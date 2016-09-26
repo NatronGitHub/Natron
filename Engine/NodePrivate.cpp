@@ -418,7 +418,7 @@ static bool runAndCheckRet(const std::string& script)
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* retObj = PyObject_GetAttrString(mainModule, "ret"); //new ref
     assert(retObj);
-    bool ret = PyObject_IsTrue(retObj) == 0;
+    bool ret = PyObject_IsTrue(retObj) == 1;
     Py_XDECREF(retObj);
     return ret;
 }
@@ -449,17 +449,33 @@ static bool checkFunctionPresence(const std::string& pluginID, const std::string
 bool
 NodePrivate::figureOutCallbackName(const std::string& inCallback, std::string* outCallback)
 {
-    // Python callbacks may be in a python script with the name of the plug-in, so prefix the plugin-ID and
+    if (inCallback.empty()) {
+        return false;
+    }
+    // Python callbacks may be in a python script with indicated by the plug-in
     // check if it exists
-    std::string pluginID = plugin.lock()->getPluginID();
-    if (checkFunctionPresence(pluginID, inCallback, true)) {
-        *outCallback = pluginID + "." + inCallback;
-    } else if (checkFunctionPresence(pluginID, inCallback, false)) {
-        *outCallback = inCallback;
-    } else {
-        if (!inCallback.empty()) {
-            _publicInterface->getApp()->appendToScriptEditor(tr("Failed to run callback: %1 does not seem to be defined").arg(QString::fromUtf8(inCallback.c_str())).toStdString());
+    std::string extScriptFile = plugin.lock()->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile);
+    std::string moduleName;
+    if (!extScriptFile.empty()) {
+        std::size_t foundDot = extScriptFile.find_last_of(".");
+        if (foundDot != std::string::npos) {
+            moduleName = extScriptFile.substr(0, foundDot);
         }
+    }
+
+    bool gotFunc = false;
+    if (!moduleName.empty() && checkFunctionPresence(moduleName, inCallback, true)) {
+        *outCallback = moduleName + "." + inCallback;
+        gotFunc = true;
+    }
+
+    if (!gotFunc && checkFunctionPresence(moduleName, inCallback, false)) {
+        *outCallback = inCallback;
+        gotFunc = true;
+    }
+
+    if (!gotFunc) {
+        _publicInterface->getApp()->appendToScriptEditor(tr("Failed to run callback: %1 does not seem to be defined").arg(QString::fromUtf8(inCallback.c_str())).toStdString());
         return false;
     }
     return true;

@@ -1593,7 +1593,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     EffectInstancePtr isEffect = toEffectInstance(holder);
     assert(isEffect);
     if (isEffect) {
-        isEffect->getNode()->declarePythonFields();
+        isEffect->getNode()->declarePythonKnobs();
     }
 } // AddKnobDialogPrivate::createKnobFromSelection
 

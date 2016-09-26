@@ -321,7 +321,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
             args << QLatin1String("-i") << filePathIn << QLatin1String("-o") << *filePathOut;
             proc.start(path, args);
             proc.waitForFinished();
-            if (proc.exitCode() == 0) {
+            if (proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit) {
                 return true;
             } else {
                 QString error = QString::fromUtf8(proc.readAllStandardError().data());

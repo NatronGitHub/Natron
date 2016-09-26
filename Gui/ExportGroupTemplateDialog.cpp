@@ -132,6 +132,8 @@ struct ExportGroupTemplateDialogPrivate
     Button* openButton;
     Label* iconPathLabel;
     LineEdit* iconPath;
+    Label* extPythonScriptLabel;
+    LineEdit* extPythonScriptEdit;
     Label* descriptionLabel;
     PlaceHolderTextEdit* descriptionEdit;
     Label* descriptionIsMarkdownLabel;
@@ -158,6 +160,8 @@ struct ExportGroupTemplateDialogPrivate
         , openButton(0)
         , iconPathLabel(0)
         , iconPath(0)
+        , extPythonScriptLabel(0)
+        , extPythonScriptEdit(0)
         , descriptionLabel(0)
         , descriptionEdit(0)
         , descriptionIsMarkdownLabel(0)
@@ -254,6 +258,17 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->shortcutKeyLabel = new Label(tr("Shortcut"), this);
     _imp->shortcutKeyEditor = new KeybindRecorder(this);
 
+
+    _imp->extPythonScriptLabel = new Label(tr("Icon relative path"), this);
+    QString extPyScriptTt = NATRON_NAMESPACE::convertFromPlainText(tr("Set here the file path of an optional Python script where callback(s) used "
+                                                                      "by the PyPlug are defined.\n"
+                                                                      "The path is relative to where you save the PyPlug script."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    _imp->extPythonScriptLabel->setToolTip(extPyScriptTt);
+    _imp->extPythonScriptEdit = new LineEdit(this);
+    _imp->extPythonScriptEdit->setPlaceholderText( QString::fromUtf8("CallbacksScript.py") );
+    _imp->extPythonScriptEdit->setToolTip(extPyScriptTt);
+
+
     _imp->fileLabel = new Label(tr("File"), this);
     QString fileTt  = NATRON_NAMESPACE::convertFromPlainText(tr("Specify here the directory where to export the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
@@ -292,10 +307,12 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
     _imp->mainLayout->addWidget(_imp->descriptionIsMarkdownCheckbox, 6, 1, 1, 1);
     _imp->mainLayout->addWidget(_imp->shortcutKeyLabel, 7, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->shortcutKeyEditor, 7, 1, 1, 2);
-    _imp->mainLayout->addWidget(_imp->fileLabel, 8, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->fileEdit, 8, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 8, 2, 1, 1);
-    _imp->mainLayout->addWidget(_imp->buttons, 9, 0, 1, 3);
+    _imp->mainLayout->addWidget(_imp->extPythonScriptLabel, 8, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->extPythonScriptEdit, 8, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->fileLabel, 9, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->fileEdit, 9, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 9, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 10, 0, 1, 3);
 
     // If this node is already a PyPlug, pre-fill the dialog with existing information
     NodeGroupPtr isGroupNode = toNodeGroup(group);
@@ -322,12 +339,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
             }
             int version = pyPlugHandle->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
             QString scriptFilePath = QString::fromUtf8(pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath).c_str());
+            QString extPythonScript = QString::fromUtf8(pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile).c_str());
             
             _imp->idEdit->setText(pluginID);
             _imp->labelEdit->setText(label);
             _imp->groupingEdit->setText(grouping);
             _imp->descriptionEdit->setText(description);
             _imp->iconPath->setText(iconFilePath);
+            _imp->extPythonScriptEdit->setText(extPythonScript);
             _imp->fileEdit->setText(scriptFilePath);
             _imp->versionSpinbox->setValue(version);
         }
@@ -441,6 +460,8 @@ ExportGroupTemplateDialog::onOkClicked()
     int version = _imp->versionSpinbox->value();
     bool isMarkdown = _imp->descriptionIsMarkdownCheckbox->isChecked();
 
+    QString extPyScript = _imp->extPythonScriptEdit->text();
+
     Qt::KeyboardModifiers qtMods;
     Qt::Key qtKey;
 
@@ -456,6 +477,7 @@ ExportGroupTemplateDialog::onOkClicked()
                                              pluginLabel.toStdString(),
                                              iconPath.toStdString(),
                                              description.toStdString(),
+                                             extPyScript.toStdString(),
                                              isMarkdown,
                                              grouping.toStdString(),
                                              version,

@@ -146,6 +146,14 @@
 #define kNatronPluginPropPyPlugIsToolset "NatronPluginPropPyPlugIsToolset"
 
 /**
+ * @brief x1 std::string property (optional) indicating for a PyPlug the file path of a Python script where callbacks
+ * used by the PyPlug can be defined. The file path is relative to the directory where kNatronPluginPropPyPlugScriptAbsoluteFilePath is
+ * contained.
+ * Default value - Empty
+ **/
+#define kNatronPluginPropPyPlugExtScriptFile "NatronPluginPropPyPlugExtScriptFile"
+
+/**
  * @brief x1 pointer property (optional) indicating for an OpenFX plug-in the pointer to the internal
  * OFX::Host::ImageEffect::ImageEffectPlugin structure.
  * Default value - NULL

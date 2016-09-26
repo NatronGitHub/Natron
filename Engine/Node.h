@@ -207,6 +207,7 @@ public:
                           const std::string& pyPlugLabel,
                           const std::string& pyPlugIcon,
                           const std::string& pyPlugDesc,
+                          const std::string& pyPlugExtPythonScript,
                           const bool pyPlugDescIsMarkdown,
                           const std::string& pyPlugGrouping,
                           int majorVersion,
@@ -220,6 +221,7 @@ private:
                                 const std::string& pyPlugLabel,
                                 const std::string& pyPlugIcon,
                                 const std::string& pyPlugDesc,
+                                const std::string& pyPlugExtPythonScript,
                                 const bool pyPlugDescIsMarkdown,
                                 const std::string& pyPlugGrouping,
                                 int majorVersion,
@@ -234,6 +236,10 @@ public:
 
     std::string getCurrentNodePresets() const;
 
+    /**
+     * @brief Restores the node to its default state. If this node has a preset active or it is a PyPlug
+     * it will be restored according to the preset/PyPlug.
+     **/
     void restoreNodeToDefaultState();
 
     ///Set values for Knobs given their serialization
@@ -1148,7 +1154,7 @@ public:
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
-    void declarePythonFields();
+    void declarePythonKnobs();
 
 private:
 

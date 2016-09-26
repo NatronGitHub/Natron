@@ -157,6 +157,10 @@ public:
     // If not set it will default to the grouping of the plug-in set in originalPluginID
     std::string pyPlugGrouping;
 
+    // The filename (relative to the directory where the pyplug file is) of a python script where optional functions
+    // and callbacks used by the PyPlug can be defined.
+    std::string pyPlugExtraPythonScript;
+
     // The label of the preset as it should appear in the GUI
     std::string presetLabel;
 
@@ -188,6 +192,7 @@ public:
     , pyPlugDescription()
     , pyPlugDescriptionIsMarkdown(false)
     , pyPlugGrouping()
+    , pyPlugExtraPythonScript()
     , presetLabel()
     , presetIcon()
     , version(0)

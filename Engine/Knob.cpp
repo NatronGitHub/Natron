@@ -4495,7 +4495,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         }
     }
     if (isUserKnob && otherIsEffect) {
-        otherIsEffect->getNode()->declarePythonFields();
+        otherIsEffect->getNode()->declarePythonKnobs();
     }
     if (!makeAlias && otherIsEffect && isEffect) {
         NodeCollectionPtr collec;
@@ -5652,7 +5652,7 @@ KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
         _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
-            isEffect->getNode()->declarePythonFields();
+            isEffect->getNode()->declarePythonKnobs();
         }
     }
 }
@@ -5665,7 +5665,7 @@ KnobHolder::recreateKnobs(bool keepCurPageIndex)
         _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
-            isEffect->getNode()->declarePythonFields();
+            isEffect->getNode()->declarePythonKnobs();
         }
     }
 }
@@ -5958,7 +5958,7 @@ KnobHolder::onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob)
             knob->setDeclaredByPlugin(true);
         }
         if (isUserKnob) {
-            isEffect->getNode()->declarePythonFields();
+            isEffect->getNode()->declarePythonKnobs();
         }
     }
 

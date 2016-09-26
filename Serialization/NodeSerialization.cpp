@@ -289,6 +289,9 @@ NodePresetSerialization::encode(YAML::Emitter& em) const
         }
 
         em << YAML::Key << "PyPlugVersion" << YAML::Value << version;
+        if (!pyPlugExtraPythonScript.empty()) {
+            em << YAML::Key << "PyPlugExtScript" << YAML::Value << pyPlugExtraPythonScript;
+        }
     } else {
         em << YAML::Key << "PluginID" << YAML::Value << originalPluginID;
     }
@@ -326,6 +329,9 @@ NodePresetSerialization::decode(const YAML::Node& node)
             }
         }
         version = node["PyPlugVersion"].as<int>();
+        if (node["PyPlugExtScript"]) {
+            pyPlugExtraPythonScript = node["PyPlugExtScript"].as<std::string>();
+        }
     } else if (node["PluginID"]) {
         originalPluginID = node["PluginID"].as<std::string>();
     }

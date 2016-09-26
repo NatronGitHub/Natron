@@ -54,6 +54,7 @@ Plugin::initializeProperties() const
     createProperty<int>(kNatronPluginPropShortcut, 0, 0);
     createProperty<std::string>(kNatronPluginPropGroupIconFilePath, std::vector<std::string>());
     createProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, std::string());
+    createProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile, std::string());
     createProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, false);
     createProperty<bool>(kNatronPluginPropPyPlugIsToolset, false);
     createProperty<void*>(kNatronPluginPropOpenFXPluginPtr, 0);

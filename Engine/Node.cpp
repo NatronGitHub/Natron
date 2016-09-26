@@ -183,6 +183,7 @@ Node::createRotoContextConditionnally()
         _imp->rotoContext = RotoContext::create( shared_from_this() );
         _imp->effect->endChanges(true);
         _imp->rotoContext->createBaseLayer();
+        declareRotoPythonField();
     }
 }
 
@@ -194,6 +195,7 @@ Node::createTrackerContextConditionnally()
     ///Initialize the tracker context if any
     if ( _imp->effect->isBuiltinTrackerNode() ) {
         _imp->trackContext = TrackerContext::create( shared_from_this() );
+        declareTrackerPythonField();
     }
 }
 
@@ -370,11 +372,19 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->ioContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
     NodeCollectionPtr group = getGroup();
+    assert(group);
+    if (!group) {
+        throw std::logic_error("Node::load no container group!");
+    }
+
+    NodePtr thisShared = shared_from_this();
+
+    // Add the node to the group before initializing anything else
+    group->addNode(thisShared);
 
     // Should we report errors if load fails ?
     _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
-    NodePtr thisShared = shared_from_this();
 
     // Any serialization from project load or copy/paste ?
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
@@ -443,8 +453,10 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
+    // Make sure knobs initialization does not attempt to call knobChanged or trigger a render.
     _imp->effect->beginChanges();
 
+    // For OpenFX this calls describe & describeInContext if neede dand then creates parameters and clips
     _imp->effect->initializeDataAfterCreate();
 
     // Set the node name
@@ -452,13 +464,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Set plug-in accepted bitdepths and set default metadata
     refreshAcceptedBitDepths();
-
-    if ( _imp->supportedDepths.empty() ) {
-        //From the spec:
-        //The default for a plugin is to have none set, the plugin must define at least one in its describe action.
-        throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
-    }
-
 
     // Create RotoContext if needed
     createRotoContextConditionnally();
@@ -482,7 +487,7 @@ Node::load(const CreateNodeArgsPtr& args)
     // If there is either PyPlug info or a preset to load, do it now
     // Since this is the same format, the same function handles it
     if (_imp->pyPlugHandle.lock() || !_imp->initialNodePreset.empty()) {
-        loadPresets(_imp->initialNodePreset);
+        restoreNodeToDefaultState();
     }
 
     // If we have a serialization, load it now
@@ -490,11 +495,17 @@ Node::load(const CreateNodeArgsPtr& args)
         fromSerialization(*serialization);
     }
 
+    // Declare Knobs as attributes of this node if this was not done before.
+    // This is very cheap when all parameters already exist.
+    declarePythonKnobs();
+
     // if we have initial values set for Knobs in the CreateNodeArgs object, deserialize them now
     setValuesFromSerialization(*args);
 
+    // Setup default-metadata
     _imp->effect->setDefaultMetadata();
 
+    // For OpenFX we crate the image effect now
     _imp->effect->createInstanceAction();
 
     // For readers, set their original frame range when creating them
@@ -505,63 +516,60 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
+    // Check if there is any overlay
     _imp->effect->initializeOverlayInteract();
 
+    // Refresh render scale support
     _imp->effect->refreshRenderScaleSupport();
 
-    /*
-       Set modifiable props
-     */
+    // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
     refreshDynamicProperties();
+
+    // Ensure the OpenGL support knob has a consistant state according to the project
     onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
- 
+
+    // Get the sub-label knob
     restoreSublabel();
 
+    // If this plug-in create views (ReadOIIO only) then refresh them
     refreshCreatedViews();
 
-    declarePythonFields();
+    // Notify the container group we added this node
+    group->notifyNodeActivated(thisShared);
 
-    if  ( getRotoContext() ) {
-        declareRotoPythonField();
-    }
-    if ( getTrackerContext() ) {
-        declareTrackerPythonField();
-    }
-
-
-    if (group) {
-        group->notifyNodeActivated(thisShared);
-    }
-
-
-    _imp->pluginSafety = (RenderSafetyEnum)pluginPtr->getProperty<int>(kNatronPluginPropRenderSafety);
-    _imp->currentThreadSafety = _imp->pluginSafety;
-
-
-    // Create gui if needed
+    // Create gui if needed. For groups this will also create the GUI of all internal nodes
+    // unless they are not created yet
     bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
     if (!argsNoNodeGui) {
         createNodeGuiInternal(args);
     }
 
+    // Callback to the effect notifying everything is setup.
+    // Generally used by Group derivatives class to initialize internal nodes
+    // unless there is a serialization that was loaded before
     _imp->effect->onEffectCreated(canOpenFileDialog, *args);
 
+    // This node is now considered created
     _imp->nodeCreated = true;
 
-    
+    // Refresh page order so that serialization does not save it if it did not change
     _imp->refreshDefaultPagesOrder();
+
+    // Refresh knobs Viewer UI order so that serialization does not save it if it did not change
     _imp->refreshDefaultViewerKnobsOrder();
 
-
+    // Refresh data that depend on inputs
     if ( !getApp()->isCreatingNodeTree() ) {
         refreshAllInputRelatedData(!serialization);
     }
 
-
+    // Run the Python callback
     _imp->runOnNodeCreatedCB(!serialization);
 
+    // If needed compute a preview for this node
     computePreviewImage( getApp()->getTimeLine()->currentFrame() );
 
+    // Resume knobChanged calls
     _imp->effect->endChanges();
 } // load
 
@@ -722,8 +730,8 @@ Node::refreshDynamicProperties()
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canTransform = _imp->effect->getCanTransform();
-    RenderSafetyEnum safety = _imp->effect->getCurrentRenderThreadSafety();
-    setRenderThreadSafety(safety);
+    _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
+    setRenderThreadSafety(_imp->pluginSafety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanTransform(canTransform);
@@ -870,7 +878,14 @@ void
 Node::refreshAcceptedBitDepths()
 {
     assert( QThread::currentThread() == qApp->thread() );
+    _imp->supportedDepths.clear();
     _imp->effect->addSupportedBitDepth(&_imp->supportedDepths);
+    if ( _imp->supportedDepths.empty() ) {
+        //From the spec:
+        //The default for a plugin is to have none set, the plugin must define at least one in its describe action.
+        throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
+    }
+
 }
 
 bool
@@ -1769,6 +1784,9 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
             restoreUserKnob(KnobGroupPtr(), KnobPagePtr(), **it, 0);
         }
     }
+
+    declarePythonKnobs();
+
     if (!serialization._pagesIndexes.empty()) {
         setPagesOrder( serialization._pagesIndexes );
     }
@@ -1925,6 +1943,7 @@ Node::saveNodeToFileInternal(const std::string& filePath,
                              const std::string& pyPlugLabel,
                              const std::string& pyPlugIcon,
                              const std::string& pyPlugDesc,
+                             const std::string& pyPlugExtPythonScript,
                              const bool pyPlugDescIsMarkdown,
                              const std::string& pyPlugGrouping,
                              int majorVersion,
@@ -1952,6 +1971,7 @@ Node::saveNodeToFileInternal(const std::string& filePath,
         serialization.pyPlugGrouping = pyPlugGrouping;
         serialization.pyPlugDescription = pyPlugDesc;
         serialization.pyPlugDescriptionIsMarkdown = pyPlugDescIsMarkdown;
+        serialization.pyPlugExtraPythonScript = pyPlugExtPythonScript;
         serialization.version = majorVersion;
     }
     serialization.presetLabel = pyPlugLabel;
@@ -1974,6 +1994,7 @@ Node::saveNodeToPyPlug(const std::string& filePath,
                        const std::string& pyPlugLabel,
                        const std::string& pyPlugIcon,
                        const std::string& pyPlugDesc,
+                       const std::string& pyPlugExtPythonScript,
                        const bool pyPlugDescIsMarkdown,
                        const std::string& pyPlugGrouping,
                        int majorVersion,
@@ -1984,7 +2005,7 @@ Node::saveNodeToPyPlug(const std::string& filePath,
     if (!isGrp) {
         throw std::invalid_argument(tr("Exporting to PyPlug is only available for a Group node").toStdString());
     }
-    saveNodeToFileInternal(filePath, pyPlugID, pyPlugLabel, pyPlugIcon, pyPlugDesc, pyPlugDescIsMarkdown, pyPlugGrouping, majorVersion, symbol, mods);
+    saveNodeToFileInternal(filePath, pyPlugID, pyPlugLabel, pyPlugIcon, pyPlugDesc, pyPlugExtPythonScript, pyPlugDescIsMarkdown, pyPlugGrouping, majorVersion, symbol, mods);
 }
 
 void
@@ -1994,7 +2015,7 @@ Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsL
     if (presetsLabel.empty()) {
         throw std::invalid_argument(tr("The preset label cannot be empty").toStdString());
     }
-    saveNodeToFileInternal(filePath, std::string(), presetsLabel, presetsIcon, std::string(), false, std::string(), 0, symbol, mods);
+    saveNodeToFileInternal(filePath, std::string(), presetsLabel, presetsIcon, std::string(), std::string(), false, std::string(), 0, symbol, mods);
 }
 
 void
@@ -2004,13 +2025,16 @@ Node::restoreNodeToDefaultState()
 
     FlagSetter setter(true, &_imp->restoringDefaults);
 
+    // Make sure the instance does not receive knobChanged now
     _imp->effect->beginChanges();
 
     bool nodeCreated = isNodeCreated();
     if (nodeCreated) {
+        // Purge any cache when reseting to defaults
         _imp->effect->purgeCaches();
     }
 
+    // Check if there is any serialization from presets/pyplug
     std::string nodePreset = getCurrentNodePresets();
     SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization;
     SERIALIZATION_NAMESPACE::NodeSerializationPtr pyPlugSerialization;
@@ -2022,7 +2046,8 @@ Node::restoreNodeToDefaultState()
         } catch (...) {
 
         }
-    } else if (pyPlugHandle) {
+    }
+    if (pyPlugHandle) {
         bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
         if (!isPythonScriptPyPlug) {
             std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
@@ -2034,6 +2059,16 @@ Node::restoreNodeToDefaultState()
     // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
     // if all parameters are actually to the good value
     if (nodeCreated){
+
+        // Remove any current user knob
+        std::list<KnobPagePtr> userPages;
+        _imp->effect->getUserPages(userPages);
+        for (std::list<KnobPagePtr>::iterator it = userPages.begin(); it!=userPages.end(); ++it) {
+            _imp->effect->deleteKnob(*it, true);
+        }
+
+
+        // Restore knob defaults
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             
@@ -2051,6 +2086,7 @@ Node::restoreNodeToDefaultState()
         }
     }
 
+    // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
         // Load pyplug, set default values to knob only if there's no preset serialization
         loadPresetsInternal(pyPlugSerialization, presetSerialization.get() == 0);
@@ -2101,7 +2137,9 @@ Node::restoreNodeToDefaultState()
             }
         }
     }
-    
+
+    // If there was a serialization, we most likely removed or created user parameters, so refresh Python knobs
+    declarePythonKnobs();
 
     if (nodeCreated) {
         // Ensure the state of the node is consistent with what the plug-in expects
@@ -2119,7 +2157,7 @@ Node::restoreNodeToDefaultState()
     // Refresh hash & meta-data and trigger a render
     _imp->effect->invalidateCacheHashAndEvaluate(true, true);
 
-} // Node::restoreNodeToDefaultState
+} // restoreNodeToDefaultState
 
 void
 Node::restoreSublabel()
@@ -8599,7 +8637,7 @@ Node::getSelectedLayer(int inputNb,
     if (processAllKnob) {
         *isAll = processAllKnob->getValue();
     }
-    if (!*isAll) {
+    if (!*isAll && foundSelector != _imp->channelsSelectors.end()) {
         *layer = _imp->getSelectedLayerInternal(inputNb, foundSelector->second);
     }
 
@@ -9998,7 +10036,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 }
 
 void
-Node::declarePythonFields()
+Node::declarePythonKnobs()
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -10027,8 +10065,8 @@ Node::declarePythonFields()
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {
-        qDebug() << QString::fromUtf8("declarePythonFields(): attribute ") + QString::fromUtf8( nodeFullName.c_str() ) + QString::fromUtf8(" is not defined");
-        throw std::logic_error(std::string("declarePythonFields(): attribute ") + nodeFullName + " is not defined");
+        qDebug() << QString::fromUtf8("declarePythonKnobs(): attribute ") + QString::fromUtf8( nodeFullName.c_str() ) + QString::fromUtf8(" is not defined");
+        throw std::logic_error(std::string("declarePythonKnobs(): attribute ") + nodeFullName + " is not defined");
     }
 
 
@@ -10109,7 +10147,7 @@ Node::declareAllPythonAttributes()
 #endif
     try {
         declareNodeVariableToPython( getFullyQualifiedName() );
-        declarePythonFields();
+        declarePythonKnobs();
         if (_imp->rotoContext) {
             declareRotoPythonField();
         }

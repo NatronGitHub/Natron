@@ -510,7 +510,7 @@ ReadNodePrivate::createDefaultReadNode()
     }
 
     //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-    _publicInterface->getNode()->declarePythonFields();
+    _publicInterface->getNode()->declarePythonKnobs();
 
     //Destroy it to keep the default parameters
     destroyReadNode();
@@ -679,7 +679,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         placeReadNodeKnobsInPage();
 
         //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-        _publicInterface->getNode()->declarePythonFields();
+        _publicInterface->getNode()->declarePythonKnobs();
     }
 
 

@@ -900,32 +900,33 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
 
     // Backward compat with older PyPlugs using Python scripts
     bool isPyPlugEncodedWithPythonScript = plugin->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
-
-    if (!isPyPlugEncodedWithPythonScript) {
-        // A pyplug might have custom functions defined in a Python script named after the plug-in ID, check if such
+    QString extScriptFile = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile).c_str());
+    if (!isPyPlugEncodedWithPythonScript && !extScriptFile.isEmpty()) {
+        // A pyplug might have custom functions defined in a custmo Python script, check if such
         // file exists. If so import it
-        QString extPythonScript = QString::fromUtf8(pyPlugDirPath.c_str());
-        Global::ensureLastPathSeparator(extPythonScript);
 
-        QString qPlugID = QString::fromUtf8(pyPlugID.c_str());
-        extPythonScript += qPlugID;
-        extPythonScript += QLatin1String(".py");
-
-        if (QFile::exists(extPythonScript)) {
-            QString script = QString::fromUtf8("import %1").arg(qPlugID);
-            std::string error, output;
-            if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output)) {
-                appendToScriptEditor(error);
-            } else if (!output.empty()) {
-                appendToScriptEditor(output);
+        QString moduleName = extScriptFile;
+        // Remove extension to get module name
+        {
+            int foundDot = moduleName.lastIndexOf(QLatin1Char('.'));
+            if (foundDot != -1) {
+                moduleName = moduleName.mid(0, foundDot);
             }
+        }
 
+
+        QString script = QString::fromUtf8("import %1").arg(moduleName);
+        std::string error, output;
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output)) {
+            appendToScriptEditor(error);
+        } else if (!output.empty()) {
+            appendToScriptEditor(output);
         }
     }
-
+    
     {
-
-
+        
+        
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         NodePtr containerNode;
         if (!istoolsetScript) {
@@ -1177,11 +1178,6 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
             }
         }
     }
-
-
-    // Add the node to the group before calling load
-    argsGroup->addNode(node);
-
 
     assert(node);
     // Call load: this will setup the node from the plug-in and its knobs. It also read from the serialization object if any
