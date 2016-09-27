@@ -75,6 +75,64 @@ CLANG_DIAG_ON(deprecated)
 #define kReadOIIOAvailableViewsKnobName "availableViews"
 #define kWriteOIIOParamViewsSelector "viewsSelector"
 
+#define kNatronNodeKnobExportPyPlugGroup "exportPyPlugDialog"
+#define kNatronNodeKnobExportPyPlugGroupLabel "Export"
+
+#define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
+#define kNatronNodeKnobExportPyPlugButtonLabel "Export"
+
+#define kNatronNodeKnobPyPlugPluginID "pyPlugPluginID"
+#define kNatronNodeKnobPyPlugPluginIDLabel "PyPlug ID"
+#define kNatronNodeKnobPyPlugPluginIDHint "When exporting a group to PyPlug, this will be the plug-in ID of the PyPlug.\n" \
+"Generally, this contains domain and sub-domains names " \
+"such as fr.inria.group.XXX.\n" \
+"If two plug-ins or more happen to have the same ID, they will be " \
+"gathered by version.\n" \
+"If two plug-ins or more have the same ID and version, the first loaded in the" \
+" search-paths will take precedence over the other."
+
+#define kNatronNodeKnobPyPlugPluginLabel "pyPlugPluginLabel"
+#define kNatronNodeKnobPyPlugPluginLabelLabel "PyPlug Label"
+#define kNatronNodeKnobPyPlugPluginLabelHint "When exporting a group to PyPlug, this will be the plug-in label as visible in the GUI of the PyPlug"
+
+#define kNatronNodeKnobPyPlugPluginGrouping "pyPlugPluginGrouping"
+#define kNatronNodeKnobPyPlugPluginGroupingLabel "PyPlug Grouping"
+#define kNatronNodeKnobPyPlugPluginGroupingHint "When exporting a group to PyPlug, this will be the grouping of the PyPlug, that is the menu under which it should be located. For example: \"Color/MyPyPlugs\". Each sub-level must be separated by a '/' character"
+
+#define kNatronNodeKnobPyPlugPluginIconFile "pyPlugPluginIcon"
+#define kNatronNodeKnobPyPlugPluginIconFileLabel "PyPlug Icon"
+#define kNatronNodeKnobPyPlugPluginIconFileHint "When exporting a group to PyPlug, this parameter indicates the filename of a PNG file of the icon to be used for this plug-in. The filename should be relative to the directory containing the PyPlug script"
+
+#define kNatronNodeKnobPyPlugPluginDescription "pyPlugPluginDescription"
+#define kNatronNodeKnobPyPlugPluginDescriptionLabel "PyPlug Description"
+#define kNatronNodeKnobPyPlugPluginDescriptionHint "When exporting a group to PyPlug, this will be the documentation of the PyPlug"
+
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown "pyPlugPluginDescriptionIsMarkdown"
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel "Markdown"
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint "Indicates whether the PyPlug description is encoded in Markdown or not. This is helpful to use rich text capabilities for the documentation"
+
+#define kNatronNodeKnobPyPlugPluginVersion "pyPlugPluginVersion"
+#define kNatronNodeKnobPyPlugPluginVersionLabel "PyPlug Version"
+#define kNatronNodeKnobPyPlugPluginVersionHint "When exporting a group to PyPlug, this will be the version of the PyPlug. This is useful to indicate users it has changed"
+
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScript "pyPlugCallbacksPythonScript"
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel "Callback(s) Python script"
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint "When exporting a group to PyPlug, this parameter indicates the filename of a Python script where callbacks used by this PyPlug are defined. The filename should be relative to the directory containing the PyPlug script"
+
+#define kNatronNodeKnobPyPlugPluginShortcut "pyPlugPluginShortcut"
+#define kNatronNodeKnobPyPlugPluginShortcutLabel "PyPlug Shortcut"
+#define kNatronNodeKnobPyPlugPluginShortcutHint "When exporting a group to PyPlug, this will be the keyboard shortcut by default the user can use to create the PyPlug. The user can always change it later on in the Preferences/Shortcut Editor"
+
+#define kNatronNodeKnobExportDialogFilePath "exportFilePath"
+#define kNatronNodeKnobExportDialogFilePathLabel "File"
+#define kNatronNodeKnobExportDialogFilePathHint "The file where to write"
+
+#define kNatronNodeKnobExportDialogOkButton "exportDialogOkButton"
+#define kNatronNodeKnobExportDialogOkButtonLabel "Ok"
+
+#define kNatronNodeKnobExportDialogCancelButton "exportDialogCancelButton"
+#define kNatronNodeKnobExportDialogCancelButtonLabel "Cancel"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -174,7 +232,7 @@ public:
 
 private:
 
-    void getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel);
+    void getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
     void getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
 
@@ -191,45 +249,12 @@ public:
     void loadPresets(const std::string& presetsLabel);
     void loadPresetsFromFile(const std::string& presetsFile);
 
-    /**
-     * @brief Exports the node state to a preset file
-     **/
-    void saveNodeToPresets(const std::string& filePath,
-                           const std::string& presetsLabel,
-                           const std::string& presetsIcon,
-                           Key symbol,
-                           const KeyboardModifiers& mods);
-
-    /**
-     * @brief Same as saveNodeToPresets, excepts that the preset will be considered as a new plug-in.
-     * And this only works for group plug-ins
-     **/
-    void saveNodeToPyPlug(const std::string& filePath,
-                          const std::string& pyPlugID,
-                          const std::string& pyPlugLabel,
-                          const std::string& pyPlugIcon,
-                          const std::string& pyPlugDesc,
-                          const std::string& pyPlugExtPythonScript,
-                          const bool pyPlugDescIsMarkdown,
-                          const std::string& pyPlugGrouping,
-                          int majorVersion,
-                          Key symbol,
-                          const KeyboardModifiers& mods);
-
-private:
-
-    void saveNodeToFileInternal(const std::string& filePath,
-                                const std::string& pyPlugID,
-                                const std::string& pyPlugLabel,
-                                const std::string& pyPlugIcon,
-                                const std::string& pyPlugDesc,
-                                const std::string& pyPlugExtPythonScript,
-                                const bool pyPlugDescIsMarkdown,
-                                const std::string& pyPlugGrouping,
-                                int majorVersion,
-                                Key symbol,
-                                const KeyboardModifiers& mods);
-
+    void exportNodeToPyPlug(const std::string& filePath);
+    void exportNodeToPresets(const std::string& filePath,
+                             const std::string& presetsLabel,
+                             const std::string& iconFilePath,
+                             int shortcutSymbol,
+                             int shortcutModifiers);
 
 public:
 
@@ -1076,7 +1101,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(bool loadingSerialization);
+    void initializeKnobs(bool loadingSerialization, bool hasGUI);
 
     void checkForPremultWarningAndCheckboxes();
 
@@ -1084,7 +1109,7 @@ public:
 
 private:
 
-    void initializeDefaultKnobs(bool loadingSerialization);
+    void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
 
     void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
 
@@ -1093,6 +1118,10 @@ private:
     void createNodePage(const KnobPagePtr& settingsPage);
 
     void createInfoPage();
+
+    void createPyPlugPage();
+
+    void createPyPlugExportGroup();
 
     void createPythonPage();
 

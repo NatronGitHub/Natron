@@ -425,11 +425,6 @@ private:
         Q_EMIT graphEditableChanged(changed);
     }
 
-    virtual void initializeKnobs() OVERRIDE;
-    virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                             ViewSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE;
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
 

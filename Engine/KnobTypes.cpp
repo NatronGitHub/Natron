@@ -78,6 +78,7 @@ KnobInt::KnobInt(const KnobHolderPtr& holder,
     , _disableSlider(false)
     , _isRectangle(false)
     , _isValueCenteredInSpinbox(false)
+    , _isShortcutKnob(false)
 {
 }
 

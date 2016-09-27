@@ -141,7 +141,7 @@ protected:
         return Qt::AlignLeft | Qt::AlignVCenter;
     }
 
-private:
+protected:
 
     /**
      * @brief Normalized parameters handling. It converts from project format
@@ -158,21 +158,21 @@ private:
 
     void sliderEditingEnd(double d);
 
-    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE;
 
     void setMaximum(int);
     void setMinimum(int);
 
-    virtual bool shouldAddStretch() const OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
-    virtual void reflectModificationsState() OVERRIDE FINAL;
-    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+    virtual bool shouldAddStretch() const OVERRIDE ;
+    virtual void setEnabled() OVERRIDE ;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE ;
+    virtual void updateGUI(int dimension) OVERRIDE ;
+    virtual void setDirty(bool dirty) OVERRIDE ;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE ;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE ;
+    virtual void updateToolTip() OVERRIDE ;
+    virtual void reflectModificationsState() OVERRIDE ;
+    virtual void refreshDimensionName(int dim) OVERRIDE ;
 
 private:
 
@@ -215,7 +215,15 @@ private:
 class KnobGuiInt
     : public KnobGuiValue
 {
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+
     KnobIntWPtr _knob;
+
+    KeybindRecorder* _shortcutRecorder;
 
 public:
 
@@ -229,6 +237,10 @@ public:
                KnobGuiContainerI *container);
 
     virtual ~KnobGuiInt() {}
+
+public Q_SLOTS:
+
+    void onKeybindRecorderEditingFinished();
 
 private:
 
@@ -245,6 +257,18 @@ private:
 
     virtual Qt::Alignment getSpinboxAlignment() const OVERRIDE FINAL;
 
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
+
+    virtual void updateGUI(int dimension) OVERRIDE FINAL ;
+
+    virtual void setEnabled() OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
+    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
+    virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
+    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
 };
 
 inline KnobGuiDoublePtr

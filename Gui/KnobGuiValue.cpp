@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
@@ -77,6 +78,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
+#include "Gui/QtEnumConvert.h"
+#include "Gui/PreferencesPanel.h"
 
 #include "ofxNatron.h"
 
@@ -1258,6 +1261,7 @@ KnobGuiInt::KnobGuiInt(KnobIPtr knob,
                        KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( toKnobInt(knob) )
+    , _shortcutRecorder(0)
 {
 }
 
@@ -1308,6 +1312,167 @@ KnobGuiInt::getSpinboxAlignment() const
     }
 }
 
+void
+KnobGuiInt::createWidget(QHBoxLayout* layout)
+{
+    KnobIntPtr knob = _knob.lock();
+    if (!knob->isShortcutKnob()) {
+        KnobGuiValue::createWidget(layout);
+    } else {
+        _shortcutRecorder = new KeybindRecorder(layout->parentWidget());
+        if ( hasToolTip() ) {
+            toolTip(_shortcutRecorder);
+        }
+        QObject::connect(_shortcutRecorder, SIGNAL(editingFinished()), this, SLOT(onKeybindRecorderEditingFinished()));
+        layout->addWidget(_shortcutRecorder);
+        enableRightClickMenu(_shortcutRecorder, -1);
+    }
+}
+
+void
+KnobGuiInt::onKeybindRecorderEditingFinished()
+{
+    Qt::KeyboardModifiers qtMods;
+    Qt::Key qtKey;
+
+    {
+        QString presetShortcut = _shortcutRecorder->text();
+        QKeySequence keySeq(presetShortcut, QKeySequence::NativeText);
+        extractKeySequence(keySeq, qtMods, qtKey);
+    }
+    int symbol = (int)QtEnumConvert::fromQtKey(qtKey);
+    int mods = (int)QtEnumConvert::fromQtModifiers(qtMods);
+
+    std::list<int> newValues;
+    newValues.push_back(symbol);
+    newValues.push_back(mods);
+
+    KnobIntPtr knob = _knob.lock();
+    std::list<int> oldValues = knob->getValueForEachDimension_mt_safe();
+
+    pushUndoCommand(new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues));
+}
+
+void
+KnobGuiInt::updateGUI(int dimension)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::updateGUI(dimension);
+    } else {
+        KnobIntPtr knob = _knob.lock();
+        assert(knob->getDimension() == 2);
+        Key symbol = (Key)knob->getValue(0);
+        KeyboardModifiers modifiers = (KeyboardModifiers)knob->getValue(1);
+        QKeySequence sequence = makeKeySequence(QtEnumConvert::toQtModifiers(modifiers), QtEnumConvert::toQtKey(symbol));
+        _shortcutRecorder->setText(sequence.toString(QKeySequence::NativeText));
+    }
+}
+
+void
+KnobGuiInt::setEnabled()
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::setEnabled();
+    } else {
+        KnobIntPtr knob = _knob.lock();
+        bool enabled0 = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+        _shortcutRecorder->setReadOnly_NoFocusRect(!enabled0);
+    }
+}
+
+void
+KnobGuiInt::setReadOnly(bool readOnly, int dimension)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::setReadOnly(readOnly, dimension);
+    } else {
+        _shortcutRecorder->setReadOnly_NoFocusRect(readOnly);
+
+    }
+}
+
+void
+KnobGuiInt::setDirty(bool dirty)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::setDirty(dirty);
+    } else {
+        _shortcutRecorder->setDirty(dirty);
+    }
+}
+
+void
+KnobGuiInt::reflectAnimationLevel(int dimension, AnimationLevelEnum level)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::reflectAnimationLevel(dimension, level);
+    } else {
+        KnobIntPtr knob = _knob.lock();
+        int value;
+
+        switch (level) {
+            case eAnimationLevelNone:
+                value = 0;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                value = 1;
+                break;
+            case eAnimationLevelOnKeyframe:
+                value = 2;
+                
+                break;
+            default:
+                value = 0;
+                break;
+        }
+
+        _shortcutRecorder->setAnimation(value);
+    }
+}
+
+void
+KnobGuiInt::reflectExpressionState(int dimension, bool hasExpr)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::reflectExpressionState(dimension, hasExpr);
+    } else {
+        bool isEnabled = _knob.lock()->isEnabled(0);
+        _shortcutRecorder->setAnimation(3);
+        _shortcutRecorder->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
+    }
+}
+
+void
+KnobGuiInt::updateToolTip()
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::updateToolTip();
+    } else {
+        toolTip(_shortcutRecorder);
+    }
+}
+
+void
+KnobGuiInt::reflectModificationsState()
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::reflectModificationsState();
+    } else {
+        bool hasModif = _knob.lock()->hasModifications();
+
+        if (_shortcutRecorder) {
+            _shortcutRecorder->setAltered(!hasModif);
+        }
+    }
+}
+
+void
+KnobGuiInt::refreshDimensionName(int dim)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::refreshDimensionName(dim);
+    } 
+}
 
 NATRON_NAMESPACE_EXIT;
 

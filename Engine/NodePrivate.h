@@ -245,7 +245,19 @@ public:
 
 
     KnobIntWPtr frameIncrKnob;
-    KnobPageWPtr nodeSettingsPage;
+    KnobPageWPtr nodeSettingsPage, pyPlugPage;
+
+    // PyPlug page
+    KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;
+    KnobFileWPtr pyPlugIconKnob, pyPlugExtPythonScript;
+    KnobBoolWPtr pyPlugDescIsMarkdownKnob;
+    KnobIntWPtr pyPlugVersionKnob;
+    KnobIntWPtr pyPlugShortcutKnob;
+    KnobButtonWPtr pyPlugExportButtonKnob;
+
+    KnobGroupWPtr pyPlugExportDialog;
+    KnobOutputFileWPtr pyPlugExportDialogFile;
+    KnobButtonWPtr pyPlugExportDialogOkButton, pyPlugExportDialogCancelButton;
 
     KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
     KnobBoolWPtr previewEnabledKnob;

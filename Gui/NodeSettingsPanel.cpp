@@ -444,7 +444,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     extractKeySequence(keySeq, qtMods, qtKey);
     
     try {
-        getNode()->getNode()->saveNodeToPresets(presetFilePath.toStdString(),
+        getNode()->getNode()->exportNodeToPresets(presetFilePath.toStdString(),
                                                 presetName.toStdString(),
                                                 presetIconFile.toStdString(),
                                                 QtEnumConvert::fromQtKey(qtKey),

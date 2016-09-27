@@ -1339,6 +1339,7 @@ AppManager::loadAllPlugins()
     // Should be done after settings are declared
     loadPythonGroups();
 
+    // Load presets after all plug-ins are loaded
     loadNodesPresets();
 
     _imp->_settings->restorePluginSettings();
@@ -1760,55 +1761,18 @@ AppManager::loadNodesPresets()
         if (!ifile) {
             continue;
         }
-        SERIALIZATION_NAMESPACE::NodePresetSerialization obj;
-        obj.decodeMetaDataOnly = true;
+        SERIALIZATION_NAMESPACE::NodeSerialization obj;
         try {
             SERIALIZATION_NAMESPACE::read(ifile, &obj);
         } catch (...) {
             continue;
         }
 
-        // If the presetID is set, make a new plug-in, otherwise append as a preset of the original plugin
-        if (!obj.pyPlugID.empty()) {
-
-            std::vector<std::string> grouping;
-            if (!obj.pyPlugGrouping.empty()) {
-                boost::split(grouping, obj.pyPlugGrouping, boost::is_any_of("/"));
-            } else {
-                // Use the original plugin grouping
-                QString originalPluginID = QString::fromUtf8(obj.originalPluginID.c_str());
-                if (originalPluginID.isEmpty()) {
-                    // Assume this is a group
-                    originalPluginID = QLatin1String(PLUGINID_NATRON_GROUP);
-                }
-                PluginPtr foundPlugin;
-                try {
-                    foundPlugin = getPluginBinary(originalPluginID, -1, -1, false);
-                } catch (...) {
-                    continue;
-                }
-                if (!foundPlugin) {
-                    continue;
-                }
-                grouping = foundPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-            }
-
-
-            PluginPtr p = Plugin::create(0, obj.pyPlugID, obj.presetLabel, obj.version, 0, grouping);
-            p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
-            p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, obj.pyPlugDescriptionIsMarkdown);
-            p->setProperty<std::string>(kNatronPluginPropDescription, obj.pyPlugDescription);
-            p->setProperty<std::string>(kNatronPluginPropIconFilePath, obj.presetIcon);
-            p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
-            p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);
-            registerPlugin(p);
-
-            
-        } else {
-
+        if (!obj._presetInstanceLabel.empty()) {
+            // If the preset label is set, append as a preset of an existing plug-in
             PluginPtr foundPlugin;
             try {
-                foundPlugin = getPluginBinary(QString::fromUtf8(obj.originalPluginID.c_str()), -1, -1, false);
+                foundPlugin = getPluginBinary(QString::fromUtf8(obj._pluginID.c_str()), -1, -1, false);
             } catch (...) {
                 continue;
             }
@@ -1817,11 +1781,65 @@ AppManager::loadNodesPresets()
             }
             PluginPresetDescriptor preset;
             preset.presetFilePath = presetFile;
-            preset.presetLabel = QString::fromUtf8(obj.presetLabel.c_str());
-            preset.presetIconFile = QString::fromUtf8(obj.presetIcon.c_str());
-            preset.symbol = (Key)obj.presetSymbol;
-            preset.modifiers = KeyboardModifiers(obj.presetModifiers);
+            preset.presetLabel = QString::fromUtf8(obj._presetInstanceLabel.c_str());
+            preset.presetIconFile = QString::fromUtf8(obj._presetsIconFilePath.c_str());
+            preset.symbol = (Key)obj._presetShortcutSymbol;
+            preset.modifiers = KeyboardModifiers(obj._presetShortcutPresetModifiers);
             foundPlugin->addPresetFile(preset);
+        } else {
+            // Try to find a pyplug
+            std::string pyPlugID, pyPlugLabel, pyPlugDescription, pyPlugIconFilePath, pyPlugGrouping, pyPlugExtCallbacks;
+            bool pyPlugDescIsMarkdown = false;
+            int pyPlugShortcutSymbol = 0;
+            int pyPlugShortcutModifiers = 0;
+            int pyPlugVersionMajor = 0,pyPlugVersionMinor = 0;
+            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = obj._knobsValues.begin(); it != obj._knobsValues.end(); ++it) {
+                if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginID) {
+                    pyPlugID = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginLabel) {
+                    pyPlugLabel = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescription) {
+                    pyPlugDescription = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown) {
+                    pyPlugDescIsMarkdown = (*it)->_values[0]._value.isBool;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginGrouping) {
+                    pyPlugGrouping = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginIconFile) {
+                    pyPlugIconFilePath = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginCallbacksPythonScript) {
+                    pyPlugExtCallbacks = (*it)->_values[0]._value.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginShortcut) {
+                    pyPlugShortcutSymbol = (*it)->_values[0]._value.isInt;
+                    pyPlugShortcutModifiers = (*it)->_values[1]._value.isInt;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginVersion) {
+                    pyPlugVersionMajor = (*it)->_values[0]._value.isInt;
+                    pyPlugVersionMajor = (*it)->_values[1]._value.isInt;
+                }
+            }
+
+            if (!pyPlugID.empty()) {
+                // If the pyPlugID is set, make a new plug-in
+                // Use grouping if set, otherwise make a "PyPlug" group as a fallback
+                std::vector<std::string> grouping;
+                if (!pyPlugGrouping.empty()) {
+                    boost::split(grouping, pyPlugGrouping, boost::is_any_of("/"));
+                } else {
+                    grouping.push_back("PyPlugs");
+                }
+
+
+                PluginPtr p = Plugin::create(0, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
+                p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
+                p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, pyPlugDescIsMarkdown);
+                p->setProperty<std::string>(kNatronPluginPropDescription, pyPlugDescription);
+                p->setProperty<std::string>(kNatronPluginPropIconFilePath, pyPlugIconFilePath);
+                p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutSymbol, 0);
+                p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutModifiers, 1);
+                p->setProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile, pyPlugExtCallbacks);
+                registerPlugin(p);
+                
+                
+            }
         }
     }
 }

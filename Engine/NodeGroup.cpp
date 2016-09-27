@@ -994,6 +994,8 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
     // When set edited make sure all knobs have the appropriate "declared by plug-in" flag
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
+#pragma message WARN("Show/hide PyPlug page here")
+//        isGrp->getNode()->getKnobByName(kNatronNodeKnobPyPlug)
         const KnobsVec& knobs = isGrp->getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
@@ -1034,9 +1036,6 @@ struct NodeGroupPrivate
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
-
-    KnobButtonPtr exportAsTemplate;
-
     NodeGroupPrivate()
         : nodesLock(QMutex::Recursive)
         , inputs()
@@ -1045,7 +1044,6 @@ struct NodeGroupPrivate
         , guiOutputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
-        , exportAsTemplate()
     {
     }
 };
@@ -1278,23 +1276,6 @@ NodeGroup::invalidateHashCache(bool invalidateParent)
     std::list<EffectInstancePtr> markedNodes;
     for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         invalidateHashRecursive((*it)->getEffectInstance(), invalidateParent, markedNodes);
-    }
-}
-
-void
-NodeGroup::initializeKnobs()
-{
-
-    EffectInstancePtr thisShared = shared_from_this();
-    KnobPagePtr nodePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, kNodePageParamName, tr(kNodePageParamLabel));
-    nodePage->setDeclaredByPlugin(false);
-    
-    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( thisShared, tr("Export as PyPlug") );
-    _imp->exportAsTemplate->setName("exportAsPyPlug");
-    _imp->exportAsTemplate->setHintToolTip( tr("Export this group as a Python group script (PyPlug) that can be shared and/or later "
-                                               "on re-used as a plug-in.") );
-    if (nodePage) {
-        nodePage->addKnob(_imp->exportAsTemplate);
     }
 }
 
@@ -1624,26 +1605,6 @@ NodeGroup::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& a
 
 }
 
-bool
-NodeGroup::knobChanged(const KnobIPtr& k,
-                       ValueChangedReasonEnum /*reason*/,
-                       ViewSpec /*view*/,
-                       double /*time*/,
-                       bool /*originatedFromMainThread*/)
-{
-    bool ret = true;
-
-    if (k == _imp->exportAsTemplate) {
-        NodeGuiIPtr gui_i = getNode()->getNodeGui();
-        if (gui_i) {
-            gui_i->exportGroupAsPythonScript();
-        }
-    } else {
-        ret = false;
-    }
-
-    return ret;
-}
 
 
 
