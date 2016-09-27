@@ -265,12 +265,33 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
-                                    const QString &label,
-                                    int dimension = 1,
-                                    bool declaredByPlugin = true)
+    boost::shared_ptr<K>
+    createKnob(const KnobHolderPtr& holder,
+               const QString &label,
+               int dimension = 1,
+               bool declaredByPlugin = true)
     {
         return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
+    }
+
+    template <typename K>
+    static boost::shared_ptr<K>
+    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
+                                      const std::string& scriptName,
+                                      const std::string& label,
+                                      int dimension = 1)
+    {
+        return appPTR->getKnobFactory().checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label, dimension);
+    }
+
+    template <typename K>
+    static boost::shared_ptr<K>
+    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
+                                      const std::string& scriptName,
+                                      const QString& label,
+                                      int dimension = 1) 
+    {
+        return checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label.toStdString(), dimension);
     }
 
     /**

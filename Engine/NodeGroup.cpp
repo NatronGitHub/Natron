@@ -1284,17 +1284,17 @@ NodeGroup::invalidateHashCache(bool invalidateParent)
 void
 NodeGroup::initializeKnobs()
 {
-    KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
-    assert(nodePage);
-    KnobPagePtr isPage = toKnobPage(nodePage);
-    assert(isPage);
-    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Export as PyPlug") );
+    EffectInstancePtr thisShared = shared_from_this();
+    KnobPagePtr nodePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, kNodePageParamName, tr(kNodePageParamLabel));
+    nodePage->setDeclaredByPlugin(false);
+    
+    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( thisShared, tr("Export as PyPlug") );
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip( tr("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                                "on re-used as a plug-in.") );
-    if (isPage) {
-        isPage->addKnob(_imp->exportAsTemplate);
+    if (nodePage) {
+        nodePage->addKnob(_imp->exportAsTemplate);
     }
 }
 

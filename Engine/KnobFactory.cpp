@@ -94,6 +94,13 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobLayers>() );
 }
 
+KnobIPtr
+KnobFactory::getHolderKnob(const KnobHolderPtr& holder,
+                       const std::string& scriptName) const
+{
+    return holder->getKnobByName(scriptName);
+}
+
 KnobHelperPtr KnobFactory::createKnob(const std::string &id,
                                                       const KnobHolderPtr& holder,
                                                       const std::string &label,

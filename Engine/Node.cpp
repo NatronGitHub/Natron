@@ -3379,9 +3379,8 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
 void
 Node::createInfoPage()
 {
-    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>(_imp->effect, tr("Info").toStdString(), 1, false);
-
-    infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
+    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>(_imp->effect, tr(kInfoPageParamLabel), 1, false);
+    infoPage->setName(kInfoPageParamName);
     _imp->infoPage = infoPage;
 
     KnobStringPtr nodeInfos = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
@@ -3569,8 +3568,8 @@ Node::getOrCreateMainPage()
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         KnobPagePtr p = toKnobPage(knobs[i]);
-        if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
-             (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
+        if ( p && (p->getName() != kInfoPageParamName) &&
+             (p->getName() != kNodePageParamName) ) {
             mainPage = p;
             break;
         }
@@ -3699,7 +3698,8 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     NodePtr ioContainer = getIOContainer();
 
     //Add the "Node" page
-    KnobPagePtr settingsPage = AppManager::createKnob<KnobPage>(_imp->effect, tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
+    KnobPagePtr settingsPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(_imp->effect, kNodePageParamName, tr(kNodePageParamLabel));
+    settingsPage->setDeclaredByPlugin(false);
     _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
@@ -3867,25 +3867,16 @@ Node::initializeKnobs(bool loadingSerialization)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
 
-    ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
-    ///For RotoPaint we need to access it's default knobs within the roto context
-    bool effectIsGroup = dynamic_cast<NodeGroup*>(_imp->effect.get()) || dynamic_cast<RotoPaint*>(_imp->effect.get());
-
-    if (!effectIsGroup) {
-        //Initialize plug-in knobs
-        _imp->effect->initializeKnobsPublic();
-    }
-
     InitializeKnobsFlag_RAII __isInitializingKnobsFlag__(getEffectInstance());
+
+    //Initialize plug-in knobs
+    _imp->effect->initializeKnobsPublic();
 
     if ( _imp->effect->getMakeSettingsPanel() ) {
         //initialize default knobs added by Natron
         initializeDefaultKnobs(loadingSerialization);
     }
 
-    if (effectIsGroup) {
-        _imp->effect->initializeKnobsPublic();
-    }
     _imp->effect->endChanges();
 
     _imp->knobsInitialized = true;

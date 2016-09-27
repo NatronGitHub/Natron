@@ -148,25 +148,13 @@ public:
     }
 
     template <typename TYPE>
-    boost::shared_ptr<TYPE>checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
+    boost::shared_ptr<TYPE>
+    checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
                                                              OFX::Host::Param::Instance* param,
                                                              int dimension)
     {
         EffectInstancePtr holder = getKnobHolder();
-
-        assert(holder);
-        boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
-        if (isType) {
-            //Remove from the parent if it exists, because it will be added again afterwards
-            isType->resetParent();
-
-            return isType;
-        }
-
-        boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder, getParamLabel(param), dimension);
-        ret->setName(scriptName);
-
-        return ret;
+        return AppManager::checkIfKnobExistsWithNameOrCreate<TYPE>(holder, scriptName, getParamLabel(param), dimension);
     }
 
 public Q_SLOTS:

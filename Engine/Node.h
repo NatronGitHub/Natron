@@ -51,8 +51,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
 
-#define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
-#define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
+#define kNodePageParamName "nodePage"
+#define kNodePageParamLabel "Node"
+#define kInfoPageParamName "infoPage"
+#define kInfoPageParamLabel "Info"
 
 
 #define kDisableNodeKnobName "disableNode"

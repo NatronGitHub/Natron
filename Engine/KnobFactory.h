@@ -59,7 +59,34 @@ public:
         return boost::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
     }
 
+    template <typename K>
+    boost::shared_ptr<K> checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
+                                                           const std::string& scriptName,
+                                                           const std::string& label,
+                                                           int dimension = 1) const
+    {
+        assert(holder);
+        boost::shared_ptr<K> isType = boost::dynamic_pointer_cast<K>(getHolderKnob(holder, scriptName));
+        if (isType) {
+            //Remove from the parent if it exists, because it will be added again afterwards
+            isType->resetParent();
+            return isType;
+        }
+
+        // If we reach here, either :
+        // - we found a knob with the same script-name but not the same type or dimension, so create a new one which will have an altered script-name (with a number appended)
+        // - we did not find such a knob, create it
+        boost::shared_ptr<K> ret = createKnob<K>(holder, label, dimension, true);
+        ret->setName(scriptName);
+        
+        return ret;
+    }
+
 private:
+
+    KnobIPtr getHolderKnob(const KnobHolderPtr& holder,
+                           const std::string& scriptName) const;
+
     KnobHelperPtr createKnob(const std::string &id,
                                              const KnobHolderPtr& holder,
                                              const std::string &label,

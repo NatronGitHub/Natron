@@ -1107,6 +1107,7 @@ RotoPaint::initializeKnobs()
 
     // Right click menu
     KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kRotoUIParamRightClickMenu) );
+    rightClickMenu->setName(kRotoUIParamRightClickMenu);
     rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     generalPage->addKnob(rightClickMenu);
