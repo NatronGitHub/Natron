@@ -1284,11 +1284,11 @@ AppManager::onAllPluginsLoaded()
         for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ( (*it2)->getIsUserCreatable() ) {
                 isUserCreatable = true;
-                break;
+            } else {
+                (*it2)->setLabelWithoutSuffix((*it2)->getPluginLabel());
             }
         }
         if (!isUserCreatable) {
-            (*first)->setLabelWithoutSuffix((*first)->getPluginLabel());
             continue;
         }
 
