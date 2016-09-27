@@ -185,6 +185,10 @@ public:
 
     int getDocumentationServerPort();
 
+#ifdef Q_OS_MAC
+    void onClickOnDock();
+#endif
+
     virtual void setCurrentLogicalDPI(double dpiX, double dpiY) OVERRIDE FINAL;
     virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -195,6 +199,11 @@ public Q_SLOTS:
     void onFontconfigCacheUpdateFinished();
     void onFontconfigTimerTriggered();
 
+#ifdef Q_OS_MAC
+Q_SIGNALS:
+    void dockClicked();
+#endif
+    
 private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;

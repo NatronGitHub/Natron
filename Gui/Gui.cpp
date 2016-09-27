@@ -104,6 +104,10 @@ Gui::Gui(const GuiAppInstancePtr& app,
     setAcceptDrops(true);
 
     setAttribute(Qt::WA_DeleteOnClose, true);
+
+#ifdef Q_OS_MAC
+     QObject::connect( appPTR, SIGNAL(dockClicked()), this, SLOT(dockClicked()) );
+#endif
 }
 
 Gui::~Gui()
@@ -747,6 +751,16 @@ Gui::isMainWidgetPanel() const
     // Main window cannot have a panel as its main widget
     return (DockablePanelI*)NULL;
 }
+
+#ifdef Q_OS_MAC
+void
+Gui::dockClicked()
+{
+    raise();
+    show();
+    setWindowState(Qt::WindowActive);
+}
+#endif
 
 NATRON_NAMESPACE_EXIT;
 
