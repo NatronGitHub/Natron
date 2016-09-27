@@ -419,7 +419,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     if ( _comboBox->isCascading() || activeEntry.empty() ) {
         _comboBox->setCurrentIndex_no_emit( knob->getValue() );
     } else {
-        _comboBox->setCurrentText( QString::fromUtf8( activeEntry.c_str() ) );
+        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
     }
 }
 
