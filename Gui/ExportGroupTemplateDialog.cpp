@@ -269,52 +269,51 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group);
     if (isGroupNode) {
         NodePtr pyPlug = isGroupNode->getNode();
-        std::string pluginID = pyPlug->getPluginID();
-        if (pluginID != PLUGINID_NATRON_GROUP) {
-            // This is a pyplug for sure
-            std::string description = pyPlug->getPluginDescription();
-            std::string label = pyPlug->getPluginLabel();
-            std::string iconFilePath = pyPlug->getPluginIconFilePath();
-            std::string grouping;
-            std::list<std::string> groupingList;
-            pyPlug->getPluginGrouping(&groupingList);
-            if (!groupingList.empty()) {
-                std::list<std::string>::iterator next = groupingList.begin();
-                ++next;
-                for (std::list<std::string>::iterator it = groupingList.begin(); it!=groupingList.end(); ++it) {
-                    grouping.append(*it);
+        std::string pluginID = pyPlug->getPyPlugID();
+        // This is a pyplug for sure
+        std::string description = pyPlug->getPyPlugDescription();
+        std::string label = pyPlug->getPyPlugLabel();
+        std::string iconFilePath = pyPlug->getPyPlugIconFilePath();
+        std::string grouping;
+        std::list<std::string> groupingList;
+        pyPlug->getPyPlugGrouping(&groupingList);
+        if (!groupingList.empty()) {
+            std::list<std::string>::iterator next = groupingList.begin();
+            ++next;
+            for (std::list<std::string>::iterator it = groupingList.begin(); it!=groupingList.end(); ++it) {
+                grouping.append(*it);
 
-                    if (next != groupingList.end()) {
-                        grouping += '/';
-                        ++next;
-                    }
+                if (next != groupingList.end()) {
+                    grouping += '/';
+                    ++next;
                 }
             }
-            int version = pyPlug->getMajorVersion();
-            std::string pluginPath = pyPlug->getPluginPythonModule();
-            {
-                std::size_t foundLastSlash = pluginPath.find_last_of("/");
-                if (foundLastSlash != std::string::npos) {
-                    pluginPath = pluginPath.substr(0, foundLastSlash);
-                }
-            }
-            {
-                std::size_t foundLastSlash = iconFilePath.find_last_of("/");
-                if (foundLastSlash != std::string::npos) {
-                    iconFilePath = iconFilePath.substr(foundLastSlash + 1);
-                }
-                if (iconFilePath == "group_icon.png") {
-                    iconFilePath.clear();
-                }
-            }
-            _imp->idEdit->setText(QString::fromUtf8(pluginID.c_str()));
-            _imp->labelEdit->setText(QString::fromUtf8(label.c_str()));
-            _imp->groupingEdit->setText(QString::fromUtf8(grouping.c_str()));
-            _imp->descriptionEdit->setText(QString::fromUtf8(description.c_str()));
-            _imp->iconPath->setText(QString::fromUtf8(iconFilePath.c_str()));
-            _imp->fileEdit->setText(QString::fromUtf8(pluginPath.c_str()));
-            _imp->versionSpinbox->setValue(version);
         }
+        int version = pyPlug->getMajorVersion();
+        std::string pluginPath = pyPlug->getPluginPythonModule();
+        {
+            std::size_t foundLastSlash = pluginPath.find_last_of("/");
+            if (foundLastSlash != std::string::npos) {
+                pluginPath = pluginPath.substr(0, foundLastSlash);
+            }
+        }
+        {
+            std::size_t foundLastSlash = iconFilePath.find_last_of("/");
+            if (foundLastSlash != std::string::npos) {
+                iconFilePath = iconFilePath.substr(foundLastSlash + 1);
+            }
+            if (iconFilePath == "group_icon.png") {
+                iconFilePath.clear();
+            }
+        }
+        _imp->idEdit->setText(QString::fromUtf8(pluginID.c_str()));
+        _imp->labelEdit->setText(QString::fromUtf8(label.c_str()));
+        _imp->groupingEdit->setText(QString::fromUtf8(grouping.c_str()));
+        _imp->descriptionEdit->setText(QString::fromUtf8(description.c_str()));
+        _imp->iconPath->setText(QString::fromUtf8(iconFilePath.c_str()));
+        _imp->fileEdit->setText(QString::fromUtf8(pluginPath.c_str()));
+        _imp->versionSpinbox->setValue(version);
+
     }
 
     resize( 400, sizeHint().height() );

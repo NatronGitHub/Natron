@@ -1461,7 +1461,7 @@ DockablePanel::onManageUserParametersActionTriggered()
         return;
     }
     // If this is a pyplug, warn that the user is about to break it
-    if (!node->getPluginPythonModule().empty()) {
+    if (node->isPyPlug()) {
         StandardButtons rep = Dialogs::questionDialog(tr("PyPlug").toStdString(), tr("You are about to edit parameters of this node which will "
                                                                                      "automatically convert this node as a Group. Are you sure "
                                                                                      "you want to edit it?").toStdString(), false);

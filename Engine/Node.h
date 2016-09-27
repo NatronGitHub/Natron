@@ -680,6 +680,14 @@ public:
      **/
     std::string getPluginIconFilePath() const;
 
+    // These functions are gone in Natron 2.2
+    std::string getPyPlugID() const;
+    std::string getPyPlugLabel() const;
+    std::string getPyPlugDescription() const;
+    void getPyPlugGrouping(std::list<std::string>* grouping) const;
+    std::string getPyPlugIconFilePath() const;
+    int getPyPlugMajorVersion() const;
+
     /*============================*/
     AppInstPtr getApp() const;
 
@@ -1225,6 +1233,8 @@ public:
 
     bool hasPyPlugBeenEdited() const;
     void setPyPlugEdited(bool edited);
+
+    bool isPyPlug() const;
 
     std::string getPluginPythonModule() const;
 
