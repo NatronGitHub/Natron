@@ -29,6 +29,12 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#ifdef Q_OS_MAC
+// for dockClickHandler and Application::Application()
+#include <objc/objc.h>
+#include <objc/message.h>
+#endif
+
 ///gui
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -154,6 +160,29 @@ GuiApplicationManager::registerGuiMetaTypes() const
     qRegisterMetaType<CurveWidget*>();
 }
 
+#ifdef Q_OS_MAC
+static bool
+dockClickHandler(id self,SEL _cmd,...)
+{
+    Q_UNUSED(self)
+    Q_UNUSED(_cmd)
+    // Do something fun here!
+    //qDebug() << "Dock icon clicked!";
+    appPTR->onClickOnDock();
+
+    // Return NO (false) to suppress the default OS X actions
+    return false;
+}
+
+void
+GuiApplicationManager::onClickOnDock()
+{
+    qDebug() << "Dock icon clicked!";
+    // do something...
+    Q_EMIT dockClicked();
+}
+#endif
+
 class Application
     : public QApplication
 {
@@ -168,6 +197,33 @@ public:
         , _app(app)
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
+        
+#ifdef Q_OS_MAC
+        // Starting from Qt5.4.0 you can handle QEvent, that related to click on dock: QEvent::ApplicationActivate.
+        // https://bugreports.qt.io/browse/QTBUG-10899
+        // https://doc.qt.io/qt-5/qevent.html
+
+        Class cls = objc_getClass("NSApplication");
+        objc_object *appInst = objc_msgSend((objc_object*)cls, sel_registerName("sharedApplication"));
+
+        if(appInst != NULL) {
+            objc_object* delegate = objc_msgSend(appInst, sel_registerName("delegate"));
+            Class delClass = (Class)objc_msgSend(delegate,  sel_registerName("class"));
+            SEL shouldHandle = sel_registerName("applicationShouldHandleReopen:hasVisibleWindows:");
+            if (class_getInstanceMethod(delClass, shouldHandle)) {
+                if (class_replaceMethod(delClass, shouldHandle, (IMP)dockClickHandler, "B@:"))
+                    qDebug() << "Registered dock click handler (replaced original method)";
+                else
+                    qWarning() << "Failed to replace method for dock click handler";
+            }
+            else {
+                if (class_addMethod(delClass, shouldHandle, (IMP)dockClickHandler,"B@:"))
+                    qDebug() << "Registered dock click handler";
+                else
+                    qWarning() << "Failed to register dock click handler";
+            }
+        }
+#endif
     }
 
 protected:

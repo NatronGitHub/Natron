@@ -693,6 +693,10 @@ public Q_SLOTS:
     void openHelpIssues();
     void openHelpDocumentation();
 
+#ifdef Q_OS_MAC
+    void dockClicked();
+#endif
+    
 private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
