@@ -1,4 +1,4 @@
-# move Obective C and C++ files from SOURCES to OBJECTIVE_SOURCES
+# move Objective C and C++ files from SOURCES to OBJECTIVE_SOURCES
 
 for(source, SOURCES) {
     contains(source,.*\\.m$) {
