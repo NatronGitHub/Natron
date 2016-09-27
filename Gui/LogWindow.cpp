@@ -48,24 +48,27 @@ NATRON_NAMESPACE_ENTER;
 
 LogWindow::LogWindow(QWidget* parent)
     : QWidget(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
+    , _mainLayout(0)
+    , _textBrowser(0)
+    , _clearButton(0)
 {
     setWindowTitle( tr("Error Log") );
 
-    mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    _mainLayout = new QVBoxLayout(this);
+    _mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    textBrowser = new QTextBrowser(this);
-    textBrowser->setOpenExternalLinks(true);
-    mainLayout->addWidget(textBrowser);
+    _textBrowser = new QTextBrowser(this);
+    _textBrowser->setOpenExternalLinks(true);
+    _mainLayout->addWidget(_textBrowser);
 
-    DialogButtonBox* buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Cancel), Qt::Horizontal, this);
+    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Close), Qt::Horizontal, this);
 
-    clearButton = new Button( tr("&Clear") );
-    clearButton->setFocusPolicy(Qt::TabFocus);
-    buttonBox->addButton(clearButton, QDialogButtonBox::ResetRole);
-    QObject::connect( clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
-    QObject::connect(buttonBox, SIGNAL(rejected()), this, SLOT(onOkButtonClicked()));
-    mainLayout->addWidget(buttonBox);
+    _clearButton = new Button( tr("&Clear") );
+    _clearButton->setFocusPolicy(Qt::TabFocus);
+    _buttonBox->addButton(_clearButton, QDialogButtonBox::ResetRole);
+    QObject::connect( _clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(onCloseButtonClicked()) );
+    _mainLayout->addWidget(_buttonBox);
 }
 static void
 replaceLineBreaksWithHtmlParagraph(QString &txt)
@@ -77,7 +80,7 @@ void
 LogWindow::displayLog(const std::list<LogEntry>& log)
 {
     if (log.empty()) {
-        textBrowser->clear();
+        _textBrowser->clear();
         return;
     }
     QString content;
@@ -106,9 +109,8 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
             ++next;
         }
     }
-    textBrowser->setHtml(content);
-    okButton->setFocus();
-    textBrowser->verticalScrollBar()->setValue( textBrowser->verticalScrollBar()->maximum() );
+    _textBrowser->setHtml(content);
+    _textBrowser->verticalScrollBar()->setValue( _textBrowser->verticalScrollBar()->maximum() );
 }
 
 
@@ -116,11 +118,11 @@ void
 LogWindow::onClearButtonClicked()
 {
     appPTR->clearErrorLog_mt_safe();
-    textBrowser->clear();
+    _textBrowser->clear();
 }
 
 void
-LogWindow::onOkButtonClicked()
+LogWindow::onCloseButtonClicked()
 {
     hide();
 }
@@ -137,30 +139,27 @@ LogWindow::keyPressEvent(QKeyEvent* e)
 }
 
 LogWindowModal::LogWindowModal(const QString& log, QWidget* parent)
-: QDialog(parent)
+    : QDialog(parent)
+    , _mainLayout(0)
+    , _textBrowser(0)
+    , _buttonBox(0)
 {
 
-    mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    _mainLayout = new QVBoxLayout(this);
+    _mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    textBrowser = new QTextBrowser(this);
-    textBrowser->setOpenExternalLinks(true);
-    textBrowser->setPlainText(log);
-    mainLayout->addWidget(textBrowser);
+    _textBrowser = new QTextBrowser(this);
+    _textBrowser->setOpenExternalLinks(true);
+    _textBrowser->setPlainText(log);
+    _mainLayout->addWidget(_textBrowser);
 
-    QWidget* buttonsContainer = new QWidget(this);
-    QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
-    buttonsLayout->addStretch();
-    okButton = new Button(tr("Ok"), buttonsContainer);
-    okButton->setFocusPolicy(Qt::TabFocus);
-    buttonsLayout->addWidget(okButton);
-    buttonsLayout->addStretch();
-    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
-    mainLayout->addWidget(buttonsContainer);
+    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Close), Qt::Horizontal, this);
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(onCloseButtonClicked()) );
+    _mainLayout->addWidget(_buttonBox);
 }
 
 void
-LogWindowModal::onOkButtonClicked()
+LogWindowModal::onCloseButtonClicked()
 {
     hide();
 }

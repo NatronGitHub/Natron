@@ -44,10 +44,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    QVBoxLayout* mainLayout;
-    QTextBrowser* textBrowser;
-    Button* okButton;
-    Button* clearButton;
+    QVBoxLayout* _mainLayout;
+    QTextBrowser* _textBrowser;
+    Button* _clearButton;
+    DialogButtonBox* _buttonBox;
 
 public:
 
@@ -59,7 +59,7 @@ public Q_SLOTS:
 
     void onClearButtonClicked();
 
-    void onOkButtonClicked();
+    void onCloseButtonClicked();
 
 private:
 
@@ -73,9 +73,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    QVBoxLayout* mainLayout;
-    QTextBrowser* textBrowser;
-    Button* okButton;
+    QVBoxLayout* _mainLayout;
+    QTextBrowser* _textBrowser;
+    DialogButtonBox* _buttonBox;
 
 public:
 
@@ -83,7 +83,7 @@ public:
 
 public Q_SLOTS:
 
-    void onOkButtonClicked();
+    void onCloseButtonClicked();
 
 private:
 
