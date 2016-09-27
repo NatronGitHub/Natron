@@ -278,7 +278,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
-    if (isGroup && isGroup->getNode()->isPyPlug()) {
+    if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
         groupEdited = isGroup->isSubGraphEditedByUser();
     }
