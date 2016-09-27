@@ -267,7 +267,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     if (activeIndex >= 0) {
         _comboBox->setCurrentIndex_no_emit(activeIndex);
     } else {
-        _comboBox->setCurrentText( QString::fromUtf8( knob->getActiveEntryText_mt_safe().c_str() ) );
+        _comboBox->setCurrentText_no_emit( QString::fromUtf8( knob->getActiveEntryText_mt_safe().c_str() ) );
     }
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
