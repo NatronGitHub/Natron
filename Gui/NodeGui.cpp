@@ -3488,7 +3488,16 @@ NodeGui::refreshAnimationIcon()
     bool hasAnimation = false;
     const KnobsVec& knobs = getNode()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end() ;++it) {
-        hasAnimation |= (*it)->hasAnimation();
+        int nDims = (*it)->getDimension();
+        for (int i = 0; i < nDims; ++i) {
+            if ((*it)->getKeyFramesCount(ViewIdx(0), i) > 0) {
+                hasAnimation = true;
+                break;
+            }
+        }
+        if (hasAnimation) {
+            break;
+        }
     }
     _animationIndicator->setActive(hasAnimation);
 
