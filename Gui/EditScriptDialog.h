@@ -57,7 +57,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     EditScriptDialog(Gui* gui,
-                     QWidget* parent);
+                    const KnobGuiPtr& knobExpressionReceiver,
+                    QWidget* parent);
 
     virtual ~EditScriptDialog();
 

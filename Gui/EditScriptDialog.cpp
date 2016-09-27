@@ -98,6 +98,7 @@ NATRON_NAMESPACE_ENTER;
 struct EditScriptDialogPrivate
 {
     Gui* gui;
+    KnobGuiWPtr knobExpressionReceiver;
     QVBoxLayout* mainLayout;
     Label* expressionLabel;
     InputScriptTextEdit* expressionEdit;
@@ -109,8 +110,9 @@ struct EditScriptDialogPrivate
     OutputScriptTextEdit* resultEdit;
     DialogButtonBox* buttons;
 
-    EditScriptDialogPrivate(Gui* gui)
+    EditScriptDialogPrivate(Gui* gui, const KnobGuiPtr& knobExpressionReceiver)
         : gui(gui)
+        , knobExpressionReceiver(knobExpressionReceiver)
         , mainLayout(0)
         , expressionLabel(0)
         , expressionEdit(0)
@@ -126,9 +128,10 @@ struct EditScriptDialogPrivate
 };
 
 EditScriptDialog::EditScriptDialog(Gui* gui,
+                                   const KnobGuiPtr& knobExpressionReceiver,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditScriptDialogPrivate(gui) )
+    , _imp( new EditScriptDialogPrivate(gui, knobExpressionReceiver) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
@@ -167,7 +170,7 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->expressionLabel = new Label(labelHtml, this);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
-    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, this);
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     _imp->mainLayout->addWidget(_imp->expressionEdit);

@@ -79,6 +79,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     InputScriptTextEdit(Gui* gui,
+                        const KnobGuiPtr& knobExpressionReceiver,
                         QWidget* parent);
 
     virtual ~InputScriptTextEdit();
@@ -109,6 +110,7 @@ private:
     LineNumberWidget* _lineNumber;
     PySyntaxHighlighter* _highlighter;
     Gui* _gui;
+    KnobGuiWPtr _knobExpressionReceiver;
 };
 
 class LineNumberWidget

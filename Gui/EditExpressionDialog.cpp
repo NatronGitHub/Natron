@@ -96,7 +96,7 @@ EditExpressionDialog::EditExpressionDialog(Gui* gui,
                                            int dimension,
                                            const KnobGuiPtr& knob,
                                            QWidget* parent)
-    : EditScriptDialog(gui, parent)
+    : EditScriptDialog(gui, knob, parent)
     , _dimension(dimension)
     , _knob(knob)
 {
