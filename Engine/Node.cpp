@@ -4017,6 +4017,7 @@ Node::makeDocumentation(bool genHTML) const
         pluginGroup = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
         pluginDescriptionIsMarkdown = plugin->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
 
+
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
             QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
@@ -4889,45 +4890,50 @@ Node::checkIfConnectingInputIsOk(const NodePtr& input) const
     if (!input || input.get() == this) {
         return false;
     }
-    bool found;
-    input->isNodeUpstream(shared_from_this(), &found);
-
+    bool found = input->isNodeUpstream(shared_from_this());
     return !found;
 }
 
-void
-Node::isNodeUpstream(const NodeConstPtr& input,
-                     bool* ok) const
+bool
+Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& markedNodes) const
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
     if (!input) {
-        *ok = false;
-
-        return;
+        return false;
     }
 
-    ///No need to lock guiInputs is only written to by the main-thread
+    if (std::find(markedNodes.begin(), markedNodes.end(), this) != markedNodes.end()) {
+        return false;
+    }
 
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == input) {
-            *ok = true;
+    markedNodes.push_back(this);
 
-            return;
+    // No need to lock inputs is only written to by the main-thread
+    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
+        if (_imp->guiInputs[i].lock() == input) {
+            return true;
         }
     }
-    *ok = false;
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        NodePtr in = _imp->inputs[i].lock();
+
+    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
+        NodePtr in = _imp->guiInputs[i].lock();
         if (in) {
-            in->isNodeUpstream(input, ok);
-            if (*ok) {
-                return;
+            if (in->isNodeUpstreamInternal(input, markedNodes)) {
+                return true;
             }
         }
     }
+    return false;
 }
+
+bool
+Node::isNodeUpstream(const NodeConstPtr& input) const
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    std::list<const Node*> markedNodes;
+    return isNodeUpstreamInternal(input, markedNodes);
+}
+
 
 static Node::CanConnectInputReturnValue
 checkCanConnectNoMultiRes(const Node* output,
@@ -6552,6 +6558,7 @@ Node::getPluginGrouping(std::vector<std::string>* grouping) const
     }
     *grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
 }
+
 
 int
 Node::getMaxInputCount() const

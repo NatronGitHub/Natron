@@ -1203,14 +1203,9 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
 
         node->onNodeUIOverlayColorChanged(color.redF(), color.greenF(), color.blueF());
 
-
-        NodesList overlayNodes;
-        getGui()->getNodesEntitledForOverlays(overlayNodes);
-        NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
-        if ( found != overlayNodes.end() ) {
-            getGui()->getApp()->redrawAllViewers();
-        }
+        getGui()->getApp()->redrawAllViewers();
     }
+
 }
 
 void
@@ -1272,12 +1267,9 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
         }
     }
-    NodesList overlayNodes;
-    getGui()->getNodesEntitledForOverlays(overlayNodes);
-    NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
-    if ( found != overlayNodes.end() ) {
-        getGui()->getApp()->redrawAllViewers();
-    }
+
+    getGui()->getApp()->redrawAllViewers();
+
 }
 
 void
@@ -1304,12 +1296,8 @@ DockablePanel::resetHostOverlayColor()
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
 
-    NodesList overlayNodes;
-    getGui()->getNodesEntitledForOverlays(overlayNodes);
-    NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
-    if ( found != overlayNodes.end() ) {
-        getGui()->getApp()->redrawAllViewers();
-    }
+    getGui()->getApp()->redrawAllViewers();
+
 }
 
 void
@@ -1404,6 +1392,7 @@ DockablePanel::onManageUserParametersActionTriggered()
                 return;
             }
             isGrp->setSubGraphEditedByUser(true);
+
         }
         
 

@@ -31,7 +31,8 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include <QtCore/QDebug>
-
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
@@ -46,6 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
+#include "Gui/NodeSettingsPanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
 #include "Gui/GuiAppInstance.h"
@@ -71,6 +73,54 @@ transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
 }
 
 #endif
+
+
+void
+ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+
+    if (!getGui()) {
+        return;
+    }
+
+
+    NodesList nodesWithPanelOpened;
+    std::list<DockablePanelI*> panels = getGui()->getApp()->getOpenedSettingsPanels();
+
+    std::set<ViewerNodePtr> viewerNodesWithPanelOpened;
+    for (std::list<DockablePanelI*>::const_iterator it = panels.begin();
+         it != panels.end(); ++it) {
+        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
+        if (!panel) {
+            continue;
+        }
+        NodeGuiPtr node = panel->getNode();
+        NodePtr internalNode = node->getNode();
+        if (node && internalNode) {
+            if ( internalNode->shouldDrawOverlay() ) {
+                ViewerNodePtr isViewer = internalNode->isEffectViewerNode();
+                if (!isViewer) {
+                    // Do not add viewers, add them afterwards
+                    nodesWithPanelOpened.push_back( node->getNode() );
+                }
+            }
+        }
+    }
+
+    // Now remove from the nodesWithPanelOpened list nodes that are not upstream of this viewer node
+    NodePtr thisNode = getInternalNode()->getNode();
+    for (NodesList::const_iterator it = nodesWithPanelOpened.begin(); it != nodesWithPanelOpened.end(); ++it) {
+        if (thisNode->isNodeUpstream(*it)) {
+            nodes.push_back(*it);
+        }
+    }
+
+    // Also add the viewer itself
+    nodes.push_back(thisNode);
+
+}
+
 
 void
 ViewerTab::drawOverlays(double time,
@@ -100,7 +150,7 @@ ViewerTab::drawOverlays(double time,
 
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
@@ -274,7 +324,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasCaughtPenMotionWhileDragging = false;
 
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
@@ -315,7 +365,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
     }
 
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
     ViewIdx view = getInternalNode()->getCurrentView();
 
@@ -513,7 +563,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 
 
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
@@ -585,7 +635,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     _imp->lastOverlayNode.reset();
 
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
@@ -866,7 +916,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
@@ -929,7 +979,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1108,7 +1158,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1167,7 +1217,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();

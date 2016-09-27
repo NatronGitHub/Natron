@@ -791,6 +791,7 @@ public:
 
     AppInstancePtr getApp() const;
 
+
     /* @brief Make this node inactive. It will appear
        as if it was removed from the graph editor
        but the object still lives to allow
@@ -1317,7 +1318,6 @@ public:
 
     bool isSubGraphEditedByUser() const;
 
-
     //Returns true if changed
     bool refreshChannelSelectors();
 
@@ -1399,7 +1399,17 @@ public:
 
     void refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps);
 
+    bool isNodeUpstream(const NodeConstPtr& input) const;
+
 private:
+
+
+
+    /**
+     * @brief If the node is an input of this node, set ok to true, otherwise
+     * calls this function recursively on all inputs.
+     **/
+    bool isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& markedNodes) const;
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
@@ -1561,12 +1571,6 @@ private:
 
     void setNodeIsRenderingInternal(NodesWList& markedNodes);
 
-
-    /**
-     * @brief If the node is an input of this node, set ok to true, otherwise
-     * calls this function recursively on all inputs.
-     **/
-    void isNodeUpstream(const NodeConstPtr& input, bool* ok) const;
 
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);

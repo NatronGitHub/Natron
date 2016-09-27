@@ -230,6 +230,12 @@ public:
 
     void setTimelineBounds(double first, double last);
 
+
+    /**
+     * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
+     **/
+    void getNodesEntitledForOverlays(NodesList& nodes) const;
+
 public Q_SLOTS:
 
     void onTimeLineTimeChanged(SequenceTime time, int);

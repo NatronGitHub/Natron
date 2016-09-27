@@ -349,7 +349,9 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& gr
             _imp->extPythonScriptEdit->setText(extPythonScript);
             _imp->fileEdit->setText(scriptFilePath);
             _imp->versionSpinbox->setValue(version);
+
         }
+
     }
 
     resize( 400, sizeHint().height() );
