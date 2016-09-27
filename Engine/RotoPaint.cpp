@@ -116,6 +116,7 @@ RotoPaint::createPlugin()
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/GroupingIcons/Set2/paint_grouping_2.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_P);
+    addPluginShortcuts(ret);
     return ret;
 }
 
@@ -131,6 +132,7 @@ RotoNode::createPlugin()
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/rotoNodeIcon.png");
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_O);
+    addPluginShortcuts(ret);
     return ret;
 }
 
