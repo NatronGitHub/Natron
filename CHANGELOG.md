@@ -7,6 +7,7 @@
 ## Version 2.1.5
 
 - Fix a bug where deprecated plugins would not be loaded from project file 2561778
+- macOS: clicking the dock icon now raises all windows
 
 ### Plugins
 
