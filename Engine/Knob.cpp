@@ -185,7 +185,7 @@ KnobI::onAnimationRemoved(ViewSpec view,
 }
 
 boost::shared_ptr<KnobPage>
-KnobI::getTopLevelPage()
+KnobI::getTopLevelPage() const
 {
     KnobPtr parentKnob = getParentKnob();
     KnobPtr parentKnobTmp = parentKnob;
@@ -3316,6 +3316,30 @@ KnobHelper::restoreOpenGLContext()
     if (hasGui) {
         hasGui->restoreOpenGLContext();
     }
+}
+
+bool
+KnobI::shouldDrawOverlayInteract() const
+{
+    // If there is one dimension disabled, don't draw it
+    int nDims = getDimension();
+    for (int i = 0; i < nDims; ++i) {
+        if (!isEnabled(i)) {
+            return false;
+        }
+    }
+
+    // If this knob is secret, don't draw it
+    if (getIsSecretRecursive()) {
+        return false;
+    }
+    
+    boost::shared_ptr<KnobPage> page = getTopLevelPage();
+    if (!page) {
+        return false;
+    }
+    // Only draw overlays for knobs in the current page
+    return page->isEnabled(0);
 }
 
 void

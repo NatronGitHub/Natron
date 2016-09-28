@@ -105,6 +105,8 @@ public Q_SLOTS:
 
     void onPageLabelChangedInternally();
 
+    void onPageSecretnessChanged();
+
     void onDeleteCurCmdLaterTriggered();
 
 private:
