@@ -121,8 +121,11 @@ configure.args              --enable-shared \
 variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
     # configure with GCC 4.9 for proper OpenMP support
     configure.compiler macports-gcc-4.9
+    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+    #configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
+    configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
     configure.args-append --enable-openmp
-    
+
     patchfiles-append pango-align-hack.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
