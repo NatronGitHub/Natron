@@ -1391,6 +1391,48 @@ static PyObject* Sbk_ParamFunc_setIconFilePath(PyObject* self, PyObject* args, P
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_setLabel(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setLabel(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setLabel(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setLabel_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setLabel(QString)
+            cppSelf->setLabel(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_setLabel_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setLabel", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_setPersistent(PyObject* self, PyObject* pyArg)
 {
     ParamWrapper* cppSelf = 0;
@@ -1855,6 +1897,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
     {"setIconFilePath", (PyCFunction)Sbk_ParamFunc_setIconFilePath, METH_VARARGS|METH_KEYWORDS},
+    {"setLabel", (PyCFunction)Sbk_ParamFunc_setLabel, METH_O},
     {"setPersistent", (PyCFunction)Sbk_ParamFunc_setPersistent, METH_O},
     {"setViewerUIIconFilePath", (PyCFunction)Sbk_ParamFunc_setViewerUIIconFilePath, METH_VARARGS|METH_KEYWORDS},
     {"setViewerUIItemSpacing", (PyCFunction)Sbk_ParamFunc_setViewerUIItemSpacing, METH_O},
