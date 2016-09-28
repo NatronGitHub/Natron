@@ -842,6 +842,7 @@ EffectInstance::getImage(int inputNb,
             thisRod = renderArgs.rod;
         }
     }
+#pragma message WARN("FIXME: inputIdentity time is set above but never used... is this normal?")
 
     if ( (!glContext || !renderInfo) && returnStorage == eStorageModeGLTex ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";

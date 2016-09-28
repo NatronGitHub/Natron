@@ -35,11 +35,13 @@
 
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(maybe-uninitialized)
 #include <libmv/autotrack/autotrack.h>
 #include <libmv/autotrack/predict_tracks.h>
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(maybe-uninitialized)
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
