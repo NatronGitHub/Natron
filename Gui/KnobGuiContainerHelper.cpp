@@ -95,7 +95,7 @@ struct KnobGuiContainerHelperPrivate
 
     KnobsGuiMapping::iterator findKnobGui(const KnobIPtr& knob);
 
-    void refreshPagesSecretness();
+    void refreshPagesEnabledness();
 };
 
 KnobGuiContainerHelper::KnobGuiContainerHelper(const KnobHolderPtr& holder,
@@ -210,7 +210,7 @@ void
 KnobGuiContainerHelper::setCurrentPage(const KnobPageGuiPtr& curPage)
 {
     _imp->currentPage = curPage;
-    _imp->refreshPagesSecretness();
+    _imp->refreshPagesEnabledness();
 }
 
 KnobPageGuiPtr
@@ -270,9 +270,15 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
 
     boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
     QObject::connect( handler.get(), SIGNAL(labelChanged()), _imp->signals.get(), SLOT(onPageLabelChangedInternally()) );
+    QObject::connect( handler.get(), SIGNAL(secretChanged()), _imp->signals.get(), SLOT(onPageSecretnessChanged()) );
 
     // Add the page to the container (most likely a tab widget)
-    addPageToPagesContainer(pageGui);
+    if (!page->getIsSecret()) {
+        addPageToPagesContainer(pageGui);
+        newTab->show();
+    } else {
+        newTab->hide();
+    }
 
     pageGui->tab->setToolTip( QString::fromUtf8( page->getHintToolTip().c_str() ) );
 
@@ -383,7 +389,7 @@ void
 KnobGuiContainerHelper::initializeKnobs()
 {
     initializeKnobVector( _imp->holder->getKnobs() );
-    _imp->refreshPagesSecretness();
+    _imp->refreshPagesEnabledness();
     refreshCurrentPage();
 
     onKnobsInitialized();
@@ -910,7 +916,7 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
         // Remove the page and all its children
         PagesMap::iterator found = _imp->pages.find(isPage);
         if ( found != _imp->pages.end() ) {
-            _imp->refreshPagesSecretness();
+            _imp->refreshPagesEnabledness();
 
             KnobsVec children = isPage->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
@@ -1017,7 +1023,8 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
     clearUndoRedoStack();
 
     recreateKnobsInternal(curPage, restorePageIndex);
-    _imp->refreshPagesSecretness();
+
+    _imp->refreshPagesEnabledness();
 
 }
 
@@ -1052,23 +1059,24 @@ KnobGuiContainerHelper::recreateViewerUIKnobs()
     if (currentViewerInterface) {
         gui->setNodeViewerInterface(currentViewerInterface);
     }
+
 }
 
 void
-KnobGuiContainerHelperPrivate::refreshPagesSecretness()
+KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
 {
     KnobPageGuiPtr curPage = _p->getCurrentPage();
 
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         KnobPagePtr page = it->second->pageKnob.lock();
         if (it->second == curPage) {
-            if ( page->getIsSecret() ) {
-                page->setSecret(false);
+            if ( !page->isEnabled(0) ) {
+                page->setEnabled(0, true);
                 page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
             }
         } else {
-            if ( !page->getIsSecret() ) {
-                page->setSecret(true);
+            if ( page->isEnabled(0) ) {
+                page->setEnabled(0, false);
                 page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
             }
         }
@@ -1087,7 +1095,7 @@ KnobGuiContainerHelper::refreshPagesOrder(const KnobPageGuiPtr& curTabName,
     std::list<KnobPagePtr > internalPages;
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr isPage = toKnobPage(*it);
-        if (isPage) {
+        if (isPage && !isPage->getIsSecret()) {
             internalPages.push_back(isPage);
         }
     }
@@ -1095,12 +1103,7 @@ KnobGuiContainerHelper::refreshPagesOrder(const KnobPageGuiPtr& curTabName,
     for (std::list<KnobPagePtr >::iterator it = internalPages.begin(); it != internalPages.end(); ++it) {
         PagesMap::const_iterator foundPage = _imp->pages.find(*it);
         if ( foundPage != _imp->pages.end() ) {
-            if ( (*it)->getChildren().size() > 0 ) {
-                foundPage->second->tab->show();
-                orderedPages.push_back(foundPage->second);
-            } else {
-                foundPage->second->tab->hide();
-            }
+            orderedPages.push_back(foundPage->second);
         }
     }
 
@@ -1163,7 +1166,7 @@ KnobGuiContainerHelper::setPageActiveIndex(const KnobPagePtr& page)
     if ( foundPage == _imp->pages.end() ) {
         return;
     }
-    _imp->refreshPagesSecretness();
+    _imp->refreshPagesEnabledness();
 
     onPageActivated(foundPage->second);
 }
@@ -1222,6 +1225,33 @@ void
 KnobGuiContainerSignalsHandler::onDeleteCurCmdLaterTriggered()
 {
     _container->onDeleteCurCmdLater();
+}
+
+void
+KnobGuiContainerSignalsHandler::onPageSecretnessChanged()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    KnobPage* isPage = dynamic_cast<KnobPage*>(handler->getKnob().get());
+    if (!isPage) {
+        return;
+    }
+    const PagesMap& pages = _container->getPages();
+    for (PagesMap::const_iterator it = pages.begin(); it!=pages.end(); ++it) {
+        if (it->first.lock().get() == isPage) {
+            if (isPage->getIsSecret()) {
+                it->second->tab->setVisible(false);
+                _container->removePageFromContainer(it->second);
+            } else {
+                _container->addPageToPagesContainer(it->second);
+                it->second->tab->setVisible(true);
+            }
+
+            break;
+        }
+    }
 }
 
 void

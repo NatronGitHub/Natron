@@ -172,6 +172,14 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
     try {
         SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
         SERIALIZATION_NAMESPACE::read(ss, &cb);
+
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it!=cb.nodes.end(); ++it) {
+            // This is a pyplug, convert it to a group
+            if ((*it)->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
+                (*it)->_pluginID = PLUGINID_NATRON_GROUP;
+            }
+        }
+
         _imp->pasteNodesInternal(cb.nodes, pos, true);
     } catch (...) {
         
@@ -183,53 +191,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
             _imp->pasteNodesInternal(isProject._nodes, pos, true);
         } catch (...) {
             
-            // check for a preset/pyplug...
-            try {
-                ss.seekg(0);
-                SERIALIZATION_NAMESPACE::NodePresetSerialization isPreset;
-                SERIALIZATION_NAMESPACE::read(ss, &isPreset);
-
-                // Instantiate this preset/pyplug
-                CreateNodeArgsPtr args;
-                if (!isPreset.pyPlugID.empty()) {
-                    args = CreateNodeArgs::create(isPreset.pyPlugID, getGroup());
-                } else if (!isPreset.originalPluginID.empty()) {
-                    args = CreateNodeArgs::create(isPreset.originalPluginID, getGroup());
-                    args->setProperty<std::string>(kCreateNodeArgsPropPreset, isPreset.presetLabel);
-                }
-                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, pos.x(), 0);
-                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, pos.y(), 1);
-                getGui()->getApp()->createNode(args);
-
-            } catch (...) {
-                ss.seekg(0);
-                // Last resort: Assume this is python code or the url of a file. We cannot rely on the
-                // mimetype correctly here because on OSX the url gets encoded as a string
-                std::string buffer;
-                while (ss.good()) {
-                    std::string line;
-                    std::getline(ss, line);
-                    line += '\n';
-                    buffer.append(line);
-                }
-
-                QString qStr = QString::fromUtf8(buffer.c_str());
-                if ( QFile::exists(qStr) ) {
-                    QList<QUrl> urls;
-                    urls.push_back( QUrl::fromLocalFile(qStr) );
-                    getGui()->handleOpenFilesFromUrls( urls, QCursor::pos() );
-                } else {
-                    std::string error, output;
-                    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(buffer, &error, &output) ) {
-                        getGui()->appendToScriptEditor(error);
-                        getGui()->ensureScriptEditorVisible();
-                    } else if ( !output.empty() ) {
-                        getGui()->appendToScriptEditor(output);
-                    }
-                }
-                return false;
-                
-            }
+            return false;
         }
     }
     

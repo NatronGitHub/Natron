@@ -111,7 +111,6 @@ SOURCES += \
     EditExpressionDialog.cpp \
     EditNodeViewerContextDialog.cpp \
     EditScriptDialog.cpp \
-    ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
     GroupBoxLabel.cpp \
@@ -261,7 +260,6 @@ HEADERS += \
     EditExpressionDialog.h \
     EditNodeViewerContextDialog.h \
     EditScriptDialog.h \
-    ExportGroupTemplateDialog.h \
     FileTypeMainWindow_win.h \
     FloatingWidget.h \
     QtEnumConvert.h \

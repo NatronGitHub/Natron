@@ -1,5 +1,5 @@
---- Portfile.orig	2016-09-15 12:34:22.000000000 +0200
-+++ Portfile	2016-09-15 12:34:55.000000000 +0200
+--- Portfile.orig	2016-09-27 18:52:34.000000000 +0200
++++ Portfile	2016-09-28 14:44:24.000000000 +0200
 @@ -66,6 +66,8 @@
                              port:expat \
                              port:libxml2
@@ -23,11 +23,18 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -114,6 +118,65 @@
+@@ -114,6 +118,72 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
 +variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
++    # configure with GCC 4.9 for proper OpenMP support
++    configure.compiler macports-gcc-4.9
++    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
++    #configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
++    configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
++    configure.args-append --enable-openmp
++
 +    patchfiles-append pango-align-hack.diff
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
@@ -61,7 +68,7 @@
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
 +    pre-extract {
-+        if {${version} != "6.9.5-9"} {
++        if {${version} != "6.9.5-10"} {
 +            ui_msg "Natron variant requires ImageMagick version 6.9.5-9 (this is ${version}), please modify the Portfile."
 +            return -code error "incompatible ImageMagick version"
 +        }
@@ -89,7 +96,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -121,6 +184,14 @@
+@@ -121,6 +191,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -104,7 +111,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -155,6 +226,11 @@
+@@ -155,6 +233,11 @@
  
  default_variants            +x11
  

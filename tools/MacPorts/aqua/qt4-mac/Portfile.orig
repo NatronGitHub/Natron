@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 146318 2016-03-04 16:27:30Z eborisch@macports.org $
+# $Id: Portfile 153015 2016-09-22 11:34:56Z michaelld@macports.org $
 
 PortSystem          1.0
 
@@ -11,10 +11,6 @@ PortGroup           xcodeversion 1.0
 PortGroup           compiler_blacklist_versions 1.0
 
 name                qt4-mac
-# qt4-mac-devel is "replaced_by" this port,
-# so this port cannot conflict with it.
-#conflicts           qt3 qt3-mac qt4-mac-devel
-conflicts           qt3 qt3-mac
 version             4.8.7
 revision            4
 set branch          [join [lrange [split ${version} .] 0 1] .]
@@ -271,15 +267,15 @@ patchfiles-append   \
 patchfiles-append   \
     patch-src_gui_dialogs_qfiledialog_mac.mm.diff
 
-# error out if trying to build on a new OSX version (> 10.11).
+# error out if trying to build on a new OSX version (> 10.12).
 
 platform darwin {
-    if {${MINOR} > 11} {
+    if {${MINOR} > 12} {
         # This project needs to be updated to build with clang++ against libc++
         depends_lib
         depends_run
         pre-fetch {
-            ui_error "$name does not currently build on OSX later than 10.11 'El Capitan'."
+            ui_error "$name does not currently build on Mac OS X later than 10.12 'Sierra'."
             error "unsupported platform"
         }
     }
@@ -583,6 +579,19 @@ pre-configure {
         # disable qmake optimization on 10.6 32-bit
         configure.args-delete -optimized-qmake
 
+    }
+
+    # on Leopard and Snow Leopard with libc++ForOlderSystems
+    # installed, SDK must be unset as we can only use system libraries
+    # also, a missing library link must be replaced for build to
+    # succeed: <https://trac.macports.org/ticket/51844>
+    platform darwin {
+        if {${os.major} == 9 || ${os.major} == 10} {
+            if {${configure.cxx_stdlib} eq "libc++"} {
+                set SDK ""
+                configure.ldflags-append "-lobjc"
+            }
+        }
     }
 
     # set the SDK, if it was found and exists

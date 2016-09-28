@@ -84,7 +84,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
-#include "Gui/ExportGroupTemplateDialog.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -919,28 +918,6 @@ void
 Gui::printAutoDeclaredVariable(const std::string & str)
 {
     _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8( str.c_str() ) );
-}
-
-void
-Gui::exportGroupAsPythonScript(const NodeCollectionPtr& collection)
-{
-    assert(collection);
-    NodesList nodes = collection->getNodes();
-    bool hasOutput = false;
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && toGroupOutput( (*it)->getEffectInstance() ) ) {
-            hasOutput = true;
-            break;
-        }
-    }
-
-    if (!hasOutput) {
-        Dialogs::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
-
-        return;
-    }
-    ExportGroupTemplateDialog dialog(collection, this, this);
-    ignore_result( dialog.exec() );
 }
 
 

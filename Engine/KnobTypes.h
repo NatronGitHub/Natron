@@ -141,6 +141,17 @@ public:
     void setValueCenteredInSpinBox(bool enabled) { _isValueCenteredInSpinbox = enabled; }
 
     bool isValueCenteredInSpinBox() const { return _isValueCenteredInSpinbox; }
+
+    // For 2D int parameters, the UI will have a keybind recorder
+    // and the first dimension stores the symbol and the 2nd the modifiers
+    void setAsShortcutKnob(bool isShortcutKnob) {
+        _isShortcutKnob = isShortcutKnob;
+    }
+
+    bool isShortcutKnob() const
+    {
+        return _isShortcutKnob;
+    }
 public:
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -172,6 +183,7 @@ private:
     bool _disableSlider;
     bool _isRectangle;
     bool _isValueCenteredInSpinbox;
+    bool _isShortcutKnob;
     static const std::string _typeNameStr;
 };
 

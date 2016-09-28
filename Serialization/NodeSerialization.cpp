@@ -28,20 +28,39 @@ void
 NodeSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-    em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
-    em << YAML::Key << "ScriptName" << YAML::Value << _nodeScriptName;
-    if (_nodeLabel != _nodeScriptName) {
-        em << YAML::Key << "Label" << YAML::Value << _nodeLabel;
+
+
+    // For pyplugs, don't serialize it, this is always a group anyway
+    if (_encodeType != eNodeSerializationTypePyPlug) {
+        em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
+    }
+    //  Presets specific
+    if (_encodeType == eNodeSerializationTypePresets) {
+        em << YAML::Key << "PresetName" << YAML::Value << _presetsIdentifierLabel;
+        if (!_presetsIconFilePath.empty()) {
+            em << YAML::Key << "PresetIcon" << YAML::Value << _presetsIconFilePath;
+        }
+        if (_presetShortcutSymbol != 0) {
+            em << YAML::Key << "PresetShortcutKey" << YAML::Value << _presetShortcutSymbol;
+        }
+        if (_presetShortcutPresetModifiers != 0) {
+            em << YAML::Key << "PresetShortcutModifiers" << YAML::Value << _presetShortcutPresetModifiers;
+        }
+
     }
 
-    std::string fullyQualifiedName = _groupFullyQualifiedScriptName;
-    if (!fullyQualifiedName.empty()) {
-        fullyQualifiedName += ".";
+
+    // Only serialize this for non pyplugs and non presets
+    if (_encodeType == eNodeSerializationTypeRegular) {
+        em << YAML::Key << "ScriptName" << YAML::Value << _nodeScriptName;
+        if (_nodeLabel != _nodeScriptName) {
+            em << YAML::Key << "Label" << YAML::Value << _nodeLabel;
+        }
     }
-    fullyQualifiedName += _nodeScriptName;
+
 
     // If version is 1.0 do not serialize
-    if ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1)) {
+    if (_encodeType != eNodeSerializationTypePyPlug  && ((_pluginMajorVersion != 1 && _pluginMajorVersion != -1) || (_pluginMinorVersion != 0 && _pluginMinorVersion != -1))) {
         em << YAML::Key << "Version" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         em << _pluginMajorVersion << _pluginMinorVersion;
         em << YAML::EndSeq;
@@ -106,15 +125,17 @@ NodeSerialization::encode(YAML::Emitter& em) const
         _trackerContext->encode(em);
     }
 
-    if (!_masterNodeFullyQualifiedScriptName.empty()) {
+     // Only serialize clone stuff for non pyplug/non presets
+    if (_encodeType == eNodeSerializationTypeRegular && !_masterNodeFullyQualifiedScriptName.empty()) {
         em << YAML::Key << "CloneMaster" << YAML::Value << _masterNodeFullyQualifiedScriptName;
     }
 
-    if (!_presetLabel.empty()) {
-        em << YAML::Key << "Preset" << YAML::Value << _presetLabel;
+    if (!_presetInstanceLabel.empty()) {
+        em << YAML::Key << "Preset" << YAML::Value << _presetInstanceLabel;
     }
 
-    if (!_userComponents.empty()) {
+    // Only serialize created components for non pyplugs/non presets
+    if (_encodeType == eNodeSerializationTypeRegular && !_userComponents.empty()) {
         em << YAML::Key << "NewLayers" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<ImageComponentsSerialization>::const_iterator it = _userComponents.begin(); it!=_userComponents.end(); ++it) {
             it->encode(em);
@@ -122,19 +143,21 @@ NodeSerialization::encode(YAML::Emitter& em) const
         em << YAML::EndSeq;
     }
 
-    if (_nodePositionCoords[0] != INT_MIN && _nodePositionCoords[1] != INT_MIN) {
-        em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodePositionCoords[0] << _nodePositionCoords[1] << YAML::EndSeq;
+    // Only serialize UI stuff for non pyplug/non presets
+    if (_encodeType == eNodeSerializationTypeRegular) {
+        if (_nodePositionCoords[0] != INT_MIN && _nodePositionCoords[1] != INT_MIN) {
+            em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodePositionCoords[0] << _nodePositionCoords[1] << YAML::EndSeq;
+        }
+        if (_nodeSize[0] != -1 && _nodeSize[1] != -1) {
+            em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeSize[0] << _nodeSize[1] << YAML::EndSeq;
+        }
+        if (_nodeColor[0] != -1 && _nodeColor[1] != -1 && _nodeColor[2] != -1) {
+            em << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeColor[0] << _nodeColor[1] << _nodeColor[2] << YAML::EndSeq;
+        }
+        if (_overlayColor[0] != -1 && _overlayColor[1] != -1 && _overlayColor[2] != -1) {
+            em << YAML::Key << "OverlayColor" << YAML::Value << YAML::Flow << YAML::BeginSeq << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << YAML::EndSeq;
+        }
     }
-    if (_nodeSize[0] != -1 && _nodeSize[1] != -1) {
-        em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeSize[0] << _nodeSize[1] << YAML::EndSeq;
-    }
-    if (_nodeColor[0] != -1 && _nodeColor[1] != -1 && _nodeColor[2] != -1) {
-        em << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeColor[0] << _nodeColor[1] << _nodeColor[2] << YAML::EndSeq;
-    }
-    if (_overlayColor[0] != -1 && _overlayColor[1] != -1 && _overlayColor[2] != -1) {
-        em << YAML::Key << "OverlayColor" << YAML::Value << YAML::Flow << YAML::BeginSeq << _overlayColor[0] << _overlayColor[1] << _overlayColor[2] << YAML::EndSeq;
-    }
-
     if (!_viewerUIKnobsOrder.empty()) {
         em << YAML::Key << "ViewerParamsOrder" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<std::string>::const_iterator it = _viewerUIKnobsOrder.begin(); it!=_viewerUIKnobsOrder.end(); ++it) {
@@ -152,8 +175,34 @@ NodeSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
 
-    _pluginID = node["PluginID"].as<std::string>();
-    _nodeScriptName = node["ScriptName"].as<std::string>();
+    if (node["PluginID"]) {
+        _pluginID = node["PluginID"].as<std::string>();
+        _encodeType = eNodeSerializationTypeRegular;
+    } else {
+        // PyPlugs are uniquely identified by the fact that they don't serialize the script name of the plug-in directly
+        _encodeType = eNodeSerializationTypePyPlug;
+    }
+
+    if (node["PresetName"]) {
+        _encodeType = eNodeSerializationTypePresets;
+
+        // This is a presets or pyplug
+        _presetsIdentifierLabel = node["PresetName"].as<std::string>();
+        if (node["PresetIcon"]) {
+            _presetsIconFilePath = node["PresetIcon"].as<std::string>();
+        }
+        if (node["PresetShortcutKey"]) {
+            _presetShortcutSymbol = node["PresetShortcutKey"].as<int>();
+        }
+        if (node["PresetShortcutModifiers"]) {
+            _presetShortcutPresetModifiers = node["PresetShortcutModifiers"].as<int>();
+        }
+    }
+
+    if (node["ScriptName"]) {
+        _nodeScriptName = node["ScriptName"].as<std::string>();
+    }
+    
     if (node["Label"]) {
         _nodeLabel = node["Label"].as<std::string>();
     } else {
@@ -219,7 +268,7 @@ NodeSerialization::decode(const YAML::Node& node)
     }
     
     if (node["Preset"]) {
-        _presetLabel = node["Preset"].as<std::string>();
+        _presetInstanceLabel = node["Preset"].as<std::string>();
     }
     
     if (node["NewLayers"]) {
@@ -274,88 +323,6 @@ NodeSerialization::decode(const YAML::Node& node)
 
 } // NodeSerialization::decode
 
-void
-NodePresetSerialization::encode(YAML::Emitter& em) const
-{
-    
-    em << YAML::BeginMap;
-    if (!pyPlugID.empty()) {
-        em << YAML::Key << "PyPlugID" << YAML::Value << pyPlugID;
-        if (!pyPlugDescription.empty()) {
-            em << YAML::Key << "PyPlugDescription" << YAML::Value << pyPlugDescription;
-            if (pyPlugDescriptionIsMarkdown) {
-                em << YAML::Key << "DescIsMarkdown" << YAML::Value << pyPlugDescriptionIsMarkdown;
-            }
-        }
-
-        em << YAML::Key << "PyPlugVersion" << YAML::Value << version;
-        if (!pyPlugExtraPythonScript.empty()) {
-            em << YAML::Key << "PyPlugExtScript" << YAML::Value << pyPlugExtraPythonScript;
-        }
-    } else {
-        em << YAML::Key << "PluginID" << YAML::Value << originalPluginID;
-    }
-    em << YAML::Key << "Label" << YAML::Value << presetLabel;
-    if (!pyPlugGrouping.empty()) {
-        em << YAML::Key << "PyPlugGrouping" << YAML::Value << pyPlugGrouping;
-    }
-    if (!presetIcon.empty()) {
-        em << YAML::Key << "Icon" << YAML::Value << presetIcon;
-    }
-    if (presetSymbol != 0) {
-        em << YAML::Key << "Key" << YAML::Value << presetSymbol;
-    }
-    if (presetModifiers != 0) {
-        em << YAML::Key << "Modifiers" << YAML::Value << presetModifiers;
-    }
-    em << YAML::Key << "Node" << YAML::Value;
-    nodeSerialization.encode(em);
-    em << YAML::EndMap;
-};
-
-void
-NodePresetSerialization::decode(const YAML::Node& node)
-{
-    if (!node.IsMap()) {
-        throw YAML::InvalidNode();
-    }
-
-    if (node["PyPlugID"]) {
-        pyPlugID = node["PyPlugID"].as<std::string>();
-        if (node["PyPlugDescription"]) {
-            pyPlugDescription = node["PyPlugDescription"].as<std::string>();
-            if (node["DescIsMarkdown"]) {
-                pyPlugDescriptionIsMarkdown = node["DescIsMarkdown"].as<bool>();
-            }
-        }
-        version = node["PyPlugVersion"].as<int>();
-        if (node["PyPlugExtScript"]) {
-            pyPlugExtraPythonScript = node["PyPlugExtScript"].as<std::string>();
-        }
-    } else if (node["PluginID"]) {
-        originalPluginID = node["PluginID"].as<std::string>();
-    }
-    if (node["Grouping"]) {
-        pyPlugGrouping = node["Grouping"].as<std::string>();
-    }
-    presetLabel = node["Label"].as<std::string>();
-    if (node["Icon"]) {
-        presetIcon = node["Icon"].as<std::string>();
-    }
-    if (node["Key"]) {
-        presetSymbol = node["Key"].as<int>();
-    }
-    if (node["Modifiers"]) {
-        presetModifiers = node["Modifiers"].as<int>();
-    }
-    presetLabel = node["Label"].as<std::string>();
-    if (decodeMetaDataOnly) {
-        return;
-    }
-    nodeSerialization.decode(node["Node"]);
-
-
-}
 
 SERIALIZATION_NAMESPACE_EXIT
 

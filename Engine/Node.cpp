@@ -111,6 +111,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 #include "Serialization/SerializationIO.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
@@ -213,6 +214,12 @@ PluginPtr
 Node::getPyPlugPlugin() const
 {
     return _imp->pyPlugHandle.lock();
+}
+
+PluginPtr
+Node::getOriginalPlugin() const
+{
+    return _imp->plugin.lock();
 }
 
 void
@@ -453,6 +460,7 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
+    bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
 
     // If this is a pyplug, load its properties
     std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
@@ -483,7 +491,7 @@ Node::load(const CreateNodeArgsPtr& args)
     initializeInputs();
 
     // Create knobs
-    initializeKnobs(serialization.get() != 0);
+    initializeKnobs(serialization.get() != 0, !argsNoNodeGui);
 
 
     // If there is either PyPlug info or a preset to load, do it now
@@ -541,7 +549,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Create gui if needed. For groups this will also create the GUI of all internal nodes
     // unless they are not created yet
-    bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
     if (!argsNoNodeGui) {
         createNodeGuiInternal(args);
     }
@@ -1561,7 +1568,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     {
         QMutexLocker k(&_imp->nodePresetMutex);
-        serialization->_presetLabel = _imp->initialNodePreset;
+        serialization->_presetInstanceLabel = _imp->initialNodePreset;
     }
 
     serialization->_pluginMajorVersion = getMajorVersion();
@@ -1672,7 +1679,7 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
 
     {
         QMutexLocker k(&_imp->nodePresetMutex);
-        _imp->initialNodePreset = serialization->_presetLabel;
+        _imp->initialNodePreset = serialization->_presetInstanceLabel;
     }
 
     {
@@ -1724,7 +1731,6 @@ Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSeri
     isGrp->clearNodes(false);
 
     // Setup initial group state
-    isGrp->setSubGraphEditedByUser(false);
     isGrp->setupInitialSubGraphState(serialization);
 
     // Restore rest of the group with the serialization
@@ -1832,20 +1838,20 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
 
     // Throws on failure
-    std::string presetsLabel;
-    getNodeSerializationFromPresetFile(presetsFile, serialization.get(), &presetsLabel);
+    getNodeSerializationFromPresetFile(presetsFile, serialization.get());
 
     {
         QMutexLocker k(&_imp->nodePresetMutex);
-        _imp->initialNodePreset = presetsLabel;
+        _imp->initialNodePreset = serialization->_presetInstanceLabel;
     }
     restoreNodeToDefaultState();
     Q_EMIT nodePresetsChanged();
 }
 
 void
-Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization, std::string* presetsLabel)
+Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
+    assert(serialization);
     FStreamsSupport::ifstream ifile;
     FStreamsSupport::open(&ifile, presetFile);
     if (!ifile || presetFile.empty()) {
@@ -1853,15 +1859,7 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
         throw std::runtime_error(message);
     }
 
-    SERIALIZATION_NAMESPACE::NodePresetSerialization obj;
-    SERIALIZATION_NAMESPACE::read(ifile,&obj);
-
-    if (serialization) {
-        *serialization = obj.nodeSerialization;
-    }
-    if (presetsLabel) {
-        *presetsLabel = obj.presetLabel;
-    }
+    SERIALIZATION_NAMESPACE::read(ifile,serialization);
 }
 
 
@@ -1877,9 +1875,8 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZ
     const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
     for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
         if (it->presetLabel.toStdString() == presetName) {
-            std::string presetsLabel;
-            getNodeSerializationFromPresetFile(it->presetFilePath.toStdString(), serialization, &presetsLabel);
-            assert(presetsLabel == presetName);
+            getNodeSerializationFromPresetFile(it->presetFilePath.toStdString(), serialization);
+            assert(presetName == serialization->_presetInstanceLabel);
             return;
         }
     }
@@ -1938,21 +1935,13 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
 
 } // Node::loadPresetsInternal
 
-
 void
-Node::saveNodeToFileInternal(const std::string& filePath,
-                             const std::string& pyPlugID,
-                             const std::string& pyPlugLabel,
-                             const std::string& pyPlugIcon,
-                             const std::string& pyPlugDesc,
-                             const std::string& pyPlugExtPythonScript,
-                             const bool pyPlugDescIsMarkdown,
-                             const std::string& pyPlugGrouping,
-                             int majorVersion,
-                             Key symbol,
-                             const KeyboardModifiers& mods)
+Node::exportNodeToPyPlug(const std::string& filePath)
 {
-
+    // Only groups can export to PyPlug
+    if (_imp->plugin.lock()->getPluginID() != PLUGINID_NATRON_GROUP) {
+        return;
+    }
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, filePath);
     if (!ofile || filePath.empty()) {
@@ -1960,65 +1949,139 @@ Node::saveNodeToFileInternal(const std::string& filePath,
         throw std::runtime_error(message);
     }
 
-    SERIALIZATION_NAMESPACE::NodePresetSerialization serialization;
-
-    if (pyPlugID.empty()) {
-        // This is a preset.
-        // Serialize the plugin ID outside from the node serialization itself so that when parsing presets for a node
-        // we just have to read the plugin id
-        serialization.originalPluginID = getPluginID();
-    } else {
-        // this is a pyplug
-        serialization.pyPlugID = pyPlugID;
-        serialization.pyPlugGrouping = pyPlugGrouping;
-        serialization.pyPlugDescription = pyPlugDesc;
-        serialization.pyPlugDescriptionIsMarkdown = pyPlugDescIsMarkdown;
-        serialization.pyPlugExtraPythonScript = pyPlugExtPythonScript;
-        serialization.version = majorVersion;
+    // Perform checks before writing the file
+    {
+        std::string pyPlugID = _imp->pyPlugIDKnob.lock()->getValue();
+        if (pyPlugID.empty()) {
+            std::string message = tr("The plug-in ID cannot be empty").toStdString();
+            throw std::runtime_error(message);
+        }
     }
-    serialization.presetLabel = pyPlugLabel;
-    serialization.presetIcon = pyPlugIcon;
-    serialization.presetSymbol = (int)symbol;
-    serialization.presetModifiers = (int)mods;
-    toSerialization(&serialization.nodeSerialization);
-
-    // No need to save node UI nor inputs
-    serialization.nodeSerialization._inputs.clear();
-    serialization.nodeSerialization._nodePositionCoords[0] = serialization.nodeSerialization._nodePositionCoords[1] = INT_MIN;
-    serialization.nodeSerialization._nodeSize[0] = serialization.nodeSerialization._nodeSize[1] = -1;
-
-    SERIALIZATION_NAMESPACE::write(ofile, serialization);
-} // saveNodeToFileInternal
-
-void
-Node::saveNodeToPyPlug(const std::string& filePath,
-                       const std::string& pyPlugID,
-                       const std::string& pyPlugLabel,
-                       const std::string& pyPlugIcon,
-                       const std::string& pyPlugDesc,
-                       const std::string& pyPlugExtPythonScript,
-                       const bool pyPlugDescIsMarkdown,
-                       const std::string& pyPlugGrouping,
-                       int majorVersion,
-                       Key symbol,
-                       const KeyboardModifiers& mods)
-{
-    NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (!isGrp) {
-        throw std::invalid_argument(tr("Exporting to PyPlug is only available for a Group node").toStdString());
+    {
+        std::string pyPlugLabel = _imp->pyPlugLabelKnob.lock()->getValue();
+        if (pyPlugLabel.empty()) {
+            std::string message = tr("The plug-in label cannot be empty").toStdString();
+            throw std::runtime_error(message);
+        }
     }
-    saveNodeToFileInternal(filePath, pyPlugID, pyPlugLabel, pyPlugIcon, pyPlugDesc, pyPlugExtPythonScript, pyPlugDescIsMarkdown, pyPlugGrouping, majorVersion, symbol, mods);
+
+    // Make sure the file paths are relative to the pyplug script directory
+    std::string pyPlugDirectoryPath;
+    {
+        std::size_t foundSlash = filePath.find_last_of('/');
+        if (foundSlash != std::string::npos) {
+            pyPlugDirectoryPath = filePath.substr(0, foundSlash + 1);
+        }
+    }
+
+    {
+        std::string iconFilePath = _imp->pyPlugIconKnob.lock()->getValue();
+        std::string path;
+        std::size_t foundSlash = iconFilePath.find_last_of('/');
+        if (foundSlash != std::string::npos) {
+            path = iconFilePath.substr(0, foundSlash + 1);
+        }
+        if (!path.empty() && path != pyPlugDirectoryPath) {
+            std::string message = tr("The plug-in icon file should be located in the same directory as the PyPlug script (%1)").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str())).toStdString();
+            throw std::runtime_error(message);
+        }
+    }
+    {
+        std::string callbacksFilePath = _imp->pyPlugExtPythonScript.lock()->getValue();
+        std::string path;
+        std::size_t foundSlash = callbacksFilePath.find_last_of('/');
+        if (foundSlash != std::string::npos) {
+            path = callbacksFilePath.substr(0, foundSlash + 1);
+        }
+        if (!path.empty() && path != pyPlugDirectoryPath) {
+            std::string message = tr("The Python callbacks file should be located in the same directory as the PyPlug script (%1)").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str())).toStdString();
+            throw std::runtime_error(message);
+        }
+    }
+
+
+    // Check that the directory where the file will be is registered in Natron search paths.
+    if (!getApp()->isBackground()) {
+        bool foundInPath = false;
+        QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
+        for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
+            if (it->toStdString() == pyPlugDirectoryPath) {
+                foundInPath = true;
+                break;
+            }
+        }
+
+        if (!foundInPath) {
+            QString message = tr("Directory \"%1\" is not in the group plug-in search path, would you like to add it?").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str()));
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
+                                                             message.toStdString(), false);
+
+            if  (rep == eStandardButtonYes) {
+                appPTR->getCurrentSettings()->appendPythonGroupsPath(pyPlugDirectoryPath);
+            }
+        }
+    }
+
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
+    toSerialization(serialization.get());
+
+    SERIALIZATION_NAMESPACE::NodeClipBoard cb;
+    cb.nodes.push_back(serialization);
+    
+    SERIALIZATION_NAMESPACE::write(ofile, cb);
 }
 
 void
-Node::saveNodeToPresets(const std::string& filePath, const std::string& presetsLabel, const std::string& presetsIcon, Key symbol, const KeyboardModifiers& mods)
+Node::exportNodeToPresets(const std::string& filePath,
+                          const std::string& presetsLabel,
+                          const std::string& iconFilePath,
+                          int shortcutSymbol,
+                          int shortcutModifiers)
 {
-
-    if (presetsLabel.empty()) {
-        throw std::invalid_argument(tr("The preset label cannot be empty").toStdString());
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, filePath);
+    if (!ofile || filePath.empty()) {
+        std::string message = tr("Failed to open file: ").toStdString() + filePath;
+        throw std::runtime_error(message);
     }
-    saveNodeToFileInternal(filePath, std::string(), presetsLabel, presetsIcon, std::string(), std::string(), false, std::string(), 0, symbol, mods);
+
+    // Make sure the file paths are relative to the presets script directory
+    std::string pyPlugDirectoryPath;
+    {
+        std::size_t foundSlash = filePath.find_last_of('/');
+        if (foundSlash != std::string::npos) {
+            pyPlugDirectoryPath = filePath.substr(0, foundSlash + 1);
+        }
+    }
+    {
+        std::string path;
+        std::size_t foundSlash = iconFilePath.find_last_of('/');
+        if (foundSlash != std::string::npos) {
+            path = iconFilePath.substr(0, foundSlash + 1);
+        }
+        if (!path.empty() && path != pyPlugDirectoryPath) {
+            std::string message = tr("The preset icon file should be located in the same directory as the preset script (%1)").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str())).toStdString();
+            throw std::runtime_error(message);
+        }
+    }
+
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
+    serialization->_presetInstanceLabel = presetsLabel;
+    serialization->_presetsIconFilePath = iconFilePath;
+    serialization->_presetShortcutSymbol = shortcutSymbol;
+    serialization->_presetShortcutPresetModifiers = shortcutModifiers;
+
+    toSerialization(serialization.get());
+
+    SERIALIZATION_NAMESPACE::NodeClipBoard cb;
+    cb.nodes.push_back(serialization);
+
+    SERIALIZATION_NAMESPACE::write(ofile, cb);
 }
+
+
 
 void
 Node::restoreNodeToDefaultState()
@@ -2054,13 +2117,13 @@ Node::restoreNodeToDefaultState()
         if (!isPythonScriptPyPlug) {
             std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
             pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
-            getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get(), 0);
+            getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get());
         }
     }
 
     // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
     // if all parameters are actually to the good value
-    if (nodeCreated){
+    if (nodeCreated) {
 
         // Remove any current user knob
         std::list<KnobPagePtr> userPages;
@@ -2088,17 +2151,16 @@ Node::restoreNodeToDefaultState()
         }
     }
 
+    // initialize the subgraph edited flag for groups
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+    if (isGrp) {
+        isGrp->setSubGraphEditedByUser(false);
+    }
+
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
         // Load pyplug, set default values to knob only if there's no preset serialization
         loadPresetsInternal(pyPlugSerialization, presetSerialization.get() == 0);
-
-        // For PyPlugs, start with the subgraph unedited
-        NodeGroupPtr isGrp = isEffectNodeGroup();
-        if (isGrp) {
-            isGrp->setSubGraphEditedByUser(false);
-        }
-
     }
 
     if (presetSerialization) {
@@ -3403,6 +3465,193 @@ Node::createInfoPage()
 }
 
 void
+Node::createPyPlugExportGroup()
+{
+    // Create the knobs in either page since they are hidden anyway
+    KnobPagePtr mainPage;
+    const KnobsVec& knobs = getKnobs();
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        KnobPagePtr p = toKnobPage(knobs[i]);
+        if (p) {
+            mainPage = p;
+            break;
+        }
+    }
+    assert(mainPage);
+    KnobGroupPtr group;
+    {
+        KnobGroupPtr param = AppManager::createKnob<KnobGroup>( _imp->effect, tr(kNatronNodeKnobExportPyPlugGroupLabel), 1, false );
+        group = param;
+        param->setName(kNatronNodeKnobExportPyPlugGroup);
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(false);
+        param->setIsPersistent(false);
+        param->setAsDialog(true);
+        mainPage->addKnob(param);
+        _imp->pyPlugExportDialog = param;
+    }
+
+    {
+        KnobOutputFilePtr param = AppManager::createKnob<KnobOutputFile>(_imp->effect, tr(kNatronNodeKnobExportDialogFilePathLabel), 1, false);
+        param->setName(kNatronNodeKnobExportDialogFilePath);
+        param->setEvaluateOnChange(false);
+        param->setIsPersistent(false);
+        param->setHintToolTip(tr(kNatronNodeKnobExportDialogFilePathHint));
+        group->addKnob(param);
+        _imp->pyPlugExportDialogFile = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogOkButtonLabel), 1, false );
+        param->setName(kNatronNodeKnobExportDialogOkButton);
+        param->setSecret(true);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        param->setSpacingBetweenItems(3);
+        param->setIsPersistent(false);
+        group->addKnob(param);
+        _imp->pyPlugExportDialogOkButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogCancelButtonLabel), 1, false );
+        param->setName(kNatronNodeKnobExportDialogCancelButton);
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        param->setSpacingBetweenItems(3);
+        param->setIsPersistent(false);
+        group->addKnob(param);
+        _imp->pyPlugExportDialogCancelButton = param;
+    }
+}
+
+void
+Node::createPyPlugPage()
+{
+    PluginPtr pyPlug = _imp->pyPlugHandle.lock();
+    KnobPagePtr page = AppManager::createKnob<KnobPage>(_imp->effect, tr(kPyPlugPageParamLabel), 1, false);
+    page->setName(kPyPlugPageParamName);
+    page->setSecret(true);
+
+    {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginID);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getPluginID());
+        }
+        param->setEvaluateOnChange(false);
+        param->setHintToolTip(tr(kNatronNodeKnobPyPlugPluginIDHint));
+        page->addKnob(param);
+        _imp->pyPlugIDKnob = param;
+    }
+    {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginLabelLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginLabel);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getPluginLabel());
+        }
+        param->setEvaluateOnChange(false);
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginLabelHint));
+        page->addKnob(param);
+        _imp->pyPlugLabelKnob = param;
+    }
+    {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginGroupingLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginGrouping);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getGroupingString());
+        }
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue("PyPlugs");
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
+        page->addKnob(param);
+        _imp->pyPlugGroupingKnob = param;
+    }
+    {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginDescriptionLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginDescription);
+        param->setEvaluateOnChange(false);
+        param->setAsMultiLine();
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
+        param->setAddNewLine(false);
+        page->addKnob(param);
+        _imp->pyPlugDescKnob = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
+        param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
+        page->addKnob(param);
+        _imp->pyPlugDescIsMarkdownKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginVersionLabel), 2, false);
+        param->setName(kNatronNodeKnobPyPlugPluginVersion);
+        param->setEvaluateOnChange(false);
+        param->setDimensionName(0, "Major");
+        param->setDimensionName(1, "Minor");
+        if (pyPlug) {
+            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), 0);
+            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), 1);
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
+        page->addKnob(param);
+        _imp->pyPlugVersionKnob = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginShortcutLabel), 2, false);
+        param->setName(kNatronNodeKnobPyPlugPluginShortcut);
+        param->setEvaluateOnChange(false);
+        param->setAsShortcutKnob(true);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), 0);
+            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), 1);
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
+        page->addKnob(param);
+        _imp->pyPlugShortcutKnob = param;
+    }
+    {
+        KnobFilePtr param = AppManager::createKnob<KnobFile>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
+        param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
+        page->addKnob(param);
+        _imp->pyPlugExtPythonScript = param;
+    }
+    {
+        KnobFilePtr param = AppManager::createKnob<KnobFile>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIconFileLabel), 1, false);
+        param->setName(kNatronNodeKnobPyPlugPluginIconFile);
+        param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
+        }
+        param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
+        page->addKnob(param);
+        _imp->pyPlugIconKnob = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(_imp->effect, tr(kNatronNodeKnobExportPyPlugButtonLabel), 1, false);
+        param->setName(kNatronNodeKnobExportPyPlugButton);
+        param->setEvaluateOnChange(false);
+        param->setHintToolTip( tr("Click to export this group to a PyPlug file (.%1)").arg(QLatin1String(NATRON_PRESETS_FILE_EXT)));
+        page->addKnob(param);
+        _imp->pyPlugExportButtonKnob = param;
+    }
+
+}
+
+void
 Node::createPythonPage()
 {
     KnobPagePtr pythonPage = AppManager::createKnob<KnobPage>(_imp->effect, tr("Python"), 1, false);
@@ -3599,7 +3848,7 @@ Node::createLabelKnob(const KnobPagePtr& settingsPage,
 }
 
 void
-Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
+Node::findOrCreateChannelEnabled()
 {
     //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
     static const std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
@@ -3621,10 +3870,14 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
     bool foundAll = foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3];
     bool isWriter = _imp->effect->isWriter();
 
+    KnobPagePtr mainPage;
     if (foundAll) {
         for (int i = 0; i < 4; ++i) {
             // Writers already have their checkboxes places correctly
             if (!isWriter) {
+                if (!mainPage) {
+                    mainPage = getOrCreateMainPage();
+                }
                 if (foundEnabled[i]->getParentKnob() == mainPage) {
                     //foundEnabled[i]->setAddNewLine(i == 3);
                     mainPage->removeKnob(foundEnabled[i]);
@@ -3643,6 +3896,10 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         if (foundAll) {
             std::cerr << getScriptName_mt_safe() << ": WARNING: property " << kNatronOfxImageEffectPropChannelSelector << " is different of " << kOfxImageComponentNone << " but uses its own checkboxes" << std::endl;
         } else {
+            if (!mainPage) {
+                mainPage = getOrCreateMainPage();
+            }
+
             //Create the selectors
             for (int i = 0; i < 4; ++i) {
                 foundEnabled[i] =  AppManager::createKnob<KnobBool>(_imp->effect, channelLabels[i], 1, false);
@@ -3658,6 +3915,9 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         }
     }
     if ( !isWriter && foundAll && !getApp()->isBackground() ) {
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
@@ -3692,7 +3952,7 @@ Node::createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskC
 }
 
 void
-Node::initializeDefaultKnobs(bool loadingSerialization)
+Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
     NodePtr ioContainer = getIOContainer();
@@ -3700,7 +3960,6 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     //Add the "Node" page
     KnobPagePtr settingsPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(_imp->effect, kNodePageParamName, tr(kNodePageParamLabel));
     settingsPage->setDeclaredByPlugin(false);
-    _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
     BackdropPtr isBackdropNode = isEffectBackdrop();
@@ -3758,7 +4017,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     }
 
 
-    findOrCreateChannelEnabled(mainPage);
+    findOrCreateChannelEnabled();
 
     ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes
     std::vector<std::pair<std::string, KnobIPtr > > foundPluginDefaultKnobsToReorder;
@@ -3831,10 +4090,18 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
     createNodePage(settingsPage);
 
-    bool createInfo = !isEffectNodeGroup();
-    if (createInfo) {
+    if (!isEffectNodeGroup()) {
         createInfoPage();
+    } else {
+        if (_imp->plugin.lock()->getPluginID() == PLUGINID_NATRON_GROUP) {
+            createPyPlugPage();
+
+            if (hasGUI) {
+                createPyPlugExportGroup();
+            }
+        }
     }
+
 
     if (_imp->effect->isWriter()
         && !ioContainer) {
@@ -3857,7 +4124,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 } // Node::initializeDefaultKnobs
 
 void
-Node::initializeKnobs(bool loadingSerialization)
+Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
 {
     ////Only called by the main-thread
 
@@ -3874,7 +4141,7 @@ Node::initializeKnobs(bool loadingSerialization)
 
     if ( _imp->effect->getMakeSettingsPanel() ) {
         //initialize default knobs added by Natron
-        initializeDefaultKnobs(loadingSerialization);
+        initializeDefaultKnobs(loadingSerialization, hasGUI);
     }
 
     _imp->effect->endChanges();
@@ -8338,6 +8605,24 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         if (foundOutput != _imp->channelsSelectors.end()) {
             _imp->onLayerChanged(true);
         }
+    } else if (what == _imp->pyPlugExportButtonKnob.lock()) {
+        // Trigger a knob changed action on the group
+        KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
+        if (k) {
+            if ( k->getValue() ) {
+                k->setValue(false);
+            } else {
+                k->setValue(true);
+            }
+        }
+    } else if (what == _imp->pyPlugExportDialogOkButton.lock()) {
+        try {
+            exportNodeToPyPlug(_imp->pyPlugExportDialogFile.lock()->getValue());
+        } catch (const std::exception& e) {
+            Dialogs::errorDialog(tr("Export").toStdString(), e.what());
+        }
+    } else if (what == _imp->pyPlugExportDialogCancelButton.lock()) {
+        _imp->pyPlugExportDialog.lock()->setValue(false);
     } else {
         ret = false;
     }

@@ -3181,22 +3181,6 @@ NodeGui::getSize(double* w,
     return getNode()->getSize(w, h);
 }
 
-void
-NodeGui::exportGroupAsPythonScript()
-{
-    NodePtr node = getNode();
-
-    if (!node) {
-        return;
-    }
-    NodeGroupPtr isGroup = node->isEffectNodeGroup();
-    if (!isGroup) {
-        qDebug() << "Attempting to export a non-group as a python script.";
-
-        return;
-    }
-    getDagGui()->getGui()->exportGroupAsPythonScript(isGroup);
-}
 
 void
 NodeGui::getColor(double* r,
@@ -3719,9 +3703,10 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
 {
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>(getKnobsHolder(), tr("Page"));
     KnobsVec children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), KnobPagePtr(), KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), page, KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
         duplicate->setAddNewLine( children[i]->isNewLineActivated() );
     }
 

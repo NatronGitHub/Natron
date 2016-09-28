@@ -72,8 +72,6 @@ public:
      **/
     virtual void setSize(double w, double h) = 0;
     
-    virtual void exportGroupAsPythonScript() = 0;
-
     /**
      * @brief Set the colour of the node as it appears on the nodegraph.
      **/

@@ -429,8 +429,6 @@ public:
 
     void printAutoDeclaredVariable(const std::string& str);
 
-    void exportGroupAsPythonScript(const NodeCollectionPtr& collection);
-
     void addMenuEntry(const QString& menuGrouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers);
 
     void setTripleSyncEnabled(bool enabled);

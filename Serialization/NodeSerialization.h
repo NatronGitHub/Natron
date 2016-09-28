@@ -31,13 +31,32 @@
 
 SERIALIZATION_NAMESPACE_ENTER;
 
+/**
+ * @class This is the main class for everything related to the serialization of nodes.
+ * It use for the purpose of 3 serialization kinds:
+ * - Serialization of a node in a project
+ * - Serialization of a PyPlug
+ * - Serialization of a Preset of a node
+ **/
 class NodeSerialization : public SerializationObjectBase
 {
 public:
 
-    ///Used to serialize
+    enum NodeSerializationTypeEnum
+    {
+        eNodeSerializationTypeRegular,
+        eNodeSerializationTypePyPlug,
+        eNodeSerializationTypePresets
+    };
+
     explicit NodeSerialization()
-    : _knobsValues()
+    : _encodeType(eNodeSerializationTypeRegular)
+    , _presetsIdentifierLabel()
+    , _presetsIconFilePath()
+    , _presetShortcutSymbol(0)
+    , _presetShortcutPresetModifiers(0)
+    , _presetInstanceLabel()
+    , _knobsValues()
     , _groupFullyQualifiedScriptName()
     , _nodeLabel()
     , _nodeScriptName()
@@ -70,7 +89,28 @@ public:
     {
     }
 
+    // This is a hint for the encode() function so it skips
+    // serializing unneeded stuff given the type
+    NodeSerializationTypeEnum _encodeType;
 
+    //////// Presets only
+    ///////////////////////////////////////////////////////
+    // Preset name
+    std::string _presetsIdentifierLabel;
+
+    // Optionally the filename of an icon file (without path) that should be located next to the preset file
+    std::string _presetsIconFilePath;
+
+    // Optionally the default keyboard symbol (as in Natron::Key) and modifiers (as in Natron::KeyboardModifiers)
+    // that should by default be used to instantiate the plug-in. (Note that the user may still change it afterwards
+    // from the Shortcut Editor)
+    int _presetShortcutSymbol;
+    int _presetShortcutPresetModifiers;
+    ///////////////////////////////////////////////////////
+    ////////// End presets related
+
+    // If this node is using a preset, this is the label of the preset it was instantiated in
+    std::string _presetInstanceLabel;
 
     // Knobs serialization
     KnobSerializationList _knobsValues;
@@ -87,7 +127,7 @@ public:
     // The ID of the plug-in embedded into the node
     std::string _pluginID;
 
-    // Plugin version used by the node
+    // Plugin version used by the node, -1 means highest loaded in the application
     int _pluginMajorVersion;
     int _pluginMinorVersion;
 
@@ -101,7 +141,6 @@ public:
     boost::shared_ptr<RotoContextSerialization> _rotoContext;
     // If this node has a Tracker context, this is its serialization
     boost::shared_ptr<TrackerContextSerialization> _trackerContext;
-
 
     // The serialization of the pages created by the user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
@@ -123,9 +162,6 @@ public:
 
     // Ordering of the knobs in the viewer UI for this node
     std::list<std::string> _viewerUIKnobsOrder;
-    
-    // If this node was built with a preset, this is the one
-    std::string _presetLabel;
 
     virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
@@ -135,84 +171,6 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 };
 
-
-class NodePresetSerialization : public SerializationObjectBase
-{
-public:
-
-    // The plug-in ID of the node to create. For PyPlugs this should be the plug-in ID of a Group
-    std::string originalPluginID;
-
-    // If set the preset will appear as a different plug-in than the one set in originalPluginID.
-    // If not set it will appear as a preset of originalPluginID
-    std::string pyPlugID;
-
-    // You may set a description for the pyPlug. Only relevant if pyPlugID is set
-    std::string pyPlugDescription;
-
-    // True if the description is encoded in markdown, otherwise it is considered plain text
-    bool pyPlugDescriptionIsMarkdown;
-
-    // You may set a grouping into which the tool should be if pyPlugID is set
-    // If not set it will default to the grouping of the plug-in set in originalPluginID
-    std::string pyPlugGrouping;
-
-    // The filename (relative to the directory where the pyplug file is) of a python script where optional functions
-    // and callbacks used by the PyPlug can be defined.
-    std::string pyPlugExtraPythonScript;
-
-    // The label of the preset as it should appear in the GUI
-    std::string presetLabel;
-
-    // Optionally the filename of an icon file (without path) that should be located next to the preset file
-    std::string presetIcon;
-
-    // When setting a pyPlugID may be useful to notify the user that the plug-in changed. Only relevant with
-    // a non empty pyPlugID
-    int version;
-
-    // Optionally the default keyboard symbol (as in Natron::Key) and modifiers (as in Natron::KeyboardModifiers)
-    // that should by default be used to instantiate the plug-in. (Note that the user may still change it afterwards
-    // from the Shortcut Editor)
-    int presetSymbol;
-    int presetModifiers;
-
-    // For a preset, there is a single node serialization and this is the serialization that should set the state of the node by default.
-    // For a pyplug, this is the serialization of the top level group (which recursively has serialization of its internal nodes)
-    NodeSerialization nodeSerialization;
-
-    // This flag is used to speed-up preset parsing by Natron: it will only read relevant meta-data from this class
-    // to show to the user in the interface instead of the whole node serialization object.
-    bool decodeMetaDataOnly;
-
-    NodePresetSerialization()
-    : SerializationObjectBase()
-    , originalPluginID()
-    , pyPlugID()
-    , pyPlugDescription()
-    , pyPlugDescriptionIsMarkdown(false)
-    , pyPlugGrouping()
-    , pyPlugExtraPythonScript()
-    , presetLabel()
-    , presetIcon()
-    , version(0)
-    , presetSymbol(0)
-    , presetModifiers(0)
-    , nodeSerialization()
-    , decodeMetaDataOnly(false)
-    {
-
-    }
-
-    virtual ~NodePresetSerialization()
-    {
-
-    }
-
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
-
-    virtual void decode(const YAML::Node& node) OVERRIDE;
-};
 
 SERIALIZATION_NAMESPACE_EXIT;
 

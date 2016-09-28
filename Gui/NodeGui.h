@@ -319,7 +319,6 @@ public:
     virtual bool isOverlayLocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void refreshStateIndicator();
-    virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
 
     bool isNearbyNameFrame(const QPointF& pos) const;
 
