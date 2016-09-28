@@ -380,6 +380,7 @@ public:
     const std::list<PluginActionShortcut>& getShortcuts() const;
 
     QStringList getGroupingAsQStringList() const;
+    std::string getGroupingString() const;
 
 };
 

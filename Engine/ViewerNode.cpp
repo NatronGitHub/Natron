@@ -885,6 +885,13 @@ ViewerNode::onKnobsLoaded()
 void
 ViewerNode::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
 {
+
+    // Viewers are not considered edited if there is not serialization or this is a preset
+    if (serialization && serialization->_presetInstanceLabel.empty()) {
+        setSubGraphEditedByUser(true);
+    }
+
+
     // If there's a serialization, load the nodes from there, otherwise create them
     if (serialization && !serialization->_children.empty()) {
         return;
@@ -1012,7 +1019,9 @@ ViewerNode::initializeKnobs()
 
     
 
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("Controls") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("UIControls") );
+    page->setName("viewerUIControls");
+    page->setSecret(true);
 
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamLayersLabel) );
@@ -1527,8 +1536,9 @@ ViewerNode::initializeKnobs()
 
 
 
-    KnobPagePtr playerToolbarPage = AppManager::createKnob<KnobPage>( thisShared, tr("Player") );
+    KnobPagePtr playerToolbarPage = AppManager::createKnob<KnobPage>( thisShared, tr("PlayerPage") );
     playerToolbarPage->setName(kViewerNodeParamPlayerToolBarPage);
+    playerToolbarPage->setSecret(true);
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSetInPointLabel) );
         param->setName(kViewerNodeParamSetInPoint);

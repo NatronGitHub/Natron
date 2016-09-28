@@ -293,6 +293,20 @@ Plugin::getGroupingAsQStringList() const
 }
 
 std::string
+Plugin::getGroupingString() const
+{
+    std::vector<std::string> groupingStd = getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::string ret;
+    for (std::size_t i = 0; i < groupingStd.size(); ++i) {
+        ret += groupingStd[i];
+        if (i < groupingStd.size() - 1) {
+            ret += "/";
+        }
+    }
+    return ret;
+}
+
+std::string
 Plugin::generateUserFriendlyPluginID() const
 {
     std::stringstream ss;

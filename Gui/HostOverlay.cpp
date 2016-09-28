@@ -924,7 +924,7 @@ PositionInteract::draw(double time,
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    if ( !knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1) ) {
+    if ( !knob || !knob->shouldDrawOverlayInteract()) {
         return;
     }
 
@@ -1321,7 +1321,7 @@ TransformInteract::draw(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr translateKnob = _translate.lock();
 
-    if ( !translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0) ) {
+    if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return;
     }
 
@@ -1460,7 +1460,7 @@ CornerPinInteract::draw(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr from1Knob = _from[0].lock();
 
-    if ( !from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0) ) {
+    if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return;
     }
 
@@ -1620,7 +1620,7 @@ PositionInteract::penMotion(double time,
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    if ( !knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1) ) {
+    if ( !knob || !knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -1799,7 +1799,7 @@ TransformInteract::penMotion(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr translateKnob = _translate.lock();
 
-    if ( !translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0) ) {
+    if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2167,7 +2167,7 @@ CornerPinInteract::penMotion(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr from1Knob = _from[0].lock();
 
-    if ( !from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0) ) {
+    if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2298,7 +2298,7 @@ PositionInteract::penUp(double time,
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    if ( !knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1) ) {
+    if ( !knob || !knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2399,7 +2399,7 @@ CornerPinInteract::penUp(double /*time*/,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr from1Knob = _from[0].lock();
 
-    if ( !from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0) ) {
+    if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2456,7 +2456,7 @@ PositionInteract::penDown(double time,
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    if ( !knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1) ) {
+    if ( !knob || !knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2486,7 +2486,7 @@ TransformInteract::penDown(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr translateKnob = _translate.lock();
 
-    if ( !translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0) ) {
+    if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2633,7 +2633,7 @@ CornerPinInteract::penDown(double time,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr from1Knob = _from[0].lock();
 
-    if ( !from1Knob || from1Knob->getIsSecretRecursive() || !from1Knob->isEnabled(0) ) {
+    if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2890,7 +2890,7 @@ PositionInteract::loseFocus(double /*time*/,
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    if ( !knob || knob->getIsSecretRecursive() || !knob->isEnabled(0) || !knob->isEnabled(1) ) {
+    if ( !knob || !knob->shouldDrawOverlayInteract() ) {
         return false;
     }
 
@@ -2912,7 +2912,7 @@ TransformInteract::loseFocus(double /*time*/,
     // see https://github.com/MrKepzie/Natron/issues/932
     KnobDoublePtr translateKnob = _translate.lock();
 
-    if ( !translateKnob || translateKnob->getIsSecretRecursive() || !translateKnob->isEnabled(0) ) {
+    if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
     }
     // reset the modifiers state

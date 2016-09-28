@@ -55,7 +55,8 @@ CLANG_DIAG_ON(deprecated)
 #define kNodePageParamLabel "Node"
 #define kInfoPageParamName "infoPage"
 #define kInfoPageParamLabel "Info"
-
+#define kPyPlugPageParamName "pyPlugPage"
+#define kPyPlugPageParamLabel "PyPlug"
 
 #define kDisableNodeKnobName "disableNode"
 #define kLifeTimeNodeKnobName "nodeLifeTime"
@@ -172,9 +173,14 @@ public:
      **/
     bool isPersistent() const;
 
+    // returns the plug-in currently instanciated in the node
     PluginPtr getPlugin() const;
 
+    // For pyplugs, returns the handle to the pyplug
     PluginPtr getPyPlugPlugin() const;
+
+    // For groups which may be pyplugs, return the handle of the group plugin
+    PluginPtr getOriginalPlugin() const;
 
 
     void setPrecompNode(const PrecompNodePtr& precomp);
@@ -1137,7 +1143,7 @@ private:
 
     void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
 
-    void findOrCreateChannelEnabled(const KnobPagePtr& mainPage);
+    void findOrCreateChannelEnabled();
 
     void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                                 const std::vector<std::string>& inputLabels,

@@ -1094,6 +1094,11 @@ public:
     virtual void restoreOpenGLContext() OVERRIDE = 0;
 
     /**
+     * @brief Returns whether any interact associated to this knob should be drawn or not
+     **/
+    bool shouldDrawOverlayInteract() const;
+
+    /**
      * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
      **/
     virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
@@ -1280,7 +1285,7 @@ public:
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
     virtual bool isTypeCompatible(const KnobIPtr & other) const = 0;
-    KnobPagePtr getTopLevelPage();
+    KnobPagePtr getTopLevelPage() const;
 };
 
 

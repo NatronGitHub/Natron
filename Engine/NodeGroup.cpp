@@ -994,8 +994,12 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
     // When set edited make sure all knobs have the appropriate "declared by plug-in" flag
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
-#pragma message WARN("Show/hide PyPlug page here")
-//        isGrp->getNode()->getKnobByName(kNatronNodeKnobPyPlug)
+        if (isGrp->getNode()->getOriginalPlugin()->getPluginID() == PLUGINID_NATRON_GROUP) {
+            KnobIPtr pyPlugPage = isGrp->getNode()->getKnobByName(kPyPlugPageParamName);
+            if (pyPlugPage) {
+                pyPlugPage->setSecret(!edited);
+            }
+        }
         const KnobsVec& knobs = isGrp->getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
@@ -1541,7 +1545,7 @@ void
 NodeGroup::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization )
 {
 
-    // Groups are always considered edited, except for PyPlugs
+    // Groups are always considered edited initially, except for PyPlugs
     PluginPtr pp = getNode()->getPyPlugPlugin();
     if (!pp) {
         setSubGraphEditedByUser(true);

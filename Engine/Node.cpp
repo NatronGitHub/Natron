@@ -216,6 +216,12 @@ Node::getPyPlugPlugin() const
     return _imp->pyPlugHandle.lock();
 }
 
+PluginPtr
+Node::getOriginalPlugin() const
+{
+    return _imp->plugin.lock();
+}
+
 void
 Node::setPrecompNode(const PrecompNodePtr& precomp)
 {
@@ -1725,7 +1731,6 @@ Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSeri
     isGrp->clearNodes(false);
 
     // Setup initial group state
-    isGrp->setSubGraphEditedByUser(false);
     isGrp->setupInitialSubGraphState(serialization);
 
     // Restore rest of the group with the serialization
@@ -2118,7 +2123,7 @@ Node::restoreNodeToDefaultState()
 
     // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
     // if all parameters are actually to the good value
-    if (nodeCreated){
+    if (nodeCreated) {
 
         // Remove any current user knob
         std::list<KnobPagePtr> userPages;
@@ -2146,17 +2151,16 @@ Node::restoreNodeToDefaultState()
         }
     }
 
+    // initialize the subgraph edited flag for groups
+    NodeGroupPtr isGrp = isEffectNodeGroup();
+    if (isGrp) {
+        isGrp->setSubGraphEditedByUser(false);
+    }
+
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
         // Load pyplug, set default values to knob only if there's no preset serialization
         loadPresetsInternal(pyPlugSerialization, presetSerialization.get() == 0);
-
-        // For PyPlugs, start with the subgraph unedited
-        NodeGroupPtr isGrp = isEffectNodeGroup();
-        if (isGrp) {
-            isGrp->setSubGraphEditedByUser(false);
-        }
-
     }
 
     if (presetSerialization) {
@@ -3523,13 +3527,17 @@ Node::createPyPlugExportGroup()
 void
 Node::createPyPlugPage()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(_imp->effect, tr("PyPlug"), 1, false);
-    page->setName("pyPlugPage");
-    _imp->pyPlugPage = page;
+    PluginPtr pyPlug = _imp->pyPlugHandle.lock();
+    KnobPagePtr page = AppManager::createKnob<KnobPage>(_imp->effect, tr(kPyPlugPageParamLabel), 1, false);
+    page->setName(kPyPlugPageParamName);
+    page->setSecret(true);
 
     {
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginID);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getPluginID());
+        }
         param->setEvaluateOnChange(false);
         param->setHintToolTip(tr(kNatronNodeKnobPyPlugPluginIDHint));
         page->addKnob(param);
@@ -3538,6 +3546,9 @@ Node::createPyPlugPage()
     {
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginLabelLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginLabel);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getPluginLabel());
+        }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginLabelHint));
         page->addKnob(param);
@@ -3546,6 +3557,9 @@ Node::createPyPlugPage()
     {
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginGroupingLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginGrouping);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getGroupingString());
+        }
         param->setEvaluateOnChange(false);
         param->setDefaultValue("PyPlugs");
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
@@ -3557,6 +3571,9 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginDescription);
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
         param->setAddNewLine(false);
         page->addKnob(param);
@@ -3566,6 +3583,9 @@ Node::createPyPlugPage()
         KnobBoolPtr param = AppManager::createKnob<KnobBool>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
         param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
         page->addKnob(param);
         _imp->pyPlugDescIsMarkdownKnob = param;
@@ -3576,6 +3596,10 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setDimensionName(0, "Major");
         param->setDimensionName(1, "Minor");
+        if (pyPlug) {
+            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), 0);
+            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), 1);
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
         _imp->pyPlugVersionKnob = param;
@@ -3585,6 +3609,10 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginShortcut);
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), 0);
+            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), 1);
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
         _imp->pyPlugShortcutKnob = param;
@@ -3593,6 +3621,9 @@ Node::createPyPlugPage()
         KnobFilePtr param = AppManager::createKnob<KnobFile>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
         param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
         page->addKnob(param);
         _imp->pyPlugExtPythonScript = param;
@@ -3601,6 +3632,9 @@ Node::createPyPlugPage()
         KnobFilePtr param = AppManager::createKnob<KnobFile>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIconFileLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginIconFile);
         param->setEvaluateOnChange(false);
+        if (pyPlug) {
+            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
+        }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);
         _imp->pyPlugIconKnob = param;
@@ -3814,7 +3848,7 @@ Node::createLabelKnob(const KnobPagePtr& settingsPage,
 }
 
 void
-Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
+Node::findOrCreateChannelEnabled()
 {
     //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
     static const std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
@@ -3836,10 +3870,14 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
     bool foundAll = foundEnabled[0] && foundEnabled[1] && foundEnabled[2] && foundEnabled[3];
     bool isWriter = _imp->effect->isWriter();
 
+    KnobPagePtr mainPage;
     if (foundAll) {
         for (int i = 0; i < 4; ++i) {
             // Writers already have their checkboxes places correctly
             if (!isWriter) {
+                if (!mainPage) {
+                    mainPage = getOrCreateMainPage();
+                }
                 if (foundEnabled[i]->getParentKnob() == mainPage) {
                     //foundEnabled[i]->setAddNewLine(i == 3);
                     mainPage->removeKnob(foundEnabled[i]);
@@ -3858,6 +3896,10 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         if (foundAll) {
             std::cerr << getScriptName_mt_safe() << ": WARNING: property " << kNatronOfxImageEffectPropChannelSelector << " is different of " << kOfxImageComponentNone << " but uses its own checkboxes" << std::endl;
         } else {
+            if (!mainPage) {
+                mainPage = getOrCreateMainPage();
+            }
+
             //Create the selectors
             for (int i = 0; i < 4; ++i) {
                 foundEnabled[i] =  AppManager::createKnob<KnobBool>(_imp->effect, channelLabels[i], 1, false);
@@ -3873,6 +3915,9 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         }
     }
     if ( !isWriter && foundAll && !getApp()->isBackground() ) {
+        if (!mainPage) {
+            mainPage = getOrCreateMainPage();
+        }
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
@@ -3915,7 +3960,6 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     //Add the "Node" page
     KnobPagePtr settingsPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(_imp->effect, kNodePageParamName, tr(kNodePageParamLabel));
     settingsPage->setDeclaredByPlugin(false);
-    _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
     BackdropPtr isBackdropNode = isEffectBackdrop();
@@ -3973,7 +4017,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     }
 
 
-    findOrCreateChannelEnabled(mainPage);
+    findOrCreateChannelEnabled();
 
     ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes
     std::vector<std::pair<std::string, KnobIPtr > > foundPluginDefaultKnobsToReorder;
@@ -4049,12 +4093,15 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     if (!isEffectNodeGroup()) {
         createInfoPage();
     } else {
-        createPyPlugPage();
+        if (_imp->plugin.lock()->getPluginID() == PLUGINID_NATRON_GROUP) {
+            createPyPlugPage();
+
+            if (hasGUI) {
+                createPyPlugExportGroup();
+            }
+        }
     }
 
-    if (hasGUI) {
-        createPyPlugExportGroup();
-    }
 
     if (_imp->effect->isWriter()
         && !ioContainer) {

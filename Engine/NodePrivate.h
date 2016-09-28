@@ -245,7 +245,6 @@ public:
 
 
     KnobIntWPtr frameIncrKnob;
-    KnobPageWPtr nodeSettingsPage, pyPlugPage;
 
     // PyPlug page
     KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;

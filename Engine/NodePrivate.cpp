@@ -76,7 +76,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , nodeLinks()
 , ioContainer()
 , frameIncrKnob()
-, nodeSettingsPage()
 , nodeLabelKnob()
 , previewEnabledKnob()
 , disableNodeKnob()
