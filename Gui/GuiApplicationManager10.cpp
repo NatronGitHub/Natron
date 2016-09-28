@@ -198,12 +198,14 @@ public:
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
         
 #ifdef Q_OS_MAC
+        // see http://stackoverflow.com/questions/15143369/qt-on-os-x-how-to-detect-clicking-the-app-dock-icon
+
         // Starting from Qt5.4.0 you can handle QEvent, that related to click on dock: QEvent::ApplicationActivate.
         // https://bugreports.qt.io/browse/QTBUG-10899
         // https://doc.qt.io/qt-5/qevent.html
 
-        Class cls = objc_getClass("NSApplication");
-        objc_object *appInst = objc_msgSend((objc_object*)cls, sel_registerName("sharedApplication"));
+        id cls = (id)objc_getClass("NSApplication");
+        id appInst = objc_msgSend(cls, sel_registerName("sharedApplication"));
 
         if(appInst != NULL) {
             objc_object* delegate = objc_msgSend(appInst, sel_registerName("delegate"));

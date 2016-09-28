@@ -825,6 +825,7 @@ EffectInstance::getImage(int inputNb,
         inputImagesThreadLocal = renderArgs.inputImages;
         thisRod = renderArgs.rod;
     }
+#pragma message WARN("FIXME: inputIdentity time is set above but never used... is this normal?")
 
 
     if ( ((!gpuGlContext && !cpuGlContext) || !renderInfo) && returnStorage == eStorageModeGLTex ) {

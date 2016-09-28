@@ -35,11 +35,17 @@
 
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+GCC_DIAG_OFF(maybe-uninitialized)
+#endif
 #include <libmv/autotrack/autotrack.h>
 #include <libmv/autotrack/predict_tracks.h>
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+GCC_DIAG_ON(maybe-uninitialized)
+#endif
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>

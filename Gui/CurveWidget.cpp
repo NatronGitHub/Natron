@@ -655,7 +655,7 @@ CurveWidget::renderText(double x,
     }
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, fonti, flags);
     glCheckError(GL_GPU);
 }
 
