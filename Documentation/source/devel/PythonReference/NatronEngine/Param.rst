@@ -45,6 +45,7 @@ Functions
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 *    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon [,checked=False])
+*	 def :meth:`setLabel<NatronEngine.Param.setLabel>` (label)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
@@ -73,7 +74,14 @@ In this base class, all common functionalities for parameters have been gathered
 	Note that since each child class has a different value type, all the functions to set/get values, and set/get keyframes
 	are specific for each class.
 
-A Param can have several functions to control some properties, namely:
+Note that most of the functions in the API of Params take a *dimension* parameter.
+This is a 0-based index of the dimension on which to operate. For instance the dimension 0
+of a RGB color parameter is the red value. 
+
+Various properties controls the parameter regarding its animation or its layout or other
+things.
+Some properties are listed here, but the list is not complete. Refer to the reference on each
+parameter type for all accessible properties.
 
 	* addNewLine:	When True, the next parameter declared will be on the same line as this parameter
 	
@@ -81,105 +89,42 @@ A Param can have several functions to control some properties, namely:
 	
 	* animationEnabled: For all parameters that have canAnimate=True, this property controls whether this parameter should be able to animate (= have keyframes) or not
 	
-	* evaluateOnChange: This property controls whether a new render should be issues when the value of this parameter changes
+	* evaluateOnChange: This property controls whether a new render should be issued when the value of this parameter changes
 	
 	* help: This is the tooltip visible when hovering the parameter with the mouse
 	
-	* enabled: Should this parameter be editable by the user or not. Generally, disabled parameters have their text in painted in black.
+	* enabled: Should this parameter be editable by the user or not. Generally, disabled parameters have their text drawn in black.
 	
 	* visible: Should this parameter be visible in the user interface or not
 	
-	* persistent: If true then the parameter value will be saved in the project
+	* persistent: If true then the parameter value will be saved in the project otherwise it will be forgotten between 2 runs
 	
-	* dimension: How many dimensions this parameter has. For instance a :doc:`Double3DParam` has 3 dimensions. A :doc:`ParametricParam` has as many dimensions as there are curves.
-
-Note that most of the functions in the API of Params take a *dimension* parameter. This is a 0-based index of the dimension on which to operate.
 				 	
 
-The following table sums up the different properties for all parameters including type-specific properties not listed above.
+Note that  most of the properties are not dynamic and only work for user created parameters.
+If calling any setter/getter associated to these properties, nothing will change right away.
+A call to :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` is needed to refresh the GUI for these parameters.
 
-
-Note that  most of the properties are not dynamic:
-they need to be set before calling :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` which will create the GUI for these parameters.
-
-.. warning::
-
-	A non-dynamic property requires a call to :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` to reflect changes.
-	
 For non *user-parameters* (i.e: parameters that were defined by the underlying OpenFX plug-in), only 
 their **dynamic** properties can be changed since  :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 will only refresh user parameters.
 	
-If a Setter function contains a (*) that means it can only be called for user parameters,
-it has no effect on already declared non-user parameters.
+	
+The following dynamic properties can be set on all parameters (non user and user):
 
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | Name:             | Type:        |   Dynamic:   |         Setter:                | Getter:              | Default:              |
 +===================+==============+==============+================================+======================+=======================+         
-| name              | string       |   no         |         None                   | getScriptName        | ""                    |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| label             | string       |   no         |         None                   | getLabel             | ""                    |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+ 
-| help              | string       |   yes        |         setHelp(*)             | getHelp              | ""                    |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| addNewLine        | bool         |   no         |         setAddNewLine(*)       | getAddNewLine        | True                  |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| persistent        | bool         |   yes        |         setPersistent(*)       | getIsPersistent      | True                  |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| evaluatesOnChange | bool         |   yes        |         setEvaluateOnChange(*) | getEvaluateOnChange  | True                  |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| animates          | bool         |   no         |         setAnimationEnabled(*) | getIsAnimationEnabled| See :ref:`(1)<(1)>`   |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | visible           | bool         |   yes        |         setVisible             | getIsVisible         | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | enabled           | bool         |   yes        |         setEnabled             | getIsEnabled         | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-|                                                                                                                                 |
-| *Properties on IntParam, Int2DParam, Int3DParam, DoubleParam, Double2DParam, Double3DParam, ColorParam only:*                   |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| min               | int/double   |   yes        |         setMinimum(*)          |  getMinimum          |  INT_MIN              |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| max               | int/double   |   yes        |         setMaximum(*)          |  getMaximum          |  INT_MAX              |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| displayMin        | int/double   |   yes        |         setDisplayMinimum(*)   |  getDisplayMinimum   |  INT_MIN              |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| displayMax        | int/double   |   yes        |         setDisplayMaximum(*)   |  getDisplayMaximum   |  INT_MAX              |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-|                                                                                                                                 |
-| *Properties on ChoiceParam only:*                                                                                               |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| options           | list<string> |   yes        |         setOptions/addOption(*)|  getOption           |  empty list           |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-|                                                                                                                                 |
-| *Properties on FileParam, OutputFileParam only:*                                                                                |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| sequenceDialog    | bool         |   yes        |         setSequenceEnabled(*)  |  None                |  False                |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-|                                                                                                                                 |
-| *Properties on StringParam only:*                                                                                               |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| type              | TypeEnum     |   no         |         setType(*)             |  None                |  eStringTypeDefault   |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-|                                                                                                                                 |
-| *Properties on PathParam only:*                                                                                                 |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| multiPathTable    | bool         |   no         |         setAsMultiPathTable(*) |  None                |  False                |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+                                                                                                                            	 
-|                                                                                                                                 |
-| *Properties on GroupParam only:*                                                                                                |
-|                                                                                                                                 |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| isTab             | bool         |   no         |         setAsTab(*)            |  None                |   False               |
-+-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
+
+
    
-   .. _(1):
-   
-    (1): animates is set to True by default only if it is one of the following parameters:
+	.. note::
+	
+	 animates is set to True by default only if it is one of the following parameters:
     IntParam Int2DParam Int3DParam
     DoubleParam Double2DParam Double3DParam
     ColorParam
@@ -544,6 +489,14 @@ label of the parameter. If this parameter is a :ref:`ButtonParam<ButtonParam>` t
 if *checked* is *True* the icon will be used when the button is down. Similarily if
 *checked* is *False* the icon will be used when the button is up.
 
+
+.. method:: NatronEngine.Param.setLabel(label)
+
+
+    :param label: :class:`str<NatronEngine.std::string>`
+
+Set the label of the parameter as visible in the GUI
+See :func:`getLabel()<NatronEngine.Param.getLabel>`
 
 
 

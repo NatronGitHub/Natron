@@ -1464,7 +1464,6 @@
         <enum-type name="TypeEnum"/>
     </object-type>
     <object-type name="FileParam"/>
-    <object-type name="OutputFileParam"/>
     <object-type name="PathParam"/>
     <object-type name="ParametricParam">
         <modify-function signature="getNthControlPoint(int,int,double*,double*,double*,double*)const">

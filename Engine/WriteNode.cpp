@@ -197,7 +197,7 @@ public:
     WriteNode* _publicInterface; // can not be a smart ptr
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     SERIALIZATION_NAMESPACE::KnobSerializationList genericKnobsSerialization;
-    KnobOutputFileWPtr outputFileKnob;
+    KnobFileWPtr outputFileKnob;
 
 
     //Thiese are knobs owned by the ReadNode and not the Reader
@@ -479,10 +479,10 @@ bool
 WriteNodePrivate::checkEncoderCreated(double time,
                                       ViewIdx view)
 {
-    KnobOutputFilePtr fileKnob = outputFileKnob.lock();
+    KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->generateFileNameAtTime( std::floor(time + 0.5), ViewSpec( view.value() ) ).toStdString();
+    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewSpec( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
@@ -505,7 +505,7 @@ getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationLis
     std::string filePattern;
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
-        if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobOutputFile::typeNameStatic()) {
+        if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
             filePattern = (*it)->_values[0]._value.isString;
             break;
         }
@@ -773,14 +773,14 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     KnobIPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        outputFileKnob = toKnobOutputFile(knob);
+        outputFileKnob = toKnobFile(knob);
     }
 } // WriteNodePrivate::createWriteNode
 
 void
 WriteNodePrivate::refreshPluginSelectorKnob()
 {
-    KnobOutputFilePtr fileKnob = outputFileKnob.lock();
+    KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
@@ -1031,7 +1031,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        KnobOutputFilePtr fileKnob = _imp->outputFileKnob.lock();
+        KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
 
@@ -1056,7 +1056,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
 
         pluginIDKnob->setValue(entry);
 
-        KnobOutputFilePtr fileKnob = _imp->outputFileKnob.lock();
+        KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
 
@@ -1071,7 +1071,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         KnobButtonPtr button = _imp->renderButtonKnob.lock();
         button->setAllDimensionsEnabled(!readFile);
         if (readFile) {
-            KnobOutputFilePtr fileKnob = _imp->outputFileKnob.lock();
+            KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
             assert(fileKnob);
             std::string filename = fileKnob->getValue();
             _imp->createReadNodeAndConnectGraph(filename);

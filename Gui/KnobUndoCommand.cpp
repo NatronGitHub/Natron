@@ -256,10 +256,7 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
         copy = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
         copy = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        copy = KnobOutputFile::create(KnobHolderPtr(), std::string(), dimension, false);
-    }
-
+    } 
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     if (!copy) {

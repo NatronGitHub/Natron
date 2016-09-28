@@ -380,7 +380,6 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
     KnobColorPtr isColor = toKnobColor(knob);
     KnobStringPtr isString = toKnobString(knob);
     KnobFilePtr isFile = toKnobFile(knob);
-    KnobOutputFilePtr isOutputFile = toKnobOutputFile(knob);
     KnobPathPtr isPath = toKnobPath(knob);
     KnobButtonPtr isButton = toKnobButton(knob);
     KnobGroupPtr isGroup = toKnobGroup(knob);
@@ -426,8 +425,6 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         return new StringParam(isString);
     } else if (isFile) {
         return new FileParam(isFile);
-    } else if (isOutputFile) {
-        return new OutputFileParam(isOutputFile);
     } else if (isPath) {
         return new PathParam(isPath);
     } else if (isGroup) {
@@ -779,14 +776,14 @@ UserParamHolder::createFileParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
+        knob->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
         return new FileParam(knob);
     } else {
         return 0;
     }
 }
 
-OutputFileParam*
+FileParam*
 UserParamHolder::createOutputFileParam(const QString& name,
                                        const QString& label)
 {
@@ -794,15 +791,15 @@ UserParamHolder::createOutputFileParam(const QString& name,
     if (!holder) {
         return NULL;
     }
-    KnobOutputFilePtr knob = holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
+    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
         KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new OutputFileParam(knob);
+        knob->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+        return new FileParam(knob);
     } else {
         return 0;
     }

@@ -191,7 +191,6 @@ public:
 
     // If true, the node is serialized
     bool isPersistent;
-    bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
     NodesWList outputs, guiOutputs;
@@ -255,7 +254,7 @@ public:
     KnobButtonWPtr pyPlugExportButtonKnob;
 
     KnobGroupWPtr pyPlugExportDialog;
-    KnobOutputFileWPtr pyPlugExportDialogFile;
+    KnobFileWPtr pyPlugExportDialogFile;
     KnobButtonWPtr pyPlugExportDialogOkButton, pyPlugExportDialogCancelButton;
 
     KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;

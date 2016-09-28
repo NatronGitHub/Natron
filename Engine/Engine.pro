@@ -238,7 +238,6 @@ SOURCES += \
     NatronEngine/buttonparam_wrapper.cpp \
     NatronEngine/choiceparam_wrapper.cpp \
     NatronEngine/fileparam_wrapper.cpp \
-    NatronEngine/outputfileparam_wrapper.cpp \
     NatronEngine/stringparam_wrapper.cpp \
     NatronEngine/stringparambase_wrapper.cpp \
     NatronEngine/pathparam_wrapper.cpp \
@@ -495,7 +494,6 @@ HEADERS += \
     NatronEngine/buttonparam_wrapper.h \
     NatronEngine/choiceparam_wrapper.h \
     NatronEngine/fileparam_wrapper.h \
-    NatronEngine/outputfileparam_wrapper.h \
     NatronEngine/stringparam_wrapper.h \
     NatronEngine/stringparambase_wrapper.h \
     NatronEngine/pathparam_wrapper.h \

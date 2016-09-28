@@ -181,7 +181,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     }
 
     KnobIPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-    KnobOutputFilePtr outputFileName = outputFileNameKnob ? toKnobOutputFile(outputFileNameKnob) : KnobOutputFilePtr();
+    KnobFilePtr outputFileName = toKnobFile(outputFileNameKnob);
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
     if ( isViewAware() ) {
@@ -416,7 +416,7 @@ OutputEffectInstance::reportStats(int time,
     KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
-        KnobOutputFilePtr strKnob = toKnobOutputFile(fileKnob);
+        KnobFilePtr strKnob = toKnobFile(fileKnob);
         if  (strKnob) {
             QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);

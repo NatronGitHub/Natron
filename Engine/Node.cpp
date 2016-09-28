@@ -1068,7 +1068,6 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
     std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
     
     assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->knobsInitialized);
     const std::vector< KnobIPtr > & nodeKnobs = getKnobs();
 
     for (std::size_t i = 0; i < params.size(); ++i) {
@@ -1392,7 +1391,6 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
 
 
         bool isFile = serialization->_typeName == KnobFile::typeNameStatic();
-        bool isOutFile = serialization->_typeName == KnobOutputFile::typeNameStatic();
         bool isPath = serialization->_typeName == KnobPath::typeNameStatic();
         bool isString = serialization->_typeName == KnobString::typeNameStatic();
         bool isParametric = serialization->_typeName == KnobParametric::typeNameStatic();
@@ -1404,7 +1402,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         bool isSeparator = serialization->_typeName == KnobSeparator::typeNameStatic();
         bool isButton = serialization->_typeName == KnobButton::typeNameStatic();
 
-        assert(isInt || isDouble || isBool || isChoice || isColor || isString || isFile || isOutFile || isPath || isButton || isSeparator || isParametric);
+        assert(isInt || isDouble || isBool || isChoice || isColor || isString || isFile || isPath || isButton || isSeparator || isParametric);
 
         KnobIPtr knob;
         KnobIPtr found = getKnobByName(serialization->_scriptName);
@@ -1425,8 +1423,6 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 knob = AppManager::createKnob<KnobString>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isFile) {
                 knob = AppManager::createKnob<KnobFile>(_imp->effect, serialization->_label, serialization->_dimension, false);
-            } else if (isOutFile) {
-                knob = AppManager::createKnob<KnobOutputFile>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isPath) {
                 knob = AppManager::createKnob<KnobPath>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isButton) {
@@ -1742,7 +1738,6 @@ Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSeri
 void
 Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
-    assert(_imp->knobsInitialized);
 
     _imp->effect->beginChanges();
     _imp->effect->onKnobsAboutToBeLoaded(serialization);
@@ -3350,25 +3345,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     }
     // The Roto node needs to have a "GPU enabled" knob to control the nodes internally
     if (glSupport != ePluginOpenGLRenderSupportNone || dynamic_cast<RotoPaint*>(_imp->effect.get())) {
-        KnobChoicePtr openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect, tr("GPU Rendering"), 1, false);
-        assert(openglRenderingKnob);
-        openglRenderingKnob->setAnimationEnabled(false);
-        {
-            std::vector<std::string> entries;
-            std::vector<std::string> helps;
-            entries.push_back("Enabled");
-            helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
-            entries.push_back("Disabled");
-            helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
-            entries.push_back("Disabled if background");
-            helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
-            openglRenderingKnob->populateChoices(entries, helps);
-        }
-
-        openglRenderingKnob->setName("enableGPURendering");
-        openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node. Note that if the GPU Rendering parameter in the Project settings is set to disabled then GPU rendering will not be activated regardless of that value.") );
-        settingsPage->addKnob(openglRenderingKnob);
-        _imp->openglRenderingEnabledKnob = openglRenderingKnob;
+        getOrCreateOpenGLEnabledKnob();
     }
 
 
@@ -3493,8 +3470,14 @@ Node::createPyPlugExportGroup()
     }
 
     {
-        KnobOutputFilePtr param = AppManager::createKnob<KnobOutputFile>(_imp->effect, tr(kNatronNodeKnobExportDialogFilePathLabel), 1, false);
+        KnobFilePtr param = AppManager::createKnob<KnobFile>(_imp->effect, tr(kNatronNodeKnobExportDialogFilePathLabel), 1, false);
         param->setName(kNatronNodeKnobExportDialogFilePath);
+        param->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+        {
+            std::vector<std::string> filters;
+            filters.push_back(NATRON_PRESETS_FILE_EXT);
+            param->setDialogFilters(filters);
+        }
         param->setEvaluateOnChange(false);
         param->setIsPersistent(false);
         param->setHintToolTip(tr(kNatronNodeKnobExportDialogFilePathHint));
@@ -3704,11 +3687,11 @@ Node::createPythonPage()
     _imp->afterRender = afterRender;
 } // Node::createPythonPage
 
-void
-Node::createHostMixKnob(const KnobPagePtr& mainPage)
+KnobDoublePtr
+Node::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
 {
-    KnobDoublePtr mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect, tr("Mix"), 1, false);
-
+    KnobDoublePtr mixKnob = AppManager::checkIfKnobExistsWithNameOrCreate<KnobDouble>(_imp->effect, kHostMixingKnobName, tr("Mix"));
+    mixKnob->setDeclaredByPlugin(false);
     mixKnob->setName(kHostMixingKnobName);
     mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
     mixKnob->setMinimum(0.);
@@ -3718,6 +3701,7 @@ Node::createHostMixKnob(const KnobPagePtr& mainPage)
         mainPage->addKnob(mixKnob);
     }
     _imp->mixWithSource = mixKnob;
+    return mixKnob;
 }
 
 void
@@ -4045,7 +4029,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         if (!mainPage) {
             mainPage = getOrCreateMainPage();
         }
-        createHostMixKnob(mainPage);
+        getOrCreateHostMixKnob(mainPage);
     }
 
 
@@ -4132,7 +4116,6 @@ Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
     _imp->effect->beginChanges();
 
     assert( QThread::currentThread() == qApp->thread() );
-    assert(!_imp->knobsInitialized);
 
     InitializeKnobsFlag_RAII __isInitializingKnobsFlag__(getEffectInstance());
 
@@ -4145,8 +4128,6 @@ Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
     }
 
     _imp->effect->endChanges();
-
-    _imp->knobsInitialized = true;
 
     Q_EMIT knobsInitialized();
 } // initializeKnobs
@@ -6307,7 +6288,6 @@ KnobIPtr
 Node::getKnobByName(const std::string & name) const
 {
     ///MT-safe, never changes
-    assert(_imp->knobsInitialized);
     if (!_imp->effect) {
         return KnobIPtr();
     }
@@ -6429,7 +6409,6 @@ Node::makePreviewImage(SequenceTime time,
     if (!isNodeCreated()) {
         return false;
     }
-    assert(_imp->knobsInitialized);
 
 
     {
@@ -6864,7 +6843,6 @@ void
 Node::togglePreview()
 {
     ///MT-safe from Knob
-    assert(_imp->knobsInitialized);
     KnobBoolPtr b = _imp->previewEnabledKnob.lock();
     if (!b) {
         return;
@@ -6876,9 +6854,6 @@ bool
 Node::isPreviewEnabled() const
 {
     ///MT-safe from EffectInstance
-    if (!_imp->knobsInitialized) {
-        qDebug() << "Node::isPreviewEnabled(): knobs not initialized (including previewEnabledKnob)";
-    }
     KnobBoolPtr b = _imp->previewEnabledKnob.lock();
     if (!b) {
         return false;
@@ -7759,7 +7734,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
             }
         }
     } else if ( _imp->effect->isWriter() ) {
-        KnobOutputFilePtr isFile = toKnobOutputFile(fileKnob);
+        KnobFilePtr isFile = toKnobFile(fileKnob);
         if (isFile && _imp->ofxSubLabelKnob.lock()) {
             KnobStringBasePtr isString = _imp->ofxSubLabelKnob.lock();
 
@@ -7777,9 +7752,8 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         /*
            Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
          */
-        KnobOutputFilePtr fileParam = toKnobOutputFile(fileKnob);
-        if (fileParam) {
-            std::string pattern = fileParam->getValue();
+        if (isFile) {
+            std::string pattern = isFile->getValue();
             std::size_t foundViewPattern = pattern.find_first_of("%v");
             if (foundViewPattern == std::string::npos) {
                 foundViewPattern = pattern.find_first_of("%V");
@@ -8685,9 +8659,35 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 } // Node::onEffectKnobValueChanged
 
 KnobChoicePtr
-Node::getOpenGLEnabledKnob() const
+Node::getOrCreateOpenGLEnabledKnob() const
 {
-    return _imp->openglRenderingEnabledKnob.lock();
+    KnobChoicePtr openglRenderingKnob = _imp->openglRenderingEnabledKnob.lock();
+    if (openglRenderingKnob) {
+        return openglRenderingKnob;
+    }
+    openglRenderingKnob = AppManager::checkIfKnobExistsWithNameOrCreate<KnobChoice>(_imp->effect, "enableGPURendering", tr("GPU Rendering"));
+    openglRenderingKnob->setDeclaredByPlugin(false);
+    assert(openglRenderingKnob);
+    openglRenderingKnob->setAnimationEnabled(false);
+    {
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        openglRenderingKnob->populateChoices(entries, helps);
+    }
+
+    openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node. Note that if the GPU Rendering parameter in the Project settings is set to disabled then GPU rendering will not be activated regardless of that value.") );
+
+    KnobPagePtr settingsPageKnob = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(_imp->effect, kNodePageParamName, tr(kNodePageParamLabel));
+    settingsPageKnob->addKnob(openglRenderingKnob);
+    _imp->openglRenderingEnabledKnob = openglRenderingKnob;
+
+    return openglRenderingKnob;
 }
 
 void

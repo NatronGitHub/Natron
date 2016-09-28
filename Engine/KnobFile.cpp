@@ -58,7 +58,8 @@ KnobFile::KnobFile(const KnobHolderPtr& holder,
                    int dimension,
                    bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, description, dimension, declaredByPlugin)
-    , _isInputImage(false)
+    , _dialogType(eKnobFileDialogTypeOpenFile)
+    , _dialogFilters()
 {
 }
 
@@ -101,9 +102,8 @@ std::string
 KnobFile::getFileName(int time,
                       ViewSpec view)
 {
-    if (!_isInputImage) {
-        return getValue(0, view);
-    } else {
+   if (_dialogType == eKnobFileDialogTypeOpenFileSequences ||
+       _dialogType == eKnobFileDialogTypeSaveFileSequences) {
         ///try to interpret the pattern and generate a filename if indexes are found
         std::vector<std::string> views;
         if ( getHolder() && getHolder()->getApp() ) {
@@ -115,54 +115,9 @@ KnobFile::getFileName(int time,
 
         return SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view);
     }
+    return getValue(0, view);
 }
 
-/***********************************KnobOutputFile*****************************************/
-
-KnobOutputFile::KnobOutputFile(const KnobHolderPtr& holder,
-                               const std::string &description,
-                               int dimension,
-                               bool declaredByPlugin)
-    : KnobStringBase(holder, description, dimension, declaredByPlugin)
-    , _isOutputImage(false)
-    , _sequenceDialog(true)
-{
-}
-
-bool
-KnobOutputFile::canAnimate() const
-{
-    return false;
-}
-
-const std::string KnobOutputFile::_typeNameStr(kKnobOutputFileTypeName);
-const std::string &
-KnobOutputFile::typeNameStatic()
-{
-    return _typeNameStr;
-}
-
-const std::string &
-KnobOutputFile::typeName() const
-{
-    return typeNameStatic();
-}
-
-QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time,
-                                       ViewSpec view)
-{
-    std::vector<std::string> views;
-
-    if ( getHolder() && getHolder()->getApp() ) {
-        views = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-    if ( !view.isViewIdx() ) {
-        view = ViewIdx(0);
-    }
-
-    return QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view).c_str() );
-}
 
 /***********************************KnobPath*****************************************/
 

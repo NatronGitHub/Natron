@@ -545,7 +545,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobOutputFilePtr fileKnob = toKnobOutputFile(fileNameKnob);
+    KnobFilePtr fileKnob = toKnobFile(fileNameKnob);
     if (!fileKnob) {
         return;
     }

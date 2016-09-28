@@ -185,7 +185,10 @@ public:
     ColorParam* createColorParam(const QString& name, const QString& label, bool useAlpha);
     StringParam* createStringParam(const QString& name, const QString& label);
     FileParam* createFileParam(const QString& name, const QString& label);
-    OutputFileParam* createOutputFileParam(const QString& name, const QString& label);
+
+    // For bw compat only
+    FileParam* createOutputFileParam(const QString& name, const QString& label);
+    
     PathParam* createPathParam(const QString& name, const QString& label);
     ButtonParam* createButtonParam(const QString& name, const QString& label);
     SeparatorParam* createSeparatorParam(const QString& name, const QString& label);

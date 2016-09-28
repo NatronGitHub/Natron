@@ -63,13 +63,12 @@ public:
         eParamDataTypeLabel, // 10
         eParamDataTypeTextInput, // 11
         eParamDataTypeInputFile, // 12
-        eParamDataTypeOutputFile, // 13
-        eParamDataTypeDirectory, // 14
-        eParamDataTypeGroup, // 15
-        eParamDataTypePage, // 16
-        eParamDataTypeButton, // 17
-        eParamDataTypeSeparator, // 18
-        eParamDataTypeCount // 19
+        eParamDataTypeDirectory, // 13
+        eParamDataTypeGroup, // 14
+        eParamDataTypePage, // 15
+        eParamDataTypeButton, // 16
+        eParamDataTypeSeparator, // 17
+        eParamDataTypeCount // 18
     };
 
     AddKnobDialog(DockablePanel* panel,

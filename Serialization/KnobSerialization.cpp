@@ -330,6 +330,16 @@ KnobSerialization::encode(YAML::Emitter& em) const
             if (fdata->useSequences) {
                 propNames.push_back("Sequences");
             }
+            if (fdata->useExistingFiles) {
+                propNames.push_back("ExistingFiles");
+            }
+            if (!fdata->filters.empty()) {
+                em << YAML::Key << "FileTypes" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+                for (std::size_t i = 0; i < fdata->filters.size(); ++i) {
+                    em << fdata->filters[i];
+                }
+                em << YAML::EndSeq;
+            }
         }
 
         if (typeData) {
@@ -609,6 +619,13 @@ KnobSerialization::decode(const YAML::Node& node)
             ValueExtraData* data = getOrCreateExtraData<ValueExtraData>(_extraData);
             data->dmax = node["DisplayMax"].as<double>();
         }
+        if (node["FileTypes"]) {
+            FileExtraData* data = getOrCreateExtraData<FileExtraData>(_extraData);
+            YAML::Node fileTypesNode = node["FileTypes"];
+            for (std::size_t i = 0; i < fileTypesNode.size(); ++i) {
+                data->filters.push_back(fileTypesNode[i].as<std::string>());
+            }
+        }
     } // isUserKnob
 
     if (node["InViewerLayout"]) {
@@ -673,6 +690,9 @@ KnobSerialization::decode(const YAML::Node& node)
             } else if (prop == "Sequences") {
                 FileExtraData* data = getOrCreateExtraData<FileExtraData>(_extraData);
                 data->useSequences = node["Sequences"].as<bool>();
+            } else if (prop == "ExistingFiles") {
+                FileExtraData* data = getOrCreateExtraData<FileExtraData>(_extraData);
+                data->useExistingFiles = node["ExistingFiles"].as<bool>();
             } else if (prop == "UseOverlay") {
                 TypeExtraData* data = getOrCreateExtraData<TypeExtraData>(_extraData);
                 data->useHostOverlayHandle = true;

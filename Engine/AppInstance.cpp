@@ -557,7 +557,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if ( !it->filename.isEmpty() ) {
                 KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
-                    KnobOutputFilePtr outFile = toKnobOutputFile(fileKnob);
+                    KnobFilePtr outFile = toKnobFile(fileKnob);
                     if (outFile) {
                         outFile->setValue( it->filename.toStdString() );
                     }

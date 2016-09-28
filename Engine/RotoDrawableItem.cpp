@@ -127,9 +127,9 @@ static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode
     node->attachRotoItem(item);
 
     // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
-    KnobChoicePtr glRenderKnob = node->getOpenGLEnabledKnob();
+    KnobChoicePtr glRenderKnob = node->getOrCreateOpenGLEnabledKnob();
     if (glRenderKnob) {
-        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOpenGLEnabledKnob();
+        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOrCreateOpenGLEnabledKnob();
         assert(rotoPaintGLRenderKnob);
         glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
     }
@@ -338,7 +338,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 #endif
 
         // Link mix
-        KnobIPtr rotoPaintMix = rotoPaintEffect->getKnobByName(kHostMixingKnobName);
+        KnobIPtr rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
         KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
         mergeMix->slaveTo(0, rotoPaintMix, 0);
     }

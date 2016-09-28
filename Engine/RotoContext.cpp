@@ -2059,9 +2059,9 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
 
     {
         // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
-        KnobChoicePtr glRenderKnob = mergeNode->getOpenGLEnabledKnob();
+        KnobChoicePtr glRenderKnob = mergeNode->getOrCreateOpenGLEnabledKnob();
         if (glRenderKnob) {
-            KnobChoicePtr rotoPaintGLRenderKnob = node->getOpenGLEnabledKnob();
+            KnobChoicePtr rotoPaintGLRenderKnob = node->getOrCreateOpenGLEnabledKnob();
             assert(rotoPaintGLRenderKnob);
             glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
         }
@@ -2083,7 +2083,7 @@ RotoContext::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInpu
         }
 
         // Link mix
-        KnobIPtr rotoPaintMix = rotoPaintEffect->getKnobByName(kHostMixingKnobName);
+        KnobIPtr rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
         KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
         mergeMix->slaveTo(0, rotoPaintMix, 0);
 

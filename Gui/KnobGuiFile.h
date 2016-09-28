@@ -124,68 +124,6 @@ private:
 };
 
 
-//================================
-class KnobGuiOutputFile
-    : public KnobGui
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-public:
-
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
-    {
-        return new KnobGuiOutputFile(knob, container);
-    }
-
-    KnobGuiOutputFile(KnobIPtr knob,
-                      KnobGuiContainerI *container);
-
-    virtual ~KnobGuiOutputFile() OVERRIDE;
-
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
-
-public Q_SLOTS:
-
-    void onTextEdited();
-
-    void onButtonClicked();
-
-    void open_file(bool);
-
-    void onMakeAbsoluteTriggered();
-
-    void onMakeRelativeTriggered();
-
-    void onSimplifyTriggered();
-
-private:
-
-    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
-    virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
-
-    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
-    virtual void updateToolTip() OVERRIDE FINAL;
-    void updateLastOpened(const QString &str);
-
-private:
-    LineEdit *_lineEdit;
-    Button *_openFileButton;
-    QString _lastOpened;
-    KnobOutputFileWPtr _knob;
-};
-
 
 //================================
 

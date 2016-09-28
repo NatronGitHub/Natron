@@ -111,6 +111,8 @@ struct AddKnobDialogPrivate
     QCheckBox* multiLine;
     Label* richTextLabel;
     QCheckBox* richText;
+    Label* fileDialogSelectExistingLabel;
+    QCheckBox* fileDialogSelectExisting;
     Label* sequenceDialogLabel;
     QCheckBox* sequenceDialog;
     Label* multiPathLabel;
@@ -171,6 +173,8 @@ struct AddKnobDialogPrivate
         , multiLine(0)
         , richTextLabel(0)
         , richText(0)
+        , fileDialogSelectExistingLabel(0)
+        , fileDialogSelectExisting(0)
         , sequenceDialogLabel(0)
         , sequenceDialog(0)
         , multiPathLabel(0)
@@ -208,7 +212,7 @@ struct AddKnobDialogPrivate
 
     void setVisibleRichText(bool visible);
 
-    void setVisibleSequence(bool visible);
+    void setVisibleFileStuff(bool visible);
 
     void setVisibleMultiPath(bool visible);
 
@@ -272,10 +276,7 @@ AddKnobDialog::dataTypeString(ParamDataTypeEnum t)
         return "Text Input";
     case eParamDataTypeInputFile:
 
-        return "Input File";
-    case eParamDataTypeOutputFile:
-
-        return "Output File";
+        return "File";
     case eParamDataTypeDirectory:
 
         return "Directory";
@@ -330,7 +331,6 @@ AddKnobDialog::dataTypeDim(ParamDataTypeEnum t)
     case eParamDataTypeLabel:
     case eParamDataTypeTextInput:
     case eParamDataTypeInputFile:
-    case eParamDataTypeOutputFile:
     case eParamDataTypeDirectory:
     case eParamDataTypeGroup:
     case eParamDataTypePage:
@@ -354,7 +354,6 @@ AddKnobDialog::getChoiceIndexFromKnobType(const KnobIPtr& knob)
     KnobBoolPtr isBool = toKnobBool(knob);
     KnobStringPtr isStr = toKnobString(knob);
     KnobFilePtr isFile = toKnobFile(knob);
-    KnobOutputFilePtr isOutputFile = toKnobOutputFile(knob);
     KnobPathPtr isPath = toKnobPath(knob);
     KnobGroupPtr isGrp = toKnobGroup(knob);
     KnobPagePtr isPage = toKnobPage(knob);
@@ -395,8 +394,6 @@ AddKnobDialog::getChoiceIndexFromKnobType(const KnobIPtr& knob)
         }
     } else if (isFile) {
         return eParamDataTypeInputFile;
-    } else if (isOutputFile) {
-        return eParamDataTypeOutputFile;
     } else if (isPath) {
         return eParamDataTypeDirectory;
     } else if (isGrp) {
@@ -700,17 +697,26 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->sequenceDialog = new QCheckBox(optContainer);
         _imp->sequenceDialog->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->sequenceDialog);
+
+
+
+        _imp->fileDialogSelectExistingLabel = new Label(tr("Select only existing files:"), optContainer);
+        optLayout->addWidget(_imp->fileDialogSelectExistingLabel);
+        _imp->fileDialogSelectExisting = new QCheckBox(optContainer);
+        _imp->fileDialogSelectExisting->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the file dialog will only open file(s) that already exists"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        optLayout->addWidget(_imp->fileDialogSelectExisting);
+
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
 
         KnobFilePtr isFile = toKnobFile(knob);
-        KnobOutputFilePtr isOutFile = toKnobOutputFile(knob);
         if (isFile) {
-            if ( isFile->isInputImageFile() ) {
+            if ( isFile->getDialogType() == KnobFile::eKnobFileDialogTypeSaveFileSequences ||
+                isFile->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFileSequences) {
                 _imp->sequenceDialog->setChecked(true);
             }
-        } else if (isOutFile) {
-            if ( isOutFile->isOutputImageFile() ) {
-                _imp->sequenceDialog->setChecked(true);
+            if ( isFile->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFile ||
+                isFile->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFileSequences) {
+                _imp->fileDialogSelectExisting->setChecked(true);
             }
         }
     }
@@ -1104,7 +1110,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1126,7 +1132,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeDouble, d);
@@ -1144,7 +1150,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
@@ -1161,7 +1167,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeBool, d);
@@ -1178,7 +1184,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
@@ -1195,13 +1201,12 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(true);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
         break;
     case eParamDataTypeInputFile:     // input file
-    case eParamDataTypeOutputFile:     // output file
         _imp->setVisibleToolTipEdit(true);
         _imp->setVisibleAnimates(false);
         _imp->setVisibleEvaluate(true);
@@ -1213,7 +1218,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(true);
+        _imp->setVisibleFileStuff(true);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
@@ -1230,7 +1235,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(true);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
@@ -1247,7 +1252,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(true);
         _imp->setVisibleParent(false);
         _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1264,7 +1269,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(false);
         _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1281,7 +1286,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1298,7 +1303,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1319,7 +1324,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
+        _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
         // _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
@@ -1490,19 +1495,23 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     }
     case AddKnobDialog::eParamDataTypeInputFile: {
         KnobFilePtr k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
-        if ( sequenceDialog->isChecked() ) {
-            k->setAsInputImage();
+
+        KnobFile::KnobFileDialogTypeEnum dialogType;
+        if ( fileDialogSelectExisting->isChecked()) {
+            if ( sequenceDialog->isChecked() ) {
+                dialogType = KnobFile::eKnobFileDialogTypeOpenFileSequences;
+            } else {
+                dialogType = KnobFile::eKnobFileDialogTypeOpenFile;
+            }
+        } else {
+            if ( sequenceDialog->isChecked() ) {
+                dialogType = KnobFile::eKnobFileDialogTypeSaveFileSequences;
+            } else {
+                dialogType = KnobFile::eKnobFileDialogTypeSaveFile;
+            }
         }
-        std::string defValue = defaultStr->text().toStdString();
-        k->setDefaultValue(defValue);
-        knob = k;
-        break;
-    }
-    case AddKnobDialog::eParamDataTypeOutputFile: {
-        KnobOutputFilePtr k = AppManager::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
-        if ( sequenceDialog->isChecked() ) {
-            k->setAsOutputImageFile();
-        }
+
+
         std::string defValue = defaultStr->text().toStdString();
         k->setDefaultValue(defValue);
         knob = k;
@@ -2085,12 +2094,15 @@ AddKnobDialogPrivate::setVisibleRichText(bool visible)
 }
 
 void
-AddKnobDialogPrivate::setVisibleSequence(bool visible)
+AddKnobDialogPrivate::setVisibleFileStuff(bool visible)
 {
+    fileDialogSelectExisting->setVisible(visible);
+    fileDialogSelectExistingLabel->setVisible(visible);
     sequenceDialogLabel->setVisible(visible);
     sequenceDialog->setVisible(visible);
     if (!knob) {
         sequenceDialog->setChecked(false);
+        fileDialogSelectExisting->setChecked(false);
     }
 }
 

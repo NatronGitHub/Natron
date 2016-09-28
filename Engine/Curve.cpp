@@ -241,10 +241,6 @@ Curve::Curve(const KnobIPtr& owner,
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;
     }
-    if ( !found && toKnobOutputFile(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeString;
-        found = true;
-    }
     if ( !found && toKnobPath(owner) ) {
         _imp->type = CurvePrivate::eCurveTypeString;
         found = true;

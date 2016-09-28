@@ -42,7 +42,6 @@ without importing anything.
 	ItemBase
 	Layer
 	Natron
-	OutputFileParam
 	PageParam
 	Param
 	ParametricParam

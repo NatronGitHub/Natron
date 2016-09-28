@@ -82,7 +82,6 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobDouble>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobBool>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobButton>() );
-    _loadedKnobs.insert( knobFactoryEntry<KnobOutputFile>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobChoice>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobSeparator>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobGroup>() );

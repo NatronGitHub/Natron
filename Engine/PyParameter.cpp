@@ -75,6 +75,15 @@ Param::getLabel() const
     return QString::fromUtf8( getInternalKnob()->getLabel().c_str() );
 }
 
+void
+Param::setLabel(const QString& label)
+{
+    if ( !getInternalKnob()->isUserKnob() ) {
+        return;
+    }
+    getInternalKnob()->setLabel(label);
+}
+
 QString
 Param::getTypeName() const
 {
@@ -1706,6 +1715,7 @@ FileParam::~FileParam()
 {
 }
 
+// Deprecated
 void
 FileParam::setSequenceEnabled(bool enabled)
 {
@@ -1715,8 +1725,42 @@ FileParam::setSequenceEnabled(bool enabled)
         return;
     }
     if (enabled) {
-        k->setAsInputImage();
+        if (k->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFile) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
+        } else if (k->getDialogType() == KnobFile::eKnobFileDialogTypeSaveFile) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
+        }
+    } else {
+        if (k->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFileSequences) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+        } else if (k->getDialogType() == KnobFile::eKnobFileDialogTypeSaveFileSequences) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+        }
     }
+}
+
+void
+FileParam::setDialogType(bool fileExisting, bool useSequences, const std::vector<std::string>& filters)
+{
+    KnobFilePtr k = _sKnob.lock();
+
+    if ( !k->isUserKnob() ) {
+        return;
+    }
+    if (fileExisting) {
+        if (useSequences) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
+        } else {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+        }
+    } else {
+        if (useSequences) {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeSaveFileSequences);
+        } else {
+            k->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+        }
+    }
+    k->setDialogFilters(filters);
 }
 
 void
@@ -1737,39 +1781,6 @@ FileParam::reloadFile()
     if (k) {
         k->reloadFile();
     }
-}
-
-/////////////////////OutputFileParam
-
-OutputFileParam::OutputFileParam(const KnobOutputFilePtr& knob)
-    : StringParamBase( toKnobStringBase(knob) )
-    , _sKnob(knob)
-{
-}
-
-OutputFileParam::~OutputFileParam()
-{
-}
-
-void
-OutputFileParam::setSequenceEnabled(bool enabled)
-{
-    KnobOutputFilePtr knob = _sKnob.lock();
-
-    if ( !knob->isUserKnob() ) {
-        return;
-    }
-    if (enabled) {
-        knob->setAsOutputImageFile();
-    } else {
-        knob->turnOffSequences();
-    }
-}
-
-void
-OutputFileParam::openFile()
-{
-    _sKnob.lock()->open_file();
 }
 
 ////////////////////PathParam

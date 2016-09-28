@@ -62,6 +62,9 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/TrackerContext.h"
 #include <SequenceParsing.h>
 
+#define kKnobOutputFileTypeName "OutputFile"
+
+
 #define BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE 2
 #define BEZIER_SERIALIZATION_REMOVES_IS_ROTO_STROKE 3
 #define BEZIER_SERIALIZATION_INTRODUCES_OPEN_BEZIER 4
@@ -589,7 +592,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
         bool isDouble = _typeName == NATRON_NAMESPACE::KnobDouble::typeNameStatic();
         bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
         bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
-        bool isOutputFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+        bool isOutputFile = _typeName == kKnobOutputFileTypeName;
         bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
         bool isLayers = _typeName == NATRON_NAMESPACE::KnobLayers::typeNameStatic();
 
@@ -695,7 +698,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
         bool isInt = _typeName == NATRON_NAMESPACE::KnobInt::typeNameStatic();
         bool isBool = _typeName == NATRON_NAMESPACE::KnobBool::typeNameStatic();
         bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
-        bool isOutFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+        bool isOutFile = _typeName == kKnobOutputFileTypeName;
         bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
 
         bool isDoubleVal = isDouble || isColor;
@@ -749,7 +752,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
     }
 
     bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
-    bool isOutFile = _typeName == NATRON_NAMESPACE::KnobOutputFile::typeNameStatic();
+    bool isOutFile = _typeName == kKnobOutputFileTypeName;
     bool isPath = _typeName == NATRON_NAMESPACE::KnobPath::typeNameStatic();
     bool isString = _typeName == NATRON_NAMESPACE::KnobString::typeNameStatic();
     bool isParametric = _typeName == NATRON_NAMESPACE::KnobParametric::typeNameStatic();

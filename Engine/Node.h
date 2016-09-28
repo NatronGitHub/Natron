@@ -707,7 +707,7 @@ public:
 
     void onOpenGLEnabledKnobChangedOnProject(bool activated);
 
-    KnobChoicePtr getOpenGLEnabledKnob() const;
+    KnobChoicePtr getOrCreateOpenGLEnabledKnob() const;
 
 private:
 
@@ -1113,6 +1113,10 @@ public:
 
     void findPluginFormatKnobs();
 
+    KnobDoublePtr getOrCreateHostMixKnob(const KnobPagePtr& mainPage);
+    
+    KnobPagePtr getOrCreateMainPage();
+
 private:
 
     void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
@@ -1131,15 +1135,12 @@ private:
 
     void createPythonPage();
 
-    void createHostMixKnob(const KnobPagePtr& mainPage);
-
     void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
                              const KnobPagePtr& mainPage,
                              bool addNewLineOnLastMask,
                              KnobIPtr* lastKnobCreated);
 
-    KnobPagePtr getOrCreateMainPage();
 
     void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
 

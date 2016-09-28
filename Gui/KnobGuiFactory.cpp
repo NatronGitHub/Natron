@@ -97,7 +97,6 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobDouble, KnobGuiDouble>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobButton, KnobGuiButton>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<KnobOutputFile, KnobGuiOutputFile>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobChoice, KnobGuiChoice>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobSeparator, KnobGuiSeparator>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobGroup, KnobGuiGroup>() );

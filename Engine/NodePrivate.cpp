@@ -41,7 +41,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , precomp()
 , app(app_)
 , isPersistent(true)
-, knobsInitialized(false)
 , inputsInitialized(false)
 , outputsMutex()
 , outputs()

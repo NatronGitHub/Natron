@@ -1101,10 +1101,6 @@ public:
         return isReader();
     }
 
-    /**
-     * @brief Called on generator effects upon creation if they have an image input file field.
-     **/
-    void openImageFileKnob();
 
 
     /**

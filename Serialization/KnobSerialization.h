@@ -45,7 +45,6 @@
 #define kKnobParametricTypeName "Parametric"
 #define kKnobLayersTypeName "Layers"
 #define kKnobFileTypeName "InputFile"
-#define kKnobOutputFileTypeName "OutputFile"
 #define kKnobPathTypeName "Path"
 
 #define kKnobInViewerContextDefaultItemSpacing 5
@@ -146,10 +145,12 @@ class FileExtraData
 {
 public:
     FileExtraData()
-        : TypeExtraData(), useSequences(false) {}
+        : TypeExtraData(), useSequences(false), useExistingFiles(false), filters() {}
 
     // User knob only
     bool useSequences;
+    bool useExistingFiles;
+    std::vector<std::string> filters;
 };
 
 class PathExtraData

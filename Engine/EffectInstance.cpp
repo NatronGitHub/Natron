@@ -91,8 +91,6 @@ NATRON_NAMESPACE_ENTER;
 
 
 class KnobFile;
-class KnobOutputFile;
-
 
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
@@ -3120,35 +3118,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     }
 } // allocateImagePlaneAndSetInThreadLocalStorage
 
-void
-EffectInstance::openImageFileKnob()
-{
-    const std::vector< KnobIPtr > & knobs = getKnobs();
 
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
-            KnobFilePtr fk = toKnobFile(knobs[i]);
-            assert(fk);
-            if ( fk->isInputImageFile() ) {
-                std::string file = fk->getValue();
-                if ( file.empty() ) {
-                    fk->open_file();
-                }
-                break;
-            }
-        } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = toKnobOutputFile(knobs[i]);
-            assert(fk);
-            if ( fk->isOutputImageFile() ) {
-                std::string file = fk->getValue();
-                if ( file.empty() ) {
-                    fk->open_file();
-                }
-                break;
-            }
-        }
-    }
-}
 
 void
 EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, int /*dimension*/, double /*time*/, ViewSpec /*view*/)
@@ -3341,14 +3311,12 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = toKnobOutputFile(knobs[i]);
-            assert(fk);
-            if ( fk->isOutputImageFile() ) {
-                fk->setValue(pattern);
-                break;
-            }
+        KnobFilePtr fk = toKnobFile(knobs[i]);
+        if ( fk && fk->getName() == kOfxImageEffectFileParamName ) {
+            fk->setValue(pattern);
+            break;
         }
+
     }
 }
 

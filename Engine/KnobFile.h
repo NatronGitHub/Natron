@@ -62,6 +62,15 @@ private: // derives from KnobI
              bool declaredByPlugin);
 
 public:
+
+    enum KnobFileDialogTypeEnum
+    {
+        eKnobFileDialogTypeOpenFile,
+        eKnobFileDialogTypeOpenFileSequences,
+        eKnobFileDialogTypeSaveFile,
+        eKnobFileDialogTypeSaveFileSequences
+    };
+
     static KnobHelperPtr create(const KnobHolderPtr& holder,
                                 const std::string &label,
                                 int dimension,
@@ -87,14 +96,23 @@ public:
 
     static const std::string & typeNameStatic();
 
-    void setAsInputImage()
-    {
-        _isInputImage = true;
+    void setDialogType(KnobFileDialogTypeEnum type) {
+        _dialogType = type;
     }
 
-    bool isInputImageFile() const
+    KnobFileDialogTypeEnum getDialogType() const
     {
-        return _isInputImage;
+        return _dialogType;
+    }
+
+    void setDialogFilters(const std::vector<std::string>& filters)
+    {
+        _dialogFilters = filters;
+    }
+
+    const std::vector<std::string>& getDialogFilters() const
+    {
+        return _dialogFilters;
     }
 
     void open_file()
@@ -124,93 +142,8 @@ private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     static const std::string _typeNameStr;
-    int _isInputImage;
-};
-
-/******************************KnobOutputFile**************************************/
-
-class KnobOutputFile
-    :  public QObject, public KnobStringBase
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-private: // derives from KnobI
-    // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-
-    KnobOutputFile(const KnobHolderPtr& holder,
-                   const std::string &description,
-                   int dimension,
-                   bool declaredByPlugin);
-
-public:
-    static KnobHelperPtr create(const KnobHolderPtr& holder,
-                                const std::string &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
-    {
-        return KnobHelperPtr(new KnobOutputFile(holder, label, dimension, declaredByPlugin));
-    }
-
-    static KnobOutputFilePtr create(const KnobHolderPtr& holder,
-                                const QString &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
-    {
-        return KnobOutputFilePtr(new KnobOutputFile(holder, label.toStdString(), dimension, declaredByPlugin));
-    }
-
-    static const std::string & typeNameStatic();
-
-    virtual bool isAnimatedByDefault() const OVERRIDE FINAL
-    {
-        return false;
-    }
-
-    void setAsOutputImageFile()
-    {
-        _isOutputImage = true;
-    }
-
-    bool isOutputImageFile() const
-    {
-        return _isOutputImage;
-    }
-
-    void open_file()
-    {
-        Q_EMIT openFile(_sequenceDialog && _isOutputImage);
-    }
-
-    void turnOffSequences()
-    {
-        _sequenceDialog = false;
-    }
-
-    bool isSequencesDialogEnabled() const
-    {
-        return _sequenceDialog;
-    }
-
-    QString generateFileNameAtTime(SequenceTime time, ViewSpec view);
-
-Q_SIGNALS:
-
-    void openFile(bool);
-
-private:
-
-    virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return false; }
-
-    virtual bool canAnimate() const OVERRIDE FINAL;
-    virtual const std::string & typeName() const OVERRIDE FINAL;
-
-private:
-    static const std::string _typeNameStr;
-    bool _isOutputImage;
-    bool _sequenceDialog;
+    KnobFileDialogTypeEnum _dialogType;
+    std::vector<std::string> _dialogFilters;
 };
 
 
@@ -312,11 +245,6 @@ toKnobFile(const KnobIPtr& knob)
     return boost::dynamic_pointer_cast<KnobFile>(knob);
 }
 
-inline KnobOutputFilePtr
-toKnobOutputFile(const KnobIPtr& knob)
-{
-    return boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-}
 
 inline KnobPathPtr
 toKnobPath(const KnobIPtr& knob)

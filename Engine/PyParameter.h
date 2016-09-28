@@ -79,6 +79,7 @@ public:
      * @brief Returns the label of the Param as shown on the GUI.
      **/
     QString getLabel() const;
+    void setLabel(const QString& label);
 
     /**
      * @brief Set the icon file-path that should be used for the button.
@@ -1038,10 +1039,16 @@ public:
     virtual ~FileParam();
 
     /**
-     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
+     * @brief DEPRECATED, use setDialogType instead.
+     * If enabled is true then the dialog associated to this parameter will be able to display sequences.
      * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
      **/
     void setSequenceEnabled(bool enabled);
+
+    /**
+     * @brief Set the type of dialog to use
+     **/
+    void setDialogType(bool fileExisting, bool useSequences, const std::vector<std::string>& filters);
 
     /**
      * @brief Forces the GUI to pop-up the dialog
@@ -1052,30 +1059,6 @@ public:
      * @brief Force a refresh of the file
      **/
     void reloadFile();
-};
-
-class OutputFileParam
-    : public StringParamBase
-{
-    KnobOutputFileWPtr _sKnob;
-
-public:
-
-
-    OutputFileParam(const KnobOutputFilePtr& knob);
-
-    virtual ~OutputFileParam();
-
-    /**
-     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
-     * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
-     **/
-    void setSequenceEnabled(bool enabled);
-
-    /**
-     * @brief Forces the GUI to pop-up the dialog
-     **/
-    void openFile();
 };
 
 class PathParam

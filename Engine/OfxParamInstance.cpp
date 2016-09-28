@@ -3377,14 +3377,12 @@ OfxPageInstance::getKnob() const
 struct OfxStringInstancePrivate
 {
     KnobFileWPtr fileKnob;
-    KnobOutputFileWPtr outputFileKnob;
     KnobStringWPtr stringKnob;
     KnobPathWPtr pathKnob;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxStringInstancePrivate()
         : fileKnob()
-        , outputFileKnob()
         , stringKnob()
         , pathKnob()
         , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
@@ -3408,27 +3406,24 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
                             (getScriptName() == kOfxImageEffectFileParamName ||
                              getScriptName() == kOfxImageEffectProxyParamName) );
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
-        int filePathSupportsImageSequences = getCanAnimate();
 
+        KnobFilePtr knob = checkIfKnobExistsWithNameOrCreate<KnobFile>(descriptor.getName(), this, 1);
+        _imp->fileKnob = knob;
 
         if (!fileIsOutput) {
-            _imp->fileKnob = checkIfKnobExistsWithNameOrCreate<KnobFile>(descriptor.getName(), this, 1);
-            if (fileIsImage) {
-                _imp->fileKnob.lock()->setAsInputImage();
-            }
-            if (!filePathSupportsImageSequences) {
-                _imp->fileKnob.lock()->setAnimationEnabled(false);
-            }
+            knob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeOpenFileSequences
+                                : KnobFile::eKnobFileDialogTypeOpenFile);
+
         } else {
-            _imp->outputFileKnob = checkIfKnobExistsWithNameOrCreate<KnobOutputFile>(descriptor.getName(), this, 1);
-            if (fileIsImage) {
-                _imp->outputFileKnob.lock()->setAsOutputImageFile();
-            } else {
-                _imp->outputFileKnob.lock()->turnOffSequences();
-            }
-            if (!filePathSupportsImageSequences) {
-                _imp->outputFileKnob.lock()->setAnimationEnabled(false);
-            }
+            knob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeSaveFileSequences
+                                : KnobFile::eKnobFileDialogTypeSaveFile);
+        }
+        if (!fileIsImage) {
+            knob->setAnimationEnabled(false);
+        } else {
+            std::vector<std::string> filters;
+            appPTR->getSupportedReaderFileFormats(&filters);
+            knob->setDialogFilters(filters);
         }
     } else if (mode == kOfxParamStringIsDirectoryPath) {
         _imp->pathKnob = checkIfKnobExistsWithNameOrCreate<KnobPath>(descriptor.getName(), this, 1);
@@ -3450,12 +3445,6 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
         if ( _imp->fileKnob.lock() ) {
             projectEnvVar_setProxy(defaultVal);
             KnobFilePtr k = _imp->fileKnob.lock();
-            k->blockValueChanges();
-            k->setDefaultValue(defaultVal, 0);
-            k->unblockValueChanges();
-        } else if ( _imp->outputFileKnob.lock() ) {
-            projectEnvVar_setProxy(defaultVal);
-            KnobOutputFilePtr k = _imp->outputFileKnob.lock();
             k->blockValueChanges();
             k->setDefaultValue(defaultVal, 0);
             k->unblockValueChanges();
@@ -3510,15 +3499,11 @@ OfxStatus
 OfxStringInstance::get(std::string &str)
 {
     KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobOutputFilePtr outputFileKnob = _imp->outputFileKnob.lock();
     KnobStringPtr strknob = _imp->stringKnob.lock();
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
     if (fileKnob) {
         str = fileKnob->getFileName( fileKnob->getCurrentTime(), fileKnob->getCurrentView() );
-        projectEnvVar_getProxy(str);
-    } else if (outputFileKnob) {
-        str = outputFileKnob->generateFileNameAtTime( outputFileKnob->getCurrentTime(), outputFileKnob->getCurrentView() ).toStdString();
         projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValue();
@@ -3535,15 +3520,11 @@ OfxStringInstance::get(OfxTime time,
                        std::string & str)
 {
     KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobOutputFilePtr outputFileKnob = _imp->outputFileKnob.lock();
     KnobStringPtr strknob = _imp->stringKnob.lock();
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
     if (fileKnob) {
         str = fileKnob->getFileName( std::floor(time + 0.5), fileKnob->getCurrentView() );
-        projectEnvVar_getProxy(str);
-    } else if (outputFileKnob) {
-        str = outputFileKnob->generateFileNameAtTime( std::floor(time + 0.5), outputFileKnob->getCurrentView() ).toStdString();
         projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValueAtTime( std::floor(time + 0.5) );
@@ -3560,7 +3541,6 @@ OfxStatus
 OfxStringInstance::set(const char* str)
 {
     KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobOutputFilePtr outputFileKnob = _imp->outputFileKnob.lock();
     KnobStringPtr strknob = _imp->stringKnob.lock();
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
@@ -3568,11 +3548,6 @@ OfxStringInstance::set(const char* str)
         std::string s(str);
         projectEnvVar_setProxy(s);
         fileKnob->setValueFromPlugin(s, ViewSpec::current(), 0);
-    }
-    if (outputFileKnob) {
-        std::string s(str);
-        projectEnvVar_setProxy(s);
-        outputFileKnob->setValueFromPlugin(s, ViewSpec::current(), 0);
     }
     if (strknob) {
         strknob->setValueFromPlugin(str, ViewSpec::current(), 0);
@@ -3593,7 +3568,6 @@ OfxStringInstance::set(OfxTime time,
     assert( KnobString::canAnimateStatic() );
 
     KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobOutputFilePtr outputFileKnob = _imp->outputFileKnob.lock();
     KnobStringPtr strknob = _imp->stringKnob.lock();
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
@@ -3602,11 +3576,6 @@ OfxStringInstance::set(OfxTime time,
         std::string s(str);
         projectEnvVar_setProxy(s);
         fileKnob->setValueAtTimeFromPlugin(time, s, ViewSpec::current(), 0);
-    }
-    if (outputFileKnob) {
-        std::string s(str);
-        projectEnvVar_setProxy(s);
-        outputFileKnob->setValueAtTimeFromPlugin(time, s, ViewSpec::current(), 0);
     }
     if (strknob) {
         strknob->setValueAtTimeFromPlugin(time, str, ViewSpec::current(), 0);
@@ -3654,9 +3623,6 @@ OfxStringInstance::getKnob() const
     if ( _imp->fileKnob.lock() ) {
         return _imp->fileKnob.lock();
     }
-    if ( _imp->outputFileKnob.lock() ) {
-        return _imp->outputFileKnob.lock();
-    }
     if ( _imp->stringKnob.lock() ) {
         return _imp->stringKnob.lock();
     }
@@ -3675,9 +3641,6 @@ OfxStringInstance::setEnabled()
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setAllDimensionsEnabled( getEnabled() );
     }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setAllDimensionsEnabled( getEnabled() );
-    }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setAllDimensionsEnabled( getEnabled() );
     }
@@ -3692,9 +3655,6 @@ OfxStringInstance::setHint()
     DYNAMIC_PROPERTY_CHECK();
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setHintToolTip(getHint());
-    }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setHintToolTip(getHint());
     }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setHintToolTip(getHint());
@@ -3712,9 +3672,6 @@ OfxStringInstance::setDefault()
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setDefaultValueWithoutApplying(v, 0);
     }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setDefaultValueWithoutApplying(v, 0);
-    }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setDefaultValueWithoutApplying(v, 0);
     }
@@ -3729,9 +3686,6 @@ OfxStringInstance::setLabel()
     DYNAMIC_PROPERTY_CHECK();
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setLabel( getParamLabel(this) );
-    }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setLabel( getParamLabel(this) );
     }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setLabel( getParamLabel(this) );
@@ -3749,9 +3703,6 @@ OfxStringInstance::setSecret()
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setSecret( getSecret() );
     }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setSecret( getSecret() );
-    }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setSecret( getSecret() );
     }
@@ -3768,9 +3719,6 @@ OfxStringInstance::setInViewportSecret()
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
     }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
-    }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
     }
@@ -3785,9 +3733,6 @@ OfxStringInstance::setInViewportLabel()
     DYNAMIC_PROPERTY_CHECK();
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
-    }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
     }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
@@ -3804,9 +3749,6 @@ OfxStringInstance::setEvaluateOnChange()
     DYNAMIC_PROPERTY_CHECK();
     if ( _imp->fileKnob.lock() ) {
         _imp->fileKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
-    }
-    if ( _imp->outputFileKnob.lock() ) {
-        _imp->outputFileKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
     }
     if ( _imp->stringKnob.lock() ) {
         _imp->stringKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );

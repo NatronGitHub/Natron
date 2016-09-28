@@ -4376,7 +4376,6 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     KnobColor* isColor = dynamic_cast<KnobColor*>(this);
     KnobString* isString = dynamic_cast<KnobString*>(this);
     KnobFile* isFile = dynamic_cast<KnobFile*>(this);
-    KnobOutputFile* isOutputFile = dynamic_cast<KnobOutputFile*>(this);
     KnobPath* isPath = dynamic_cast<KnobPath*>(this);
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
     KnobPage* isPage = dynamic_cast<KnobPage*>(this);
@@ -4457,15 +4456,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         output = newKnob;
     } else if (isFile) {
         KnobFilePtr newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
-        if ( isFile->isInputImageFile() ) {
-            newKnob->setAsInputImage();
-        }
-        output = newKnob;
-    } else if (isOutputFile) {
-        KnobOutputFilePtr newKnob = otherHolder->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
-        if ( isOutputFile->isOutputImageFile() ) {
-            newKnob->setAsOutputImageFile();
-        }
+        newKnob->setDialogType(isFile->getDialogType());
+        newKnob->setDialogFilters(isFile->getDialogFilters());
         output = newKnob;
     } else if (isPath) {
         KnobPathPtr newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
@@ -5131,10 +5123,10 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             }
 
             KnobFile* isFile = dynamic_cast<KnobFile*>(this);
-            KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(this);
-            if (isFile || isOutFile) {
+            if (isFile) {
                 FileExtraData* extraData = new FileExtraData;
-                extraData->useSequences = isFile ? isFile->isInputImageFile() : isOutFile->isOutputImageFile();
+                extraData->useSequences = isFile->getDialogType() == KnobFile::eKnobFileDialogTypeOpenFileSequences ||
+                isFile->getDialogType() == KnobFile::eKnobFileDialogTypeSaveFileSequences;
                 serialization->_extraData.reset(extraData);
             }
 
@@ -5247,7 +5239,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
         KnobColor* isColor = dynamic_cast<KnobColor*>(this);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
-        KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(this);
         KnobPath* isPath = dynamic_cast<KnobPath*>(this);
 
         int nDims = std::min( getDimension(), serialization->_dimension );
@@ -5315,14 +5306,23 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 }
             }
 
-        } else if (isInFile || isOutFile) {
+        } else if (isInFile) {
             const FileExtraData* data = dynamic_cast<const FileExtraData*>(serialization->_extraData.get());
-            if (data && data->useSequences) {
-                if (isInFile) {
-                    isInFile->setAsInputImage();
-                } else if (isOutFile) {
-                    isOutFile->setAsOutputImageFile();
+            if (data) {
+                if (data->useExistingFiles) {
+                    if (data->useSequences) {
+                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFileSequences);
+                    } else {
+                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
+                    }
+                } else {
+                    if (data->useSequences) {
+                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFileSequences);
+                    } else {
+                        isInFile->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
+                    }
                 }
+                isInFile->setDialogFilters(data->filters);
             }
         } else if (isPath) {
             const PathExtraData* data = dynamic_cast<const PathExtraData*>(serialization->_extraData.get());
@@ -6142,21 +6142,7 @@ KnobHolder::createFileKnob(const std::string& name,
     return ret;
 }
 
-KnobOutputFilePtr
-KnobHolder::createOuptutFileKnob(const std::string& name,
-                                 const std::string& label,
-                                 bool userKnob)
-{
-    KnobIPtr existingKnob = getKnobByName(name);
 
-    if (existingKnob) {
-        return toKnobOutputFile(existingKnob);
-    }
-    KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(shared_from_this(), label, 1, false);
-    ret->setName(name);
-    onUserKnobCreated(ret, userKnob);
-    return ret;
-}
 
 KnobPathPtr
 KnobHolder::createPathKnob(const std::string& name,

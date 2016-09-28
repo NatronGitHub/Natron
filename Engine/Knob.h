@@ -2559,7 +2559,6 @@ public:
     //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
     KnobStringPtr createStringKnob(const std::string& name, const std::string& label, bool userKnob = true);
     KnobFilePtr createFileKnob(const std::string& name, const std::string& label, bool userKnob = true);
-    KnobOutputFilePtr createOuptutFileKnob(const std::string& name, const std::string& label, bool userKnob = true);
     KnobPathPtr createPathKnob(const std::string& name, const std::string& label, bool userKnob = true);
     KnobPagePtr createPageKnob(const std::string& name, const std::string& label, bool userKnob = true);
     KnobGroupPtr createGroupKnob(const std::string& name, const std::string& label, bool userKnob = true);
