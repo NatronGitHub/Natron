@@ -2168,7 +2168,7 @@ public:
 
 private:
 
-    void runBeforeFrameRenderCallback(const NodePtr& outputNode)
+    void runBeforeFrameRenderCallback(int frame, const NodePtr& outputNode)
     {
         std::string cb = outputNode->getBeforeFrameRenderCallback();
         if ( cb.empty() ) {
@@ -2209,8 +2209,7 @@ private:
         std::stringstream ss;
         std::string appStr = outputNode->getApp()->getAppIDString();
         std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
-#error "'time' in the next line refers to a C function pointer, not a variable"
-        ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
+        ss << cb << "(" << frame << ", " << outputNodeName << ", " << appStr << ")";
         std::string script = ss.str();
         try {
             _imp->scheduler->runCallbackWithVariables( QString::fromUtf8( script.c_str() ) );
@@ -2245,7 +2244,7 @@ private:
         NodePtr outputNode = output->getNode();
 
         // Notify we start rendering a frame to Python
-        runBeforeFrameRenderCallback(outputNode);
+        runBeforeFrameRenderCallback(time, outputNode);
 
         try {
             // Writers always render at scale 1 (for now)

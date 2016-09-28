@@ -634,7 +634,7 @@ CurveWidget::renderText(double x,
                         const QString & text,
                         const QColor & color,
                         const QFont & font,
-                        int /*flags*/) const
+                        int flags) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -655,7 +655,7 @@ CurveWidget::renderText(double x,
     }
     double scalex = (right - left) / w;
     double scaley = (top - bottom) / h;
-    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, fonti, flags);
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError(GL_GPU);
 }
 
