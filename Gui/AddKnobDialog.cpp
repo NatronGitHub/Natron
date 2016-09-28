@@ -1316,7 +1316,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleToolTipEdit(true);
         _imp->setVisibleAnimates(false);
         _imp->setVisibleEvaluate(false);
-        _imp->setVisibleHide(false);
+        _imp->setVisibleHide(true);
         _imp->setVisibleMenuItems(false);
         //_imp->setVisibleMinMax(false);
         _imp->setVisibleStartNewLine(true);
