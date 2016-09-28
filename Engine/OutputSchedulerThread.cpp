@@ -2209,6 +2209,7 @@ private:
         std::stringstream ss;
         std::string appStr = outputNode->getApp()->getAppIDString();
         std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
+#error "'time' in the next line refers to a C function pointer, not a variable"
         ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
         std::string script = ss.str();
         try {

@@ -479,6 +479,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 
             if (isDuringPainting) {
+                Q_UNUSED(renderedDot);
                 /*if (!renderedDot) {
                     lastCenterOut = lastCenterIn;
                     distToNextOut = distNextIn;

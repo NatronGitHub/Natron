@@ -574,6 +574,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             lastUsedGraph = _imp->_nodeGraphArea;
         }
         assert(lastUsedGraph);
+#pragma message WARN("FIXME: pasteNodesOk is not used, remove it?")
         bool pasteNodesOk = false;
         if (lastUsedGraph) {
             // Try to paste on the most recently used nodegraph. If we are lucky this is a

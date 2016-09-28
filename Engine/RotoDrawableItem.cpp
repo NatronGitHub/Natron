@@ -622,6 +622,10 @@ RotoDrawableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, Val
     }
     
     invalidateHashCache();
+    Q_UNUSED(reason);
+    Q_UNUSED(dimension);
+    Q_UNUSED(time);
+    Q_UNUSED(view);
     /*// Call invalidate hash on the mask and effect, this will recurse below on all nodes in the group which is enough to invalidate the hash;
     if (_imp->maskNode) {
         _imp->maskNode->getEffectInstance()->onSignificantEvaluateAboutToBeCalled(KnobIPtr(), reason, dimension, time, view);
