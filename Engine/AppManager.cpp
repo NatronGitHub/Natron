@@ -3936,7 +3936,9 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
 PythonGILLocker::PythonGILLocker()
 //    : state(PyGILState_UNLOCKED)
 {
-    appPTR->takeNatronGIL();
+    if (appPTR) {
+        appPTR->takeNatronGIL();
+    }
 //    ///Take the GIL for this thread
 //    state = PyGILState_Ensure();
 //    assert(PyThreadState_Get());
@@ -3947,7 +3949,9 @@ PythonGILLocker::PythonGILLocker()
 
 PythonGILLocker::~PythonGILLocker()
 {
-    appPTR->releaseNatronGIL();
+    if (appPTR) {
+        appPTR->releaseNatronGIL();
+    }
 
 //#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
 //    assert(PyGILState_Check());  // Not available prior to Python 3.4
