@@ -46,6 +46,7 @@
 
 #include <OpenGL/OpenGL.h> // necessary for CGL, even if glad was included just above
 #include <OpenGL/CGLTypes.h>
+#include <OpenGL/CGLRenderers.h>
 
 #include "Engine/OSGLContext.h"
 
