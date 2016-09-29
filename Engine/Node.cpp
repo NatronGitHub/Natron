@@ -1792,7 +1792,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     _imp->effect->onKnobsLoaded();
     _imp->effect->endChanges();
 
-} // Node::fromSerializationInternal
+} // loadKnobsFromSerialization
 
 void
 Node::clearPresetFlag()
@@ -4154,6 +4154,8 @@ Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
         initializeDefaultKnobs(loadingSerialization, hasGUI);
     }
 
+    declarePythonKnobs();
+    
     _imp->effect->endChanges();
 
     Q_EMIT knobsInitialized();
