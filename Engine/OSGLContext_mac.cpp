@@ -498,7 +498,7 @@ static const char *RendererIDString(GLint ID)
         case 0x00024500: return "kCGLRendererIntelHD5000ID"; // Iris
         case kCGLRendererMesa3DFXID: return "kCGLRendererMesa3DFXID";
         default: {
-            sprintf(holder, "Unknown(%p)", (void *) ID);
+            sprintf(holder, "Unknown(0x%x)", ID);
             return (const char *) holder;
         }
     }
