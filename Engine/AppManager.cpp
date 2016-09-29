@@ -3115,7 +3115,9 @@ AppManager::initPython(int argc,
     }
 
 
-    Py_SetProgramName(_imp->args[0]);
+    if (argc >= 1) {
+        Py_SetProgramName(_imp->args[0]);
+    }
 
 
     ///Must be called prior to Py_Initialize
