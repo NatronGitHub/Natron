@@ -536,7 +536,7 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         GLint nBytesMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
         GLint nBytesTexMem;
-        CGLDescribeRenderer(rend, i,  kCGLRPTextureeMemory, &nBytesTexMem);
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemory, &nBytesTexMem);
         qDebug() << "OpenGL renderer" << RendererIDString(rendererID) << "has" << nBytesMem/(1024.*1024.) << "MB of VRAM and" << nBytesTexMem/(1024.*1024.) << "MB of texture";
 
         info.maxMemBytes = (std::size_t)nBytesMem;
