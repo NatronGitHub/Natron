@@ -117,6 +117,15 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal description {Natron version} {
+    # configure with GCC 4.9 for proper OpenMP support
+    configure.compiler macports-gcc-4.9
+    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+    configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
+    #configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
+    #configure.args-append --enable-openmp
+}
+
 variant opencolorio description {Add OpenColorIO support.} {
     depends_lib-append  port:opencolorio
     configure.args-delete       -DUSE_OCIO:BOOL=FALSE
