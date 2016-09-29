@@ -59,6 +59,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -167,15 +168,25 @@ NodeCollection::addNode(const NodePtr& node)
     }
 }
 
+
+
+void
+NodeCollection::removeNode(const Node* node)
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodesList::iterator it =_imp->nodes.begin(); it != _imp->nodes.end();++it) {
+        if ( it->get() == node ) {
+            _imp->nodes.erase(it);
+            break;
+        }
+    }
+    onNodeRemoved(node);
+}
+
 void
 NodeCollection::removeNode(const NodePtr& node)
 {
-    QMutexLocker k(&_imp->nodesMutex);
-    NodesList::iterator found = std::find(_imp->nodes.begin(), _imp->nodes.end(), node);
-
-    if ( found != _imp->nodes.end() ) {
-        _imp->nodes.erase(found);
-    }
+    removeNode(node.get());
 }
 
 NodePtr
@@ -390,8 +401,10 @@ NodeCollection::forceRefreshPreviews()
     }
 }
 
+
+
 void
-NodeCollection::clearNodes(bool emitSignal)
+NodeCollection::clearNodesInternal(bool blocking)
 {
     NodesList nodesToDelete;
     {
@@ -406,26 +419,25 @@ NodeCollection::clearNodes(bool emitSignal)
 
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
-            isGrp->clearNodes(emitSignal);
+            isGrp->clearNodesInternal(blocking);
         }
         PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
         if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->clearNodes(emitSignal);
+            isPrecomp->getPrecompApp()->getProject()->clearNodesInternal(blocking);
         }
     }
 
     ///Kill effects
 
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->destroyNode(false);
+        (*it)->destroyNode(blocking, false);
     }
 
 
-    if (emitSignal) {
-        if (_imp->graph) {
-            _imp->graph->onNodesCleared();
-        }
+    if (_imp->graph) {
+        _imp->graph->onNodesCleared();
     }
+
 
     {
         QMutexLocker l(&_imp->nodesMutex);
@@ -433,6 +445,19 @@ NodeCollection::clearNodes(bool emitSignal)
     }
 
     nodesToDelete.clear();
+}
+
+void
+NodeCollection::clearNodesBlocking()
+{
+    quitAnyProcessingForAllNodes_blocking();
+    clearNodesInternal(true);
+}
+
+void
+NodeCollection::clearNodesNonBlocking()
+{
+    clearNodesInternal(false);
 }
 
 void
@@ -1006,6 +1031,9 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
                 (*it)->setDeclaredByPlugin(!edited);
             }
         }
+        if (edited) {
+            isGrp->getNode()->clearPresetFlag();
+        }
     }
 }
 
@@ -1051,6 +1079,23 @@ struct NodeGroupPrivate
     {
     }
 };
+
+void
+NodeGroup::onNodeRemoved(const Node* node)
+{
+    for (std::vector<NodeWPtr >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+        if (it->lock().get() == node) {
+            _imp->inputs.erase(it);
+            break;
+        }
+    }
+    for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        if (it->lock().get() == node) {
+            _imp->outputs.erase(it);
+            break;
+        }
+    }
+}
 
 PluginPtr
 NodeGroup::createPlugin()
@@ -1295,18 +1340,18 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         QMutexLocker k(&_imp->nodesLock);
         GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr input = _imp->inputs[i].lock();
+            int i = 0;
+            for (std::vector<NodeWPtr >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it, ++i) {
+                NodePtr input = it->lock();
                 if (node == input) {
                     ///Also disconnect the real input
 
                     thisNode->disconnectInput(i);
 
-
-                    _imp->inputs.erase(_imp->inputs.begin() + i);
+                    _imp->inputs.erase(it);
                     thisNode->initializeInputs();
 
-                    return;
+                    break;
                 }
             }
             ///The input must have been tracked before
@@ -1542,20 +1587,11 @@ NodeGroup::clearLastRenderedImage()
 }
 
 void
-NodeGroup::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization )
+NodeGroup::setupInitialSubGraphState()
 {
 
-    // Groups are always considered edited initially, except for PyPlugs
-    PluginPtr pp = getNode()->getPyPlugPlugin();
-    if (!pp) {
-        setSubGraphEditedByUser(true);
-    }
 
-    // If there's a serialization, don't create additional nodes
-    if (serialization) {
-        return;
-    }
-
+    setSubGraphEditedByUser(true);
 
     NodePtr input, output;
 
@@ -1589,25 +1625,44 @@ NodeGroup::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerializ
         y -= 100;
         input->setPosition(x, y);
     }
-
-
 }
 
 void
-NodeGroup::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& args)
+NodeGroup::loadSubGraph(bool nodeIsCreated,
+                        const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                        const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
 {
+    // The PyPlug cases is handled in Node::loadInternalNodeGraph
 
+    // If there is a preset serialization object, this is the one holding the node-graph, otherwise fallback on the project serialization
+    if (presetSerialization) {
+        // Clear nodes
+        if (nodeIsCreated) {
+            clearNodesBlocking();
+        }
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        // This will create internal nodes and restore their links
+        Project::restoreGroupFromSerialization(presetSerialization->_children, toNodeGroup(shared_from_this()));
 
-    // If the CreateNodeArgs specified to not initialize the sub-nodegraph, don't call the setup
-    bool createInitialNodes = !args.getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
+    } else if (projectSerialization) {
 
-    if (createInitialNodes) {
-        setupInitialSubGraphState(serialization.get());
+        // There's only a project serialization when loading the node the first time
+        assert(!nodeIsCreated);
+
+        //Clear any node created already in setupInitialSubGraphState()
+        clearNodesBlocking();
+
+        // This will create internal nodes and restore their links
+        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()));
+
     }
 
+    // A group always appear edited
+    setSubGraphEditedByUser(true);
+
+
 }
+
 
 
 

@@ -278,8 +278,6 @@ ViewerTab::setProjection(double zoomLeft,
     _imp->viewer->setProjection(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
     QString str = QString::number( std::floor(zoomFactor * 100 + 0.5) );
     str.append( QLatin1Char('%') );
-    str.prepend( QString::fromUtf8("  ") );
-    str.append( QString::fromUtf8("  ") );
     getInternalNode()->setZoomComboBoxText(str.toStdString());
 }
 

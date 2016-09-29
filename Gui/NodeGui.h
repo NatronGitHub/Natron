@@ -605,7 +605,7 @@ private:
     bool _wasBeginEditCalled;
 
     ///This is the garphical red line displayed when the node is a clone
-    LinkArrow* _slaveMasterLink;
+    boost::scoped_ptr<LinkArrow> _slaveMasterLink;
     boost::weak_ptr<NodeGui> _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow

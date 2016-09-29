@@ -2703,7 +2703,7 @@ public:
     bool isSlave() const;
 
     ///Slave all the knobs of this holder to the other holder.
-    void slaveAllKnobs(const KnobHolderPtr& other, bool restore);
+    void slaveAllKnobs(const KnobHolderPtr& other);
 
     void unslaveAllKnobs();
 

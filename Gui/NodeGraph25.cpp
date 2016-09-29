@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 void
 NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode)
 {
-    if (!nearbyNode) {
+    if (!nearbyNode || !nearbyNode->getNode()) {
         return;
     }
     if ( casIsCtrl ) {
@@ -77,6 +77,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& near
         if ( nearbyNode->getSettingPanel() ) {
             getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
         } else {
+
             ViewerInstancePtr isViewer = nearbyNode->getNode()->isEffectViewerInstance();
             if (isViewer) {
                 ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );

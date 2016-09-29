@@ -212,16 +212,11 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         nodes.push_back( isGrp->getNode() );
     }
 
-    {
-        std::map<std::string, std::string> oldNewScriptNamesMapping;
-        for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-            if ( appPTR->isBackground() && ( it->first->isEffectViewerInstance() ) ) {
-                //ignore viewers on background mode
-                continue;
-            }
-            it->first->restoreKnobsLinks(*it->second, nodes, oldNewScriptNamesMapping);
-        }
+
+    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        it->first->restoreKnobsLinks(*it->second, nodes);
     }
+
 
     return !mustShowErrorsLog;
 } // ProjectPrivate::restoreGroupFromSerialization

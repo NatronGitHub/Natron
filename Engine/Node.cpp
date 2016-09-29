@@ -158,7 +158,7 @@ Node::Node(const AppInstancePtr& app,
 
 Node::~Node()
 {
-    destroyNodeInternal(true, false);
+    destroyNode(true, false);
 }
 
 bool
@@ -324,8 +324,7 @@ void
 Node::createNodeGuiInternal(const CreateNodeArgsPtr& args)
 {
 
-    // If this node is in a group and the group UI is not yet created, append it to the group list.
-    // Otherwise create the node UI directly
+    // The container group UI should have been created so far
     NodePtr thisShared = shared_from_this();
     NodeCollectionPtr group = getGroup();
     NodeGraphI* graph_i = group->getNodeGraph();
@@ -336,30 +335,6 @@ Node::createNodeGuiInternal(const CreateNodeArgsPtr& args)
         if (!_imp->guiPointer.lock()) {
             throw std::runtime_error(tr("Could not create GUI for node %1").arg(QString::fromUtf8(getScriptName_mt_safe().c_str())).toStdString());
         }
-
-        NodeGroupPtr isNodeGroup = toNodeGroup(_imp->effect);
-        if (isNodeGroup) {
-            NodeGraphI* graph_i = isNodeGroup->getNodeGraph();
-            if (graph_i) {
-                // If recursively we created internal nodes but the Group GUI was not yet created, create their gui now
-                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
-                    graph_i->createNodeGui(it->first, *it->second);
-                }
-
-                // As a second- pass refresh all GUI inputs for the nodes now that they have been created
-                for (std::list<std::pair<NodePtr, CreateNodeArgsPtr> >::const_iterator it = _imp->nodesToCreateGui.begin(); it!=_imp->nodesToCreateGui.end(); ++it) {
-                    Q_EMIT it->first->inputsInitialized();
-                }
-                _imp->nodesToCreateGui.clear();
-            }
-        }
-    } else {
-        // The group is probably being created, append to its list
-        NodeGroupPtr containerIsGroup = toNodeGroup(group);
-        if (containerIsGroup) {
-            containerIsGroup->getNode()->_imp->nodesToCreateGui.push_back(std::make_pair(thisShared, args));
-        }
-
     }
 }
 
@@ -404,12 +379,14 @@ Node::load(const CreateNodeArgsPtr& args)
         for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
             if (it->presetLabel.toStdString() == presetLabel) {
 
-                // We found a matching preset, should we notify user if not found ?
-                QMutexLocker k(&_imp->nodePresetMutex);
+                // We found a matching preset
                 _imp->initialNodePreset = presetLabel;
                 break;
             }
         }
+    } else if (serialization) {
+        // The serialization had a preset
+        _imp->initialNodePreset = serialization->_presetInstanceLabel;
     }
 
 
@@ -493,21 +470,17 @@ Node::load(const CreateNodeArgsPtr& args)
     // Create knobs
     initializeKnobs(serialization.get() != 0, !argsNoNodeGui);
 
-
-    // If there is either PyPlug info or a preset to load, do it now
-    // Since this is the same format, the same function handles it
-    if (_imp->pyPlugHandle.lock() || !_imp->initialNodePreset.empty()) {
-        restoreNodeToDefaultState();
+    // If this node is a group and we are in gui mode, create the node graph right now before creating any other
+    // subnodes (in restoreNodeToDefaultState). This is so that the nodes get a proper position
+    {
+        NodeGroupPtr isGroupNode = toNodeGroup(_imp->effect);
+        if (isGroupNode && isGroupNode->isSubGraphUserVisible() ) {
+            getApp()->createGroupGui(thisShared, *args);
+        }
     }
 
-    // If we have a serialization, load it now
-    if (serialization) {
-        fromSerialization(*serialization);
-    }
-
-    // Declare Knobs as attributes of this node if this was not done before.
-    // This is very cheap when all parameters already exist.
-    declarePythonKnobs();
+    // Restore the node to its default state including internal node graph and such for groups
+    restoreNodeToDefaultState(args);
 
     // if we have initial values set for Knobs in the CreateNodeArgs object, deserialize them now
     setValuesFromSerialization(*args);
@@ -549,7 +522,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Create gui if needed. For groups this will also create the GUI of all internal nodes
     // unless they are not created yet
-    if (!argsNoNodeGui) {
+    if (!argsNoNodeGui && !getApp()->isBackground()) {
         createNodeGuiInternal(args);
     }
 
@@ -1123,31 +1096,31 @@ findMasterKnob(const KnobIPtr & knob,
            const NodesList & allNodes,
            const std::string& masterKnobName,
            const std::string& masterNodeName,
-           const std::string& masterTrackName,
-           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+           const std::string& masterTrackName)
 {
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode;
-    std::string masterNodeNameToFind = masterNodeName;
 
-    /*
-     When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
-     nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
-     */
-    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
+    if (masterNodeName == kKnobMasterNodeIsGroup) {
+        EffectInstancePtr thisEffect = toEffectInstance(knob->getHolder());
+        if (thisEffect) {
+            NodeGroupPtr thisGroup = toNodeGroup(thisEffect->getNode()->getGroup());
+            if (thisGroup) {
+                masterNode = thisGroup->getNode();
+            }
+        }
+        assert(masterNode);
+    } else {
 
-    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
-        masterNodeNameToFind = foundMapping->second;
-    }
-
-    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-        if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
-            masterNode = *it2;
-            break;
+        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+            if ( (*it2)->getScriptName() == masterNodeName ) {
+                masterNode = *it2;
+                break;
+            }
         }
     }
     if (!masterNode) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
+        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
 
         return KnobIPtr();
     }
@@ -1171,7 +1144,7 @@ findMasterKnob(const KnobIPtr & knob,
         }
     }
 
-    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
+    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
 
     return KnobIPtr();
 }
@@ -1179,8 +1152,7 @@ findMasterKnob(const KnobIPtr & knob,
 
 void
 Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
-                       const NodesList & allNodes,
-                      const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+                       const NodesList & allNodes)
 {
 
     SERIALIZATION_NAMESPACE::KnobSerialization* isKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serialization.get());
@@ -1189,7 +1161,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
     if (isGroupKnobSerialization) {
         for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
             try {
-                restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+                restoreKnobLinks(*it, allNodes);
             } catch (const std::exception& e) {
                 LogEntry::LogEntryColor c;
                 if (getColor(&c.r, &c.g, &c.b)) {
@@ -1216,7 +1188,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                     const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
                     const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
                     const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
-                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
+                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName);
                     if (alias) {
                         knob->setKnobAsAliasOfThis(alias, true);
                     }
@@ -1246,8 +1218,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                                                      allNodes,
                                                      masterKnobName,
                                                      masterNodeName,
-                                                     masterTrackName,
-                                                     oldNewScriptNamesMapping);
+                                                     masterTrackName);
                     if (master) {
                         // Find dimension in master by name
                         int dimIndex = -1;
@@ -1283,14 +1254,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
             try {
                 for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
                     if ( !isKnobSerialization->_values[i]._expression.empty() ) {
-                        QString expr( QString::fromUtf8( isKnobSerialization->_values[i]._expression.c_str() ) );
-
-                        //Replace all occurrences of script-names that we know have changed
-                        for (std::map<std::string, std::string>::const_iterator it = oldNewScriptNamesMapping.begin();
-                             it != oldNewScriptNamesMapping.end(); ++it) {
-                            expr.replace( QString::fromUtf8( it->first.c_str() ), QString::fromUtf8( it->second.c_str() ) );
-                        }
-                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, expr.toStdString(), isKnobSerialization->_values[i]._expresionHasReturnVariable);
+                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, isKnobSerialization->_values[i]._expression, isKnobSerialization->_values[i]._expresionHasReturnVariable);
                     }
                 }
             } catch (const std::exception& e) {
@@ -1347,6 +1311,9 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!page) {
                 return;
             }
+            if (!found && _imp->isLoadingPreset) {
+                _imp->presetKnobs.push_back(page);
+            }
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
             }
@@ -1373,6 +1340,9 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             }
             if (group) {
                 group->addKnob(grp);
+            }
+            if (!found && _imp->isLoadingPreset) {
+                _imp->presetKnobs.push_back(group);
             }
             grp->setValue(groupSerialization->_isOpened);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
@@ -1435,6 +1405,9 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isChoice) {
                 knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
+            }
+            if (!found && _imp->isLoadingPreset) {
+                _imp->presetKnobs.push_back(knob);
             }
         } // found
 
@@ -1576,7 +1549,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     NodePtr masterNode = getMasterNode();
     if (masterNode) {
-        serialization->_masterNodeFullyQualifiedScriptName = masterNode->getFullyQualifiedName();
+        serialization->_masterNodecriptName = masterNode->getScriptName_mt_safe();
     }
 
     RotoContextPtr roto = getRotoContext();
@@ -1671,13 +1644,10 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         return;
     }
 
+    // Load all knobs as well as user knobs and roto/tracking data
     loadKnobsFromSerialization(*serialization);
 
-    {
-        QMutexLocker k(&_imp->nodePresetMutex);
-        _imp->initialNodePreset = serialization->_presetInstanceLabel;
-    }
-
+    // Remember the UI
     {
         QMutexLocker k(&_imp->nodeUIDataMutex);
         _imp->nodePositionCoords[0] = serialization->_nodePositionCoords[0];
@@ -1692,48 +1662,59 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
         _imp->overlayColor[2] = serialization->_overlayColor[2];
     }
 
-    loadInternalNodesFromSerialization(serialization);
-
-    
-} // Node::fromSerialization
+} // fromSerialization
 
 void
-Node::loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+Node::loadInternalNodeGraph(bool initialSetupAllowed,
+                            const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                            const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization,
+                            const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
 {
-
     NodeGroupPtr isGrp = isEffectNodeGroup();
     if (!isGrp) {
         return;
     }
 
-    // If the sub-graph is not visible, it is expected the group creates its internal nodes when it is created itself
-    if (!isGrp->isSubGraphUserVisible()) {
-        return;
+
+    bool isPyPlug = _imp->isPyPlug;
+
+
+    bool nodeIsCreated = isNodeCreated();
+    {
+        PluginPtr pyPlug = _imp->pyPlugHandle.lock();
+        // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
+        // gets created. So don't do anything
+        bool isPythonScriptPyPlug = pyPlug && pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+        if (isPythonScriptPyPlug) {
+            return;
+        }
+    }
+    assert(!isPyPlug || pyPlugSerialization);
+
+
+    // If we are creating the node in the standard way, initialize the sub-graph. For a standard Group it creates the Input and Output nodes.
+    if ((!projectSerialization || projectSerialization->_children.empty()) && !nodeIsCreated && !isPyPlug && initialSetupAllowed) {
+        isGrp->setupInitialSubGraphState();
     }
 
-    // OK now this is a user-editable graph
-    // Restore internal nodes for groups and newer Pyplugs (post 2.2)
-    PluginPtr pyPlug = _imp->pyPlugHandle.lock();
+    if (isPyPlug) {
+        // For PyPlugs, the graph s not editable anyway, so if the node is already created, don't do anything
+        if (!nodeIsCreated) {
+            // This will create internal nodes and restore their links.
+            // We don't care about other serialization objects because they do not contain the nodegraph itself, just modifications that were brought to the knobs
+            Project::restoreGroupFromSerialization(pyPlugSerialization->_children, isGrp);
 
-    // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
-    // gets created. So don't do anything
-    bool isPythonScriptPyPlug = pyPlug && pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
-    if (isPythonScriptPyPlug) {
-        return;
+            // We restored settings, the subgraph is no longer considered edited.
+            isGrp->setSubGraphEditedByUser(false);
+        }
+
+    } else {
+        // Call the nodegroup derivative that is the only one to know what to do
+        isGrp->loadSubGraph(nodeIsCreated, projectSerialization, presetSerialization);
     }
 
-    // Kill all existing nodes. This requires ensuring no thread is running
-    isGrp->quitAnyProcessingForAllNodes_blocking();
-    isGrp->clearNodes(false);
-
-    // Setup initial group state
-    isGrp->setupInitialSubGraphState(serialization);
-
-    // Restore rest of the group with the serialization
-    Project::restoreGroupFromSerialization(serialization->_children, isGrp);
-
-    isGrp->onGroupLoaded();
 }
+
 
 void
 Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
@@ -1805,11 +1786,27 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
         _imp->effect->setViewerUIKnobs(viewerUIknobs);
     }
 
+    // Force update of user knobs on the GUI if we are calling this in restoreNodeDefaults
+    _imp->effect->recreateUserKnobs(false);
 
     _imp->effect->onKnobsLoaded();
     _imp->effect->endChanges();
 
 } // Node::fromSerializationInternal
+
+void
+Node::clearPresetFlag()
+{
+    bool isEmpty;
+    {
+        QMutexLocker k(&_imp->nodePresetMutex);
+        isEmpty = _imp->initialNodePreset.empty();
+        _imp->initialNodePreset.clear();
+    }
+    if (!isEmpty) {
+        Q_EMIT nodePresetsChanged();
+    }
+}
 
 void
 Node::loadPresets(const std::string& presetsLabel)
@@ -1820,7 +1817,7 @@ Node::loadPresets(const std::string& presetsLabel)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = presetsLabel;
     }
-    restoreNodeToDefaultState();
+    restoreNodeToDefaultState(CreateNodeArgsPtr());
     Q_EMIT nodePresetsChanged();
 }
 
@@ -1839,7 +1836,7 @@ Node::loadPresetsFromFile(const std::string& presetsFile)
         QMutexLocker k(&_imp->nodePresetMutex);
         _imp->initialNodePreset = serialization->_presetInstanceLabel;
     }
-    restoreNodeToDefaultState();
+    restoreNodeToDefaultState(CreateNodeArgsPtr());
     Q_EMIT nodePresetsChanged();
 }
 
@@ -1871,7 +1868,7 @@ Node::getNodeSerializationFromPresetName(const std::string& presetName, SERIALIZ
     for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin() ;it!=presets.end(); ++it) {
         if (it->presetLabel.toStdString() == presetName) {
             getNodeSerializationFromPresetFile(it->presetFilePath.toStdString(), serialization);
-            assert(presetName == serialization->_presetInstanceLabel);
+            assert(presetName == serialization->_presetsIdentifierLabel);
             return;
         }
     }
@@ -1922,11 +1919,6 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
             }
         }
     }
-    
-    
-    loadInternalNodesFromSerialization(serialization.get());
-    
-    
 
 } // Node::loadPresetsInternal
 
@@ -2019,6 +2011,7 @@ Node::exportNodeToPyPlug(const std::string& filePath)
 
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
+    serialization->_encodeType = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug;
     toSerialization(serialization.get());
 
     SERIALIZATION_NAMESPACE::NodeClipBoard cb;
@@ -2063,7 +2056,8 @@ Node::exportNodeToPresets(const std::string& filePath,
 
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization(new SERIALIZATION_NAMESPACE::NodeSerialization);
-    serialization->_presetInstanceLabel = presetsLabel;
+    serialization->_encodeType = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets;
+    serialization->_presetsIdentifierLabel = presetsLabel;
     serialization->_presetsIconFilePath = iconFilePath;
     serialization->_presetShortcutSymbol = shortcutSymbol;
     serialization->_presetShortcutPresetModifiers = shortcutModifiers;
@@ -2079,7 +2073,7 @@ Node::exportNodeToPresets(const std::string& filePath,
 
 
 void
-Node::restoreNodeToDefaultState()
+Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -2088,6 +2082,7 @@ Node::restoreNodeToDefaultState()
     // Make sure the instance does not receive knobChanged now
     _imp->effect->beginChanges();
 
+    // If the node is not yet created (i.e: this is called in the load() function) then some stuff here doesn't need to be done
     bool nodeCreated = isNodeCreated();
     if (nodeCreated) {
         // Purge any cache when reseting to defaults
@@ -2096,9 +2091,10 @@ Node::restoreNodeToDefaultState()
 
     // Check if there is any serialization from presets/pyplug
     std::string nodePreset = getCurrentNodePresets();
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization;
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr pyPlugSerialization;
-    PluginPtr pyPlugHandle = _imp->pyPlugHandle.lock();
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization, pyPlugSerialization, projectSerialization;
+    if (args) {
+        projectSerialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    }
     if (!nodePreset.empty()) {
         try {
             presetSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
@@ -2107,35 +2103,27 @@ Node::restoreNodeToDefaultState()
 
         }
     }
-    if (pyPlugHandle) {
-        bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
-        if (!isPythonScriptPyPlug) {
-            std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
-            pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
-            getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get());
+
+    if (_imp->isPyPlug) {
+        PluginPtr pyPlugHandle = _imp->pyPlugHandle.lock();
+        if (pyPlugHandle) {
+            bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+            if (!isPythonScriptPyPlug) {
+                std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+                pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+                getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get());
+            }
         }
     }
-
     // Reset all knobs to default first, block value changes and do them all afterwards because the node state can only be restored
     // if all parameters are actually to the good value
     if (nodeCreated) {
-
-        // Remove any current user knob
-        std::list<KnobPagePtr> userPages;
-        _imp->effect->getUserPages(userPages);
-        for (std::list<KnobPagePtr>::iterator it = userPages.begin(); it!=userPages.end(); ++it) {
-            _imp->effect->deleteKnob(*it, true);
-        }
 
 
         // Restore knob defaults
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-            
-            KnobButtonPtr isBtn = toKnobButton(*it);
-            KnobPagePtr isPage = toKnobPage(*it);
-            KnobSeparatorPtr isSeparator = toKnobSeparator(*it);
-            if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator || ( (*it)->getName() == kUserLabelKnobName ) ) {
+            if (!(*it)->getIsPersistent() ) {
                 continue;
             }
             (*it)->blockValueChanges();
@@ -2155,13 +2143,30 @@ Node::restoreNodeToDefaultState()
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
         // Load pyplug, set default values to knob only if there's no preset serialization
-        loadPresetsInternal(pyPlugSerialization, presetSerialization.get() == 0);
+        bool setDefaultValues = presetSerialization.get() == 0;
+        loadPresetsInternal(pyPlugSerialization, setDefaultValues);
     }
 
     if (presetSerialization) {
+
+        // If any preset knob already exist, remove it
+        {
+            for (std::list<KnobIWPtr>::iterator it = _imp->presetKnobs.begin(); it != _imp->presetKnobs.end(); ++it) {
+                KnobIPtr knob = it->lock();
+                if (!knob) {
+                    continue;
+                }
+                _imp->effect->deleteKnob(knob, true);
+            }
+            _imp->presetKnobs.clear();
+        }
+
+        _imp->isLoadingPreset = true;
         // Load presets from serialization if any
         loadPresetsInternal(presetSerialization, true);
+        _imp->isLoadingPreset = false;
     } else {
+
         // Reset knob default values to their initial default value if we had a different preset before
         if (nodeCreated) {
             const KnobsVec& knobs = getKnobs();
@@ -2195,6 +2200,18 @@ Node::restoreNodeToDefaultState()
                 }
             }
         }
+    }
+
+    {
+        bool initialSubGraphSetupAllowed = false;
+        if (args) {
+            initialSubGraphSetupAllowed = !args->getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
+        }
+        loadInternalNodeGraph(initialSubGraphSetupAllowed, projectSerialization.get(), pyPlugSerialization.get(), presetSerialization.get());
+    }
+
+    if (projectSerialization) {
+        fromSerialization(*projectSerialization);
     }
 
     // If there was a serialization, we most likely removed or created user parameters, so refresh Python knobs
@@ -2260,17 +2277,27 @@ Node::loadKnob(const KnobIPtr & knob,
 
 void
 Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                        const NodesList & allNodes,
-                        const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+                        const NodesList & allNodes)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
 
-    const std::string & masterNodeName = serialization._masterNodeFullyQualifiedScriptName;
+    const std::string & masterNodeName = serialization._masterNodecriptName;
     if ( !masterNodeName.empty() ) {
-        // Find master node
-        NodePtr masterNode = getApp()->getNodeByFullySpecifiedName(masterNodeName);
+
+        // In the past the script-name contained the fully qualified name , e.g: Group1.Blur1
+        // This leads to issues when restoring the graph in another Group name.
+        // Ensure the name is only the script-name by removing the prefix
+        NodePtr masterNode;
+        std::size_t foundDot = masterNodeName.find_last_of(".");
+        if (foundDot != std::string::npos) {
+            masterNode = getGroup()->getNodeByName(masterNodeName.substr(foundDot + 1));
+        } else {
+            masterNode = getGroup()->getNodeByName(masterNodeName);
+        }
+
+
 
         if (!masterNode) {
             LogEntry::LogEntryColor c;
@@ -2283,7 +2310,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
                                             .arg( QString::fromUtf8( serialization._nodeScriptName.c_str() ) )
                                             .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
         } else {
-            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance(), true );
+            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance() );
         }
         return;
     }
@@ -2293,7 +2320,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
     ///try to find a serialized value for this knob
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         try {
-            restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+            restoreKnobLinks(*it, allNodes);
         } catch (const std::exception& e) {
             // For stub nodes don't report errors
             if (!isEffectStubNode()) {
@@ -2309,7 +2336,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
     const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
     for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
         try {
-            restoreKnobLinks(*it, allNodes, oldNewScriptNamesMapping);
+            restoreKnobLinks(*it, allNodes);
         } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {
@@ -2414,7 +2441,7 @@ Node::areAllProcessingThreadsQuit() const
 {
     {
         QMutexLocker locker(&_imp->mustQuitPreviewMutex);
-        if (!_imp->previewThreadQuit) {
+        if (_imp->computingPreview) {
             return false;
         }
     }
@@ -5410,7 +5437,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, shared_from_this());
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;
@@ -5418,7 +5445,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, shared_from_this());
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
         }
@@ -5635,7 +5662,7 @@ Node::disconnectInput(int inputNumber)
 
 
     QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-    inputShared->disconnectOutput(useGuiValues, shared_from_this());
+    inputShared->disconnectOutput(useGuiValues, this);
 
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5717,7 +5744,7 @@ Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
                 _imp->guiInputs[found].reset();
             }
         }
-        input->disconnectOutput(useGuiValues, shared_from_this());
+        input->disconnectOutput(useGuiValues, this);
         Q_EMIT inputChanged(found);
         bool mustCallEnd = false;
         if (!useGuiValues) {
@@ -5761,7 +5788,7 @@ Node::disconnectInput(const NodePtr& input)
 
 int
 Node::disconnectOutput(bool useGuiValues,
-                       const NodeConstPtr& output)
+                       const Node* output)
 {
     assert(output);
     int ret = -1;
@@ -5770,7 +5797,7 @@ Node::disconnectOutput(bool useGuiValues,
         if (!useGuiValues) {
             int ret = 0;
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
-                if (it->lock() == output) {
+                if (it->lock().get() == output) {
                     _imp->outputs.erase(it);
                     break;
                 }
@@ -5778,7 +5805,7 @@ Node::disconnectOutput(bool useGuiValues,
         }
         int ret = 0;
         for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
-            if (it->lock() == output) {
+            if (it->lock().get() == output) {
                 _imp->guiOutputs.erase(it);
                 break;
             }
@@ -5819,8 +5846,6 @@ Node::clearLastRenderedImage()
     _imp->effect->clearLastRenderedImage();
 }
 
-/*After this call this node still knows the link to the old inputs/outputs
-   but no other node knows this node.*/
 void
 Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                  bool disconnectAll,
@@ -5882,7 +5907,11 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                     continue;
                 }
 
-                NodeCollectionPtr effectParent = isEffect->getNode()->getGroup();
+                NodePtr effectNode = isEffect->getNode();
+                if (!effectNode) {
+                    continue;
+                }
+                NodeCollectionPtr effectParent = effectNode->getGroup();
                 if (!effectParent) {
                     continue;
                 }
@@ -5962,7 +5991,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
             NodePtr input = _imp->guiInputs[i].lock();
             if (input) {
-                input->disconnectOutput(false, shared_from_this());
+                input->disconnectOutput(false, this);
             }
         }
     }
@@ -6167,22 +6196,20 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
-    doDestroyNodeInternalEnd(false, thisArgs ? thisArgs->autoReconnect : false);
+    doDestroyNodeInternalEnd(thisArgs ? thisArgs->autoReconnect : false);
     _imp->renderWatcher.reset();
 }
 
 void
-Node::doDestroyNodeInternalEnd(bool fromDest,
-                               bool autoReconnect)
+Node::doDestroyNodeInternalEnd(bool autoReconnect)
 {
-    ///Remove the node from the project
-    if (!fromDest) {
+    //if (doDeactivate) {
         deactivate(NodesList(),
                    true,
                    autoReconnect,
                    true,
                    false);
-    }
+    //}
 
     {
         NodeGuiIPtr guiPtr = _imp->guiPointer.lock();
@@ -6194,7 +6221,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     ///If its a group, clear its nodes
     NodeGroupPtr isGrp = isEffectNodeGroup();
     if (isGrp) {
-        isGrp->clearNodes(true);
+        isGrp->clearNodesBlocking();
     }
 
 
@@ -6216,11 +6243,6 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     ///Remove the Python node
     deleteNodeVariableToPython( getFullyQualifiedName() );
 
-    ///Disconnect all inputs
-    /*int maxInputs = getMaxInputCount();
-       for (int i = 0; i < maxInputs; ++i) {
-       disconnectInput(i);
-       }*/
 
     ///Kill the effect
     if (_imp->effect) {
@@ -6232,17 +6254,15 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     ///the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
     ///thisShared ptr
 
-    ///If not inside a gorup or inside fromDest the shared_ptr is probably invalid at this point
-    if (!fromDest) {
-        NodePtr thisShared = shared_from_this();
-        if ( getGroup() ) {
-            getGroup()->removeNode(thisShared);
-        }
+    NodeCollectionPtr thisGroup = getGroup();
+    if ( thisGroup ) {
+        thisGroup->removeNode(this);
     }
-} // Node::doDestroyNodeInternalEnd
+
+} // doDestroyNodeInternalEnd
 
 void
-Node::destroyNodeInternal(bool fromDest,
+Node::destroyNode(bool blockingDestroy,
                           bool autoReconnect)
 {
     if (!_imp->effect) {
@@ -6255,34 +6275,25 @@ Node::destroyNodeInternal(bool fromDest,
     }
 
     bool allProcessingQuit = areAllProcessingThreadsQuit();
-    if (allProcessingQuit) {
-        doDestroyNodeInternalEnd(true, false);
-    } else {
-        if (!fromDest) {
-            NodeGroupPtr isGrp = isEffectNodeGroup();
-            NodesList nodesToWatch;
-            nodesToWatch.push_back( shared_from_this() );
-            if (isGrp) {
-                isGrp->getNodes_recursive(nodesToWatch, false);
-            }
-            _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
-            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-            boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
-            args->autoReconnect = autoReconnect;
-            _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-        } else {
-            // Well, we are in the destructor, we better have nothing left to render
+    if (allProcessingQuit || blockingDestroy) {
+        if (!allProcessingQuit) {
             quitAnyProcessing_blocking(false);
-            doDestroyNodeInternalEnd(true, false);
         }
+        doDestroyNodeInternalEnd(false);
+    } else {
+        NodeGroupPtr isGrp = isEffectNodeGroup();
+        NodesList nodesToWatch;
+        nodesToWatch.push_back( shared_from_this() );
+        if (isGrp) {
+            isGrp->getNodes_recursive(nodesToWatch, false);
+        }
+        _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
+        QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
+        args->autoReconnect = autoReconnect;
+        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
     }
 } // Node::destroyNodeInternal
-
-void
-Node::destroyNode(bool autoReconnect)
-{
-    destroyNodeInternal(false, autoReconnect);
-}
 
 KnobIPtr
 Node::getKnobByName(const std::string & name) const
@@ -7305,15 +7316,13 @@ Node::onKnobSlaved(const KnobIPtr& slave,
                    int dimension,
                    bool isSlave)
 {
-    ///ignore the call if the node is a clone
-    {
-        QMutexLocker l(&_imp->masterNodeMutex);
-        if ( _imp->masterNode.lock() ) {
-            return;
+    // If this is a unslave action, remove the clone state
+    if (!isSlave) {
+        NodePtr masterNode = getMasterNode();
+        if ( masterNode ) {
+            onAllKnobsSlaved(false, KnobHolderPtr());
         }
     }
-
-    assert( master->getHolder() );
 
 
     ///If the holder isn't an effect, ignore it too
@@ -7333,7 +7342,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
         QMutexLocker l(&_imp->masterNodeMutex);
         KnobLinkList::iterator found = _imp->nodeLinks.end();
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->masterNode.lock() == parentNode) {
+            if (it->slave.lock() == slave) {
                 found = it;
                 break;
             }
@@ -8415,8 +8424,9 @@ Node::onRefreshIdentityStateRequestReceived()
 
 
     NodeGuiIPtr nodeUi = _imp->guiPointer.lock();
-    assert(nodeUi);
-    nodeUi->onIdentityStateChanged(isIdentity ? inputNb : -1);
+    if (nodeUi) {
+        nodeUi->onIdentityStateChanged(isIdentity ? inputNb : -1);
+    }
 } // Node::onRefreshIdentityStateRequestReceived
 
 void

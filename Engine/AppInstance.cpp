@@ -291,7 +291,7 @@ AppInstance::AppInstance(int appID)
 
 AppInstance::~AppInstance()
 {
-    _imp->_currentProject->clearNodes(false);
+    _imp->_currentProject->clearNodesBlocking();
 }
 
 const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo&
@@ -976,7 +976,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
                 Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
                 if (containerNode) {
-                    containerNode->destroyNode(false);
+                    containerNode->destroyNode(false, false);
                 }
 
                 return node;

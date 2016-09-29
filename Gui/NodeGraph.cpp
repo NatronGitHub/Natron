@@ -246,7 +246,6 @@ NodeGraph::onNodesCleared()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        _imp->_nodes.clear();
         _imp->_nodesTrash.clear();
     }
 
@@ -390,6 +389,7 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     // have been created
     NodeGroupPtr isGroup = node->isEffectNodeGroup();
     if (!isGroup) {
+    #pragma message WARN("Check this")
         setNodeToDefaultPosition(node_ui, selectedNodes, args);
     }
 

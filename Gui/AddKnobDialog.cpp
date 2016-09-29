@@ -1564,7 +1564,6 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     knob->setEvaluateOnChange( evaluatesOnChange->isChecked() );
 
 
-    knob->setSecret( hideBox->isChecked() );
     knob->setName(nameLineEdit->text().toStdString(), true);
     knob->setHintToolTip( tooltipArea->toPlainText().toStdString() );
     bool addedInGrp = false;
@@ -1927,6 +1926,12 @@ AddKnobDialog::onOkClicked()
             }
         }
     }
+
+    if (_imp->knob && _imp->hideBox->isVisible()) {
+        _imp->knob->setSecret( _imp->hideBox->isChecked() );
+    }
+
+
     //also refresh the new line flag for this knob if it was set
     if (_imp->knob && !wasNewLineActivated) {
         _imp->knob->setAddNewLine(false);

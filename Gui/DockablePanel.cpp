@@ -554,7 +554,7 @@ DockablePanel::onPageIndexChanged(int index)
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         if (it->second->tab == curTab) {
             setCurrentPage(it->second);
-            EffectInstancePtr isEffect = toEffectInstance(_imp->_holder);
+            EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
             if ( isEffect && isEffect->getNode()->hasOverlay() ) {
                 isEffect->getApp()->redrawAllViewers();
             }
@@ -606,7 +606,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
     if (_imp->_helpButton) {
         _imp->_helpToolTip = QString::fromUtf8( pluginDesc.c_str() );
         _imp->_helpButton->setToolTip( helpString() );
-        EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
+        EffectInstancePtr iseffect = toEffectInstance(_imp->_holder.lock());
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
             _imp->_pluginVersionMajor = majorVersion;
@@ -640,8 +640,9 @@ DockablePanel::onNodeScriptChanged(const QString& label)
 void
 DockablePanel::onGuiClosing()
 {
-    if (_imp->_holder) {
-        _imp->_holder->discardPanelPointer();
+    KnobHolderPtr holder = _imp->_holder.lock();
+    if (holder) {
+        holder->discardPanelPointer();
     }
     if (_imp->_nameLineEdit) {
         QObject::disconnect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
@@ -652,7 +653,7 @@ DockablePanel::onGuiClosing()
 KnobHolderPtr
 DockablePanel::getHolder() const
 {
-    return _imp->_holder;
+    return _imp->_holder.lock();
 }
 
 void
@@ -670,7 +671,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
         
     } else {
         std::list<KnobIPtr > knobsList;
-        const std::vector<KnobIPtr > & knobs = _imp->_holder->getKnobs();
+        const std::vector<KnobIPtr > & knobs = _imp->_holder.lock()->getKnobs();
         for (std::vector<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButtonPtr isBtn = toKnobButton(*it);
             KnobPagePtr isPage = toKnobPage(*it);
@@ -831,7 +832,7 @@ DockablePanel::helpString() const
     //Base help
     QString tt;
     bool isMarkdown = false;
-    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
+    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder.lock());
 
     if (iseffect) {
         isMarkdown = iseffect->getNode()->getPlugin()->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
@@ -876,7 +877,7 @@ DockablePanel::helpString() const
 void
 DockablePanel::showHelp()
 {
-    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder);
+    EffectInstancePtr iseffect = toEffectInstance(_imp->_holder.lock());
 
     if (iseffect) {
         NodePtr node = iseffect->getNode();
@@ -1335,7 +1336,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 
     assert(emitter);
 
-    EffectInstancePtr isEffect = toEffectInstance(_imp->_holder);
+    EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
     if (isEffect) {
         NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
@@ -1350,7 +1351,8 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         QAction* removeAnimation = new QAction(tr("Remove animation on all parameters"), &menu);
         menu.addAction(removeAnimation);
 
-        if ( master || !_imp->_holder || !_imp->_holder->getApp() || _imp->_holder->getApp()->isGuiFrozen() ) {
+        KnobHolderPtr holder = _imp->_holder.lock();
+        if ( master || !holder || !holder->getApp() || holder->getApp()->isGuiFrozen() ) {
             setKeys->setEnabled(false);
             removeAnimation->setEnabled(false);
         }

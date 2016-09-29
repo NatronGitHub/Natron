@@ -95,7 +95,7 @@ struct DockablePanelPrivate
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
     std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
-    KnobHolderPtr _holder;
+    KnobHolderWPtr _holder;
     bool _useScrollAreasForTabs;
     DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;

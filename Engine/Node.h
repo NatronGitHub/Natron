@@ -211,8 +211,7 @@ private:
      * This function throws an exception if no serialization is valid in the object
      **/
     void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
-                          const NodesList & allNodes,
-                          const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+                          const NodesList & allNodes);
 
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
@@ -232,7 +231,10 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-    void loadInternalNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization);
+    void loadInternalNodeGraph(bool initialSetupAllowed,
+                               const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization,
+                               const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization);
 
     void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 
@@ -253,6 +255,12 @@ public:
      * This function throws exception in case of error.
      **/
     void loadPresets(const std::string& presetsLabel);
+
+    /**
+     * @brief Clear any preset flag on the node, but does'nt change the configuration
+     **/
+    void clearPresetFlag();
+
     void loadPresetsFromFile(const std::string& presetsFile);
 
     void exportNodeToPyPlug(const std::string& filePath);
@@ -273,7 +281,7 @@ public:
      * @brief Restores the node to its default state. If this node has a preset active or it is a PyPlug
      * it will be restored according to the preset/PyPlug.
      **/
-    void restoreNodeToDefaultState();
+    void restoreNodeToDefaultState(const CreateNodeArgsPtr& args);
 
     ///Set values for Knobs given their serialization
     void setValuesFromSerialization(const CreateNodeArgs& args);
@@ -296,8 +304,7 @@ public:
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                           const NodesList & allNodes,
-                           const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+                           const NodesList & allNodes);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
@@ -779,7 +786,7 @@ private:
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues, const NodeConstPtr& output);
+    int disconnectOutput(bool useGuiValues, const Node* output);
 
 public:
 
@@ -858,15 +865,17 @@ public:
     /**
      * @brief Calls deactivate() and then remove the node from the project. The object will be destroyed
      * when the caller releases the reference to this Node
+     * @param blockingDestroy This function needs to ensure no processing occurs when the node is destroyed. If this parameter
+     * is set to true, the function will sit and wait until all processing is done, otherwise it will return immediatelely even if the node
+     * is not yet detroyed
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
      **/
-    void destroyNode(bool autoReconnect);
+    void destroyNode(bool blockingDestroy, bool autoReconnect);
 
 private:
 
-    void destroyNodeInternal(bool fromDest, bool autoReconnect);
 
-    void doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect);
+    void doDestroyNodeInternalEnd(bool autoReconnect);
 
 public:
 

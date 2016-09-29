@@ -60,7 +60,7 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiContainerHelperPrivate
 {
     KnobGuiContainerHelper* _p;
-    KnobHolderPtr holder;
+    KnobHolderWPtr holder;
 
     // Stores our KnobGui refered to by the internal Knob
     KnobsGuiMapping knobsMap;
@@ -376,7 +376,7 @@ findKnobsOnSameLine(const KnobsVec& knobs,
 const KnobsVec&
 KnobGuiContainerHelper::getInternalKnobs() const
 {
-    return _imp->holder->getKnobs();
+    return _imp->holder.lock()->getKnobs();
 }
 
 const KnobsGuiMapping&
@@ -388,7 +388,7 @@ KnobGuiContainerHelper::getKnobsMapping() const
 void
 KnobGuiContainerHelper::initializeKnobs()
 {
-    initializeKnobVector( _imp->holder->getKnobs() );
+    initializeKnobVector( _imp->holder.lock()->getKnobs() );
     _imp->refreshPagesEnabledness();
     refreshCurrentPage();
 
@@ -1035,7 +1035,7 @@ KnobGuiContainerHelper::recreateViewerUIKnobs()
     if (!gui) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(_imp->holder);
+    EffectInstancePtr isEffect = toEffectInstance(_imp->holder.lock());
     if (!isEffect) {
         return;
     }
@@ -1155,7 +1155,7 @@ KnobGuiContainerHelper::recreateUserKnobs(bool restorePageIndex)
 void
 KnobGuiContainerHelper::getUserPages(std::list<KnobPagePtr>& userPages) const
 {
-    return _imp->holder->getUserPages(userPages);
+    return _imp->holder.lock()->getUserPages(userPages);
 }
 
 void

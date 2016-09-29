@@ -883,46 +883,56 @@ ViewerNode::onKnobsLoaded()
 }
 
 void
-ViewerNode::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+ViewerNode::createViewerProcessNode()
 {
-
-    // Viewers are not considered edited if there is not serialization or this is a preset
-    if (serialization && serialization->_presetInstanceLabel.empty()) {
-        setSubGraphEditedByUser(true);
-    }
-
-
-    // If there's a serialization, load the nodes from there, otherwise create them
-    if (serialization && !serialization->_children.empty()) {
-        return;
-    }
-
-    ViewerNodePtr thisShared = shared_from_this();
-
     NodePtr internalViewerNode;
     {
+        ViewerNodePtr thisShared = shared_from_this();
+
         QString nodeName = QString::fromUtf8("ViewerProcess");
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared));
         //args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode = getApp()->createNode(args);
 
     }
     assert(internalViewerNode);
     if (!internalViewerNode) {
-        throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
+        throw std::invalid_argument("ViewerNode::setupGraph: No internal viewer process!");
     }
     _imp->internalViewerProcessNode = internalViewerNode;
+    _imp->onInternalViewerCreated();
     Q_EMIT internalViewerCreated();
+}
+
+void
+ViewerNode::setupGraph(bool createViewerProcess)
+{
+    // Viewers are not considered edited by default
+    setSubGraphEditedByUser(false);
+
+    ViewerNodePtr thisShared = shared_from_this();
+
+    NodePtr internalViewerNode = _imp->internalViewerProcessNode.lock();
+    assert(createViewerProcess || internalViewerNode);
+    if (createViewerProcess) {
+        createViewerProcessNode();
+        internalViewerNode = _imp->internalViewerProcessNode.lock();
+    }
 
 
-    double inputWidth, inputHeight;
-    internalViewerNode->getSize(&inputWidth, &inputHeight);
-    double inputX, inputY;
-    internalViewerNode->getPosition(&inputX, &inputY);
+    double inputWidth = 1, inputHeight = 1;
+    if (internalViewerNode) {
+        internalViewerNode->getSize(&inputWidth, &inputHeight);
+    }
+    double inputX = 0, inputY = 0;
+    if (internalViewerNode) {
+        internalViewerNode->getPosition(&inputX, &inputY);
+    }
 
     double startOffset = - (VIEWER_INITIAL_N_INPUTS / 2) * inputWidth - inputWidth / 2. - (VIEWER_INITIAL_N_INPUTS / 2 - 1) * inputWidth / 2;
 
@@ -933,17 +943,101 @@ ViewerNode::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSeriali
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName.toStdString());
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, inputX + startOffset, 0);
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, inputY - inputHeight * 10, 1);
         //args.addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
         inputNodes[i] = getApp()->createNode(args);
         assert(inputNodes[i]);
-        inputNodes[i]->setPosition(inputX + startOffset, inputY - inputHeight * 10);
         startOffset += inputWidth * 1.5;
     }
 
+}
 
-    
-    _imp->onInternalViewerCreated();
+void
+ViewerNode::setupInitialSubGraphState()
+{
+    setupGraph(true);
+}
+
+void
+ViewerNode::clearGroupWithoutViewerProcess()
+{
+    // When we load the internal node-graph we don't want to kill the viewer process node, hence we remove it temporarily from the group so it doesn't get killed
+    // and the re-add it back.
+    if (getNodes().empty()) {
+        return;
+    }
+    NodePtr viewerProcessNode = _imp->internalViewerProcessNode.lock();
+    assert(viewerProcessNode);
+    removeNode(viewerProcessNode);
+    clearNodesBlocking();
+    addNode(viewerProcessNode);
+}
+
+void
+ViewerNode::loadSubGraph(bool nodeIsCreated,
+                         const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                         const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
+{
+
+    EffectInstancePtr thisShared = shared_from_this();
+
+    // Load group from presets if any
+    if (presetSerialization) {
+        clearGroupWithoutViewerProcess();
+        Project::restoreGroupFromSerialization(presetSerialization->_children, toNodeGroup(thisShared));
+        setSubGraphEditedByUser(false);
+    } else if (projectSerialization) {
+        // If there's a project serialization load it. There will be children only if the user edited the Viewer group
+        if (!projectSerialization->_children.empty()) {
+
+            // Clear nodes that were created if any
+            clearGroupWithoutViewerProcess();
+
+            // Restore group
+            Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(thisShared));
+
+            setSubGraphEditedByUser(true);
+        } else {
+            if (!getInternalViewerNode()) {
+                setupInitialSubGraphState();
+            }
+        }
+    } else {
+        // This is the case where the user is restoring to defaults without a preset
+        if (nodeIsCreated) {
+            clearGroupWithoutViewerProcess();
+            setupGraph(false);
+        }
+    }
+
+    // Ensure the internal viewer process node exists
+    if (!_imp->internalViewerProcessNode.lock()) {
+        NodePtr internalViewerNode;
+        NodesList nodes = getNodes();
+        for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            if ((*it)->isEffectViewerInstance()) {
+                internalViewerNode = *it;
+                break;
+            }
+        }
+        assert(internalViewerNode);
+        if (!internalViewerNode) {
+            throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
+        }
+        _imp->internalViewerProcessNode = internalViewerNode;
+        Q_EMIT internalViewerCreated();
+        
+        _imp->onInternalViewerCreated();
+
+    }
+
+
+    _imp->refreshInputChoices(true);
+    refreshInputFromChoiceMenu(0);
+    refreshInputFromChoiceMenu(1);
 }
 
 
@@ -968,31 +1062,6 @@ ViewerNodePrivate::onInternalViewerCreated()
     mustSetUpPlaybackButtonsTimer.setSingleShot(true);
     QObject::connect( &mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), _publicInterface, SLOT(onSetDownPlaybackButtonsTimeout()) );
 
-}
-
-void
-ViewerNode::onGroupLoaded()
-{
-    NodePtr internalViewerNode;
-    NodesList nodes = getNodes();
-    for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        if ((*it)->isEffectViewerInstance()) {
-            internalViewerNode = *it;
-            break;
-        }
-    }
-    assert(internalViewerNode);
-    if (!internalViewerNode) {
-        throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
-    }
-    _imp->internalViewerProcessNode = internalViewerNode;
-    Q_EMIT internalViewerCreated();
-
-    _imp->onInternalViewerCreated();
-
-    _imp->refreshInputChoices(true);
-    refreshInputFromChoiceMenu(0);
-    refreshInputFromChoiceMenu(1);
 }
 
 /**
@@ -2461,7 +2530,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
-    if (!k) {
+    if (!k || reason == eValueChangedReasonRestoreDefault) {
         return false;
     }
 
@@ -2548,7 +2617,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         } else if (zoomChoice == "-") {
              _imp->scaleZoomFactor(0.9);
         } else {
-            QString str = QString::fromUtf8(zoomChoice.substr(0, zoomChoice.size() - 1).c_str());
+            QString str = QString::fromUtf8(zoomChoice.c_str());
+            str = str.trimmed();
+            str = str.mid(0, str.size() - 1);
             int zoomInteger = str.toInt();
             _imp->uiContext->zoomViewport(zoomInteger / 100.);
         }

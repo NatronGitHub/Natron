@@ -1137,9 +1137,9 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
 
     U64 knobsAge;
     ar & ::boost::serialization::make_nvp("KnobsAge", knobsAge);
-    ar & ::boost::serialization::make_nvp("MasterNode", _masterNodeFullyQualifiedScriptName);
+    ar & ::boost::serialization::make_nvp("MasterNode", _masterNodecriptName);
     if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-        _masterNodeFullyQualifiedScriptName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodeFullyQualifiedScriptName);
+        _masterNodecriptName = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_masterNodecriptName);
     }
 
     if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {

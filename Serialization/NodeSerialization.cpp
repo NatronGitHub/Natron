@@ -126,8 +126,8 @@ NodeSerialization::encode(YAML::Emitter& em) const
     }
 
      // Only serialize clone stuff for non pyplug/non presets
-    if (_encodeType == eNodeSerializationTypeRegular && !_masterNodeFullyQualifiedScriptName.empty()) {
-        em << YAML::Key << "CloneMaster" << YAML::Value << _masterNodeFullyQualifiedScriptName;
+    if (_encodeType == eNodeSerializationTypeRegular && !_masterNodecriptName.empty()) {
+        em << YAML::Key << "CloneMaster" << YAML::Value << _masterNodecriptName;
     }
 
     if (!_presetInstanceLabel.empty()) {
@@ -264,7 +264,7 @@ NodeSerialization::decode(const YAML::Node& node)
         _trackerContext->decode(node["Tracks"]);
     }
     if (node["CloneMaster"]) {
-        _masterNodeFullyQualifiedScriptName = node["CloneMaster"].as<std::string>();
+        _masterNodecriptName = node["CloneMaster"].as<std::string>();
     }
     
     if (node["Preset"]) {

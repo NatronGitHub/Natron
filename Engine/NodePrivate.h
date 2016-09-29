@@ -376,11 +376,11 @@ public:
     // This is used to determine if the ordering has changed or not for serialization purpose
     std::list<std::string> defaultViewerKnobsOrder;
 
-    // When deserializing a Group, the internal nodes are built before the Group UI is created, hence we store them in this
-    // list temporarily to create their GUI once the Group creates its own
-    std::list<std::pair<NodePtr, CreateNodeArgsPtr> > nodesToCreateGui;
-
     bool restoringDefaults;
+
+    // Used to determine which knobs are presets, so that if the user switch preset we remove them
+    bool isLoadingPreset;
+    std::list<KnobIWPtr> presetKnobs;
 };
 
 class RefreshingInputData_RAII

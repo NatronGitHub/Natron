@@ -72,8 +72,6 @@ ViewerTab::updateZoomComboBox(int value)
     assert(value > 0);
     QString str = QString::number(value);
     str.append( QLatin1Char('%') );
-    str.prepend( QString::fromUtf8("  ") );
-    str.append( QString::fromUtf8("  ") );
     ViewerNodePtr internalNode = getInternalNode();
     if (internalNode) {
         internalNode->setZoomComboBoxText(str.toStdString());

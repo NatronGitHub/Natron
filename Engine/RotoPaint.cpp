@@ -224,7 +224,7 @@ RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b,
 }
 
 void
-RotoPaint::setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* /*serialization*/)
+RotoPaint::setupInitialSubGraphState()
 {
     RotoPaintPtr thisShared = boost::dynamic_pointer_cast<RotoPaint>(shared_from_this());
     for (int i = 0; i < ROTOPAINT_MAX_INPUTS_COUNT; ++i) {

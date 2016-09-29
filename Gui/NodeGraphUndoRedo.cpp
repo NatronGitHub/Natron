@@ -129,7 +129,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodeGuiPtr node = it->lock();
             if (node) {
-                node->getNode()->destroyNode(false);
+                node->getNode()->destroyNode(false, false);
             }
         }
     }
@@ -259,7 +259,7 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodeGuiPtr n = it->node.lock();
             if (n) {
-                n->getNode()->destroyNode(false);
+                n->getNode()->destroyNode(false, false);
             }
         }
     }
@@ -725,7 +725,7 @@ void
 DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node.lock()->getNode()->getEffectInstance()->slaveAllKnobs( it->master.lock()->getEffectInstance(), false );
+        it->node.lock()->getNode()->getEffectInstance()->slaveAllKnobs( it->master.lock()->getEffectInstance() );
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -2027,7 +2027,7 @@ RestoreNodeToDefaultCommand::redo()
         if (!internalNode) {
             continue;
         }
-        internalNode->restoreNodeToDefaultState();
+        internalNode->restoreNodeToDefaultState(CreateNodeArgsPtr());
     }
 }
 

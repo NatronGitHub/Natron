@@ -1768,7 +1768,7 @@ AppManager::loadNodesPresets()
             continue;
         }
 
-        if (!obj._presetInstanceLabel.empty()) {
+        if (!obj._presetsIdentifierLabel.empty()) {
             // If the preset label is set, append as a preset of an existing plug-in
             PluginPtr foundPlugin;
             try {
@@ -1781,7 +1781,7 @@ AppManager::loadNodesPresets()
             }
             PluginPresetDescriptor preset;
             preset.presetFilePath = presetFile;
-            preset.presetLabel = QString::fromUtf8(obj._presetInstanceLabel.c_str());
+            preset.presetLabel = QString::fromUtf8(obj._presetsIdentifierLabel.c_str());
             preset.presetIconFile = QString::fromUtf8(obj._presetsIconFilePath.c_str());
             preset.symbol = (Key)obj._presetShortcutSymbol;
             preset.modifiers = KeyboardModifiers(obj._presetShortcutPresetModifiers);
@@ -2207,7 +2207,13 @@ AppManager::getPluginBinary(const QString & pluginId,
 NodePtr
 AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group)
 {
-    NodePtr retNode;
+
+    NodePtr retNode = group->getNodeByName(serialization->_nodeScriptName);
+
+    // When loading a group, if a node with the same name and plug-in ID already exists, return it
+    if (retNode && retNode->getPluginID() == serialization->_pluginID) {
+        return retNode;
+    }
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);

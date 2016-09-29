@@ -2149,14 +2149,55 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, 
 }
 
 
+
+template <typename T>
+void initDefaultValue(T* value)
+{
+    *value = T();
+}
+
+
+template <>
+void initDefaultValue(double* value)
+{
+    *value = 0.;
+}
+
+template <>
+void initDefaultValue(int* value)
+{
+    *value = 0;
+}
+
+template <>
+void initDefaultValue(bool* value)
+{
+    *value = false;
+}
+
+
+template<>
+void
+Knob<bool>::populate()
+{
+    for (int i = 0; i < getDimension(); ++i) {
+        _values[i] = false;
+        _guiValues[i] = false;
+        _defaultValues[i].value = false;
+        _defaultValues[i].defaultValueSet = false;
+    }
+    KnobHelper::populate();
+}
+
+
 template<typename T>
 void
 Knob<T>::populate()
 {
     for (int i = 0; i < getDimension(); ++i) {
-        _values[i] = T();
-        _guiValues[i] = T();
-        _defaultValues[i].value = T();
+        initDefaultValue<T>(&_values[i]);
+        initDefaultValue<T>(&_guiValues[i]);
+        initDefaultValue<T>(&_defaultValues[i].value);
         _defaultValues[i].defaultValueSet = false;
     }
     KnobHelper::populate();

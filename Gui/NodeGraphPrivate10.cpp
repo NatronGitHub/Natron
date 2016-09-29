@@ -130,7 +130,7 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        //args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
 
         duplicateNode = groupContainer->getApplication()->createNode(args);
 
@@ -156,7 +156,7 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
         DotGui* isDot = dynamic_cast<DotGui*>( duplicateNodeUI.get() );
         // Dots cannot be cloned, just copy them
         if (!isDot) {
-            duplicateNode->getEffectInstance()->slaveAllKnobs( cloneMaster->getEffectInstance(), false );
+            duplicateNode->getEffectInstance()->slaveAllKnobs( cloneMaster->getEffectInstance() );
         }
     }
 

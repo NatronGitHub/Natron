@@ -107,7 +107,7 @@ public:
 
     bool isDoingNeatRender() const;
 
-    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization) OVERRIDE FINAL;
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
     NodePtr getPremultNode() const;
 

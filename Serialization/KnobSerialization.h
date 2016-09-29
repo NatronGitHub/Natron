@@ -50,6 +50,13 @@
 #define kKnobInViewerContextDefaultItemSpacing 5
 #define kKnobStringDefaultFontSize 11
 
+// When the knob is slaved to a knob on the Group node containing the node
+// we use this special string instead for masterNodeName because the group name
+// might change from one group to another.
+// We make sure to include a character that is not allowed to Python (the '@' character)
+// to ensure no node in the node-graph can have this script-name ever.
+#define kKnobMasterNodeIsGroup "@thisGroup"
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 /**
@@ -72,16 +79,26 @@ SERIALIZATION_NAMESPACE_ENTER;
  **/
 struct MasterSerialization
 {
-    std::string masterDimensionName; // The dimension the knob is slaved to in the master knob
-    std::string masterNodeName; // the node script-name holding this knob
-    std::string masterTrackName; // if the master knob is part of a track this is the track name
-    std::string masterKnobName; // the script-name of the master knob
+    // The dimension the knob is slaved to in the master knob
+    std::string masterDimensionName;
+
+    // the node script-name holding this knob
+    std::string masterNodeName;
+
+    // if the master knob is part of a track this is the track name
+    std::string masterTrackName;
+
+    // the script-name of the master knob
+    std::string masterKnobName;
+
+    // If true this struct is considered to contain relevant data
     bool hasLink;
 
     MasterSerialization()
     : hasLink(false)
     {
     }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 

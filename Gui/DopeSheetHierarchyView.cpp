@@ -378,7 +378,9 @@ HierarchyViewPrivate::checkKnobVisibleState(const DSKnobPtr& dsKnob)
 {
     int dim = dsKnob->getDimension();
     KnobGuiPtr knobGui = dsKnob->getKnobGui();
-
+    if (!knobGui) {
+        return;
+    }
     assert(knobGui);
     bool showContext = false;
 

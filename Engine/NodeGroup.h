@@ -89,6 +89,7 @@ public:
      * @brief Removes a node from the collection. MT-safe.
      **/
     void removeNode(const NodePtr& node);
+    void removeNode(const Node* node);
 
     /**
      * @brief Get the last node added with the given id
@@ -98,7 +99,16 @@ public:
     /**
      * @brief Removes all nodes within the collection. MT-safe.
      **/
-    void clearNodes(bool emitSignal);
+    void clearNodesBlocking();
+    void clearNodesNonBlocking();
+private:
+
+    void clearNodesInternal(bool blocking);
+
+public:
+
+
+
 
 
     /**
@@ -281,6 +291,7 @@ public:
 
 protected:
 
+    virtual void onNodeRemoved(const Node* /*node*/) {}
 
     virtual void onGraphEditableChanged(bool /*changed*/) {}
 
@@ -385,34 +396,31 @@ public:
 
     /**
      * @brief For sub-classes override to choose whether to create a node graph that will be visible by the user or not.
-     * If returning false, the nodegraph will NEVER be created.
+     * If returning false, the nodegraph will NEVER be created and all nodes in the node-graph are expected to be non-persistent, i.e:
+     * when reloading the node, it should create the internal nodes again.
      **/
     virtual bool isSubGraphUserVisible() const
     {
         return true;
     }
 
-    /**
-     * @brief Callback called when the node gui has been created
-     **/
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& args) OVERRIDE;
-
-    /**
-     * @brief Callback called after the internal group has been restored completely. 
-     * Base implementation doesn't do anything
-     **/
-    virtual void onGroupLoaded() {}
 
     /**
      * @brief Called when the Group is created or when the node is reset to default to re-initialize the node to its default state.
      **/
-    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization );
+    virtual void setupInitialSubGraphState();
+
+    virtual void loadSubGraph(bool nodeIsCreated,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization);
 
 Q_SIGNALS:
 
     void graphEditableChanged(bool);
 
 private:
+
+    virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
 
     // A group render function should never get called
     virtual StatusEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN

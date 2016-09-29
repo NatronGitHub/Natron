@@ -593,6 +593,8 @@ NodeGraph::onGroupNameChanged(const QString& /*name*/)
     if (isGrp) {
         std::string label;
         makeFullyQualifiedLabel(isGrp->getNode(), &label);
+        label += ' ';
+        label += tr("Node Graph").toStdString();
         setLabel(label);
         TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
         if (parent) {
@@ -620,12 +622,8 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
             newName[i] = '_';
         }
     }
-    std::string oldName = getScriptName();
-    for (std::size_t i = 0; i < oldName.size(); ++i) {
-        if (oldName[i] == '.') {
-            oldName[i] = '_';
-        }
-    }
+    newName += "_NodeGraph";
+
     setScriptName(newName);
 
   

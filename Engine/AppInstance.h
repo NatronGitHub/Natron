@@ -430,6 +430,8 @@ public:
 
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
 
+    virtual void createGroupGui(const NodePtr & /*group*/, const CreateNodeArgs& /*args*/) {}
+
     void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
     virtual void reloadScriptEditorFonts() {}
 

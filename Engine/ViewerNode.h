@@ -225,7 +225,12 @@ public:
 
     KnobButtonPtr getTurboModeButtonKnob() const;
 
-    virtual void setupInitialSubGraphState(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization ) OVERRIDE FINAL;
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
+
+    virtual void loadSubGraph(bool nodeIsCreated,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization) OVERRIDE FINAL;
+
 
     virtual bool isOutput() const OVERRIDE FINAL
     {
@@ -255,9 +260,6 @@ public:
     {
         Q_EMIT disconnectTextureRequest(index, clearRoD);
     }
-
-    // Called when the group containing this viewer node has been fully restored, including graph links
-    virtual void onGroupLoaded() OVERRIDE FINAL;
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
@@ -289,6 +291,12 @@ Q_SIGNALS:
     void internalViewerCreated();
 
 private:
+
+    void createViewerProcessNode();
+
+    void setupGraph(bool createViewerProcess);
+
+    void clearGroupWithoutViewerProcess();
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 

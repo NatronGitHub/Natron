@@ -244,7 +244,7 @@ Effect::isWriterNode()
 void
 Effect::destroy(bool autoReconnect)
 {
-    getInternalNode()->destroyNode(autoReconnect);
+    getInternalNode()->destroyNode(false, autoReconnect);
 }
 
 int

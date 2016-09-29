@@ -1041,7 +1041,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
         if (hasMaster) {
-            slaveAllKnobs(hasMaster->getEffectInstance(), false);
+            slaveAllKnobs(hasMaster->getEffectInstance());
         }
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();

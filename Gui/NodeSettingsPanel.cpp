@@ -346,6 +346,8 @@ SavePresetsDialog::SavePresetsDialog(Gui* gui, QWidget* parent)
     QPixmap openPix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
     filePathOpenButton = new Button(QIcon(openPix), QString(), row4);
+    filePathOpenButton->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    filePathOpenButton->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
     QObject::connect( filePathOpenButton, SIGNAL(clicked(bool)), this, SLOT(onOpenFileButtonClicked()) );
     row4Layout->addWidget(filePathEdit);
     row4Layout->addWidget(filePathOpenButton);
@@ -374,8 +376,9 @@ void
 SavePresetsDialog::onOpenFileButtonClicked()
 {
     std::vector<std::string> filters;
+    filters.push_back(NATRON_PRESETS_FILE_EXT);
     const QString& path = _gui->getLastPluginDirectory();
-    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeDir, path.toStdString(), _gui, false);
+    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave, path.toStdString(), _gui, false);
     
     if ( dialog.exec() ) {
         std::string selection = dialog.selectedFiles();
@@ -427,14 +430,6 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     QString presetFilePath = presetPath;
     if (!presetFilePath.endsWith(QLatin1String("." NATRON_PRESETS_FILE_EXT))) {
         presetFilePath += QLatin1String("." NATRON_PRESETS_FILE_EXT);
-    }
-
-    if (QFile::exists(presetFilePath)) {
-        QString message = tr("%1 already exists, Would you like to overwrite it?").arg(presetFilePath);
-        StandardButtonEnum rep = Dialogs::questionDialog( tr("Export Presets").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo) );
-        if (rep != eStandardButtonYes) {
-            return;
-        }
     }
     
     Qt::KeyboardModifiers qtMods;

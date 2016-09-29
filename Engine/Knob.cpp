@@ -3570,13 +3570,15 @@ KnobHelper::slaveToInternal(int dimension,
 
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), ViewIdx(0), reason);
-    } else if (isBtn) {
-        //For buttons, don't evaluate or the instanceChanged action of the button will be called,
+    } else {
         //just refresh the hasModifications flag so it gets serialized
-        isBtn->computeHasModifications();
-        //force the aliased parameter to be persistent if it's not, otherwise it will not be saved
-        isBtn->setIsPersistent(true);
+        computeHasModifications();
+        if (isBtn) {
+            //force the aliased parameter to be persistent if it's not, otherwise it will not be saved
+            isBtn->setIsPersistent(true);
+        }
     }
+
 
     ///Register this as a listener of the master
     if (masterKnob) {
@@ -4731,7 +4733,19 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
                 } else {
                     // coverity[dead_error_line]
                     if (holder && holder != knob->getHolder()) {
-                        serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
+                        // If the master knob is on  the group containing the node holding this knob
+                        // then don't serialize the node name
+
+                        EffectInstancePtr thisHolderIsEffect = toEffectInstance(knob->getHolder());
+                        if (thisHolderIsEffect) {
+                            NodeGroupPtr isGrp = toNodeGroup(thisHolderIsEffect->getNode()->getGroup());
+                            if (isGrp && isGrp == holder) {
+                                serialization->_slaveMasterLink.masterNodeName = kKnobMasterNodeIsGroup;
+                            }
+                        }
+                        if (serialization->_slaveMasterLink.masterNodeName.empty()) {
+                            serialization->_slaveMasterLink.masterNodeName = holder->getScriptName_mt_safe();
+                        }
                     }
                 }
                 serialization->_slaveMasterLink.masterKnobName = master.second->getName();
@@ -5509,8 +5523,12 @@ KnobHolder::~KnobHolder()
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelperPtr helper = boost::dynamic_pointer_cast<KnobHelper>(_imp->knobs[i]);
         assert(helper);
-        if ( helper && (helper->getHolder().get() == this) ) {
-            helper->_imp->holder.reset();
+        if (helper) {
+            helper->deleteKnob();
+            // Make sure nobody is referencing this
+            if ((helper->getHolder().get() == this) ) {
+                helper->_imp->holder.reset();
+            }
         }
     }
 }
@@ -5724,7 +5742,7 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
         }
     }
 
-    if (alsoDeleteGui && _imp->settingsPanel) {
+    if (sharedKnob && alsoDeleteGui && _imp->settingsPanel) {
         _imp->settingsPanel->deleteKnobGui(sharedKnob);
     }
 }
@@ -6655,8 +6673,7 @@ KnobHolder::getKnobs_mt_safe() const
 }
 
 void
-KnobHolder::slaveAllKnobs(const KnobHolderPtr& other,
-                          bool restore)
+KnobHolder::slaveAllKnobs(const KnobHolderPtr& other)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (_imp->isSlave) {
@@ -6667,32 +6684,31 @@ KnobHolder::slaveAllKnobs(const KnobHolderPtr& other,
 
     ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
     ///will reslave it correctly if needed
-    if (!restore) {
-        beginChanges();
+    beginChanges();
 
-        const KnobsVec & otherKnobs = other->getKnobs();
-        const KnobsVec & thisKnobs = getKnobs();
-        for (U32 i = 0; i < otherKnobs.size(); ++i) {
-            if ( otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob() ) {
-                KnobIPtr foundKnob;
-                for (U32 j = 0; j < thisKnobs.size(); ++j) {
-                    if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
-                        foundKnob = thisKnobs[j];
-                        break;
-                    }
-                }
-                assert(foundKnob);
-                if (!foundKnob) {
-                    continue;
-                }
-                int dims = foundKnob->getDimension();
-                for (int j = 0; j < dims; ++j) {
-                    foundKnob->slaveTo(j, otherKnobs[i], j);
+    const KnobsVec & otherKnobs = other->getKnobs();
+    const KnobsVec & thisKnobs = getKnobs();
+    for (U32 i = 0; i < otherKnobs.size(); ++i) {
+        if ( otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob() ) {
+            KnobIPtr foundKnob;
+            for (U32 j = 0; j < thisKnobs.size(); ++j) {
+                if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
+                    foundKnob = thisKnobs[j];
+                    break;
                 }
             }
+            assert(foundKnob);
+            if (!foundKnob) {
+                continue;
+            }
+            int dims = foundKnob->getDimension();
+            for (int j = 0; j < dims; ++j) {
+                foundKnob->slaveTo(j, otherKnobs[i], j);
+            }
         }
-        endChanges();
     }
+    endChanges();
+
     _imp->isSlave = true;
 }
 
@@ -6720,7 +6736,6 @@ KnobHolder::unslaveAllKnobs()
     }
     endChanges();
     _imp->isSlave = false;
-    onAllKnobsSlaved(false, KnobHolderPtr());
 }
 
 void

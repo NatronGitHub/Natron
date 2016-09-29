@@ -180,7 +180,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _panelCreated(false)
     , _clonedColor()
     , _wasBeginEditCalled(false)
-    , _slaveMasterLink(NULL)
+    , _slaveMasterLink()
     , _masterNodeGui()
     , _knobsLinks()
     , _expressionIndicator()
@@ -257,7 +257,7 @@ NodeGui::initialize(NodeGraph* dag,
     createGui();
     refreshPosition(x, y, true);
 
-    // For the tracker node, it needs the panel created by default for the tracks panel
+    // For the tracker node, it needs the panel created by default for the tracks panel (is it still needed?)
     {
         const bool panelAlwaysCreatedByDefault = internalNode->getEffectInstance()->isBuiltinTrackerNode();
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
@@ -313,12 +313,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     }
 
-    // For a group create its node graph
-    NodeGroupPtr isGroup = internalNode->isEffectNodeGroup();
-    if ( isGroup && isGroup->isSubGraphUserVisible() ) {
-        getDagGui()->getGui()->createGroupGui(internalNode, args);
-    }
-
 } // initialize
 
 void
@@ -360,6 +354,10 @@ NodeGui::restoreStateAfterCreation()
     onOutputLayerChanged();
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
+
+    if (internalNode->getMasterNode()) {
+        onAllKnobsSlaved(true);
+    }
     onKnobsLinksChanged();
 }
 
@@ -2176,7 +2174,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         assert(!_slaveMasterLink);
 
         if ( masterNode->getGroup() == node->getGroup() ) {
-            _slaveMasterLink = new LinkArrow( masterNodeGui, shared_from_this(), parentItem() );
+            _slaveMasterLink.reset(new LinkArrow( masterNodeGui, shared_from_this(), parentItem() ));
             _slaveMasterLink->setColor( QColor(200, 100, 100) );
             _slaveMasterLink->setArrowHeadColor( QColor(243, 137, 20) );
             _slaveMasterLink->setWidth(3);
@@ -2188,8 +2186,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         }
     } else {
         if (_slaveMasterLink) {
-            delete _slaveMasterLink;
-            _slaveMasterLink = 0;
+            _slaveMasterLink.reset();
         }
         _masterNodeGui.reset();
         if ( !node->isNodeDisabled() ) {
@@ -2198,6 +2195,10 @@ NodeGui::onAllKnobsSlaved(bool b)
             }
         }
     }
+
+    // Also refresh links
+    onKnobsLinksChanged();
+    
     update();
 }
 
@@ -2276,20 +2277,27 @@ NodeGui::onKnobsLinksChanged()
     InternalLinks links;
     node->getKnobsLinks(links);
 
+    // When the node is cloned, don't consider links
+    NodePtr nodeIsCloned = node->getMasterNode();
+
     ///1st pass: remove the no longer needed links
     KnobGuiLinks newLinks;
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        bool found = false;
-        for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
-            if ( it2->masterNode.lock() == it->first.lock() ) {
-                found = true;
-                break;
+    if (nodeIsCloned) {
+        links.clear();
+    } else {
+        for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
+            bool found = false;
+            for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
+                if ( it2->masterNode.lock() == it->first.lock() ) {
+                    found = true;
+                    break;
+                }
             }
-        }
-        if (!found) {
-            delete it->second.arrow;
-        } else {
-            newLinks.insert(*it);
+            if (!found) {
+                delete it->second.arrow;
+            } else {
+                newLinks.insert(*it);
+            }
         }
     }
     _knobsLinks = newLinks;
@@ -2298,7 +2306,14 @@ NodeGui::onKnobsLinksChanged()
 
     NodeGuiPtr thisShared = shared_from_this();
 
+    int nbVisibleLinks = 0;
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
+        if (it->master.lock()->getIsSecret() || it->slave.lock()->getIsSecret()) {
+            continue;
+        }
+
+        ++nbVisibleLinks;
+
         NodePtr masterNode = it->masterNode.lock();
         KnobGuiLinks::iterator foundGuiLink = masterNode ? _knobsLinks.find(it->masterNode) : _knobsLinks.end();
         if ( foundGuiLink != _knobsLinks.end() ) {
@@ -2356,7 +2371,7 @@ NodeGui::onKnobsLinksChanged()
         }
     }
 
-    if (links.size() > 0) {
+    if (nbVisibleLinks > 0) {
         if ( !_expressionIndicator->isActive() ) {
             _expressionIndicator->setActive(true);
         }
@@ -2874,7 +2889,9 @@ NodeGui::refreshNodeText()
 
     if (!presetsIconSet && !presetsLabel.isEmpty()) {
         finalText += QLatin1Char('\n');
+        finalText += QLatin1Char('(');
         finalText += presetsLabel;
+        finalText += QLatin1Char(')');
     }
     if (!subLabelContent.isEmpty()) {
         finalText += QLatin1Char('\n');
@@ -3721,12 +3738,14 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
     bool showDialog = group->getValue();
     if (showDialog) {
         assert(!_activeNodeCustomModalDialog);
-        boost::shared_ptr<GroupKnobDialog> dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
-        _activeNodeCustomModalDialog = dialog;
-        dialog->move( QCursor::pos() );
-        dialog->exec();
-        // Notify dialog closed
-        group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+        {
+            boost::shared_ptr<GroupKnobDialog> dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
+            _activeNodeCustomModalDialog = dialog;
+            dialog->move( QCursor::pos() );
+            dialog->exec();
+            // Notify dialog closed
+            group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+        }
         _activeNodeCustomModalDialog.reset();
     } else {
         _activeNodeCustomModalDialog->close();

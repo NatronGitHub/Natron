@@ -63,7 +63,7 @@ public:
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
-    , _masterNodeFullyQualifiedScriptName()
+    , _masterNodecriptName()
     , _inputs()
     , _rotoContext()
     , _trackerContext()
@@ -131,8 +131,8 @@ public:
     int _pluginMajorVersion;
     int _pluginMinorVersion;
 
-    // If this node is a clone of another one, this is the full script-name of the master node
-    std::string _masterNodeFullyQualifiedScriptName;
+    // If this node is a clone of another one, this is the script-name of the master node
+    std::string _masterNodecriptName;
 
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
     std::map<std::string, std::string> _inputs;

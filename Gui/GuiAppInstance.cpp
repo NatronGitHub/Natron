@@ -190,13 +190,13 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             //_imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            _imp->_previewProvider->viewerNodeInternal->destroyNode(false);
+            _imp->_previewProvider->viewerNodeInternal->destroyNode(true, false);
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
 
         if (_imp->_previewProvider->readerNode) {
-            _imp->_previewProvider->readerNode->destroyNode(false);
+            _imp->_previewProvider->readerNode->destroyNode(true, false);
             _imp->_previewProvider->readerNode.reset();
         }
 
@@ -1008,9 +1008,16 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
+GuiAppInstance::createGroupGui(const NodePtr & group, const CreateNodeArgs& args)
+{
+    _imp->_gui->createGroupGui(group, args);
+}
+
+void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                                         const CreateNodeArgs& args)
 {
+#pragma message WARN("Check this")
     NodeGuiPtr nodeGui;
     {
         NodeGuiIPtr node_gui_i = node->getNodeGui();

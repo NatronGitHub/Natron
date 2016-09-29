@@ -145,6 +145,8 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , overlayColor()
 , nodeIsSelected(false)
 , restoringDefaults(false)
+, isLoadingPreset(false)
+, presetKnobs()
 {
     nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
     nodeSize[0] = nodeSize[1] = -1;
