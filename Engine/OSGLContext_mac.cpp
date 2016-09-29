@@ -46,6 +46,7 @@
 
 #include <OpenGL/OpenGL.h> // necessary for CGL, even if glad was included just above
 #include <OpenGL/CGLTypes.h>
+#include <OpenGL/CGLRenderers.h>
 
 #include "Engine/OSGLContext.h"
 #include "Engine/AppManager.h"
@@ -536,7 +537,7 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         GLint nBytesMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
         GLint nBytesTexMem;
-        CGLDescribeRenderer(rend, i,  kCGLRPTextureeMemory, &nBytesTexMem);
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemory, &nBytesTexMem);
         qDebug() << "OpenGL renderer" << RendererIDString(rendererID) << "has" << nBytesMem/(1024.*1024.) << "MB of VRAM and" << nBytesTexMem/(1024.*1024.) << "MB of texture";
 
         info.maxMemBytes = (std::size_t)nBytesMem;
