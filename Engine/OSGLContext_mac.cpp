@@ -463,6 +463,47 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
 #endif // if 0
 }
 
+static const char *RendererIDString(GLint ID)
+{
+    static char holder[256] = {0};
+    // should compile on OSX 10.6 (we don't use defines or enums that wer introduced later)
+    switch (ID & kCGLRendererIDMatchingMask) {
+        case kCGLRendererGenericID: return "kCGLRendererGenericID";
+        case kCGLRendererGenericFloatID: return "kCGLRendererGenericFloatID";
+        case kCGLRendererAppleSWID: return "kCGLRendererAppleSWID";
+        case kCGLRendererATIRage128ID: return "kCGLRendererATIRage128ID";
+        case kCGLRendererATIRadeonID: return "kCGLRendererATIRadeonID";
+        case kCGLRendererATIRageProID: return "kCGLRendererATIRageProID";
+        case kCGLRendererATIRadeon8500ID: return "kCGLRendererATIRadeon8500ID";
+        case kCGLRendererATIRadeon9700ID: return "kCGLRendererATIRadeon9700ID";
+        case kCGLRendererATIRadeonX1000ID: return "kCGLRendererATIRadeonX1000ID"; // Radeon X1xxx
+        case kCGLRendererATIRadeonX2000ID: return "kCGLRendererATIRadeonX2000ID"; // Radeon HD 2xxx and 4xxx
+        //case kCGLRendererATIRadeonX3000ID:
+        case 0x00021B00: return "kCGLRendererATIRadeonX3000ID"; // Radeon HD 5xxx and 6xxx
+        //case kCGLRendererATIRadeonX4000ID:
+        case 0x00021C00: return "kCGLRendererATIRadeonX4000ID"; // Radeon HD 7xxx
+        case kCGLRendererGeForce2MXID: return "kCGLRendererGeForce2MXID"; // GeForce 2MX and 4MX
+        case kCGLRendererGeForce3ID: return "kCGLRendererGeForce3ID"; // GeForce 3 and 4Ti
+        case kCGLRendererGeForceFXID: return "kCGLRendererGeForceFXID"; // GeForce 5xxx, 6xxx and 7xxx, and Quadro FX 4500
+        case kCGLRendererGeForce8xxxID: return "kCGLRendererGeForce8xxxID"; // GeForce 8xxx, 9xxx, 1xx, 2xx, and 3xx, and Quadro 4800
+        //case kCGLRendererGeForceID: return "kCGLRendererGeForceID"; // GeForce 6xx, and Quadro 4000, K5000
+        case kCGLRendererVTBladeXP2ID: return "kCGLRendererVTBladeXP2ID";
+        case kCGLRendererIntel900ID: return "kCGLRendererIntel900ID"; // GMA 950
+        case kCGLRendererIntelX3100ID: return "kCGLRendererIntelX3100ID";
+        //case kCGLRendererIntelHDID:
+        case 0x00024300: return "kCGLRendererIntelHDID"; // HD Graphics 3000
+        //case kCGLRendererIntelHD4000ID:
+        case 0x00024400: return "kCGLRendererIntelHD4000ID";
+        //case kCGLRendererIntelHD5000ID:
+        case 0x00024500: return "kCGLRendererIntelHD5000ID"; // Iris
+        case kCGLRendererMesa3DFXID: return "kCGLRendererMesa3DFXID";
+        default: {
+            sprintf(holder, "Unknown(%p)", (void *) ID);
+            return (const char *) holder;
+        }
+    }
+}
+
 void
 OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
@@ -477,12 +518,14 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         OpenGLRendererInfo info;
         GLint rendererID, haccelerated;
         if (CGLDescribeRenderer(rend, i,  kCGLRPRendererID, &rendererID) != kCGLNoError) {
+            qDebug() << "Could not describe OpenGL renderer" << i;
             continue;
         }
         CGLDescribeRenderer(rend, i,  kCGLRPAccelerated, &haccelerated);
 
         // We don't allow renderers that are not hardware accelerated
         if (!haccelerated) {
+            qDebug() << "OpenGL renderer" << RendererIDString(rendererID) << "is not accelerated";
             continue;
         }
 
@@ -492,6 +535,9 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
         GLint nBytesMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
+        GLint nBytesTexMem;
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureeMemory, &nBytesTexMem);
+        qDebug() << "OpenGL renderer" << RendererIDString(rendererID) << "has" << nBytesMem/(1024.*1024.) << "MB of VRAM and" << nBytesTexMem/(1024.*1024.) << "MB of texture";
 
         info.maxMemBytes = (std::size_t)nBytesMem;
 #else
@@ -499,8 +545,11 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         //Deprecated in OS X v10.7.
         GLint nMBMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemoryMegabytes, &nMBMem);
+        GLint nMBTexMem;
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemoryMegabytes, &nMBTexMem);
 
         info.maxMemBytes = (std::size_t)nMBMem * 1e6;
+        qDebug() << "OpenGL renderer" << RendererIDString(rendererID) << "has" << nMBMem << "MB of VRAM and" << nMBTexMem << "MB of texture";
 
         // Available in OS X v10.9
         //GLint maxOpenGLMajorVersion;
@@ -522,19 +571,23 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         GLint numPixelFormats;
         CGLError errorCode = CGLChoosePixelFormat(&attributes[0], &pixelFormat, &numPixelFormats);
         if (errorCode != kCGLNoError) {
-            qDebug() << "Failed to created pixel format for renderer " << rendererID;
+            qDebug() << "Failed to created pixel format for renderer " << RendererIDString(rendererID);
+            continue;
+        }
+        if (pixelFormat == NULL) {
+            qDebug() << "No matching pixel format exists for renderer " << RendererIDString(rendererID);
             continue;
         }
         CGLContextObj cglContext;
         errorCode = CGLCreateContext(pixelFormat, 0, &cglContext);
         CGLDestroyPixelFormat (pixelFormat);
         if (errorCode != kCGLNoError) {
-            qDebug() << "Failed to create OpenGL context for renderer " << rendererID;
+            qDebug() << "Failed to create OpenGL context for renderer " << RendererIDString(rendererID);
             continue;
         }
         errorCode = CGLSetCurrentContext (cglContext);
         if (errorCode != kCGLNoError) {
-            qDebug() << "Failed to make OpenGL context current for renderer " << rendererID;
+            qDebug() << "Failed to make OpenGL context current for renderer " << RendererIDString(rendererID);
             continue;
         }
         // get renderer strings
