@@ -6814,28 +6814,52 @@ Node::getMaxInputCount() const
     return _imp->effect->getMaxInputCount();
 }
 
+std::string removeTrailingDigits(const std::string& str)
+{
+    if (str.empty()) {
+        return std::string();
+    }
+    std::size_t i = str.size() - 1;
+    while (i > 0 && std::isdigit(str[i])) {
+        --i;
+    }
+
+    if (i == 0) {
+        // Name only consists of digits
+        return std::string();
+    }
+
+    return str.substr(0, i + 1);
+}
+
 bool
 Node::isEntitledForInspectorInputsStyle() const
 {
-    ViewerNodePtr isViewer = toViewerNode(_imp->effect);
-    if (isViewer) {
-        return true;
-    }
+
+    // Find the number of inputs that share the same basename
+
+    int nInputsWithSameBasename = 0;
+
+    std::string baseInputName;
+
+    // We need a boolean here because the baseInputName may be empty in the case input names only contain numbers
+    bool baseInputNameSet = false;
+
     int maxInputs = getMaxInputCount();
-    int nOptionalInputs = 0;
-    bool firstInput = true;
     for (int i = 0; i < maxInputs; ++i) {
-        if ( !_imp->effect->isInputOptional(i)) {
-            // allow one non-optional input, otherwise display them all
-            if (!firstInput) {
-                return false;
-            }
+        if (!baseInputNameSet) {
+            baseInputName = removeTrailingDigits(getInputLabel(i));
+            baseInputNameSet = true;
+            nInputsWithSameBasename = 1;
         } else {
-            ++nOptionalInputs;
+            std::string thisBaseName = removeTrailingDigits(getInputLabel(i));
+            if (thisBaseName == baseInputName) {
+                ++nInputsWithSameBasename;
+            }
         }
-        firstInput = false;
+
     }
-    return nOptionalInputs > 4;
+    return maxInputs > 4 && nInputsWithSameBasename >= 4;
 }
 
 bool
