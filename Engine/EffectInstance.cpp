@@ -608,7 +608,9 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
     rod.toPixelEnclosing(scale, getAspectRatio(-1), &pixelRod);
     try {
         int identityInputNb;
-        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, inputView, &identityInputNb);
+        double identityTime;
+        ViewIdx identityView;
+        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, &identityTime, &identityView, &identityInputNb);
         if (*isIdentity_p) {
             if (identityInputNb >= 0) {
                 *identityInput_p = getInput(identityInputNb);
