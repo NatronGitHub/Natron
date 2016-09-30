@@ -548,8 +548,6 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
                                                 bool* isIdentity_p,
-                                                double* identityTime,
-                                                ViewIdx* inputView,
                                                 EffectInstPtr* identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
@@ -767,8 +765,6 @@ EffectInstance::getImage(int inputNb,
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstPtr identityInput;
-    double inputIdentityTime = 0.;
-    ViewIdx inputIdentityView(view);
     U64 nodeHash;
     bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
@@ -797,7 +793,7 @@ EffectInstance::getImage(int inputNb,
            This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
            Make-up some reasonable arguments
          */
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputIdentityView, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds) ) {
             return ImagePtr();
         }
     } else {
@@ -836,13 +832,11 @@ EffectInstance::getImage(int inputNb,
             }
             thisEffectRenderTime = renderArgs.time;
             isIdentity = renderArgs.isIdentity;
-            inputIdentityTime = renderArgs.identityTime;
             identityInput = renderArgs.identityInput;
             inputImagesThreadLocal = renderArgs.inputImages;
             thisRod = renderArgs.rod;
         }
     }
-#pragma message WARN("FIXME: inputIdentity time is set above but never used... is this normal?")
 
     if ( (!glContext || !renderInfo) && returnStorage == eStorageModeGLTex ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";

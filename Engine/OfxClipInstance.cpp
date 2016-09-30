@@ -460,7 +460,7 @@ OfxClipInstance::getConnected() const
                 input = effect->getInput(inputNb);
             }
 
-            return input != NULL;
+            return input.get() != 0;
         }
     }
 }

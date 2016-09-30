@@ -2179,8 +2179,6 @@ private:
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
-                                         double* identityTime,
-                                         ViewIdx *inputView,
                                          EffectInstPtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
