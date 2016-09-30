@@ -2130,9 +2130,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
 
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
-        // Load pyplug, set default values to knob only if there's no preset serialization
-        bool setDefaultValues = presetSerialization.get() == 0;
-        loadPresetsInternal(pyPlugSerialization, setDefaultValues);
+        loadPresetsInternal(pyPlugSerialization, false);
     }
 
     if (presetSerialization) {
@@ -3538,7 +3536,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginID);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getPluginID());
+            param->setValue(pyPlug->getPluginID());
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip(tr(kNatronNodeKnobPyPlugPluginIDHint));
@@ -3549,7 +3547,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginLabelLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginLabel);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getPluginLabel());
+            param->setValue(pyPlug->getPluginLabel());
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginLabelHint));
@@ -3560,10 +3558,10 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginGroupingLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginGrouping);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getGroupingString());
+            param->setValue(pyPlug->getGroupingString());
         }
         param->setEvaluateOnChange(false);
-        param->setDefaultValue("PyPlugs");
+        param->setValue("PyPlugs");
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
         page->addKnob(param);
         _imp->pyPlugGroupingKnob = param;
@@ -3574,7 +3572,7 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
         param->setAddNewLine(false);
@@ -3586,7 +3584,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
+            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
         page->addKnob(param);
@@ -3599,8 +3597,8 @@ Node::createPyPlugPage()
         param->setDimensionName(0, "Major");
         param->setDimensionName(1, "Minor");
         if (pyPlug) {
-            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), 0);
-            param->setDefaultValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), 1);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), ViewSpec(0), 0);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSpec(0), 1);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
@@ -3612,8 +3610,8 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), 0);
-            param->setDefaultValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), 1);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), ViewSpec(0), 0);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSpec(0), 1);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
@@ -3624,7 +3622,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
         page->addKnob(param);
@@ -3635,7 +3633,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginIconFile);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setDefaultValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);

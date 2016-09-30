@@ -297,8 +297,6 @@ public:
     void setOnProjectCreatedCB(const std::string& func);
     void setOnProjectLoadedCB(const std::string& func);
 
-    bool isLoadFromPyPlugsEnabled() const;
-
     bool isAutoDeclaredVariablePrintActivated() const;
 
     void setAutoDeclaredVariablePrintEnabled(bool enabled);
@@ -557,7 +555,6 @@ private:
     KnobStringPtr _defaultOnProjectClose;
     KnobStringPtr _defaultOnNodeCreated;
     KnobStringPtr _defaultOnNodeDelete;
-    KnobBoolPtr _loadPyPlugsFromPythonScript;
     KnobBoolPtr _echoVariableDeclarationToPython;
 
     // Appearance

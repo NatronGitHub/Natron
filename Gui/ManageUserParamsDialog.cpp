@@ -331,8 +331,8 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     QObject::connect( _imp->editButton, SIGNAL(clicked(bool)), this, SLOT(onEditClicked()) );
     _imp->buttonsLayout->addWidget(_imp->editButton);
 
-    _imp->removeButton = new Button(tr("Delete"), _imp->buttonsContainer);
-    _imp->removeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Delete the selected parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->removeButton = new Button(tr("Remove"), _imp->buttonsContainer);
+    _imp->removeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove the selected parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onDeleteClicked()) );
     _imp->buttonsLayout->addWidget(_imp->removeButton);
 
@@ -1152,22 +1152,8 @@ ManageUserParamsDialog::onViewerTreeSelectionChanged()
     _imp->knobsTree->blockSignals(false);
 
     QList<QTreeWidgetItem*> selection = _imp->viewerUITree->selectedItems();
-    bool canDelete = true;
-    if ( !selection.isEmpty() ) {
-        QTreeWidgetItem* item = selection[0];
-        //if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-        //    canEdit = false;
-        // }
-        for (std::list<TreeItem>::iterator it = _imp->viewerUIItems.begin(); it != _imp->viewerUIItems.end(); ++it) {
-            if (it->item == item) {
-                if (!it->knob->isUserKnob()) {
-                    canDelete = false;
-                }
-            }
-        }
-    }
-
-    _imp->removeButton->setEnabled(selection.size() == 1 && canDelete);
+    
+    _imp->removeButton->setEnabled(selection.size() == 1);
     _imp->editButton->setEnabled(selection.size() == 1);
     _imp->upButton->setEnabled(selection.size() == 1);
     _imp->downButton->setEnabled(selection.size() == 1);

@@ -726,8 +726,6 @@ PreferencesPanel::createGui()
         int w = fm.width(label);
         maxLength = std::max(w, maxLength);
     }
-    assert(pluginsFrameLayout);
-    assert(uiTabTreeItem);
     _imp->tree->setFixedWidth(maxLength + 100);
 
     _imp->buttonBox = new DialogButtonBox(Qt::Horizontal);
@@ -757,15 +755,20 @@ PreferencesPanel::createGui()
 
 
     // Create plug-ins view
-    createPluginsView(pluginsFrameLayout);
+    if (pluginsFrameLayout) {
+        createPluginsView(pluginsFrameLayout);
+    }
 
 
     // Create the shortcut Editor
-    createShortcutEditor(uiTabTreeItem);
+    if (uiTabTreeItem) {
+        createShortcutEditor(uiTabTreeItem);
+    }
 
 
-    _imp->tabs[0].treeItem->setSelected(true);
-    onItemSelectionChanged();
+    if (!_imp->tabs.empty()) {
+        _imp->tabs[0].treeItem->setSelected(true);
+    }
 
     resize( TO_DPIX(900), TO_DPIY(600) );
 } // PreferencesPanel::createGui

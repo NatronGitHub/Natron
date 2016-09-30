@@ -1813,7 +1813,7 @@ AppManager::loadNodesPresets()
                     pyPlugShortcutModifiers = (*it)->_values[1]._value.isInt;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginVersion) {
                     pyPlugVersionMajor = (*it)->_values[0]._value.isInt;
-                    pyPlugVersionMajor = (*it)->_values[1]._value.isInt;
+                    pyPlugVersionMinor = (*it)->_values[1]._value.isInt;
                 }
             }
 
@@ -1839,6 +1839,8 @@ AppManager::loadNodesPresets()
                 p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutSymbol, 0);
                 p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutModifiers, 1);
                 p->setProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile, pyPlugExtCallbacks);
+                p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMajor, 0);
+                p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMinor, 1);
                 registerPlugin(p);
                 
                 

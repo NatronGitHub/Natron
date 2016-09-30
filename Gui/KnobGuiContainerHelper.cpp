@@ -275,7 +275,6 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     // Add the page to the container (most likely a tab widget)
     if (!page->getIsSecret()) {
         addPageToPagesContainer(pageGui);
-        newTab->show();
     } else {
         newTab->hide();
     }

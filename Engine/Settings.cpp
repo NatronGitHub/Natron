@@ -1450,16 +1450,6 @@ Settings::initializeKnobsPython()
     _defaultOnNodeDelete->setHintToolTip( tr("The default beforeNodeRemoval callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnNodeDelete);
 
-    _loadPyPlugsFromPythonScript = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Load PyPlugs in projects from .py if possible") );
-    _loadPyPlugsFromPythonScript->setName("loadFromPyFile");
-    _loadPyPlugsFromPythonScript->setHintToolTip( tr("When checked, if a project contains a PyPlug, it will try to first load the PyPlug "
-                                                     "from the .py file. If the version of the PyPlug has changed Natron will ask you "
-                                                     "whether you want to upgrade to the new version of the PyPlug in your project. "
-                                                     "If the .py file is not found, it will fallback to the same behavior "
-                                                     "as when this option is unchecked. When unchecked the PyPlug will load as a regular group "
-                                                     "with the informations embedded in the project file.") );
-    _loadPyPlugsFromPythonScript->setDefaultValue(true);
-    _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
     _echoVariableDeclarationToPython = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Print auto-declared variables in the Script Editor") );
     _echoVariableDeclarationToPython->setName("printAutoDeclaredVars");
@@ -3174,12 +3164,6 @@ std::string
 Settings::getOnProjectCreatedCB()
 {
     return _onProjectCreated->getValue();
-}
-
-bool
-Settings::isLoadFromPyPlugsEnabled() const
-{
-    return _loadPyPlugsFromPythonScript->getValue();
 }
 
 bool
