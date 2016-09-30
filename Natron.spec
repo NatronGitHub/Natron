@@ -1,6 +1,6 @@
 Summary: Open source compositing software
 Name: Natron
-Version: 2.1.4
+Version: 2.1.5
 Release: 1%{?dist}
 License: GPLv2
 
