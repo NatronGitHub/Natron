@@ -252,19 +252,27 @@ ViewerTabPrivate::getTimeTransform(double time,
 
 #endif // ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
+std::list<ViewerTabPrivate::PluginViewerContext>::iterator
+ViewerTabPrivate::findActiveNodeContextForNode(const NodePtr& node)
+{
+    // Try once with the pyplug if any and once without, because the plug-in may have changed
+    PluginPtr plug = node->getPlugin();
+    return findActiveNodeContextForPlugin(plug);
+}
 
 std::list<ViewerTabPrivate::PluginViewerContext>::iterator
-ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
+ViewerTabPrivate::findActiveNodeContextForPlugin(const PluginPtr& plugin)
 {
+    std::string pluginID = plugin->getPluginID();
     // Roto and RotoPaint are 2 different plug-ins but we don't want them at the same time in the viewer
     bool isRotoOrRotoPaint = pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT;
     for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it != currentNodeContext.end(); ++it) {
         if (isRotoOrRotoPaint) {
-            if (it->pluginID == PLUGINID_NATRON_ROTO || it->pluginID == PLUGINID_NATRON_ROTOPAINT) {
+            if (pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT) {
                 return it;
             }
         } else {
-            if (it->pluginID == pluginID) {
+            if (plugin == it->plugin.lock() || plugin == it->pyPlug.lock()) {
                 return it;
             }
         }
@@ -280,7 +288,7 @@ ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
     if (node->isEffectViewerNode()) {
         return false;
     }
-    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin( node->getPluginID() );
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForNode(node);
 
     if ( found == currentNodeContext.end() ) {
         return false;

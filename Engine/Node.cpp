@@ -1461,7 +1461,10 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
 
     // Check if pages ordering changed, if not do not serialize
-    bool pageOrderChanged = hasPageOrderChangedSinceDefault();
+    bool pageOrderChanged = true;
+    if (serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
+        pageOrderChanged = hasPageOrderChangedSinceDefault();
+    }
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
@@ -1480,7 +1483,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             if (isPage->getChildren().empty()) {
                 continue;
             }
-            if (pageOrderChanged || subGraphEdited) {
+            if (!isPage->getIsSecret() && (pageOrderChanged || subGraphEdited)) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
             if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
@@ -1616,23 +1619,27 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Only serialize viewer UI knobs order if it has changed
 
+    bool serializeViewerKnobs = serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular;
     KnobsVec viewerUIKnobs = getEffectInstance()->getViewerUIKnobs();
-    if (viewerUIKnobs.size() != _imp->defaultViewerKnobsOrder.size()) {
-        std::list<std::string>::const_iterator it2 = _imp->defaultViewerKnobsOrder.begin();
-        bool hasChanged = false;
-        for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
-            if ((*it)->getName() != *it2) {
-                hasChanged = true;
-                break;
-            }
-        }
-        if (hasChanged) {
+    if (!serializeViewerKnobs) {
+        if (viewerUIKnobs.size() != _imp->defaultViewerKnobsOrder.size()) {
+            std::list<std::string>::const_iterator it2 = _imp->defaultViewerKnobsOrder.begin();
+            bool hasChanged = false;
             for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it, ++it2) {
-                serialization->_viewerUIKnobsOrder.push_back((*it)->getName());
+                if ((*it)->getName() != *it2) {
+                    hasChanged = true;
+                    break;
+                }
             }
+            serializeViewerKnobs |= hasChanged;
         }
     }
-    
+    if (serializeViewerKnobs) {
+        for (KnobsVec::iterator it = viewerUIKnobs.begin(); it!=viewerUIKnobs.end(); ++it) {
+            serialization->_viewerUIKnobsOrder.push_back((*it)->getName());
+        }
+    }
+
 } // Node::toSerialization
 
 void
@@ -2345,14 +2352,18 @@ Node::setPagesOrder(const std::list<std::string>& pages)
     //re-order the pages
     std::list<KnobIPtr > pagesOrdered;
 
-    for (std::list<std::string>::const_iterator it = pages.begin(); it != pages.end(); ++it) {
-        const KnobsVec &knobs = getKnobs();
-        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ( (*it2)->getName() == *it ) {
-                pagesOrdered.push_back(*it2);
-                _imp->effect->removeKnobFromList(*it2);
-                break;
-            }
+    KnobsVec knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr isPage = toKnobPage(*it);
+        if (!isPage) {
+            continue;
+        }
+        if (std::find(pages.begin(), pages.end(), isPage->getName()) != pages.end()) {
+            pagesOrdered.push_back(isPage);
+            _imp->effect->removeKnobFromList(isPage);
+            isPage->setSecret(false);
+        } else if (isPage->isUserKnob()) {
+            isPage->setSecret(true);
         }
     }
     int index = 0;
@@ -2376,7 +2387,7 @@ Node::getPagesOrder() const
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage && !ispage->getChildren().empty()) {
+        if (ispage && !ispage->getChildren().empty() && !ispage->getIsSecret()) {
             ret.push_back( ispage->getName() );
         }
     }

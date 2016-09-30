@@ -295,7 +295,7 @@ static NodePtr getMainInputRecursiveInternal(const NodePtr& inputParam, const Vi
     }
     NodePtr inputRet = getMainInputRecursiveInternal(input, viewerGroup);
     if (!inputRet) {
-        return inputParam;
+        return input;
     } else {
         return inputRet;
     }

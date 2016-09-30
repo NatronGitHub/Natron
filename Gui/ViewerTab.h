@@ -134,7 +134,7 @@ public:
 
     QVBoxLayout* getMainLayout() const;
 
-    NodeGuiPtr getCurrentNodeViewerInterface(const std::string& pluginID) const;
+    NodeGuiPtr getCurrentNodeViewerInterface(const PluginPtr& plugin) const;
 
     /**
      * @brief Creates a new viewer interface context for this node. This is not shared among viewers.

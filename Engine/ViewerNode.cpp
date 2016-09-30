@@ -2484,8 +2484,12 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
         internalNodeToConnect->connectInput(groupInput, internalInputIndex);
     } else {
         int prefInput = internalNodeToConnect->getPreferredInputForConnection();
-        if (prefInput != -1) {
-            internalNodeToConnect->disconnectInput(prefInput);
+        if (prefInput == -1) {
+            // Preferred input might be connected, disconnect it first
+            prefInput = internalNodeToConnect->getPreferredInput();
+            if (prefInput != -1) {
+                internalNodeToConnect->disconnectInput(prefInput);
+            }
             internalNodeToConnect->connectInput(groupInput, prefInput);
         }
     }

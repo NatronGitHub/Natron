@@ -437,7 +437,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
     *createdToolButton = toolButton;
 
 
-    QString shortcutGroup = QString::fromUtf8(getNode()->getNode()->getPlugin()->getPluginShortcutGroup().c_str());
+    QString shortcutGroup = QString::fromUtf8(getNode()->getNode()->getOriginalPlugin()->getPluginShortcutGroup().c_str());
     QIcon icon;
     if ( !iconPath.empty() ) {
         QString iconPathStr = QString::fromUtf8( iconPath.c_str() );

@@ -610,6 +610,20 @@ KnobChoice::hasModificationsVirtual(int dimension) const
     return false;
 }
 
+bool
+KnobChoice::checkIfValueChanged(const int& a, const int& /*b*/)
+{
+    std::string aStr;
+    QMutexLocker k(&_entriesMutex);
+    if (a >= 0 && a < (int)_mergedEntries.size()) {
+        aStr = _mergedEntries[a];
+    } else {
+        return true;
+    }
+    return aStr != _currentEntryLabel;
+
+}
+
 #ifdef DEBUG
 #pragma message WARN("When enabling multi-view knobs, make this multi-view too")
 #endif
@@ -627,28 +641,6 @@ KnobChoice::onInternalValueChanged(int dimension,
     }
 }
 
-#if 0 // dead code
-// replaced by boost::iequals(a, b)
-static bool
-caseInsensitiveCompare(const std::string& a,
-                       const std::string& b)
-{
-    if ( a.size() != b.size() ) {
-        return false;
-    }
-    std::locale loc;
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        char aLow = std::tolower(a[i], loc);
-        char bLow = std::tolower(b[i], loc);
-        if (aLow != bLow) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-#endif
 
 static bool
 stringEqualFunctor(const std::string& a,
@@ -954,38 +946,6 @@ KnobChoice::getActiveEntryText_mt_safe()
     return std::string();
 }
 
-#if 0 // dead code
-// replaced by boost::trim_copy(str)
-static std::string
-trim(std::string const & str)
-{
-    const std::string whitespace = " \t\f\v\n\r";
-    std::size_t first = str.find_first_not_of(whitespace);
-
-    // If there is no non-whitespace character, both first and last will be std::string::npos (-1)
-    // There is no point in checking both, since if either doesn't work, the
-    // other won't work, either.
-    if (first == std::string::npos) {
-        return "";
-    }
-
-    std::size_t last  = str.find_last_not_of(whitespace);
-
-    return str.substr(first, last - first + 1);
-}
-
-// replaced by std::replace_if(str.begin(), str.end(), ::isspace, ' ');
-static void
-whitespacify(std::string & str)
-{
-    std::replace( str.begin(), str.end(), '\t', ' ');
-    std::replace( str.begin(), str.end(), '\f', ' ');
-    std::replace( str.begin(), str.end(), '\v', ' ');
-    std::replace( str.begin(), str.end(), '\n', ' ');
-    std::replace( str.begin(), str.end(), '\r', ' ');
-}
-
-#endif
 
 std::string
 KnobChoice::getHintToolTipFull() const
@@ -1091,6 +1051,10 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
     if (isChoice) {
         populateChoices(isChoice->getEntries_mt_safe(),
                         isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
+        {
+            QMutexLocker k(&_entriesMutex);
+            _currentEntryLabel = isChoice->_currentEntryLabel;
+        }
     }
 }
 

@@ -119,6 +119,8 @@ ViewerTab::ViewerTab(const std::string& scriptName,
         }
     }
 
+    manageSlotsForInfoWidget(0, true);
+
     _imp->viewerLayout->addWidget(_imp->viewerSubContainer);
     _imp->mainLayout->addWidget(_imp->viewerContainer);
 

@@ -64,10 +64,10 @@ NATRON_NAMESPACE_ENTER;
 
 
 NodeGuiPtr
-ViewerTab::getCurrentNodeViewerInterface(const std::string& pluginID) const
+ViewerTab::getCurrentNodeViewerInterface(const PluginPtr& plugin) const
 {
     for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it!=_imp->currentNodeContext.end(); ++it) {
-        if (it->pluginID == pluginID) {
+        if (it->plugin.lock() == plugin || it->pyPlug.lock() == plugin) {
             return it->currentNode.lock();
         }
     }
@@ -126,8 +126,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
         return;
     }
 
-    std::string pluginID = n->getNode()->getPluginID();
-    std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForNode(n->getNode());
     NodeGuiPtr activeNodeForPlugin;
     if ( foundActive != _imp->currentNodeContext.end() ) {
         activeNodeForPlugin = foundActive->currentNode.lock();
@@ -222,7 +221,8 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     }
 
     ViewerTabPrivate::PluginViewerContext p;
-    p.pluginID = pluginID;
+    p.plugin = n->getNode()->getOriginalPlugin();
+    p.pyPlug = n->getNode()->getPyPlugPlugin();
     p.currentNode = n;
     p.currentContext = it->second;
     _imp->currentNodeContext.push_back(p);
@@ -264,18 +264,7 @@ ViewerTab::removeNodeViewerInterfaceInternal(const NodeGuiPtr& n,
     QWidget* activePlayer = 0;
     {
         // Keep the iterator under this scope since we erase it
-        std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
-
-        if (foundActive == _imp->currentNodeContext.end() && internalNode->isEffectNodeGroup()) {
-            /*
-             There might be a case where the plug-in ID of a node changed if it's a PyPlug and the user clicked the "Unlock" button to transform
-             it to a Group. Check with the PyPlug ID again
-             */
-            PluginPtr hasPyPlug = internalNode->getPyPlugPlugin();
-            if (hasPyPlug) {
-                foundActive = _imp->findActiveNodeContextForPlugin(hasPyPlug->getPluginID());
-            }
-        }
+        std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForNode(internalNode);
 
         if ( foundActive != _imp->currentNodeContext.end() ) {
             activeNodeForPlugin = foundActive->currentNode.lock();

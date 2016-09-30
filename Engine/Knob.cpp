@@ -4617,6 +4617,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,
     } else {
         _imp->slaveForAlias.reset();
     }
+    master->computeHasModifications();
 
     return true;
 }

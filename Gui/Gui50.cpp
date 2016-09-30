@@ -144,7 +144,7 @@ Gui::showErrorLog()
 }
 
 NodeGuiPtr
-Gui::getCurrentNodeViewerInterface(const std::string& pluginID) const
+Gui::getCurrentNodeViewerInterface(const PluginPtr& plugin) const
 {
     std::list<ViewerTab*> viewers;
     {
@@ -156,7 +156,7 @@ Gui::getCurrentNodeViewerInterface(const std::string& pluginID) const
     }
     ViewerTab* viewer = viewers.front();
     
-    return viewer->getCurrentNodeViewerInterface(pluginID);
+    return viewer->getCurrentNodeViewerInterface(plugin);
 }
 
 void

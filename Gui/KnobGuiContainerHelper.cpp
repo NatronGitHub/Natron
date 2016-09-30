@@ -1047,7 +1047,7 @@ KnobGuiContainerHelper::recreateViewerUIKnobs()
     if (!thisNodeGui) {
         return;
     }
-    NodeGuiPtr currentViewerInterface = gui->getCurrentNodeViewerInterface(thisNode->getPluginID());
+    NodeGuiPtr currentViewerInterface = gui->getCurrentNodeViewerInterface(thisNode->getPlugin());
 
     if (thisNodeGui->getNode()->isEffectViewerNode()) {
         gui->removeViewerInterface(thisNodeGui, true);

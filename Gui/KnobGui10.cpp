@@ -584,11 +584,24 @@ KnobGui::toolTip(QWidget* w) const
         std::list<std::string> additionalShortcuts = knob->getInViewerContextAdditionalShortcuts();
         EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
         if (isEffect) {
-            QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getPlugin()->getPluginShortcutGroup().c_str());
-
             QString additionalKeyboardShortcutString;
             QString thisActionID = QString::fromUtf8( knob->getName().c_str() );
-            std::list<QKeySequence> keybinds = getKeybind( pluginShortcutGroup, thisActionID );
+
+            std::list<QKeySequence> keybinds;
+
+            // Try with the shortcut group of the original plugin.
+            QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getOriginalPlugin()->getPluginShortcutGroup().c_str());
+            keybinds = getKeybind( pluginShortcutGroup, thisActionID );
+            /*
+             // If this is a pyplug, try again with the pyplug group
+             if (keybinds.empty()) {
+                PluginPtr pyPlug = isEffect->getNode()->getPyPlugPlugin();
+                if (pyPlug) {
+                    pluginShortcutGroup = QString::fromUtf8(pyPlug->getPluginShortcutGroup().c_str());
+                    keybinds = getKeybind( pluginShortcutGroup, thisActionID );
+                }
+            }*/
+
             if (keybinds.size() > 0) {
                 if (!isMarkdown) {
                     additionalKeyboardShortcutString += QLatin1String("<br/>");

@@ -1,0 +1,123 @@
+PluginID: fr.inria.built-in.Viewer
+Params:
+  - ScriptName: deviceColorspace
+    Value: Linear(None)
+  - ScriptName: pyPlugPluginID
+    Value: fr.inria.ViewerOCIO
+  - ScriptName: pyPlugPluginLabel
+    Value: ViewerOCIO
+  - ScriptName: pyPlugPluginGrouping
+    Value: Image
+  - ScriptName: pyPlugPluginDescription
+    Value: A viewer using OpenColorIO color transform capabilities instead of the built-in Natron colorspaces.
+  - ScriptName: pyPlugPluginVersion
+    Value: [1, 0]
+  - ScriptName: pyPlugPluginShortcut
+    Value: [73, 100663296]
+  - ScriptName: exportDialogOkButton
+    Value: {K: exportDialogOkButton}
+    Props: [MasterIsAlias]
+  - ScriptName: exportDialogCancelButton
+    Value: {K: exportDialogCancelButton}
+    Props: [MasterIsAlias]
+UserPages:
+  - TypeName: Page
+    ScriptName: controls
+    Label: Controls
+    Params:
+      - ScriptName: ocioDisplayDevice
+        Default: sRGB
+        NDims: 1
+        TypeName: Choice
+        Label: Display Device
+        Hint: Specifies the display device that will be used to view the sequence.
+        Entries: [None, Rec709, XYZ, sRGB]
+        InViewerLabel: Device
+        Props: [Secret]
+      - ScriptName: ocioViewTransform
+        Default: Default
+        NDims: 1
+        TypeName: Choice
+        Label: View Transform
+        Hint: Specifies the display transform to apply to the scene or image.
+        Entries: [Default, RRT, Film, Raw, Log]
+        InViewerLabel: Xform
+        Props: [Secret, AnimatesChanged]
+    Props:
+      - Secret
+PagesOrder: [nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.ViewerInternal
+    ScriptName: ViewerProcess
+    Inputs: {A: Dot1, B: Dot2}
+    Pos: [80.44213924572455, 9.060432950904726]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input1
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-78.79118949758345, -560.9632901643022]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input2
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [251.9126901015186, -560.9632901643017]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input3
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-315.6079954910646, -503.4035024538603]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input4
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-312.5411894975834, -426.1645155818809]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input5
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-311.0191632415419, -347.3807489724623]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input6
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-314.1314761978192, -277.8656607876812]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input7
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [470.5938769400918, -504.9482821912997]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input8
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [467.4815639838148, -421.5301763695623]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input9
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [470.5483699772958, -345.8359692350228]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input10
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [468.9808367584581, -274.7761013128019]
+  - PluginID: fr.inria.openfx.OCIODisplay
+    ScriptName: OCIODisplay1
+    Params:
+      - ScriptName: displayIndex
+        Value: {N: "@thisGroup", K: ocioDisplayDevice}
+        Props: [MasterIsAlias]
+      - ScriptName: viewIndex
+        Value: {N: "@thisGroup", K: ocioViewTransform}
+        Props: [MasterIsAlias]
+      - ScriptName: premult
+        Value: true
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [-84.97030844734172, -149.7460139536911]
+  - PluginID: fr.inria.openfx.OCIODisplay
+    ScriptName: OCIODisplay1_2
+    Params:
+      - ScriptName: premult
+        Value: true
+    PagesOrder: [Controls, nodePage, infoPage]
+    CloneMaster: OCIODisplay1
+    Pos: [247.0450221458921, -148.465829314046]
+  - PluginID: fr.inria.built-in.Dot
+    ScriptName: Dot1
+    Inputs: {"": OCIODisplay1_2}
+    Pos: [292.0450221458918, 17.06043295090473]
+  - PluginID: fr.inria.built-in.Dot
+    ScriptName: Dot2
+    Inputs: {"": OCIODisplay1}
+    Pos: [-39.97030844734172, 17.06043295090467]
+ViewerParamsOrder: [layer, alphaChannel, displayChannels, aInput, operation, bInput, clipToProject, proxyMode, proxyLevel, fullFrame, enableRegionOfInterest, refreshViewport, pauseUpdates, fitViewport, syncViewports, zoom, enableGain, gain, autoContrast, enableGamma, gamma, enableCheckerBoard, ocioDisplayDevice, ocioViewTransform, activeView, enableInfoBar]

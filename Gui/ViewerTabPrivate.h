@@ -80,7 +80,7 @@ struct ViewerTabPrivate
      */
     struct PluginViewerContext
     {
-        std::string pluginID;
+        PluginWPtr plugin, pyPlug;
         NodeGuiWPtr currentNode;
         NodeViewerContextPtr currentContext;
     };
@@ -117,7 +117,8 @@ struct ViewerTabPrivate
 
 #endif
 
-    std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const std::string& pluginID);
+    std::list<PluginViewerContext>::iterator findActiveNodeContextForNode(const NodePtr& plugin);
+    std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const PluginPtr& plugin);
 
     // Returns true if this node has a viewer context but it is not active
     bool hasInactiveNodeViewerContext(const NodePtr& node);

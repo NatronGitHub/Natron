@@ -1190,7 +1190,7 @@ Knob<T>::setValue(const T & v,
 
     {
         QMutexLocker l(&_valueMutex);
-        hasChanged |= (v != _values[dimension]);
+        hasChanged |= checkIfValueChanged(v, _values[dimension]);
         _values[dimension] = v;
         _guiValues[dimension] = v;
     }

@@ -744,6 +744,8 @@ Q_SIGNALS:
 
 private:
 
+    virtual bool checkIfValueChanged(const int& a, const int& b) OVERRIDE FINAL;
+
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
 
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;

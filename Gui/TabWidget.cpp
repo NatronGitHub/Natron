@@ -728,7 +728,6 @@ TabWidget::addNewViewer()
         throw std::logic_error("");
     }
     CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, graph->getGroup() ));
-    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     _imp->gui->getApp()->createNode(args);
 }

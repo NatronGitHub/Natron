@@ -252,6 +252,8 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
+    ViewerNodePtr isViewerNode = internalNode->isEffectViewerNode();
+
 
     double x,y;
     internalNode->getPosition(&x, &y);
@@ -263,7 +265,7 @@ NodeGui::initialize(NodeGraph* dag,
         const bool panelAlwaysCreatedByDefault = internalNode->getEffectInstance()->isBuiltinTrackerNode();
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
         SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-        bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
+        bool panelOpened = isViewerNode ? false : args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
         if (panelAlwaysCreatedByDefault ||
             (!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
             ensurePanelCreated();
@@ -306,7 +308,7 @@ NodeGui::initialize(NodeGraph* dag,
     }
 
     // For a viewer, it creates its own viewer knobs in createViewerGui
-    if (internalNode->isEffectViewerNode()) {
+    if (isViewerNode) {
         getDagGui()->getGui()->createViewerGui(thisAsShared);
     } else {
         // Must be done after the viewer gui has been created
@@ -3803,7 +3805,7 @@ static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr
             continue;
         }
         bool checkable = button->getIsCheckable();
-        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup(),
+        ActionWithShortcut* action = new ActionWithShortcut(node->getOriginalPlugin()->getPluginShortcutGroup(),
                                                             button->getName(),
                                                             button->getLabel(),
                                                             m);

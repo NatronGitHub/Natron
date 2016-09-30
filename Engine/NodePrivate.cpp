@@ -337,7 +337,7 @@ NodePrivate::refreshDefaultPagesOrder()
     defaultPagesOrder.clear();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr ispage = toKnobPage(*it);
-        if (ispage && !ispage->getChildren().empty()) {
+        if (ispage && !ispage->getChildren().empty() && !ispage->getIsSecret()) {
             defaultPagesOrder.push_back( ispage->getName() );
         }
     }

@@ -421,7 +421,7 @@ KnobGuiChoice::onEntriesPopulated()
     std::string pluginShortcutGroup;
     EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
     if (isEffect) {
-        PluginPtr plugin = isEffect->getNode()->getPlugin();
+        PluginPtr plugin = isEffect->getNode()->getOriginalPlugin();
         if (plugin) {
             pluginShortcutGroup = plugin->getPluginShortcutGroup();
         }

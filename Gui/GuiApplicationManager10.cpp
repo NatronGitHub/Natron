@@ -403,7 +403,6 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, mainInstance->getProject() ));
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
-        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         viewerFound = mainInstance->createNode(args);
     }

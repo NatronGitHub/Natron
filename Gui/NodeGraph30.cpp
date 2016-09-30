@@ -90,7 +90,6 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     } else {
         CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_VIEWER_GROUP,
                              getGroup() ));
-        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
         NodePtr node = getGui()->getApp()->createNode(args);
 

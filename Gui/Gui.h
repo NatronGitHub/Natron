@@ -335,7 +335,7 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
-    NodeGuiPtr getCurrentNodeViewerInterface(const std::string& pluginID) const;
+    NodeGuiPtr getCurrentNodeViewerInterface(const PluginPtr& plugin) const;
 
     /**
      * @brief Make a new viewer interface for the given node.
