@@ -1612,11 +1612,7 @@ GroupFromSelectionCommand::redo()
                 args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 NodePtr output = _graph->getGui()->getApp()->createNode(args);
-                try {
-                    output->setScriptName("Output");
-                } catch (...) {
-                }
-
+       
                 assert(output);
 
                 double thisNodeX, thisNodeY;

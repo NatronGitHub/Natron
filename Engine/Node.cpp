@@ -306,7 +306,7 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
             }
         try {
             if (group) {
-                group->initNodeName(pluginLabel, &name);
+                group->initNodeName(plugin->getPluginID(), pluginLabel, &name);
             } else {
                 name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(pluginLabel);
             }
@@ -1667,19 +1667,16 @@ Node::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& 
 void
 Node::loadInternalNodeGraph(bool initialSetupAllowed,
                             const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                            const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization,
-                            const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
+                            const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization)
 {
     NodeGroupPtr isGrp = isEffectNodeGroup();
     if (!isGrp) {
         return;
     }
 
+    // Only do this when loading the node the first time
+    assert(!isNodeCreated());
 
-    bool isPyPlug = _imp->isPyPlug;
-
-
-    bool nodeIsCreated = isNodeCreated();
     {
         PluginPtr pyPlug = _imp->pyPlugHandle.lock();
         // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
@@ -1689,29 +1686,20 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
             return;
         }
     }
-    assert(!isPyPlug || pyPlugSerialization);
+
+    // PyPlug serialization is only for pyplugs
+    assert(!_imp->isPyPlug || pyPlugSerialization);
 
 
-    // If we are creating the node in the standard way, initialize the sub-graph. For a standard Group it creates the Input and Output nodes.
-    if ((!projectSerialization || projectSerialization->_children.empty()) && !nodeIsCreated && !isPyPlug && initialSetupAllowed) {
+    // If we are creating the node in the standard way or loading a project and the internal node graph was not edited, initialize the sub-graph.
+    // For a standard Group it creates the Input and Output nodes.
+    if ((!projectSerialization || projectSerialization->_children.empty()) && !_imp->isPyPlug && initialSetupAllowed) {
         isGrp->setupInitialSubGraphState();
     }
 
-    if (isPyPlug) {
-        // For PyPlugs, the graph s not editable anyway, so if the node is already created, don't do anything
-        if (!nodeIsCreated) {
-            // This will create internal nodes and restore their links.
-            // We don't care about other serialization objects because they do not contain the nodegraph itself, just modifications that were brought to the knobs
-            Project::restoreGroupFromSerialization(pyPlugSerialization->_children, isGrp);
 
-            // We restored settings, the subgraph is no longer considered edited.
-            isGrp->setSubGraphEditedByUser(false);
-        }
-
-    } else {
-        // Call the nodegroup derivative that is the only one to know what to do
-        isGrp->loadSubGraph(nodeIsCreated, projectSerialization, presetSerialization);
-    }
+    // Call the nodegroup derivative that is the only one to know what to do
+    isGrp->loadSubGraph(projectSerialization, pyPlugSerialization);
 
 }
 
@@ -2134,11 +2122,6 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         }
     }
 
-    // initialize the subgraph edited flag for groups
-    NodeGroupPtr isGrp = isEffectNodeGroup();
-    if (isGrp) {
-        isGrp->setSubGraphEditedByUser(false);
-    }
 
     // If this is a pyplug, load the node state (and its internal subgraph)
     if (pyPlugSerialization) {
@@ -2202,12 +2185,13 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         }
     }
 
-    {
+    if (!nodeCreated) {
         bool initialSubGraphSetupAllowed = false;
         if (args) {
             initialSubGraphSetupAllowed = !args->getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
         }
-        loadInternalNodeGraph(initialSubGraphSetupAllowed, projectSerialization.get(), pyPlugSerialization.get(), presetSerialization.get());
+
+        loadInternalNodeGraph(initialSubGraphSetupAllowed, projectSerialization.get(), pyPlugSerialization.get());
     }
 
     if (projectSerialization) {
@@ -6228,11 +6212,12 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 
 
     ///Quit any rendering
-    OutputEffectInstancePtr isOutput = isEffectOutput();
-    if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine(true);
+    {
+        OutputEffectInstancePtr isOutput = isEffectOutput();
+        if (isOutput) {
+            isOutput->getRenderEngine()->quitEngine(true);
+        }
     }
-
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache();
@@ -6250,7 +6235,6 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     if (_imp->effect) {
         _imp->effect->clearPluginMemoryChunks();
     }
-    _imp->effect.reset();
 
     ///If inside the group, remove it from the group
     ///the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
@@ -6260,6 +6244,9 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     if ( thisGroup ) {
         thisGroup->removeNode(this);
     }
+
+    _imp->effect.reset();
+
 
 } // doDestroyNodeInternalEnd
 

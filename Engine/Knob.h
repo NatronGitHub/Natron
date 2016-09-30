@@ -1125,14 +1125,6 @@ public:
     virtual void* getOfxParamHandle() const = 0;
 
     /**
-     * @brief For MultiInstance effects, flagging a knob as instance specific will make it appear in the table of the instances
-     * instead as the regular way of showing knobs.
-     * Not MT-safe, should be called right away after creation.
-     **/
-    virtual void setAsInstanceSpecific() = 0;
-    virtual bool isInstanceSpecific() const = 0;
-
-    /**
      * @brief If this knob has a gui view, then the gui view should set the animation of this knob on the application's knob clipboard.
      **/
     virtual void copyAnimationToClipboard() const = 0;
@@ -1351,8 +1343,6 @@ public:
      **/
     virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
     virtual void setDeclaredByPlugin(bool b) OVERRIDE FINAL;
-    virtual void setAsInstanceSpecific() OVERRIDE FINAL;
-    virtual bool isInstanceSpecific() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDynamicallyCreated() OVERRIDE FINAL;
     virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAsUserKnob(bool b) OVERRIDE FINAL;
@@ -2484,7 +2474,6 @@ protected:
 
 public:
 
-    void refreshInstanceSpecificKnobsOnly(bool isPlayback, double time);
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
 
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);

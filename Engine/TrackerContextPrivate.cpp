@@ -123,11 +123,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
-            try {
-                output->setScriptName("Output");
-            } catch (...) {
-            }
-
+        
             assert(output);
         }
         {

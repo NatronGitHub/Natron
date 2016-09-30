@@ -530,7 +530,8 @@ NodeCollection::checkNodeName(const NodeConstPtr& node,
 } // NodeCollection::checkNodeName
 
 void
-NodeCollection::initNodeName(const std::string& pluginLabel,
+NodeCollection::initNodeName(const std::string& pluginID,
+                             const std::string& pluginLabel,
                              std::string* nodeName)
 {
     std::string baseName(pluginLabel);
@@ -542,7 +543,18 @@ NodeCollection::initNodeName(const std::string& pluginLabel,
         baseName = baseName.substr(0, baseName.size() - 3);
     }
 
-    checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
+    bool isOutputNode = pluginID == PLUGINID_NATRON_OUTPUT;
+    if (!isOutputNode) {
+        // For non GroupOutput nodes, always append a digit
+        checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
+    } else {
+        // For output node, don't append a digit as it is expect there's a single node
+        try {
+            checkNodeName(NodeConstPtr(), baseName, false, false, nodeName);
+        } catch (...) {
+            checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
+        }
+    }
 }
 
 bool
@@ -1019,21 +1031,21 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
     // When set edited make sure all knobs have the appropriate "declared by plug-in" flag
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
-        if (isGrp->getNode()->getOriginalPlugin()->getPluginID() == PLUGINID_NATRON_GROUP) {
+
+        if (isSubGraphEditable()) {
             KnobIPtr pyPlugPage = isGrp->getNode()->getKnobByName(kPyPlugPageParamName);
             if (pyPlugPage) {
                 pyPlugPage->setSecret(!edited);
             }
         }
+
         const KnobsVec& knobs = isGrp->getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
                 (*it)->setDeclaredByPlugin(!edited);
             }
         }
-        if (edited) {
-            isGrp->getNode()->clearPresetFlag();
-        }
+
     }
 }
 
@@ -1589,7 +1601,9 @@ NodeGroup::clearLastRenderedImage()
 void
 NodeGroup::setupInitialSubGraphState()
 {
-
+    if (!isSubGraphEditable() || !isSubGraphUserVisible()) {
+        return;
+    }
 
     setSubGraphEditedByUser(true);
 
@@ -1602,10 +1616,6 @@ NodeGroup::setupInitialSubGraphState()
         args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
         output = getApp()->createNode(args);
-        try {
-            output->setScriptName("Output");
-        } catch (...) {
-        }
 
         assert(output);
     }
@@ -1628,37 +1638,34 @@ NodeGroup::setupInitialSubGraphState()
 }
 
 void
-NodeGroup::loadSubGraph(bool nodeIsCreated,
-                        const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                        const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
+NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                        const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization)
 {
-    // The PyPlug cases is handled in Node::loadInternalNodeGraph
+    if (getNode()->isPyPlug()) {
 
-    // If there is a preset serialization object, this is the one holding the node-graph, otherwise fallback on the project serialization
-    if (presetSerialization) {
-        // Clear nodes
-        if (nodeIsCreated) {
-            clearNodesBlocking();
-        }
+        assert(pyPlugSerialization);
+        // This will create internal nodes and restore their links.
+        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()));
 
-        // This will create internal nodes and restore their links
-        Project::restoreGroupFromSerialization(presetSerialization->_children, toNodeGroup(shared_from_this()));
+        // For PyPlugs, the graph s not editable anyway
+        setSubGraphEditedByUser(false);
+
 
     } else if (projectSerialization) {
 
-        // There's only a project serialization when loading the node the first time
-        assert(!nodeIsCreated);
+        // Ok if we are here that means we are loading a group that was edited.
+        // Clear any initial nodes created and load the sub-graph
 
         //Clear any node created already in setupInitialSubGraphState()
         clearNodesBlocking();
-
+        
         // This will create internal nodes and restore their links
         Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()));
 
+        // A group always appear edited
+        setSubGraphEditedByUser(true);
     }
 
-    // A group always appear edited
-    setSubGraphEditedByUser(true);
 
 
 }

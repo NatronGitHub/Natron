@@ -416,68 +416,75 @@ ReadNodePrivate::destroyReadNode()
     if (!embeddedPlugin) {
         return;
     }
-    KnobsVec knobs = _publicInterface->getKnobs();
+    {
+        KnobsVec knobs = _publicInterface->getKnobs();
 
-    genericKnobsSerialization.clear();
+        genericKnobsSerialization.clear();
 
-    try {
+        try {
 
-        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            if ( !(*it)->isDeclaredByPlugin() ) {
-                continue;
-            }
+            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
-            //If it is a knob of this ReadNode, do not destroy it
-            bool isReadNodeKnob = false;
-            for (std::list<KnobIWPtr >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
-                if (it2->lock() == *it) {
-                    isReadNodeKnob = true;
-                    break;
-                }
-            }
-            if (isReadNodeKnob) {
-                continue;
-            }
+                // The internal node still holds a shared ptr to the knob.
+                // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+                embeddedPlugin->getEffectInstance()->removeKnobFromList(*it);
 
-            //Keep pages around they will be re-used
-            KnobPagePtr isPage = toKnobPage(*it);
-            if (isPage) {
-                continue;
-            }
-
-            //This is a knob of the Reader plug-in
-
-            //Serialize generic knobs and keep them around until we create a new Reader plug-in
-            bool mustSerializeKnob;
-            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-
-            if (!isGeneric || mustSerializeKnob) {
-
-                if (!isGeneric && !(*it)->getIsSecret()) {
-                    // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                    (*it)->setSecret(false);
+                if ( !(*it)->isDeclaredByPlugin() ) {
+                    continue;
                 }
 
-                SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
-                (*it)->toSerialization(s.get());
-                genericKnobsSerialization.push_back(s);
-            }
-            if (!isGeneric) {
-                try {
-                    _publicInterface->deleteKnob(*it, false);
-                } catch (...) {
-                    
+                //If it is a knob of this ReadNode, do not destroy it
+                bool isReadNodeKnob = false;
+                for (std::list<KnobIWPtr >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
+                    if (it2->lock() == *it) {
+                        isReadNodeKnob = true;
+                        break;
+                    }
+                }
+                if (isReadNodeKnob) {
+                    continue;
+                }
+
+                //Keep pages around they will be re-used
+                KnobPagePtr isPage = toKnobPage(*it);
+                if (isPage) {
+                    continue;
+                }
+
+                //This is a knob of the Reader plug-in
+
+                //Serialize generic knobs and keep them around until we create a new Reader plug-in
+                bool mustSerializeKnob;
+                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+
+                if (!isGeneric || mustSerializeKnob) {
+
+                    if (!isGeneric && !(*it)->getIsSecret()) {
+                        // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                        (*it)->setSecret(false);
+                    }
+
+                    SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
+                    (*it)->toSerialization(s.get());
+                    genericKnobsSerialization.push_back(s);
+                }
+                if (!isGeneric) {
+                    try {
+                        _publicInterface->deleteKnob(*it, false);
+                    } catch (...) {
+                        
+                    }
                 }
             }
+        } catch (...) {
+            assert(false);
         }
-    } catch (...) {
-        assert(false);
     }
-    
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
 
     QMutexLocker k(&embeddedPluginMutex);
+    embeddedPlugin->destroyNode(true, false);
     embeddedPlugin.reset();
 } // ReadNodePrivate::destroyReadNode
 

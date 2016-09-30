@@ -386,10 +386,6 @@ struct KnobHelperPrivate
     // A blind handle to the ofx param, needed for custom OpenFX interpolation
     void* ofxParamHandle;
 
-    // This is to deal with multi-instance effects such as the Tracker: instance specifics knobs are
-    // not shared between instances whereas non instance specifics are shared.
-    bool isInstanceSpecific;
-
     // For each dimension, the label displayed on the interface (e.g: "R" "G" "B" "A")
     std::vector<std::string> dimensionNames;
 
@@ -476,7 +472,6 @@ struct KnobHelperPrivate
         , mustCloneGuiCurves()
         , mustCloneInternalCurves()
         , ofxParamHandle(0)
-        , isInstanceSpecific(false)
         , dimensionNames(dimension_)
         , expressionMutex()
         , expressions()
@@ -618,7 +613,10 @@ KnobHelper::deleteKnob()
 
     resetParent();
 
+
     if (holder) {
+
+        // For containers also delete children.
         KnobGroup* isGrp =  dynamic_cast<KnobGroup*>(this);
         KnobPage* isPage = dynamic_cast<KnobPage*>(this);
         if (isGrp)     {
@@ -635,10 +633,13 @@ KnobHelper::deleteKnob()
 
         EffectInstancePtr effect = toEffectInstance(holder);
         if (effect) {
-            if ( useHostOverlayHandle() ) {
-                effect->getNode()->removePositionHostOverlay( shared_from_this() );
+            NodePtr node = effect->getNode();
+            if (node) {
+                if ( useHostOverlayHandle() ) {
+                    node->removePositionHostOverlay( shared_from_this() );
+                }
+                node->removeParameterFromPython( getName() );
             }
-            effect->getNode()->removeParameterFromPython( getName() );
         }
     }
     _signalSlotHandler.reset();
@@ -686,18 +687,6 @@ bool
 KnobHelper::isDeclaredByPlugin() const
 {
     return _imp->declaredByPlugin;
-}
-
-void
-KnobHelper::setAsInstanceSpecific()
-{
-    _imp->isInstanceSpecific = true;
-}
-
-bool
-KnobHelper::isInstanceSpecific() const
-{
-    return _imp->isInstanceSpecific;
 }
 
 void
@@ -1801,6 +1790,10 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
                                         ValueChangedReasonEnum reason,
                                         ValueChangedReasonEnum originalReason)
 {
+    // If this assert triggers, that is that the knob have had its function deleteKnob() called but the object was not really deleted.
+    // You should investigate why the Knob was not deleted.
+    assert(_signalSlotHandler);
+
     AppInstancePtr app;
     KnobHolderPtr holder = getHolder();
     if (holder) {
@@ -5520,15 +5513,14 @@ KnobHolder::KnobHolder(const KnobHolder& other)
 
 KnobHolder::~KnobHolder()
 {
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelperPtr helper = boost::dynamic_pointer_cast<KnobHelper>(_imp->knobs[i]);
         assert(helper);
         if (helper) {
-            helper->deleteKnob();
             // Make sure nobody is referencing this
-            if ((helper->getHolder().get() == this) ) {
-                helper->_imp->holder.reset();
-            }
+            helper->_imp->holder.reset();
+            helper->deleteKnob();
+
         }
     }
 }
@@ -6608,20 +6600,6 @@ KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time)
     }
 }
 
-void
-KnobHolder::refreshInstanceSpecificKnobsOnly(bool isPlayback,
-                                             double time)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( !getApp() || getApp()->isGuiFrozen() ) {
-        return;
-    }
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if ( _imp->knobs[i]->isInstanceSpecific() ) {
-            _imp->knobs[i]->onTimeChanged(isPlayback, time);
-        }
-    }
-}
 
 KnobIPtr
 KnobHolder::getKnobByName(const std::string & name) const

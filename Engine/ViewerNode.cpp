@@ -977,21 +977,23 @@ ViewerNode::clearGroupWithoutViewerProcess()
 }
 
 void
-ViewerNode::loadSubGraph(bool nodeIsCreated,
-                         const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                         const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization)
+ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                         const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization)
 {
 
-    EffectInstancePtr thisShared = shared_from_this();
 
-    // Load group from presets if any
-    if (presetSerialization) {
-        clearGroupWithoutViewerProcess();
-        Project::restoreGroupFromSerialization(presetSerialization->_children, toNodeGroup(thisShared));
-        setSubGraphEditedByUser(false);
+    if (getNode()->isPyPlug()) {
+        assert(pyPlugSerialization);
+        // Handle the pyplug case on NodeGroup implementation
+        NodeGroup::loadSubGraph(projectSerialization, pyPlugSerialization);
     } else if (projectSerialization) {
         // If there's a project serialization load it. There will be children only if the user edited the Viewer group
         if (!projectSerialization->_children.empty()) {
+
+            // The subgraph was not initialized in this case
+            assert(getNodes().empty());
+
+            EffectInstancePtr thisShared = shared_from_this();
 
             // Clear nodes that were created if any
             clearGroupWithoutViewerProcess();
@@ -1001,17 +1003,17 @@ ViewerNode::loadSubGraph(bool nodeIsCreated,
 
             setSubGraphEditedByUser(true);
         } else {
+
+            // We are loading a non edited default viewer, just ensure the initial setup was done
             if (!getInternalViewerNode()) {
-                setupInitialSubGraphState();
+                setupGraph(true);
             }
-        }
-    } else {
-        // This is the case where the user is restoring to defaults without a preset
-        if (nodeIsCreated) {
-            clearGroupWithoutViewerProcess();
-            setupGraph(false);
+
+            setSubGraphEditedByUser(false);
         }
     }
+
+
 
     // Ensure the internal viewer process node exists
     if (!_imp->internalViewerProcessNode.lock()) {
@@ -1033,6 +1035,7 @@ ViewerNode::loadSubGraph(bool nodeIsCreated,
         _imp->onInternalViewerCreated();
 
     }
+    assert(getInternalViewerNode());
 
 
     _imp->refreshInputChoices(true);

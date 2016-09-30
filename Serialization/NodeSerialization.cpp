@@ -29,9 +29,9 @@ NodeSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
 
-
-    // For pyplugs, don't serialize it, this is always a group anyway
-    if (_encodeType != eNodeSerializationTypePyPlug) {
+    // The plug-in ID might be empty if we are serializing a PyPlug if a default Group node.
+    // If this is a PyPlug of a viewer node it will be the viewer plug-in ID.
+    if (!_pluginID.empty()) {
         em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
     }
     //  Presets specific

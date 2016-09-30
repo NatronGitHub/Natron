@@ -233,8 +233,7 @@ public:
 
     void loadInternalNodeGraph(bool initialSetupAllowed,
                                const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization,
-                               const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization);
+                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization);
 
     void loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization);
 

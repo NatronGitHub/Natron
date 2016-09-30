@@ -379,71 +379,92 @@ void
 WriteNodePrivate::destroyWriteNode()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (!embeddedPlugin.lock()) {
+    NodePtr embeddedNode = embeddedPlugin.lock();
+    if (!embeddedNode) {
         return;
     }
-    KnobsVec knobs = _publicInterface->getKnobs();
 
     genericKnobsSerialization.clear();
 
-    try {
+    {
+        KnobsVec knobs = _publicInterface->getKnobs();
+        
+        try {
 
-        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            if ( !(*it)->isDeclaredByPlugin() ) {
-                continue;
-            }
+            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
-            //If it is a knob of this WriteNode, do not destroy it
-            bool isWriteNodeKnob = false;
-            for (std::list<KnobIWPtr >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
-                if (it2->lock() == *it) {
-                    isWriteNodeKnob = true;
-                    break;
+
+                // The internal node still holds a shared ptr to the knob.
+                // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+                embeddedNode->getEffectInstance()->removeKnobFromList(*it);
+
+                if ( !(*it)->isDeclaredByPlugin() ) {
+                    continue;
+                }
+
+                //If it is a knob of this WriteNode, do not destroy it
+                bool isWriteNodeKnob = false;
+                for (std::list<KnobIWPtr >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                    if (it2->lock() == *it) {
+                        isWriteNodeKnob = true;
+                        break;
+                    }
+                }
+                if (isWriteNodeKnob) {
+                    continue;
+                }
+
+                //Keep pages around they will be re-used
+
+                {
+                    KnobPagePtr isPage = toKnobPage(*it);
+                    if (isPage) {
+                        continue;
+                    }
+                }
+
+                //This is a knob of the Writer plug-in
+
+                //Serialize generic knobs and keep them around until we create a new Writer plug-in
+                bool mustSerializeKnob;
+                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+                if (!isGeneric || mustSerializeKnob) {
+
+                    if (!isGeneric && !(*it)->getIsSecret()) {
+                        // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                        (*it)->setSecret(false);
+                    }
+                    SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
+                    (*it)->toSerialization(s.get());
+                    genericKnobsSerialization.push_back(s);
+                }
+                if (!isGeneric) {
+                    try {
+                        _publicInterface->deleteKnob(*it, false);
+
+                    } catch (...) {
+                        
+                    }
                 }
             }
-            if (isWriteNodeKnob) {
-                continue;
-            }
-
-            //Keep pages around they will be re-used
-            KnobPagePtr isPage = toKnobPage(*it);
-            if (isPage) {
-                continue;
-            }
-
-            //This is a knob of the Writer plug-in
-
-            //Serialize generic knobs and keep them around until we create a new Writer plug-in
-            bool mustSerializeKnob;
-            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-            if (!isGeneric || mustSerializeKnob) {
-
-                if (!isGeneric && !(*it)->getIsSecret()) {
-                    // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                    (*it)->setSecret(false);
-                }
-                SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
-                (*it)->toSerialization(s.get());
-                genericKnobsSerialization.push_back(s);
-            }
-            if (!isGeneric) {
-                try {
-                    _publicInterface->deleteKnob(*it, false);
-                } catch (...) {
-                    
-                }
-            }
+            
+        } catch (...) {
+            assert(false);
         }
-
-    } catch (...) {
-        assert(false);
     }
-
-
+    
+    
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-
+    if (embeddedNode) {
+        embeddedNode->destroyNode(true, false);
+    }
     embeddedPlugin.reset();
+
+    NodePtr readBack = readBackNode.lock();
+    if (readBack) {
+        readBack->destroyNode(true, false);
+    }
     readBackNode.reset();
 } // WriteNodePrivate::destroyWriteNode
 
@@ -634,11 +655,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         output = _publicInterface->getApp()->createNode(args);
-        try {
-            output->setScriptName("Output");
-        } catch (...) {
-        }
-
+    
         assert(output);
         outputNode = output;
     }
@@ -754,6 +771,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             output->replaceInput(input, 0);
         }
     }
+
+    // There should always be a single input node
+    assert(_publicInterface->getMaxInputCount() == 1);
 
     _publicInterface->getNode()->findPluginFormatKnobs();
 

@@ -689,11 +689,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     knob->setOfxParamHandle( (void*)instance->getHandle() );
 
-    bool isInstanceSpecific = descriptor.getProperties().getIntProperty(kNatronOfxParamPropIsInstanceSpecific) != 0;
-    if (isInstanceSpecific) {
-        knob->setAsInstanceSpecific();
-    }
-
     ptk->connectDynamicProperties();
 
     return instance;

@@ -114,7 +114,9 @@ public:
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
      **/
-    void initNodeName(const std::string& pluginLabel, std::string* nodeName);
+    void initNodeName(const std::string& pluginID,
+                      const std::string& pluginLabel,
+                      std::string* nodeName);
 
     /**
      * @brief Given the baseName, set in nodeName a possible script-name for the node.
@@ -410,9 +412,8 @@ public:
      **/
     virtual void setupInitialSubGraphState();
 
-    virtual void loadSubGraph(bool nodeIsCreated,
-                              const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                              const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization);
+    virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization);
 
 Q_SIGNALS:
 

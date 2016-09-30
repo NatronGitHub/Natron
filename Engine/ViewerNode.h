@@ -227,9 +227,8 @@ public:
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
-    virtual void loadSubGraph(bool nodeIsCreated,
-                              const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
-                              const SERIALIZATION_NAMESPACE::NodeSerialization* presetSerialization) OVERRIDE FINAL;
+    virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization) OVERRIDE FINAL;
 
 
     virtual bool isOutput() const OVERRIDE FINAL
