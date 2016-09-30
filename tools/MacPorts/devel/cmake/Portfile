@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149466 2016-06-22 15:43:38Z michaelld@macports.org $
+# $Id: Portfile 153280 2016-09-28 12:22:36Z michaelld@macports.org $
 
 PortSystem          1.0
 universal_variant no
@@ -23,15 +23,15 @@ dist_subdir         cmake
 
 subport cmake-devel {}
 
-set branch          3.5
+set branch          3.6
 
 if {${subport} eq ${name}} {
 
     # release
 
     version         ${branch}.2
-    checksums       rmd160 9053820870f124dee5845eb5ba4717ac71477231 \
-                    sha256 92d8410d3d981bb881dfff2aed466da55a58d34c7390d50449aa59b32bb5e62a
+    checksums       rmd160 2b9a04eec4964302ddb0e3b48060407cbdab8455 \
+                    sha256 189ae32a6ac398bb2f523ae77f70d463a6549926cde1544cd9cc7c6609f8b346
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -39,8 +39,12 @@ if {${subport} eq ${name}} {
     long_description ${base_long_description} \
         The ${subport} release port is updated roughly every few months.
 
-    # keep this patch until the next version (major or minor)
-    patchfiles-append patch-Modules-Platform-Darwin-Initialize.cmake.diff
+    # release-only patches
+    patchfiles-append \
+        patch-Modules-FindQt4.cmake.release.diff \
+        patch-Modules-FindFreetype.cmake.release.diff \
+        patch-Modules-noArchCheck.release.diff \
+        patch-CMakeFindFrameworks.cmake.release.diff
 
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
@@ -50,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20160621
+    version         20160926
     set dist_branch 3.6
-    set dist_date   20160621
-    set dist_hash   gdbfd5
-    checksums       rmd160 8b536bbda1334cab7954724f8bdc485d1330e5ba \
-                    sha256 ff99a623f1a95313ac4b8a648ca185db8468ad0a5edaa888fcf4564e6c66d5e9
+    set dist_date   20160926
+    set dist_hash   gcdaf3
+    checksums       rmd160 f16413d27c94a568d20e4a75140d37545c9b98f2 \
+                    sha256 d922c15c634e7827a7c563e64cd958ab96f53b310f132b36f3fb755a9999dd26
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -63,6 +67,19 @@ if {${subport} eq ${name}} {
 
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
+
+    # devel-only patches
+    patchfiles-append \
+        patch-Modules-FindQt4.cmake.devel.diff \
+        patch-Modules-FindFreetype.cmake.devel.diff \
+        patch-Modules-noArchCheck.devel.diff \
+        patch-CMakeFindFrameworks.cmake.devel.diff \
+        patch-Source_CMakeVersionCompute.cmake.devel.diff
+
+    # allow use of libuv or libuv-devel;
+    # system libuv is the default as of 20160830 (g320f5)
+    depends_lib-append \
+        path:lib/pkgconfig/libuv.pc:libuv
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -82,11 +99,7 @@ depends_lib-append  port:curl \
 # jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
 # use its internal jsoncpp until a better solution comes about.
 
-patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
-                    patch-Modules-FindFreetype.cmake.diff \
-                    patch-Modules-FindQt4.cmake.diff \
-                    patch-Modules-Platform-Darwin.cmake.diff \
-                    patch-Modules-noArchCheck.diff
+patchfiles-append   patch-Modules-Platform-Darwin.cmake.diff
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
@@ -104,7 +117,7 @@ platform darwin {
     }
 }
 
-configure.args      --docdir=share/doc/cmake \
+configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
                     --system-libs \
@@ -165,10 +178,18 @@ post-destroot {
     xinstall -d -m 0755 ${destroot}${prefix}/share/emacs/site-lisp
     xinstall -m 0644 ${worksrcpath}/Auxiliary/cmake-mode.el \
         ${destroot}${prefix}/share/emacs/site-lisp
-    foreach type {syntax indent} {
-        xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
-        xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
-            ${destroot}${prefix}/share/vim/vimfiles/${type}
+    if {${subport} eq ${name}} {
+        foreach type {syntax indent} {
+            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+            xinstall -m 0644 -W ${worksrcpath}/Auxiliary cmake-${type}.vim \
+                ${destroot}${prefix}/share/vim/vimfiles/${type}
+        }
+    } else {
+        foreach type {syntax indent} {
+            xinstall -d -m 0755 ${destroot}${prefix}/share/vim/vimfiles/${type}
+            xinstall -m 0644 -W ${worksrcpath}/Auxiliary/vim/${type} cmake.vim \
+                ${destroot}${prefix}/share/vim/vimfiles/${type}
+        }
     }
     if ([variant_isset gui]) {
         set app CMake

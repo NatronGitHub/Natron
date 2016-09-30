@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 144197 2016-01-04 17:14:39Z ryandesign@macports.org $
+# $Id: Portfile 150291 2016-07-15 08:04:42Z ryandesign@macports.org $
 
 PortSystem              1.0
 
 name                    webp
-version                 0.5.0
+version                 0.5.1
 categories              graphics science devel
 platforms               darwin
 maintainers             ryandesign openmaintainer
@@ -28,8 +28,8 @@ long_description        WebP is a new image format that provides lossy \
 homepage                https://developers.google.com/speed/webp/
 master_sites            http://downloads.webmproject.org/releases/webp/
 
-checksums               rmd160  911edb98dbd65d593320a0b01c4d6492e9b91587 \
-                        sha256  5cd3bb7b623aff1f4e70bd611dc8dbabbf7688fd5eb225b32e02e09e37dfb274
+checksums               rmd160  2d14736f3de77475f04d3aa46121aa571a1245f5 \
+                        sha256  6ad66c6fcd60a023de20b6856b03da8c7d347269d76b1fd9c3287e8b5e8813df
 
 depends_lib             port:zlib \
                         port:libpng \

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 147243 2016-03-31 23:35:30Z devans@macports.org $
+# $Id: Portfile 153230 2016-09-27 16:12:54Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           gobject_introspection 1.0
@@ -7,7 +7,7 @@ PortGroup           gobject_introspection 1.0
 name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
-version             2.34.0
+version             2.36.0
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -23,8 +23,8 @@ long_description    ${description}
 
 master_sites        gnome:sources/${my_name}/${branch}/
 
-checksums           rmd160  7e20f674b07387a052500564a1a9749e91eabaf2 \
-                    sha256  d55e5b383ee219bd0e23bf6ed4427d56a7db5379729a6e3e0a0e0eba9a8d8879
+checksums           rmd160  0a6079ba5a018ff62aaeb0af699a1355c7500f5c \
+                    sha256  85ab52ce9f2c26327141b3dcf21cca3da6a3f8de84b95fa1e727d8871a23245c
 
 depends_build       port:pkgconfig
 

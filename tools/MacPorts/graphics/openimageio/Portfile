@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.6.14 tags/Release-
+github.setup     OpenImageIO oiio 1.6.17 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -117,6 +117,15 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal description {Natron version} {
+    # configure with GCC 4.9 for proper OpenMP support
+    configure.compiler macports-gcc-4.9
+    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+    configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
+    #configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
+    #configure.args-append --enable-openmp
+}
+
 variant opencolorio description {Add OpenColorIO support.} {
     depends_lib-append  port:opencolorio
     configure.args-delete       -DUSE_OCIO:BOOL=FALSE
@@ -130,7 +139,7 @@ variant ffmpeg description {Add FFmpeg support.} {
 }
 
 variant openjpeg description {Add OpenJPEG support.} {
-    depends_lib-append  port:openjpeg15
+    depends_lib-append  port:openjpeg
     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
     configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_INCLUDE_DIR=${prefix}/include/openjpeg-1.5
 }

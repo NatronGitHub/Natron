@@ -1,6 +1,6 @@
---- Portfile.orig	2016-06-20 11:18:29.000000000 +0200
-+++ Portfile	2016-06-20 11:19:44.000000000 +0200
-@@ -69,7 +69,11 @@
+--- Portfile.orig	2016-08-31 17:33:07.000000000 +0200
++++ Portfile	2016-08-31 17:33:15.000000000 +0200
+@@ -67,7 +67,11 @@
      -DBUILD_SHARED_LIBS=on \
      -DGLFW_BUILD_EXAMPLES=off \
      -DGLFW_BUILD_TESTS=off \
@@ -13,7 +13,7 @@
  
  # remove top-level library path, such that internal libraries are used
  # instead of any already-installed ones.
-@@ -89,6 +93,23 @@
+@@ -87,6 +91,23 @@
  
  # error out if trying to build on OSX 10.6 or earlier; not supported
  

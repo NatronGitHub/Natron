@@ -1,6 +1,6 @@
---- Portfile.orig	2016-05-28 11:24:37.000000000 +0200
-+++ Portfile	2016-06-23 13:55:58.000000000 +0200
-@@ -101,6 +101,11 @@
+--- Portfile.orig	2016-08-31 17:30:21.000000000 +0200
++++ Portfile	2016-08-31 17:30:26.000000000 +0200
+@@ -100,6 +100,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
  
@@ -12,11 +12,12 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -132,10 +137,12 @@
+@@ -131,11 +136,13 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
 +                    --disable-xlib \
+                     --disable-audiotoolbox \
                      --disable-videotoolbox \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
@@ -24,9 +25,9 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
  
- # disable asm on Tiger
- # libblueray doesn't build on Tiger so disable for now (#39442)
-@@ -181,6 +188,17 @@
+ 
+ platform darwin {
+@@ -199,6 +206,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -44,7 +45,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -205,6 +223,15 @@
+@@ -223,6 +241,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -60,7 +61,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -230,11 +257,52 @@
+@@ -248,11 +275,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -113,7 +114,7 @@
  }
  
  default_variants +x11
-@@ -305,6 +373,12 @@
+@@ -323,6 +391,12 @@
                              port:samba3
  
      license                 GPL-3+
