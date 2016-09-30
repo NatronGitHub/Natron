@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -10806,6 +10807,44 @@ layerEqualityFunctor(const std::string& a,
     return false;
 }
 
+static bool isRedComponent(const std::string& a) {
+    std::string str = a;
+    boost::to_lower(str);
+    return str == "red" || str == "r";
+}
+
+static bool isGreenComponent(const std::string& a) {
+    std::string str = a;
+    boost::to_lower(str);
+    return str == "green" || str == "g";
+}
+
+static bool isBlueComponent(const std::string& a) {
+    std::string str = a;
+    boost::to_lower(str);
+    return str == "blue" || str == "b";
+}
+
+static bool isAlphaComponent(const std::string& a) {
+    std::string str = a;
+    boost::to_lower(str);
+    return str == "alpha" || str == "a";
+}
+
+static bool channelNamesEqualFunctor(const std::string& a, const std::string& b)
+{
+    if (isRedComponent(a) && isRedComponent(b)) {
+        return true;
+    } else if (isGreenComponent(a) && isGreenComponent(b)) {
+        return true;
+    } else if (isBlueComponent(a) && isBlueComponent(b)) {
+        return true;
+    } else if (isAlphaComponent(a) && isAlphaComponent(b)) {
+        return true;
+    }
+    return false;
+}
+
 int
 Node::getMaskChannel(int inputNb,
                      ImageComponents* comps,
@@ -10830,7 +10869,7 @@ Node::getMaskChannel(int inputNb,
                      ( isColor && it->second.compsAvailable[i].first.isColorPlane() ) ) {
                     const std::vector<std::string>& channels = it->second.compsAvailable[i].first.getComponentsNames();
                     for (std::size_t j = 0; j < channels.size(); ++j) {
-                        if (channels[j] == channelName) {
+                        if (channelNamesEqualFunctor(channels[j], channelName)) {
                             *comps = it->second.compsAvailable[i].first;
                             *maskInput = it->second.compsAvailable[i].second.lock();
 

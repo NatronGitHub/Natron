@@ -556,6 +556,7 @@ EffectInstance::getInputHint(int /*inputNb*/) const
     return std::string();
 }
 
+
 void
 EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
 {
@@ -760,7 +761,6 @@ EffectInstance::getImage(int inputNb,
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstancePtr identityInput;
-    double inputIdentityTime = 0.;
     bool duringPaintStroke;
     // Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     // re-computing of the same image many many times
@@ -775,6 +775,7 @@ EffectInstance::getImage(int inputNb,
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     OSGLContextPtr gpuGlContext, cpuGlContext;
+
 
     assert(tls && (tls->currentRenderArgs.validArgs || !tls->frameArgs.empty()));
 
@@ -818,12 +819,10 @@ EffectInstance::getImage(int inputNb,
         }
         thisEffectRenderTime = renderArgs.time;
         isIdentity = renderArgs.isIdentity;
-        inputIdentityTime = renderArgs.identityTime;
         identityInput = renderArgs.identityInput;
         inputImagesThreadLocal = renderArgs.inputImages;
         thisRod = renderArgs.rod;
     }
-#pragma message WARN("FIXME: inputIdentity time is set above but never used... is this normal?")
 
 
     if ( ((!gpuGlContext && !cpuGlContext) || !renderInfo) && returnStorage == eStorageModeGLTex ) {
