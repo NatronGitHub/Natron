@@ -6825,7 +6825,7 @@ Node::getMaxInputCount() const
     return _imp->effect->getMaxInputCount();
 }
 
-std::string removeTrailingDigits(const std::string& str)
+static std::string removeTrailingDigits(const std::string& str)
 {
     if (str.empty()) {
         return std::string();

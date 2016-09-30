@@ -8,9 +8,13 @@
 
 - Fix a bug where deprecated plugins would not be loaded from project file 2561778
 - macOS: clicking the dock icon now raises all windows
+- The whole user interface now uses the same font, and dialogs were cleaned up to use standard buttons
 
 ### Plugins
 
+- Crop: add the "Extent" choice, to chose either a predefined format or a custom size
+- Shuffle: re-enable the "Output Components" choice"
+- Premult/UnPremult: don't try to check processed channel when rewiring the input
 - (beta feature) ErodeBlur: Erode or dilate a mask by smoothing.
 - (beta feature) KeyMix: Copies A to B only where Mask is non-zero.
 - (beta feature) PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
