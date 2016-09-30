@@ -120,6 +120,7 @@ using std::make_pair;
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
 static void
@@ -1348,26 +1349,47 @@ NodeGui::initializeInputsForInspector()
 
     assert(node);
 
+    // Count mask inputs first
+    std::vector<bool> masksInputs(_inputEdges.size());
+    int nMasksInputs = 0;
+    for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
+        masksInputs[i] = node->getEffectInstance()->isInputMask(i);
+        if (masksInputs[i]) {
+            ++nMasksInputs;
+        }
+    }
+
+
+
     ///If the node is a viewer, display 1 input and another one aside and hide all others.
     ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
 
     bool isViewer = node->isEffectViewer() != 0;
     int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
-    double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
-    double angle =  piDividedbyX;
-    bool maskAside = false;
-    for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        bool isMask = node->getEffectInstance()->isInputMask(i);
+    double angleBetweenInputs = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
+    double angle =  angleBetweenInputs;
 
-        if ( ( (int)i < maxInitiallyOnTopVisibleInputs ) || (isMask && maskAside) ) {
-            _inputEdges[i]->setAngle(angle);
-            angle += piDividedbyX;
-        } else if (isMask && !maskAside) {
-            _inputEdges[i]->setAngle(0);
-            maskAside = true;
+    double angleBetweenMasks = 0.;
+    double maskAngle = 0.;
+    if (nMasksInputs > 1) {
+        angleBetweenMasks = M_PI / (double)(nMasksInputs + 1);
+        maskAngle = -M_PI_2 + angleBetweenMasks;
+    }
+
+
+    for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
+        if (masksInputs[i]) {
+            _inputEdges[i]->setAngle(maskAngle);
+            maskAngle += angleBetweenMasks;
         } else {
-            _inputEdges[i]->setAngle(M_PI);
+            if ( ( (int)i < maxInitiallyOnTopVisibleInputs ) ) {
+                _inputEdges[i]->setAngle(angle);
+                angle += angleBetweenInputs;
+            } else {
+                _inputEdges[i]->setAngle(M_PI);
+            }
         }
+
 
         if ( !_inputEdges[i]->hasSource() ) {
             _inputEdges[i]->initLine();
