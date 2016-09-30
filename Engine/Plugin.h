@@ -132,6 +132,13 @@
 #define kNatronPluginPropPyPlugScriptAbsoluteFilePath "NatronPluginPropPyPlugScriptAbsoluteFilePath"
 
 /**
+ * @brief x1 std::string property (optional) indicating the ID of the plug-in container to use for the PyPlug
+ * Default value - Empty
+ * If empty, Natron assume the PyPlug is one of a default Group node.
+ **/
+#define kNatronPluginPropPyPlugContainerID "NatronPluginPropPyPlugContainerID"
+
+/**
  * @brief x1 bool property (optional) indicating for a PyPlug whether it is encoded using old Python scripts or to
  * the newer YAML-based format.
  * Default value - false

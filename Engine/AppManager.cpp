@@ -1829,6 +1829,9 @@ AppManager::loadNodesPresets()
 
 
                 PluginPtr p = Plugin::create(0, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
+                if (!obj._pluginID.empty()) {
+                    p->setProperty<std::string>(kNatronPluginPropPyPlugContainerID, obj._pluginID);
+                }
                 p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
                 p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, pyPlugDescIsMarkdown);
                 p->setProperty<std::string>(kNatronPluginPropDescription, pyPlugDescription);

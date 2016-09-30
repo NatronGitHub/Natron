@@ -1032,7 +1032,7 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
 
-        if (isSubGraphEditable()) {
+        if (isGrp->isSubGraphUserVisible()) {
             KnobIPtr pyPlugPage = isGrp->getNode()->getKnobByName(kPyPlugPageParamName);
             if (pyPlugPage) {
                 pyPlugPage->setSecret(!edited);

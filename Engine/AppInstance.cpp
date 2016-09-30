@@ -923,7 +923,11 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             appendToScriptEditor(output);
         }
     }
-    
+
+    std::string originalPluginID = plugin->getProperty<std::string>(kNatronPluginPropPyPlugContainerID);
+    if (originalPluginID.empty()) {
+        originalPluginID = PLUGINID_NATRON_GROUP;
+    }
     {
         
         
@@ -932,7 +936,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         if (!istoolsetScript) {
             CreateNodeArgsPtr groupArgs(new CreateNodeArgs(*args));
             groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
-            groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID,PLUGINID_NATRON_GROUP);
+            groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID, originalPluginID);
             groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
             groupArgs->setProperty<std::string>(kCreateNodeArgsPropPyPlugID, pyPlugID);
             containerNode = createNode(groupArgs);

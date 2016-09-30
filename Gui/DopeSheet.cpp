@@ -73,7 +73,11 @@ typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 bool
 nodeHasAnimation(const NodeGuiPtr &nodeGui)
 {
-    const KnobsVec &knobs = nodeGui->getNode()->getKnobs();
+    NodePtr internalNode = nodeGui->getNode();
+    if (!internalNode) {
+        return false;
+    }
+    const KnobsVec &knobs = internalNode->getKnobs();
 
     for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();

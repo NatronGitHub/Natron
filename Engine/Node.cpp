@@ -1139,7 +1139,6 @@ findMasterKnob(const KnobIPtr & knob,
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
             if ( (otherKnobs[j]->getName() == masterKnobName) ) {
                 return otherKnobs[j];
-                break;
             }
         }
     }
@@ -1914,7 +1913,7 @@ void
 Node::exportNodeToPyPlug(const std::string& filePath)
 {
     // Only groups can export to PyPlug
-    if (_imp->plugin.lock()->getPluginID() != PLUGINID_NATRON_GROUP) {
+    if (!isEffectNodeGroup()) {
         return;
     }
     FStreamsSupport::ofstream ofile;
@@ -1980,14 +1979,20 @@ Node::exportNodeToPyPlug(const std::string& filePath)
         bool foundInPath = false;
         QStringList groupSearchPath = appPTR->getAllNonOFXPluginsPaths();
         for (QStringList::iterator it = groupSearchPath.begin(); it != groupSearchPath.end(); ++it) {
-            if (it->toStdString() == pyPlugDirectoryPath) {
+            std::string thisPath = it->toStdString();
+
+            // pyPlugDirectoryPath ends with a separator, so ensure this one has one too
+            if (!thisPath.empty() && thisPath[thisPath.size() - 1] != '/') {
+                thisPath.push_back('/');
+            }
+            if (thisPath == pyPlugDirectoryPath) {
                 foundInPath = true;
                 break;
             }
         }
 
         if (!foundInPath) {
-            QString message = tr("Directory \"%1\" is not in the group plug-in search path, would you like to add it?").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str()));
+            QString message = tr("Directory \"%1\" is not in the plug-in search path, would you like to add it?").arg(QString::fromUtf8(pyPlugDirectoryPath.c_str()));
             StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
                                                              message.toStdString(), false);
 
@@ -2185,6 +2190,12 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         }
     }
 
+    // Load serialization before loading internal nodegraph as restoring parameters of the sub-nodegraph could reference user knobs
+    // on this node
+    if (projectSerialization) {
+        fromSerialization(*projectSerialization);
+    }
+
     if (!nodeCreated) {
         bool initialSubGraphSetupAllowed = false;
         if (args) {
@@ -2194,9 +2205,6 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         loadInternalNodeGraph(initialSubGraphSetupAllowed, projectSerialization.get(), pyPlugSerialization.get());
     }
 
-    if (projectSerialization) {
-        fromSerialization(*projectSerialization);
-    }
 
     // If there was a serialization, we most likely removed or created user parameters, so refresh Python knobs
     declarePythonKnobs();
@@ -4085,10 +4093,11 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
     createNodePage(settingsPage);
 
-    if (!isEffectNodeGroup()) {
+    NodeGroupPtr isGrpNode = isEffectNodeGroup();
+    if (!isGrpNode) {
         createInfoPage();
     } else {
-        if (_imp->plugin.lock()->getPluginID() == PLUGINID_NATRON_GROUP) {
+        if (isGrpNode->isSubGraphUserVisible()) {
             createPyPlugPage();
 
             if (hasGUI) {
@@ -8594,6 +8603,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         } catch (const std::exception& e) {
             Dialogs::errorDialog(tr("Export").toStdString(), e.what());
         }
+        _imp->pyPlugExportDialog.lock()->setValue(false);
     } else if (what == _imp->pyPlugExportDialogCancelButton.lock()) {
         _imp->pyPlugExportDialog.lock()->setValue(false);
     } else {
