@@ -1025,6 +1025,24 @@ AppInstance::createWriter(const std::string& filename,
     return createNode(args);
 }
 
+static std::string removeTrailingDigits(const std::string& str)
+{
+    if (str.empty()) {
+        return std::string();
+    }
+    std::size_t i = str.size() - 1;
+    while (i > 0 && std::isdigit(str[i])) {
+        --i;
+    }
+
+    if (i == 0) {
+        // Name only consists of digits
+        return std::string();
+    }
+
+    return str.substr(0, i + 1);
+}
+
 /**
  * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
@@ -1043,26 +1061,34 @@ isEntitledForInspector(Plugin* plugin,
         return false;
     }
 
+    // Find the number of inputs that share the same basename
+
+    int nInputsWithSameBasename = 0;
+
+    std::string baseInputName;
+
+    // We need a boolean here because the baseInputName may be empty in the case input names only contain numbers
+    bool baseInputNameSet = false;
+
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
     int nInputs = 0;
-    bool firstInput = true;
     for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
         if ( !(*it)->isOutput() ) {
-            if ( !(*it)->isOptional() ) {
-                if (!firstInput) {                    // allow one non-optional input
-                    return false;
-                }
+            ++nInputs;
+            if (!baseInputNameSet) {
+                baseInputName = removeTrailingDigits((*it)->getName());
+                baseInputNameSet = true;
+                nInputsWithSameBasename = 1;
             } else {
-                ++nInputs;
+                std::string thisBaseName = removeTrailingDigits((*it)->getName());
+                if (thisBaseName == baseInputName) {
+                    ++nInputsWithSameBasename;
+                }
             }
-            firstInput = false;
         }
     }
-    if (nInputs > 4) {
-        return true;
-    }
+    return nInputs > 4 && nInputsWithSameBasename >= 4;
 
-    return false;
 }
 
 NodePtr
