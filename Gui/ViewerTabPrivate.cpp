@@ -268,7 +268,8 @@ ViewerTabPrivate::findActiveNodeContextForPlugin(const PluginPtr& plugin)
     bool isRotoOrRotoPaint = pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT;
     for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it != currentNodeContext.end(); ++it) {
         if (isRotoOrRotoPaint) {
-            if (pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT) {
+            std::string otherID = it->plugin.lock()->getPluginID();
+            if (otherID == PLUGINID_NATRON_ROTO || otherID == PLUGINID_NATRON_ROTOPAINT) {
                 return it;
             }
         } else {
