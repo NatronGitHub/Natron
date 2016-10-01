@@ -352,8 +352,6 @@ KnobDouble::denormalize(const int dimension,
                         const double value) const
 {
     EffectInstancePtr effect = toEffectInstance( getHolder() );
-
-    assert(effect);
     if (!effect) {
         // coverity[dead_error_line]
         return value;
@@ -1051,10 +1049,10 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
     if (isChoice) {
         populateChoices(isChoice->getEntries_mt_safe(),
                         isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
-        {
+        /*{
             QMutexLocker k(&_entriesMutex);
             _currentEntryLabel = isChoice->_currentEntryLabel;
-        }
+        }*/
     }
 }
 

@@ -2951,7 +2951,6 @@ template <typename T>
 void
 Knob<T>::computeHasModifications()
 {
-
     bool oneChanged = false;
 
     for (int i = 0; i < getDimension(); ++i) {

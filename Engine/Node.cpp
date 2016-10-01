@@ -1555,7 +1555,10 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_pluginMinorVersion = getMinorVersion();
 
-    getInputNames(serialization->_inputs);
+    // Only serialize inputs for regular serialization
+    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
+        getInputNames(serialization->_inputs);
+    }
 
 
     NodePtr masterNode = getMasterNode();
@@ -6462,16 +6465,18 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
 
+
     /// prevent 2 previews to occur at the same time since there's only 1 preview instance
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
 
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
-        NodePtr outputNode = isGroup->getOutputNode(false);
+        NodePtr outputNode = isGroup->getOutputNodeInput(false);
         if (outputNode) {
-            effect = outputNode->getEffectInstance();
+            return outputNode->makePreviewImage(time, width, height, buf);
         }
+        return false;
     } else {
         effect = _imp->effect;
     }

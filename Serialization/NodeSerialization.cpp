@@ -66,21 +66,24 @@ NodeSerialization::encode(YAML::Emitter& em) const
         em << YAML::EndSeq;
     }
 
-    bool hasInput = false;
-    for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (!it->second.empty()) {
-            hasInput = true;
-            break;
-        }
-    }
-    if (hasInput) {
-        em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
+    // When PyPlug or preset, no need to serialize inputs
+    if (_encodeType == eNodeSerializationTypeRegular) {
+        bool hasInput = false;
         for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
             if (!it->second.empty()) {
-                em << YAML::Key << it->first << YAML::Value << it->second;
+                hasInput = true;
+                break;
             }
         }
-        em << YAML::EndMap;
+        if (hasInput) {
+            em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
+            for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+                if (!it->second.empty()) {
+                    em << YAML::Key << it->first << YAML::Value << it->second;
+                }
+            }
+            em << YAML::EndMap;
+        }
     }
 
     if (!_knobsValues.empty()) {
