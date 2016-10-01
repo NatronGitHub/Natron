@@ -763,62 +763,6 @@ getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, 
 
 } // getDependenciesRecursive_internal
 
-#if 0
-static bool
-isRotoPaintNodeInputRecursive(const NodePtr& node,
-                              const NodePtr& rotoPaintNode)
-{
-    if ( node == rotoPaintNode ) {
-        return true;
-    }
-    int maxInputs = node->getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr input = node->getInput(i);
-        if (input) {
-            if (input == rotoPaintNode) {
-                return true;
-            } else {
-                bool ret = isRotoPaintNodeInputRecursive(input, rotoPaintNode);
-                if (ret) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-/**
- * @brief The following is to flag that we are drawing on nodes in-between the Viewer and the RotoPaint node.
- * It is no longer needed since now we automatically connect the Viewer node to the RotoPaint when drawing.
- **/
-static void
-updateLastStrokeDataRecursively(const NodePtr& node,
-                                const NodePtr& rotoPaintNode,
-                                const RectD& lastStrokeBbox,
-                                bool invalidate)
-{
-    if ( isRotoPaintNodeInputRecursive(node, rotoPaintNode) ) {
-        if (invalidate) {
-            node->invalidateLastPaintStrokeDataNoRotopaint();
-        } else {
-            node->setLastPaintStrokeDataNoRotopaint();
-        }
-
-        if ( node == rotoPaintNode ) {
-            return;
-        }
-        int maxInputs = node->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = node->getInput(i);
-            if (input) {
-                updateLastStrokeDataRecursively(input, rotoPaintNode, lastStrokeBbox, invalidate);
-            }
-        }
-    }
-}
-#endif
 
 /**
  * @brief While drawing, extract once all changes made by the user recently and keep this set of changes

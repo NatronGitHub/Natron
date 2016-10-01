@@ -313,8 +313,13 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
     U64 projectHash = getApp()->getProject()->computeHash(time, view);
     hash->append(projectHash);
 
-
+    // Append all knobs hash
     KnobHolder::appendToHash(time, view, hash);
+
+    // Also append the disabled state of the node. This is useful because the knob disabled itself is not enough: if the node is not disabled
+    // but inside a disabled group, it is considered disabled but yet has the same hash than when not disabled.
+    hash->append(node->isNodeDisabled());
+
 }
 
 void
