@@ -104,8 +104,7 @@ public:
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
-    virtual void onEffectCreated(bool mayCreateFileDialog,
-                                 const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
 
 private:
 

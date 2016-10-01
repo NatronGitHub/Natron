@@ -533,6 +533,7 @@ private:
 
     void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
 
+    bool openFileDialogIfNeeded(const CreateNodeArgsPtr& args);
 
     NodePtr createNodeInternal(const CreateNodeArgsPtr& args);
 

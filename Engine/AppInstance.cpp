@@ -1049,7 +1049,44 @@ AppInstance::createWriter(const std::string& filename,
     return createNode(args);
 }
 
+bool
+AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
+{
 
+    // True if the caller set a value for the kOfxImageEffectFileParamName parameter
+    bool hasDefaultFilename = false;
+    {
+        std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        if (foundFileName != defaultParamValues.end()) {
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
+        }
+    }
+
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+
+    bool isSilent = args->getProperty<bool>(kCreateNodeArgsPropSilent);
+    bool isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
+    bool hasGui = !args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui;
+
+    if (mustOpenDialog) {
+        std::string pattern = openImageFileDialog();
+        if (!pattern.empty()) {
+            args->addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
+            return true;
+        }
+
+        // User canceled operation
+        return false;
+    } else {
+        // We already have a filename
+        return true;
+    }
+}
 
 NodePtr
 AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
@@ -1107,6 +1144,18 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     }
 
 
+    std::string foundPluginID = plugin->getPluginID();
+
+    {
+        bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
+
+        // For Read/Write, open file dialog if needed
+        if (foundPluginID == PLUGINID_NATRON_READ || (useDialogForWriters && foundPluginID == PLUGINID_NATRON_WRITE)) {
+            if (!openFileDialogIfNeeded(args)) {
+                return node;
+            }
+        }
+    }
 
     // If the plug-in is a PyPlug create it with createNodeFromPyPlug()
     std::string pyPlugFile = plugin->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
@@ -1121,8 +1170,6 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
             return node;
         }
     }
-
-    std::string foundPluginID = plugin->getPluginID();
 
 
     // Get the group container

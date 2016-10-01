@@ -97,7 +97,7 @@ public:
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;

@@ -1624,8 +1624,7 @@ public:
     /**
      * @brief Called after all knobs have been loaded and the node has been created
      **/
-    virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
-                                 const CreateNodeArgs& /*args*/) {}
+    virtual void onEffectCreated(const CreateNodeArgs& /*args*/) {}
 
 
 

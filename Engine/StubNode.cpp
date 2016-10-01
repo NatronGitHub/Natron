@@ -179,7 +179,7 @@ StubNode::knobChanged(const KnobIPtr& k,
 }
 
 void
-StubNode::onEffectCreated(bool /*mayCreateFileDialog*/, const CreateNodeArgs& /*defaultParamValues*/)
+StubNode::onEffectCreated(const CreateNodeArgs& /*defaultParamValues*/)
 {
     refreshInputsFromSerialization();
 }

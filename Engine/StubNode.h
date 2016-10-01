@@ -73,7 +73,7 @@ public:
     
     SERIALIZATION_NAMESPACE::NodeSerializationPtr getNodeSerialization () const;
 
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     
 private:
 

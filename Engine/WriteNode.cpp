@@ -958,8 +958,7 @@ WriteNode::initializeKnobs()
 } // WriteNode::initializeKnobs
 
 void
-WriteNode::onEffectCreated(bool mayCreateFileDialog,
-                           const CreateNodeArgs& args)
+WriteNode::onEffectCreated(const CreateNodeArgs& args)
 {
 
     RenderEnginePtr engine = getRenderEngine();
@@ -980,25 +979,16 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
     KnobStringPtr pluginIdParam = _imp->pluginIDStringKnob.lock();
     std::string pattern;
 
-    if (mayCreateFileDialog) {
-        bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
-        if (useDialogForWriters) {
-            pattern = getApp()->saveImageFileDialog();
-        }
 
-        //The user selected a file, if it fails to read do not create the node
-        throwErrors = true;
-    } else {
-
-        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
-        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
-        if (foundFileName != defaultParamValues.end()) {
-            std::string propName(kCreateNodeArgsPropParamValue);
-            propName += "_";
-            propName += kOfxImageEffectFileParamName;
-            pattern = args.getProperty<std::string>(propName);
-        }
+    std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+    std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+    if (foundFileName != defaultParamValues.end()) {
+        std::string propName(kCreateNodeArgsPropParamValue);
+        propName += "_";
+        propName += kOfxImageEffectFileParamName;
+        pattern = args.getProperty<std::string>(propName);
     }
+
 
     _imp->createWriteNode( throwErrors, pattern, 0 );
     _imp->refreshPluginSelectorKnob();

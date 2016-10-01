@@ -391,20 +391,6 @@ Node::load(const CreateNodeArgsPtr& args)
     }
 
 
-    // True if the caller set a value for the kOfxImageEffectFileParamName parameter
-    // This is a hack so reader/writers can show dialogs
-    bool hasDefaultFilename = false;
-    {
-        std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
-        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
-        if (foundFileName != defaultParamValues.end()) {
-            std::string propName(kCreateNodeArgsPropParamValue);
-            propName += "_";
-            propName += kOfxImageEffectFileParamName;
-            hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
-        }
-    }
-    bool canOpenFileDialog = !_imp->wasCreatedSilently && !serialization && _imp->isPersistent && !hasDefaultFilename && getGroup();
 
 
     std::string argFixedName = args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
@@ -530,7 +516,7 @@ Node::load(const CreateNodeArgsPtr& args)
     // Callback to the effect notifying everything is setup.
     // Generally used by Group derivatives class to initialize internal nodes
     // unless there is a serialization that was loaded before
-    _imp->effect->onEffectCreated(canOpenFileDialog, *args);
+    _imp->effect->onEffectCreated(*args);
 
     // This node is now considered created
     _imp->nodeCreated = true;
