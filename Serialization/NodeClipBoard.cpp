@@ -45,7 +45,10 @@ NodeClipBoard::encode(YAML::Emitter& em) const
 void
 NodeClipBoard::decode(const YAML::Node& node)
 {
-    
+    if (node.IsMap()) {
+        // In case somebody is pasting a project, make sure we differentiate project and clipboard
+        throw YAML::InvalidNode();
+    }
     nodes.clear();
     if (node.IsSequence()) {
         for (std::size_t i = 0; i < node.size(); ++i) {
