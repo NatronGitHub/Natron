@@ -4086,19 +4086,16 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
     if (isViewer) {
         int viewerIndex = getViewerIndexThreadLocal();
-        EffectInstancePtr viewerInput = isViewer->getInput(viewerIndex);
-        if (viewerInput) {
-            *retHash = 0;
-            U64 inputHash;
-            return viewerInput->getFramesNeeded_public(time, view, &inputHash);
-        } else {
-            return FramesNeededMap();
-        }
-
+        assert(viewerIndex == 0 || viewerIndex == 1);
+        *retHash = 0;
+        FramesNeededMap ret;
+        FrameRangesMap& rangeMap = ret[viewerIndex];
+        RangeD range = {time, time};
+        rangeMap[view].push_back(range);
+        return ret;
     }
-    /*
-     Compute the frame/view hash if needed
-     */
+
+    // Compute the frame/view hash if needed
     FramesNeededMap framesNeeded;
 
     boost::scoped_ptr<Hash64> hashObj;

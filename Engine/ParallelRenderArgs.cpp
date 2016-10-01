@@ -44,6 +44,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -398,7 +399,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         // Get the hash from the thread local storage
         U64 frameViewHash;
         bool gotHash = effect->getRenderHash(time, view, &frameViewHash);
-        assert(gotHash);
         (void)gotHash;
 
         ///Check identity
@@ -753,8 +753,13 @@ getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, 
 
         }
     }
-    FrameViewPair fv = {time, view};
-    nodeData->frameViewHash[fv] = hashValue;
+
+    // For the viewer, since it has no hash of its own, do NOT set the frameViewHash.
+    ViewerInstance* isViewerInstance = dynamic_cast<ViewerInstance*>(effect.get());
+    if (!isViewerInstance) {
+        FrameViewPair fv = {time, view};
+        nodeData->frameViewHash[fv] = hashValue;
+    }
 
 
     if (nodeHash) {
