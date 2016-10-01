@@ -1,0 +1,164 @@
+PluginID: fr.inria.built-in.Group
+Params:
+  - ScriptName: pyPlugPluginID
+    Value: fr.inria.Fill
+  - ScriptName: pyPlugPluginLabel
+    Value: Fill
+  - ScriptName: pyPlugPluginGrouping
+    Value: Filter
+  - ScriptName: pyPlugPluginDescription
+    Value: Add a constant color on the source image where the alpha channel not 0. You can control the blending between the original image and the constant color with the operator and the mix factor.
+  - ScriptName: pyPlugPluginVersion
+    Value: [1, 0]
+  - ScriptName: pyPlugPluginIcon
+    Value: Fill.png
+  - ScriptName: exportDialogOkButton
+    Value: {K: exportDialogOkButton}
+    Props: [MasterIsAlias]
+  - ScriptName: exportDialogCancelButton
+    Value: {K: exportDialogCancelButton}
+    Props: [MasterIsAlias]
+UserPages:
+  - TypeName: Page
+    ScriptName: controls
+    Label: Controls
+    Params:
+      - ScriptName: Solid1color
+        Default: [0, 0, 0]
+        NDims: 3
+        TypeName: Color
+        Label: Color
+        Max: 2147483647
+        DisplayMax: 1
+      - ScriptName: Merge1operation
+        Default: over
+        NDims: 1
+        TypeName: Choice
+        Label: Operation
+        Entries: [atop, average, color, color-burn, color-dodge, conjoint-over, copy, difference, disjoint-over, divide, exclusion, freeze, from, geometric, grain-extract, grain-merge, hard-light, hue, hypot, in, luminosity, mask, matte, max, min, minus, multiply, out, over, overlay, pinlight, plus, reflect, saturation, screen, soft-light, stencil, under, xor]
+        Hints: [Ab + B(1 - a) (a.k.a. src-atop), (A + B) / 2, "SetLum(A, Lum(B))", darken B towards A, brighten B towards A, "A + B(1-a)/b, A if a > b", A (a.k.a. src), abs(A-B) (a.k.a. absminus), "A+B(1-a)/b, A+B if a+b < 1", "A/B, 0 if A < 0 and B < 0", A+B-2AB, 1-sqrt(1-A)/B, B-A (a.k.a. subtract), 2AB/(A+B), B - A + 0.5, B + A - 0.5, "multiply if A < 0.5, screen if A > 0.5", "SetLum(SetSat(A, Sat(B)), Lum(B))", sqrt(A*A+B*B), Ab (a.k.a. src-in), "SetLum(B, Lum(A))", Ba (a.k.a dst-in), Aa + B(1-a) (unpremultiplied over), "max(A, B) (a.k.a. lighten only)", "min(A, B) (a.k.a. darken only)", A-B, "AB, 0 if A < 0 and B < 0", A(1-b) (a.k.a. src-out), A+B(1-a) (a.k.a. src-over), "multiply if B < 0.5, screen if B > 0.5", "if B >= 0.5 then max(A, 2*B - 1), min(A, B * 2.0 ) else", A+B (a.k.a. add), A*A / (1 - B), "SetLum(SetSat(B, Sat(A)), Lum(B))", "A+B-AB if A or B <= 1, otherwise max(A, B)", "burn-in if A < 0.5, lighten if A > 0.5", B(1-a) (a.k.a. dst-out), A(1-b)+B (a.k.a. dst-over), A(1-b)+B(1-a)]
+        Props: [NoNewLine, AnimatesChanged]
+      - ScriptName: Merge1enableMask_Mask
+        Default: false
+        NDims: 1
+        TypeName: Bool
+        Label: Mask
+        Props: [NoNewLine]
+      - ScriptName: Merge1maskChannel_Mask
+        Default: RGBA.A
+        NDims: 1
+        TypeName: Choice
+        Label: ""
+        Entries: [None, RGBA.R, RGBA.G, RGBA.B, RGBA.A, Forward.Motion.U, Forward.Motion.V, DisparityRight.Disparity.X, DisparityRight.Disparity.Y]
+      - ScriptName: Merge1maskInvert
+        Default: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Mask
+        Props: [NoNewLine]
+      - ScriptName: Merge1mix
+        Default: 1
+        NDims: 1
+        TypeName: Double
+        Label: Mix
+        Min: 0
+        Max: 1
+        DisplayMin: 0
+        DisplayMax: 1
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.Dot
+    ScriptName: Dot1
+    Inputs: {"": Input1}
+    Pos: [809, 199]
+  - PluginID: net.sf.openfx.Unpremult
+    ScriptName: Unpremult1
+    Version: [2, 0]
+    Inputs: {Source: Dot1}
+    Params:
+      - ScriptName: NatronOfxParamProcessA
+        Value: true
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [1036, 185]
+  - PluginID: net.sf.openfx.MergePlugin
+    ScriptName: Merge1
+    Inputs: {A: Solid1, B: Unpremult1, Mask: Input2}
+    Params:
+      - ScriptName: operation
+        Value: {N: "@thisGroup", K: Merge1operation}
+        Props: [MasterIsAlias]
+      - ScriptName: maskInvert
+        Value: {N: "@thisGroup", K: Merge1maskInvert}
+        Props: [MasterIsAlias]
+      - ScriptName: mix
+        Value: {N: "@thisGroup", K: Merge1mix}
+        Props: [MasterIsAlias]
+      - ScriptName: userTextArea
+        Value: <font size="6" color="#000000" face="Droid Sans"><Natron>(over)</Natron></font>
+      - ScriptName: enableMask_Mask
+        Value: {N: "@thisGroup", K: Merge1enableMask_Mask}
+        Props: [MasterIsAlias]
+      - ScriptName: maskChannel_Mask
+        Value: {N: "@thisGroup", K: Merge1maskChannel_Mask}
+        Props: [MasterIsAlias]
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [1036, 302]
+  - PluginID: net.sf.openfx.Solid
+    ScriptName: Solid1
+    Params:
+      - ScriptName: NatronParamFormatSize
+        Value: [1920, 1080]
+      - ScriptName: color
+        Value: [{N: "@thisGroup", K: Solid1color, D: r}, {N: "@thisGroup", K: Solid1color, D: g}, {N: "@thisGroup", K: Solid1color, D: b}]
+        Props: [MasterIsAlias]
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [1261, 187]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    ScriptName: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Merge1, B: Dot1}
+    Params:
+      - ScriptName: outputChannelsChoice
+        Value: RGBA
+      - ScriptName: outputRChoice
+        Value: A.r
+      - ScriptName: outputGChoice
+        Value: A.g
+      - ScriptName: outputBChoice
+        Value: A.b
+      - ScriptName: outputA
+        Value: B.a
+      - ScriptName: outputAChoice
+        Value: B.a
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [764, 314]
+  - PluginID: net.sf.openfx.Premult
+    ScriptName: Premult1
+    Version: [2, 0]
+    Inputs: {Source: Shuffle1}
+    Params:
+      - ScriptName: NatronOfxParamProcessA
+        Value: true
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [584, 314]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input1
+    Label: Source
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [764, 73]
+  - PluginID: fr.inria.built-in.Output
+    ScriptName: Output
+    Label: Output1
+    Inputs: {Source: Premult1}
+    PagesOrder: [nodePage, infoPage]
+    Pos: [584, 442]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Input2
+    Label: Mask
+    Params:
+      - ScriptName: optional
+        Value: true
+      - ScriptName: isMask
+        Value: true
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [1227, 314]

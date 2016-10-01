@@ -2849,7 +2849,6 @@ KnobHelper::clearExpression(int dimension,
              it != dependencies.end(); ++it) {
             KnobIPtr otherKnob = it->first.lock();
             KnobHelper* other = dynamic_cast<KnobHelper*>( otherKnob.get() );
-            assert(other);
             if (!other) {
                 continue;
             }

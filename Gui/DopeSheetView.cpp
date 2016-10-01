@@ -2075,9 +2075,8 @@ DopeSheetViewPrivate::computeGroupRange(const DSNodePtr& group)
     }
 
     NodePtr node = group->getInternalNode();
-    assert(node);
     if (!node) {
-        throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is NULL");
+        return;
     }
 
     FrameRange range;

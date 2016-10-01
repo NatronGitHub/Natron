@@ -1,0 +1,178 @@
+PluginID: fr.inria.built-in.Group
+Params:
+  - ScriptName: pyPlugPluginID
+    Value: fr.inria.ZMask
+  - ScriptName: pyPlugPluginLabel
+    Value: ZMask
+  - ScriptName: pyPlugPluginGrouping
+    Value: Filter
+  - ScriptName: pyPlugPluginDescription
+    Value: Creates a mask from a depth buffer by specifying the center value and the amplitude of the range around it with the tightness parameter
+  - ScriptName: pyPlugPluginVersion
+    Value: [1, 0]
+  - ScriptName: exportDialogOkButton
+    Value: {K: exportDialogOkButton}
+    Props: [MasterIsAlias]
+  - ScriptName: exportDialogCancelButton
+    Value: {K: exportDialogCancelButton}
+    Props: [MasterIsAlias]
+UserPages:
+  - TypeName: Page
+    ScriptName: controls
+    Label: Controls
+    Params:
+      - ScriptName: zPicking
+        Default: false
+        NDims: 1
+        TypeName: Bool
+        Label: Z picking
+      - ScriptName: centerValue
+        Default: [1, 1, 1]
+        NDims: 3
+        TypeName: Color
+        Label: Center Value
+        Max: 2147483647
+        DisplayMax: 200
+      - ScriptName: tightness
+        Default: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Tightness
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - ScriptName: contrast
+        Default: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Contrast
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - ScriptName: offset
+        Default: [0, 0, 0, 0]
+        NDims: 4
+        TypeName: Color
+        Label: Offset
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: -200
+        DisplayMax: 200
+      - ScriptName: gamma
+        Default: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Gamma
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0.2
+        DisplayMax: 5
+      - ScriptName: invertGradient
+        Default: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Gradient
+      - ScriptName: Source_channels
+        Default: Color.RGBA
+        NDims: 1
+        TypeName: Choice
+        Label: Source Layer
+        Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+      - ScriptName: channels
+        Default: Color.RGB
+        NDims: 1
+        TypeName: Choice
+        Label: Output Layer
+        Entries: [Color.RGB, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: net.sf.openfx.MergePlugin
+    ScriptName: Merge1
+    Inputs: {A: Solid1, B: InputSource}
+    Params:
+      - ScriptName: operation
+        Value: difference
+      - ScriptName: userTextArea
+        Value: <Natron>(difference)</Natron>
+      - ScriptName: B_channels
+        Value: {N: "@thisGroup", K: Source_channels}
+        Props: [MasterIsAlias]
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [764, 248]
+  - PluginID: net.sf.openfx.Solid
+    ScriptName: Solid1
+    Params:
+      - ScriptName: NatronParamFormatSize
+        Value: [1920, 1080]
+      - ScriptName: color
+        Value: [{N: "@thisGroup", K: centerValue, D: r}, {N: "@thisGroup", K: centerValue, D: g}, {N: "@thisGroup", K: centerValue, D: b}]
+        Props: [MasterIsAlias]
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [776, 134]
+  - PluginID: net.sf.openfx.Invert
+    ScriptName: Invert1
+    Version: [2, 0]
+    Inputs: {Source: Clamp1}
+    Params:
+      - ScriptName: premultChanged
+        Value: true
+      - ScriptName: channels
+        Value: {N: "@thisGroup", K: channels}
+        Props: [MasterIsAlias]
+      - ScriptName: disableNode
+        Value: {N: "@thisGroup", K: invertGradient}
+        Props: [MasterIsAlias]
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [764, 546]
+  - PluginID: net.sf.openfx.Clamp
+    ScriptName: Clamp1
+    Version: [2, 0]
+    Inputs: {Source: ColorCorrect1}
+    Params:
+      - ScriptName: premultChanged
+        Value: true
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [764, 455]
+  - PluginID: net.sf.openfx.ColorCorrectPlugin
+    ScriptName: ColorCorrect1
+    Version: [2, 0]
+    Inputs: {Source: Merge1}
+    Params:
+      - ScriptName: MasterContrast
+        Value: [{N: "@thisGroup", K: contrast, D: r}, {N: "@thisGroup", K: contrast, D: g}, {N: "@thisGroup", K: contrast, D: b}, {N: "@thisGroup", K: contrast, D: a}]
+        Props: [MasterIsAlias]
+      - ScriptName: MasterGamma
+        Value: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
+        Props: [MasterIsAlias]
+      - ScriptName: MasterGain
+        Value: [{N: "@thisGroup", K: tightness, D: r}, {N: "@thisGroup", K: tightness, D: g}, {N: "@thisGroup", K: tightness, D: b}, {N: "@thisGroup", K: tightness, D: a}]
+        Props: [MasterIsAlias]
+      - ScriptName: MasterOffset
+        Value: [{N: "@thisGroup", K: offset, D: r}, {N: "@thisGroup", K: offset, D: g}, {N: "@thisGroup", K: offset, D: b}, {N: "@thisGroup", K: offset, D: a}]
+        Props: [MasterIsAlias]
+      - ScriptName: premultChanged
+        Value: true
+    PagesOrder: [Controls, Ranges, nodePage, infoPage]
+    Pos: [764, 344]
+  - PluginID: fr.inria.built-in.Output
+    ScriptName: Output
+    Label: Output1
+    Inputs: {Source: Switch1}
+    PagesOrder: [nodePage, infoPage]
+    Pos: [764, 774]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: InputSource
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [506, 255]
+  - PluginID: net.sf.openfx.switchPlugin
+    ScriptName: Switch1
+    Inputs: {0: Invert1, 1: InputSource}
+    Params:
+      - ScriptName: which
+        Value: {Expr: thisGroup.zPicking.get()}
+      - ScriptName: p1_channels
+        Value: {Expr: thisGroup.Source_channels.get()}
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [764, 638]

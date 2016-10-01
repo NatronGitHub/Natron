@@ -951,7 +951,10 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         // For newer pyPlugs this is taken care of in the Node::load function when creating
         // the container group
         if (isPyPlugEncodedWithPythonScript) {
-            AddCreateNode_RAII creatingNode_raii(_imp.get(), containerNode, args);
+            boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;
+            if (containerNode) {
+                creatingNode_raii.reset(new AddCreateNode_RAII(_imp.get(), containerNode, args));
+            }
             std::string containerFullySpecifiedName;
             if (containerNode) {
                 containerFullySpecifiedName = containerNode->getFullyQualifiedName();
