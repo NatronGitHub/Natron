@@ -1772,7 +1772,7 @@ AppManager::loadNodesPresets()
             // If the preset label is set, append as a preset of an existing plug-in
             PluginPtr foundPlugin;
             try {
-                foundPlugin = getPluginBinary(QString::fromUtf8(obj._pluginID.c_str()), -1, -1, false);
+                foundPlugin = getPluginBinary(QString::fromUtf8(obj._pluginID.c_str()), obj._pluginMajorVersion, obj._pluginMinorVersion, false);
             } catch (...) {
                 continue;
             }

@@ -171,7 +171,7 @@ NodeGraph::event(QEvent* e)
         QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
         assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
+            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastPluginCreatedID, this);
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
@@ -196,28 +196,30 @@ NodeGraph::onNodeCreationDialogFinished()
 
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        int major;
-        QString res = dialog->getNodeName(&major);
+        QString presetName;
+        PluginPtr plugin = dialog->getPlugin(&presetName);
 
         dialog->deleteLater();
 
         switch (ret) {
-        case QDialog::Accepted: {
-            _imp->_lastNodeCreatedName = res;
-            const PluginsMap & allPlugins = appPTR->getPluginsList();
-            PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
-            if ( found != allPlugins.end() ) {
-                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                CreateNodeArgsPtr args(CreateNodeArgs::create( res.toStdString(), getGroup() ));
-                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
-                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
-                args->setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
-                getGui()->getApp()->createNode(args);
+            case QDialog::Accepted: {
+                if (plugin) {
+                    std::string pluginID = plugin->getPluginID();
+                    _imp->_lastPluginCreatedID = QString::fromUtf8(pluginID.c_str());
+
+                    QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                    CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID, getGroup() ));
+                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, plugin->getMajorVersion(), 0);
+                    args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetName.toStdString());
+                    getGui()->getApp()->createNode(args);
+
+                }
+                break;
             }
-            break;
-        }
-        case QDialog::Rejected:
-        default:
+            case QDialog::Rejected:
+            default:
             break;
         }
     }

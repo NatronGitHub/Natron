@@ -60,7 +60,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
     , _nodes()
     , _nodesTrash()
     , _nodeCreationShortcutEnabled(false)
-    , _lastNodeCreatedName()
+    , _lastPluginCreatedID()
     , _root(NULL)
     , _nodeRoot(NULL)
     , _cacheSizeText(NULL)

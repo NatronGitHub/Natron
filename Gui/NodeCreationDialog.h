@@ -54,8 +54,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    /// map<weight, pair<ID,Label> >
-    typedef std::multimap<int, std::pair<QString, QString> > PluginsNamesMap;
+    struct PluginDesc
+    {
+        PluginWPtr plugin;
+        QString comboLabel;
+        QString lineEditLabel;
+        QString presetName;
+    };
+    // Map each plug-in by a weight
+    typedef std::multimap<int, PluginDesc> PluginsNamesMap;
 
     CompleterLineEdit(const PluginsNamesMap& plugins,
                       bool quickExit,
@@ -68,6 +75,8 @@ public:
 
 
     virtual ~CompleterLineEdit();
+
+    const PluginsNamesMap& getPluginNamesMap() const;
 
     QListView* getView() const;
 
@@ -97,12 +106,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit NodeCreationDialog(const QString& initialFilter,
+    explicit NodeCreationDialog(const QString& defaultPluginID,
                                 QWidget* parent);
 
     virtual ~NodeCreationDialog() OVERRIDE;
 
-    QString getNodeName(int *major) const;
+    PluginPtr getPlugin(QString* presetName) const;
 
 private:
 
