@@ -1071,7 +1071,7 @@ AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
     bool isSilent = args->getProperty<bool>(kCreateNodeArgsPropSilent);
     bool isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
     bool hasGui = !args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
-    bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui;
+    bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui && !isBackground();
 
     if (mustOpenDialog) {
         std::string pattern = openImageFileDialog();
