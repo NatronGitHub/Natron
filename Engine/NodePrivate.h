@@ -246,6 +246,7 @@ public:
     KnobIntWPtr frameIncrKnob;
 
     // PyPlug page
+    KnobPageWPtr pyPlugPage;
     KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;
     KnobFileWPtr pyPlugIconKnob, pyPlugExtPythonScript;
     KnobBoolWPtr pyPlugDescIsMarkdownKnob;

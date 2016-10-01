@@ -202,6 +202,8 @@ public:
 
 private:
 
+    void initNodeNameFallbackOnPluginDefault();
+
     void createNodeGuiInternal(const CreateNodeArgsPtr& args);
 
     /**

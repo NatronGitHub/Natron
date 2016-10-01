@@ -1833,6 +1833,16 @@ AppManager::loadNodesPresets()
                     p->setProperty<std::string>(kNatronPluginPropPyPlugContainerID, obj._pluginID);
                 }
                 p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
+
+
+                QString presetDirectory;
+                {
+                    int foundSlash = presetFile.lastIndexOf(QLatin1Char('/'));
+                    if (foundSlash != -1) {
+                        presetDirectory = presetFile.mid(0, foundSlash);
+                    }
+                }
+                p->setProperty<std::string>(kNatronPluginPropResourcesPath, presetDirectory.toStdString());
                 p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, pyPlugDescIsMarkdown);
                 p->setProperty<std::string>(kNatronPluginPropDescription, pyPlugDescription);
                 p->setProperty<std::string>(kNatronPluginPropIconFilePath, pyPlugIconFilePath);
@@ -2004,7 +2014,7 @@ AppManager::loadPythonGroups()
         p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);
         p->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFilePath);
         p->setProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, true);
-
+        p->setProperty<std::string>(kNatronPluginPropResourcesPath, modulePath.toStdString());
         //p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
         //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
         //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);

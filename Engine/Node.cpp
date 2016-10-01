@@ -257,15 +257,40 @@ static bool findAvailableName(const std::string &baseName, const NodeCollectionP
 }
 
 void
+Node::initNodeNameFallbackOnPluginDefault()
+{
+    NodeCollectionPtr group = getGroup();
+    std::string name;
+    std::string pluginLabel;
+    AppManager::AppTypeEnum appType = appPTR->getAppType();
+    PluginPtr plugin = getPlugin();
+    if ( plugin &&
+        ( ( appType == AppManager::eAppTypeBackground) ||
+         ( appType == AppManager::eAppTypeGui) ||
+         ( appType == AppManager::eAppTypeInterpreter) ) ) {
+            pluginLabel = plugin->getLabelWithoutSuffix();
+        } else {
+            pluginLabel = plugin->getPluginLabel();
+        }
+    try {
+        if (group) {
+            group->initNodeName(plugin->getPluginID(), pluginLabel, &name);
+        } else {
+            name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(pluginLabel);
+        }
+    } catch (...) {
+    }
+
+    setNameInternal(name.c_str(), false);
+}
+
+void
 Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* serialization, const QString& fixedName)
 {
-    /*
-     If the serialization is not null, we are either pasting a node or loading it from a project.
-     */
-    NodeCollectionPtr group = getGroup();
-
+    // If the serialization is not null, we are either pasting a node or loading it from a project.
     if (!fixedName.isEmpty()) {
 
+        NodeCollectionPtr group = getGroup();
         std::string name;
         findAvailableName(fixedName.toStdString(), group, shared_from_this(), &name);
 
@@ -277,44 +302,28 @@ Node::initNodeScriptName(const SERIALIZATION_NAMESPACE::NodeSerialization* seria
 
     } else if (serialization) {
 
-        std::string name;
-        bool nameAvailable = findAvailableName(serialization->_nodeScriptName, group, shared_from_this(), &name);
-
-        // This version of setScriptName will not error if the name is invalid or already taken
-        setScriptName_no_error_check(name);
-
-        // If the script name was not available, give the same script name to the label, most likely this is a copy/paste operation.
-        if (!nameAvailable) {
-            setLabel(name);
+        if (serialization->_nodeScriptName.empty()) {
+            // The serialized script name may be empty in the case we are loading from a PyPlug/Preset directly
+            initNodeNameFallbackOnPluginDefault();
         } else {
-            setLabel(serialization->_nodeLabel);
+            NodeCollectionPtr group = getGroup();
+            std::string name;
+            bool nameAvailable = findAvailableName(serialization->_nodeScriptName, group, shared_from_this(), &name);
+
+            // This version of setScriptName will not error if the name is invalid or already taken
+            setScriptName_no_error_check(name);
+
+
+            // If the script name was not available, give the same script name to the label, most likely this is a copy/paste operation.
+            if (!nameAvailable) {
+                setLabel(name);
+            } else {
+                setLabel(serialization->_nodeLabel);
+            }
         }
-
-
 
     } else {
-        std::string name;
-        std::string pluginLabel;
-        AppManager::AppTypeEnum appType = appPTR->getAppType();
-        PluginPtr plugin = getPlugin();
-        if ( plugin &&
-            ( ( appType == AppManager::eAppTypeBackground) ||
-             ( appType == AppManager::eAppTypeGui) ||
-             ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                pluginLabel = plugin->getLabelWithoutSuffix();
-            } else {
-                pluginLabel = plugin->getPluginLabel();
-            }
-        try {
-            if (group) {
-                group->initNodeName(plugin->getPluginID(), pluginLabel, &name);
-            } else {
-                name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(pluginLabel);
-            }
-        } catch (...) {
-        }
-
-        setNameInternal(name.c_str(), false);
+        initNodeNameFallbackOnPluginDefault();
     }
 
 
@@ -368,6 +377,13 @@ Node::load(const CreateNodeArgsPtr& args)
     // Should we report errors if load fails ?
     _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
 
+    // If this is a pyplug, load its properties
+    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
+    if (!pyPlugID.empty()) {
+        _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
+        _imp->isPyPlug = true;
+    }
+
 
     // Any serialization from project load or copy/paste ?
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
@@ -376,7 +392,13 @@ Node::load(const CreateNodeArgsPtr& args)
     std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
-        const std::vector<PluginPresetDescriptor>& presets = getPlugin()->getPresetFiles();
+
+        // Figure out the plugin to use. We cannot use getPlugin() now because the effect is not yet created
+        PluginPtr plugin = _imp->pyPlugHandle.lock();
+        if (!plugin) {
+            plugin = _imp->plugin.lock();
+        }
+        const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
         for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
             if (it->presetLabel.toStdString() == presetLabel) {
 
@@ -426,12 +448,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
 
-    // If this is a pyplug, load its properties
-    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
-    if (!pyPlugID.empty()) {
-        _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
-        _imp->isPyPlug = true;
-    }
 
     // Make sure knobs initialization does not attempt to call knobChanged or trigger a render.
     _imp->effect->beginChanges();
@@ -1456,6 +1472,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     bool subGraphEdited = isSubGraphEditedByUser();
 
+    KnobPagePtr pyPlugPage = _imp->pyPlugPage.lock();
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -1496,6 +1513,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
         if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
             // This knob was not modified by the user, don't serialize it
+            continue;
+        }
+
+        // If the knob is in the PyPlug page, only serialize if the PyPlug page is visible
+        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage) {
             continue;
         }
 
@@ -2336,7 +2358,7 @@ void
 Node::setPagesOrder(const std::list<std::string>& pages)
 {
     //re-order the pages
-    std::list<KnobIPtr > pagesOrdered;
+    std::vector<KnobIPtr> pagesOrdered(pages.size());
 
     KnobsVec knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -2344,17 +2366,28 @@ Node::setPagesOrder(const std::list<std::string>& pages)
         if (!isPage) {
             continue;
         }
-        if (std::find(pages.begin(), pages.end(), isPage->getName()) != pages.end()) {
-            pagesOrdered.push_back(isPage);
-            _imp->effect->removeKnobFromList(isPage);
-            isPage->setSecret(false);
-        } else if (isPage->isUserKnob()) {
+
+        // Look for it in the pages
+        int i = 0;
+        bool found = false;
+        for (std::list<std::string>::const_iterator it2 = pages.begin(); it2 != pages.end(); ++it2, ++i) {
+            if (*it2 == isPage->getName()) {
+                pagesOrdered[i] = *it;
+                _imp->effect->removeKnobFromList(isPage);
+                isPage->setSecret(false);
+                found = true;
+                break;
+            }
+        }
+        if (!found && isPage->isUserKnob()) {
             isPage->setSecret(true);
         }
     }
     int index = 0;
-    for (std::list<KnobIPtr >::iterator it =  pagesOrdered.begin(); it != pagesOrdered.end(); ++it, ++index) {
-        _imp->effect->insertKnob(index, *it);
+    for (std::vector<KnobIPtr >::iterator it =  pagesOrdered.begin(); it != pagesOrdered.end(); ++it, ++index) {
+        if (*it) {
+            _imp->effect->insertKnob(index, *it);
+        }
     }
 }
 
@@ -3529,6 +3562,7 @@ Node::createPyPlugPage()
     KnobPagePtr page = AppManager::createKnob<KnobPage>(_imp->effect, tr(kPyPlugPageParamLabel), 1, false);
     page->setName(kPyPlugPageParamName);
     page->setSecret(true);
+    _imp->pyPlugPage = page;
 
     {
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
@@ -3557,9 +3591,10 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginGrouping);
         if (pyPlug) {
             param->setValue(pyPlug->getGroupingString());
+        } else {
+            param->setValue("PyPlugs");
         }
         param->setEvaluateOnChange(false);
-        param->setValue("PyPlugs");
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
         page->addKnob(param);
         _imp->pyPlugGroupingKnob = param;
@@ -8607,7 +8642,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         if (foundOutput != _imp->channelsSelectors.end()) {
             _imp->onLayerChanged(true);
         }
-    } else if (what == _imp->pyPlugExportButtonKnob.lock()) {
+    } else if (what == _imp->pyPlugExportButtonKnob.lock() && reason != eValueChangedReasonRestoreDefault) {
         // Trigger a knob changed action on the group
         KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
         if (k) {
@@ -8617,7 +8652,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                 k->setValue(true);
             }
         }
-    } else if (what == _imp->pyPlugExportDialogOkButton.lock()) {
+    } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {
             exportNodeToPyPlug(_imp->pyPlugExportDialogFile.lock()->getValue());
         } catch (const std::exception& e) {
