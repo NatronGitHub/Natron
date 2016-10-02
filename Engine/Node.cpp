@@ -4681,24 +4681,69 @@ Node::getEffectInstance() const
 }
 
 void
-Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
+Node::hasViewersConnectedInternal(std::list<ViewerInstance* >* viewers,
+                                 std::list<const Node*>* markedNodes) const
 {
+
+    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
+        return;
+    }
+
+    markedNodes->push_back(this);
     ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>( _imp->effect.get() );
 
     if (thisViewer) {
-        std::list<ViewerInstance* >::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
-        if ( alreadyExists == viewers->end() ) {
-            viewers->push_back(thisViewer);
-        }
+        viewers->push_back(thisViewer);
     } else {
         NodesList outputs;
         getOutputsWithGroupRedirection(outputs);
 
         for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
-            (*it)->hasViewersConnected(viewers);
+            (*it)->hasViewersConnectedInternal(viewers, markedNodes);
         }
     }
+}
+
+void
+Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstance* >* writers,
+                                     std::list<const Node*>* markedNodes) const
+{
+    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
+        return;
+    }
+
+    markedNodes->push_back(this);
+
+    OutputEffectInstance* thisWriter = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
+
+    if ( thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter) ) {
+        writers->push_back(thisWriter);
+    } else {
+        NodesList outputs;
+        getOutputsWithGroupRedirection(outputs);
+
+        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            assert(*it);
+            (*it)->hasOutputNodesConnectedInternal(writers, markedNodes);
+        }
+    }
+}
+
+void
+Node::hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const
+{
+    std::list<const Node*> m;
+    hasOutputNodesConnectedInternal(writers, &m);
+}
+
+void
+Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
+{
+
+    std::list<const Node*> m;
+    hasViewersConnectedInternal(viewers, &m);
+
 }
 
 /**
@@ -4841,26 +4886,7 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
     }
 }
 
-void
-Node::hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const
-{
-    OutputEffectInstance* thisWriter = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
-    if ( thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter) ) {
-        std::list<OutputEffectInstance* >::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
-        if ( alreadyExists == writers->end() ) {
-            writers->push_back(thisWriter);
-        }
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasOutputNodesConnected(writers);
-        }
-    }
-}
 
 int
 Node::getMajorVersion() const
