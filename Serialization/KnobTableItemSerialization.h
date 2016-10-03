@@ -52,6 +52,34 @@ public:
     virtual void decode(const YAML::Node& node) OVERRIDE;
 };
 
+class KnobItemsTableSerialization
+: public SerializationObjectBase
+{
+public:
+    
+    // During d&d it is useful to find from which node it is originated
+    // This is the fully qualified name of the node, e.g: Group1.Blur1
+    std::string nodeScriptName;
+    
+    // A unique identifier for the table so that one does not attempt to deserialize a table of one type to another one
+    std::string tableIdentifier;
+    
+    std::list<KnobTableItemSerializationPtr> items;
+    
+    KnobItemsTableSerialization()
+    : nodeScriptName()
+    , tableIdentifier()
+    , items()
+    {
+        
+    }
+    
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+    
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+    
+};
+
 SERIALIZATION_NAMESPACE_EXIT;
 
 #endif // NATRON_SERIALIZATION_KNOBTABLEITEMSERIALIZATION_H

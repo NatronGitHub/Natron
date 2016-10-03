@@ -65,5 +65,50 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
     }
 }
 
+void
+KnobItemsTableSerialization::encode(YAML::Emitter& em) const
+{
+    if (nodeScriptName.empty() && items.empty()) {
+        return;
+    }
+    em << YAML::BeginMap;
+    if (!nodeScriptName.empty()) {
+        em << YAML::Key << "Node" << YAML::Value << nodeScriptName;
+    }
+    em << YAML::Key << "ID" << YAML::Value << tableIdentifier;
+    if (!items.empty()) {
+        em << YAML::Key << "Items" << YAML::Value << YAML::BeginSeq;
+        for (std::list<KnobTableItemSerializationPtr>::const_iterator it = items.begin(); it!= items.end(); ++it) {
+            (*it)->encode(em);
+        }
+    }
+    em << YAML::EndSeq;
+    em << YAML::EndMap;
+}
+
+void
+KnobItemsTableSerialization::decode(const YAML::Node& node)
+{
+    if (!node.IsMap()) {
+        throw YAML::InvalidNode();
+    }
+    
+    if (node["Node"]) {
+        nodeScriptName = node["Node"].as<std::string>();
+    }
+    
+    tableIdentifier = node["ID"].as<std::string>();
+    
+    if (node["Items"]) {
+        YAML::Node itemsNode = node["Items"];
+        for (std::size_t i = 0; i < itemsNode.size(); ++i) {
+            KnobTableItemSerializationPtr s(new KnobTableItemSerialization);
+            s->decode(itemsNode[i]);
+            items.push_back(s);
+        }
+    }
+}
+
+
 
 SERIALIZATION_NAMESPACE_EXIT;

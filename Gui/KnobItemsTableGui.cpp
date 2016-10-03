@@ -37,6 +37,7 @@
 #include <QMouseEvent>
 #include <QMimeData>
 #include <QUndoCommand>
+#include <QClipboard>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -59,7 +60,7 @@
 
 #include "Engine/KnobItemsTable.h"
 
-#include "Serialization/KnobSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/SerializationIO.h"
 
 #define kNatronKnobItemsTableGuiMimeType "Natron/NatronKnobItemsTableGuiMimeType"
@@ -697,22 +698,22 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
     }
 
     // Make up drag data
-    SERIALIZATION_NAMESPACE::KnobTableRowsSerializationPtr obj(new SERIALIZATION_NAMESPACE::KnobTableRowsSerialization);
+    SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
 
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->panel);
     if (isNodePanel) {
         NodeGuiPtr nodeUI = isNodePanel->getNode();
         assert(nodeUI);
-        obj->nodeFullyQualifiedName = nodeUI->getNode()->getFullyQualifiedName();
+        obj.nodeScriptName = nodeUI->getNode()->getFullyQualifiedName();
     }
     for (std::set<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
-        std::vector<SERIALIZATION_NAMESPACE::KnobSerializationPtr> row;
-        (*it)->itemToSerialization(row);
-        obj->rows.push_back(row);
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+        (*it)->toSerialization(s.get());
+        obj.items.push_back(s);
     }
 
     std::ostringstream ss;
-    SERIALIZATION_NAMESPACE::write(ss, *obj);
+    SERIALIZATION_NAMESPACE::write(ss, obj);
 
     QByteArray dataArray(ss.str().c_str());
 
@@ -732,9 +733,19 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
     } else if (supportedActions & Qt::CopyAction && dragDropMode() != QAbstractItemView::InternalMove) {
         action = Qt::CopyAction;
     }
-
-    drag->exec(supportedActions, defaultDropAction());
-
+    
+    if (drag->exec(supportedActions, defaultDropAction()) == Qt::MoveAction) {
+        
+        // If the target is NULL, we have no choice but to remove data from the original table.
+        // This means the drop finished on another instance of Natron
+        if (!drag->target()) {
+            // If the target table is not this one, we have no choice but to remove from this table the items out of undo/redo operation
+            for (std::set<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
+                _imp->internalModel.lock()->removeItem(*it, eTableChangeReasonInternal);
+            }
+        }
+    }
+    
 } // startDrag
 
 void
@@ -856,33 +867,56 @@ class RemoveItemsUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(RemoveItemsUndoCommand)
 
-    struct RemovedItem
-    {
-        KnobTableItemWPtr item;
-        int indexInParent;
-
-        RemovedItem()
-        : item()
-        , indexInParent(-1)
-        {
-        }
-    };
-
 public:
 
-
-    RemoveItemsUndoCommand(RotoPanel* roto,
-                           const QList<QTreeWidgetItem*> & items);
+    struct Item
+    {
+        KnobTableItemPtr item;
+        KnobTableItemPtr parent;
+        int indexInParent;
+    };
+    
+    RemoveItemsUndoCommand(KnobItemsTableGuiPrivate* table,
+                           const std::list<KnobTableItemPtr>& items)
+    : QUndoCommand()
+    , _table(table)
+    , _items()
+    {
+        for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it!=items.end(); ++it) {
+            Item i;
+            i.item = *it;
+            i.indexInParent = (*it)->getIndexInParent();
+            i.parent = (*it)->getParent();
+            _items.push_back(i);
+        }
+    }
 
     virtual ~RemoveItemsUndoCommand();
 
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
+    virtual void undo() OVERRIDE FINAL
+    {
+        KnobItemsTablePtr table = _table->internalModel.lock();
+        for (std::list<Item>::const_iterator it = _items.begin(); it!=_items.end(); ++it) {
+            table->removeItem(it->item, eTableChangeReasonInternal);
+        }
+    }
+    
+    virtual void redo() OVERRIDE FINAL
+    {
+        KnobItemsTablePtr table = _table->internalModel.lock();
+        for (std::list<Item>::const_iterator it = _items.begin(); it!=_items.end(); ++it) {
+            if (it->parent) {
+                it->parent->insertChild(it->indexInParent, it->item, eTableChangeReasonInternal);
+            } else {
+                table->insertTopLevelItem(it->indexInParent, it->item, eTableChangeReasonInternal);
+            }
+        }
+    }
 
 private:
 
     KnobItemsTableGuiPrivate* _table;
-    std::list<RemovedItem> _items;
+    std::list<Item> _items;
 };
 
 
@@ -990,9 +1024,9 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     QVariant data = mimedata->data(mimeDataType);
     QString serializationStr = data.toString();
     std::stringstream ss(serializationStr.toStdString());
-    SERIALIZATION_NAMESPACE::KnobTableRowsSerializationPtr obj(new SERIALIZATION_NAMESPACE::KnobTableRowsSerialization);
+    SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
     try {
-        SERIALIZATION_NAMESPACE::read(ss, obj.get());
+        SERIALIZATION_NAMESPACE::read(ss, &obj);
     } catch (...) {
         e->ignore();
         return;
@@ -1003,7 +1037,7 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     // Operation was move, hence remove items from this view
     KnobItemsTablePtr originalTable;
     {
-        NodePtr originalNode = _imp->_publicInterface->getGui()->getApp()->getProject()->getNodeByFullySpecifiedName(obj->nodeFullyQualifiedName);
+        NodePtr originalNode = _imp->_publicInterface->getGui()->getApp()->getProject()->getNodeByFullySpecifiedName(obj.nodeScriptName);
         if (!originalNode) {
             e->ignore();
             return;
@@ -1034,8 +1068,8 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     }
 
     std::list<KnobTableItemPtr> droppedItems;
-    for (std::size_t i = 0; i < obj->rows.size(); ++i) {
-        KnobTableItemPtr newItem = table->getOrCreateItemFromDnDData(obj->rows[i]);
+    for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = obj.items.begin(); it != obj.items.end(); ++it) {
+        KnobTableItemPtr newItem = table->createItemFromSerialization(*it);
         if (newItem) {
             droppedItems.push_back(newItem);
         }
@@ -1146,16 +1180,37 @@ public:
 
     PasteItemUndoCommand(KnobItemsTableGuiPrivate* table,
                          const KnobTableItemPtr& target,
-                         const std::list<KnobTableItemPtr>& source)
+                         const SERIALIZATION_NAMESPACE::KnobItemsTableSerialization& source)
     : QUndoCommand()
     , _table(table)
     , _targetItem(target)
     , _originalTargetItemSerialization()
-    , _sourceItems(source)
+    , _sourceItemsCopies()
+    , _sourceItemSerialization()
     {
-        std::vector<SERIALIZATION_NAMESPACE::KnobSerializationPtr> row;
-        target->itemToSerialization(row);
-        _originalTargetItemSerialization.rows.push_back(row);
+        // Make sure tables match content type
+        KnobItemsTablePtr model = table->internalModel.lock();
+        assert(source.tableIdentifier == model->getTableIdentifier());
+        
+        // Remember the state of the target item
+        if (target) {
+            target->toSerialization(&_originalTargetItemSerialization);
+        }
+        
+        // If this is a tree and the item can receive children, add as sub children
+        if ((!target || target->isItemContainer()) && model->getType() == KnobItemsTable::eKnobItemsTableTypeTree) {
+            for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = source.items.begin(); it!=source.items.end(); ++it) {
+                KnobTableItemPtr copy = model->createItemFromSerialization(*it);
+                if (copy) {
+                    _sourceItemsCopies.push_back(copy);
+                }
+            }
+        } else {
+            // Should have been caught earlier with a nice error dialog for the user:
+            // You cannot paste multiple items onto one
+            assert(source.items.size() == 1);
+            _sourceItemSerialization = source.items.front();
+        }
         setText(tr("Paste Item(s)"));
     }
 
@@ -1168,20 +1223,43 @@ private:
 
     KnobItemsTableGuiPrivate* _table;
     KnobTableItemPtr _targetItem;
-    SERIALIZATION_NAMESPACE::KnobTableRowsSerialization _originalTargetItemSerialization;
-    std::list<KnobTableItemPtr> _sourceItems;
+    SERIALIZATION_NAMESPACE::KnobTableItemSerialization _originalTargetItemSerialization;
+    
+    // Only used when pasting multiple items as children of a container
+    std::list<KnobTableItemPtr> _sourceItemsCopies;
+    
+    // Only used when pasting an item onto another one
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr _sourceItemSerialization;
 };
 
 void
 PasteItemUndoCommand::redo()
 {
-
+    if (_sourceItemSerialization) {
+        // We paste 1 item onto another
+        assert(_targetItem);
+        _targetItem->fromSerialization(*_sourceItemSerialization);
+    } else {
+        // We paste multiple items as children of a container
+        for (std::list<KnobTableItemPtr>::const_iterator it = _sourceItemsCopies.begin(); it!=_sourceItemsCopies.end(); ++it) {
+            _targetItem->addChild(*it, eTableChangeReasonInternal);
+        }
+    }
 }
 
 void
 PasteItemUndoCommand::undo()
 {
-
+    if (_sourceItemSerialization) {
+        // We paste 1 item onto another
+        assert(_targetItem);
+        _targetItem->fromSerialization(_originalTargetItemSerialization);
+    } else {
+        // We paste multiple items as children of a container
+        for (std::list<KnobTableItemPtr>::const_iterator it = _sourceItemsCopies.begin(); it!=_sourceItemsCopies.end(); ++it) {
+            _targetItem->removeChild(*it, eTableChangeReasonInternal);
+        }
+    }
 }
 
 class DuplicateItemUndoCommand
@@ -1193,7 +1271,22 @@ public:
 
 
     DuplicateItemUndoCommand(KnobItemsTableGuiPrivate* table,
-                             const KnobTableItemPtr& item);
+                             const std::list<KnobTableItemPtr>& items)
+    : QUndoCommand()
+    , _table(table)
+    , _items()
+    {
+        for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+            SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+            (*it)->toSerialization(s.get());
+            KnobTableItemPtr dup = table->internalModel.lock()->createItemFromSerialization(s);
+            assert(dup);
+            _duplicates.push_back(dup);
+        }
+        
+        
+        
+    }
 
     virtual ~DuplicateItemUndoCommand();
 
@@ -1202,47 +1295,153 @@ public:
     
 private:
     
+
     KnobItemsTableGuiPrivate* _table;
-    KnobTableWPtr _item, _duplicate;
+    std::list<KnobTableItemPtr> _items, _duplicates;
 };
 
+void
+DuplicateItemUndoCommand::redo()
+{
+    assert(_duplicates.size() == _items.size());
+    std::list<KnobTableItemPtr>::const_iterator ito = _items.begin();
+    for (std::list<KnobTableItemPtr>::const_iterator it = _duplicates.begin(); it != _duplicates.end(); ++it, ++ito) {
+        int itemIndex = (*ito)->getIndexInParent();
+        itemIndex += 1;
+        KnobTableItemPtr parent = (*ito)->getParent();
+        if (parent) {
+            parent->insertChild(itemIndex, *it, eTableChangeReasonInternal);
+        } else {
+            _table->internalModel.lock()->insertTopLevelItem(itemIndex, *it, eTableChangeReasonInternal);
+        }
+    }
+    
+}
+
+void
+DuplicateItemUndoCommand::undo()
+{
+    assert(_duplicates.size() == _items.size());
+    for (std::list<KnobTableItemPtr>::const_iterator it = _duplicates.begin(); it != _duplicates.end(); ++it) {
+        _table->internalModel.lock()->removeItem(*it, eTableChangeReasonInternal);
+    }
+}
 
 void
 KnobItemsTableGui::onDeleteItemsActionTriggered()
 {
-
+    std::list<KnobTableItemPtr> selection = _imp->internalModel.lock()->getSelectedItems();
+    if (selection.empty()) {
+        return;
+    }
+    pushUndoCommand(new RemoveItemsUndoCommand(_imp.get(), selection));
 }
 
 void
 KnobItemsTableGui::onCopyItemsActionTriggered()
 {
-
+    KnobItemsTablePtr model = _imp->internalModel.lock();
+    std::list<KnobTableItemPtr> selection = model->getSelectedItems();
+    if (selection.empty()) {
+        return;
+    }
+    SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
+    obj.tableIdentifier = model->getTableIdentifier();
+    obj.nodeScriptName = model->getNode()->getFullyQualifiedName();
+    for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it!=selection.end(); ++it) {
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+        (*it)->toSerialization(s.get());
+        obj.items.push_back(s);
+    }
+    
+    std::ostringstream ss;
+    try {
+        SERIALIZATION_NAMESPACE::write(ss, obj);
+    } catch (...) {
+        return;
+    }
+    
+    QMimeData* mimedata = new QMimeData;
+    QByteArray data( ss.str().c_str() );
+    mimedata->setData(QLatin1String("text/plain"), data);
+    QClipboard* clipboard = QApplication::clipboard();
+    
+    // Ownership is transferred to the clipboard
+    clipboard->setMimeData(mimedata);
 }
 
 void
 KnobItemsTableGui::onPasteItemsActionTriggered()
 {
+    KnobItemsTablePtr model = _imp->internalModel.lock();
+    std::list<KnobTableItemPtr> selection = model->getSelectedItems();
 
+    if (selection.size() > 1) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You can only copy an item onto another one or on the view itself").toStdString());
+        return;
+    }
+    
+    QClipboard* clipboard = QApplication::clipboard();
+    const QMimeData* data = clipboard->mimeData();
+    if (!data) {
+        return;
+    }
+    std::string str;
+    {
+        QByteArray array = data->data(QLatin1String("text/plain"));
+        if (array.data()) {
+            str = std::string(array.data());
+        }
+    }
+    
+    std::istringstream ss(str);
+    SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
+    try {
+        SERIALIZATION_NAMESPACE::read(ss, &obj);
+    } catch (...) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You cannot copy this kind of data here").toStdString());
+        return;
+    }
+    
+    // Check that table is of the same type
+    if (obj.tableIdentifier != model->getTableIdentifier()) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You cannot copy this kind of data here").toStdString());
+        return;
+    }
+    
+    KnobTableItemPtr target;
+    if (!selection.empty()) {
+        target = selection.front();
+    }
+    
+    if (obj.items.size() > 1 && target && !target->isItemContainer()) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("%1 is not a container, you can only copy a single item onto it").arg(QString::fromUtf8(target->getScriptName_mt_safe().c_str())).toStdString());
+        return;
+    }
+    
+    pushUndoCommand(new PasteItemUndoCommand(_imp.get(), target, obj));
+    
+    
 }
 
 void
 KnobItemsTableGui::onCutItemsActionTriggered()
 {
-
+    onCopyItemsActionTriggered();
+    onDeleteItemsActionTriggered();
+    
 }
 
 void
 KnobItemsTableGui::onDuplicateItemsActionTriggered()
 {
-
+    std::list<KnobTableItemPtr> selection = _imp->internalModel.lock()->getSelectedItems();
+    if (selection.empty()) {
+        return;
+    }
+    pushUndoCommand(new DuplicateItemUndoCommand(_imp.get(), selection));
 }
 
-
-void
-KnobItemsTableGui::onSelectAllItemsActionTriggered()
-{
-
-}
 
 void
 KnobItemsTableGui::onTableItemRightClicked(const QPoint& globalPos, TableItem* item)
@@ -1255,6 +1454,14 @@ KnobItemsTableGui::onTableItemDataChanged(TableItem* item)
 {
 
 }
+
+
+void
+KnobItemsTableGui::onSelectAllItemsActionTriggered()
+{
+    
+}
+
 
 void
 KnobItemsTableGui::onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected)

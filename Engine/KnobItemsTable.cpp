@@ -346,10 +346,9 @@ KnobItemsTable::addTopLevelItem(const KnobTableItemPtr& item, TableChangeReasonE
 void
 KnobItemsTable::insertTopLevelItem(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
-    KnobTableItemPtr parent = item->getParent();
-    if (parent) {
-        parent->removeChild(item, reason);
-    }
+    
+    removeItem(item, reason);
+    
     int insertIndex;
 
     {
@@ -477,6 +476,9 @@ KnobTableItem::getFullyQualifiedName() const
 void
 KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
+    if (!isItemContainer()) {
+        return;
+    }
     assert(_imp->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
 
     item->getModel()->removeItem(item, reason);
@@ -513,6 +515,9 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeR
 void
 KnobTableItem::removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
+    if (!isItemContainer()) {
+        return;
+    }
     bool removed = false;
     KnobItemsTablePtr model = getModel();
     if (!model->getPythonPrefix().empty()) {

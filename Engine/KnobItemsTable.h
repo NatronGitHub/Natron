@@ -88,6 +88,11 @@ public:
 
     void setLabel(const std::string& label, TableChangeReasonEnum reason);
 
+    /**
+     * @brief If true, the item may receive children, otherwise it cannot have children.
+     **/
+    virtual bool isItemContainer() const = 0;
+    
     void addChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason) {
         insertChild(-1, item, reason);
     }
@@ -178,18 +183,9 @@ public:
     };
     
 
-private:
-
-
-    KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount);
-
 public:
-
-
-    static KnobItemsTablePtr create(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount)
-    {
-        return KnobItemsTablePtr(new KnobItemsTable(originalHolder, type, colsCount));
-    }
+    
+    KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount);
 
 
     virtual ~KnobItemsTable();
@@ -204,8 +200,18 @@ public:
      **/
     NodePtr getNode() const;
 
-    // is it a tree or table ? E.g: Roto has a tree, and tracker has a Table
+    /**
+     * Is it a tree or table ? E.g: Roto has a tree, and tracker has a Table
+     * When a tree, items may have children
+     **/
     KnobItemsTableTypeEnum getType() const;
+    
+    /**
+     * @brief Return a identifier for the table so that when the table is serialize we don't attempt to 
+     * deserialize it onto another table type. E.G: we don't want the user to drop the content of a tracker table
+     * onto an item of the Roto
+     **/
+    virtual std::string getTableIdentifier() const = 0;
 
     /**
      * @brief Tells whether you implement the drag and drop handlers. If not the GUI will not support it
