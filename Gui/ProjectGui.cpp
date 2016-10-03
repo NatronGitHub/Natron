@@ -239,10 +239,13 @@ AddFormatDialog::onCopyFromViewer()
         if ( (*it)->getNode()->getLabel() == activeText.toStdString() ) {
             ViewerTab* tab = _gui->getViewerTabForInstance(*it);
             RectD f = tab->getViewer()->getRoD(0);
-            Format format = tab->getViewer()->getDisplayWindow();
-            _widthSpinBox->setValue( f.width() );
-            _heightSpinBox->setValue( f.height() );
-            _pixelAspectSpinBox->setValue( format.getPixelAspectRatio() );
+            RectD canonicalFormat = tab->getViewer()->getCanonicalFormat(0);
+            double par = tab->getViewer()->getPAR(0);
+            RectI format;
+            canonicalFormat.toPixelEnclosing(0, par, &format);
+            _widthSpinBox->setValue( format.width() );
+            _heightSpinBox->setValue( format.height() );
+            _pixelAspectSpinBox->setValue(par);
         }
     }
 }

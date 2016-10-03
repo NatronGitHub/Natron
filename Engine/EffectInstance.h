@@ -293,9 +293,9 @@ public:
     virtual void onScriptNameChanged(const std::string& /*fullyQualifiedName*/) {}
 
     /**
-     * @brief Forwarded to the node's render format
+     * @brief Returns the node output format
      **/
-    void getRenderFormat(Format *f) const;
+    RectI getOutputFormat() const;
 
     /**
      * @brief Forwarded to the node's render views count

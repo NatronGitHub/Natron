@@ -37,6 +37,8 @@
 
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
+#include "Engine/Format.h"
+#include "Engine/Project.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ViewerInstance.h"
 
@@ -64,7 +66,7 @@ NATRON_NAMESPACE_ENTER;
 bool
 ViewerTab::isClippedToProject() const
 {
-    return _imp->viewer->isClippingImageToProjectWindow();
+    return _imp->viewer->isClippingImageToFormat();
 }
 
 std::string
@@ -1145,6 +1147,36 @@ ViewerTab::onClipPreferencesChanged()
     if (_imp->fpsLocked) {
         refreshFPSBoxFromClipPreferences();
     }
+
+    Format format;
+    getGui()->getApp()->getProject()->getProjectDefaultFormat(&format);
+    RectD canonicalFormat = format.toCanonicalFormat();
+
+    int activeInputs[2];
+    _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
+    for (int i = 0; i < 2; ++i) {
+        EffectInstPtr input;
+        if (activeInputs[i] != -1) {
+            input = _imp->viewerNode->getInput(activeInputs[i]);
+        }
+        if (!input) {
+            _imp->infoWidget[i]->setResolution(format);
+
+            std::string formatName = getGui()->getApp()->getProject()->getFormatNameFromRect(format, format.getPixelAspectRatio());
+            _imp->viewer->setFormat(formatName, canonicalFormat, format.getPixelAspectRatio(), i);
+        } else {
+            RectI inputFormat = input->getOutputFormat();
+            RectD inputCanonicalFormat;
+            double inputPar = input->getAspectRatio(-1);
+            _imp->infoWidget[i]->setResolution(inputFormat);
+            inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
+
+            std::string formatName = getGui()->getApp()->getProject()->getFormatNameFromRect(inputFormat, inputPar);
+            _imp->viewer->setFormat(formatName, inputCanonicalFormat, inputPar, i);
+        }
+
+    }
+
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -57,9 +57,9 @@ public:
 
     bool colorAndMouseVisible();
 
-    void setResolution(const Format & f);
+    void setResolution(const RectI & f);
 
-    void setDataWindow(const RectI & r); // in canonical coordinates
+    void setDataWindow(const RectI & r); // in pixel coordinates
 
     void setImageFormat(const ImageComponents& comp, ImageBitDepthEnum depth);
 

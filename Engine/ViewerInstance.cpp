@@ -973,7 +973,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;
     if (!useCache || outArgs->forceRender) {
-        outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
+        outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(outArgs->params->textureIndex, rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         outArgs->params->roiNotRoundedToTileSize = outArgs->params->roi;
 
         UpdateViewerParams::CachedTile tile;
@@ -1013,7 +1013,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     } else {
         std::vector<RectI> tiles, tilesRounded;
-        outArgs->params->roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles, &tilesRounded, &outArgs->params->tileSize, &outArgs->params->roiNotRoundedToTileSize);
+        outArgs->params->roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(outArgs->params->textureIndex, rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles, &tilesRounded, &outArgs->params->tileSize, &outArgs->params->roiNotRoundedToTileSize);
 
         assert(tiles.size() == tilesRounded.size());
 

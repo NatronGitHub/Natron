@@ -108,6 +108,7 @@ struct TextureInfo
         , time(0)
         , rod()
         , format()
+        , pixelAspectRatio(1.)
         , lastRenderedTiles(MAX_MIP_MAP_LEVELS)
         , memoryHeldByLastRenderedImages(0)
         , isPartialImage(false)
@@ -125,8 +126,9 @@ struct TextureInfo
     SequenceTime time;
     RectD rod;
 
-    // For now we always use the project format, but we store the pixel aspect ratio of the upstream image
-    Format format;
+    RectD format;
+
+    double pixelAspectRatio;
 
     // Hold shared pointers here because some images might not be held by the cache
     std::vector<ImagePtr> lastRenderedTiles;
@@ -182,11 +184,9 @@ struct ViewerGL::Implementation
     bool hasMovedSincePress;
 
     /////// currentViewerInfo
-    mutable QMutex projectFormatMutex;
-    Format projectFormat;
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
     QString currentViewerInfo_topRightBBOXoverlay[2]; /*!< The string holding the top right corner coordinates of the dataWindow*/
-    QString currentViewerInfo_resolutionOverlay; /*!< The string holding the resolution overlay, e.g: "1920x1080"*/
+    QString currentViewerInfo_resolutionOverlay[2]; /*!< The string holding the resolution overlay, e.g: "1920x1080"*/
 
     ///////Picker info, used only by the main-thread
     PickerStateEnum pickerState;
@@ -279,12 +279,6 @@ public:
 
     void drawCheckerboardTexture(const QPolygonF& polygon);
 
-    void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
-    {
-        QMutexLocker k(&projectFormatMutex);
-
-        canonicalProjectFormat = projectFormat.toCanonicalFormat();
-    }
 
 private:
     /**

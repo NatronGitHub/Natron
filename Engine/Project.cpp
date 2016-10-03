@@ -1174,6 +1174,55 @@ Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
     *currentValue = _imp->formatKnob->getValue();
 }
 
+std::string
+Project::getFormatNameFromRect(const RectI& rect, double par) const
+{
+    // First try to find the format in the project formats, they have a good chance to be named
+    bool foundFormat = false;
+    Format f;
+    {
+        QMutexLocker k(&_imp->formatMutex);
+
+        for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it!=_imp->builtinFormats.end(); ++it) {
+            if (it->x1 == rect.x1 && it->y1 == rect.x1 && it->x2 == rect.x2 && it->y2 == rect.y2 && par == it->getPixelAspectRatio()) {
+                f = *it;
+                foundFormat = true;
+                break;
+            }
+        }
+        if (!foundFormat) {
+            for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it!=_imp->additionalFormats.end(); ++it) {
+                if (it->x1 == rect.x1 && it->y1 == rect.x1 && it->x2 == rect.x2 && it->y2 == rect.y2 && par == it->getPixelAspectRatio()) {
+                    f = *it;
+                    foundFormat = true;
+                    break;
+                }
+            }
+        }
+    }
+    std::string initialName;
+    if (foundFormat) {
+        initialName = f.getName();
+    } else {
+        f.set(rect);
+        f.setPixelAspectRatio(par);
+    }
+    if (!initialName.empty()) {
+        return initialName;
+    } else {
+        // Format name was empty, too bad, make up one
+        std::stringstream ss;
+        ss << f.width();
+        ss << 'x';
+        ss << f.height();
+        if (f.getPixelAspectRatio() != 1.) {
+            ss << ':';
+            ss << f.getPixelAspectRatio();
+        }
+        return ss.str();
+    }
+}
+
 int
 Project::getProjectViewsCount() const
 {

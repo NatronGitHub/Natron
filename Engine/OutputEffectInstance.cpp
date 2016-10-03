@@ -123,7 +123,7 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
     }
     /*If the rod is infinite clip it to the project's default*/
     Format projectDefault;
-    getRenderFormat(&projectDefault);
+    getApp()->getProject()->getProjectDefaultFormat(&projectDefault);
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()

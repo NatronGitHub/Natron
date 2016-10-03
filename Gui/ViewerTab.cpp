@@ -904,9 +904,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled, "<p>" +
                            tr("Clips the portion of the image displayed "
-                              "on the viewer to the project format. "
-                              "When off, everything in the union of all nodes "
-                              "region of definition is displayed.").toStdString() + "</p>" +
+                              "on the viewer to the input stream format.").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->clipToProjectFormatButton);
 
     setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFullFrameProc, "<p>" +

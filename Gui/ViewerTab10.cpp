@@ -212,7 +212,7 @@ void
 ViewerTab::onClipToProjectButtonToggle(bool b)
 {
     _imp->clipToProjectFormatButton->setDown(b);
-    _imp->viewer->setClipToDisplayWindow(b);
+    _imp->viewer->setClipToFormat(b);
 }
 
 void

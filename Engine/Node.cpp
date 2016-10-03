@@ -9814,10 +9814,9 @@ addIdentityNodesRecursively(const Node* caller,
 
             renderHash = node->getEffectInstance()->getRenderHash();
 
-            Format f;
-            node->getEffectInstance()->getRenderFormat(&f);
+            RectI format = node->getEffectInstance()->getOutputFormat();
 
-            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, f, view, &inputTimeId, &identityView, &inputNbId);
+            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, format, view, &inputTimeId, &identityView, &inputNbId);
         }
 
 

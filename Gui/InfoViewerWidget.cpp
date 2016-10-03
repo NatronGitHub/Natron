@@ -390,7 +390,7 @@ InfoViewerWidget::removeTrailingZeroes(QString& str)
 }
 
 void
-InfoViewerWidget::setResolution(const Format & f)
+InfoViewerWidget::setResolution(const RectI & f)
 {
     assert( QThread::currentThread() == qApp->thread() );
     format = f;
