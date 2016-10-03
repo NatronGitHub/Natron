@@ -373,9 +373,9 @@ getInputRoD(EffectInstance* effect,
         rod = f;
     }
 #else
-    RectI format = effect->getOutputFormat();
-    double par = effect->getAspectRatio(-1);
-    format.toCanonical_noClipping(0, par, &rod);
+    Format f;
+    effect->getApp()->getProject()->getProjectDefaultFormat(&f);
+    rod = f.toCanonicalFormat();
 #endif
 }
 
