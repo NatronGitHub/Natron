@@ -1551,9 +1551,10 @@ Project::onKnobValueChanged(KnobI* knob,
                     (*it)->incrementKnobsAge();
                 }
 
-                ///Format change, hence probably the PAR so run getClipPreferences again
-                forceComputeInputDependentDataOnAllTrees();
+
             }
+            ///Format change, hence probably the PAR so run getClipPreferences again
+            forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
