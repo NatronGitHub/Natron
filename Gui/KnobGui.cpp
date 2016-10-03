@@ -38,6 +38,7 @@
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/NodeSettingsPanel.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
 
@@ -66,7 +67,10 @@ KnobGui::initialize()
     KnobGuiPtr thisShared = shared_from_this();
 
     assert(thisShared);
-    if (!_imp->isInViewerUIKnob) {
+
+    // Set the pointer to the GUI only for the settings panel knob gui
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->container);
+    if (isNodePanel) {
         knob->setKnobGuiPointer(thisShared);
     }
     KnobHelperPtr helper = toKnobHelper(knob);

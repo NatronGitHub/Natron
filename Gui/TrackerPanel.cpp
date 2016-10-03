@@ -443,7 +443,6 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->view = new TableView(this);
     QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onRemoveButtonClicked()) );
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
     TrackerTableItemDelegate* delegate = new TrackerTableItemDelegate(_imp->view, this);
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
@@ -1362,11 +1361,6 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
 
     --_imp->selectionRecursion;
 } // TrackerPanel::selectInternal
-
-void
-TrackerPanel::onItemRightClicked(TableItem* /*item*/)
-{
-}
 
 void
 TrackerPanel::onItemDataChanged(TableItem* item)

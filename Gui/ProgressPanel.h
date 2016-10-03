@@ -123,7 +123,7 @@ public Q_SLOTS:
 
     void onShowProgressPanelTimerTriggered();
 
-    void onItemRightClicked(TableItem* item);
+    void onItemRightClicked(QPoint globalPos, TableItem* item);
 
 Q_SIGNALS:
 

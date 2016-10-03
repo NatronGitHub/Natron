@@ -141,6 +141,7 @@ class KnobGuiFactory;
 class KnobGuiInt;
 class KnobGuiTable;
 class KnobGuiLayers;
+class KnobItemsTableGui;
 class KnobHolder;
 struct KnobPageGui;
 class KnobWidgetDnD;

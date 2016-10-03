@@ -106,7 +106,6 @@ public Q_SLOTS:
     void onItemDataChanged(TableItem* item);
     void onItemEnabledCheckBoxChecked(bool checked);
     void onItemMotionModelChanged(int index);
-    void onItemRightClicked(TableItem* item);
 
     void onContextSelectionAboutToChange(int reason);
     void onContextSelectionChanged(int reason);

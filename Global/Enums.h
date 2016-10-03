@@ -703,6 +703,18 @@ enum MergingFunctionEnum
     eMergeXOR
 };
 
+enum TableChangeReasonEnum
+{
+    // The action was initiated by an internal call of the API of KnobItemsTable
+    eTableChangeReasonInternal,
+
+    // The action was initiated by an external call of the API of KnobItemsTable
+    eTableChangeReasonExternal,
+
+    // The action was initiated by calling the API of the table Gui
+    eTableChangeReasonPanel
+};
+
 
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons, StandardButtonEnum)

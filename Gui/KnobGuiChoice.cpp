@@ -286,6 +286,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
         _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
     }
 
+
     _comboBox->setCascading( _knob.lock()->isCascading() );
     onEntriesPopulated();
 
@@ -400,6 +401,12 @@ KnobGuiChoice::getPixmapFromFilePath(const KnobHolderPtr& holder, const QString&
         return false;
     }
     return pix;
+}
+
+ComboBox*
+KnobGuiChoice::getCombobox() const
+{
+    return _comboBox;
 }
 
 QPixmap

@@ -57,6 +57,7 @@ HEADERS += \
     ImageKeySerialization.h \
     ImageParamsSerialization.h \
     KnobSerialization.h \
+    KnobTableItemSerialization.h \
     NodeSerialization.h \
     NodeBackdropSerialization.h \
     NodeClipBoard.h \
@@ -83,7 +84,6 @@ HEADERS += \
 
 
 SOURCES += \
-    KnobSerialization.cpp \
     BezierCPSerialization.cpp \
     BezierSerialization.cpp \
     CurveSerialization.cpp \
@@ -92,6 +92,8 @@ SOURCES += \
     FrameParamsSerialization.cpp \
     ImageKeySerialization.cpp \
     ImageParamsSerialization.cpp \
+    KnobSerialization.cpp \
+    KnobTableItemSerialization.cpp \
     NodeSerialization.cpp \
     NodeClipBoard.cpp \
     NonKeyParamsSerialization.cpp \

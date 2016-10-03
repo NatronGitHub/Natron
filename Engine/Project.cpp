@@ -2746,7 +2746,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
         KnobPagePtr isPage = toKnobPage(knobs[i]);
         KnobButtonPtr isButton = toKnobButton(knobs[i]);
-        if (isGroup || isPage || isButton) {
+        if (isGroup || isPage || (isButton && !isButton->getIsCheckable())) {
             continue;
         }
 

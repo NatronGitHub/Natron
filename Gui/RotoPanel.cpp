@@ -46,6 +46,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPainter>
 #include <QUndoCommand>
 #include <QByteArray>
+#include <QStyledItemDelegate>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -71,6 +72,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiMacros.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TableModelView.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SpinBox.h"
 
@@ -376,6 +378,7 @@ public:
     QIcon iconLayer, iconBezier, iconVisible, iconUnvisible, iconLocked, iconUnlocked, iconInverted, iconUninverted, iconWheel;
     QIcon iconStroke, iconEraser, iconSmear, iconSharpen, iconBlur, iconClone, iconReveal, iconDodge, iconBurn;
     TreeWidget* tree;
+    boost::scoped_ptr<TableItemEditorFactory> itemFactory;
     QTreeWidgetItem* treeHeader;
     SelectedItems selectedItems;
     TreeItems items;
@@ -607,6 +610,11 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->tree->setToolTip(treeToolTip);
 
     _imp->mainLayout->addWidget(_imp->tree);
+
+    _imp->itemFactory.reset(new TableItemEditorFactory);
+    QStyledItemDelegate* delegate =  dynamic_cast<QStyledItemDelegate*>(_imp->tree->itemDelegate());
+    assert(delegate);
+    delegate->setItemEditorFactory( _imp->itemFactory.get() );
 
     QObject::connect( _imp->tree, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onItemClicked(QTreeWidgetItem*,int)) );
     QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );

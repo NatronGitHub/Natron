@@ -2897,7 +2897,7 @@ Node::setLabel(const std::string& label)
     }
     NodeCollectionPtr collection = getGroup();
     if (collection) {
-        collection->notifyNodeNameChanged( shared_from_this() );
+        collection->notifyNodeLabelChanged( shared_from_this() );
     }
     Q_EMIT labelChanged( QString::fromUtf8( label.c_str() ) );
 }

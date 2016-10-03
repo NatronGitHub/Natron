@@ -943,8 +943,6 @@ RotoContext::resetToDefault()
     removeItemRecursively(baseLayer, reason);
     createBaseLayer();
     Q_EMIT selectionChanged( (int)reason );
-
-
 }
 
 void

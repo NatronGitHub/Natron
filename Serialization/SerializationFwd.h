@@ -40,6 +40,7 @@ class FrameKeySerialization;
 class FrameParamsSerialization;
 class KnobSerializationBase;
 class KnobSerialization;
+class KnobTableItemSerialization;
 class GroupKnobSerialization;
 class NodeClipBoard;
 class NodeSerialization;
@@ -73,6 +74,8 @@ typedef boost::shared_ptr<RotoDrawableItemSerialization> RotoDrawableItemSeriali
 typedef boost::shared_ptr<RotoItemSerialization> RotoItemSerializationPtr;
 typedef boost::shared_ptr<RotoLayerSerialization> RotoLayerSerializationPtr;
 typedef boost::shared_ptr<RotoStrokeItemSerialization> RotoStrokeItemSerializationPtr;
+typedef boost::shared_ptr<KnobTableItemSerialization> KnobTableItemSerializationPtr;
+
 
 typedef std::list<NodeSerializationPtr> NodeSerializationList;
 typedef std::list<KnobSerializationPtr> KnobSerializationList;

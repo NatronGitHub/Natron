@@ -483,6 +483,7 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 };
 
+
 SERIALIZATION_NAMESPACE_EXIT;
 
 

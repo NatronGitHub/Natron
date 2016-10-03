@@ -1308,7 +1308,7 @@ TableView::mouseReleaseEvent(QMouseEvent* e)
     TableItem* item = itemAt( e->pos() );
 
     if ( triggerButtonIsRight(e) && index.isValid() ) {
-        Q_EMIT itemRightClicked(item);
+        Q_EMIT itemRightClicked(e->globalPos(), item);
     } else {
         QTreeView::mouseReleaseEvent(e);
     }
@@ -1379,33 +1379,32 @@ TableView::dragEnterEvent(QDragEnterEvent *e)
 void
 TableView::dropEvent(QDropEvent* e)
 {
-    //  QTreeView::dropEvent(e);
 
-    DropIndicatorPosition position = dropIndicatorPosition();
-
-    switch (position) {
-    case QAbstractItemView::OnItem:
-    case QAbstractItemView::OnViewport:
-    default:
-
-        return;
-
-    case QAbstractItemView::AboveItem:
-    case QAbstractItemView::BelowItem:
-        break;
-    }
+    // We only support drag & drop that are internal to this table
     TableItem* into = itemAt( e->pos() );
-
     if ( !into || _imp->draggedItems.empty() ) {
         return;
     }
-    Q_EMIT aboutToDrop();
-    int targetRow = into->row();
 
-    //We only support full rows
+
+    // We only support full rows
     assert(selectionBehavior() == QAbstractItemView::SelectRows);
 
-    ///Remove the items
+
+    DropIndicatorPosition position = dropIndicatorPosition();
+
+    // Only allow dragging on items if we can make a hierarchy (i.e: this is a tree)
+    if (position == QAbstractItemView::OnViewport ||
+        position == QAbstractItemView::OnItem) {
+        return;
+    }
+
+    // Prepare for changes
+    Q_EMIT aboutToDrop();
+
+    int targetRow = into->row();
+
+    // Remove the items but do not delete them
     std::map<int, std::map<int, TableItem*> > rowMoved;
     for (std::list<TableItem*>::iterator it = _imp->draggedItems.begin(); it != _imp->draggedItems.end(); ++it) {
         rowMoved[(*it)->row()][(*it)->column()] = *it;
@@ -1413,7 +1412,8 @@ TableView::dropEvent(QDropEvent* e)
         assert(taken == *it);
         Q_UNUSED(taken);
     }
-    /// remove the rows in reverse order so that indexes are still valid
+
+    // Remove the rows in reverse order so that indexes are still valid
     for (std::map<int, std::map<int, TableItem*> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
         _imp->model->removeRows(it->first);
         if (it->first <= targetRow) {
@@ -1421,8 +1421,8 @@ TableView::dropEvent(QDropEvent* e)
         }
     }
     _imp->draggedItems.clear();
-    ///insert back at the correct position
 
+    // Insert back at the correct position depending on the drop indicator
     int nRows = _imp->model->rowCount();
     switch (position) {
     case QAbstractItemView::AboveItem: {
@@ -1439,10 +1439,8 @@ TableView::dropEvent(QDropEvent* e)
     }
     default:
         assert(false);
-
         return;
     }
-    ;
 
     int rowIndex = targetRow;
     for (std::map<int, std::map<int, TableItem*> >::iterator it = rowMoved.begin(); it != rowMoved.end(); ++it, ++rowIndex) {

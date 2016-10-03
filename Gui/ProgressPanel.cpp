@@ -179,7 +179,7 @@ ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
 
     _imp->mainLayout->addWidget(_imp->view);
 
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
+    QObject::connect( _imp->view, SIGNAL(itemRightClicked(QPoint, TableItem*)), this, SLOT(onItemRightClicked(QPoint, TableItem*)) );
     QStringList dimensionNames;
     dimensionNames
         << tr("Node")
@@ -614,7 +614,7 @@ ProgressPanel::onQueueRendersCheckboxChecked()
 }
 
 void
-ProgressPanel::onItemRightClicked(TableItem* item)
+ProgressPanel::onItemRightClicked(QPoint globalPos, TableItem* item)
 {
     ProgressTaskInfoPtr task;
     {
@@ -635,7 +635,7 @@ ProgressPanel::onItemRightClicked(TableItem* item)
 
     QAction* triggered = 0;
     if ( !m.isEmpty() ) {
-        triggered = m.exec( QCursor::pos() );
+        triggered = m.exec(globalPos);
     }
     if ( (triggered == showLogAction) && showLogAction ) {
         const QString& log = hasProcess->getProcessLog();

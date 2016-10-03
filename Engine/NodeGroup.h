@@ -284,11 +284,10 @@ public:
      **/
     virtual void notifyInputMaskStateChanged(const NodePtr& /*node*/) {}
 
-
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeNameChanged(const NodePtr& /*node*/) {}
+    virtual void notifyNodeLabelChanged(const NodePtr& /*node*/) {}
 
 
 protected:
@@ -369,7 +368,7 @@ public:
     virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputOptionalStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
-    virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
+    virtual void notifyNodeLabelChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;

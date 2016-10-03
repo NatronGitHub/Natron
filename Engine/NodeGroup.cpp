@@ -1446,7 +1446,7 @@ NodeGroup::notifyInputMaskStateChanged(const NodePtr& /*node*/)
 }
 
 void
-NodeGroup::notifyNodeNameChanged(const NodePtr& node)
+NodeGroup::notifyNodeLabelChanged(const NodePtr& node)
 {
     GroupInputPtr isInput = node->isEffectGroupInput();
 

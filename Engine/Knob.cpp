@@ -1800,7 +1800,6 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         app = holder->getApp();
     }
 
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
 
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle

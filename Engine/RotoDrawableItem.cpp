@@ -583,7 +583,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
 {
     // Any knob except transform center should break the multi-stroke into a new stroke
     if ( (reason == eValueChangedReasonUserEdited) && (knob != _imp->center.lock()) && (knob != _imp->cloneCenter.lock()) ) {
-#pragma message WARN("Check if the reason is correct here, shouldn't it be user edited?")
         getContext()->s_breakMultiStroke();
     }
 

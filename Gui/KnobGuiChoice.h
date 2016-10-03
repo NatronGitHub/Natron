@@ -127,6 +127,8 @@ public:
 
     static QPixmap getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
 
+    ComboBox* getCombobox() const;
+
 public Q_SLOTS:
 
     void onCurrentIndexChanged(int i);
@@ -140,6 +142,7 @@ public Q_SLOTS:
     void onItemNewSelected();
 
     void onRefreshMenuActionTriggered();
+
 
 private:
 

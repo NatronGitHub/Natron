@@ -130,6 +130,7 @@ SOURCES += \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
+    KnobItemsTableGui.cpp \
     KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
@@ -275,6 +276,7 @@ HEADERS += \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
+    KnobItemsTableGui.h \
     KnobGui.h \
     KnobGuiContainerI.h \
     KnobGuiContainerHelper.h \

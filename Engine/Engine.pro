@@ -124,6 +124,7 @@ SOURCES += \
     KnobFactory.cpp \
     KnobFile.cpp \
     KnobTypes.cpp \
+    KnobItemsTable.cpp \
     LibraryBinary.cpp \
     Log.cpp \
     Lut.cpp \
@@ -330,6 +331,7 @@ HEADERS += \
     KnobFactory.h \
     KnobFile.h \
     KnobTypes.h \
+    KnobItemsTable.h \
     LibraryBinary.h \
     Log.h \
     LogEntry.h \
