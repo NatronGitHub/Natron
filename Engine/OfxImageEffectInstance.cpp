@@ -1093,7 +1093,7 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
         { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
         { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
-        { kOfxImageEffectPropFormat,             OFX::Host::Property::eInt,     4, false,  "0" },
+        { kOfxImageClipPropFormat,             OFX::Host::Property::eInt,     4, false,  "0" },
         OFX::Host::Property::propSpecEnd
     };
 
@@ -1114,7 +1114,7 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
     outArgs.setIntProperty( kOfxImageEffectFrameVarying, metadata.getIsFrameVarying() );
 
     const RectI& outputFormat = metadata.getOutputFormat();
-    outArgs.setIntPropertyN( kOfxImageEffectPropFormat, (const int*)&outputFormat.x1, 4);
+    outArgs.setIntPropertyN( kOfxImageClipPropFormat, (const int*)&outputFormat.x1, 4);
 
     /// now add the clip gubbins to the out args
     for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
@@ -1230,7 +1230,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
         defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
         defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
         int formatV[4];
-        outArgs.getIntPropertyN(kOfxImageEffectPropFormat, formatV, 4);
+        outArgs.getIntPropertyN(kOfxImageClipPropFormat, formatV, 4);
         RectI format;
         format.x1 = formatV[0];
         format.y1 = formatV[1];
