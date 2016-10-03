@@ -121,7 +121,6 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 
-    QObject::connect( parent->getGui()->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)) );
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
