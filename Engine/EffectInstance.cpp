@@ -3727,7 +3727,7 @@ EffectInstance::getTransform_public(double time,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
-    assert( getNode()->getCurrentCanTransform() );
+    //assert( getNode()->getCurrentCanTransform() ); // called in every case for overlays
 
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
