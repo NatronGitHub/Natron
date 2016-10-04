@@ -372,12 +372,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string, std::string> projectPaths;
     gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
-    for (std::map<std::string, std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it) {
-        QString varName;
-        varName.append( QLatin1Char('[') );
-        varName.append( QString::fromUtf8( it->first.c_str() ) );
-        varName.append( QLatin1Char(']') );
-        _relativeChoice->addItem(varName);
+    int i = 1;
+    for (std::map<std::string, std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it, ++i) {
+        std::string varName = '[' + it->first + ']';
+        _relativeChoice->addItem( QString::fromUtf8( varName.c_str() ) );
+        if ( allowRelativePaths && !currentDirectory.compare(0, varName.size(), varName) ) {
+            _relativeChoice->setCurrentIndex_no_emit(i);
+        }
     }
     if (!allowRelativePaths) {
         _relativeLabel->hide();
