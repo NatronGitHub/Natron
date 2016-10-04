@@ -73,7 +73,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     } else {
         groupName = tr("top-level");
     }
-    group->getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
+    AppInstPtr appInst = group->getApplication();
+    if (!appInst) {
+        return !mustShowErrorsLog;
+    }
+    appInst->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
 
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
@@ -116,7 +120,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
                     
-                    NodePtr parent = group->getApplication()->createNode(args);
+                    NodePtr parent = appInst->createNode(args);
                     try {
                         parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
                     } catch (...) {
@@ -229,7 +233,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
             }
             args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            n = group->getApplication()->createNode(args);
+            n = appInst->createNode(args);
         }
         if (!n) {
             QString text( tr("ERROR: The node %1 version %2.%3"
@@ -286,7 +290,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
 
 
-    group->getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
+    appInst->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
 
 
     /// Connect the nodes together

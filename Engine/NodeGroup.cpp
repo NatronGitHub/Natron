@@ -322,7 +322,11 @@ NodeCollection::refreshViewersAndPreviews()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( !getApplication()->isBackground() ) {
+    AppInstPtr appInst = getApplication();
+    if (!appInst) {
+        return;
+    }
+    if ( !appInst->isBackground() ) {
         NodesList nodes = getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             assert(*it);
@@ -343,10 +347,14 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
-    if ( getApplication()->isBackground() ) {
+    AppInstPtr appInst = getApplication();
+    if (!appInst) {
         return;
     }
-    double time = getApplication()->getTimeLine()->currentFrame();
+    if ( appInst->isBackground() ) {
+        return;
+    }
+    double time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -363,10 +371,14 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
-    if ( getApplication()->isBackground() ) {
+    AppInstPtr appInst = getApplication();
+    if (!appInst) {
         return;
     }
-    double time = getApplication()->getTimeLine()->currentFrame();
+    if ( appInst->isBackground() ) {
+        return;
+    }
+    double time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -802,7 +814,11 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = getApplication()->getProject();
+    AppInstPtr appInst = getApplication();
+    if (!appInst) {
+        return;
+    }
+    boost::shared_ptr<Project> project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -840,7 +856,11 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = getApplication()->getProject();
+    AppInstPtr appInst = getApplication();
+    if (!appInst) {
+        return;
+    }
+    boost::shared_ptr<Project> project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
