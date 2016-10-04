@@ -55,7 +55,8 @@ public:
     virtual ~InfoViewerWidget() OVERRIDE;
 
 
-    bool colorAndMouseVisible();
+    bool colorVisible();
+    bool mouseVisible();
 
     void setResolution(const RectI & f);
 
@@ -76,8 +77,10 @@ public Q_SLOTS:
 
     void setColorApproximated(bool approx);
 
-    void hideColorAndMouseInfo();
-    void showColorAndMouseInfo();
+    void hideColorInfo();
+    void showColorInfo();
+    void hideMouseInfo();
+    void showMouseInfo();
     void setFps(double actualFps, double desiredFps);
     void hideFps();
 

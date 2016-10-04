@@ -211,27 +211,43 @@ InfoViewerWidget::hideFps()
 }
 
 bool
-InfoViewerWidget::colorAndMouseVisible()
+InfoViewerWidget::colorVisible()
 {
-    return coordMouse->isVisible();
+    return hvl_lastOption->isVisible();
 }
 
 void
-InfoViewerWidget::showColorAndMouseInfo()
+InfoViewerWidget::showColorInfo()
 {
-    coordMouse->show();
     hvl_lastOption->show();
     rgbaValues->show();
     color->show();
 }
 
 void
-InfoViewerWidget::hideColorAndMouseInfo()
+InfoViewerWidget::hideColorInfo()
 {
-    coordMouse->hide();
     hvl_lastOption->hide();
     rgbaValues->hide();
     color->hide();
+}
+
+bool
+InfoViewerWidget::mouseVisible()
+{
+    return coordMouse->isVisible();
+}
+
+void
+InfoViewerWidget::showMouseInfo()
+{
+    coordMouse->show();
+}
+
+void
+InfoViewerWidget::hideMouseInfo()
+{
+    coordMouse->hide();
 }
 
 InfoViewerWidget::~InfoViewerWidget()

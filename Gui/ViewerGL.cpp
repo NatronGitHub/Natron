@@ -2584,8 +2584,8 @@ ViewerGL::updateColorPicker(int textureIndex,
                 (*it)->hideViewerCursor();
             }
         }
-        if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
+        if ( _imp->infoViewer[textureIndex]->colorVisible() ) {
+            _imp->infoViewer[textureIndex]->hideColorInfo();
         }
         if (textureIndex == 0) {
             setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
@@ -2660,8 +2660,8 @@ ViewerGL::updateColorPicker(int textureIndex,
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
-        if ( !_imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
+        if ( !_imp->infoViewer[textureIndex]->colorVisible() ) {
+            _imp->infoViewer[textureIndex]->showColorInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
 
@@ -3136,15 +3136,27 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
 }
 
 void
+ViewerGL::enterEvent(QEvent* e)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->infoViewer[0]->showMouseInfo();
+    _imp->infoViewer[1]->showMouseInfo();
+    QGLWidget::enterEvent(e);
+}
+
+void
 ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if (_imp->pickerState == ePickerStateInactive) {
-        _imp->infoViewer[0]->hideColorAndMouseInfo();
-        _imp->infoViewer[1]->hideColorAndMouseInfo();
+        _imp->infoViewer[0]->hideColorInfo();
+        _imp->infoViewer[1]->hideColorInfo();
         setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
     }
+    _imp->infoViewer[0]->hideMouseInfo();
+    _imp->infoViewer[1]->hideMouseInfo();
     QGLWidget::leaveEvent(e);
 }
 
@@ -3718,8 +3730,8 @@ ViewerGL::pickColorInternal(double x,
             }
             _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
             _imp->infoViewer[i]->setColorValid(true);
-            if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->showColorAndMouseInfo();
+            if ( !_imp->infoViewer[i]->colorVisible() ) {
+                _imp->infoViewer[i]->showColorInfo();
             }
             _imp->infoViewer[i]->setColor(r, g, b, a);
             ret = true;
@@ -3807,8 +3819,8 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
-                     _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+                 if ( _imp->infoViewer[texIndex]->colorVisible() && _imp->pickerState == ePickerStateInactive) {
+                     _imp->infoViewer[texIndex]->hideColorInfo();
                  }
                  for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
                      if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
@@ -3824,8 +3836,8 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                      updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
                 // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
-                if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
-                    _imp->infoViewer[texIndex]->showColorAndMouseInfo();
+                if ( !_imp->infoViewer[texIndex]->colorVisible() ) {
+                    _imp->infoViewer[texIndex]->showColorInfo();
                 }
                 // Show the picker on parametric params without updating the color value
                 if (texIndex == 0) {
@@ -3835,15 +3847,10 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 ///unkwn state
                 assert(false);
             }
-            double par = _imp->displayTextures[texIndex].pixelAspectRatio;
-            QPoint imgPosPixel;
-            imgPosPixel.rx() = std::floor(imgPos.x() / par);
-            imgPosPixel.ry() = std::floor( imgPos.y() );
-            _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
-        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
-            _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+        if ( _imp->infoViewer[texIndex]->colorVisible() && _imp->pickerState == ePickerStateInactive) {
+            _imp->infoViewer[texIndex]->hideColorInfo();
         }
         for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
             if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
@@ -3854,6 +3861,15 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
             setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
+
+    double par = _imp->displayTextures[texIndex].pixelAspectRatio;
+    QPoint imgPosPixel;
+    imgPosPixel.rx() = std::floor(imgPos.x() / par);
+    imgPosPixel.ry() = std::floor( imgPos.y() );
+    _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
+    //if ( !_imp->infoViewer[texIndex]->mouseVisible() ) { // done in enterEvent
+    //    _imp->infoViewer[texIndex]->showMouseInfo();
+    //}
 } // ViewerGL::updateInfoWidgetColorPickerInternal
 
 void
@@ -3892,8 +3908,8 @@ ViewerGL::updateRectangleColorPickerInternal()
                 _imp->viewerTab->getGui()->setColorPickersColor(r, g, b, a);
             }
             _imp->infoViewer[i]->setColorValid(true);
-            if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->showColorAndMouseInfo();
+            if ( !_imp->infoViewer[i]->colorVisible() ) {
+                _imp->infoViewer[i]->showColorInfo();
             }
             _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
