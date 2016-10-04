@@ -733,18 +733,18 @@ PreferencesPanel::createGui()
     _imp->tree->setFixedWidth(maxLength + 100);
 
     _imp->buttonBox = new DialogButtonBox(Qt::Horizontal);
-    _imp->restoreDefaultsB = new Button( tr("Restore defaults") );
+    _imp->restoreDefaultsB = new Button( tr("Restore Defaults") );
     _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->prefsHelp = new Button( tr("Help") );
-    _imp->prefsHelp->setToolTip( tr("Show help for preference") );
+    _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->cancelB = new Button( tr("Discard") );
     _imp->cancelB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->okB = new Button( tr("Save") );
     _imp->okB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save changes on disk and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonBox->addButton(_imp->restoreDefaultsB, QDialogButtonBox::ResetRole);
-    _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::ResetRole);
+    _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::HelpRole);
     _imp->buttonBox->addButton(_imp->cancelB, QDialogButtonBox::RejectRole);
     _imp->buttonBox->addButton(_imp->okB, QDialogButtonBox::AcceptRole);
 
