@@ -561,23 +561,40 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->viewerSubContainerLayout->setSpacing(1);
 
 
-    _imp->viewer = new ViewerGL(this);
-
-    _imp->viewerSubContainerLayout->addWidget(_imp->viewer);
-
-
-    /*info bbox & color*/
+    // Info bars
     QString inputNames[2] = {
         QString::fromUtf8("A:"), QString::fromUtf8("B:")
     };
     for (int i = 0; i < 2; ++i) {
         _imp->infoWidget[i] = new InfoViewerWidget(inputNames[i], this);
+
+    }
+
+    // Viewer
+    _imp->viewer = new ViewerGL(this);
+
+    // Init viewer to project format
+    {
+        Format projectFormat;
+        getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+
+        RectD canonicalFormat = projectFormat.toCanonicalFormat();
+        for (int i = 0; i < 2; ++i) {
+            _imp->viewer->setInfoViewer(_imp->infoWidget[i], i);
+            _imp->viewer->setRegionOfDefinition(canonicalFormat, projectFormat.getPixelAspectRatio(), i);
+            setInfoBarAndViewerResolution(projectFormat, canonicalFormat, projectFormat.getPixelAspectRatio(), i);
+        }
+        _imp->viewer->resetWipeControls();
+    }
+
+    _imp->viewerSubContainerLayout->addWidget(_imp->viewer);
+    for (int i = 0; i < 2; ++i) {
         _imp->viewerSubContainerLayout->addWidget(_imp->infoWidget[i]);
-        _imp->viewer->setInfoViewer(_imp->infoWidget[i], i);
         if (i == 1) {
             _imp->infoWidget[i]->hide();
         }
     }
+
 
     _imp->viewerLayout->addWidget(_imp->viewerSubContainer);
 

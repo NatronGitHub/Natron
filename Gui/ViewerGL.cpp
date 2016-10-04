@@ -121,16 +121,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 
-    Format projectFormat;
-    parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
-    RectD canonicalFormat = projectFormat.toCanonicalFormat();
-
-    for (int i = 0; i < 2; ++i) {
-        setRegionOfDefinition(canonicalFormat, projectFormat.getPixelAspectRatio(), i);
-        _imp->displayTextures[i].format = canonicalFormat;
-    }
-    resetWipeControls();
     populateMenu();
 
     QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()) );
@@ -598,13 +589,10 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         int activeInputs[2];
         getInternalNode()->getActiveInputs(activeInputs[0], activeInputs[1]);
         for (int i = 0; i < 2; ++i) {
-            if ( !_imp->displayTextures[i].isVisible || (activeInputs[i] == -1) ) {
-                continue;
-            }
+
             if ( (i == 1) && (_imp->viewerTab->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
                 break;
             }
-            RectD dataW = getRoD(i);
             RectD canonicalFormat = getCanonicalFormat(i);
 
             // Draw format
@@ -638,6 +626,12 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 glEnd();
                 glCheckErrorIgnoreOSXBug();
             }
+
+            if ( !_imp->displayTextures[i].isVisible || (activeInputs[i] == -1) ) {
+                continue;
+            }
+            RectD dataW = getRoD(i);
+
 
             if (dataW != canonicalFormat) {
                 renderText(dataW.right(), dataW.top(),

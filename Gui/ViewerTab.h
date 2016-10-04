@@ -301,6 +301,8 @@ public:
 
     void setCurrentLayers(const QString& layer, const QString& alphaLayer);
 
+    void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
+
 public Q_SLOTS:
 
     void onPauseViewerButtonClicked(bool clicked);
@@ -448,8 +450,6 @@ public Q_SLOTS:
     void toggleTripleSync(bool toggled);
 
 private:
-
-    void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
 
     void abortViewersAndRefresh();
 
