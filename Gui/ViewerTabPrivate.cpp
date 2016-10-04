@@ -86,7 +86,12 @@ ViewerTabPrivate::getOverlayTransform(double time,
     EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
-    if ( !currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform() ) {
+    // call getTransform even of effects that claim not to support it, because it may still return
+    // a transform to apply to the overlays (eg for Reformat).
+    // If transform is not implemented, it should return eStatusReplyDefault:
+    // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
+    // "the value kOfxStatReplyDefault is returned if the plug-in does not trap the action"
+    if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {

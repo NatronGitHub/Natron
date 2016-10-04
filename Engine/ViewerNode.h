@@ -183,7 +183,7 @@ public:
 
     bool isPlayerVisible() const;
 
-    bool isClipToProjectEnabled() const;
+    bool isClipToFormatEnabled() const;
 
     bool isInfoBarVisible() const;
 

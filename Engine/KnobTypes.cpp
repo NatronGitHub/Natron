@@ -341,7 +341,7 @@ getInputRoD(const EffectInstancePtr& effect,
     }
 #else
     Format f;
-    effect->getRenderFormat(&f);
+    effect->getApp()->getProject()->getProjectDefaultFormat(&f);
     rod = f.toCanonicalFormat();
 #endif
 }

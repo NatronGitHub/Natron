@@ -92,8 +92,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , lastMousePosition()
     , lastDragStartPos()
     , hasMovedSincePress(false)
-    , projectFormatMutex()
-    , projectFormat()
     , currentViewerInfo_btmLeftBBOXoverlay()
     , currentViewerInfo_topRightBBOXoverlay()
     , currentViewerInfo_resolutionOverlay()
@@ -239,17 +237,15 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     RectD rod = _this->getRoD(textureIndex);
 
     ViewerNodePtr internalNode = _this->getViewerTab()->getInternalNode();
-    bool clipToDisplayWindow = internalNode->isClipToProjectEnabled();
+    bool clipToDisplayWindow = internalNode->isClipToFormatEnabled();
 
     RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
     rectClippedToRoI.intersect(rod, &rectClippedToRoI);
 
 
     if (clipToDisplayWindow) {
-        RectD canonicalProjectFormat;
-        this->getProjectFormatCanonical(canonicalProjectFormat);
-        rod.intersect(canonicalProjectFormat, &rod);
-        rectClippedToRoI.intersect(canonicalProjectFormat, &rectClippedToRoI);
+        rod.intersect(this->displayTextures[textureIndex].format, &rod);
+        rectClippedToRoI.intersect(this->displayTextures[textureIndex].format, &rectClippedToRoI);
     }
 
     

@@ -118,17 +118,6 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 
-    QObject::connect( parent->getGui()->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)) );
-    Format projectFormat;
-    parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-
-    RectD canonicalFormat = projectFormat.toCanonicalFormat();
-
-    for (int i = 0; i < 2; ++i) {
-        setRegionOfDefinition(canonicalFormat, projectFormat.getPixelAspectRatio(), i);
-    }
-    onProjectFormatChangedInternal(projectFormat, false);
-
     QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()) );
 }
 
@@ -365,17 +354,16 @@ ViewerGL::paintGL()
             bool checkerboard = viewerNode->isCheckerboardEnabled();
             if (checkerboard) {
                 // draw checkerboard texture, but only on the left side if in wipe mode
-                RectD projectFormatCanonical;
-                _imp->getProjectFormatCanonical(projectFormatCanonical);
+                RectD canonicalFormat = _imp->displayTextures[0].format;
                 if (compOperator == eViewerCompositingOperatorNone) {
-                    _imp->drawCheckerboardTexture(projectFormatCanonical);
+                    _imp->drawCheckerboardTexture(canonicalFormat);
                 } else if ( operatorIsWipe(compOperator) ) {
                     QPolygonF polygonPoints;
-                    Implementation::WipePolygonEnum t = _imp->getWipePolygon(projectFormatCanonical,
+                    Implementation::WipePolygonEnum t = _imp->getWipePolygon(canonicalFormat,
                                                                              false,
                                                                              &polygonPoints);
                     if (t == Implementation::eWipePolygonFull) {
-                        _imp->drawCheckerboardTexture(projectFormatCanonical);
+                        _imp->drawCheckerboardTexture(canonicalFormat);
                     } else if (t == Implementation::eWipePolygonPartial) {
                         _imp->drawCheckerboardTexture(polygonPoints);
                     }
@@ -552,41 +540,12 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
 
     glCheckError(GL_GPU);
 
-    RectD projectFormatCanonical;
-    _imp->getProjectFormatCanonical(projectFormatCanonical);
-    renderText(projectFormatCanonical.right(), projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay, _imp->textRenderingColor, _imp->textFont);
-
-
-    QPoint topRight( projectFormatCanonical.right(), projectFormatCanonical.top() );
-    QPoint topLeft( projectFormatCanonical.left(), projectFormatCanonical.top() );
-    QPoint btmLeft( projectFormatCanonical.left(), projectFormatCanonical.bottom() );
-    QPoint btmRight( projectFormatCanonical.right(), projectFormatCanonical.bottom() );
 
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
         GL_GPU::glDisable(GL_BLEND);
 
-        GL_GPU::glBegin(GL_LINES);
-
-        GL_GPU::glColor4f( _imp->displayWindowOverlayColor.redF(),
-                   _imp->displayWindowOverlayColor.greenF(),
-                   _imp->displayWindowOverlayColor.blueF(),
-                   _imp->displayWindowOverlayColor.alphaF() );
-        GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
-        GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
-
-        GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
-        GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
-
-        GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
-        GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
-
-        GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
-        GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
-
-        GL_GPU::glEnd();
-        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         ViewerNodePtr viewerNode = _imp->viewerTab->getInternalNode();
         if (!viewerNode) {
@@ -596,15 +555,51 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
 
 
         for (int i = 0; i < 2; ++i) {
-            if ( !_imp->displayTextures[i].isVisible || (!bInput && i == 1)) {
-                continue;
-            }
+
             if ( (i == 1) && (compOperator == eViewerCompositingOperatorNone) ) {
                 break;
             }
+            RectD canonicalFormat = getCanonicalFormat(i);
+
+            // Draw format
+            {
+                renderText(canonicalFormat.right(), canonicalFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay[i], _imp->textRenderingColor, _imp->textFont);
+
+
+                QPoint topRight( canonicalFormat.right(), canonicalFormat.top() );
+                QPoint topLeft( canonicalFormat.left(), canonicalFormat.top() );
+                QPoint btmLeft( canonicalFormat.left(), canonicalFormat.bottom() );
+                QPoint btmRight( canonicalFormat.right(), canonicalFormat.bottom() );
+
+                GL_GPU::glBegin(GL_LINES);
+
+                GL_GPU::glColor4f( _imp->displayWindowOverlayColor.redF(),
+                                  _imp->displayWindowOverlayColor.greenF(),
+                                  _imp->displayWindowOverlayColor.blueF(),
+                                  _imp->displayWindowOverlayColor.alphaF() );
+                GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
+                GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
+
+                GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
+                GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
+
+                GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
+                GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
+
+                GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
+                GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
+                
+                GL_GPU::glEnd();
+                glCheckErrorIgnoreOSXBug(GL_GPU);
+            }
+
+            if ( !_imp->displayTextures[i].isVisible || (!bInput && i == 1)) {
+                continue;
+            }
             RectD dataW = getRoD(i);
 
-            if (dataW != projectFormatCanonical) {
+
+            if (dataW != canonicalFormat) {
                 renderText(dataW.right(), dataW.top(),
                            _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
@@ -964,18 +959,17 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 } // ViewerGL::getImageRectangleDisplayed
 
 RectI
-ViewerGL::getExactImageRectangleDisplayed(const RectD & rod,
+ViewerGL::getExactImageRectangleDisplayed(int texIndex,
+                                          const RectD & rod,
                                           const double par,
                                           unsigned int mipMapLevel)
 {
 
-    bool clipToProject = getInternalNode()->isClipToProjectEnabled();
+    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
     RectD clippedRod;
 
-    if (clipToProject) {
-        RectD projectFormatCanonical;
-        _imp->getProjectFormatCanonical(projectFormatCanonical);
-        rod.intersect(projectFormatCanonical, &clippedRod);
+    if (clipToFormat) {
+        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
     } else {
         clippedRod = rod;
     }
@@ -988,7 +982,8 @@ ViewerGL::getExactImageRectangleDisplayed(const RectD & rod,
 }
 
 RectI
-ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
+ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
+                                                      const RectD & rod,
                                                       const double par,
                                                       unsigned int mipMapLevel,
                                                       std::vector<RectI>* tiles,
@@ -996,13 +991,11 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
                                                       int *viewerTileSize,
                                                       RectI* roiNotRounded)
 {
-    bool clipToProject = getInternalNode()->isClipToProjectEnabled();
+    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
     RectD clippedRod;
 
-    if (clipToProject) {
-        RectD projectFormatCanonical;
-        _imp->getProjectFormatCanonical(projectFormatCanonical);
-        rod.intersect(projectFormatCanonical, &clippedRod);
+    if (clipToFormat) {
+        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
     } else {
         clippedRod = rod;
     }
@@ -1141,6 +1134,37 @@ ViewerGL::isViewerUIVisible() const
 }
 
 void
+ViewerGL::refreshFormatFromMetadata()
+{
+    ViewerInstancePtr internalViewerNode = getInternalNode()->getInternalViewerNode();
+    if (!internalViewerNode) {
+        return;
+    }
+
+    Format format;
+    getViewerTab()->getGui()->getApp()->getProject()->getProjectDefaultFormat(&format);
+    RectD canonicalFormat = format.toCanonicalFormat();
+
+    for (int i = 0; i < 2; ++i) {
+
+        EffectInstancePtr input = internalViewerNode->getInput(i);
+        if (!input) {
+            getViewerTab()->setInfoBarAndViewerResolution(format, canonicalFormat, format.getPixelAspectRatio(), i);
+        } else {
+            RectI inputFormat = input->getOutputFormat();
+            RectD inputCanonicalFormat;
+            double inputPar = input->getAspectRatio(-1);
+            inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
+
+            getViewerTab()->setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
+
+        }
+        
+    }
+
+}
+
+void
 ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                                         const boost::shared_ptr<Texture>& texture,
                                         const ImagePtr& image,
@@ -1196,12 +1220,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
 
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
-            RectI pixelRoD;
-            image->getRoD().toPixelEnclosing(0, image->getPixelAspectRatio(), &pixelRoD);
-            {
-                QMutexLocker k(&_imp->projectFormatMutex);
-                _imp->displayTextures[textureIndex].format = Format( _imp->projectFormat, image->getPixelAspectRatio() );
-            }
             {
                 QMutexLocker k(&_imp->lastRenderedImageMutex);
                 _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] = image;
@@ -1868,8 +1886,8 @@ ViewerGL::updateColorPicker(int textureIndex,
                 (*it)->hideViewerCursor();
             }
         }
-        if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
+        if ( _imp->infoViewer[textureIndex]->colorVisible() ) {
+            _imp->infoViewer[textureIndex]->hideColorInfo();
         }
         if (textureIndex == 0) {
             setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
@@ -1920,8 +1938,7 @@ ViewerGL::updateColorPicker(int textureIndex,
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
     RectD rod = getRoD(textureIndex);
-    RectD projectCanonical;
-    _imp->getProjectFormatCanonical(projectCanonical);
+    RectD formatCanonical = getCanonicalFormat(textureIndex);
     unsigned int mmLevel;
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
          ( imgPosCanonical.x() < rod.right() ) &&
@@ -1930,12 +1947,12 @@ ViewerGL::updateColorPicker(int textureIndex,
         if ( (pos.x() >= 0) && ( pos.x() < width() ) &&
              (pos.y() >= 0) && ( pos.y() < height() ) ) {
             ///if the clip to project format is enabled, make sure it is in the project format too
-            bool clipping = viewerNode->isClipToProjectEnabled();
+            bool clipping = viewerNode->isClipToFormatEnabled();
             if ( !clipping ||
-                 ( ( imgPosCanonical.x() >= projectCanonical.left() ) &&
-                   ( imgPosCanonical.x() < projectCanonical.right() ) &&
-                   ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
-                   ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
+                 ( ( imgPosCanonical.x() >= formatCanonical.left() ) &&
+                   ( imgPosCanonical.x() < formatCanonical.right() ) &&
+                   ( imgPosCanonical.y() >= formatCanonical.bottom() ) &&
+                   ( imgPosCanonical.y() < formatCanonical.top() ) ) ) {
                 //imgPos must be in canonical coordinates
                 picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a, &mmLevel);
             }
@@ -1949,8 +1966,8 @@ ViewerGL::updateColorPicker(int textureIndex,
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
-        if ( !_imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
+        if ( !_imp->infoViewer[textureIndex]->colorVisible() ) {
+            _imp->infoViewer[textureIndex]->showColorInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
 
@@ -2005,7 +2022,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
         return false;
     }
     RectI roiNotRounded;
-    RectI roi = getImageRectangleDisplayedRoundedToTileSize(_imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0, 0, 0, &roiNotRounded);
+    RectI roi = getImageRectangleDisplayedRoundedToTileSize(texIndex, _imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0, 0, 0, &roiNotRounded);
     const RectI& currentTexRoi = _imp->displayTextures[texIndex].texture->getTextureRect();
     if (!currentTexRoi.contains(roi)) {
         return false;
@@ -2183,29 +2200,22 @@ ViewerGL::zoomViewport(double newZoomFactor)
     checkIfViewPortRoIValidOrRender();
 }
 
+
 void
 ViewerGL::fitImageToFormat()
 {
-    if (_imp->viewerTab && _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->isDuringPainting()) {
-        fitImageToFormat(false);
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->getApp()->isDuringPainting()) {
+        return;
     }
-}
 
-void
-ViewerGL::fitImageToFormat(bool useProjectFormat)
-{
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     // size in Canonical = Zoom coordinates !
     double w, h;
-    const RectD& tex0RoD = _imp->displayTextures[0].rod;
-    if (!tex0RoD.isNull() && !tex0RoD.isInfinite() && !useProjectFormat) {
-        w = tex0RoD.width();
-        h = tex0RoD.height();
-    } else {
-        h = _imp->projectFormat.height();
-        w = _imp->projectFormat.width() * _imp->projectFormat.getPixelAspectRatio();
-    }
+    const RectD& tex0Format = _imp->displayTextures[0].format;
+    assert(!tex0Format.isNull());
+    w = tex0Format.width();
+    h = tex0Format.height();
 
     assert(h > 0. && w > 0.);
 
@@ -2271,10 +2281,7 @@ ViewerGL::disconnectViewer()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( displayingImage() ) {
         Format f;
-        {
-            QMutexLocker k(&_imp->projectFormatMutex);
-            f = _imp->projectFormat;
-        }
+        getViewerTab()->getGui()->getApp()->getProject()->getProjectDefaultFormat(&f);
         RectD canonicalFormat = f.toCanonicalFormat();
         for (int i = 0; i < 2; ++i) {
             setRegionOfDefinition(canonicalFormat, f.getPixelAspectRatio(), i);
@@ -2296,13 +2303,19 @@ ViewerGL::getRoD(int textureIndex) const
 
 /*The displayWindow of the currentFrame(Resolution)
    This is the same for both as we only use the display window as to indicate the project window.*/
-Format
-ViewerGL::getDisplayWindow() const
+RectD
+ViewerGL::getCanonicalFormat(int texIndex) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->displayTextures[0].format;
+    return _imp->displayTextures[texIndex].format;
+}
+
+double
+ViewerGL::getPAR(int texIndex) const
+{
+    return _imp->displayTextures[texIndex].pixelAspectRatio;
 }
 
 void
@@ -2343,50 +2356,19 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
 }
 
 void
-ViewerGL::onProjectFormatChangedInternal(const Format & format,
-                                         bool triggerRender)
+ViewerGL::setFormat(const std::string& formatName, const RectD& format, double par, int textureIndex)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    RectD canonicalFormat = format.toCanonicalFormat();
 
-    for (int i = 0; i < 2; ++i) {
-        if (_imp->infoViewer[i]) {
-            _imp->infoViewer[i]->setResolution(format);
-            if (!_imp->displayTextures[i].isVisible) {
-                _imp->displayTextures[i].rod = canonicalFormat;
-            }
-        }
-    }
-    {
-        QMutexLocker k(&_imp->projectFormatMutex);
-        _imp->projectFormat = format;
-    }
-    _imp->currentViewerInfo_resolutionOverlay.clear();
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( format.width() ) );
-    _imp->currentViewerInfo_resolutionOverlay.append( QLatin1Char('x') );
-    _imp->currentViewerInfo_resolutionOverlay.append( QString::number( format.height() ) );
+    _imp->displayTextures[textureIndex].format = format;
+    _imp->displayTextures[textureIndex].pixelAspectRatio = par;
 
-    bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
-    if (!loadingProject && triggerRender) {
-        fitImageToFormat(true);
-    }
-
-    if (!loadingProject) {
-        update();
-    }
-} // ViewerGL::onProjectFormatChangedInternal
-
-void
-ViewerGL::onProjectFormatChanged(const Format & format)
-{
-    onProjectFormatChangedInternal(format, true);
+    _imp->currentViewerInfo_resolutionOverlay[textureIndex] = QString::fromUtf8(formatName.c_str());
 }
-
 
 /*display black in the viewer*/
 void
@@ -2434,15 +2416,27 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
 }
 
 void
+ViewerGL::enterEvent(QEvent* e)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->infoViewer[0]->showMouseInfo();
+    _imp->infoViewer[1]->showMouseInfo();
+    QGLWidget::enterEvent(e);
+}
+
+void
 ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if (_imp->pickerState == ePickerStateInactive) {
-        _imp->infoViewer[0]->hideColorAndMouseInfo();
-        _imp->infoViewer[1]->hideColorAndMouseInfo();
+        _imp->infoViewer[0]->hideColorInfo();
+        _imp->infoViewer[1]->hideColorInfo();
         setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
     }
+    _imp->infoViewer[0]->hideMouseInfo();
+    _imp->infoViewer[1]->hideMouseInfo();
     QGLWidget::leaveEvent(e);
 }
 
@@ -2811,8 +2805,8 @@ ViewerGL::pickColorInternal(double x,
             }
             _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
             _imp->infoViewer[i]->setColorValid(true);
-            if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->showColorAndMouseInfo();
+            if ( !_imp->infoViewer[i]->colorVisible() ) {
+                _imp->infoViewer[i]->showColorInfo();
             }
             _imp->infoViewer[i]->setColor(r, g, b, a);
             ret = true;
@@ -2857,13 +2851,13 @@ void
 ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const QPoint & widgetPos)
 {
-    Format dispW = getDisplayWindow();
-    RectD canonicalDispW = dispW.toCanonicalFormat();
     bool isDrawing = _imp->viewerTab->getGui()->getApp()->isDuringPainting();
+
 
     if (!isDrawing) {
         for (int i = 0; i < 2; ++i) {
             const RectD& rod = getRoD(i);
+            RectD canonicalDispW = getCanonicalFormat(i);
             updateInfoWidgetColorPickerInternal(imgPos, widgetPos, width(), height(), rod, canonicalDispW, i);
         }
     }
@@ -2893,13 +2887,13 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
          ( widgetPos.x() >= 0) && ( widgetPos.x() < width) &&
          ( widgetPos.y() >= 0) && ( widgetPos.y() < height) ) {
         ///if the clip to project format is enabled, make sure it is in the project format too
-        if ( viewerNode->isClipToProjectEnabled() &&
+        if ( viewerNode->isClipToFormatEnabled() &&
              ( ( imgPos.x() < dispW.left() ) ||
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
-                     _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+                 if ( _imp->infoViewer[texIndex]->colorVisible() && _imp->pickerState == ePickerStateInactive) {
+                     _imp->infoViewer[texIndex]->hideColorInfo();
                  }
                  for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
                      if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
@@ -2915,8 +2909,8 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                      updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
                 // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
-                if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
-                    _imp->infoViewer[texIndex]->showColorAndMouseInfo();
+                if ( !_imp->infoViewer[texIndex]->colorVisible() ) {
+                    _imp->infoViewer[texIndex]->showColorInfo();
                 }
                 // Show the picker on parametric params without updating the color value
                 if (texIndex == 0) {
@@ -2926,15 +2920,10 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 ///unkwn state
                 assert(false);
             }
-            double par = _imp->displayTextures[texIndex].format.getPixelAspectRatio();
-            QPoint imgPosPixel;
-            imgPosPixel.rx() = std::floor(imgPos.x() / par);
-            imgPosPixel.ry() = std::floor( imgPos.y() );
-            _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
-        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
-            _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+        if ( _imp->infoViewer[texIndex]->colorVisible() && _imp->pickerState == ePickerStateInactive) {
+            _imp->infoViewer[texIndex]->hideColorInfo();
         }
         for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
             if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
@@ -2945,6 +2934,15 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
             setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
+
+    double par = _imp->displayTextures[texIndex].pixelAspectRatio;
+    QPoint imgPosPixel;
+    imgPosPixel.rx() = std::floor(imgPos.x() / par);
+    imgPosPixel.ry() = std::floor( imgPos.y() );
+    _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
+    //if ( !_imp->infoViewer[texIndex]->mouseVisible() ) { // done in enterEvent
+    //    _imp->infoViewer[texIndex]->showMouseInfo();
+    //}
 } // ViewerGL::updateInfoWidgetColorPickerInternal
 
 void
@@ -2983,8 +2981,8 @@ ViewerGL::updateRectangleColorPickerInternal()
                 _imp->viewerTab->getGui()->setColorPickersColor(r, g, b, a);
             }
             _imp->infoViewer[i]->setColorValid(true);
-            if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->showColorAndMouseInfo();
+            if ( !_imp->infoViewer[i]->colorVisible() ) {
+                _imp->infoViewer[i]->showColorInfo();
             }
             _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);

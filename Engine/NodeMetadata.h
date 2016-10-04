@@ -95,6 +95,10 @@ public:
 
     const ImageComponents& getImageComponents(int inputNb) const;
 
+    void setOutputFormat(const RectI& format);
+
+    const RectI& getOutputFormat() const;
+
 private:
 
     boost::scoped_ptr<NodeMetadataPrivate> _imp;

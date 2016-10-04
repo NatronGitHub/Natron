@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "NodeMetadata.h"
-
+#include "Engine/RectI.h"
 #include <cassert>
 #include <vector>
 
@@ -66,6 +66,9 @@ struct NodeMetadataPrivate
     //True if the effect changes throughout the time
     bool isFrameVarying;
 
+    // The output format in pixel coords
+    RectI outputFormat;
+
 
     NodeMetadataPrivate()
         : outputPremult(eImagePremultiplicationPremultiplied)
@@ -75,6 +78,7 @@ struct NodeMetadataPrivate
         , inputsData()
         , canRenderAtNonframes(true)
         , isFrameVarying(false)
+        , outputFormat()
     {
     }
 
@@ -92,6 +96,7 @@ struct NodeMetadataPrivate
         inputsData = other.inputsData;
         canRenderAtNonframes = other.canRenderAtNonframes;
         isFrameVarying = other.isFrameVarying;
+        outputFormat = other.outputFormat;
     }
 };
 
@@ -149,6 +154,9 @@ NodeMetadata::operator==(const NodeMetadata& other) const
         return false;
     }
     if ( _imp->inputsData.size() != other._imp->inputsData.size() ) {
+        return false;
+    }
+    if (_imp->outputFormat != other._imp->outputFormat) {
         return false;
     }
     for (std::size_t i = 0; i < _imp->inputsData.size(); ++i) {
@@ -296,6 +304,18 @@ NodeMetadata::getImageComponents(int inputNb) const
 
         return _imp->inputsData[inputNb].components;
     }
+}
+
+void
+NodeMetadata::setOutputFormat(const RectI& format)
+{
+    _imp->outputFormat = format;
+}
+
+const RectI&
+NodeMetadata::getOutputFormat() const
+{
+    return _imp->outputFormat;
 }
 
 NATRON_NAMESPACE_EXIT;

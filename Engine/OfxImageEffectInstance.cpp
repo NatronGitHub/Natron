@@ -271,7 +271,7 @@ OfxImageEffectInstance::getProjectSize(double & xSize,
 {
     Format f;
 
-    _ofxEffectInstance.lock()->getRenderFormat(&f);
+    _ofxEffectInstance.lock()->getApp()->getProject()->getProjectDefaultFormat(&f);
     RectI pixelF;
     pixelF.x1 = f.x1;
     pixelF.x2 = f.x2;
@@ -294,7 +294,7 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
 {
     Format f;
 
-    _ofxEffectInstance.lock()->getRenderFormat(&f);
+    _ofxEffectInstance.lock()->getApp()->getProject()->getProjectDefaultFormat(&f);
     RectI pixelF;
     pixelF.x1 = f.x1;
     pixelF.x2 = f.x2;
@@ -317,7 +317,7 @@ OfxImageEffectInstance::getProjectExtent(double & xSize,
 {
     Format f;
 
-    _ofxEffectInstance.lock()->getRenderFormat(&f);
+    _ofxEffectInstance.lock()->getApp()->getProject()->getProjectDefaultFormat(&f);
     RectI pixelF;
     pixelF.x1 = f.x1;
     pixelF.x2 = f.x2;
@@ -335,7 +335,7 @@ OfxImageEffectInstance::getProjectPixelAspectRatio() const
 {
     assert( _ofxEffectInstance.lock() );
     Format f;
-    _ofxEffectInstance.lock()->getRenderFormat(&f);
+    _ofxEffectInstance.lock()->getApp()->getProject()->getProjectDefaultFormat(&f);
 
     return f.getPixelAspectRatio();
 }
@@ -593,7 +593,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
         if (stat == kOfxStatFailed) {
             throw std::runtime_error("The parameter failed to create curves from their default\n"
-                                     "initialized by the plugin.");
+                                     "initialized by the plug-in.");
         }
         ret->onCurvesDefaultInitialized();
 
@@ -1095,6 +1095,7 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         { kOfxImageClipPropFieldOrder,           OFX::Host::Property::eString,  1, false,  "" },
         { kOfxImageClipPropContinuousSamples,    OFX::Host::Property::eInt,     1, false,  "0" },
         { kOfxImageEffectFrameVarying,           OFX::Host::Property::eInt,     1, false,  "0" },
+        { kOfxImageClipPropFormat,             OFX::Host::Property::eInt,     4, false,  "0" },
         OFX::Host::Property::propSpecEnd
     };
 
@@ -1113,6 +1114,9 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
     outArgs.setStringProperty( kOfxImageClipPropFieldOrder, OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ) );
     outArgs.setIntProperty( kOfxImageClipPropContinuousSamples, metadata.getIsContinuous() );
     outArgs.setIntProperty( kOfxImageEffectFrameVarying, metadata.getIsFrameVarying() );
+
+    const RectI& outputFormat = metadata.getOutputFormat();
+    outArgs.setIntPropertyN( kOfxImageClipPropFormat, (const int*)&outputFormat.x1, 4);
 
     /// now add the clip gubbins to the out args
     for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
@@ -1227,6 +1231,14 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
         defaultPrefs.setOutputPremult( OfxClipInstance::ofxPremultToNatronPremult( outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication) ) );
         defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
         defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
+        int formatV[4];
+        outArgs.getIntPropertyN(kOfxImageClipPropFormat, formatV, 4);
+        RectI format;
+        format.x1 = formatV[0];
+        format.y1 = formatV[1];
+        format.x2 = formatV[2];
+        format.y2 = formatV[3];
+        defaultPrefs.setOutputFormat(format);
 
 #       ifdef OFX_DEBUG_ACTIONS
         std::cout << outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate) << ","
