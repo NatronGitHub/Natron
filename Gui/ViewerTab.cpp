@@ -254,8 +254,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->clipToProjectFormatButton->setFixedSize(buttonSize);
     _imp->clipToProjectFormatButton->setIconSize(buttonIconSize);
     _imp->clipToProjectFormatButton->setCheckable(true);
-    _imp->clipToProjectFormatButton->setChecked(false);
-    _imp->clipToProjectFormatButton->setDown(false);
+    _imp->clipToProjectFormatButton->setChecked(true);
+    _imp->clipToProjectFormatButton->setDown(true);
     _imp->firstRowLayout->addWidget(_imp->clipToProjectFormatButton);
 
     _imp->fullFrameProcessingButton = new Button(_imp->firstSettingsRow);
