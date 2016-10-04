@@ -176,8 +176,6 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    void setInfoBarResolution(const Format & f);
-
     /**
      * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
      **/
@@ -450,6 +448,8 @@ public Q_SLOTS:
     void toggleTripleSync(bool toggled);
 
 private:
+
+    void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
 
     void abortViewersAndRefresh();
 

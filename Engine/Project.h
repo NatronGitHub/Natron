@@ -154,7 +154,7 @@ public:
 
     void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
-    std::string getFormatNameFromRect(const RectI& rect, double par) const;
+    bool getFormatNameFromRect(const RectI& rect, double par, std::string* name) const;
 
     void getAdditionalFormats(std::list<Format> *formats) const;
 

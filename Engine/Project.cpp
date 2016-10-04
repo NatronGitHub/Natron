@@ -1174,8 +1174,8 @@ Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
     *currentValue = _imp->formatKnob->getValue();
 }
 
-std::string
-Project::getFormatNameFromRect(const RectI& rect, double par) const
+bool
+Project::getFormatNameFromRect(const RectI& rect, double par, std::string* name) const
 {
     // First try to find the format in the project formats, they have a good chance to be named
     bool foundFormat = false;
@@ -1200,27 +1200,11 @@ Project::getFormatNameFromRect(const RectI& rect, double par) const
             }
         }
     }
-    std::string initialName;
+    name->clear();
     if (foundFormat) {
-        initialName = f.getName();
-    } else {
-        f.set(rect);
-        f.setPixelAspectRatio(par);
+        *name = f.getName();
     }
-    if (!initialName.empty()) {
-        return initialName;
-    } else {
-        // Format name was empty, too bad, make up one
-        std::stringstream ss;
-        ss << f.width();
-        ss << 'x';
-        ss << f.height();
-        if (f.getPixelAspectRatio() != 1.) {
-            ss << ':';
-            ss << f.getPixelAspectRatio();
-        }
-        return ss.str();
-    }
+    return !name->empty();
 }
 
 int

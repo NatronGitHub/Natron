@@ -58,7 +58,7 @@ public:
     bool colorVisible();
     bool mouseVisible();
 
-    void setResolution(const RectI & f);
+    void setResolution(const QString& name);
 
     void setDataWindow(const RectI & r); // in pixel coordinates
 
@@ -68,7 +68,6 @@ public:
 
     void setMousePos(QPoint p);
 
-    static void removeTrailingZeroes(QString& str);
 
 public Q_SLOTS:
 
@@ -96,7 +95,6 @@ private:
     Label* descriptionLabel;
     Label* imageFormat;
     Label* resolution;
-    Format format;
     Label* coordDispWindow;
     Label* coordMouse;
     Label* rgbaValues;

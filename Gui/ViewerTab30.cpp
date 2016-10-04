@@ -347,13 +347,6 @@ ViewerTab::onRenderScaleButtonClicked(bool checked)
     onRenderScaleComboIndexChanged( _imp->renderScaleCombo->activeIndex() );
 }
 
-void
-ViewerTab::setInfoBarResolution(const Format & f)
-{
-    _imp->infoWidget[0]->setResolution(f);
-    _imp->infoWidget[1]->setResolution(f);
-}
-
 #if 0
 void
 ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
@@ -1140,6 +1133,41 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     onSpinboxFpsChangedInternal( _imp->fpsBox->value() );
 }
 
+static std::string makeUpFormatName(const RectI& format, double par)
+{
+    // Format name was empty, too bad, make up one
+    std::stringstream ss;
+    ss << format.width();
+    ss << 'x';
+    ss << format.height();
+    if (par != 1.) {
+        ss << ':';
+        ss << QString::number(par, 'f', 2).toStdString();
+    }
+    return ss.str();
+}
+
+void
+ViewerTab::setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex)
+{
+    std::string formatName, infoBarName;
+    if (!getGui()->getApp()->getProject()->getFormatNameFromRect(rect, par, &formatName)) {
+        formatName = makeUpFormatName(rect, par);
+        infoBarName = formatName;
+    } else {
+        // If the format has a name, for the info bar also add the resolution
+        std::stringstream ss;
+        ss << formatName;
+        ss << ' ';
+        ss << rect.width();
+        ss << 'x';
+        ss << rect.height();
+        infoBarName = ss.str();
+    }
+    _imp->infoWidget[texIndex]->setResolution(QString::fromUtf8(infoBarName.c_str()));
+    _imp->viewer->setFormat(formatName, canonicalRect, par, texIndex);
+}
+
 void
 ViewerTab::onClipPreferencesChanged()
 {
@@ -1160,19 +1188,15 @@ ViewerTab::onClipPreferencesChanged()
             input = _imp->viewerNode->getInput(activeInputs[i]);
         }
         if (!input) {
-            _imp->infoWidget[i]->setResolution(format);
-
-            std::string formatName = getGui()->getApp()->getProject()->getFormatNameFromRect(format, format.getPixelAspectRatio());
-            _imp->viewer->setFormat(formatName, canonicalFormat, format.getPixelAspectRatio(), i);
+            setInfoBarAndViewerResolution(format, canonicalFormat, format.getPixelAspectRatio(), i);
         } else {
             RectI inputFormat = input->getOutputFormat();
             RectD inputCanonicalFormat;
             double inputPar = input->getAspectRatio(-1);
-            _imp->infoWidget[i]->setResolution(inputFormat);
             inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
 
-            std::string formatName = getGui()->getApp()->getProject()->getFormatNameFromRect(inputFormat, inputPar);
-            _imp->viewer->setFormat(formatName, inputCanonicalFormat, inputPar, i);
+            setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
+
         }
 
     }

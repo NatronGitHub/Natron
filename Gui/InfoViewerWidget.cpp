@@ -70,8 +70,8 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
                              "<br />"
                              "<font color=orange>Input:</font> Specifies whether the information are for the input <b>A</b> or <b>B</b><br />"
                              "<font color=orange>Image format:</font>  An identifier for the pixel components and bitdepth of the displayed image<br />"
-                             "<font color=orange>Format:</font>  The resolution of the project's format<br />"
-                             "<font color=orange>RoD:</font>  The region of definition of the displayed image<br />"
+                             "<font color=orange>Format:</font>  The resolution of the input (where the image is displayed)<br />"
+                             "<font color=orange>RoD:</font>  The region of definition of the displayed image (where the data is defined)<br />"
                              "<font color=orange>Fps:</font>  (Only active during playback) The frame-rate of the play-back sustained by the viewer<br />"
                              "<font color=orange>Coordinates:</font>  The coordinates of the current mouse location<br />"
                              "<font color=orange>RGBA:</font>  The RGBA color of the displayed image. Note that if some <b>?</b> are set instead of colors "
@@ -110,7 +110,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     resolution = new Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
-        int width = fm.width( QString::fromUtf8("00000x00000") );
+        int width = fm.width( QString::fromUtf8("2K_Super_35(full-ap) 00000x00000:0.00") );
         resolution->setMinimumWidth(width);
     }
 
@@ -385,56 +385,19 @@ InfoViewerWidget::setMousePos(QPoint p)
     coordMouse->setText(coord);
 }
 
-void
-InfoViewerWidget::removeTrailingZeroes(QString& str)
-{
-    int dot = str.lastIndexOf( QLatin1Char('.') );
-
-    if (dot != -1) {
-        int i = str.size() - 1;
-        while (i > dot) {
-            if ( str[i] == QLatin1Char('0') ) {
-                --i;
-            } else {
-                break;
-            }
-        }
-        if ( i != (str.size() - 1) ) {
-            str.remove(i, str.size() - i);
-        }
-    }
-}
 
 void
-InfoViewerWidget::setResolution(const RectI & f)
+InfoViewerWidget::setResolution(const QString & f)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    format = f;
-
     const QFont& font = resolution->font();
-    if ( format.getName().empty() ) {
-        QString w, h;
-        w.setNum( format.width() );
-        h.setNum( format.height() );
-        removeTrailingZeroes(w);
-        removeTrailingZeroes(h);
+    QString reso;
+    reso = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%2\" size=%3>%1</font>")
+    .arg(f)
+    .arg( font.family() )
+    .arg( font.pixelSize() );
+    resolution->setText(reso);
 
-        QString reso;
-        reso = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%3\" size=%4>%1x%2</font>")
-               .arg(w)
-               .arg(h)
-               .arg( font.family() )
-               .arg( font.pixelSize() );
-        resolution->setText(reso);
-    } else {
-        QString reso = QString::fromUtf8("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
-                       .arg( font.family() )
-                       .arg( font.pixelSize() );
-        reso.append( QString::fromUtf8( format.getName().c_str() ) );
-        //  reso.append("\t");
-        reso.append( QString::fromUtf8("</font>") );
-        resolution->setText(reso);
-    }
 }
 
 void
