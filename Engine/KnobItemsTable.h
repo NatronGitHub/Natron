@@ -41,11 +41,6 @@
 #include "Serialization/KnobSerialization.h"
 
 /**
- * @brief String passed to setColumn to indicate that a column corresponds to the script-name
- **/
-#define kKnobTableItemColumnScriptName "KnobTableItemColumnScriptName"
-
-/**
  * @brief String passed to setColumn to indicate that a column corresponds to the label
  **/
 #define kKnobTableItemColumnLabel "KnobTableItemColumnLabel"
@@ -55,7 +50,7 @@ NATRON_NAMESPACE_ENTER;
 /**
  * @class A KnobTableItem represents one row in an item view. Each column of the row can be the view of a Knob (or only
  * one of its dimensions). An item is identified by a script-name, and has a label that is the name visible on the Gui.
- * The item view can display the content of the label/script-name by passing kKnobTableItemColumnScriptName or kKnobTableItemColumnLabel
+ * The item view can display the content of the label by passing kKnobTableItemColumnLabel
  * to the columnName parameter of setColumn.
  **/
 struct KnobTableItemPrivate;
@@ -112,7 +107,7 @@ public:
     /**
      * @brief Set the content of a column. 
      * @param columnName If this is the script-name of a knob, then the cell represents the given dimension of the knob.
-     * Otherwise this can be kKnobTableItemColumnScriptName or kKnobTableItemColumnLabel
+     * Otherwise this can be kKnobTableItemColumnLabel to indicate that the column should display the label.
      * @param dimension If set columnName is the script-name of a knob, dimension is the index of the dimension to represent 
      * of the knob in the case it is multi-dimensional. 
      * If dimension is -1, the column should represent all dimensions (Currently -1 is only supported for KnobColor)
@@ -124,6 +119,26 @@ public:
     KnobIPtr getColumnKnob(int col, int *dimensionIndex) const;
 
     std::string getColumnName(int col) const;
+    
+    /**
+     * @brief If a column was set to display the label with setColum, then this function will return the column
+     * passed to setColumn, otherwise it returns -1
+     **/
+    int getLabelColumnIndex() const;
+    
+    /**
+     * @brief If a column was set to display the content 
+     * of the given dimension of the given knob,
+     * then this function will return the column
+     * passed to setColumn, otherwise it returns -1.
+     **/
+    int getKnobColumnIndex(const KnobIPtr& knob, int dimension) const;
+    
+    /**
+     * @brief Returns the row index of the item in the model. Note that the item
+     * MUST be in the model, otherwise this function returns -1
+     **/
+    int getItemRow() const;
 
     /**
      * @brief Serialization support

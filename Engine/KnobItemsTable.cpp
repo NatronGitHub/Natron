@@ -86,7 +86,7 @@ struct KnobItemsTablePrivate
     int selectionRecursion;
 
     // track items that were added/removed during the full change of a begin/end selection
-    std::list<KnobTableItemPtr> newItemsInSelection, itemsRemovedFromSelection;
+    std::set<KnobTableItemPtr> newItemsInSelection, itemsRemovedFromSelection;
 
     // List of knobs on the holder which controls each knob with the same script-name on each item in the table
     std::list<KnobIWPtr> perItemMasterKnobs;
@@ -133,19 +133,24 @@ struct KnobItemsTablePrivate
 
     void addToSelectionList(const KnobTableItemPtr& item)
     {
-        if ( std::find(selectedItems.begin(), selectedItems.end(), item) != selectedItems.end() ) {
-            return;
+        // If the item is already in items removed from the selection, remove it from the other list
+        std::set<KnobTableItemPtr>::iterator found = itemsRemovedFromSelection.find(item);
+        if (found != itemsRemovedFromSelection.end() ) {
+            itemsRemovedFromSelection.erase(found);
         }
-        selectedItems.push_back(item);
-        newItemsInSelection.push_back(item);
+        newItemsInSelection.insert(item);
     }
 
     void removeFromSelectionList(const KnobTableItemPtr& item)
     {
-
-        {
-            itemsRemovedFromSelection.push_back(item);
+        // If the item is already in items added to the selection, remove it from the other list
+        std::set<KnobTableItemPtr>::iterator found = newItemsInSelection.find(item);
+        if (found != newItemsInSelection.end() ) {
+            newItemsInSelection.erase(found);
         }
+        
+        itemsRemovedFromSelection.insert(item);
+        
     }
 
     void linkItemKnobsToGuiKnobs(const KnobTableItemPtr& markers, bool multipleItemsSelected, bool slave);
@@ -587,7 +592,7 @@ KnobTableItem::setColumn(int col, const std::string& columnName, int dimension)
     if (col < 0 || col >= (int)_imp->columns.size()) {
         return;
     }
-    if (columnName != kKnobTableItemColumnLabel && columnName != kKnobTableItemColumnScriptName) {
+    if (columnName != kKnobTableItemColumnLabel) {
         _imp->columns[col].knob = getKnobByName(columnName);
         assert(_imp->columns[col].knob.lock());
     }
@@ -614,6 +619,58 @@ KnobTableItem::getColumnName(int col) const
         return std::string();
     }
     return  _imp->columns[col].columnName;
+}
+
+int
+KnobTableItem::getLabelColumnIndex() const
+{
+    QMutexLocker k(&_imp->lock);
+    for (std::size_t i = 0; i < _imp->columns.size(); ++i) {
+        if (_imp->columns[i].columnName == kKnobTableItemColumnLabel) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int
+KnobTableItem::getKnobColumnIndex(const KnobIPtr& knob, int dimension) const
+{
+    QMutexLocker k(&_imp->lock);
+    for (std::size_t i = 0; i < _imp->columns.size(); ++i) {
+        if (_imp->columns[i].knob.lock() == knob && (_imp->columns[i].dimensionIndex == -1 || _imp->columns[i].dimensionIndex == dimension)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int
+KnobTableItem::getItemRow() const
+{
+    int indexInParent = getIndexInParent();
+    
+    // If this fails here, that means the item is not yet in the model.
+    if (indexInParent != -1) {
+        return indexInParent;
+    
+    int rowI = indexInParent;
+    KnobTableItemPtr parent = getParent();
+    while (parent) {
+        indexInParent = parent->getIndexInParent();
+        parent = parent->getParent();
+        rowI += indexInParent;
+        
+        // Add one because the parent itself counts, here is a simple example:
+        //
+        //  Item1                       --> row 0
+        //      ChildLevel1             --> row 1
+        //          ChildLevel2         --> row 2
+        //              ChildLevel3_1   --> row 3
+        //              ChildLevel3_2   --> row 4
+        rowI += 1;
+    }
+    return rowI;
 }
 
 void
@@ -955,29 +1012,28 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
         if ( _imp->itemsRemovedFromSelection.empty() && _imp->newItemsInSelection.empty() ) {
             return;
         }
-        itemsAdded = _imp->newItemsInSelection;
-        itemsRemoved = _imp->itemsRemovedFromSelection;
-
 
         ++_imp->selectionRecursion;
 
         // Remove from selection and unslave from master knobs
-        for (std::list<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
             std::list<KnobTableItemWPtr>::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), *it);
             if ( found == _imp->selectedItems.end() ) {
                 // Not in selection
                 continue;
             }
+            itemsRemoved.push_back(*it);
             _imp->selectedItems.erase(found);
         }
 
         // Add to selection and slave to master knobs
-        for (std::list<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
             std::list<KnobTableItemWPtr>::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), *it);
             if ( found != _imp->selectedItems.end() ) {
-                // Alread in selection
+                // Already in selection
                 continue;
             }
+            itemsAdded.push_back(*it);
             _imp->selectedItems.push_back(*it);
         }
 
@@ -988,10 +1044,10 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
         bool selectionEmpty = _imp->selectedItems.empty();
 
 
-        for (std::list<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
             _imp->linkItemKnobsToGuiKnobs(*it, selectionIsDirty, true);
         }
-        for (std::list<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
             _imp->linkItemKnobsToGuiKnobs(*it, selectionIsDirty, false);
         }
 

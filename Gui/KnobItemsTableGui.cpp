@@ -34,11 +34,13 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelection>
+#include <QItemSelectionModel>
 #include <QMouseEvent>
 #include <QMimeData>
 #include <QUndoCommand>
 #include <QClipboard>
 
+#include "Engine/Utils.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -70,12 +72,33 @@ struct ModelItem {
     // The internal item in Engine
     KnobTableItemWPtr internalItem;
 
-    std::vector<TableItem*> columnItems;
-
-
+    struct ColumnData
+    {
+        TableItem* item;
+        KnobIWPtr knob;
+        int knobDimension;
+        
+        ColumnData()
+        : item(0)
+        , knob()
+        , knobDimension(-1)
+        {
+            
+        }
+    };
+    std::vector<ColumnData> columnItems;
+    
+    // If the item wants to display its label in a column, here it is
+    int labelColIndex;
+    
+    // If the item wants to display the scriptname in a column here it is
+    int scriptNameColIndex;
+    
     ModelItem()
     : internalItem()
     , columnItems()
+    , labelColIndex(-1)
+    , scriptNameColIndex(-1)
     {
 
     }
@@ -96,6 +119,9 @@ struct KnobItemsTableGuiPrivate
     ModelItemsVec items;
 
     std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
+    
+    // Prevent recursion from selectionChanged signal of QItemSelectionModel
+    int selectingModelRecursion;
 
     KnobItemsTableGuiPrivate(KnobItemsTableGui* publicInterface, DockablePanel* panel, const KnobItemsTablePtr& table)
     : _publicInterface(publicInterface)
@@ -105,6 +131,8 @@ struct KnobItemsTableGuiPrivate
     , tableView(0)
     , itemEditorFactory()
     , items()
+    , knobsMapping()
+    , selectingModelRecursion(0)
     {
     }
 
@@ -120,7 +148,7 @@ struct KnobItemsTableGuiPrivate
     ModelItemsVec::iterator findItem(const TableItem* item) {
         for (ModelItemsVec::iterator it = items.begin(); it!=items.end(); ++it) {
             for (std::size_t i = 0; i < it->columnItems.size(); ++i) {
-                if (it->columnItems[i] == item) {
+                if (it->columnItems[i].item == item) {
                     return it;
                 }
             }
@@ -129,76 +157,91 @@ struct KnobItemsTableGuiPrivate
     }
 
     void showItemMenu(TableItem* item, const QPoint & globalPos);
+    
+    bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col);
 
     void createCustomWidgetRecursively(const KnobTableItemPtr& item);
+    
+    void selectionFromIndexList(const QModelIndexList& indexes, std::list<KnobTableItemPtr>* items);
+    
+    void selectionToItems(const QItemSelection& selection, std::list<KnobTableItemPtr>* items);
+    
+    void itemsToSelection(const std::list<KnobTableItemPtr>& items, QItemSelection* selection);
 
+    void createTableItems(const KnobTableItemPtr& item);
 };
+
+bool
+KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col)
+{
+    int dim;
+    KnobIPtr knob = item->getColumnKnob(col, &dim);
+    if (!knob) {
+        return false;
+    }
+    
+    // For these kind of knobs, create a knob GUI. For all others, the default line-edit provided by the view is enough to display numbers/strings
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
+    KnobButtonPtr isButton = toKnobButton(knob);
+    KnobBoolPtr isBoolean = toKnobBool(knob);
+    
+    // Create a KnobGui just for these kinds of parameters, for all others, use default interface
+    if (!isChoice && (!isColor || dim != -1) && !isButton && !isBoolean) {
+        return false;
+    }
+    
+    // Look for any existing KnobGui and destroy it
+    {
+        std::map<KnobIWPtr, KnobGuiPtr>::iterator found = knobsMapping.find(knob);
+        if (found != knobsMapping.end()) {
+            found->second->removeGui();
+            knobsMapping.erase(found);
+        }
+    }
+    
+    
+    // Create the Knob Gui
+    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, _publicInterface) );
+    if (!ret) {
+        assert(false);
+        return false;
+    }
+    ret->initialize();
+    knobsMapping.insert(std::make_pair(knob, ret));
+    
+    QWidget* rowContainer = new QWidget;
+    QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
+    std::vector<KnobIPtr> knobsOnSameLine;
+    ret->createGUI(rowContainer, 0 /*labelContainer*/, 0 /*label*/, 0 /*warningIndicator*/, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
+    
+    
+    // Set the widget
+    {
+        ModelItemsVec::iterator foundItem = findItem(item);
+        assert((int)foundItem->columnItems.size() == tableModel->columnCount());
+        tableView->setCellWidget(foundItem->columnItems[col].item->row(), col, rowContainer);
+    }
+    
+    // We must call this otherwise this is never called by Qt for custom widgets in an item view (this is a Qt bug)
+    KnobGuiChoice* isChoiceGui = dynamic_cast<KnobGuiChoice*>(ret.get());
+    if (isChoiceGui) {
+#pragma message WARN("Check if in Qt5 this hack is still needed")
+        ComboBox* combobox = isChoiceGui->getCombobox();
+        combobox->setProperty("ComboboxColumn", col);
+        QObject::connect(combobox, SIGNAL(minimumSizeChanged(QSize)), _publicInterface, SLOT(onComboBoxMinimumSizeChanged(QSize)));
+        QSize s = combobox->minimumSizeHint();
+        Q_UNUSED(s);
+    }
+    return true;
+} // createItemCustomWidgetAtCol
 
 void
 KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& item)
 {
     int nCols = tableModel->columnCount();
     for (int i = 0; i < nCols; ++i) {
-        int dim;
-        KnobIPtr knob = item->getColumnKnob(i, &dim);
-        if (!knob) {
-            continue;
-        }
-
-        // For these kind of knobs, create a knob GUI. For all others, the default line-edit provided by the view is enough to display numbers/strings
-        KnobChoicePtr isChoice = toKnobChoice(knob);
-        KnobColorPtr isColor = toKnobColor(knob);
-        KnobButtonPtr isButton = toKnobButton(knob);
-        KnobBoolPtr isBoolean = toKnobBool(knob);
-
-        if (isChoice || (isColor && dim == -1) || isButton || isBoolean) {
-
-            // Look for any existing KnobGui and destroy it
-            {
-                std::map<KnobIWPtr, KnobGuiPtr>::iterator found = knobsMapping.find(knob);
-                if (found != knobsMapping.end()) {
-                    found->second->removeGui();
-                    knobsMapping.erase(found);
-                }
-            }
-
-
-            // Create the Knob Gui
-            KnobGuiPtr ret( appPTR->createGuiForKnob(knob, _publicInterface) );
-            if (!ret) {
-                assert(false);
-                return;
-            }
-            ret->initialize();
-            knobsMapping.insert(std::make_pair(knob, ret));
-
-            QWidget* rowContainer = new QWidget;
-            QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
-            std::vector<KnobIPtr> knobsOnSameLine;
-            ret->createGUI(rowContainer, 0 /*labelContainer*/, 0 /*label*/, 0 /*warningIndicator*/, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
-
-
-            // Set the widget
-            {
-                ModelItemsVec::iterator foundItem = findItem(item);
-                assert((int)foundItem->columnItems.size() == nCols);
-                tableView->setCellWidget(foundItem->columnItems[i]->row(), i, rowContainer);
-            }
-
-            // We must call this otherwise this is never called by Qt for custom widgets in an item view (this is a Qt bug)
-            KnobGuiChoice* isChoiceGui = dynamic_cast<KnobGuiChoice*>(ret.get());
-            if (isChoiceGui) {
-#pragma message WARN("Check if in Qt5 this hack is still needed")
-                ComboBox* combobox = isChoiceGui->getCombobox();
-                combobox->setProperty("ComboboxColumn", i);
-                QObject::connect(combobox, SIGNAL(minimumSizeChanged(QSize)), _publicInterface, SLOT(onComboBoxMinimumSizeChanged(QSize)));
-                QSize s = combobox->minimumSizeHint();
-                Q_UNUSED(s);
-            }
-
-
-
-        }
+        createItemCustomWidgetAtCol(item, i);
     }
 
     const std::vector<KnobTableItemPtr>& children = item->getChildren();
@@ -467,6 +510,15 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
         }
     }
 
+    
+    
+    connect(table.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(topLevelItemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelTopLevelItemRemoved( KnobTableItemPtr,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(topLevelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelTopLevelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
+    
+    /*connect(table.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onItemLabelChanged(QString,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(childRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onItemChildRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(childInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(childInserted(int, KnobTableItemPtr,TableChangeReasonEnum)));*/
 } // KnobItemsTableGui::KnobItemsTableGui
 
 KnobItemsTableGui::~KnobItemsTableGui()
@@ -973,7 +1025,7 @@ DragItemsUndoCommand::moveItem(int indexInParent, const KnobTableItemPtr& parent
         parent->insertChild(indexInParent, item, eTableChangeReasonInternal);
         ModelItemsVec::iterator foundParent = _table->findItem(parent);
         if (foundParent != _table->items.end()) {
-            _table->tableView->setExpanded(_table->tableModel->index(foundParent->columnItems[0]), true);
+            _table->tableView->setExpanded(_table->tableModel->index(foundParent->columnItems[0].item), true);
         }
     } else {
         toTable->insertTopLevelItem(indexInParent, item, eTableChangeReasonInternal);
@@ -1462,12 +1514,198 @@ KnobItemsTableGui::onSelectAllItemsActionTriggered()
     
 }
 
+void
+KnobItemsTableGuiPrivate::selectionFromIndexList(const QModelIndexList& indexes, std::list<KnobTableItemPtr>* outItems)
+{
+    std::set<KnobTableItemPtr> uniqueItems;
+    for (QModelIndexList::const_iterator it = indexes.begin(); it != indexes.end(); ++it) {
+        //Check that the item is valid
+        assert(it->isValid() && it->row() >= 0 && it->row() < (int)items.size() && it->column() >= 0 && it->column() < tableModel->columnCount());
+        
+        // Get the table item corresponding to the index
+        TableItem* tableItem = tableModel->item(it->row(), it->column());
+        assert(tableItem);
+        
+        // Get the internal knobtableitem corresponding to the table item
+        ModelItemsVec::iterator found = findItem(tableItem);
+        assert(found != items.end());
+        if (found == items.end()) {
+            continue;
+        }
+        
+        KnobTableItemPtr internalItem = found->internalItem.lock();
+        assert(internalItem);
+        if (!internalItem) {
+            continue;
+        }
+        uniqueItems.insert(internalItem);
+    }
+    
+    for (std::set<KnobTableItemPtr>::iterator it = uniqueItems.begin(); it != uniqueItems.end(); ++it) {
+        outItems->push_back(*it);
+    }
+}
+
+void
+KnobItemsTableGuiPrivate::itemsToSelection(const std::list<KnobTableItemPtr>& inItems, QItemSelection* selection)
+{
+    
+    for (std::list<KnobTableItemPtr>::const_iterator it = inItems.begin(); it!=inItems.end(); ++it) {
+        ModelItemsVec::iterator found = findItem(*it);
+        assert(found != items.end());
+        if (found == items.end()) {
+            continue;
+        }
+        assert(!found->columnItems.empty());
+        QModelIndex leftMostColumnIndex = tableModel->index(found->columnItems[0].item);
+        QModelIndex rightMostColumnIndex = tableModel->index(found->columnItems[found->columnItems.size() - 1].item);
+        
+        QItemSelectionRange t(leftMostColumnIndex, rightMostColumnIndex);
+        for (std::size_t i = 0; i < found->columnItems.size(); ++i) {
+            selection->append(t);
+        }
+    }
+}
+
+void
+KnobItemsTableGuiPrivate::selectionToItems(const QItemSelection& selection, std::list<KnobTableItemPtr>* items)
+{
+    QModelIndexList indexes = selection.indexes();
+    selectionFromIndexList(indexes, items);
+}
 
 void
 KnobItemsTableGui::onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected)
 {
+    // Watch for recursion
+    if (_imp->selectingModelRecursion) {
+        return;
+    }
+    
+    // Convert indexes to items
+    std::list<KnobTableItemPtr> deselectedItems, selectedItems;
+    _imp->selectionToItems(selected, &selectedItems);
+    _imp->selectionToItems(deselected, &deselectedItems);
+
+#pragma message WARN("refresh keyframes here")
+
+    // Select the items in the model internally
+    KnobItemsTablePtr model = _imp->internalModel.lock();
+    model->beginEditSelection();
+    model->removeFromSelection(selectedItems, eTableChangeReasonPanel);
+    model->addToSelection(selectedItems, eTableChangeReasonPanel);
+    model->endEditSelection(eTableChangeReasonPanel);
+}
+
+void
+KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason)
+{
+    if (reason == eTableChangeReasonPanel) {
+        // Do not recurse
+        return;
+    }
+    
+#pragma message WARN("refresh keyframes here")
+
+    // Refresh the view
+    QItemSelection selectionToAdd, selectionToRemove;
+    _imp->itemsToSelection(addedToSelection, &selectionToAdd);
+    _imp->itemsToSelection(removedFromSelection, &selectionToRemove);
+    QItemSelectionModel* selectionModel = _imp->tableView->selectionModel();
+    
+    // Ensure we don't recurse indefinitely in the selection
+    ++_imp->selectingModelRecursion;
+    selectionModel->select(selectionToRemove, QItemSelectionModel::Deselect);
+    selectionModel->select(selectionToAdd, QItemSelectionModel::Select);
+    --_imp->selectingModelRecursion;
     
 }
 
+void
+KnobItemsTableGui::onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    
+}
+
+void
+KnobItemsTableGui::onModelTopLevelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    
+}
+
+void
+KnobItemsTableGui::onItemLabelChanged(const QString& label, TableChangeReasonEnum reason)
+{
+    
+}
+void
+KnobItemsTableGui::onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    
+}
+
+void
+KnobItemsTableGui::onItemChildInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    
+}
+
+static QString
+labelToolTipFromScriptName(const KnobTableItemPtr& item)
+{
+    return ( QString::fromUtf8("<p><b>")
+            + QString::fromUtf8( item->getScriptName_mt_safe().c_str() )
+            + QString::fromUtf8("</b></p>")
+            +  NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("KnobItemsTableGui", "The label of the item"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+}
+
+void
+KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
+{
+    // The item should not exist in the table GUI yet.
+    assert(findItem(item) == items.end());
+    
+    int itemRow = item->getItemRow();
+    
+    int nCols = tableModel->columnCount();
+    
+    ModelItem mitem;
+    mitem.columnItems.resize(nCols);
+    
+    for (int i = 0; i < nCols; ++i) {
+        
+        ModelItem::ColumnData d;
+        // If this column represents a knob, this is the knob
+        d.knob = item->getColumnKnob(i, &d.knobDimension);
+        
+        TableItem* tableItem = new TableItem;
+        d.item = tableItem;
+        tableView->setItem(itemRow, i, tableItem);
+
+        
+        if (d.knob.lock()) {
+            // If we have a knob, create the custom widget
+            createItemCustomWidgetAtCol(item, i);
+        } else {
+            // Ok the column must be kKnobTableItemColumnLabel
+            // otherwise we don't know what the user want
+            std::string columnID = item->getColumnName(i);
+            assert(columnID == kKnobTableItemColumnLabel);
+            mitem.labelColIndex = i;
+            tableItem->setToolTip( labelToolTipFromScriptName(item) );
+            tableItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
+            tableItem->setText( QString::fromUtf8( item->getLabel().c_str() ) );
+            
+        }
+        
+        tableView->resizeColumnToContents(i);
+        mitem.columnItems[i] = d;
+
+    }
+
+    // Create custom widgets for knobs
+    createCustomWidgetRecursively(item);
+
+}
 
 NATRON_NAMESPACE_EXIT;

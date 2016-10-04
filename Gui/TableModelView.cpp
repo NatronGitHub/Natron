@@ -238,12 +238,12 @@ TableModel::onDataChanged(const QModelIndex & index)
 bool
 TableModel::insertRows(int row,
                        int count,
-                       const QModelIndex &)
+                       const QModelIndex & parent)
 {
     if ( (count < 1) || (row < 0) || (row > _imp->rowCount) ) {
         return false;
     }
-    beginInsertRows(QModelIndex(), row, row + count - 1);
+    beginInsertRows(parent, row, row + count - 1);
     _imp->rowCount += count;
     int cc = _imp->horizontalHeaderItems.size();
     if (_imp->rowCount == 0) {
@@ -266,12 +266,12 @@ TableModel::insertRows(int row,
 bool
 TableModel::insertColumns(int column,
                           int count,
-                          const QModelIndex &)
+                          const QModelIndex & parent)
 {
     if ( (count < 1) || (column < 0) || ( column > (int)_imp->horizontalHeaderItems.size() ) ) {
         return false;
     }
-    beginInsertColumns(QModelIndex(), column, column +  count - 1);
+    beginInsertColumns(parent, column, column +  count - 1);
     int cc = _imp->horizontalHeaderItems.size();
 
 

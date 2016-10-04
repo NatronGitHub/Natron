@@ -35,6 +35,7 @@
 #include <QSize>
 
 #include "Gui/GuiFwd.h"
+#include "Global/GlobalDefines.h"
 
 #include "Gui/KnobGuiContainerI.h"
 
@@ -83,6 +84,14 @@ public Q_SLOTS:
     void onTableItemRightClicked(const QPoint& globalPos, TableItem* item);
     void onTableItemDataChanged(TableItem* item);
     void onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected);
+    
+    void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);
+    void onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void onModelTopLevelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+
+    void onItemLabelChanged(const QString& label, TableChangeReasonEnum reason);
+    void onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void onItemChildInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 private:
 
     boost::scoped_ptr<KnobItemsTableGuiPrivate> _imp;
