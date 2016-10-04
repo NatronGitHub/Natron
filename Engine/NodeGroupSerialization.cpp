@@ -178,10 +178,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                 usingPythonModule = true;
                             }
                         } else {
-                            StandardButtonEnum rep = Dialogs::questionDialog( tr("New PyPlug version").toStdString(),
-                                                                              ( tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg( QString::fromUtf8( stdModuleName.c_str() ) ).toStdString() + '\n' +
-                                                                                tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
-                                                                                tr("Would you like to update your script to use the newer version?").toStdString() ),
+#pragma message WARN("WHAT HAPPENS when the user clicks 'no' in this dialog? The project seems to load anyway with the other (either older or newer) pyplug version, is is this just an informative message without a yes/no answer????")
+#pragma message WARN("I put 'this file' instead of 'this script' because there is a confusion with the pyplug which is a script too, is this OK?")
+                            StandardButtonEnum rep = Dialogs::questionDialog( ( (pyVersion > savedPythonModuleVersion) ? tr("New PyPlug version") : tr("Old PyPlug version") ).toStdString(),
+                                                                              ( tr("Version %1 of PyPlug \"%2\" was found in the PyPlug search path.").arg(pyVersion).arg( QString::fromUtf8( stdModuleName.c_str() ) ).toStdString() + '\n' +
+                                                                                tr("This file is using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
+                                                                               ( (pyVersion > savedPythonModuleVersion) ? tr("Would you like to update this file to use the newer version?") : tr("Would you like to update this file to use the older version?") ).toStdString() ),
                                                                               false,
                                                                               StandardButtons(eStandardButtonYes | eStandardButtonNo) );
                             if (rep == eStandardButtonYes) {
