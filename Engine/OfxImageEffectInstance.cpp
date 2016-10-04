@@ -592,7 +592,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
         if (stat == kOfxStatFailed) {
             throw std::runtime_error("The parameter failed to create curves from their default\n"
-                                     "initialized by the plugin.");
+                                     "initialized by the plug-in.");
         }
         ret->onCurvesDefaultInitialized();
 

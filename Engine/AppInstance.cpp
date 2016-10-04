@@ -1138,7 +1138,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         } catch (const std::exception& e2) {
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                 tr("Cannot load plugin executable.").toStdString() + ": " + e2.what(), false );
+                                 tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what(), false );
             }
             return node;
         }
