@@ -1893,9 +1893,8 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     ///which will lead to asserts down the stream
     if ( self->isReader() && ( QThread::currentThread() != qApp->thread() ) ) {
         Format frmt;
-        RectI pixelRoD;
-        rod.toPixelEnclosing(0, par, &pixelRoD);
-        frmt.set(pixelRoD);
+        RectI formatRect = self->getOutputFormat();
+        frmt.set(formatRect);
         frmt.setPixelAspectRatio(par);
         self->getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
