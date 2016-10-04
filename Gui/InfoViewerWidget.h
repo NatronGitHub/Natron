@@ -55,11 +55,12 @@ public:
     virtual ~InfoViewerWidget() OVERRIDE;
 
 
-    bool colorAndMouseVisible();
+    bool colorVisible();
+    bool mouseVisible();
 
-    void setResolution(const Format & f);
+    void setResolution(const QString& name);
 
-    void setDataWindow(const RectI & r); // in canonical coordinates
+    void setDataWindow(const RectI & r); // in pixel coordinates
 
     void setImageFormat(const ImageComponents& comp, ImageBitDepthEnum depth);
 
@@ -67,7 +68,6 @@ public:
 
     void setMousePos(QPoint p);
 
-    static void removeTrailingZeroes(QString& str);
 
 public Q_SLOTS:
 
@@ -76,8 +76,10 @@ public Q_SLOTS:
 
     void setColorApproximated(bool approx);
 
-    void hideColorAndMouseInfo();
-    void showColorAndMouseInfo();
+    void hideColorInfo();
+    void showColorInfo();
+    void hideMouseInfo();
+    void showMouseInfo();
     void setFps(double actualFps, double desiredFps);
     void hideFps();
 
@@ -93,7 +95,6 @@ private:
     Label* descriptionLabel;
     Label* imageFormat;
     Label* resolution;
-    Format format;
     Label* coordDispWindow;
     Label* coordMouse;
     Label* rgbaValues;

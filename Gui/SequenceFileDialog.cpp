@@ -72,6 +72,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QStandardPaths>
 #endif
+#include <QtCore/QDebug>
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
@@ -372,12 +373,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string, std::string> projectPaths;
     gui->getApp()->getProject()->getEnvironmentVariables(projectPaths);
-    for (std::map<std::string, std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it) {
-        QString varName;
-        varName.append( QLatin1Char('[') );
-        varName.append( QString::fromUtf8( it->first.c_str() ) );
-        varName.append( QLatin1Char(']') );
-        _relativeChoice->addItem(varName);
+    int i = 1;
+    for (std::map<std::string, std::string>::iterator it = projectPaths.begin(); it != projectPaths.end(); ++it, ++i) {
+        std::string varName = '[' + it->first + ']';
+        _relativeChoice->addItem( QString::fromUtf8( varName.c_str() ) );
+        if ( allowRelativePaths && !currentDirectory.compare(0, varName.size(), varName) ) {
+            _relativeChoice->setCurrentIndex_no_emit(i);
+        }
     }
     if (!allowRelativePaths) {
         _relativeLabel->hide();
@@ -576,12 +578,21 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     if (!hasRestoredDir) {
-        //Both calls to setDirectory failed, default to something that can always succeed: the root
-#ifndef __NATRON_WIN32__
-        setDirectory( QString::fromUtf8("/") );
-#else
-        setDirectory( QString() );
-#endif
+        // try to go up until we find a directory that exists.
+        QString dir = QString::fromUtf8( directoryArgs.c_str() );
+        //qDebug() << "dir=" << dir;
+        while (!dir.isEmpty() && !hasRestoredDir) {
+            dir = QDir::cleanPath(dir + QString::fromUtf8("/.."));
+            //qDebug() << "dir=" << dir;
+            if ( QDir(dir).exists() ) {
+                hasRestoredDir = setDirectory(dir);
+            }
+        }
+    }
+
+    if (!hasRestoredDir) {
+        // All calls to setDirectory failed, default to something that can always succeed: the root
+        setDirectory( QDir::rootPath() );
     }
 
     if (!isSequenceDialog) {

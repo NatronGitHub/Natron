@@ -123,6 +123,10 @@ public:
     //  The frame range over which a clip has images.
     virtual void getFrameRange(double &startFrame, double &endFrame) const OVERRIDE FINAL;
 
+    // Format -
+    // The format of the clip or image (in pixel coordinates)
+    virtual OfxRectI getFormat() const OVERRIDE FINAL;
+
     /// Field Order - Which spatial field occurs temporally first in a frame.
     /// \returns
     ///  - kOfxImageFieldNone - the clip material is unfielded

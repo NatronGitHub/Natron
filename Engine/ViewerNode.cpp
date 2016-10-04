@@ -69,11 +69,10 @@
 #define kViewerNodeParamDisplayChannelsLabel "Display Channels"
 #define kViewerNodeParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
 
-#define kViewerNodeParamClipToProject "clipToProject"
-#define kViewerNodeParamClipToProjectLabel "Clip To Project"
-#define kViewerNodeParamClipToProjectHint "Clips the portion of the image displayed " \
-"on the viewer to the project format. " \
-"When off, everything in the union of all nodes " \
+#define kViewerNodeParamClipToFormat "clipToFormat"
+#define kViewerNodeParamClipToFormatLabel "Clip To Format"
+#define kViewerNodeParamClipToFormatHint "Clips the portion of the image displayed " \
+"on the viewer to the format upstream. When off everything in " \
 "region of definition is displayed"
 
 #define kViewerNodeParamFullFrame "fullFrame"
@@ -434,7 +433,7 @@ ViewerNode::createPlugin()
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_I, 0);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierControl, 1
                           );
-    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamClipToProject, kViewerNodeParamClipToProjectLabel, Key_C, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamClipToFormat, kViewerNodeParamClipToFormatLabel, Key_C, eKeyboardModifierShift) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, Key_W, eKeyboardModifierShift) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableProxyMode, kViewerNodeParamEnableProxyModeLabel, Key_P, eKeyboardModifierControl) );
@@ -527,7 +526,7 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobChoice> zoomChoiceKnob;
     boost::weak_ptr<KnobButton> syncViewersButtonKnob;
     boost::weak_ptr<KnobButton> centerViewerButtonKnob;
-    boost::weak_ptr<KnobButton> clipToProjectButtonKnob;
+    boost::weak_ptr<KnobButton> clipToFormatButtonKnob;
     boost::weak_ptr<KnobButton> fullFrameButtonKnob;
     boost::weak_ptr<KnobButton> toggleUserRoIButtonKnob;
     boost::weak_ptr<KnobDouble> userRoIBtmLeftKnob;
@@ -1228,16 +1227,17 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamClipToProjectLabel) );
-        param->setName(kViewerNodeParamClipToProject);
-        param->setHintToolTip(tr(kViewerNodeParamClipToProjectHint));
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamClipToFormatLabel) );
+        param->setName(kViewerNodeParamClipToFormat);
+        param->setHintToolTip(tr(kViewerNodeParamClipToFormatHint));
         page->addKnob(param);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
         param->setCheckable(true);
+        param->setDefaultValue(true);
         param->setIconLabel(NATRON_IMAGES_PATH "cliptoprojectEnabled.png", true);
         param->setIconLabel(NATRON_IMAGES_PATH "cliptoprojectDisable.png", false);
-        _imp->clipToProjectButtonKnob = param;
+        _imp->clipToFormatButtonKnob = param;
     }
 
     {
@@ -1862,8 +1862,8 @@ ViewerNode::initializeKnobs()
     addKnobToViewerUI(_imp->bInputNodeChoiceKnob.lock());
     _imp->bInputNodeChoiceKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
-    addKnobToViewerUI(_imp->clipToProjectButtonKnob.lock());
-    _imp->clipToProjectButtonKnob.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->clipToFormatButtonKnob.lock());
+    _imp->clipToFormatButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
     _imp->toggleProxyModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->proxyChoiceKnob.lock());
@@ -4191,9 +4191,9 @@ ViewerNode::setCurrentView(ViewIdx view)
 }
 
 bool
-ViewerNode::isClipToProjectEnabled() const
+ViewerNode::isClipToFormatEnabled() const
 {
-    return _imp->clipToProjectButtonKnob.lock()->getValue();
+    return _imp->clipToFormatButtonKnob.lock()->getValue();
 }
 
 double

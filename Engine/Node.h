@@ -362,6 +362,16 @@ public:
 
     void hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const;
 
+private:
+
+    void hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
+                                     std::list<const Node*>* markedNodes) const;
+
+    void hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* writers,
+                                         std::list<const Node*>* markedNodes) const;
+
+public:
+
     /**
      * @brief Forwarded to the live effect instance
      **/

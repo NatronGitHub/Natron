@@ -91,6 +91,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 
     QFontMetrics fm(font(), 0);
 
+
     _imp->viewerContainer = new QWidget(this);
     _imp->viewerLayout = new QHBoxLayout(_imp->viewerContainer);
     _imp->viewerLayout->setContentsMargins(0, 0, 0, 0);
@@ -102,9 +103,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     _imp->viewerSubContainerLayout->setSpacing(1);
 
 
-    _imp->viewer = new ViewerGL(this);
-    _imp->viewerSubContainerLayout->addWidget(_imp->viewer);
-
+    // Info bars
     QString inputNames[2] = {
         QString::fromUtf8("A:"), QString::fromUtf8("B:")
     };
@@ -112,6 +111,28 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     bool infobarvisible = node->isInfoBarVisible();
     for (int i = 0; i < 2; ++i) {
         _imp->infoWidget[i] = new InfoViewerWidget(inputNames[i], this);
+
+    }
+
+    // Viewer
+    _imp->viewer = new ViewerGL(this);
+
+    // Init viewer to project format
+    {
+        Format projectFormat;
+        getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+
+        RectD canonicalFormat = projectFormat.toCanonicalFormat();
+        for (int i = 0; i < 2; ++i) {
+            _imp->viewer->setInfoViewer(_imp->infoWidget[i], i);
+            _imp->viewer->setRegionOfDefinition(canonicalFormat, projectFormat.getPixelAspectRatio(), i);
+            setInfoBarAndViewerResolution(projectFormat, canonicalFormat, projectFormat.getPixelAspectRatio(), i);
+        }
+        _imp->viewer->resetWipeControls();
+    }
+
+    _imp->viewerSubContainerLayout->addWidget(_imp->viewer);
+    for (int i = 0; i < 2; ++i) {
         _imp->viewerSubContainerLayout->addWidget(_imp->infoWidget[i]);
         _imp->viewer->setInfoViewer(_imp->infoWidget[i], i);
         if (i == 1 || !infobarvisible) {
@@ -121,11 +142,11 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 
     manageSlotsForInfoWidget(0, true);
 
+
     _imp->viewerLayout->addWidget(_imp->viewerSubContainer);
     _imp->mainLayout->addWidget(_imp->viewerContainer);
 
     TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
-
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
@@ -265,12 +286,6 @@ ViewerTab::getInternalNode() const
 }
 
 
-void
-ViewerTab::setInfoBarResolution(const Format & f)
-{
-    _imp->infoWidget[0]->setResolution(f);
-    _imp->infoWidget[1]->setResolution(f);
-}
 
 void
 ViewerTab::connectToAInput(int inputNb)
@@ -288,6 +303,41 @@ ViewerTab::connectToBInput(int inputNb)
     if (internalNode) {
         internalNode->connectInputToIndex(inputNb, 1);
     }
+}
+
+static std::string makeUpFormatName(const RectI& format, double par)
+{
+    // Format name was empty, too bad, make up one
+    std::stringstream ss;
+    ss << format.width();
+    ss << 'x';
+    ss << format.height();
+    if (par != 1.) {
+        ss << ':';
+        ss << QString::number(par, 'f', 2).toStdString();
+    }
+    return ss.str();
+}
+
+void
+ViewerTab::setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex)
+{
+    std::string formatName, infoBarName;
+    if (!getGui()->getApp()->getProject()->getFormatNameFromRect(rect, par, &formatName)) {
+        formatName = makeUpFormatName(rect, par);
+        infoBarName = formatName;
+    } else {
+        // If the format has a name, for the info bar also add the resolution
+        std::stringstream ss;
+        ss << formatName;
+        ss << ' ';
+        ss << rect.width();
+        ss << 'x';
+        ss << rect.height();
+        infoBarName = ss.str();
+    }
+    _imp->infoWidget[texIndex]->setResolution(QString::fromUtf8(infoBarName.c_str()));
+    _imp->viewer->setFormat(formatName, canonicalRect, par, texIndex);
 }
 
 NATRON_NAMESPACE_EXIT;

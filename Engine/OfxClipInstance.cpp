@@ -356,6 +356,31 @@ OfxClipInstance::setAspectRatio(double par)
     _imp->aspectRatio = par;
 }
 
+OfxRectI
+OfxClipInstance::getFormat() const
+{
+    EffectInstancePtr effect = getEffectHolder();
+
+    RectI nRect;
+    if ( isOutput() ) {
+        nRect = effect->getOutputFormat();
+    } else {
+        EffectInstancePtr inputNode = getAssociatedNode();
+        if (inputNode) {
+            inputNode = inputNode->getNearestNonIdentity( effect->getCurrentTime() );
+        }
+        if (!inputNode) {
+            Format f;
+            effect->getApp()->getProject()->getProjectDefaultFormat(&f);
+            nRect = f;
+        } else {
+            nRect = inputNode->getOutputFormat();
+        }
+    }
+    OfxRectI ret = {nRect.x1, nRect.y1, nRect.x2, nRect.y2};
+    return ret;
+}
+
 // Frame Rate -
 double
 OfxClipInstance::getFrameRate() const

@@ -130,11 +130,10 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    void setInfoBarResolution(const Format & f);
-
     QVBoxLayout* getMainLayout() const;
 
     NodeGuiPtr getCurrentNodeViewerInterface(const PluginPtr& plugin) const;
+
 
     /**
      * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
@@ -235,6 +234,8 @@ public:
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
     void getNodesEntitledForOverlays(NodesList& nodes) const;
+
+    void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
 
 public Q_SLOTS:
 

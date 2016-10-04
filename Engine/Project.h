@@ -160,6 +160,8 @@ public:
 
     void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
+    bool getFormatNameFromRect(const RectI& rect, double par, std::string* name) const;
+
     void getAdditionalFormats(std::list<Format> *formats) const;
 
     void setupProjectForStereo();

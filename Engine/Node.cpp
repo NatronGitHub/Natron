@@ -4643,24 +4643,69 @@ Node::getEffectInstance() const
 }
 
 void
-Node::hasViewersConnected(std::list<ViewerInstancePtr>* viewers) const
+Node::hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
+                                 std::list<const Node*>* markedNodes) const
 {
-    ViewerInstancePtr thisViewer = isEffectViewerInstance();
+
+    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
+        return;
+    }
+
+    markedNodes->push_back(this);
+    ViewerInstancePtr thisViewer = toViewerInstance( _imp->effect);
 
     if (thisViewer) {
-        std::list<ViewerInstancePtr>::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
-        if ( alreadyExists == viewers->end() ) {
-            viewers->push_back(thisViewer);
-        }
+        viewers->push_back(thisViewer);
     } else {
         NodesList outputs;
         getOutputsWithGroupRedirection(outputs);
 
         for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
-            (*it)->hasViewersConnected(viewers);
+            (*it)->hasViewersConnectedInternal(viewers, markedNodes);
         }
     }
+}
+
+void
+Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* writers,
+                                     std::list<const Node*>* markedNodes) const
+{
+    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
+        return;
+    }
+
+    markedNodes->push_back(this);
+
+    OutputEffectInstancePtr thisWriter = boost::dynamic_pointer_cast<OutputEffectInstance>(_imp->effect);
+
+    if ( thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter.get()) ) {
+        writers->push_back(thisWriter);
+    } else {
+        NodesList outputs;
+        getOutputsWithGroupRedirection(outputs);
+
+        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            assert(*it);
+            (*it)->hasOutputNodesConnectedInternal(writers, markedNodes);
+        }
+    }
+}
+
+void
+Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr >* writers) const
+{
+    std::list<const Node*> m;
+    hasOutputNodesConnectedInternal(writers, &m);
+}
+
+void
+Node::hasViewersConnected(std::list<ViewerInstancePtr >* viewers) const
+{
+
+    std::list<const Node*> m;
+    hasViewersConnectedInternal(viewers, &m);
+
 }
 
 /**
@@ -4803,26 +4848,6 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
     }
 }
 
-void
-Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const
-{
-    OutputEffectInstancePtr thisWriter = isEffectOutput();
-
-    if ( thisWriter && thisWriter->isOutput() && !toGroupOutput(thisWriter) ) {
-        std::list<OutputEffectInstancePtr>::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
-        if ( alreadyExists == writers->end() ) {
-            writers->push_back(thisWriter);
-        }
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasOutputNodesConnected(writers);
-        }
-    }
-}
 
 int
 Node::getMajorVersion() const
@@ -9548,10 +9573,9 @@ addIdentityNodesRecursively(NodeConstPtr caller,
             U64 renderHash = 0;
 
 
-            Format f;
-            node->getEffectInstance()->getRenderFormat(&f);
+            RectI format = node->getEffectInstance()->getOutputFormat();
 
-            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, f, view, &inputTimeId, &identityView, &inputNbId);
+            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, format, view, &inputTimeId, &identityView, &inputNbId);
         }
 
 

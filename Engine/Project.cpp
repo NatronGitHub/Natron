@@ -1194,6 +1194,39 @@ Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
     *currentValue = _imp->formatKnob->getValue();
 }
 
+bool
+Project::getFormatNameFromRect(const RectI& rect, double par, std::string* name) const
+{
+    // First try to find the format in the project formats, they have a good chance to be named
+    bool foundFormat = false;
+    Format f;
+    {
+        QMutexLocker k(&_imp->formatMutex);
+
+        for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it!=_imp->builtinFormats.end(); ++it) {
+            if (it->x1 == rect.x1 && it->y1 == rect.x1 && it->x2 == rect.x2 && it->y2 == rect.y2 && par == it->getPixelAspectRatio()) {
+                f = *it;
+                foundFormat = true;
+                break;
+            }
+        }
+        if (!foundFormat) {
+            for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it!=_imp->additionalFormats.end(); ++it) {
+                if (it->x1 == rect.x1 && it->y1 == rect.x1 && it->x2 == rect.x2 && it->y2 == rect.y2 && par == it->getPixelAspectRatio()) {
+                    f = *it;
+                    foundFormat = true;
+                    break;
+                }
+            }
+        }
+    }
+    name->clear();
+    if (foundFormat) {
+        *name = f.getName();
+    }
+    return !name->empty();
+}
+
 int
 Project::getProjectViewsCount() const
 {
@@ -1528,9 +1561,10 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 
                 invalidateHashCache();
 
-                ///Format change, hence probably the PAR so run getClipPreferences again
-                forceComputeInputDependentDataOnAllTrees();
+
             }
+            ///Format change, hence probably the PAR so run getClipPreferences again
+            forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob ) {

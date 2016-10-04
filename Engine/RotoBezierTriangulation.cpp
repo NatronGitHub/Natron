@@ -88,7 +88,7 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/, void *po
 
     unsigned int* p = (unsigned int*)data;
     assert(p);
-    assert(*p >= 0 && *p < myData->bezierPolygonJoined.size());
+    assert(/**p >= 0 &&*/ *p < myData->bezierPolygonJoined.size());
 #ifndef NDEBUG
     assert(myData->bezierPolygonJoined[*p].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[*p].x <= myData->bezierBbox.x2 &&
            myData->bezierPolygonJoined[*p].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[*p].y <= myData->bezierBbox.y2);
@@ -133,7 +133,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
      new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
      new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
      new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    assert(*vertexData >= 0 && *vertexData < myData->bezierPolygonIndices.size());
+    assert(/**vertexData >= 0 &&*/ *vertexData < myData->bezierPolygonIndices.size());
     *dataOut = (void*)vertexData;
     
 }

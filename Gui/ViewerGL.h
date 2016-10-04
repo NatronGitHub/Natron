@@ -98,8 +98,9 @@ public:
     /**
      *@returns Returns the displayWindow of the currentFrame(Resolution)
      **/
-    // MT-SAFE: don't return a reference
-    Format getDisplayWindow() const;
+    RectD getCanonicalFormat(int texIndex) const;
+
+    double getPAR(int texIndex) const;
 
     virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
@@ -128,8 +129,8 @@ public:
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -142,11 +143,10 @@ public:
      **/
     virtual void fitImageToFormat() OVERRIDE FINAL;
 
-    void fitImageToFormat(bool useProjectFormat);
-
-
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
     virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void refreshFormatFromMetadata() OVERRIDE FINAL;
 
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently
@@ -223,12 +223,11 @@ public Q_SLOTS:
 
 
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
+    void setFormat(const std::string& formatName, const RectD& format, double par, int textureIndex);
 
     virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) OVERRIDE FINAL;
 
     void clearColorBuffer(double r = 0., double g = 0., double b = 0., double a = 1.);
-
-    void onProjectFormatChanged(const Format & format);
 
     void onCheckerboardSettingsChanged();
 
@@ -242,9 +241,6 @@ public Q_SLOTS:
 
     void clearLastRenderedTexture();
 
-private:
-
-    void onProjectFormatChangedInternal(const Format & format, bool triggerRender);
 
 public:
 
@@ -472,6 +468,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
 

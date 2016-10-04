@@ -1357,7 +1357,8 @@ Settings::initializeKnobsPlugins()
     _pluginsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Plug-ins") );
     _pluginsTab->setName("plugins");
 
-    _extraPluginPaths = AppManager::createKnob<KnobPath>( shared_from_this(), tr("OpenFX plugins search path") );
+    _extraPluginPaths = AppManager::createKnob<KnobPath>( shared_from_this(), tr("OpenFX plug-ins search path") );
+
     _extraPluginPaths->setName("extraPluginsSearchPaths");
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -1372,14 +1373,14 @@ Settings::initializeKnobsPlugins()
 
 #endif
 
-    _extraPluginPaths->setHintToolTip( tr("Extra search paths where %1 should scan for OpenFX plugins. "
-                                          "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
-                                          "The priority order for system-wide plugins, from high to low, is:\n"
-                                          "- plugins found in OFX_PLUGIN_PATH\n"
-                                          "- plugins found in %2\n"
-                                          "Plugins bundled with the binary distribution of Natron may have either "
-                                          "higher or lower priority, depending on the \"Prefer bundled plugins over "
-                                          "system-wide plugins\" setting.\n"
+    _extraPluginPaths->setHintToolTip( tr("Extra search paths where %1 should scan for OpenFX plug-ins. "
+                                          "Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
+                                          "The priority order for system-wide plug-ins, from high to low, is:\n"
+                                          "- plug-ins found in OFX_PLUGIN_PATH\n"
+                                          "- plug-ins found in %2\n"
+                                          "Plug-ins bundled with the binary distribution of Natron may have either "
+                                          "higher or lower priority, depending on the \"Prefer bundled plug-ins over "
+                                          "system-wide plug-ins\" setting.\n"
                                           "Any change will take effect on the next launch of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
@@ -1392,17 +1393,19 @@ Settings::initializeKnobsPlugins()
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
 
-    _loadBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use bundled plugins") );
+    _loadBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use bundled plug-ins") );
+
     _loadBundledPlugins->setName("useBundledPlugins");
-    _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plugins bundled "
+    _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
                                             "with the binary distribution.\n"
-                                            "When unchecked, only system-wide plugins are loaded (more information can be "
-                                            "found in the help for the \"Extra plugins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                            "When unchecked, only system-wide plug-ins are loaded (more information can be "
+                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _pluginsTab->addKnob(_loadBundledPlugins);
 
-    _preferBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prefer bundled plugins over system-wide plugins") );
+    _preferBundledPlugins = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Prefer bundled plug-ins over system-wide plugins") );
+
     _preferBundledPlugins->setName("preferBundledPlugins");
-    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the %1 binary distribution will take precedence over system-wide plugins "
+    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
                                               "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _pluginsTab->addKnob(_preferBundledPlugins);
 } // Settings::initializeKnobsPlugins

@@ -2371,16 +2371,28 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
 
     //Define all nodes in the same group reachable by their bare script-name
     NodesList siblings = collection->getNodes();
+    std::string collectionScriptName;
+    if (isParentGrp) {
+        collectionScriptName = isParentGrp->getNode()->getFullyQualifiedName();
+    } else {
+        collectionScriptName = appID;
+    }
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
         if ((*it)->isActivated()) {
             std::string scriptName = (*it)->getScriptName_mt_safe();
-            std::string fullName = (*it)->getFullyQualifiedName();
-            ss << tabStr << scriptName << " = " << appID << "." << fullName << "\n";
+            std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
+            ss << tabStr << "if hasattr(";
+            if (isParentGrp) {
+                ss << appID << ".";
+            }
+            ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
+
+            ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
         }
     }
 
     if (isParentGrp) {
-        ss << tabStr << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
+        ss << tabStr << "thisGroup = " << appID << "." << collectionScriptName << "\n";
     } else {
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
@@ -2397,7 +2409,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
 
     //If this node is a group, also define all nodes inside the group, though they will be referencable via
     //thisNode.childname but also with <NodeName.childname>
-    NodeGroupPtr isHolderGrp = toNodeGroup(effect);
+    /*NodeGroupPtr isHolderGrp = toNodeGroup(effect);
     if (isHolderGrp) {
         NodesList children = isHolderGrp->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
@@ -2410,11 +2422,12 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
                 PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(nodeFullName, appPTR->getMainModule(), &isAttrDefined);
                 Q_UNUSED(obj);
                 if (isAttrDefined) {
-                    ss << tabStr << node->getScriptName_mt_safe() << "." << scriptName << " = " << nodeFullName << "\n";
+                    ss << tabStr << "if hasattr(" << node->getScriptName_mt_safe() << ",\"" << scriptName << "\"):\n";
+                    ss << tabStr << "    " << holderScriptName << "." << scriptName << " = " << nodeFullName << "\n";
                 }
             }
         }
-    }
+    }*/
 
 
     return ss.str();

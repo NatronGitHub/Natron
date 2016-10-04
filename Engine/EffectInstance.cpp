@@ -514,13 +514,6 @@ EffectInstance::getScriptName_mt_safe() const
     return getNode()->getScriptName_mt_safe();
 }
 
-void
-EffectInstance::getRenderFormat(Format *f) const
-{
-    assert(f);
-    getApp()->getProject()->getProjectDefaultFormat(f);
-}
-
 int
 EffectInstance::getRenderViewsCount() const
 {
@@ -1036,14 +1029,15 @@ EffectInstance::getImage(int inputNb,
 
 void
 EffectInstance::calcDefaultRegionOfDefinition(double /*time*/,
-                                              const RenderScale & /*scale*/,
+                                              const RenderScale & scale,
                                               ViewIdx /*view*/,
                                               RectD *rod)
 {
-    Format projectDefault;
 
-    getRenderFormat(&projectDefault);
-    *rod = RectD( projectDefault.left(), projectDefault.bottom(), projectDefault.right(), projectDefault.top() );
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    RectI format = getOutputFormat();
+    double par = getAspectRatio(-1);
+    format.toCanonical_noClipping(mipMapLevel, par, rod);
 }
 
 StatusEnum
@@ -1093,14 +1087,8 @@ EffectInstance::ifInfiniteApplyHeuristic(double time,
                                          ViewIdx view,
                                          RectD* rod) //!< input/output
 {
-    /*If the rod is infinite clip it to the project's default*/
+    /*If the rod is infinite clip it to the format*/
 
-    Format projectFormat;
-
-    getRenderFormat(&projectFormat);
-    RectD projectDefault = projectFormat.toCanonicalFormat();
-    /// FIXME: before removing the assert() (I know you are tempted) please explain (here: document!) if the format rectangle can be empty and in what situation(s)
-    assert( !projectDefault.isNull() );
 
     assert(rod);
     if ( rod->isNull() ) {
@@ -1146,37 +1134,48 @@ EffectInstance::ifInfiniteApplyHeuristic(double time,
     }
     ///If infinite : clip to inputsUnion if not null, otherwise to project default
 
+
+    RectD canonicalFormat;
+
+    if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
+        RectI format = getOutputFormat();
+        assert(!format.isNull());
+        double par = getAspectRatio(-1);
+        unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+        format.toCanonical_noClipping(mipMapLevel, par, &canonicalFormat);
+    }
+
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     if (x1Infinite) {
         if ( !inputsUnion.isNull() ) {
-            rod->x1 = std::min(inputsUnion.x1, projectDefault.x1);
+            rod->x1 = std::min(inputsUnion.x1, canonicalFormat.x1);
         } else {
-            rod->x1 = projectDefault.x1;
+            rod->x1 = canonicalFormat.x1;
         }
         rod->x2 = std::max(rod->x1, rod->x2);
     }
     if (y1Infinite) {
         if ( !inputsUnion.isNull() ) {
-            rod->y1 = std::min(inputsUnion.y1, projectDefault.y1);
+            rod->y1 = std::min(inputsUnion.y1, canonicalFormat.y1);
         } else {
-            rod->y1 = projectDefault.y1;
+            rod->y1 = canonicalFormat.y1;
         }
         rod->y2 = std::max(rod->y1, rod->y2);
     }
     if (x2Infinite) {
         if ( !inputsUnion.isNull() ) {
-            rod->x2 = std::max(inputsUnion.x2, projectDefault.x2);
+            rod->x2 = std::max(inputsUnion.x2, canonicalFormat.x2);
         } else {
-            rod->x2 = projectDefault.x2;
+            rod->x2 = canonicalFormat.x2;
         }
         rod->x1 = std::min(rod->x1, rod->x2);
     }
     if (y2Infinite) {
         if ( !inputsUnion.isNull() ) {
-            rod->y2 = std::max(inputsUnion.y2, projectDefault.y2);
+            rod->y2 = std::max(inputsUnion.y2, canonicalFormat.y2);
         } else {
-            rod->y2 = projectDefault.y2;
+            rod->y2 = canonicalFormat.y2;
         }
         rod->y1 = std::min(rod->y1, rod->y2);
     }
@@ -3871,7 +3870,7 @@ EffectInstance::getTransform_public(double time,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
-    assert( getNode()->getCurrentCanTransform() );
+    //assert( getNode()->getCurrentCanTransform() ); // called in every case for overlays
 
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
@@ -5585,12 +5584,14 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
 
     bool multipleClipsPAR = supportsMultipleClipPARs();
-    double projectPAR;
-    {
-        Format f;
-        getRenderFormat(&f);
-        projectPAR =  f.getPixelAspectRatio();
-    }
+
+
+    Format projectFormat;
+    getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+    double projectPAR = projectFormat.getPixelAspectRatio();
+
+    bool outputFormatSet = false;
+    RectI outputFormat = projectFormat;
 
 
     // now add the input gubbins to the per inputs metadatas
@@ -5635,6 +5636,14 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
             metadata.setBitDepth(i, depth);
         } else {
+
+
+            if (!outputFormatSet && effect) {
+                // Get the format from the first non optional input
+                outputFormat = effect->getOutputFormat();
+                outputFormatSet = true;
+            }
+
             ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth = effect ? effect->getBitDepth(-1) : eImageBitDepthFloat;
 
@@ -5654,8 +5663,17 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // set output premultiplication
     metadata.setOutputPremult(premult);
 
+    metadata.setOutputFormat(outputFormat);
+
     return eStatusOK;
 } // EffectInstance::getDefaultMetadata
+
+RectI
+EffectInstance::getOutputFormat() const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.getOutputFormat();
+}
 
 ImageComponents
 EffectInstance::getComponents(int inputNb) const

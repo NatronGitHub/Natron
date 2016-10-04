@@ -65,7 +65,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER;
 
 
-
 void
 ViewerTab::updateZoomComboBox(int value)
 {

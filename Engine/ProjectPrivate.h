@@ -152,7 +152,7 @@ public:
         double par = f.getPixelAspectRatio();
         if (par != 1.) {
             formatStr.append( QLatin1Char(' ') );
-            formatStr.append( QString::number( f.getPixelAspectRatio() ) );
+            formatStr.append( QString::number( f.getPixelAspectRatio(), 'f', 2 ) );
         }
 
         return formatStr;
