@@ -591,7 +591,7 @@ FileSystemModel::isDriveName(const QString& name)
     return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
 #else
 
-    return name == QString::fromUtf8("/");
+    return name == QDir::rootPath();
 #endif
 }
 
@@ -603,7 +603,7 @@ FileSystemModel::startsWithDriveName(const QString& name)
     return name.size() >= 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
 #else
 
-    return name.startsWith( QChar::fromLatin1('/') );
+    return name.startsWith( QDir::rootPath() );
 #endif
 }
 
