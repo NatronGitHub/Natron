@@ -2881,7 +2881,9 @@ AppManager::initPython(int argc,
 #ifndef IS_PYTHON_2
         _imp->args[i] = char2wchar(argv[i]);
 #else
-        _imp->args[i] = strdup(argv[i]); // free'd in ~AppManagerPrivate()
+        QString s = QString::fromUtf8(argv[i]);
+        std::string stdS = s.toStdString();
+        strncpy(_imp->args[i], stdS.c_str(), stdS.size());
 #endif
     }
 
