@@ -95,18 +95,13 @@ static std::string
 getUserName()
 {
 #ifdef __NATRON_WIN32__
-    TCHAR user_name[UNLEN + 1];
+    wchar_t user_name[UNLEN + 1];
     DWORD user_name_size = sizeof(user_name);
-    GetUserName(user_name, &user_name_size);
-#ifdef UNICODE
+    GetUserNameW(user_name, &user_name_size);
+
     std::wstring wUserName(user_name);
     std::string sUserName = OFX::wideStringToString(wUserName);
-
     return sUserName;
-#else
-
-    return std::string(user_name);
-#endif
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;
     passwd = getpwuid( getuid() );
