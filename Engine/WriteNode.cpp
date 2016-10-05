@@ -392,9 +392,11 @@ void
 WriteNodePrivate::destroyWriteNode()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (!embeddedPlugin.lock()) {
+    NodePtr embeddedNode = embeddedPlugin.lock();
+    if (!embeddedNode) {
         return;
     }
+
     KnobsVec knobs = _publicInterface->getKnobs();
 
     genericKnobsSerialization.clear();
@@ -405,6 +407,11 @@ WriteNodePrivate::destroyWriteNode()
         boost::archive::xml_oarchive oArchive(ss);
         std::list<boost::shared_ptr<KnobSerialization> > serialized;
         for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+            // The internal node still holds a shared ptr to the knob.
+            // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+            embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
+
             if ( !(*it)->isDeclaredByPlugin() ) {
                 continue;
             }
@@ -482,7 +489,15 @@ WriteNodePrivate::destroyWriteNode()
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
 
+    if (embeddedNode) {
+        embeddedNode->destroyNode(false);
+    }
     embeddedPlugin.reset();
+
+    NodePtr readBack = readBackNode.lock();
+    if (readBack) {
+        readBack->destroyNode(false);
+    }
     readBackNode.reset();
 } // WriteNodePrivate::destroyWriteNode
 

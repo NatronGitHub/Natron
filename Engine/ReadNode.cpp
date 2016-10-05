@@ -439,6 +439,11 @@ ReadNodePrivate::destroyReadNode()
 
 
         for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+            // The internal node still holds a shared ptr to the knob.
+            // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+            embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
+
             if ( !(*it)->isDeclaredByPlugin() ) {
                 continue;
             }
@@ -516,7 +521,11 @@ ReadNodePrivate::destroyReadNode()
     _publicInterface->recreateKnobs(true);
 
     QMutexLocker k(&embeddedPluginMutex);
+    if (embeddedPlugin) {
+        embeddedPlugin->destroyNode(false);
+    }
     embeddedPlugin.reset();
+
 } // ReadNodePrivate::destroyReadNode
 
 void
