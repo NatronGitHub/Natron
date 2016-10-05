@@ -2883,6 +2883,7 @@ AppManager::initPython(int argc,
 #else
         QString s = QString::fromUtf8(argv[i]);
         std::string stdS = s.toStdString();
+        _imp->args[i] = (char*)malloc(sizeof(char) * (stdS.size() + 1));
         strncpy(_imp->args[i], stdS.c_str(), stdS.size());
 #endif
     }
