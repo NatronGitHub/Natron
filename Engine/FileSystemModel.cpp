@@ -1609,7 +1609,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             sequences.push_back( std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]) );
         } else {
             QString filename = all[i].fileName();
-
+            qDebug() << "FileSystemModel: " << filename;
             /// If the item does not match the filter regexp set by the user, discard it
             if ( !model->isAcceptedByRegexps(filename) ) {
                 KERNEL_INCR();
