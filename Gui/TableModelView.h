@@ -28,7 +28,6 @@
 #include "Global/Macros.h"
 
 #include <vector>
-#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -64,7 +63,7 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
     friend class TableView;
     friend struct TableItemPrivate;
 
-    TableItem(const TableItemPtr& parent);
+    TableItem();
 
 public:
 
@@ -72,6 +71,7 @@ public:
      * @brief Creates an item
      * @param parent If not NULL, this is a pointer to the parent row, otherwise
      * this item is considered a top-level item.
+     * If the parent not NULL, it must belong to a model already
      **/
     static TableItemPtr create(const TableItemPtr& parent = TableItemPtr());
 
@@ -92,6 +92,28 @@ public:
      * @brief Returns the children of this item. The ownership of the children is handled by this item.
      **/
     const std::vector<TableItemPtr>& getChildren() const;
+    
+    /**
+     * @brief Inserts a child at the given row.
+     * It does not work if the model is not a table model.
+     * If this item does not belong to a model this function will return false.
+     * If row is -1 or the count of children, the child is appended
+     * Returns true on success.
+     **/
+    bool insertChild(int row, const TableItemPtr& child);
+    
+    /**
+     * @brief Returns the children of this item. The ownership of the children is handled by this item.
+     **/
+    bool addChild(const TableItemPtr& child)
+    {
+        return insertChild(-1, child);
+    }
+    
+    /**
+     * @brief Removes the given child if found. Returns true on success.
+     **/
+    bool removeChild(const TableItemPtr& child);
 
     /**
      * @brief Returns the index of this item in the parent children
@@ -349,12 +371,20 @@ protected:
     virtual void dragLeaveEvent(QDragLeaveEvent *e) OVERRIDE ;
     virtual void dragEnterEvent(QDragEnterEvent *e) OVERRIDE ;
     virtual void dropEvent(QDropEvent* e) OVERRIDE ;
-    virtual void startDrag(Qt::DropActions supportedActions) OVERRIDE ;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
+    virtual void setupAndExecDragObject(QDrag* drag,
+                                        const QModelIndexList& rows,
+                                        Qt::DropActions supportedActions,
+                                        Qt::DropAction defaultAction);
 private:
+    
+    virtual void startDrag(Qt::DropActions /*supportedActions*/) OVERRIDE FINAL {}
 
+    void setupDragObject(Qt::DropActions supportedActions);
+    
     inline QPoint getOffset() const {
         return QPoint(isRightToLeft() ? -horizontalOffset() : horizontalOffset(), verticalOffset());
     }
@@ -363,7 +393,7 @@ private:
 
     void adjustViewOptionsForIndex(QStyleOptionViewItemV4 *option, const TableItemPtr &item, const QModelIndex& index) const;
     QStyleOptionViewItemV4 viewOptionsV4() const;
-    QPixmap renderToPixmap(const std::set<int>& rows, QRect *r) const;
+    QPixmap renderToPixmap(const QModelIndexList& rows, QRect *r) const;
 
 
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -377,7 +407,7 @@ private:
 
 /**
  * @class TableModel is a model that goes into a view. It can be used either as a tree model or a table model. In each case
- * each row has 1 item per column.
+ * each row is 1 item. Each item holds data for all columns.
  * For each function taking a row index, the index is expressed in the parent children list, if a parent is supplied, otherwise
  * this will be the row index in the top level items.
  **/
@@ -410,12 +440,18 @@ protected:
 
 public:
 
+   
     static TableModelPtr create(int columns, TableModelTypeEnum type)
     {
         return TableModelPtr(new TableModel(columns, type));
     }
 
     virtual ~TableModel();
+    
+    /**
+     @brief Returns the type of the model, @see TableModelTypeEnum
+     **/
+    TableModelTypeEnum getType() const;
 
     /**
      * @brief Return a list of top level items, or all items for a model of type eTableModelTypeTable
@@ -484,24 +520,37 @@ public:
      * Set the item at given row
      **/
     void setRow(int row, const TableItemPtr& item);
-
+    
     /**
-     * @brief For a tree type only: inserts an item at the given row index.
-     * If row is -1, the row is appended
-     * @returns True on success, false otherwise
+     * @brief Insert count empty rows at the given index. If row is equals to the rowCount of children in parent
+     * then the rows are appended. For tree model type, new items are created. For the table model type, the
+     * storage only is allocated.
+     **/
+    virtual bool insertRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
+    
+    /**
+     * @brief Removes
+     **/
+    virtual bool removeRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
+    
+    /**
+     * @brief same as insertRows except that the new item is provided by caller
      **/
     bool insertTopLevelItem(int row, const TableItemPtr& item);
-
+    
     /**
-     * @brief  For a tree type only: Convenience function
+     * @brief Convenience function: calls insertTopLevelItem with row = -1
      **/
     bool addTopLevelItem(const TableItemPtr& item)
     {
         return insertTopLevelItem(-1, item);
     }
+    
+
 
     /**
-     * @brief  For a tree type only: remove top level item
+     * @brief For a tree, this removes a top level item.
+     * For a table, this is the same as calling setRow with a NULL pointer and also calling removeRows on that same row
      * @returns true on success
      **/
     bool removeTopLevelItem(const TableItemPtr& item);
@@ -551,15 +600,7 @@ Q_SIGNALS:
 
 private:
 
-
-    /**
-    * @brief Storage support: add/remove space in the table.
-    **/
-    virtual bool insertRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
-
     virtual bool insertColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
-
-    virtual bool removeRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 
     virtual bool removeColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 

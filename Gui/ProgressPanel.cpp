@@ -170,28 +170,28 @@ ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
 
     _imp->headerLayout->addStretch();
 
+    std::vector<std::pair<QString, QIcon> > headerData;
+    headerData.push_back(std::make_pair(tr("Node"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Progress"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Status"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Controls"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Time remaining"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Frame Range"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Task"), QIcon()));
+
 
     _imp->view = new TableView(this);
     _imp->view->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    _imp->model = new TableModel(0, 0, _imp->view);
+    _imp->model = TableModel::create(headerData.size(), TableModel::eTableModelTypeTable);
     _imp->view->setSortingEnabled(false);
     _imp->view->setTableModel(_imp->model);
 
     _imp->mainLayout->addWidget(_imp->view);
 
     QObject::connect( _imp->view, SIGNAL(itemRightClicked(QPoint, TableItemPtr)), this, SLOT(onItemRightClicked(QPoint, TableItemPtr)) );
-    QStringList dimensionNames;
-    dimensionNames
-        << tr("Node")
-        << tr("Progress")
-        << tr("Status")
-        << tr("Controls")
-        << tr("Time remaining")
-        << tr("Frame Range")
-        << tr("Task");
+   
 
-    _imp->view->setColumnCount( dimensionNames.size() );
-    _imp->view->setHorizontalHeaderLabels(dimensionNames);
+    _imp->model->setHorizontalHeaderData(headerData);
     //_imp->view->header()->setResizeMode(QHeaderView::Fixed);
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->header()->resizeSection( COL_TIME_REMAINING, TO_DPIX(150) );
@@ -341,8 +341,7 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
                 _imp->tasks.erase(foundInMap);
             }
         }
-        int rc = _imp->view->rowCount();
-        int cc = _imp->view->columnCount();
+        int rc = _imp->model->rowCount();
         assert( (int)_imp->tasksOrdered.size() == rc );
 
         for (int i = 0; i < rc; ++i) {
@@ -351,9 +350,9 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
             if ( foundSelected != tasks.end() ) {
                 continue;
             }
-            for (int j = 0; j < cc; ++j) {
-                table.push_back( _imp->view->takeItem(i, j) );
-            }
+            TableItemPtr item = _imp->model->getItem(i);
+            table.push_back(item);
+            _imp->model->setRow(i, TableItemPtr()) ;
 
 
             newOrder.push_back(_imp->tasksOrdered[i]);
@@ -503,16 +502,15 @@ void
 ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    int rc = _imp->view->rowCount();
-    _imp->view->setRowCount(rc + 1);
+    int rc = _imp->model->rowCount();
+    _imp->model->insertRows(rc);
 
     std::vector<TableItemPtr> items;
     task->getTableItems(&items);
     assert(items.size() == COL_LAST);
 
-    for (std::size_t i = 0; i < items.size(); ++i) {
-        _imp->view->setItem(rc, i, items[i]);
-    }
+    _imp->view->setRow(rc, item);
+
     task->setCellWidgets(rc, _imp->view);
 
     _imp->lastTaskAdded = task;

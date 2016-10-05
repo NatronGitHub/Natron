@@ -74,18 +74,19 @@ struct ModelItem {
 
     struct ColumnData
     {
-        TableItemPtr item;
         KnobIWPtr knob;
         int knobDimension;
         
         ColumnData()
-        : item()
-        , knob()
+        : knob()
         , knobDimension(-1)
         {
             
         }
     };
+    
+    TableItemPtr item;
+    
     std::vector<ColumnData> columnItems;
     
     // If the item wants to display its label in a column, here it is
@@ -96,6 +97,7 @@ struct ModelItem {
     
     ModelItem()
     : internalItem()
+    , item()
     , columnItems()
     , labelColIndex(-1)
     , scriptNameColIndex(-1)
@@ -147,15 +149,13 @@ struct KnobItemsTableGuiPrivate
 
     ModelItemsVec::iterator findItem(const TableItemConstPtr& item) {
         for (ModelItemsVec::iterator it = items.begin(); it!=items.end(); ++it) {
-            for (std::size_t i = 0; i < it->columnItems.size(); ++i) {
-                if (it->columnItems[i].item == item) {
-                    return it;
-                }
+            if (it->item == item) {
+                return it;
             }
         }
         return items.end();
     }
-
+    
     void showItemMenu(const TableItemPtr& item, const QPoint & globalPos);
     
     bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col);
@@ -286,7 +286,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
     int col = index.column();
 
 
-    TableItemPtr item = _imp->tableModel->item(index);
+    TableItemPtr item = _imp->tableModel->getItem(index);
     assert(item);
     if (!item) {
         // coverity[dead_error_line]
@@ -364,7 +364,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
 
     // Figure out text color
     QPen pen = painter->pen();
-    if ( !item->getFlags().testFlag(Qt::ItemIsEditable) ) {
+    if ( !item->getFlags(col).testFlag(Qt::ItemIsEditable) ) {
         // Paint non editable items text in black
         pen.setColor(Qt::black);
     } else {
@@ -378,7 +378,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
 
     QRect textRect( geom.x() + 5, geom.y(), geom.width() - 5, geom.height() );
     QRect r;
-    QVariant var = item->data(Qt::DisplayRole);
+    QVariant var = item->getData(col, Qt::DisplayRole);
     double d = var.toDouble();
     QString dataStr = QString::number(d, 'f', 6);
     painter->drawText(textRect, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignLeft, dataStr, &r);
@@ -387,15 +387,12 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
 class KnobItemsTableView : public TableView
 {
     KnobItemsTableGuiPrivate* _imp;
-    QPoint _lastMousePressPosition;
 public:
 
     KnobItemsTableView(KnobItemsTableGuiPrivate* imp, QWidget* parent)
     : TableView(parent)
     , _imp(imp)
-    , _lastMousePressPosition()
     {
-
     }
 
     virtual ~KnobItemsTableView()
@@ -405,15 +402,14 @@ public:
 
 private:
 
-
-
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
-    virtual void mouseMoveEvent(QMouseEvent *event) OVERRIDE FINAL;
     virtual void dragMoveEvent(QDragMoveEvent *e) OVERRIDE FINAL;
     virtual void dragEnterEvent(QDragEnterEvent *e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    virtual void startDrag(Qt::DropActions supportedActions) OVERRIDE FINAL;
+    virtual void setupAndExecDragObject(QDrag* drag,
+                                        const QModelIndexList& rows,
+                                        Qt::DropActions supportedActions,
+                                        Qt::DropAction defaultAction) OVERRIDE FINAL;
 };
 
 KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePanel* panel, QWidget* parent)
@@ -441,7 +437,19 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->tableView->setItemDelegate(delegate);
 
-    _imp->tableModel = TableModel::create(0, 0);
+    int nCols = table->getColumnsCount();
+
+    KnobItemsTable::KnobItemsTableTypeEnum knobTableType = table->getType();
+    TableModel::TableModelTypeEnum type;
+    switch (knobTableType) {
+        case KnobItemsTable::eKnobItemsTableTypeTable:
+            type = TableModel::eTableModelTypeTable;
+            break;
+        case KnobItemsTable::eKnobItemsTableTypeTree:
+            type = TableModel::eTableModelTypeTree;
+            break;
+    }
+    _imp->tableModel = TableModel::create(nCols, type);
     QObject::connect( _imp->tableModel.get(), SIGNAL(s_itemChanged(TableItemPtr)), this, SLOT(onTableItemDataChanged(TableItemPtr)) );
     _imp->tableView->setTableModel(_imp->tableModel);
 
@@ -450,8 +458,6 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
                      SLOT(onModelSelectionChanged(QItemSelection,QItemSelection)) );
 
 
-    int nCols = table->getColumnsCount();
-    _imp->tableView->setColumnCount(nCols);
 
     std::vector<QString> headerLabels(nCols), headerIcons(nCols);
     for (int i = 0; i < nCols; ++i) {
@@ -462,28 +468,27 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     QString iconsPath = QString::fromUtf8(table->getIconsPath().c_str());
     Global::ensureLastPathSeparator(iconsPath);
 
+    std::vector<std::pair<QString, QIcon> > headerDatas(nCols);
     for (int i = 0; i < nCols; ++i) {
-        TableItemPtr headerItem = TableItem::create();
         if (!headerLabels[i].isEmpty()) {
-            headerItem->setText(headerLabels[i]);
+            headerDatas[i].first = headerLabels[i];
         }
         if (!headerIcons[i].isEmpty()) {
             QString filePath = iconsPath + headerIcons[i];
             QPixmap p;
             if (p.load(filePath) && !p.isNull()) {
                 QIcon ic(p);
-                headerItem->setIcon(ic);
+                headerDatas[i].second = ic;
             }
         }
-
-        _imp->tableModel->setHorizontalHeaderItem(i, headerItem);
     }
+    _imp->tableModel->setHorizontalHeaderData(headerDatas);
+
 
     _imp->tableView->setUniformRowHeights(table->getRowsHaveUniformHeight());
 
 
-    KnobItemsTable::KnobItemsTableTypeEnum type = table->getType();
-    if (type == KnobItemsTable::eKnobItemsTableTypeTree) {
+    if (knobTableType == KnobItemsTable::eKnobItemsTableTypeTree) {
         _imp->tableView->setItemsExpandable(false);
         _imp->tableView->setRootIsDecorated(true);
         _imp->tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
@@ -520,49 +525,17 @@ KnobItemsTableGui::~KnobItemsTableGui()
 
 
 void
-KnobItemsTableView::mousePressEvent(QMouseEvent* event)
+KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
+                                           const QModelIndexList& rows,
+                                           Qt::DropActions supportedActions,
+                                           Qt::DropAction defaultAction)
+
 {
 
-    _lastMousePressPosition = event->pos() + getOffset();
-    TableView::mousePressEvent(event);
-}
-
-void KnobItemsTableView::mouseMoveEvent(QMouseEvent *event)
-{
-    QPoint topLeft;
-    QPoint bottomRight = event->pos();
-
-    if (state() == ExpandingState || state() == CollapsingState)
-        return;
-
-    if (state() == DraggingState) {
-        topLeft = _lastMousePressPosition - getOffset();
-        if ((topLeft - bottomRight).manhattanLength() > QApplication::startDragDistance()) {
-            startDrag(model()->supportedDragActions());
-            setState(NoState); // the startDrag will return when the dnd operation is done
-            stopAutoScroll();
-        }
-        return;
-    }
-    TableView::mouseMoveEvent(event);
-}
-
-void
-KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
-{
-    QModelIndexList indexes = selectedIndexes();
-    if (indexes.isEmpty()) {
-        return;
-    }
-    std::set<int> rowsIndexes;
-    for (QModelIndexList::iterator it = indexes.begin(); it != indexes.end(); ++it) {
-        rowsIndexes.insert(it->row());
-    }
-
-    std::set<KnobTableItemPtr> items;
-    for (std::set<int>::iterator it = rowsIndexes.begin(); it!=rowsIndexes.end(); ++it) {
+    std::list<KnobTableItemPtr> items;
+    for (QModelIndexList::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         // Get the first col item
-        TableItemPtr item = _imp->tableModel->item(*it, 0);
+        TableItemPtr item = _imp->tableModel->getItem(*it);
         assert(item);
         if (!item) {
             continue;
@@ -575,7 +548,7 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
         if (!internalItem) {
             continue;
         }
-        items.insert(internalItem);
+        items.push_back(internalItem);
 
     }
 
@@ -592,7 +565,7 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
         assert(nodeUI);
         obj.nodeScriptName = nodeUI->getNode()->getFullyQualifiedName();
     }
-    for (std::set<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
+    for (std::list<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
         SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
         (*it)->toSerialization(s.get());
         obj.items.push_back(s);
@@ -603,36 +576,24 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
 
     QByteArray dataArray(ss.str().c_str());
 
-    QDrag *drag = new QDrag(this);
     QMimeData *data = new QMimeData;
     data->setData(QLatin1String(kNatronKnobItemsTableGuiMimeType), dataArray);
-    QRect rect;
-    QPixmap pixmap = renderToPixmap(rowsIndexes, &rect);
-    rect.adjust(horizontalOffset(), verticalOffset(), 0, 0);
-    drag->setPixmap(pixmap);
     drag->setMimeData(data);
-    drag->setHotSpot(_lastMousePressPosition - rect.topLeft());
-
-    Qt::DropAction action = Qt::IgnoreAction;
-    if (defaultDropAction() != Qt::IgnoreAction && (supportedActions & defaultDropAction())) {
-        action = defaultDropAction();
-    } else if (supportedActions & Qt::CopyAction && dragDropMode() != QAbstractItemView::InternalMove) {
-        action = Qt::CopyAction;
-    }
     
-    if (drag->exec(supportedActions, defaultDropAction()) == Qt::MoveAction) {
+    if (drag->exec(supportedActions, defaultAction) == Qt::MoveAction) {
         
         // If the target is NULL, we have no choice but to remove data from the original table.
         // This means the drop finished on another instance of Natron
         if (!drag->target()) {
+            KnobItemsTablePtr model = _imp->internalModel.lock();
             // If the target table is not this one, we have no choice but to remove from this table the items out of undo/redo operation
-            for (std::set<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
-                _imp->internalModel.lock()->removeItem(*it, eTableChangeReasonInternal);
+            for (std::list<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
+                model->removeItem(*it, eTableChangeReasonInternal);
             }
         }
     }
     
-} // startDrag
+} // setupAndExecDragObject
 
 void
 KnobItemsTableView::dragMoveEvent(QDragMoveEvent *e)
@@ -859,7 +820,7 @@ DragItemsUndoCommand::moveItem(int indexInParent, const KnobTableItemPtr& parent
         parent->insertChild(indexInParent, item, eTableChangeReasonInternal);
         ModelItemsVec::iterator foundParent = _table->findItem(parent);
         if (foundParent != _table->items.end()) {
-            _table->tableView->setExpanded(_table->tableModel->index(foundParent->columnItems[0].item), true);
+            _table->tableView->setExpanded(_table->tableModel->getItemIndex(foundParent->item), true);
         }
     } else {
         toTable->insertTopLevelItem(indexInParent, item, eTableChangeReasonInternal);
@@ -1505,16 +1466,29 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     
     ModelItem mitem;
     mitem.columnItems.resize(nCols);
+    mitem.item = TableItem::create();
     
+    TableItemPtr parentItem;
+    KnobTableItemPtr knobParentItem = item->getParent();
+    if (knobParentItem) {
+        ModelItemsVec::iterator foundParent = findItem(knobParentItem);
+        assert(foundParent != items.end());
+        if (foundParent != items.end()) {
+            parentItem = foundParent->item;
+        }
+    }
+    if (parentItem) {
+        parentItem->insertChild(itemRow, mitem.item);
+    } else {
+        tableModel->insertTopLevelItem(itemRow, mitem.item);
+    }
+
     for (int i = 0; i < nCols; ++i) {
         
         ModelItem::ColumnData d;
         // If this column represents a knob, this is the knob
         d.knob = item->getColumnKnob(i, &d.knobDimension);
         
-        TableItemPtr tableItem = TableItem::create();
-        d.item = tableItem;
-        tableView->setItem(itemRow, i, tableItem);
 
         
         if (d.knob.lock()) {
@@ -1526,9 +1500,9 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
             std::string columnID = item->getColumnName(i);
             assert(columnID == kKnobTableItemColumnLabel);
             mitem.labelColIndex = i;
-            tableItem->setToolTip( labelToolTipFromScriptName(item) );
-            tableItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
-            tableItem->setText( QString::fromUtf8( item->getLabel().c_str() ) );
+            mitem.item->setToolTip(i, labelToolTipFromScriptName(item) );
+            mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
+            mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
             
         }
         

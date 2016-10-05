@@ -108,12 +108,12 @@ struct TableItemPrivate
     // Weak ref to column 0 item of the parent
     TableItemWPtr parent;
 
-    TableItemPrivate(const TableItemPtr& parent)
+    TableItemPrivate()
     : columns()
     , model()
     , indexInParent(-1)
     , children()
-    , parent(parent)
+    , parent()
     {
 
     }
@@ -175,8 +175,8 @@ struct TableItemPrivate
 
 };
 
-TableItem::TableItem(const TableItemPtr& parent)
-: _imp(new TableItemPrivate(parent))
+TableItem::TableItem()
+: _imp(new TableItemPrivate())
 {
     
 }
@@ -190,10 +190,10 @@ TableItem::~TableItem()
 TableItemPtr
 TableItem::create(const TableItemPtr& parent)
 {
-    TableItemPtr ret(new TableItem(parent));
+    TableItemPtr ret(new TableItem);
     if (parent) {
-        // If user provides a parent item, then automatically add the child in the model
-        parent->_imp->children.push_back(ret);
+        // Inserting the item in the parent may not succeed if parent is not in a model already.
+        parent->insertChild(-1, ret);
     }
     return ret;
 }
@@ -208,6 +208,100 @@ const TableItemVec&
 TableItem::getChildren() const
 {
     return _imp->children;
+}
+
+bool
+TableItem::insertChild(int row, const TableItemPtr& child)
+{
+    TableModelPtr model = getModel();
+    if (!model) {
+        // Item is not in a model
+        return false;
+    } else if (model->getType() != TableModel::eTableModelTypeTree) {
+        return false;
+    }
+    
+    if (row > (int)_imp->children.size()) {
+        return false;
+    }
+    
+    // Remove the child from its original parent/model
+    {
+        TableItemPtr currentParent = child->getParentItem();
+        if (currentParent) {
+            currentParent->removeChild(child);
+        } else {
+            TableModelPtr childModel = child->getModel();
+            if (childModel) {
+                childModel->removeTopLevelItem(child);
+            }
+        }
+    }
+
+    TableItemPtr thisShared = shared_from_this();
+    child->_imp->parent = thisShared;
+    child->_imp->model = model;
+    
+    QModelIndex thisIdx = model->getItemIndex(thisShared);
+    if (row == -1 || row == (int)_imp->children.size()) {
+        model->beginInsertRows(thisIdx, _imp->children.size(), _imp->children.size());
+        child->_imp->indexInParent = _imp->children.size();
+        _imp->children.push_back(child);
+        model->endInsertRows();
+    } else {
+        model->beginInsertRows(thisIdx, row, row);
+        TableItemVec::iterator it = _imp->children.begin();
+        std::advance(it, row);
+        it = _imp->children.insert(it, child);
+        int index = row;
+        for (TableItemVec::iterator p = it; p != _imp->children.end(); ++it, ++index) {
+            (*p)->_imp->indexInParent = index;
+        }
+        model->endInsertRows();
+    }
+    return true;
+}
+
+bool
+TableItem::removeChild(const TableItemPtr& child)
+{
+    if (!child) {
+        return false;
+    }
+    if (child->getParentItem().get() != this) {
+        return false;
+    }
+    
+    TableModelPtr model = getModel();
+    
+    
+    int i = 0;
+    for (TableItemVec::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it, ++i) {
+        if (*it == child) {
+            
+            if (model) {
+                TableItemPtr thisShared = shared_from_this();
+                QModelIndex thisIdx = model->getItemIndex(thisShared);
+                model->beginRemoveRows(thisIdx, i, i);
+            }
+            
+            child->_imp->parent.reset();
+            child->_imp->model.reset();
+            child->_imp->indexInParent = - 1;
+            
+            it = _imp->children.erase(it);
+            for (; it != _imp->children.end(); ++it) {
+                --(*it)->_imp->indexInParent;
+            }
+            if (model) {
+                model->endRemoveRows();
+            }
+
+            
+            return true;
+        }
+    }
+    return false;
 }
 
 TableModelPtr
@@ -320,6 +414,12 @@ TableModel::TableModel(int columns, TableModelTypeEnum type)
 TableModel::~TableModel()
 {
 
+}
+
+TableModel::TableModelTypeEnum
+TableModel::getType() const
+{
+    return _imp->type;
 }
 
 void
@@ -638,61 +738,73 @@ TableModel::setRow(int row, const TableItemPtr& item)
 bool
 TableModel::insertTopLevelItem(int row, const TableItemPtr& item)
 {
-    if (_imp->type != eTableModelTypeTree) {
-        throw std::logic_error("TableModel::insertTopLevelItem: called on a table that is not a tree");
-    }
+   
     if (!item) {
         return false;
     }
-    if (row >= (int)_imp->topLevelItems.size()) {
+    if (row > (int)_imp->topLevelItems.size()) {
         return false;
     }
 
     item->_imp->setModelAndInitColumns(shared_from_this());
 
-    if (row == -1) {
+    
+    if (row == -1 || row == (int)_imp->topLevelItems.size()) {
+        beginInsertRows(QModelIndex(), _imp->topLevelItems.size(), _imp->topLevelItems.size());
         _imp->topLevelItems.push_back(item);
+        item->_imp->indexInParent = _imp->topLevelItems.size() - 1;
+        endInsertRows();
     } else {
+        beginInsertRows(QModelIndex(), row, row);
         TableItemVec::iterator it = _imp->topLevelItems.begin();
         std::advance(it, row);
-        _imp->topLevelItems.insert(it, item);
+        it = _imp->topLevelItems.insert(it, item);
+        
+        int index = row;
+        for (TableItemVec::iterator p = it; p != _imp->topLevelItems.end(); ++p, ++index) {
+            (*p)->_imp->indexInParent = index;
+        }
+        endInsertRows();
+        
     }
 
-    refreshTopLevelItemIndices();
 
-    QModelIndex idx = createIndex(row, 0, item.get());
+    /*QModelIndex idx = createIndex(item->_imp->indexInParent, 0, item.get());
 
     // Refresh the view
-    Q_EMIT dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);*/
     return true;
 }
 
 bool
 TableModel::removeTopLevelItem(const TableItemPtr& item)
 {
-    if (_imp->type != eTableModelTypeTree) {
-        throw std::logic_error("TableModel::removeTopLevelItem: called on a table that is not a tree");
-    }
+  
     if (!item) {
         return false;
     }
-
+    
     int i = 0;
     for (TableItemVec::iterator it = _imp->topLevelItems.begin(); it!=_imp->topLevelItems.end(); ++it, ++i) {
         if (*it == item) {
 
+            beginRemoveRows(QModelIndex(), i, i);
             // Item no longer belongs to model
+            assert(!item->_imp->parent.lock());
             item->_imp->indexInParent = -1;
             item->_imp->model.reset();
+#pragma message WARN("Should we also recursively remove children of item?")
+            it = _imp->topLevelItems.erase(it);
+            for (; it != _imp->topLevelItems.end(); ++it) {
+                --item->_imp->indexInParent;
+            }
 
-            _imp->topLevelItems.erase(it);
-
-            refreshTopLevelItemIndices();
-
-            QModelIndex idx = createIndex(i, 0, 0);
+            endRemoveRows();
+            /*QModelIndex first = createIndex(i, 0, 0);
+            QModelIndex last = createIndex(i, _imp->colCount - 1, 0);
 
             // Refresh the view
-            Q_EMIT dataChanged(idx, idx);
+            Q_EMIT dataChanged(first, last);*/
 
             return true;
         }
@@ -1018,10 +1130,13 @@ struct TableViewPrivate
 {
     TableModelWPtr model;
     std::list<TableItemPtr> draggedItems;
-
+    
+    QPoint lastMousePressPosition;
+    
     TableViewPrivate()
-        : model()
-        , draggedItems()
+    : model()
+    , draggedItems()
+    , lastMousePressPosition()
     {
     }
 };
@@ -1304,7 +1419,10 @@ TableView::currentItem() const
 void
 TableView::mousePressEvent(QMouseEvent* e)
 {
-    TableItemPtr item = itemAt( e->pos() );
+    QPoint p = e->pos();
+    _imp->lastMousePressPosition = p + getOffset();
+
+    TableItemPtr item = itemAt(p);
 
     if (!item) {
         selectionModel()->clear();
@@ -1312,6 +1430,27 @@ TableView::mousePressEvent(QMouseEvent* e)
         QTreeView::mousePressEvent(e);
     }
 }
+
+void TableView::mouseMoveEvent(QMouseEvent *event)
+{
+    QPoint topLeft;
+    QPoint bottomRight = event->pos();
+    
+    if (state() == ExpandingState || state() == CollapsingState)
+        return;
+    
+    if (state() == DraggingState) {
+        topLeft = _imp->lastMousePressPosition - getOffset();
+        if ((topLeft - bottomRight).manhattanLength() > QApplication::startDragDistance()) {
+            setupDragObject(model()->supportedDragActions());
+            setState(NoState); // the startDrag will return when the dnd operation is done
+            stopAutoScroll();
+        }
+        return;
+    }
+    QTreeView::mouseMoveEvent(event);
+}
+
 
 void
 TableView::mouseDoubleClickEvent(QMouseEvent* e)
@@ -1480,7 +1619,7 @@ struct DraggablePaintItem
     TableItemPtr tableItem;
 };
 
-QPixmap TableView::renderToPixmap(const std::set<int>& rows, QRect *r) const
+QPixmap TableView::renderToPixmap(const QModelIndexList& rows, QRect *r) const
 {
     assert(r);
 
@@ -1490,11 +1629,11 @@ QPixmap TableView::renderToPixmap(const std::set<int>& rows, QRect *r) const
     const int colsCount = model->columnCount();;
 
     std::vector<DraggablePaintItem> paintItems;
-    for (std::set<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+    for (QModelIndexList::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
 
         TableItemPtr modelItem = model->getItem(*it);
         for (int c = 0; c < colsCount; ++c) {
-            QModelIndex idx = model->index(*it, c);
+            QModelIndex idx = model->index(it->row(), c);
             const QRect itemRect = visualRect(idx);
             if (itemRect.intersects(viewportRect)) {
                 DraggablePaintItem d;
@@ -1542,10 +1681,72 @@ TableView::rebuildDraggedItemsFromSelection()
 }
 
 void
-TableView::startDrag(Qt::DropActions supportedActions)
+TableView::setupDragObject(Qt::DropActions supportedActions)
 {
+    
     rebuildDraggedItemsFromSelection();
-    QTreeView::startDrag(supportedActions);
+    
+    
+    QModelIndexList rowsIndices;
+    
+    // Extract only model indices for column 0 that are drag enabled
+    {
+        QModelIndexList indexes = selectedIndexes();
+        if (indexes.isEmpty()) {
+            return;
+        }
+        for (QModelIndexList::iterator it = indexes.begin(); it != indexes.end(); ++it) {
+            if (it->column() == 0 && model()->flags(*it) & Qt::ItemIsDragEnabled) {
+                rowsIndices.push_back(*it);
+            }
+        }
+    }
+    if (rowsIndices.isEmpty()) {
+        return;
+    }
+    QDrag *drag = new QDrag(this);
+    QRect rect;
+    QPixmap pixmap = renderToPixmap(rowsIndices, &rect);
+    rect.adjust(horizontalOffset(), verticalOffset(), 0, 0);
+    drag->setPixmap(pixmap);
+    drag->setHotSpot(_imp->lastMousePressPosition - rect.topLeft());
+    
+    Qt::DropAction action = Qt::IgnoreAction;
+    if (defaultDropAction() != Qt::IgnoreAction && (supportedActions & defaultDropAction())) {
+        action = defaultDropAction();
+    } else if (supportedActions & Qt::CopyAction && dragDropMode() != QAbstractItemView::InternalMove) {
+        action = Qt::CopyAction;
+    }
+    
+    // Call implementation dependent drag mimedata setup
+    setupAndExecDragObject(drag, rowsIndices, supportedActions, action);
+}
+
+void
+TableView::setupAndExecDragObject(QDrag* drag,
+                                  const QModelIndexList& rows,
+                                  Qt::DropActions supportedActions,
+                                  Qt::DropAction defaultAction)
+{
+    QMimeData *data = getTableModel()->mimeData(rows);
+    if (!data) {
+        return;
+    }
+    drag->setMimeData(data);
+    if (drag->exec(supportedActions, defaultAction) == Qt::MoveAction) {
+        
+        TableModelPtr model = getTableModel();
+        // If the target table is not this one, we have no choice but to remove from this table the items out of undo/redo operation
+        for (QModelIndexList::const_iterator it = rows.begin(); it != rows.end(); ++it) {
+            TableItemPtr item = model->getItem(*it);
+            if (item) {
+                model->removeTopLevelItem(item);
+            }
+        }
+        
+    }
+    
+    
 }
 
 void
@@ -1558,6 +1759,11 @@ TableView::dragLeaveEvent(QDragLeaveEvent *e)
 void
 TableView::dragEnterEvent(QDragEnterEvent *e)
 {
+    
+    if (_imp->draggedItems.empty()) {
+        e->ignore();
+        return;
+    }
     rebuildDraggedItemsFromSelection();
     QTreeView::dragEnterEvent(e);
 }
@@ -1566,9 +1772,14 @@ void
 TableView::dropEvent(QDropEvent* e)
 {
 
+    if (getTableModel()->getType() == TableModel::eTableModelTypeTree) {
+        QTreeView::dropEvent(e);
+        return;
+    }
     // We only support drag & drop that are internal to this table
     TableItemPtr into = itemAt( e->pos() );
     if ( !into || _imp->draggedItems.empty() ) {
+        e->ignore();
         return;
     }
 
@@ -1588,36 +1799,28 @@ TableView::dropEvent(QDropEvent* e)
     // Prepare for changes
     Q_EMIT aboutToDrop();
 
-    int targetRow = into->row();
 
     TableModelPtr model = getTableModel();
 
     // Remove the items but do not delete them
-    std::map<int, std::map<int, TableItemPtr> > rowMoved;
+    std::map<int, TableItemPtr> rowMoved;
     for (std::list<TableItemPtr>::iterator it = _imp->draggedItems.begin(); it != _imp->draggedItems.end(); ++it) {
-        rowMoved[(*it)->row()][(*it)->column()] = *it;
-        TableItemPtr taken = model->takeItem( (*it)->row(), (*it)->column() );
-        assert(taken == *it);
-        Q_UNUSED(taken);
+        rowMoved[(*it)->getRowInParent()] = *it;
+        model->removeTopLevelItem(*it);
     }
 
-    // Remove the rows in reverse order so that indexes are still valid
-    for (std::map<int, std::map<int, TableItemPtr> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
-        model->removeRows(it->first);
-        if (it->first <= targetRow) {
-            --targetRow;
-        }
-    }
     _imp->draggedItems.clear();
 
+    int targetRow = into->getRowInParent();
+
     // Insert back at the correct position depending on the drop indicator
-    int nRows = model->rowCount();
     switch (position) {
     case QAbstractItemView::AboveItem: {
         model->insertRows( targetRow, rowMoved.size() );
         break;
     }
     case QAbstractItemView::BelowItem: {
+        int nRows = model->rowCount();
         ++targetRow;
         if (targetRow > nRows) {
             targetRow = nRows;
@@ -1631,10 +1834,8 @@ TableView::dropEvent(QDropEvent* e)
     }
 
     int rowIndex = targetRow;
-    for (std::map<int, std::map<int, TableItemPtr> >::iterator it = rowMoved.begin(); it != rowMoved.end(); ++it, ++rowIndex) {
-        for (std::map<int, TableItemPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            model->setItem(rowIndex, it2->first, it2->second);
-        }
+    for (std::map<int, TableItemPtr>::iterator it = rowMoved.begin(); it != rowMoved.end(); ++it, ++rowIndex) {
+        model->setRow(it->first, it->second);
     }
 
     Q_EMIT itemDropped();

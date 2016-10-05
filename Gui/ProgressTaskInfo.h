@@ -140,7 +140,7 @@ public Q_SLOTS:
 
     void onProcessCanceled();
 
-    void getTableItems(std::vector<TableItemPtr>* items) const;
+    TableItemPtr getTableItem() const;
 
     void createCellWidgets();
 

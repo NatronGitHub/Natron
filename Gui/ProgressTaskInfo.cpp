@@ -92,13 +92,7 @@ public:
     ProgressPanel* panel;
     NodeWPtr node;
     ProgressTaskInfo* _publicInterface; // can not be a smart ptr
-    TableItemPtr nameItem;
-    TableItemPtr progressItem;
-    TableItemPtr statusItem;
-    TableItemPtr controlsItem;
-    TableItemPtr timeRemainingItem;
-    TableItemPtr taskInfoItem;
-    TableItemPtr frameRangeItem;
+    TableItemPtr item;
     ProgressTaskInfo::ProgressTaskStatusEnum status;
     QProgressBar* progressBar;
     double progressPercent;
@@ -133,13 +127,7 @@ public:
         : panel(panel)
         , node(node)
         , _publicInterface(publicInterface)
-        , nameItem()
-        , progressItem()
-        , statusItem()
-        , controlsItem()
-        , timeRemainingItem()
-        , taskInfoItem()
-        , frameRangeItem()
+        , item()
         , status(ProgressTaskInfo::eProgressTaskStatusQueued)
         , progressBar(0)
         , progressPercent(0)
@@ -574,8 +562,8 @@ ProgressTaskInfo::updateProgress(const int frame,
     updateProgressBar(percent, progress);
 }
 
-void
-ProgressTaskInfo::getTableItems(std::vector<TableItemPtr>* items) const
+TableItemPtr
+ProgressTaskInfo::getTableItems() const
 {
     items->push_back(_imp->nameItem);
     items->push_back(_imp->progressItem);
