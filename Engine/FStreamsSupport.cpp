@@ -24,7 +24,7 @@
 
 #include "FStreamsSupport.h"
 
-
+#include <iostream>
 NATRON_NAMESPACE_ENTER;
 
 
@@ -36,7 +36,9 @@ FStreamsSupport::open (FStreamsSupport::ifstream *stream,
 #ifdef __NATRON_WIN32__
     // Windows std::ifstream accepts non-standard wchar_t*
     // On MingW, we use our own FStreamsSupport::ifstream
+    std::cout << "FStreamsSupport::open: " << path << std::endl;
     std::wstring wpath = Global::utf8_to_utf16(path);
+    std::cout << "FStreamsSupport::open: (Checked wide string): " << QString::fromStdWString(wpath).toStdString() << std::endl;
     stream->open (wpath.c_str(), mode);
     stream->seekg (0, std::ios_base::beg); // force seek, otherwise broken
 #else
