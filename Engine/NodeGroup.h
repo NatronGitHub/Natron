@@ -98,7 +98,14 @@ public:
     /**
      * @brief Removes all nodes within the collection. MT-safe.
      **/
-    void clearNodes(bool emitSignal);
+    void clearNodesBlocking();
+    void clearNodesNonBlocking();
+
+private:
+
+    void clearNodesInternal(bool blocking);
+
+public:
 
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
@@ -193,6 +200,7 @@ public:
     void forceRefreshPreviews();
 
     void quitAnyProcessingForAllNodes_non_blocking();
+    void quitAnyProcessingForAllNodes_blocking();
 
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -278,6 +286,7 @@ public:
                              QString& output);
 
 private:
+    void quitAnyProcessingInternal(bool blocking);
 
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };

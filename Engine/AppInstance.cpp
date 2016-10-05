@@ -209,7 +209,7 @@ AppInstance::AppInstance(int appID)
 
 AppInstance::~AppInstance()
 {
-    _imp->_currentProject->clearNodes(false);
+    _imp->_currentProject->clearNodesBlocking();
 }
 
 const ProjectBeingLoadedInfo&
@@ -900,7 +900,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
             Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
             if (containerNode) {
-                containerNode->destroyNode(false);
+                containerNode->destroyNode(false, false);
             }
 
             return node;
@@ -1301,7 +1301,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         try {
             createNodeGui(node, multiInstanceParent, args);
         } catch (const std::exception& e) {
-            node->destroyNode(false);
+            node->destroyNode(true, false);
             if (!isSilentCreation) {
                 std::string title("Error while creating node");
                 std::string message = title + " " + foundPluginID + ": " + e.what();

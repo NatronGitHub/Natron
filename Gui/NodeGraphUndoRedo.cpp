@@ -128,7 +128,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodeGuiPtr node = it->lock();
             if (node) {
-                node->getNode()->destroyNode(false);
+                node->getNode()->destroyNode(false, false);
             }
         }
     }
@@ -258,7 +258,7 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodeGuiPtr n = it->node.lock();
             if (n) {
-                n->getNode()->destroyNode(false);
+                n->getNode()->destroyNode(false, false);
             }
         }
     }

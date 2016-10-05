@@ -2660,7 +2660,7 @@ Node::abortAnyProcessing_blocking()
 
 Node::~Node()
 {
-    destroyNodeInternal(true, false);
+    destroyNode(true, false);
 }
 
 const std::vector<std::string> &
@@ -6377,22 +6377,20 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
-    doDestroyNodeInternalEnd(false, thisArgs ? thisArgs->autoReconnect : false);
+    doDestroyNodeInternalEnd(thisArgs ? thisArgs->autoReconnect : false);
     _imp->renderWatcher.reset();
 }
 
 void
-Node::doDestroyNodeInternalEnd(bool fromDest,
-                               bool autoReconnect)
+Node::doDestroyNodeInternalEnd(bool autoReconnect)
 {
     ///Remove the node from the project
-    if (!fromDest) {
-        deactivate(NodesList(),
-                   true,
-                   autoReconnect,
-                   true,
-                   false);
-    }
+    deactivate(NodesList(),
+               true,
+               autoReconnect,
+               true,
+               false);
+
 
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
@@ -6404,7 +6402,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     ///If its a group, clear its nodes
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGrp) {
-        isGrp->clearNodes(true);
+        isGrp->clearNodesBlocking();
     }
 
 
@@ -6443,17 +6441,15 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     ///thisShared ptr
 
     ///If not inside a gorup or inside fromDest the shared_ptr is probably invalid at this point
-    if (!fromDest) {
-        NodePtr thisShared = shared_from_this();
-        if ( getGroup() ) {
-            getGroup()->removeNode(thisShared);
-        }
+    NodePtr thisShared = shared_from_this();
+    if ( getGroup() ) {
+        getGroup()->removeNode(thisShared);
     }
+
 } // Node::doDestroyNodeInternalEnd
 
 void
-Node::destroyNodeInternal(bool fromDest,
-                          bool autoReconnect)
+Node::destroyNode(bool blockingDestroy, bool autoReconnect)
 {
     if (!_imp->effect) {
         return;
@@ -6465,34 +6461,27 @@ Node::destroyNodeInternal(bool fromDest,
     }
 
     bool allProcessingQuit = areAllProcessingThreadsQuit();
-    if (allProcessingQuit) {
-        doDestroyNodeInternalEnd(true, false);
-    } else {
-        if (!fromDest) {
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-            NodesList nodesToWatch;
-            nodesToWatch.push_back( shared_from_this() );
-            if (isGrp) {
-                isGrp->getNodes_recursive(nodesToWatch, false);
-            }
-            _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
-            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-            boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
-            args->autoReconnect = autoReconnect;
-            _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-        } else {
-            // Well, we are in the destructor, we better have nothing left to render
+    if (allProcessingQuit || blockingDestroy) {
+        if (!allProcessingQuit) {
             quitAnyProcessing_blocking(false);
-            doDestroyNodeInternalEnd(true, false);
         }
+        doDestroyNodeInternalEnd(false);
+    } else {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+        NodesList nodesToWatch;
+        nodesToWatch.push_back( shared_from_this() );
+        if (isGrp) {
+            isGrp->getNodes_recursive(nodesToWatch, false);
+        }
+        _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
+        QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
+        args->autoReconnect = autoReconnect;
+        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
     }
 } // Node::destroyNodeInternal
 
-void
-Node::destroyNode(bool autoReconnect)
-{
-    destroyNodeInternal(false, autoReconnect);
-}
 
 KnobPtr
 Node::getKnobByName(const std::string & name) const

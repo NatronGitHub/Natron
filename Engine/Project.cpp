@@ -1864,7 +1864,12 @@ Project::doResetEnd(bool aboutToQuit)
     }
 
 
-    clearNodes(!aboutToQuit);
+    if (aboutToQuit) {
+        clearNodesBlocking();
+    } else {
+        clearNodesNonBlocking();
+    }
+
 
     if (!aboutToQuit) {
         {

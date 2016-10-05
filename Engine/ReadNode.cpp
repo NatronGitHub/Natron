@@ -522,7 +522,7 @@ ReadNodePrivate::destroyReadNode()
 
     QMutexLocker k(&embeddedPluginMutex);
     if (embeddedPlugin) {
-        embeddedPlugin->destroyNode(false);
+        embeddedPlugin->destroyNode(true, false);
     }
     embeddedPlugin.reset();
 

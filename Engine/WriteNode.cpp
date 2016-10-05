@@ -490,13 +490,13 @@ WriteNodePrivate::destroyWriteNode()
     _publicInterface->recreateKnobs(true);
 
     if (embeddedNode) {
-        embeddedNode->destroyNode(false);
+        embeddedNode->destroyNode(true, false);
     }
     embeddedPlugin.reset();
 
     NodePtr readBack = readBackNode.lock();
     if (readBack) {
-        readBack->destroyNode(false);
+        readBack->destroyNode(true, false);
     }
     readBackNode.reset();
 } // WriteNodePrivate::destroyWriteNode

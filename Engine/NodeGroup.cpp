@@ -250,28 +250,38 @@ NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
     }
 }
 
-static void
-quitAnyProcessingInternal(NodeCollection* grp)
+void
+NodeCollection::quitAnyProcessingInternal(bool blocking)
 {
-    NodesList nodes = grp->getNodes();
+    NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->quitAnyProcessing_non_blocking();
+        if (blocking) {
+            (*it)->quitAnyProcessing_blocking(true);
+        } else {
+            (*it)->quitAnyProcessing_non_blocking();
+        }
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
-            quitAnyProcessingInternal(isGrp);
+            isGrp->quitAnyProcessingInternal(blocking);
         }
         PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
         if (isPrecomp) {
-            quitAnyProcessingInternal( isPrecomp->getPrecompApp()->getProject().get() );
+            isPrecomp->getPrecompApp()->getProject()->quitAnyProcessingInternal(blocking);
         }
     }
 }
 
 void
+NodeCollection::quitAnyProcessingForAllNodes_blocking()
+{
+    quitAnyProcessingInternal(true);
+}
+
+void
 NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 {
-    quitAnyProcessingInternal(this);
+    quitAnyProcessingInternal(false);
 }
 
 bool
@@ -393,7 +403,7 @@ NodeCollection::forceRefreshPreviews()
 }
 
 void
-NodeCollection::clearNodes(bool emitSignal)
+NodeCollection::clearNodesInternal(bool blocking)
 {
     NodesList nodesToDelete;
     {
@@ -408,26 +418,25 @@ NodeCollection::clearNodes(bool emitSignal)
 
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
-            isGrp->clearNodes(emitSignal);
+            isGrp->clearNodesInternal(blocking);
         }
         PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
         if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->clearNodes(emitSignal);
+            isPrecomp->getPrecompApp()->getProject()->clearNodesInternal(blocking);
         }
     }
 
     ///Kill effects
 
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->destroyNode(false);
+        (*it)->destroyNode(blocking, false);
     }
 
 
-    if (emitSignal) {
-        if (_imp->graph) {
-            _imp->graph->onNodesCleared();
-        }
+    if (_imp->graph) {
+        _imp->graph->onNodesCleared();
     }
+
 
     {
         QMutexLocker l(&_imp->nodesMutex);
@@ -435,6 +444,19 @@ NodeCollection::clearNodes(bool emitSignal)
     }
 
     nodesToDelete.clear();
+}
+
+void
+NodeCollection::clearNodesBlocking()
+{
+    quitAnyProcessingForAllNodes_blocking();
+    clearNodesInternal(true);
+}
+
+void
+NodeCollection::clearNodesNonBlocking()
+{
+    clearNodesInternal(false);
 }
 
 void

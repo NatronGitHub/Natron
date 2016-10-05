@@ -736,13 +736,11 @@ public:
      * when the caller releases the reference to this Node
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
      **/
-    void destroyNode(bool autoReconnect);
+    void destroyNode(bool blockingDestroy, bool autoReconnect);
 
 private:
 
-    void destroyNodeInternal(bool fromDest, bool autoReconnect);
-
-    void doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect);
+    void doDestroyNodeInternalEnd(bool autoReconnect);
 
 public:
 

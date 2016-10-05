@@ -182,7 +182,7 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             //_imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            _imp->_previewProvider->viewerNodeInternal->destroyNode(false);
+            _imp->_previewProvider->viewerNodeInternal->destroyNode(true, false);
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
@@ -190,12 +190,12 @@ GuiAppInstance::deletePreviewProvider()
         for (std::map<std::string, NodePtr>::iterator it =
                  _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->destroyNode(false);
+            it->second->destroyNode(true, false);
         }
         _imp->_previewProvider->readerNodes.clear();
 #else
         if (_imp->_previewProvider->readerNode) {
-            _imp->_previewProvider->readerNode->destroyNode(false);
+            _imp->_previewProvider->readerNode->destroyNode(true, false);
             _imp->_previewProvider->readerNode.reset();
         }
 #endif
