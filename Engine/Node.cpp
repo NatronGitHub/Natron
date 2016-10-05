@@ -4279,7 +4279,7 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     int curIndex = choice->getValue();
     choice->populateChoices(entries);
     choice->beginChanges();
-    choice->setDefaultValue(defValue);
+    choice->setDefaultValueWithoutApplying(defValue);
     if (!loadingProject) {
         //changedKnob was not called because we are initializing knobs
         handleFormatKnob( choice.get() );

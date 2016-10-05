@@ -1524,6 +1524,7 @@ Project::onKnobValueChanged(KnobI* knob,
         NodesList nodes;
         getNodes_recursive(nodes, true);
 
+        // Refresh nodes with a format parameter
         std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
@@ -1985,6 +1986,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         return;
     }
 
+    bool mustRefreshNodeFormats = false;
     Format dispW;
     {
         QMutexLocker l(&_imp->formatMutex);
@@ -2003,7 +2005,19 @@ Project::setOrAddProjectFormat(const Format & frmt,
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW);
+            mustRefreshNodeFormats = true;
         }
+    }
+    if (mustRefreshNodeFormats) {
+        // Refresh nodes with a format parameter
+        NodesList nodes;
+        getNodes_recursive(nodes, true);
+        int index = _imp->formatKnob->getValue();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->refreshFormatParamChoice(entries, index, false);
+        }
+
     }
 }
 
