@@ -92,13 +92,13 @@ public:
     ProgressPanel* panel;
     NodeWPtr node;
     ProgressTaskInfo* _publicInterface; // can not be a smart ptr
-    TableItem* nameItem;
-    TableItem* progressItem;
-    TableItem* statusItem;
-    TableItem* controlsItem;
-    TableItem* timeRemainingItem;
-    TableItem* taskInfoItem;
-    TableItem* frameRangeItem;
+    TableItemPtr nameItem;
+    TableItemPtr progressItem;
+    TableItemPtr statusItem;
+    TableItemPtr controlsItem;
+    TableItemPtr timeRemainingItem;
+    TableItemPtr taskInfoItem;
+    TableItemPtr frameRangeItem;
     ProgressTaskInfo::ProgressTaskStatusEnum status;
     QProgressBar* progressBar;
     double progressPercent;
@@ -133,13 +133,13 @@ public:
         : panel(panel)
         , node(node)
         , _publicInterface(publicInterface)
-        , nameItem(0)
-        , progressItem(0)
-        , statusItem(0)
-        , controlsItem(0)
-        , timeRemainingItem(0)
-        , taskInfoItem(0)
-        , frameRangeItem(0)
+        , nameItem()
+        , progressItem()
+        , statusItem()
+        , controlsItem()
+        , timeRemainingItem()
+        , taskInfoItem()
+        , frameRangeItem()
         , status(ProgressTaskInfo::eProgressTaskStatusQueued)
         , progressBar(0)
         , progressPercent(0)
@@ -374,14 +374,14 @@ ProgressTaskInfo::onProcessCanceled()
 void
 ProgressTaskInfo::clearItems()
 {
-    _imp->nameItem = 0;
-    _imp->progressItem = 0;
+    _imp->nameItem.reset();
+    _imp->progressItem.reset();
     _imp->progressBar = 0;
-    _imp->controlsItem = 0;
-    _imp->timeRemainingItem = 0;
-    _imp->taskInfoItem = 0;
-    _imp->statusItem = 0;
-    _imp->frameRangeItem = 0;
+    _imp->controlsItem.reset();
+    _imp->timeRemainingItem.reset();
+    _imp->taskInfoItem.reset();
+    _imp->statusItem.reset();
+    _imp->frameRangeItem.reset();
 }
 
 NodePtr
@@ -455,7 +455,7 @@ ProgressTaskInfoPrivate::createItems()
     }
     _publicInterface->createCellWidgets();
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if (nodeUI) {
@@ -466,13 +466,13 @@ ProgressTaskInfoPrivate::createItems()
         nameItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         progressItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         item->setTextColor(Qt::yellow);
@@ -480,7 +480,7 @@ ProgressTaskInfoPrivate::createItems()
         statusItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if (nodeUI) {
@@ -490,14 +490,14 @@ ProgressTaskInfoPrivate::createItems()
         controlsItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         item->setText( tr("N/A") );
         timeRemainingItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if ( getNode()->getEffectInstance()->isOutput() ) {
@@ -512,7 +512,7 @@ ProgressTaskInfoPrivate::createItems()
         frameRangeItem = item;
     }
     {
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         item->setText(message);
@@ -575,7 +575,7 @@ ProgressTaskInfo::updateProgress(const int frame,
 }
 
 void
-ProgressTaskInfo::getTableItems(std::vector<TableItem*>* items) const
+ProgressTaskInfo::getTableItems(std::vector<TableItemPtr>* items) const
 {
     items->push_back(_imp->nameItem);
     items->push_back(_imp->progressItem);

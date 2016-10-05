@@ -82,7 +82,7 @@ struct ProgressPanelPrivate
     QHBoxLayout* headerLayout;
     QCheckBox* queueTasksCheckbox;
     QCheckBox* removeTasksAfterFinishCheckbox;
-    TableModel* model;
+    TableModelPtr model;
     TableView* view;
     mutable QMutex tasksMutex;
     TasksMap tasks;
@@ -98,7 +98,7 @@ struct ProgressPanelPrivate
         , headerLayout(0)
         , queueTasksCheckbox(0)
         , removeTasksAfterFinishCheckbox(0)
-        , model(0)
+        , model()
         , view(0)
         , tasksMutex()
         , tasks()
@@ -121,12 +121,12 @@ struct ProgressPanelPrivate
         return ProgressTaskInfoPtr();
     }
 
-    ProgressTaskInfoPtr findTask(const TableItem* item) const
+    ProgressTaskInfoPtr findTask(const TableItemConstPtr& item) const
     {
         assert( !tasksMutex.tryLock() );
 
         for (TasksMap::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
-            std::vector<TableItem*> items;
+            std::vector<TableItemPtr> items;
             it->second->getTableItems(&items);
             for (std::size_t i = 0; i < items.size(); ++i) {
                 if (items[i] == item) {
@@ -179,7 +179,7 @@ ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
 
     _imp->mainLayout->addWidget(_imp->view);
 
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(QPoint, TableItem*)), this, SLOT(onItemRightClicked(QPoint, TableItem*)) );
+    QObject::connect( _imp->view, SIGNAL(itemRightClicked(QPoint, TableItemPtr)), this, SLOT(onItemRightClicked(QPoint, TableItemPtr)) );
     QStringList dimensionNames;
     dimensionNames
         << tr("Node")
@@ -329,7 +329,7 @@ ProgressPanel::removeTaskFromTable(const ProgressTaskInfoPtr& task)
 void
 ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
 {
-    std::vector<TableItem*> table;
+    std::vector<TableItemPtr> table;
     std::vector<ProgressTaskInfoPtr> newOrder;
 
     {
@@ -506,7 +506,7 @@ ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
     int rc = _imp->view->rowCount();
     _imp->view->setRowCount(rc + 1);
 
-    std::vector<TableItem*> items;
+    std::vector<TableItemPtr> items;
     task->getTableItems(&items);
     assert(items.size() == COL_LAST);
 
@@ -614,7 +614,7 @@ ProgressPanel::onQueueRendersCheckboxChecked()
 }
 
 void
-ProgressPanel::onItemRightClicked(QPoint globalPos, TableItem* item)
+ProgressPanel::onItemRightClicked(QPoint globalPos, const TableItemPtr& item)
 {
     ProgressTaskInfoPtr task;
     {

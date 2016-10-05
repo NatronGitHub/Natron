@@ -430,7 +430,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     QSplitter *splitter = new QSplitter();
 
     _view = new TableView(thirdPartyContainer);
-    _model = new TableModel(0, 0, _view);
+    _model = TableModel::create(0, 0);
     _view->setTableModel(_model);
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
@@ -473,12 +473,12 @@ AboutWindow::AboutWindow(QWidget* parent)
     }
     _view->setRowCount( rowsTmp.size() );
 
-    TableItem* readmeIndex = 0;
+    TableItemPtr readmeIndex;
     for (int i = 0; i < rowsTmp.size(); ++i) {
         if ( !rowsTmp[i].startsWith( QString::fromUtf8("LICENSE-") ) ) {
             continue;
         }
-        TableItem* item = new TableItem;
+        TableItemPtr item = TableItem::create();
         item->setText( rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         _view->setItem(i, 0, item);
@@ -490,7 +490,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this,
                       SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     if (readmeIndex) {
-        readmeIndex->setSelected(true);
+        _view->setItemSelected(readmeIndex, true);
     }
     _tabWidget->addTab( thirdPartyContainer, QString::fromUtf8("Third-Party components") );
 }
@@ -505,7 +505,7 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
     if ( indexes.empty() ) {
         _thirdPartyBrowser->clear();
     } else {
-        TableItem* item = _view->item(indexes.front().row(), 0);
+        TableItemPtr item = _view->item(indexes.front().row(), 0);
         assert(item);
         if (!item) {
             return;

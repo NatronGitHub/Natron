@@ -74,12 +74,12 @@ struct ModelItem {
 
     struct ColumnData
     {
-        TableItem* item;
+        TableItemPtr item;
         KnobIWPtr knob;
         int knobDimension;
         
         ColumnData()
-        : item(0)
+        : item()
         , knob()
         , knobDimension(-1)
         {
@@ -112,7 +112,7 @@ struct KnobItemsTableGuiPrivate
     KnobItemsTableWPtr internalModel;
     DockablePanel* panel;
 
-    TableModel* tableModel;
+    TableModelPtr tableModel;
     TableView* tableView;
     boost::scoped_ptr<TableItemEditorFactory> itemEditorFactory;
 
@@ -127,7 +127,7 @@ struct KnobItemsTableGuiPrivate
     : _publicInterface(publicInterface)
     , internalModel(table)
     , panel(panel)
-    , tableModel(0)
+    , tableModel()
     , tableView(0)
     , itemEditorFactory()
     , items()
@@ -145,7 +145,7 @@ struct KnobItemsTableGuiPrivate
         return items.end();
     }
 
-    ModelItemsVec::iterator findItem(const TableItem* item) {
+    ModelItemsVec::iterator findItem(const TableItemConstPtr& item) {
         for (ModelItemsVec::iterator it = items.begin(); it!=items.end(); ++it) {
             for (std::size_t i = 0; i < it->columnItems.size(); ++i) {
                 if (it->columnItems[i].item == item) {
@@ -156,7 +156,7 @@ struct KnobItemsTableGuiPrivate
         return items.end();
     }
 
-    void showItemMenu(TableItem* item, const QPoint & globalPos);
+    void showItemMenu(const TableItemPtr& item, const QPoint & globalPos);
     
     bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col);
 
@@ -286,7 +286,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
     int col = index.column();
 
 
-    TableItem* item = _imp->tableModel->item(index);
+    TableItemPtr item = _imp->tableModel->item(index);
     assert(item);
     if (!item) {
         // coverity[dead_error_line]
@@ -364,7 +364,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
 
     // Figure out text color
     QPen pen = painter->pen();
-    if ( !item->flags().testFlag(Qt::ItemIsEditable) ) {
+    if ( !item->getFlags().testFlag(Qt::ItemIsEditable) ) {
         // Paint non editable items text in black
         pen.setColor(Qt::black);
     } else {
@@ -405,15 +405,7 @@ public:
 
 private:
 
-    inline QPoint getOffset() const {
-        return QPoint(isRightToLeft() ? -horizontalOffset() : horizontalOffset(), verticalOffset());
-    }
 
-    void calcLogicalIndices(QVector<int> *logicalIndices, QVector<QStyleOptionViewItemV4::ViewItemPosition> *itemPositions, int left, int right) const;
-
-    void adjustViewOptionsForIndex(QStyleOptionViewItemV4 *option, const KnobTableItemPtr &item, const QModelIndex& index) const;
-    QStyleOptionViewItemV4 viewOptionsV4() const;
-    QPixmap renderToPixmap(const std::set<int>& rows, QRect *r) const;
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* event) OVERRIDE FINAL;
@@ -442,15 +434,15 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 #endif
     _imp->tableView->header()->setStretchLastSection(true);
 
-    QObject::connect( _imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItem*)), this, SLOT(onTableItemRightClicked(QPoint,TableItem*)) );
+    QObject::connect( _imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItemPtr)), this, SLOT(onTableItemRightClicked(QPoint,TableItemPtr)) );
 
     AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate(_imp.get());
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->tableView->setItemDelegate(delegate);
 
-    _imp->tableModel = new TableModel(0, 0, _imp->tableView);
-    QObject::connect( _imp->tableModel, SIGNAL(s_itemChanged(TableItem*)), this, SLOT(onTableItemDataChanged(TableItem*)) );
+    _imp->tableModel = TableModel::create(0, 0);
+    QObject::connect( _imp->tableModel.get(), SIGNAL(s_itemChanged(TableItemPtr)), this, SLOT(onTableItemDataChanged(TableItemPtr)) );
     _imp->tableView->setTableModel(_imp->tableModel);
 
     QItemSelectionModel *selectionModel = _imp->tableView->selectionModel();
@@ -471,7 +463,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     Global::ensureLastPathSeparator(iconsPath);
 
     for (int i = 0; i < nCols; ++i) {
-        TableItem* headerItem = new TableItem;
+        TableItemPtr headerItem = TableItem::create();
         if (!headerLabels[i].isEmpty()) {
             headerItem->setText(headerLabels[i]);
         }
@@ -526,164 +518,6 @@ KnobItemsTableGui::~KnobItemsTableGui()
     
 }
 
-void KnobItemsTableView::calcLogicalIndices(QVector<int> *logicalIndices, QVector<QStyleOptionViewItemV4::ViewItemPosition> *itemPositions, int left, int right) const
-{
-    const int columnCount = header()->count();
-    /* 'left' and 'right' are the left-most and right-most visible visual indices.
-     Compute the first visible logical indices before and after the left and right.
-     We will use these values to determine the QStyleOptionViewItemV4::viewItemPosition. */
-    int logicalIndexBeforeLeft = -1, logicalIndexAfterRight = -1;
-    for (int visualIndex = left - 1; visualIndex >= 0; --visualIndex) {
-        int logicalIndex = header()->logicalIndex(visualIndex);
-        if (!header()->isSectionHidden(logicalIndex)) {
-            logicalIndexBeforeLeft = logicalIndex;
-            break;
-        }
-    }
-
-    for (int visualIndex = left; visualIndex < columnCount; ++visualIndex) {
-        int logicalIndex = header()->logicalIndex(visualIndex);
-        if (!header()->isSectionHidden(logicalIndex)) {
-            if (visualIndex > right) {
-                logicalIndexAfterRight = logicalIndex;
-                break;
-            }
-            logicalIndices->append(logicalIndex);
-        }
-    }
-
-    itemPositions->resize(logicalIndices->count());
-    for (int currentLogicalSection = 0; currentLogicalSection < logicalIndices->count(); ++currentLogicalSection) {
-        const int headerSection = logicalIndices->at(currentLogicalSection);
-        // determine the viewItemPosition depending on the position of column 0
-        int nextLogicalSection = currentLogicalSection + 1 >= logicalIndices->count()
-        ? logicalIndexAfterRight
-        : logicalIndices->at(currentLogicalSection + 1);
-        int prevLogicalSection = currentLogicalSection - 1 < 0
-        ? logicalIndexBeforeLeft
-        : logicalIndices->at(currentLogicalSection - 1);
-        QStyleOptionViewItemV4::ViewItemPosition pos;
-        if (columnCount == 1 || (nextLogicalSection == 0 && prevLogicalSection == -1)
-            || (headerSection == 0 && nextLogicalSection == -1)/* || spanning*/)
-            pos = QStyleOptionViewItemV4::OnlyOne;
-        else if (headerSection == 0 || (nextLogicalSection != 0 && prevLogicalSection == -1))
-            pos = QStyleOptionViewItemV4::Beginning;
-        else if (nextLogicalSection == 0 || nextLogicalSection == -1)
-            pos = QStyleOptionViewItemV4::End;
-        else
-            pos = QStyleOptionViewItemV4::Middle;
-        (*itemPositions)[currentLogicalSection] = pos;
-    }
-} // calcLogicalIndices
-
-void KnobItemsTableView::adjustViewOptionsForIndex(QStyleOptionViewItemV4 *option,
-                                                   const KnobTableItemPtr &item,
-                                                   const QModelIndex& index) const
-{
-
-    if (_imp->tableView->isExpanded(index)) {
-        option->state |= QStyle::State_Open;
-    } else {
-        option->state |= QStyle::State_None;
-    }
-    if (item->getChildren().empty()) {
-        option->state |= QStyle::State_Children;
-    } else {
-        option->state |= QStyle::State_None;
-    }
-    KnobTableItemPtr parentItem = item->getParent();
-    if (parentItem && parentItem->getChildren().size() > 1) {
-        option->state |= QStyle::State_Sibling;
-    } else {
-        option->state |= QStyle::State_None;
-    }
-
-    option->showDecorationSelected = (_imp->tableView->selectionBehavior() & QTreeView::SelectRows) || option->showDecorationSelected;
-
-    // index = visual index of visible columns only. data = logical index.
-    QVector<int> logicalIndices;
-
-    // vector of left/middle/end for each logicalIndex, visible columns only.
-    QVector<QStyleOptionViewItemV4::ViewItemPosition> viewItemPosList;
-
-
-    const bool spanning = false;//viewItems.at(row).spanning;
-
-    const int left = (spanning ? header()->visualIndex(0) : 0);
-    const int right = (spanning ? header()->visualIndex(0) : header()->count() - 1 );
-    calcLogicalIndices(&logicalIndices, &viewItemPosList, left, right);
-
-    const int visualIndex = logicalIndices.indexOf(index.column());
-    option->viewItemPosition = viewItemPosList.at(visualIndex);
-} // adjustViewOptionsForIndex
-
-
-
-QStyleOptionViewItemV4 KnobItemsTableView::viewOptionsV4() const
-{
-    QStyleOptionViewItemV4 option = viewOptions();
-    //if (wrapItemText)
-     //   option.features = QStyleOptionViewItemV2::WrapText;
-    option.locale = locale();
-    option.locale.setNumberOptions(QLocale::OmitGroupSeparator);
-    option.widget = this;
-    return option;
-}
-struct DraggablePaintItem
-{
-    QModelIndex index;
-    QRect rect;
-    TableItem* tableItem;
-};
-
-QPixmap KnobItemsTableView::renderToPixmap(const std::set<int>& rows, QRect *r) const
-{
-    assert(r);
-
-    const QRect viewportRect = viewport()->rect();
-    const int colsCount = _imp->tableModel->columnCount();;
-
-    std::vector<DraggablePaintItem> paintItems;
-    for (std::set<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-        for (int c = 0; c < colsCount; ++c) {
-            TableItem* item = _imp->tableModel->item(*it, c);
-            if (!item) {
-                continue;
-            }
-            const QRect itemRect = _imp->tableView->visualItemRect(item);
-            if (itemRect.intersects(viewportRect)) {
-                DraggablePaintItem d;
-                d.rect = itemRect;
-                d.index = _imp->tableModel->index(*it, c);
-                d.tableItem = item;
-                *r = r->unite(itemRect);
-                paintItems.push_back(d);
-            }
-        }
-    }
-    *r = r->intersect(viewportRect);
-
-    if (paintItems.empty()) {
-        return QPixmap();
-    }
-
-
-    QPixmap pixmap(r->size());
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    QStyleOptionViewItemV4 option = viewOptionsV4();
-    option.state |= QStyle::State_Selected;
-    for (std::size_t i = 0; i < paintItems.size(); ++i) {
-        option.rect = paintItems[i].rect.translated(-r->topLeft());
-
-        ModelItemsVec::iterator found = _imp->findItem(paintItems[i].tableItem);
-        assert(found != _imp->items.end());
-
-        adjustViewOptionsForIndex(&option, found->internalItem.lock(), paintItems[i].index);
-        itemDelegate(paintItems[i].index)->paint(&painter, option, paintItems[i].index);
-    }
-    return pixmap;
-} // renderToPixmap
 
 void
 KnobItemsTableView::mousePressEvent(QMouseEvent* event)
@@ -728,7 +562,7 @@ KnobItemsTableView::startDrag(Qt::DropActions supportedActions)
     std::set<KnobTableItemPtr> items;
     for (std::set<int>::iterator it = rowsIndexes.begin(); it!=rowsIndexes.end(); ++it) {
         // Get the first col item
-        TableItem* item = _imp->tableModel->item(*it, 0);
+        TableItemPtr item = _imp->tableModel->item(*it, 0);
         assert(item);
         if (!item) {
             continue;
@@ -887,7 +721,7 @@ KnobItemsTableGui::getInternalTable() const
 }
 
 void
-KnobItemsTableGuiPrivate::showItemMenu(TableItem* item, const QPoint & globalPos)
+KnobItemsTableGuiPrivate::showItemMenu(const TableItemPtr& item, const QPoint & globalPos)
 {
     
 }
@@ -1109,7 +943,7 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
 
     KnobTableItemPtr targetInternalItem;
     {
-        TableItem* targetItem = itemAt(e->pos());
+        TableItemPtr targetItem = itemAt(e->pos());
         if (targetItem) {
             ModelItemsVec::iterator found = _imp->findItem(targetItem);
             if (found != _imp->items.end()) {
@@ -1496,13 +1330,13 @@ KnobItemsTableGui::onDuplicateItemsActionTriggered()
 
 
 void
-KnobItemsTableGui::onTableItemRightClicked(const QPoint& globalPos, TableItem* item)
+KnobItemsTableGui::onTableItemRightClicked(const QPoint& globalPos, const TableItemPtr& item)
 {
     _imp->showItemMenu(item, globalPos);
 }
 
 void
-KnobItemsTableGui::onTableItemDataChanged(TableItem* item)
+KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item)
 {
 
 }
@@ -1523,7 +1357,7 @@ KnobItemsTableGuiPrivate::selectionFromIndexList(const QModelIndexList& indexes,
         assert(it->isValid() && it->row() >= 0 && it->row() < (int)items.size() && it->column() >= 0 && it->column() < tableModel->columnCount());
         
         // Get the table item corresponding to the index
-        TableItem* tableItem = tableModel->item(it->row(), it->column());
+        TableItemPtr tableItem = tableModel->item(it->row(), it->column());
         assert(tableItem);
         
         // Get the internal knobtableitem corresponding to the table item
@@ -1678,7 +1512,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
         // If this column represents a knob, this is the knob
         d.knob = item->getColumnKnob(i, &d.knobDimension);
         
-        TableItem* tableItem = new TableItem;
+        TableItemPtr tableItem = TableItem::create();
         d.item = tableItem;
         tableView->setItem(itemRow, i, tableItem);
 
@@ -1709,3 +1543,5 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING
+#include "moc_KnobItemsTableGui.cpp"

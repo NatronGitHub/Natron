@@ -81,8 +81,8 @@ public Q_SLOTS:
 
     void onSelectAllItemsActionTriggered();
 
-    void onTableItemRightClicked(const QPoint& globalPos, TableItem* item);
-    void onTableItemDataChanged(TableItem* item);
+    void onTableItemRightClicked(const QPoint& globalPos, const TableItemPtr& item);
+    void onTableItemDataChanged(const TableItemPtr& item);
     void onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected);
     
     void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);

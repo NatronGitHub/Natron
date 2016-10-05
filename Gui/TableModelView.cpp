@@ -30,12 +30,16 @@
 #include <stdexcept>
 #include <climits>
 #include <cfloat>
+#include <map>
 
 #include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QStyle>
 #include <QScrollBar>
+#include <QDebug>
+#include <QPainter>
+#include <QVariant>
 
 #include "Gui/GuiMacros.h"
 #include "Gui/Label.h"
@@ -55,149 +59,249 @@ class MetaTypesRegistration
 public:
     inline MetaTypesRegistration()
     {
-        qRegisterMetaType<TableItem*>("TableItem*");
+        qRegisterMetaType<TableItemPtr>("TableItemPtr");
     }
 };
 
+typedef std::vector<TableItemPtr> TableItemVec;
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static MetaTypesRegistration registration;
-TableItem::TableItem(const TableItem & other)
-    : values(other.values)
-    , view(0)
-    , id(-1)
-    , itemFlags(other.itemFlags)
+
+struct TableItemPrivate
 {
+
+    struct ColumnData
+    {
+        // For each role index, its value as a variant
+        std::map<int, QVariant> values;
+
+        // Flags controlling the UI
+        Qt::ItemFlags itemFlags;
+
+        ColumnData()
+        : values()
+        , itemFlags(Qt::ItemIsEditable
+                    | Qt::ItemIsSelectable
+                    | Qt::ItemIsUserCheckable
+                    | Qt::ItemIsEnabled
+                    | Qt::ItemIsDragEnabled
+                    | Qt::ItemIsDropEnabled)
+        {
+
+        }
+    };
+
+    // Per columns data. The number of columns must match the columns count of the model
+    std::vector<ColumnData> columns;
+
+    // Weak ref to the model
+    TableModelWPtr model;
+
+    // The index of the item in the parent storage for fast access.
+    int indexInParent;
+
+    // Strong ref to children
+    TableItemVec children;
+
+    // Weak ref to column 0 item of the parent
+    TableItemWPtr parent;
+
+    TableItemPrivate(const TableItemPtr& parent)
+    : columns()
+    , model()
+    , indexInParent(-1)
+    , children()
+    , parent(parent)
+    {
+
+    }
+
+    void setModelAndInitColumns(const TableModelPtr& m)
+    {
+        model = m;
+        int nCols = m ? m->columnCount() : 0;
+        if ((int)columns.size() != nCols) {
+            columns.resize(nCols);
+        }
+    }
+
+    // Ensure the col index is ok, otherwise throw an exc
+    void ensureColumnOk(int col) {
+        assert(col >= 0 && col < (int)columns.size());
+        if (col < 0 || col >= (int)columns.size()) {
+            throw std::invalid_argument("TableItem: wrong column index");
+        }
+    }
+
+    void insertColumnsRecursively(int column, int count)
+    {
+        assert(column >= 0 && column <= (int)columns.size());
+        if (column == (int)columns.size()) {
+            columns.resize(columns.size() + count);
+        } else {
+            std::vector<ColumnData>::iterator it = columns.begin();
+            std::advance(it, column);
+            columns.insert(it, count, ColumnData());
+        }
+
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            children[i]->_imp->insertColumnsRecursively(column, count);
+        }
+    }
+
+    void removeColumnsRecursively(int column, int count)
+    {
+        assert(column >= 0 && column <= (int)columns.size());
+
+        std::vector<ColumnData>::iterator it = columns.begin();
+        std::advance(it, column);
+
+        std::vector<ColumnData>::iterator last = it;
+        if (column + count < (int)columns.size()) {
+            std::advance(last, count);
+        } else {
+            last = columns.end();
+        }
+
+        columns.erase(it, last);
+
+
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            children[i]->_imp->removeColumnsRecursively(column, count);
+        }
+    }
+
+};
+
+TableItem::TableItem(const TableItemPtr& parent)
+: _imp(new TableItemPrivate(parent))
+{
+    
 }
+
 
 TableItem::~TableItem()
 {
-    if ( TableModel * model = (view ? qobject_cast<TableModel*>( view->model() ) : 0) ) {
-        model->removeItem(this);
-    }
-    view = 0;
+
 }
 
-TableItem *
-TableItem::clone() const
+TableItemPtr
+TableItem::create(const TableItemPtr& parent)
 {
-    return new TableItem(*this);
+    TableItemPtr ret(new TableItem(parent));
+    if (parent) {
+        // If user provides a parent item, then automatically add the child in the model
+        parent->_imp->children.push_back(ret);
+    }
+    return ret;
+}
+
+TableItemPtr
+TableItem::getParentItem() const
+{
+    return _imp->parent.lock();
+}
+
+const TableItemVec&
+TableItem::getChildren() const
+{
+    return _imp->children;
+}
+
+TableModelPtr
+TableItem::getModel() const
+{
+    return _imp->model.lock();
+}
+
+Qt::ItemFlags
+TableItem::getFlags(int col) const
+{
+    _imp->ensureColumnOk(col);
+    return _imp->columns[col].itemFlags;
 }
 
 int
-TableItem::row() const
+TableItem::getRowInParent() const
 {
-    return view ? view->row(this) : -1;
-}
-
-int
-TableItem::column() const
-{
-    return view ? view->column(this) : -1;
+    return _imp->indexInParent;
 }
 
 void
-TableItem::setSelected(bool aselect)
+TableItem::setFlags(int col, Qt::ItemFlags flags)
 {
-    if (view) {
-        view->setItemSelected(this, aselect);
-    }
-}
-
-bool
-TableItem::isSelected() const
-{
-    return view ? view->isItemSelected(this) : false;
-}
-
-void
-TableItem::setFlags(Qt::ItemFlags flags)
-{
-    itemFlags = flags;
-    if ( TableModel * model = (view ? qobject_cast<TableModel*>( view->model() ) : 0) ) {
-        model->itemChanged(this);
+    _imp->ensureColumnOk(col);
+    _imp->columns[col].itemFlags = flags;
+    TableModelPtr model = getModel();
+    if (model) {
+        model->onItemChanged(shared_from_this(), col, false);
     }
 }
 
 QVariant
-TableItem::data(int role) const
+TableItem::getData(int col, int role) const
 {
+    _imp->ensureColumnOk(col);
     role = (role == Qt::EditRole ? Qt::DisplayRole : role);
-    for (int i = 0; i < values.count(); ++i) {
-        if (values.at(i).role == role) {
-            return values.at(i).value;
-        }
-    }
 
-    return QVariant();
+    std::map<int, QVariant>::const_iterator foundRole = _imp->columns[col].values.find(role);
+    if (foundRole == _imp->columns[col].values.end()) {
+        return QVariant();
+    }
+    return foundRole->second;
 }
 
 void
-TableItem::setData(int role,
-                   const QVariant &value)
+TableItem::setData(int col, int role, const QVariant &value)
 {
-    bool found = false;
-
+    _imp->ensureColumnOk(col);
+    
     role = (role == Qt::EditRole ? Qt::DisplayRole : role);
-    for (int i = 0; i < values.count(); ++i) {
-        if (values.at(i).role == role) {
-            if (values[i].value == value) {
-                return;
-            }
 
-            values[i].value = value;
-            found = true;
-            break;
-        }
+    QVariant& curValue = _imp->columns[col].values[role];
+    if (curValue == value) {
+        // Nothing changed
+        return;
     }
-    if (!found) {
-        values.append( ItemData(role, value) );
-    }
-    if ( TableModel * model = (view ? qobject_cast<TableModel*>( view->model() ) : 0) ) {
-        model->itemChanged(this);
+
+    TableModelPtr model = getModel();
+    if (model) {
+        model->onItemChanged(shared_from_this(), col, true);
     }
 }
 
-TableItem &
-TableItem::operator=(const TableItem &other)
-{
-    values = other.values;
-    itemFlags = other.itemFlags;
-
-    return *this;
-}
 
 ///////////////TableModel
 struct TableModelPrivate
 {
-    std::vector<TableItem*> tableItems;
-    std::vector<TableItem*> horizontalHeaderItems;
-    int rowCount;
+    TableModel::TableModelTypeEnum type;
 
-    TableModelPrivate(int rows,
-                      int columns)
-        : tableItems(rows * columns, (TableItem*)0)
-        , horizontalHeaderItems(columns, (TableItem*)0)
-        , rowCount(rows)
-    {
-    }
+    // For table type, this is all items. For trees, this is only toplevel items
+    TableItemVec topLevelItems;
 
-    int indexOfItem(const TableItem* item) const
+    // The header item
+    TableItemPtr headerItem;
+
+    int colCount;
+
+    TableModelPrivate(int columns, TableModel::TableModelTypeEnum type)
+    : type(type)
+    , topLevelItems()
+    , headerItem(TableItem::create())
+    , colCount(columns)
     {
-        for (std::size_t i = 0; i < tableItems.size(); ++i) {
-            if (tableItems[i] == item) {
-                return (int)i;
-            }
+        assert(columns > 0);
+        if (columns == 0) {
+            throw std::invalid_argument("TableModel: Must have at least 1 column");
         }
-
-        return -1;
     }
 
-    int indexOfHeaderItem(const TableItem* item) const
+    int getTopLevelItemIndex(const TableItemConstPtr item) const
     {
-        for (std::size_t i = 0; i < horizontalHeaderItems.size(); ++i) {
-            if (horizontalHeaderItems[i] == item) {
+        for (std::size_t i = 0; i < topLevelItems.size(); ++i) {
+            if (topLevelItems[i] == item) {
                 return (int)i;
             }
         }
@@ -206,58 +310,127 @@ struct TableModelPrivate
     }
 };
 
-TableModel::TableModel(int rows,
-                       int columns,
-                       TableView* view)
-    : QAbstractTableModel(view)
-    , _imp( new TableModelPrivate(rows, columns) )
+TableModel::TableModel(int columns, TableModelTypeEnum type)
+    : QAbstractTableModel()
+    , _imp( new TableModelPrivate(columns, type) )
 {
     QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
 }
 
 TableModel::~TableModel()
 {
-    for (int i = 0; i < (int)_imp->tableItems.size(); ++i) {
-        delete _imp->tableItems[i];
-    }
 
+}
 
-    for (int i = 0; i < (int)_imp->horizontalHeaderItems.size(); ++i) {
-        delete _imp->horizontalHeaderItems[i];
+void
+TableItem::refreshChildrenIndices()
+{
+    // Update table indices
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i]) {
+            _imp->children[i]->_imp->indexInParent = i;
+        }
     }
 }
 
 void
+TableModel::refreshTopLevelItemIndices()
+{
+    // Update table indices
+    for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
+        if (_imp->topLevelItems[i]) {
+            _imp->topLevelItems[i]->_imp->indexInParent = i;
+        }
+    }
+}
+
+
+void
 TableModel::onDataChanged(const QModelIndex & index)
 {
-    if ( TableItem * i = item(index) ) {
+    TableItemPtr i = getItem(index);
+    if (i) {
         Q_EMIT s_itemChanged(i);
     }
 }
 
 bool
-TableModel::insertRows(int row,
-                       int count,
-                       const QModelIndex & parent)
+TableModel::insertRows(int row, int count, const QModelIndex & parent)
 {
-    if ( (count < 1) || (row < 0) || (row > _imp->rowCount) ) {
+    // Only valid if:
+    // - at least 1 row must be added
+    // - the index of the row corresponds to a valid index or to rowCount in which case we append rows
+    // - the parent column is 0 or the parent is invalid
+    if ( (count < 1) || (row < 0) || (row > rowCount(parent) || parent.column() > 0) ) {
         return false;
     }
+
     beginInsertRows(parent, row, row + count - 1);
-    _imp->rowCount += count;
-    int cc = _imp->horizontalHeaderItems.size();
-    if (_imp->rowCount == 0) {
-        _imp->tableItems.resize(cc * count);
-    } else {
-        std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
-        int idx = tableIndex(row, 0);
-        if ( idx < (int)_imp->tableItems.size() ) {
-            std::advance(pos, idx);
-            _imp->tableItems.insert(pos, cc * count, (TableItem*)0);
+
+    if (_imp->type == eTableModelTypeTable) {
+
+        if (_imp->topLevelItems.empty()) {
+            _imp->topLevelItems.resize(_imp->colCount * count);
         } else {
-            _imp->tableItems.insert(_imp->tableItems.end(), cc * count, (TableItem*)0);
+
+            // Find the item corresponding to the row index
+
+            if ( row < (int)_imp->topLevelItems.size() ) {
+                // The index is valid in the table, insert the appropriate number of items
+                TableItemVec::iterator it = _imp->topLevelItems.begin();
+                std::advance(it, row);
+                _imp->topLevelItems.insert(it, count, TableItemPtr());
+            } else {
+                // The index does not exist, append rows
+                _imp->topLevelItems.insert(_imp->topLevelItems.end(), count, TableItemPtr());
+            }
+        }
+
+        // Refresh indices to speed up the table type
+        refreshTopLevelItemIndices();
+
+    } else {
+        TableModelPtr thisShared = shared_from_this();
+
+        // If there's a parent item, this is a pointer to it
+        TableItemPtr parentItem = getItem(parent);
+
+        int row_i = row;
+        int rowsToAdd = count;
+        while (rowsToAdd > 0) {
+            TableItemPtr newItem = TableItem::create();
+            newItem->_imp->model = thisShared;
+            newItem->_imp->parent = parentItem;
+
+            if (parentItem) {
+                if (row_i > (int)parentItem->_imp->children.size()) {
+                    parentItem->_imp->children.push_back(newItem);
+                } else {
+                    TableItemVec::iterator it = parentItem->_imp->children.begin();
+                    std::advance(it, row_i);
+                    parentItem->_imp->children.insert(it, newItem);
+                }
+                ++row_i;
+            } else {
+                if (row_i > (int)_imp->topLevelItems.size()) {
+                    _imp->topLevelItems.push_back(newItem);
+                } else {
+                    TableItemVec::iterator it = _imp->topLevelItems.begin();
+                    std::advance(it, row_i);
+                    _imp->topLevelItems.insert(it, newItem);
+                }
+                ++row_i;
+
+            }
+            --rowsToAdd;
+        }
+        if (parentItem) {
+            parentItem->refreshChildrenIndices();
+        } else {
+            refreshTopLevelItemIndices();
         }
     }
+
     endInsertRows();
 
     return true;
@@ -268,75 +441,76 @@ TableModel::insertColumns(int column,
                           int count,
                           const QModelIndex & parent)
 {
-    if ( (count < 1) || (column < 0) || ( column > (int)_imp->horizontalHeaderItems.size() ) ) {
+    // Only Valid if:
+    // - column is in colsCount range or it is at colsCount
+    // - count is >= 1
+    // - parent is invalid, because in our model all rows are expected to have the same number of columns
+    if ( (count < 1) || (column < 0) || ( column > (int)_imp->colCount ) || parent.isValid() ) {
         return false;
     }
+
     beginInsertColumns(parent, column, column +  count - 1);
-    int cc = _imp->horizontalHeaderItems.size();
 
+    for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
+        _imp->topLevelItems[i]->_imp->insertColumnsRecursively(column, count);
+    }
 
-    {
-        std::vector<TableItem*>::iterator pos = _imp->horizontalHeaderItems.begin();
-        if ( column < (int)_imp->horizontalHeaderItems.size() ) {
-            std::advance(pos, column);
-            _imp->horizontalHeaderItems.insert(pos, count, (TableItem*)0);
-        } else {
-            _imp->horizontalHeaderItems.insert(_imp->horizontalHeaderItems.end(), count, (TableItem*)0);
-        }
-    }
-    if (cc == 0) {
-        _imp->tableItems.resize(_imp->rowCount * count);
-    } else {
-        for (int row = 0; row < _imp->rowCount; ++row) {
-            std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
-            int idx = tableIndex(row, column);
-            if ( idx < (int)_imp->tableItems.size() ) {
-                std::advance(pos, idx);
-                _imp->tableItems.insert(pos, count, (TableItem*)0);
-            } else {
-                _imp->tableItems.insert(_imp->tableItems.end(), count, (TableItem*)0);
-            }
-        }
-    }
+    _imp->headerItem->_imp->insertColumnsRecursively(column, count);
+
     endInsertColumns();
 
     return true;
 }
 
 bool
-TableModel::removeRows(int row,
-                       int count,
-                       const QModelIndex &)
+TableModel::removeRows(int row, int count, const QModelIndex & parent)
 {
-    if ( (count < 1) || (row < 0) || (row + count > _imp->rowCount) ) {
+    // Check for invalid row or count
+    if ( (count < 1) || (row < 0) || (row + count > rowCount(parent)) ) {
         return false;
     }
 
-    beginRemoveRows(QModelIndex(), row, row + count - 1);
-    int i = tableIndex(row, 0);
-    int n = count * columnCount();
-    TableItem *oldItem = 0;
-    for (int j = i; j < n + i; ++j) {
-        oldItem = _imp->tableItems.at(j);
-        if (oldItem) {
-            oldItem->view = 0;
-        }
-        delete oldItem;
-    }
-    _imp->rowCount -= count;
+    beginRemoveRows(parent, row, row + count - 1);
 
-    std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
-    int idx = std::max(i, 0);
-    if ( idx < (int)_imp->tableItems.size() ) {
-        std::advance(pos, idx);
-        std::vector<TableItem*>::iterator last = pos;
-        if ( (idx + n) < (int)_imp->tableItems.size() ) {
-            std::advance(last, n);
+    TableItemPtr parentItem = getItem(parent);
+    if (parentItem) {
+        TableItemVec::iterator pos = parentItem->_imp->children.begin();
+        std::advance(pos, row);
+        TableItemVec::iterator last = pos;
+        if ( (row + count) < (int)parentItem->_imp->children.size() ) {
+            std::advance(last, count);
         } else {
-            last = _imp->tableItems.end();
+            last = parentItem->_imp->children.end();
         }
-        _imp->tableItems.erase(pos, last);
+        for (TableItemVec::iterator it = pos; it != last; ++it) {
+            if ((*it)) {
+                (*it)->_imp->model.reset();
+            }
+        }
+        parentItem->_imp->children.erase(pos, last);
+
+        parentItem->refreshChildrenIndices();
+    } else {
+        TableItemVec::iterator pos = _imp->topLevelItems.begin();
+        std::advance(pos, row);
+        TableItemVec::iterator last = pos;
+        if ( (row + count) < (int)_imp->topLevelItems.size() ) {
+            std::advance(last, count);
+        } else {
+            last = _imp->topLevelItems.end();
+        }
+        for (TableItemVec::iterator it = pos; it != last; ++it) {
+            if ((*it)) {
+                // Reset index in parent and model ptr in case someone else holds a ref to this item
+                (*it)->_imp->indexInParent = -1;
+                (*it)->_imp->model.reset();
+            }
+        }
+        _imp->topLevelItems.erase(pos, last);
+
+        refreshTopLevelItemIndices();
     }
+
 
     endRemoveRows();
 
@@ -346,516 +520,270 @@ TableModel::removeRows(int row,
 bool
 TableModel::removeColumns(int column,
                           int count,
-                          const QModelIndex &)
+                          const QModelIndex & parent)
 {
-    if ( (count < 1) || (column < 0) || ( column + count >  (int)_imp->horizontalHeaderItems.size() ) ) {
+    if ( (count < 1) || (column < 0) || ( column + count > _imp->colCount ) ) {
         return false;
     }
 
-    beginRemoveColumns(QModelIndex(), column, column + count - 1);
-    TableItem* oldItem = 0;
-    for (int row = rowCount() - 1; row >= 0; --row) {
-        int i = tableIndex(row, column);
-        for (int j = i; j < i + count; ++j) {
-            oldItem = _imp->tableItems.at(j);
-            if (oldItem) {
-                oldItem->view = 0;
-            }
-            delete oldItem;
-        }
+    beginRemoveColumns(parent, column, column + count - 1);
+    TableItemPtr oldItem;
 
-
-        std::vector<TableItem*>::iterator pos = _imp->tableItems.begin();
-        if ( i < (int)_imp->tableItems.size() ) {
-            std::advance(pos, i);
-            std::vector<TableItem*>::iterator last = pos;
-            if ( (i + count) < (int)_imp->tableItems.size() ) {
-                std::advance(last, count);
-            } else {
-                last = _imp->tableItems.end();
-            }
-            _imp->tableItems.erase(pos, last);
-        }
-    }
-    for (int h = column; h < column + count; ++h) {
-        oldItem = _imp->horizontalHeaderItems.at(h);
-        if (oldItem) {
-            oldItem->view = 0;
-        }
-        delete oldItem;
+    for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
+        _imp->topLevelItems[i]->_imp->removeColumnsRecursively(column, count);
     }
 
-    std::vector<TableItem*>::iterator pos = _imp->horizontalHeaderItems.begin();
-    if ( column < (int)_imp->horizontalHeaderItems.size() ) {
-        std::advance(pos, column);
-        std::vector<TableItem*>::iterator last = pos;
-        if ( (column + count) < (int)_imp->horizontalHeaderItems.size() ) {
-            std::advance(last, count);
-        } else {
-            last = _imp->horizontalHeaderItems.end();
-        }
-        _imp->horizontalHeaderItems.erase(pos, last);
-    }
+    _imp->headerItem->_imp->removeColumnsRecursively(column, count);
 
     endRemoveColumns();
 
     return true;
-} // TableModel::removeColumns
+} // removeColumns
 
 void
-TableModel::setTable(const std::vector<TableItem*>& items)
+TableModel::setTable(const TableItemVec& items)
 {
-    beginRemoveRows( QModelIndex(), 0, std::max(0, _imp->rowCount - 1) );
-    for (std::size_t i = 0; i < _imp->tableItems.size(); ++i) {
-        if ( _imp->tableItems.at(i) ) {
-            _imp->tableItems[i]->view = 0;
-            delete _imp->tableItems.at(i);
-            _imp->tableItems[i] = 0;
+    if (_imp->type != eTableModelTypeTable) {
+        throw std::logic_error("TableModel::setRowCount: call to setRowCount for a tree model");
+    }
+
+    beginRemoveRows( QModelIndex(), 0, std::max(0, (int)_imp->topLevelItems.size() - 1) );
+    for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
+        if (_imp->topLevelItems[i]) {
+            // Reset index in parent and model ptr in case someone else holds a ref to this item
+            _imp->topLevelItems[i]->_imp->indexInParent = -1;
+            _imp->topLevelItems[i]->_imp->model.reset();
+            _imp->topLevelItems[i].reset();
         }
     }
     endRemoveRows();
 
-    _imp->rowCount = items.size() / _imp->horizontalHeaderItems.size();
+    _imp->topLevelItems = items;
 
-    _imp->tableItems = items;
-
-    TableView *view = qobject_cast<TableView*>( QObject::parent() );
+    TableModelPtr thisShared = shared_from_this();
 
 
-    beginInsertRows( QModelIndex(), 0, std::max(0, _imp->rowCount - 1) );
-
-
-    for (int i = 0; i < (int)_imp->tableItems.size(); ++i) {
-        _imp->tableItems[i]->id = i;
-        _imp->tableItems[i]->view = view;
+    beginInsertRows( QModelIndex(), 0, std::max(0, (int)_imp->topLevelItems.size() - 1) );
+    for (int i = 0; i < (int)_imp->topLevelItems.size(); ++i) {
+        if (_imp->topLevelItems[i]) {
+            _imp->topLevelItems[i]->_imp->indexInParent = i;
+            _imp->topLevelItems[i]->_imp->setModelAndInitColumns(thisShared);
+        }
     }
 
     endInsertRows();
 
-    if ( !items.empty() ) {
-        QModelIndex tl = QAbstractTableModel::index(0, 0);
-        int cols = columnCount();
-        int lastTableIndex = items.size() - 1;
-        int lastIndexRow = cols == 0 ? lastTableIndex : ( lastTableIndex - (cols - 1) ) / cols;
-        QModelIndex br = QAbstractTableModel::index(lastIndexRow, cols - 1);
-        Q_EMIT dataChanged(tl, br);
+    TableItemPtr firstItem, lastItem;
+    if (!items.empty()) {
+        firstItem = items.front();
+        lastItem = items.back();
     }
-}
+    // Notify the view that we changed
+    QModelIndex tl = createIndex(0, 0, firstItem.get());
+    QModelIndex br = createIndex(std::max(0, (int)items.size() - 1), 0, lastItem.get());
+    Q_EMIT dataChanged(tl, br);
 
-void
-TableModel::setItem(int row,
-                    int column,
-                    TableItem *item)
-{
-    int i = tableIndex(row, column);
-
-    if ( (i < 0) || ( i >= (int)_imp->tableItems.size() ) ) {
-        throw std::domain_error("TableModel::setItem: index out of range");
-    }
-    TableItem *oldItem = _imp->tableItems.at(i);
-    if (item == oldItem) {
-        throw std::domain_error("TableModel::setItem: item already in table");
-    }
-
-    // remove old
-    if (oldItem) {
-        oldItem->view = 0;
-    }
-    delete _imp->tableItems.at(i);
-
-    // set new
-    if (item) {
-        item->id = i;
-    }
-    _imp->tableItems[i] = item;
-
-    QModelIndex idx = QAbstractTableModel::index(row, column);
-    Q_EMIT dataChanged(idx, idx);
-}
-
-TableItem *
-TableModel::takeItem(int row,
-                     int column)
-{
-    long i = tableIndex(row, column);
-    TableItem *itm = _imp->tableItems[i];
-
-    if (itm) {
-        itm->view = 0;
-        itm->id = -1;
-        _imp->tableItems[i] = 0;
-        QModelIndex ind = index(itm);
-        Q_EMIT dataChanged(ind, ind);
-    }
-
-    return itm;
-}
-
-QModelIndex
-TableModel::index(const TableItem *item) const
-{
-    if (!item) {
-        return QModelIndex();
-    }
-    int i = -1;
-    const int id = item->id;
-    if ( (id >= 0) && ( id < (int)_imp->tableItems.size() ) && (_imp->tableItems.at(id) == item) ) {
-        i = id;
-    } else { // we need to search for the item
-        i = _imp->indexOfItem(item);
-        if (i == -1) { // not found
-            return QModelIndex();
-        }
-    }
-    int ncols = columnCount();
-    if (ncols == 0) {
-        return QModelIndex();
-    } else {
-        int row = i / ncols;
-        int col = i % ncols;
-
-        return QAbstractTableModel::index(row, col);
-    }
-}
-
-TableItem *
-TableModel::item(int row,
-                 int column) const
-{
-    return item( index(row, column) );
-}
-
-TableItem *
-TableModel::item(const QModelIndex &index) const
-{
-    if ( !isValid(index) ) {
-        return 0;
-    }
-
-    int idx = tableIndex( index.row(), index.column() );
-
-    return idx < (int)_imp->tableItems.size() ? _imp->tableItems[idx] : 0;
-}
-
-void
-TableModel::removeItem(TableItem *item)
-{
-    int i = _imp->indexOfItem(item);
-
-    if (i != -1) {
-        _imp->tableItems[i] = 0;
-        QModelIndex idx = index(item);
-        Q_EMIT dataChanged(idx, idx);
-
-        return;
-    }
-
-    i = _imp->indexOfHeaderItem(item);
-    if (i != -1) {
-        _imp->horizontalHeaderItems[i] = 0;
-        Q_EMIT headerDataChanged(Qt::Horizontal, i, i);
-
-        return;
-    }
-}
-
-void
-TableModel::setHorizontalHeaderItem(int section,
-                                    TableItem *item)
-{
-    if ( (section < 0) || ( section >= (int)_imp->horizontalHeaderItems.size() ) ) {
-        return;
-    }
-
-    TableItem *oldItem = _imp->horizontalHeaderItems.at(section);
-    if (item == oldItem) {
-        return;
-    }
-
-    if (oldItem) {
-        oldItem->view = 0;
-    }
-    delete oldItem;
-
-    TableView *view = qobject_cast<TableView*>( QObject::parent() );
-
-    if (item) {
-        item->view = view;
-        item->itemFlags = Qt::ItemFlags(int(item->itemFlags) | ItemIsHeaderItem);
-    }
-    _imp->horizontalHeaderItems[section] = item;
-    Q_EMIT headerDataChanged(Qt::Horizontal, section, section);
-}
-
-TableItem *
-TableModel::takeHorizontalHeaderItem(int section)
-{
-    if ( (section < 0) || ( section >= (int)_imp->horizontalHeaderItems.size() ) ) {
-        return 0;
-    }
-    TableItem *itm = _imp->horizontalHeaderItems.at(section);
-    if (itm) {
-        itm->view = 0;
-        itm->itemFlags &= ~ItemIsHeaderItem;
-        _imp->horizontalHeaderItems[section] = 0;
-    }
-
-    return itm;
-}
-
-TableItem *
-TableModel::horizontalHeaderItem(int section)
-{
-    assert( section >= 0 && section < (int)_imp->horizontalHeaderItems.size() );
-
-    return _imp->horizontalHeaderItems[section];
 }
 
 void
 TableModel::setRowCount(int rows)
 {
-    if ( (rows < 0) || (_imp->rowCount == rows) ) {
+    if (_imp->type != eTableModelTypeTable) {
+        throw std::logic_error("TableModel::setRowCount: call to setRowCount for a tree model");
+    }
+    if ( (rows < 0) || ((int)_imp->topLevelItems.size() == rows) ) {
         return;
     }
-    if (_imp->rowCount < rows) {
-        insertRows(std::max(_imp->rowCount, 0), rows - _imp->rowCount);
+    int curItems = (int)_imp->topLevelItems.size();
+    if (curItems < rows) {
+        insertRows(curItems, rows - curItems);
     } else {
-        removeRows(std::max(rows, 0), _imp->rowCount - rows);
+        removeRows(rows, curItems - rows);
     }
 }
 
 void
-TableModel::setColumnCount(int columns)
+TableModel::setRow(int row, const TableItemPtr& item)
 {
-    int cc = (int)_imp->horizontalHeaderItems.size();
-
-    if ( (columns < 0) || (cc == columns) ) {
+    if (_imp->type != eTableModelTypeTable) {
+        throw std::logic_error("TableModel::setRowCount: call to setRowCount for a tree model");
+    }
+    if (row < 0 || row >= (int)_imp->topLevelItems.size()) {
         return;
     }
-    if (cc < columns) {
-        insertColumns(std::max(cc, 0), columns - cc);
+    QModelIndex first, last;
+    if (!item) {
+        // Delete item
+        if (_imp->topLevelItems[row]) {
+
+            // Reset index in parent and model ptr in case someone else holds a ref to this item
+            _imp->topLevelItems[row]->_imp->indexInParent = -1;
+            _imp->topLevelItems[row]->_imp->model.reset();
+            first = createIndex(row, 0, 0);
+            last = createIndex(row, _imp->colCount - 1, 0);
+            _imp->topLevelItems[row].reset();
+        }
     } else {
-        removeColumns(std::max(columns, 0), cc - columns);
-    }
-}
-
-int
-TableModel::rowCount(const QModelIndex &parent) const
-{
-    return parent.isValid() ? 0 : _imp->rowCount;
-}
-
-int
-TableModel::columnCount(const QModelIndex &parent) const
-{
-    return parent.isValid() ? 0 : (int)_imp->horizontalHeaderItems.size();
-}
-
-QVariant
-TableModel::data(const QModelIndex &index,
-                 int role) const
-{
-    TableItem *itm = item(index);
-
-    if (itm) {
-        return itm->data(role);
+        item->_imp->setModelAndInitColumns(shared_from_this());
+        item->_imp->indexInParent = row;
+        _imp->topLevelItems[row] = item;
+        first = createIndex(row, 0, item.get());
+        last = createIndex(row, _imp->colCount - 1, item.get());
     }
 
-    return QVariant();
-}
-
-TableItem *
-TableModel::createItem() const
-{
-    return new TableItem;
+    // Refresh the view
+    Q_EMIT dataChanged(first, last);
 }
 
 bool
-TableModel::setData(const QModelIndex &index,
-                    const QVariant &value,
-                    int role)
+TableModel::insertTopLevelItem(int row, const TableItemPtr& item)
 {
-    if ( !index.isValid() ) {
+    if (_imp->type != eTableModelTypeTree) {
+        throw std::logic_error("TableModel::insertTopLevelItem: called on a table that is not a tree");
+    }
+    if (!item) {
+        return false;
+    }
+    if (row >= (int)_imp->topLevelItems.size()) {
         return false;
     }
 
-    TableItem *itm = item(index);
-    if (itm) {
-        itm->setData(role, value);
+    item->_imp->setModelAndInitColumns(shared_from_this());
 
-        return true;
+    if (row == -1) {
+        _imp->topLevelItems.push_back(item);
+    } else {
+        TableItemVec::iterator it = _imp->topLevelItems.begin();
+        std::advance(it, row);
+        _imp->topLevelItems.insert(it, item);
     }
 
-    // don't create dummy table items for empty values
-    if ( !value.isValid() ) {
-        return false;
-    }
+    refreshTopLevelItemIndices();
 
-    TableView *view = qobject_cast<TableView*>( QObject::parent() );
-    if (!view) {
-        return false;
-    }
+    QModelIndex idx = createIndex(row, 0, item.get());
 
-    itm = createItem();
-    itm->setData(role, value);
-    view->setItem(index.row(), index.column(), itm);
-
+    // Refresh the view
+    Q_EMIT dataChanged(idx, idx);
     return true;
 }
 
 bool
-TableModel::setItemData(const QModelIndex &index,
-                        const QMap<int, QVariant> &roles)
+TableModel::removeTopLevelItem(const TableItemPtr& item)
 {
-    if ( !index.isValid() ) {
+    if (_imp->type != eTableModelTypeTree) {
+        throw std::logic_error("TableModel::removeTopLevelItem: called on a table that is not a tree");
+    }
+    if (!item) {
         return false;
     }
 
-    TableView *view = qobject_cast<TableView*>( QObject::parent() );
-    TableItem *itm = item(index);
-    if (itm) {
-        itm->view = 0; // prohibits item from calling itemChanged()
-        bool changed = false;
-        for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
-            if ( itm->data( it.key() ) != it.value() ) {
-                itm->setData( it.key(), it.value() );
-                changed = true;
-            }
+    int i = 0;
+    for (TableItemVec::iterator it = _imp->topLevelItems.begin(); it!=_imp->topLevelItems.end(); ++it, ++i) {
+        if (*it == item) {
+
+            // Item no longer belongs to model
+            item->_imp->indexInParent = -1;
+            item->_imp->model.reset();
+
+            _imp->topLevelItems.erase(it);
+
+            refreshTopLevelItemIndices();
+
+            QModelIndex idx = createIndex(i, 0, 0);
+
+            // Refresh the view
+            Q_EMIT dataChanged(idx, idx);
+
+            return true;
         }
-        itm->view = view;
-        if (changed) {
-            itemChanged(itm);
-        }
-
-        return true;
-    }
-
-    if (!view) {
-        return false;
-    }
-
-    itm = createItem();
-    for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
-        itm->setData( it.key(), it.value() );
-    }
-    view->setItem(index.row(), index.column(), itm);
-
-    return true;
-}
-
-QMap<int, QVariant> TableModel::itemData(const QModelIndex &index) const
-{
-    QMap<int, QVariant> roles;
-    TableItem *itm = item(index);
-    if (itm) {
-        for (int i = 0; i < itm->values.count(); ++i) {
-            roles.insert(itm->values.at(i).role,
-                         itm->values.at(i).value);
-        }
-    }
-
-    return roles;
-}
-
-QVariant
-TableModel::headerData(int section,
-                       Qt::Orientation orientation,
-                       int role) const
-{
-    if (section < 0) {
-        return QVariant();
-    }
-
-    TableItem *itm = 0;
-    if ( (orientation == Qt::Horizontal) && ( section < (int)_imp->horizontalHeaderItems.size() ) ) {
-        itm = _imp->horizontalHeaderItems.at(section);
-    } else {
-        return QVariant(); // section is out of bounds
-    }
-    if (itm) {
-        return itm->data(role);
-    }
-    if (role == Qt::DisplayRole) {
-        return section + 1;
-    }
-
-    return QVariant();
-}
-
-bool
-TableModel::setHeaderData(int section,
-                          Qt::Orientation orientation,
-                          const QVariant &value,
-                          int role)
-{
-    if ( (section < 0) ||
-         ( (orientation == Qt::Horizontal) && ( (int)_imp->horizontalHeaderItems.size() <= section ) ) ) {
-        return false;
-    }
-
-    TableItem *itm = 0;
-    if (orientation == Qt::Horizontal) {
-        itm = _imp->horizontalHeaderItems.at(section);
-    }
-
-    if (itm) {
-        itm->setData(role, value);
-
-        return true;
     }
 
     return false;
 }
 
-long
-TableModel::tableIndex(int row,
-                       int column) const
-{
-    // y * width + x
-    return ( row * (int)_imp->horizontalHeaderItems.size() ) + column;
-}
 
-void
-TableModel::clear()
+
+TableItemPtr
+TableModel::getItem(int row, const QModelIndex& parent) const
 {
-    beginResetModel();
-    for (std::size_t i = 0; i < _imp->tableItems.size(); ++i) {
-        if ( _imp->tableItems.at(i) ) {
-            _imp->tableItems[i]->view = 0;
-            delete _imp->tableItems.at(i);
-            _imp->tableItems[i] = 0;
+    if (_imp->type == eTableModelTypeTable || !parent.isValid()) {
+        if (row < 0 || row >= (int)_imp->topLevelItems.size()) {
+            return TableItemPtr();
         }
+        return _imp->topLevelItems[row];
+    } else {
+        TableItem *parentItem = static_cast<TableItem*>(parent.internalPointer());
+        assert(parentItem);
+        if (!parentItem) {
+            return TableItemPtr();
+        }
+        if (row < 0 || row >= (int)parentItem->_imp->children.size()) {
+            return TableItemPtr();
+        }
+        return parentItem->_imp->children[row];
+
     }
-    endResetModel();
 }
 
-bool
-TableModel::isValid(const QModelIndex &index) const
+TableItemPtr
+TableModel::getItem(const QModelIndex& index) const
 {
-    return index.isValid()
-           && index.row() < _imp->rowCount
-           && index.column() < (int)_imp->horizontalHeaderItems.size();
+    if (!index.isValid()) {
+        return TableItemPtr();
+    }
+    return getItem(index.row(), index.parent());
 }
 
-void
-TableModel::itemChanged(TableItem *item)
+QModelIndex
+TableModel::parent(const QModelIndex &child) const
 {
-    if (!item) {
-        return;
+    if (!child.isValid()) {
+        return QModelIndex();
+    }
+    TableItem *itm = static_cast<TableItem*>(child.internalPointer());
+    if (!itm) {
+        return QModelIndex();
+    }
+    TableItemPtr parent = itm->getParentItem();
+    return getItemIndex(parent);
+
+}
+
+QModelIndex
+TableModel::getItemIndex(const TableItemConstPtr& item) const
+{
+    // Item is not part of the model...
+    if (!item || item->getModel().get() != this) {
+        return QModelIndex();
     }
 
-    if (item->flags() & ItemIsHeaderItem) {
-        int column = _imp->indexOfHeaderItem(item);
-        if (column >= 0) {
-            Q_EMIT headerDataChanged(Qt::Horizontal, column, column);
+    // Use the index already computed on the item
+    TableItemPtr parent = item->getParentItem();
+    if (parent) {
+        assert(item->_imp->indexInParent >= 0 && item->_imp->indexInParent < (int)parent->_imp->children.size());
+        if (item->_imp->indexInParent >= 0 && item->_imp->indexInParent < (int)parent->_imp->children.size()) {
+            return createIndex(item->_imp->indexInParent, 0, parent->_imp->children[item->_imp->indexInParent].get());
+        } else {
+            throw std::runtime_error("TableModel::getItemIndex: Item internal index in storage was wrong");
         }
     } else {
-        QModelIndex idx = index(item);
-        if ( idx.isValid() ) {
-            Q_EMIT dataChanged(idx, idx);
+        assert(item->_imp->indexInParent >= 0 && item->_imp->indexInParent < (int)_imp->topLevelItems.size());
+        if (item->_imp->indexInParent >= 0 && item->_imp->indexInParent < (int)_imp->topLevelItems.size()) {
+            return createIndex(item->_imp->indexInParent, 0, _imp->topLevelItems[item->_imp->indexInParent].get());
+        } else {
+            throw std::runtime_error("TableModel::getItemIndex: Item internal index in storage was wrong");
         }
     }
 }
+
+
+QModelIndex
+TableModel::index( int row, int column, const QModelIndex &parent) const
+{
+    TableItemPtr i = getItem(row, parent);
+    return createIndex(row, column, i.get());
+}
+
 
 Qt::ItemFlags
 TableModel::flags(const QModelIndex &index) const
@@ -863,27 +791,236 @@ TableModel::flags(const QModelIndex &index) const
     if ( !index.isValid() ) {
         return Qt::ItemIsDropEnabled;
     }
-    if ( TableItem * itm = item(index) ) {
-        return itm->flags();
+    TableItemPtr itm = getItem(index);
+    if (itm) {
+        return itm->getFlags(index.column());
     }
 
     return Qt::ItemIsEditable
-           | Qt::ItemIsSelectable
-           | Qt::ItemIsUserCheckable
-           | Qt::ItemIsEnabled
-           | Qt::ItemIsDragEnabled
-           | Qt::ItemIsDropEnabled;
+    | Qt::ItemIsSelectable
+    | Qt::ItemIsUserCheckable
+    | Qt::ItemIsEnabled
+    | Qt::ItemIsDragEnabled
+    | Qt::ItemIsDropEnabled;
 }
+
+
+void
+TableModel::setHorizontalHeaderItem(const TableItemPtr &item)
+{
+
+    if (!item) {
+        Q_EMIT headerDataChanged(Qt::Horizontal, 0, _imp->colCount - 1);
+        return;
+    }
+    if (item) {
+        item->_imp->setModelAndInitColumns(shared_from_this());
+    }
+    _imp->headerItem = item;
+    Q_EMIT headerDataChanged(Qt::Horizontal, 0, _imp->colCount - 1);
+}
+
+void
+TableModel::setHorizontalHeaderData(const std::vector<std::pair<QString, QIcon> >& sections)
+{
+    if ((int)sections.size() != _imp->colCount) {
+        throw std::invalid_argument("TableModel::setHorizontalHeaderData: invalid number of columns");
+    }
+
+    for (std::size_t i = 0; i < sections.size(); ++i) {
+        TableItemPtr item = _imp->headerItem;
+        if (!item) {
+            item = TableItem::create();
+        }
+        if (!sections[i].first.isEmpty()) {
+            item->setText(i, sections[i].first);
+        }
+        if (!sections[i].second.isNull()) {
+            item->setIcon(i, sections[i].second);
+        }
+        setHorizontalHeaderItem(item);
+    }
+}
+
+int
+TableModel::rowCount(const QModelIndex &parent) const
+{
+    if (!parent.isValid()) {
+        return (int)_imp->topLevelItems.size();
+    } else {
+        // Returns the row count in the item
+        TableItemPtr i = getItem(parent);
+        // Check if it has children
+        if (!i) {
+            return 0;
+        }
+        return i->getChildren().size();
+        
+    }
+
+}
+
+int
+TableModel::columnCount(const QModelIndex & /*parent*/) const
+{
+    // All rows have the same number of columns
+    return _imp->colCount;
+}
+
+QVariant
+TableModel::data(const QModelIndex &index, int role) const
+{
+    TableItemPtr itm = getItem(index);
+    if (itm) {
+        return itm->getData(index.column(), role);
+    }
+
+    return QVariant();
+}
+
+bool
+TableModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if ( !index.isValid() ) {
+        return false;
+    }
+
+    TableItemPtr itm = getItem(index);
+    if (itm) {
+        itm->setData(index.column(), role, value);
+        return true;
+    }
+
+    // For tables, create a dummy item if it doesn't exist already.
+    // (only if the value is non null)
+    if ( _imp->type == eTableModelTypeTree || !value.isValid() ) {
+        return false;
+    }
+
+    itm = TableItem::create();
+    itm->setData(index.column(), role, value);
+    setRow(index.row(), itm);
+
+    return true;
+}
+
+bool
+TableModel::setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles)
+{
+    if ( !index.isValid() ) {
+        return false;
+    }
+
+    TableItemPtr itm = getItem(index);
+    if (itm) {
+        itm->_imp->model.reset(); // prohibits item from calling itemChanged()
+        bool changed = false;
+        for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
+            if ( itm->getData( index.column(), it.key() ) != it.value() ) {
+                itm->setData( index.column(), it.key(), it.value() );
+                changed = true;
+            }
+        }
+        itm->_imp->setModelAndInitColumns(shared_from_this());
+        if (changed) {
+            onItemChanged(itm, index.column(), true);
+        }
+    } else {
+        // For tables, create a dummy item if it doesn't exist already.
+        if (_imp->type == eTableModelTypeTree) {
+            return false;
+        }
+        itm = TableItem::create();
+        for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
+            itm->setData( index.column(), it.key(), it.value() );
+        }
+        setRow(index.row(), itm);
+
+    }
+
+
+    return true;
+}
+
+QMap<int, QVariant> TableModel::itemData(const QModelIndex &index) const
+{
+    QMap<int, QVariant> roles;
+    TableItemPtr itm = getItem(index);
+    if (itm) {
+        if (index.column() < (int)itm->_imp->columns.size()) {
+            for (std::map<int, QVariant>::const_iterator it= itm->_imp->columns[index.column()].values.begin(); it!=itm->_imp->columns[index.column()].values.end(); ++it) {
+                roles.insert(it->first, it->second);
+            }
+        }
+    }
+    return roles;
+}
+
+QVariant
+TableModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (section < 0 || section >= _imp->colCount || !_imp->headerItem) {
+        return QVariant();
+    }
+    if (orientation == Qt::Horizontal) {
+        return _imp->headerItem->getData(section, role);
+    } else {
+        return QVariant(); // section is out of bounds
+    }
+}
+
+bool
+TableModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
+{
+    if ( section < 0 || orientation == Qt::Vertical || (section >= _imp->colCount) || !_imp->headerItem) {
+        return false;
+    }
+    _imp->headerItem->setData(section, role, value);
+    return true;
+}
+
+void
+TableModel::clear()
+{
+    beginResetModel();
+    _imp->topLevelItems.clear();
+    endResetModel();
+}
+
+void
+TableModel::onItemChanged(const TableItemPtr& item, int col, bool valuesChanged)
+{
+    if (!item) {
+        return;
+    }
+    if (item == _imp->headerItem) {
+        Q_EMIT headerDataChanged(Qt::Horizontal, col, col);
+    } else {
+        int rowIndex = item->getRowInParent();
+        if (rowIndex != -1) {
+            QModelIndex idx = createIndex(rowIndex, col, item.get());
+
+            // Data changed is needed because we need to refresh the abstract item view
+            Q_EMIT dataChanged(idx, idx);
+
+            // Emit our convenience signal if values have changed
+            if (valuesChanged) {
+                Q_EMIT itemDataChanged(item, col);
+            }
+        }
+    }
+}
+
 
 ////////////////TableViewPrivae
 
 struct TableViewPrivate
 {
-    TableModel* model;
-    std::list<TableItem*> draggedItems;
+    TableModelWPtr model;
+    std::list<TableItemPtr> draggedItems;
 
     TableViewPrivate()
-        : model(0)
+        : model()
         , draggedItems()
     {
     }
@@ -1046,138 +1183,27 @@ TableView::~TableView()
 }
 
 void
-TableView::setTableModel(TableModel* model)
+TableView::setTableModel(const TableModelPtr& model)
 {
     _imp->model = model;
-    setModel(model);
+    setModel(model.get());
 }
+
+TableModelPtr
+TableView::getTableModel() const
+{
+    return _imp->model.lock();
+}
+
+
 
 void
-TableView::setRowCount(int rows)
-{
-    _imp->model->setRowCount(rows);
-}
-
-int
-TableView::rowCount() const
-{
-    return _imp->model->rowCount();
-}
-
-void
-TableView::setColumnCount(int columns)
-{
-    _imp->model->setColumnCount(columns);
-}
-
-int
-TableView::columnCount() const
-{
-    return _imp->model->columnCount();
-}
-
-int
-TableView::row(const TableItem *item) const
-{
-    return _imp->model->index(item).row();
-}
-
-int
-TableView::column(const TableItem *item) const
-{
-    return _imp->model->index(item).column();
-}
-
-TableItem*
-TableView::item(int row,
-                int column) const
-{
-    return _imp->model->item(row, column);
-}
-
-void
-TableView::setItem(int row,
-                   int column,
-                   TableItem *item)
-{
-    if (item) {
-        if (item->view != 0) {
-            qWarning("TableView: cannot insert an item that is already owned by another TableView");
-            throw std::logic_error("TableView::setItem: cannot insert an item that is already owned by another TableView");
-        } else {
-            item->view = this;
-            _imp->model->setItem(row, column, item);
-        }
-    } else {
-        delete takeItem(row, column);
-    }
-}
-
-TableItem*
-TableView::takeItem(int row,
-                    int column)
-{
-    TableItem* item =  _imp->model->takeItem(row, column);
-
-    if (item) {
-        item->view = 0;
-    }
-
-    return item;
-}
-
-void
-TableView::setHorizontalHeaderLabels(const QStringList &labels)
-{
-    TableItem *item = 0;
-
-    for (int i = 0; i < _imp->model->columnCount() && i < labels.count(); ++i) {
-        item = _imp->model->horizontalHeaderItem(i);
-        if (!item) {
-            item = _imp->model->createItem();
-            setHorizontalHeaderItem(i, item);
-        }
-        item->setText( labels.at(i) );
-    }
-}
-
-TableItem*
-TableView::horizontalHeaderItem(int column) const
-{
-    return _imp->model->horizontalHeaderItem(column);
-}
-
-TableItem*
-TableView::takeHorizontalHeaderItem(int column)
-{
-    TableItem *itm = _imp->model->takeHorizontalHeaderItem(column);
-
-    if (itm) {
-        itm->view = 0;
-    }
-
-    return itm;
-}
-
-void
-TableView::setHorizontalHeaderItem(int column,
-                                   TableItem *item)
-{
-    if (item) {
-        item->view = this;
-        _imp->model->setHorizontalHeaderItem(column, item);
-    } else {
-        delete takeHorizontalHeaderItem(column);
-    }
-}
-
-void
-TableView::editItem(TableItem *item)
+TableView::editItem(const TableItemPtr &item)
 {
     if (!item) {
         return;
     }
-    QTreeView::edit( _imp->model->index(item) );
+    QTreeView::edit( getTableModel()->getItemIndex(item) );
 }
 
 bool
@@ -1191,22 +1217,22 @@ TableView::edit(const QModelIndex & index,
 }
 
 void
-TableView::openPersistentEditor(TableItem *item)
+TableView::openPersistentEditor(const TableItemPtr &item)
 {
     if (!item) {
         return;
     }
-    QModelIndex index = _imp->model->index(item);
+    QModelIndex index = getTableModel()->getItemIndex(item);
     QAbstractItemView::openPersistentEditor(index);
 }
 
 void
-TableView::closePersistentEditor(TableItem *item)
+TableView::closePersistentEditor(const TableItemPtr &item)
 {
     if (!item) {
         return;
     }
-    QModelIndex index = _imp->model->index(item);
+    QModelIndex index = getTableModel()->getItemIndex(item);
     QAbstractItemView::closePersistentEditor(index);
 }
 
@@ -1215,7 +1241,6 @@ TableView::cellWidget(int row,
                       int column) const
 {
     QModelIndex index = model()->index( row, column, QModelIndex() );
-
     return QAbstractItemView::indexWidget(index);
 }
 
@@ -1235,13 +1260,13 @@ TableView::removeCellWidget(int row,
     setCellWidget(row, column, 0);
 }
 
-TableItem*
+TableItemPtr
 TableView::itemAt(const QPoint &p) const
 {
-    return _imp->model->item( indexAt(p) );
+    return getTableModel()->getItem( indexAt(p) );
 }
 
-TableItem*
+TableItemPtr
 TableView::itemAt(int x,
                   int y) const
 {
@@ -1249,37 +1274,37 @@ TableView::itemAt(int x,
 }
 
 QRect
-TableView::visualItemRect(const TableItem *item) const
+TableView::visualItemRect(const TableItemConstPtr& item) const
 {
     if (!item) {
         return QRect();
     }
-    QModelIndex index = _imp->model->index( const_cast<TableItem*>(item) );
+    QModelIndex index = getTableModel()->getItemIndex(item);
     assert( index.isValid() );
 
     return visualRect(index);
 }
 
-TableItem*
+TableItemPtr
 TableView::editedItem() const
 {
     if (state() == QAbstractItemView::EditingState) {
         return currentItem();
     } else {
-        return (TableItem*)0;
+        return TableItemPtr();
     }
 }
 
-TableItem*
+TableItemPtr
 TableView::currentItem() const
 {
-    return _imp->model->item( currentIndex() );
+    return getTableModel()->getItem( currentIndex() );
 }
 
 void
 TableView::mousePressEvent(QMouseEvent* e)
 {
-    TableItem* item = itemAt( e->pos() );
+    TableItemPtr item = itemAt( e->pos() );
 
     if (!item) {
         selectionModel()->clear();
@@ -1292,7 +1317,7 @@ void
 TableView::mouseDoubleClickEvent(QMouseEvent* e)
 {
     QModelIndex index = indexAt( e->pos() );
-    TableItem* item = _imp->model->item(index);
+    TableItemPtr item = getTableModel()->getItem(index);
 
     if (item) {
         setCurrentIndex(index);
@@ -1305,7 +1330,7 @@ void
 TableView::mouseReleaseEvent(QMouseEvent* e)
 {
     QModelIndex index = indexAt( e->pos() );
-    TableItem* item = itemAt( e->pos() );
+    TableItemPtr item = itemAt( e->pos() );
 
     if ( triggerButtonIsRight(e) && index.isValid() ) {
         Q_EMIT itemRightClicked(e->globalPos(), item);
@@ -1326,21 +1351,182 @@ TableView::keyPressEvent(QKeyEvent* e)
 }
 
 bool
-TableView::isItemSelected(const TableItem *item) const
+TableView::isItemSelected(const TableItemConstPtr &item) const
 {
-    QModelIndex index = _imp->model->index(item);
+    QModelIndex index = getTableModel()->getItemIndex(item);
 
     return selectionModel()->isSelected(index);
 }
 
 void
-TableView::setItemSelected(const TableItem *item,
+TableView::setItemSelected(const TableItemPtr& item,
                            bool select)
 {
-    QModelIndex index = _imp->model->index(item);
+    QModelIndex index = getTableModel()->getItemIndex(item);
 
     selectionModel()->select(index, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }
+
+
+
+void TableView::calcLogicalIndices(QVector<int> *logicalIndices, QVector<QStyleOptionViewItemV4::ViewItemPosition> *itemPositions, int left, int right) const
+{
+    const int columnCount = header()->count();
+    /* 'left' and 'right' are the left-most and right-most visible visual indices.
+     Compute the first visible logical indices before and after the left and right.
+     We will use these values to determine the QStyleOptionViewItemV4::viewItemPosition. */
+    int logicalIndexBeforeLeft = -1, logicalIndexAfterRight = -1;
+    for (int visualIndex = left - 1; visualIndex >= 0; --visualIndex) {
+        int logicalIndex = header()->logicalIndex(visualIndex);
+        if (!header()->isSectionHidden(logicalIndex)) {
+            logicalIndexBeforeLeft = logicalIndex;
+            break;
+        }
+    }
+
+    for (int visualIndex = left; visualIndex < columnCount; ++visualIndex) {
+        int logicalIndex = header()->logicalIndex(visualIndex);
+        if (!header()->isSectionHidden(logicalIndex)) {
+            if (visualIndex > right) {
+                logicalIndexAfterRight = logicalIndex;
+                break;
+            }
+            logicalIndices->append(logicalIndex);
+        }
+    }
+
+    itemPositions->resize(logicalIndices->count());
+    for (int currentLogicalSection = 0; currentLogicalSection < logicalIndices->count(); ++currentLogicalSection) {
+        const int headerSection = logicalIndices->at(currentLogicalSection);
+        // determine the viewItemPosition depending on the position of column 0
+        int nextLogicalSection = currentLogicalSection + 1 >= logicalIndices->count()
+        ? logicalIndexAfterRight
+        : logicalIndices->at(currentLogicalSection + 1);
+        int prevLogicalSection = currentLogicalSection - 1 < 0
+        ? logicalIndexBeforeLeft
+        : logicalIndices->at(currentLogicalSection - 1);
+        QStyleOptionViewItemV4::ViewItemPosition pos;
+        if (columnCount == 1 || (nextLogicalSection == 0 && prevLogicalSection == -1)
+            || (headerSection == 0 && nextLogicalSection == -1)/* || spanning*/)
+            pos = QStyleOptionViewItemV4::OnlyOne;
+        else if (headerSection == 0 || (nextLogicalSection != 0 && prevLogicalSection == -1))
+            pos = QStyleOptionViewItemV4::Beginning;
+        else if (nextLogicalSection == 0 || nextLogicalSection == -1)
+            pos = QStyleOptionViewItemV4::End;
+        else
+            pos = QStyleOptionViewItemV4::Middle;
+        (*itemPositions)[currentLogicalSection] = pos;
+    }
+} // calcLogicalIndices
+
+void TableView::adjustViewOptionsForIndex(QStyleOptionViewItemV4 *option,
+                                          const TableItemPtr &item,
+                                          const QModelIndex& index) const
+{
+    assert(item);
+    if (isExpanded(index)) {
+        option->state |= QStyle::State_Open;
+    } else {
+        option->state |= QStyle::State_None;
+    }
+    if (item->getChildren().empty()) {
+        option->state |= QStyle::State_Children;
+    } else {
+        option->state |= QStyle::State_None;
+    }
+    TableItemPtr parentItem = item->getParentItem();
+    if (parentItem && parentItem->getChildren().size() > 1) {
+        option->state |= QStyle::State_Sibling;
+    } else {
+        option->state |= QStyle::State_None;
+    }
+
+    option->showDecorationSelected = (selectionBehavior() & QTreeView::SelectRows) || option->showDecorationSelected;
+
+    // index = visual index of visible columns only. data = logical index.
+    QVector<int> logicalIndices;
+
+    // vector of left/middle/end for each logicalIndex, visible columns only.
+    QVector<QStyleOptionViewItemV4::ViewItemPosition> viewItemPosList;
+
+
+    const bool spanning = false;//viewItems.at(row).spanning;
+
+    const int left = (spanning ? header()->visualIndex(0) : 0);
+    const int right = (spanning ? header()->visualIndex(0) : header()->count() - 1 );
+    calcLogicalIndices(&logicalIndices, &viewItemPosList, left, right);
+
+    const int visualIndex = logicalIndices.indexOf(index.column());
+    option->viewItemPosition = viewItemPosList.at(visualIndex);
+} // adjustViewOptionsForIndex
+
+
+
+QStyleOptionViewItemV4 TableView::viewOptionsV4() const
+{
+    QStyleOptionViewItemV4 option = viewOptions();
+    //if (wrapItemText)
+    //   option.features = QStyleOptionViewItemV2::WrapText;
+    option.locale = locale();
+    option.locale.setNumberOptions(QLocale::OmitGroupSeparator);
+    option.widget = this;
+    return option;
+}
+struct DraggablePaintItem
+{
+    QModelIndex index;
+    int col;
+    QRect rect;
+    TableItemPtr tableItem;
+};
+
+QPixmap TableView::renderToPixmap(const std::set<int>& rows, QRect *r) const
+{
+    assert(r);
+
+    TableModelPtr model = getTableModel();
+
+    const QRect viewportRect = viewport()->rect();
+    const int colsCount = model->columnCount();;
+
+    std::vector<DraggablePaintItem> paintItems;
+    for (std::set<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+
+        TableItemPtr modelItem = model->getItem(*it);
+        for (int c = 0; c < colsCount; ++c) {
+            QModelIndex idx = model->index(*it, c);
+            const QRect itemRect = visualRect(idx);
+            if (itemRect.intersects(viewportRect)) {
+                DraggablePaintItem d;
+                d.rect = itemRect;
+                d.index = idx;
+                d.tableItem = modelItem;
+                *r = r->unite(itemRect);
+                paintItems.push_back(d);
+            }
+        }
+
+
+    }
+    *r = r->intersect(viewportRect);
+
+    if (paintItems.empty()) {
+        return QPixmap();
+    }
+
+
+    QPixmap pixmap(r->size());
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    QStyleOptionViewItemV4 option = viewOptionsV4();
+    option.state |= QStyle::State_Selected;
+    for (std::size_t i = 0; i < paintItems.size(); ++i) {
+        option.rect = paintItems[i].rect.translated(-r->topLeft());
+        adjustViewOptionsForIndex(&option, paintItems[i].tableItem, paintItems[i].index);
+        itemDelegate(paintItems[i].index)->paint(&painter, option, paintItems[i].index);
+    }
+    return pixmap;
+} // renderToPixmap
 
 void
 TableView::rebuildDraggedItemsFromSelection()
@@ -1348,7 +1534,7 @@ TableView::rebuildDraggedItemsFromSelection()
     _imp->draggedItems.clear();
     QModelIndexList indexes = selectionModel()->selectedIndexes();
     for (QModelIndexList::Iterator it = indexes.begin(); it != indexes.end(); ++it) {
-        TableItem* i = item( it->row(), it->column() );
+        TableItemPtr i = getTableModel()->getItem(*it);
         if (i) {
             _imp->draggedItems.push_back(i);
         }
@@ -1381,7 +1567,7 @@ TableView::dropEvent(QDropEvent* e)
 {
 
     // We only support drag & drop that are internal to this table
-    TableItem* into = itemAt( e->pos() );
+    TableItemPtr into = itemAt( e->pos() );
     if ( !into || _imp->draggedItems.empty() ) {
         return;
     }
@@ -1404,18 +1590,20 @@ TableView::dropEvent(QDropEvent* e)
 
     int targetRow = into->row();
 
+    TableModelPtr model = getTableModel();
+
     // Remove the items but do not delete them
-    std::map<int, std::map<int, TableItem*> > rowMoved;
-    for (std::list<TableItem*>::iterator it = _imp->draggedItems.begin(); it != _imp->draggedItems.end(); ++it) {
+    std::map<int, std::map<int, TableItemPtr> > rowMoved;
+    for (std::list<TableItemPtr>::iterator it = _imp->draggedItems.begin(); it != _imp->draggedItems.end(); ++it) {
         rowMoved[(*it)->row()][(*it)->column()] = *it;
-        TableItem* taken = _imp->model->takeItem( (*it)->row(), (*it)->column() );
+        TableItemPtr taken = model->takeItem( (*it)->row(), (*it)->column() );
         assert(taken == *it);
         Q_UNUSED(taken);
     }
 
     // Remove the rows in reverse order so that indexes are still valid
-    for (std::map<int, std::map<int, TableItem*> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
-        _imp->model->removeRows(it->first);
+    for (std::map<int, std::map<int, TableItemPtr> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {
+        model->removeRows(it->first);
         if (it->first <= targetRow) {
             --targetRow;
         }
@@ -1423,10 +1611,10 @@ TableView::dropEvent(QDropEvent* e)
     _imp->draggedItems.clear();
 
     // Insert back at the correct position depending on the drop indicator
-    int nRows = _imp->model->rowCount();
+    int nRows = model->rowCount();
     switch (position) {
     case QAbstractItemView::AboveItem: {
-        _imp->model->insertRows( targetRow, rowMoved.size() );
+        model->insertRows( targetRow, rowMoved.size() );
         break;
     }
     case QAbstractItemView::BelowItem: {
@@ -1434,7 +1622,7 @@ TableView::dropEvent(QDropEvent* e)
         if (targetRow > nRows) {
             targetRow = nRows;
         }
-        _imp->model->insertRows( targetRow, rowMoved.size() );
+        model->insertRows( targetRow, rowMoved.size() );
         break;
     }
     default:
@@ -1443,9 +1631,9 @@ TableView::dropEvent(QDropEvent* e)
     }
 
     int rowIndex = targetRow;
-    for (std::map<int, std::map<int, TableItem*> >::iterator it = rowMoved.begin(); it != rowMoved.end(); ++it, ++rowIndex) {
-        for (std::map<int, TableItem*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            _imp->model->setItem(rowIndex, it2->first, it2->second);
+    for (std::map<int, std::map<int, TableItemPtr> >::iterator it = rowMoved.begin(); it != rowMoved.end(); ++it, ++rowIndex) {
+        for (std::map<int, TableItemPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            model->setItem(rowIndex, it2->first, it2->second);
         }
     }
 

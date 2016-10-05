@@ -212,6 +212,10 @@ typedef boost::shared_ptr<KnobGui const> KnobGuiConstPtr;
 typedef boost::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
 typedef boost::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
 typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
+typedef boost::shared_ptr<TableItem> TableItemPtr;
+typedef boost::shared_ptr<const TableItem> TableItemConstPtr;
+
+typedef boost::shared_ptr<TableModel> TableModelPtr;
 
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
@@ -222,7 +226,10 @@ typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
 typedef boost::weak_ptr<KnobPageGui> KnobPageGuiWPtr;
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
+typedef boost::weak_ptr<TableItem> TableItemWPtr;
+typedef boost::weak_ptr<TableModel> TableModelWPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
+
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class DialogParamHolder;

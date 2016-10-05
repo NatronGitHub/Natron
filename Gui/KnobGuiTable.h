@@ -64,13 +64,13 @@ public Q_SLOTS:
 
     void onEditButtonClicked();
 
-    void onItemDataChanged(TableItem* item);
+    void onItemDataChanged(const TableItemPtr& item);
 
     void onItemAboutToDrop();
 
     void onItemDropped();
 
-    void onItemDoubleClicked(TableItem* item);
+    void onItemDoubleClicked(const TableItemPtr& item);
 
 protected:
 

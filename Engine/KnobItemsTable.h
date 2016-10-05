@@ -34,6 +34,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QMetaType>
 #include <QString>
 
 #include "Engine/Knob.h"
@@ -372,5 +373,10 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::KnobTableItemPtr)
+Q_DECLARE_METATYPE(std::list<NATRON_NAMESPACE::KnobTableItemPtr>)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::TableChangeReasonEnum)
+
 
 #endif // NATRON_ENGINE_KNOBITEMSTABLE_H

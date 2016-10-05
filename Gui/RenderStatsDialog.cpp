@@ -82,10 +82,10 @@ struct RowInfo
 {
     NodeWPtr node;
     int rowIndex;
-    TableItem* item;
+    TableItemPtr item;
 
     RowInfo()
-        : node(), rowIndex(-1), item(0) {}
+        : node(), rowIndex(-1), item() {}
 };
 
 struct StatRowsCompare
@@ -116,6 +116,8 @@ struct StatRowsCompare
         }
     }
 };
+class StatsTableModel;
+typedef boost::shared_ptr<StatsTableModel> StatsTableModelPtr;
 
 class StatsTableModel
     : public TableModel
@@ -123,19 +125,25 @@ class StatsTableModel
     Q_DECLARE_TR_FUNCTIONS(StatsTableModel)
 
 private:
-    TableView* view;
+
     std::vector<NodeWPtr > rows;
+
+    StatsTableModel(int row,
+                    int cols)
+    : TableModel(row, cols)
+    , rows()
+    {
+    }
+
 
 public:
 
-    StatsTableModel(int row,
-                    int cols,
-                    TableView* view)
-        : TableModel(row, cols, view)
-        , view(view)
-        , rows()
+    static StatsTableModelPtr create(int row,
+                                     int cols)
     {
+        return StatsTableModelPtr(new StatsTableModel(row, cols));
     }
+
 
     virtual ~StatsTableModel() {}
 
@@ -183,168 +191,168 @@ public:
         }
 
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_NAME);
+                it = item(row, COL_NAME);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
 
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The label of the node as it appears on the nodegraph."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText( QString::fromUtf8( node->getLabel().c_str() ) );
+            it->setText( QString::fromUtf8( node->getLabel().c_str() ) );
             if (!exists) {
-                view->setItem(row, COL_NAME, item);
+                setItem(row, COL_NAME, it);
             }
         }
 
 
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_PLUGIN_ID);
+                it = item(row, COL_PLUGIN_ID);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The ID of the plug-in embedded in the node."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText( QString::fromUtf8( node->getPluginID().c_str() ) );
+            it->setText( QString::fromUtf8( node->getPluginID().c_str() ) );
             if (!exists) {
-                view->setItem(row, COL_PLUGIN_ID, item);
+                setItem(row, COL_PLUGIN_ID, it);
             }
         }
 
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             double timeSoFar;
             if (exists) {
-                item = view->item(row, COL_TIME);
-                timeSoFar = item->data( (int)eItemsRoleTime ).toDouble();
+                it = item(row, COL_TIME);
+                timeSoFar = it->data( (int)eItemsRoleTime ).toDouble();
                 timeSoFar += stats.getTotalTimeSpentRendering();
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The time spent rendering by this node across all threads."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
+                it->setToolTip(tt);
                 timeSoFar = stats.getTotalTimeSpentRendering();
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setData( (int)eItemsRoleTime, timeSoFar );
-            item->setText( Timer::printAsTime(timeSoFar, false) );
+            it->setData( (int)eItemsRoleTime, timeSoFar );
+            it->setText( Timer::printAsTime(timeSoFar, false) );
 
             if (!exists) {
-                view->setItem(row, COL_TIME, item);
+                setItem(row, COL_TIME, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_SUPPORT_TILES);
+                it = item(row, COL_SUPPORT_TILES);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("Whether this node has tiles (portions of the final image) support or not."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             QString str;
             if ( stats.isTilesSupportEnabled() ) {
                 str = QString::fromUtf8("Yes");
             } else {
                 str = QString::fromUtf8("No");
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_SUPPORT_TILES, item);
+                setItem(row, COL_SUPPORT_TILES, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_SUPPORT_RS);
+                it = item(row, COL_SUPPORT_RS);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("Whether this node has render scale support or not.\n"
                                                                "When activated, that means the node can render an image at a "
                                                                "lower scale."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             QString str;
             if ( stats.isRenderScaleSupportEnabled() ) {
                 str = QString::fromUtf8("Yes");
             } else {
                 str = QString::fromUtf8("No");
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_SUPPORT_RS, item);
+                setItem(row, COL_SUPPORT_RS, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             QString str;
             if (exists) {
-                item = view->item(row, COL_MIPMAP_LEVEL);
+                it = item(row, COL_MIPMAP_LEVEL);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
                                                                "1 means scale = 50%, 2 means scale = 25%, etc."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             const std::set<unsigned int>& mm = stats.getMipMapLevelsRendered();
             for (std::set<unsigned int>::const_iterator it = mm.begin(); it != mm.end(); ++it) {
                 str.append( QString::number(*it) );
                 str.append( QLatin1Char(' ') );
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_MIPMAP_LEVEL, item);
+                setItem(row, COL_MIPMAP_LEVEL, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_CHANNELS);
+                it = item(row, COL_CHANNELS);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The channels processed by this node (corresponding to the RGBA checkboxes)."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             QString str;
             std::bitset<4> processChannels = stats.getChannelsRendered();
             if (processChannels[0]) {
@@ -359,27 +367,27 @@ public:
             if (processChannels[3]) {
                 str.append( QString::fromUtf8("A") );
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_CHANNELS, item);
+                setItem(row, COL_CHANNELS, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             QString str;
             if (exists) {
-                item = view->item(row, COL_PREMULT);
+                it = item(row, COL_PREMULT);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The alpha premultiplication of the image produced by this node."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             ImagePremultiplicationEnum premult = stats.getOutputPremult();
             switch (premult) {
             case eImagePremultiplicationOpaque:
@@ -392,50 +400,50 @@ public:
                 str = QString::fromUtf8("Unpremultiplied");
                 break;
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_PREMULT, item);
+                setItem(row, COL_PREMULT, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             QString str;
             if (exists) {
-                item = view->item(row, COL_ROD);
+                it = item(row, COL_ROD);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The region of definition of the image produced."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             const RectD& rod = stats.getRoD();
             str = QString::fromUtf8("(%1, %2, %3, %4)").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2);
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_ROD, item);
+                setItem(row, COL_ROD, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             if (exists) {
-                item = view->item(row, COL_IDENTITY);
+                it = item(row, COL_IDENTITY);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("When different of \"-\", this node does not render but rather "
                                                                "directly returns the image produced by the node indicated by its label."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             QString str;
             NodePtr identity = stats.getInputImageIdentity();
             if (identity) {
@@ -443,31 +451,31 @@ public:
             } else {
                 str = QLatin1Char('-');
             }
-            item->setText(str);
+            it->setText(str);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
             if (!exists) {
-                view->setItem(row, COL_IDENTITY, item);
+                setItem(row, COL_IDENTITY, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             int nbIdentityTiles = 0;
             QString tilesInfo;
             if (exists) {
-                item = view->item(row, COL_IDENTITY_TILES);
-                nbIdentityTiles = item->data( (int)eItemsRoleIdentityTilesNb ).toInt();
-                tilesInfo = item->data( (int)eItemsRoleIdentityTilesInfo ).toString();
+                it = item(row, COL_IDENTITY_TILES);
+                nbIdentityTiles = it->data( (int)eItemsRoleIdentityTilesNb ).toInt();
+                tilesInfo = it->data( (int)eItemsRoleIdentityTilesInfo ).toString();
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The list of the tiles that were identity in the image.\n"
                                                                "Double-click for more info."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             std::list<std::pair<RectI, NodePtr > > tiles = stats.getIdentityRectangles();
             for (std::list<std::pair<RectI, NodePtr > >::iterator it = tiles.begin(); it != tiles.end(); ++it) {
                 const RectI& tile = it->first;
@@ -476,35 +484,35 @@ public:
             }
             nbIdentityTiles += (int)tiles.size();
 
-            item->setData( (int)eItemsRoleIdentityTilesNb, nbIdentityTiles );
-            item->setData( (int)eItemsRoleIdentityTilesInfo, tilesInfo );
+            it->setData( (int)eItemsRoleIdentityTilesNb, nbIdentityTiles );
+            it->setData( (int)eItemsRoleIdentityTilesInfo, tilesInfo );
 
             QString str = QString::number(nbIdentityTiles) + QString::fromUtf8(" tiles...");
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText(str);
+            it->setText(str);
             if (!exists) {
-                view->setItem(row, COL_IDENTITY_TILES, item);
+                setItem(row, COL_IDENTITY_TILES, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             int nbTiles = 0;
             QString tilesInfo;
             if (exists) {
-                item = view->item(row, COL_RENDERED_TILES);
-                nbTiles = item->data( (int)eItemsRoleRenderedTilesNb ).toInt();
-                tilesInfo = item->data( (int)eItemsRoleRenderedTilesInfo ).toString();
+                it = item(row, COL_RENDERED_TILES);
+                nbTiles = it->data( (int)eItemsRoleRenderedTilesNb ).toInt();
+                tilesInfo = it->data( (int)eItemsRoleRenderedTilesInfo ).toString();
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The list of the tiles effectivly rendered.\n"
                                                                "Double-click for more infos"), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             const std::list<RectI>& tiles = stats.getRenderedRectangles();
             for (std::list<RectI>::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
                 const RectI& tile = *it;
@@ -513,31 +521,31 @@ public:
             }
             nbTiles += (int)tiles.size();
 
-            item->setData( (int)eItemsRoleRenderedTilesNb, nbTiles );
-            item->setData( (int)eItemsRoleRenderedTilesInfo, tilesInfo );
+            it->setData( (int)eItemsRoleRenderedTilesNb, nbTiles );
+            it->setData( (int)eItemsRoleRenderedTilesInfo, tilesInfo );
 
             QString str = QString::number(nbTiles) + QString::fromUtf8(" tiles...");
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText(str);
+            it->setText(str);
             if (!exists) {
-                view->setItem(row, COL_RENDERED_TILES, item);
+                setItem(row, COL_RENDERED_TILES, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             QString planesInfo;
             if (exists) {
-                item = view->item(row, COL_RENDERED_PLANES);
+                it = item(row, COL_RENDERED_PLANES);
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The list of the planes rendered by this node."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             const std::set<std::string>& planes = stats.getPlanesRendered();
             for (std::set<std::string>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
                 if ( !planesInfo.isEmpty() ) {
@@ -547,101 +555,101 @@ public:
             }
 
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText(planesInfo);
+            it->setText(planesInfo);
             if (!exists) {
-                view->setItem(row, COL_RENDERED_PLANES, item);
+                setItem(row, COL_RENDERED_PLANES, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             int nb = 0;
             if (exists) {
-                item = view->item(row, COL_NB_CACHE_HIT);
-                nb = item->text().toInt();
+                it = item(row, COL_NB_CACHE_HIT);
+                nb = it->text().toInt();
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The number of cache hits."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
+            assert(it);
             int nbCacheMiss, nbCacheHits, nbCacheHitButDown;
             stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
             nb += nbCacheHits;
 
             QString str = QString::number(nb);
             if (nodeUi) {
-                item->setTextColor(Qt::black);
-                item->setBackgroundColor(c);
+                it->setTextColor(Qt::black);
+                it->setBackgroundColor(c);
             }
-            item->setText(str);
+            it->setText(str);
             if (!exists) {
-                view->setItem(row, COL_NB_CACHE_HIT, item);
+                setItem(row, COL_NB_CACHE_HIT, it);
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             int nb = 0;
             if (exists) {
-                item = view->item(row, COL_NB_CACHE_HIT_DOWNSCALED);
-                if (item) {
-                    nb = item->text().toInt();
+                it = item(row, COL_NB_CACHE_HIT_DOWNSCALED);
+                if (it) {
+                    nb = it->text().toInt();
                 }
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The number of cache access hits but at higher scale "
                                                                "hence requiring downscaling."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
-            if (item) {
+            assert(it);
+            if (it) {
                 int nbCacheMiss, nbCacheHits, nbCacheHitButDown;
                 stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
                 nb += nbCacheHitButDown;
 
                 QString str = QString::number(nb);
                 if (nodeUi) {
-                    item->setTextColor(Qt::black);
-                    item->setBackgroundColor(c);
+                    it->setTextColor(Qt::black);
+                    it->setBackgroundColor(c);
                 }
-                item->setText(str);
+                it->setText(str);
                 if (!exists) {
-                    view->setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, item);
+                    setItem(row, COL_NB_CACHE_HIT_DOWNSCALED, it);
                 }
             }
         }
         {
-            TableItem* item = 0;
+            TableItemPtr it;
             int nb = 0;
             if (exists) {
-                item = view->item(row, COL_NB_CACHE_MISS);
-                if (item) {
-                    nb = item->text().toInt();
+                it = item(row, COL_NB_CACHE_MISS);
+                if (it) {
+                    nb = it->text().toInt();
                 }
             } else {
-                item = new TableItem;
+                it = TableItem::create();
                 QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The number of cache misses."), NATRON_NAMESPACE::WhiteSpaceNormal);
-                item->setToolTip(tt);
-                item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+                it->setToolTip(tt);
+                it->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
-            assert(item);
-            if (item) {
+            assert(it);
+            if (it) {
                 int nbCacheMiss, nbCacheHits, nbCacheHitButDown;
                 stats.getCacheAccessInfos(&nbCacheMiss, &nbCacheHits, &nbCacheHitButDown);
                 nb += nbCacheMiss;
 
                 QString str = QString::number(nb);
                 if (nodeUi) {
-                    item->setTextColor(Qt::black);
-                    item->setBackgroundColor(c);
+                    it->setTextColor(Qt::black);
+                    it->setBackgroundColor(c);
                 }
-                item->setText(str);
+                it->setText(str);
                 if (!exists) {
-                    view->setItem(row, COL_NB_CACHE_MISS, item);
+                    setItem(row, COL_NB_CACHE_MISS, it);
                 }
             }
         }
@@ -660,7 +668,7 @@ public:
         for (std::size_t i = 0; i < rows.size(); ++i) {
             vect[i].node = rows[i];
             vect[i].rowIndex = i;
-            vect[i].item = view->item(vect[i].rowIndex, column);
+            vect[i].item = item(vect[i].rowIndex, column);
             assert(vect[i].item);
         }
         Q_EMIT layoutAboutToBeChanged();
@@ -675,11 +683,11 @@ public:
                 vect[vect.size() - i - 1] = copy[i];
             }
         }
-        std::vector<TableItem*> newTable(vect.size() * NUM_COLS);
+        std::vector<TableItemPtr> newTable(vect.size() * NUM_COLS);
         for (std::size_t i = 0; i < vect.size(); ++i) {
             rows[i] = vect[i].node;
             for (int j = 0; j < NUM_COLS; ++j) {
-                TableItem* item = takeItem(vect[i].rowIndex, j);
+                TableItemPtr item = takeItem(vect[i].rowIndex, j);
                 assert(item);
                 newTable[(i * NUM_COLS) + j] = item;
             }
@@ -714,7 +722,7 @@ struct RenderStatsDialogPrivate
     Label* useUnixWildcardsLabel;
     QCheckBox* useUnixWildcardsCheckbox;
     TableView* view;
-    StatsTableModel* model;
+    StatsTableModelPtr model;
 
     RenderStatsDialogPrivate(Gui* gui)
         : gui(gui)
@@ -740,7 +748,7 @@ struct RenderStatsDialogPrivate
         , useUnixWildcardsLabel(0)
         , useUnixWildcardsCheckbox(0)
         , view(0)
-        , model(0)
+        , model()
     {
     }
 
@@ -869,7 +877,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     _imp->view = new TableView(this);
 
-    _imp->model = new StatsTableModel(0, 0, _imp->view);
+    _imp->model = StatsTableModel::create(0, 0);
     _imp->view->setTableModel(_imp->model);
 
     QStringList dimensionNames;

@@ -26,7 +26,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 struct Row
 {
-    std::vector<TableItem*> items;
+    std::vector<TableItemPtr> items;
 };
 
 typedef std::vector<Row> Variables;
@@ -42,7 +42,7 @@ struct KnobGuiTablePrivate
 
     QWidget* mainContainer;
     TableView *table;
-    TableModel* model;
+    TableModelPtr model;
     Button *addPathButton;
     Button* removePathButton;
     Button* editPathButton;
@@ -53,7 +53,7 @@ struct KnobGuiTablePrivate
     KnobGuiTablePrivate()
         : mainContainer(0)
         , table(0)
-        , model(0)
+        , model()
         , addPathButton(0)
         , removePathButton(0)
         , editPathButton(0)
@@ -140,7 +140,7 @@ KnobTableItemDelegate::paint(QPainter * painter,
 
         return;
     }
-    TableItem* item = model->item(index);
+    TableItemPtr item = model->item(index);
     if (!item) {
         QStyledItemDelegate::paint(painter, option, index);
 
@@ -148,7 +148,7 @@ KnobTableItemDelegate::paint(QPainter * painter,
     }
     QPen pen;
 
-    if ( !item->flags().testFlag(Qt::ItemIsEnabled) ) {
+    if ( !item->getFlags().testFlag(Qt::ItemIsEnabled) ) {
         pen.setColor(Qt::black);
     } else {
         pen.setColor( QColor(200, 200, 200) );
@@ -189,7 +189,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     _imp->table = new TableView(_imp->mainContainer);
     QObject::connect( _imp->table, SIGNAL(aboutToDrop()), this, SLOT(onItemAboutToDrop()) );
     QObject::connect( _imp->table, SIGNAL(itemDropped()), this, SLOT(onItemDropped()) );
-    QObject::connect( _imp->table, SIGNAL(itemDoubleClicked(TableItem*)), this, SLOT(onItemDoubleClicked(TableItem*)) );
+    QObject::connect( _imp->table, SIGNAL(itemDoubleClicked(TableItemPtr)), this, SLOT(onItemDoubleClicked(TableItemPtr)) );
 
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
@@ -206,8 +206,8 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     _imp->table->setUniformRowHeights(true);
     _imp->table->setItemDelegate( new KnobTableItemDelegate(knob, _imp->table) );
 
-    _imp->model = new TableModel(0, 0, _imp->table);
-    QObject::connect( _imp->model, SIGNAL(s_itemChanged(TableItem*)), this, SLOT(onItemDataChanged(TableItem*)) );
+    _imp->model = TableModel::create(0, 0);
+    QObject::connect( _imp->model.get(), SIGNAL(s_itemChanged(TableItemPtr)), this, SLOT(onItemDataChanged(TableItemPtr)) );
 
 
     _imp->table->setTableModel(_imp->model);
@@ -298,7 +298,7 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
             }
         }
 
-        TableItem* cell = new TableItem;
+        TableItemPtr cell = TableItem::create();
         cell->setText(*it);
         cell->setFlags(flags);
         r.items.push_back(cell);
@@ -511,11 +511,11 @@ KnobGuiTable::onItemDropped()
     _imp->dragAndDropping = false;
 
     //Now refresh the knob balue
-    onItemDataChanged(0);
+    onItemDataChanged(TableItemPtr());
 }
 
 void
-KnobGuiTable::onItemDoubleClicked(TableItem* item)
+KnobGuiTable::onItemDoubleClicked(const TableItemPtr& item)
 {
     int row = -1;
     int col = -1;
@@ -568,7 +568,7 @@ KnobGuiTable::onItemDoubleClicked(TableItem* item)
 } // KnobGuiTable::onItemDoubleClicked
 
 void
-KnobGuiTable::onItemDataChanged(TableItem* item)
+KnobGuiTable::onItemDataChanged(const TableItemPtr& item)
 {
     if (_imp->isInsertingItem || _imp->dragAndDropping) {
         return;

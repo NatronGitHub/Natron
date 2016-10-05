@@ -54,7 +54,7 @@ class AboutWindow
     QWidget* _buttonContainer;
     QHBoxLayout* _buttonLayout;
     Button* _closeButton;
-    TableModel* _model;
+    TableModelPtr _model;
     TableView* _view;
 
 public:
