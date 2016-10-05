@@ -107,7 +107,7 @@ qSystemDirectory()
         return QString();
     }
     std::wstring ws(fullPath.constData(), retLen);
-    return QString::fromStdWstring(ws);
+    return QString::fromStdWString(ws);
 }
 
 static HINSTANCE
