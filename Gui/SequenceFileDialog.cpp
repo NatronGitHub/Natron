@@ -1854,7 +1854,6 @@ SequenceFileDialog::selectedFiles()
         selection = ret.toStdString();
     }
 #endif
-    std::cout << "SequenceFileDialog::selectedFiles(): " << selection << std::endl;
     return selection;
 }
 
