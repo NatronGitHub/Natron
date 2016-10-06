@@ -464,8 +464,6 @@ AppManager::load(int &argc,
     QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
 #endif
 
-    assert(argv);
-
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
