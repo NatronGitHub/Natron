@@ -1130,6 +1130,9 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
         }
         std::cout << "UTF-8 arg: " <<  utf8Args->back() << std::endl;
     }
+    // Free memory allocated for CommandLineToArgvW arguments.
+    LocalFree(argList);
+
 
 #endif
 }
