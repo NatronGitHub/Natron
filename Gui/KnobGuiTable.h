@@ -64,7 +64,7 @@ public Q_SLOTS:
 
     void onEditButtonClicked();
 
-    void onItemDataChanged(const TableItemPtr& item);
+    void onItemDataChanged(const TableItemPtr& item, int col);
 
     void onItemAboutToDrop();
 

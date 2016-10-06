@@ -550,11 +550,11 @@ public:
 
 
     /**
-     * @brief For a tree, this removes a top level item.
+     * @brief For a tree, this removes an item from the model. If the item belongs to a parent, it removes it from the parent children list.
      * For a table, this is the same as calling setRow with a NULL pointer and also calling removeRows on that same row
      * @returns true on success
      **/
-    bool removeTopLevelItem(const TableItemPtr& item);
+    bool removeItem(const TableItemPtr& item);
 
     /**
      * @brief Is item selected ?
@@ -588,7 +588,7 @@ public:
 
 public Q_SLOTS:
 
-    void onDataChanged(const QModelIndex & index);
+    void onDataChanged(const QModelIndex & tl, const QModelIndex& br);
 
 Q_SIGNALS:
 

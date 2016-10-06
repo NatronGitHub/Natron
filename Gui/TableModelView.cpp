@@ -230,14 +230,9 @@ TableItem::insertChild(int row, const TableItemPtr& child)
     
     // Remove the child from its original parent/model
     {
-        TableItemPtr currentParent = child->getParentItem();
-        if (currentParent) {
-            currentParent->removeChild(child);
-        } else {
-            TableModelPtr childModel = child->getModel();
-            if (childModel) {
-                childModel->removeTopLevelItem(child);
-            }
+        TableModelPtr childModel = child->getModel();
+        if (childModel) {
+            childModel->removeItem(child);
         }
     }
 
@@ -411,7 +406,7 @@ TableModel::TableModel(int columns, TableModelTypeEnum type)
     : QAbstractTableModel()
     , _imp( new TableModelPrivate(columns, type) )
 {
-    QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
+    QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex, QModelIndex)) );
 }
 
 TableModel::~TableModel()
@@ -449,11 +444,14 @@ TableModel::refreshTopLevelItemIndices()
 
 
 void
-TableModel::onDataChanged(const QModelIndex & index)
+TableModel::onDataChanged(const QModelIndex & tl, const QModelIndex& br)
 {
-    TableItemPtr i = getItem(index);
-    if (i) {
-        Q_EMIT s_itemChanged(i);
+    for (int row = tl.row(); row <= br.row(); ++row) {
+        TableItemPtr i = getItem(row);
+        if (i) {
+            Q_EMIT s_itemChanged(i);
+        }
+
     }
 }
 
@@ -780,40 +778,47 @@ TableModel::insertTopLevelItem(int row, const TableItemPtr& item)
 }
 
 bool
-TableModel::removeTopLevelItem(const TableItemPtr& item)
+TableModel::removeItem(const TableItemPtr& item)
 {
   
     if (!item) {
         return false;
     }
-    
-    int i = 0;
-    for (TableItemVec::iterator it = _imp->topLevelItems.begin(); it!=_imp->topLevelItems.end(); ++it, ++i) {
-        if (*it == item) {
 
-            beginRemoveRows(QModelIndex(), i, i);
-            // Item no longer belongs to model
-            assert(!item->_imp->parent.lock());
-            item->_imp->indexInParent = -1;
-            item->_imp->model.reset();
+    TableItemPtr parent = item->getParentItem();
+    if (parent) {
+        return parent->removeChild(item);
+    } else {
+
+        int i = 0;
+        for (TableItemVec::iterator it = _imp->topLevelItems.begin(); it!=_imp->topLevelItems.end(); ++it, ++i) {
+            if (*it == item) {
+
+                beginRemoveRows(QModelIndex(), i, i);
+                // Item no longer belongs to model
+                assert(!item->_imp->parent.lock());
+                item->_imp->indexInParent = -1;
+                item->_imp->model.reset();
 #pragma message WARN("Should we also recursively remove children of item?")
-            it = _imp->topLevelItems.erase(it);
-            for (; it != _imp->topLevelItems.end(); ++it) {
-                --item->_imp->indexInParent;
+                it = _imp->topLevelItems.erase(it);
+                for (; it != _imp->topLevelItems.end(); ++it) {
+                    --item->_imp->indexInParent;
+                }
+
+                endRemoveRows();
+                /*QModelIndex first = createIndex(i, 0, 0);
+                 QModelIndex last = createIndex(i, _imp->colCount - 1, 0);
+
+                 // Refresh the view
+                 Q_EMIT dataChanged(first, last);*/
+                
+                return true;
             }
-
-            endRemoveRows();
-            /*QModelIndex first = createIndex(i, 0, 0);
-            QModelIndex last = createIndex(i, _imp->colCount - 1, 0);
-
-            // Refresh the view
-            Q_EMIT dataChanged(first, last);*/
-
-            return true;
         }
-    }
+        return false;
 
-    return false;
+    }
+    
 }
 
 
@@ -1767,7 +1772,7 @@ TableView::setupAndExecDragObject(QDrag* drag,
         for (QModelIndexList::const_iterator it = rows.begin(); it != rows.end(); ++it) {
             TableItemPtr item = model->getItem(*it);
             if (item) {
-                model->removeTopLevelItem(item);
+                model->removeItem(item);
             }
         }
         
@@ -1833,7 +1838,7 @@ TableView::dropEvent(QDropEvent* e)
     std::map<int, TableItemPtr> rowMoved;
     for (std::list<TableItemPtr>::iterator it = _imp->draggedItems.begin(); it != _imp->draggedItems.end(); ++it) {
         rowMoved[(*it)->getRowInParent()] = *it;
-        model->removeTopLevelItem(*it);
+        model->removeItem(*it);
     }
 
     _imp->draggedItems.clear();

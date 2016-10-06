@@ -155,9 +155,7 @@ struct KnobItemsTableGuiPrivate
         }
         return items.end();
     }
-    
-    void showItemMenu(const TableItemPtr& item, const QPoint & globalPos);
-    
+
     bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int row, int col);
 
     void createCustomWidgetRecursively(const KnobTableItemPtr& item);
@@ -169,6 +167,8 @@ struct KnobItemsTableGuiPrivate
     void itemsToSelection(const std::list<KnobTableItemPtr>& items, QItemSelection* selection);
 
     void createTableItems(const KnobTableItemPtr& item);
+
+    void removeTableItem(const KnobTableItemPtr& item);
 };
 
 bool
@@ -451,7 +451,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
             break;
     }
     _imp->tableModel = TableModel::create(nCols, type);
-    QObject::connect( _imp->tableModel.get(), SIGNAL(s_itemChanged(TableItemPtr)), this, SLOT(onTableItemDataChanged(TableItemPtr)) );
+    QObject::connect( _imp->tableModel.get(), SIGNAL(itemDataChanged(TableItemPtr,int)), this, SLOT(onTableItemDataChanged(TableItemPtr,int)) );
     _imp->tableView->setTableModel(_imp->tableModel);
 
     QItemSelectionModel *selectionModel = _imp->tableView->selectionModel();
@@ -685,12 +685,6 @@ KnobItemsTablePtr
 KnobItemsTableGui::getInternalTable() const
 {
     return _imp->internalModel.lock();
-}
-
-void
-KnobItemsTableGuiPrivate::showItemMenu(const TableItemPtr& item, const QPoint & globalPos)
-{
-    
 }
 
 void
@@ -1299,12 +1293,37 @@ KnobItemsTableGui::onDuplicateItemsActionTriggered()
 void
 KnobItemsTableGui::onTableItemRightClicked(const QPoint& globalPos, const TableItemPtr& item)
 {
-    _imp->showItemMenu(item, globalPos);
+#pragma message WARN("Check if right click works correctly directly from KnobGui, otherwise implement it here")
 }
 
 void
-KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item)
+KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item, int col)
 {
+    if (!item) {
+        return;
+    }
+    ModelItemsVec::iterator found = _imp->findItem(item);
+    if (found == _imp->items.end()) {
+        return;
+    }
+    KnobTableItemPtr internalItem = found->internalItem.lock();
+    if (!internalItem) {
+        return;
+    }
+
+    // If the column is handled by a knob GUI, then we do not bother handling interfacing with the knob here since everything is handled in the KnobGui side
+    int knobDim;
+    KnobIPtr knob = internalItem->getColumnKnob(col, &knobDim);
+    if (knob) {
+        return;
+    }
+
+    // The column is not a knob... this gotta be kKnobTableItemColumnLabel
+    std::string colName = internalItem->getColumnName(col);
+    assert(colName == kKnobTableItemColumnLabel);
+    QString label = item->getText(col);
+
+    internalItem->setLabel(label.toStdString(), eTableChangeReasonPanel);
 
 }
 
@@ -1312,7 +1331,7 @@ KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item)
 void
 KnobItemsTableGui::onSelectAllItemsActionTriggered()
 {
-    
+    _imp->internalModel.lock()->selectAll(eTableChangeReasonInternal);
 }
 
 void
@@ -1423,32 +1442,74 @@ KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& ad
 }
 
 void
-KnobItemsTableGui::onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
-{
-    
-}
-
-void
-KnobItemsTableGui::onModelTopLevelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
-{
-    
-}
-
-void
 KnobItemsTableGui::onItemLabelChanged(const QString& label, TableChangeReasonEnum reason)
 {
-    
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+
+    KnobTableItem* item = dynamic_cast<KnobTableItem*>(sender());
+    if (!item) {
+        return;
+    }
+
+
+    int labelColIndex = item->getLabelColumnIndex();
+    if (labelColIndex == -1) {
+        return;
+    }
+
+    TableItemPtr tableItem;
+    for (ModelItemsVec::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        if (it->internalItem.lock().get() == item) {
+            tableItem = it->item;
+            break;
+        }
+    }
+    if (!tableItem) {
+        return;
+    }
+
+
+    tableItem->setText(labelColIndex, label);
 }
+
+
+void
+KnobItemsTableGui::onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+    _imp->removeTableItem(item);
+}
+
+void
+KnobItemsTableGui::onModelTopLevelItemInserted(int /*index*/, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+{
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+    _imp->createTableItems(item);
+}
+
+
 void
 KnobItemsTableGui::onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
-    
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+    _imp->removeTableItem(item);
 }
 
 void
-KnobItemsTableGui::onItemChildInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTableGui::onItemChildInserted(int /*index*/, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
-    
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+    _imp->createTableItems(item);
 }
 
 static QString
@@ -1458,6 +1519,20 @@ labelToolTipFromScriptName(const KnobTableItemPtr& item)
             + QString::fromUtf8( item->getScriptName_mt_safe().c_str() )
             + QString::fromUtf8("</b></p>")
             +  NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("KnobItemsTableGui", "The label of the item"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+}
+
+void
+KnobItemsTableGuiPrivate::removeTableItem(const KnobTableItemPtr& item)
+{
+    ModelItemsVec::iterator foundItem = findItem(item);
+    if (foundItem == items.end()) {
+        return;
+    }
+    TableItemPtr tableItem = foundItem->item;
+    if (!tableItem) {
+        return;
+    }
+    tableModel->removeItem(tableItem);
 }
 
 void

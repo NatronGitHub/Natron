@@ -200,7 +200,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 
     const int numCols = knob->getColumnsCount();
     _imp->model = TableModel::create(numCols, TableModel::eTableModelTypeTable);
-    QObject::connect( _imp->model.get(), SIGNAL(s_itemChanged(TableItemPtr)), this, SLOT(onItemDataChanged(TableItemPtr)) );
+    QObject::connect( _imp->model.get(), SIGNAL(itemDataChanged(TableItemPtr,int)), this, SLOT(onItemDataChanged(TableItemPtr,int)) );
 
 
     _imp->table->setTableModel(_imp->model);
@@ -494,7 +494,7 @@ KnobGuiTable::onItemDropped()
     _imp->dragAndDropping = false;
 
     //Now refresh the knob balue
-    onItemDataChanged(TableItemPtr());
+    onItemDataChanged(TableItemPtr(), 0);
 }
 
 void
@@ -540,7 +540,7 @@ KnobGuiTable::onItemDoubleClicked(const TableItemPtr& item)
 } // KnobGuiTable::onItemDoubleClicked
 
 void
-KnobGuiTable::onItemDataChanged(const TableItemPtr& item)
+KnobGuiTable::onItemDataChanged(const TableItemPtr& item, int /*col*/)
 {
     if (_imp->isInsertingItem || _imp->dragAndDropping) {
         return;
