@@ -136,6 +136,34 @@ CLArgs::CLArgs(int& argc,
     _imp->parse();
 }
 
+CLArgs::CLArgs(int& argc,
+       wchar_t* argv[],
+       bool forceBackground)
+: _imp( new CLArgsPrivate() )
+{
+    _imp->isEmpty = false;
+    if (forceBackground) {
+        _imp->isBackground = true;
+    }
+    
+    std::vector<std::string> utf8Args;
+    for (int i = 0; i < argc; ++i) {
+        std::wstring ws(argv[i]);
+        QString str = QString::fromStdWString(ws);
+        if ( (str.size() >= 2) && ( str[0] == QChar::fromLatin1('"') ) && ( str[str.size() - 1] == QChar::fromLatin1('"') ) ) {
+            str.remove(0, 1);
+            str.remove(str.size() - 1, 1);
+        }
+#ifdef DEBUG
+        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
+#endif
+        _imp->args.push_back(str);
+
+    }
+    _imp->parse();
+
+}
+
 CLArgs:: CLArgs(const QStringList &arguments,
                 bool forceBackground)
     : _imp( new CLArgsPrivate() )

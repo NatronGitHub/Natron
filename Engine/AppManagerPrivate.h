@@ -230,6 +230,11 @@ public:
     void tearDownGL();
 
     void setViewerCacheTileSize();
+
+    void handleCommandLineArgs(int argc, char** argv);
+    void handleCommandLineArgsW(int argc, wchar_t** argv);
+
+    void copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args);
 };
 
 NATRON_NAMESPACE_EXIT;

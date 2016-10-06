@@ -232,17 +232,25 @@ win32 {
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
-  DEFINES -= _UNICODE UNICODE
+  DEFINES += _UNICODE UNICODE
  
   DEFINES += QHTTP_SERVER_STATIC 
 
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
 
+
+
   # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
   LIBS += -lopengl32 -lGdi32
 
 
+}
+
+win32-g++ {
+    # -municode is needed for linking because it uses wmain() instead of the traditional main()
+    # https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
+    LIBS += -municode
 }
 
 win32-msvc* {

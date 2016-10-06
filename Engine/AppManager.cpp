@@ -384,37 +384,9 @@ AppManager::releaseNatronGIL()
     _imp->natronPythonGIL.unlock();
 }
 
-
 bool
-AppManager::load(int &argc,
-                 char *argv[],
-                 const CLArgs& cl)
+AppManager::loadFromArgs(const CLArgs& cl)
 {
-    // Ensure the arguments are Utf-8 encoded
-    std::vector<std::string> utf8Args;
-    if (argv) {
-        CLArgs::ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
-    } else {
-        // If the user didn't specify launch arguments (e.g unit testing),
-        // At least append the binary path
-        QString path = ProcInfo::applicationDirPath(0);
-        utf8Args.push_back(path.toStdString());
-    }
-
-    // Copy command line args to local members that live throughout the lifetime of AppManager
-#ifndef IS_PYTHON_2
-    _imp->commandLineArgsWide.resize(utf8Args.size());
-#endif
-    _imp->commandLineArgsUtf8.resize(utf8Args.size());
-    _imp->nArgs = (int)utf8Args.size();
-    for (std::size_t i = 0; i < utf8Args.size(); ++i) {
-        _imp->commandLineArgsUtf8[i] = strdup(utf8Args[i].c_str());
-
-        // Python 3 needs wchar_t arguments
-#ifndef IS_PYTHON_2
-        _imp->commandLineArgsWide[i] = char2wchar(utf8Args[i].c_str());
-#endif
-    }
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -468,9 +440,27 @@ AppManager::load(int &argc,
     assert(qApp);
 
     bool ret = loadInternal(cl);
-
+    
     return ret;
-} // AppManager::load
+} // loadFromArgs
+
+bool
+AppManager::load(int argc,
+                 char **argv,
+                 const CLArgs& cl)
+{
+    _imp->handleCommandLineArgs(argc, argv);
+    return loadFromArgs(cl);
+}
+
+bool
+AppManager::load(int argc,
+                 wchar_t **argv,
+                 const CLArgs& cl)
+{
+    _imp->handleCommandLineArgsW(argc, argv);
+    return loadFromArgs(cl);
+}
 
 AppManager::~AppManager()
 {

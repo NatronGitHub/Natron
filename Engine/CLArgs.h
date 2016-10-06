@@ -74,6 +74,10 @@ public:
            char* argv[],
            bool forceBackground);
 
+    CLArgs(int& argc,
+           wchar_t* argv[],
+           bool forceBackground);
+
     CLArgs(const QStringList& arguments,
            bool forceBackground);
 
