@@ -1125,6 +1125,10 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
     for (int i = 0; i < nArgsOut; ++i) {
         std::wstring wide(argList[i]);
         utf8Args->push_back(Global::utf16_to_utf8(wide));
+        if (argv) {
+            std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
+        }
+        std::cout << "UTF-8 arg: " <<  utf8Args->back() << std::endl;
     }
 
 #endif
