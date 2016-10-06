@@ -680,7 +680,7 @@ private:
 
     void loadAllPlugins();
 
-    void initPython(int argc, char* argv[]);
+    void initPython();
 
     void tearDownPython();
 

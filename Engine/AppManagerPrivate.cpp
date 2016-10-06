@@ -111,7 +111,8 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
-    , args()
+    , commandLineArgsUtf8()
+    , nArgs(0)
     , mainModule(0)
     , mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
@@ -136,10 +137,16 @@ AppManagerPrivate::AppManagerPrivate()
 
 AppManagerPrivate::~AppManagerPrivate()
 {
-    for (U32 i = 0; i < args.size(); ++i) {
-        free(args[i]);
+    
+
+    for (std::size_t i = 0; i < commandLineArgsUtf8.size(); ++i) {
+        free(commandLineArgsUtf8[i]);
     }
-    args.clear();
+#ifndef IS_PYTHON_2
+    for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
+        free(commandLineArgsWide[i]);
+    }
+#endif
 }
 
 #ifdef NATRON_USE_BREAKPAD

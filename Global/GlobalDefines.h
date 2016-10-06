@@ -195,6 +195,33 @@ utf8_to_utf16(const std::string & s)
 #endif
 } // utf8_to_utf16
 
+inline std::string
+utf16_to_utf8 (const std::wstring& str)
+{
+#ifdef __NATRON_WIN32__
+    std::string utf8;
+
+    utf8.resize(WideCharToMultiByte (CP_UTF8, 0, str.data(), str.length(), NULL, 0, NULL, NULL));
+    WideCharToMultiByte (CP_UTF8, 0, str.data(), str.length(), &utf8[0], (int)utf8.size(), NULL, NULL);
+
+    return utf8;
+#else
+    std::string utf8;
+    for (std::size_t i = 0; i < str.size(); ++i) {
+        char c[MB_LEN_MAX];
+        int nbBytes = wctomb(c, str[i]);
+        if (nbBytes > 0) {
+            for (int j = 0; j < nbBytes; ++j) {
+                utf8.push_back(c[j]);
+            }
+        } else {
+            break;
+        }
+    }
+    return utf8;
+#endif
+} // utf16_to_utf8
+
 #ifdef __NATRON_WIN32__
 
 

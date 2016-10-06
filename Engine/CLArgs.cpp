@@ -34,6 +34,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 
+#include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 #include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
@@ -116,8 +117,12 @@ CLArgs::CLArgs(int& argc,
     if (forceBackground) {
         _imp->isBackground = true;
     }
-    for (int i = 0; i < argc; ++i) {
-        QString str = QString::fromUtf8(argv[i]);
+
+    std::vector<std::string> utf8Args;
+    ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
+
+    for (std::size_t i = 0; i < utf8Args.size(); ++i) {
+        QString str = QString::fromUtf8(utf8Args[i].c_str());
         if ( (str.size() >= 2) && ( str[0] == QChar::fromLatin1('"') ) && ( str[str.size() - 1] == QChar::fromLatin1('"') ) ) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
@@ -1099,5 +1104,30 @@ CLArgsPrivate::parse()
         return;
     }
 } // CLArgsPrivate::parse
+
+void
+CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string>* utf8Args)
+{
+    assert(utf8Args);
+#ifndef __NATRON_WIN32__
+    // On Unix, command line args are Utf8
+    assert(!argc || argv);
+    for (int i = 0; i < argc; ++i) {
+        utf8Args->push_back(argv[i]);
+    }
+#else
+    // On Windows, it must be converted: http://stackoverflow.com/questions/5408730/what-is-the-encoding-of-argv
+    (void)argc;
+    (void)argv;
+
+    int nArgsOut;
+    wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
+    for (int i = 0; i < nArgsOut; ++i) {
+        std::wstring wide(argList[i]);
+        utf8Args->push_back(Global::utf16_to_utf8(wide));
+    }
+
+#endif
+}
 
 NATRON_NAMESPACE_EXIT;

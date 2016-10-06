@@ -81,6 +81,12 @@ public:
 
     ~CLArgs();
 
+    /**
+     * @brief Ensures that the command line arguments passed to main are Utf8 encoded. On Windows
+     * the command line arguments must be processed to be safe. 
+     **/
+    static void ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string>* utf8Args);
+
     void operator=(const CLArgs& other);
 
     bool isEmpty() const;

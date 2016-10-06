@@ -129,7 +129,10 @@ currentPath()
 static QString
 applicationFilePath_fromArgv(const char* argv0Param)
 {
-    QString argv0 = QString::fromUtf8(argv0Param);
+    QString argv0;
+    if (argv0Param) {
+        argv0 = QString::fromUtf8(argv0Param);
+    }
     QString absPath;
 
     if ( !argv0.isEmpty() && ( argv0.at(0) == QLatin1Char('/') ) ) {
