@@ -66,6 +66,7 @@ public:
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL;
     //////
 
+    TableView* getTableView() const;
 
     KnobItemsTablePtr getInternalTable() const;
 

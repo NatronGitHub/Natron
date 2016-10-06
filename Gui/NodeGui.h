@@ -306,7 +306,7 @@ public:
         return _parentMultiInstance.lock();
     }
 
-    TrackerPanel* getTrackerPanel() const;
+    KnobItemsTableGuiPtr getKnobItemsTable() const;
 
 
     void setKnobLinksVisible(bool visible);

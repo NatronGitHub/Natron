@@ -2583,6 +2583,16 @@ public:
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
 
+
+    /**
+     * @brief Set the holder to have the given table to display in its settings panel.
+     * The KnobHolder takes ownership of the table.
+     * @param paramScriptNameBefore The script-name of the knob right before where the table should be inserted in the layout or the script-name of a page.
+     **/
+    void setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore);
+    KnobItemsTablePtr getItemsTable() const;
+    std::string getItemsTablePreviousKnobScriptName() const;
+
 protected:
 
     void onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob);

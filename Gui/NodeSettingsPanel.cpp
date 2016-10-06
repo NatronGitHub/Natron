@@ -61,8 +61,6 @@
 #include "Gui/QtEnumConvert.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/SequenceFileDialog.h"
-#include "Gui/TrackerPanel.h"
-#include "Gui/RotoPanel.h"
 
 #include "Serialization/NodeSerialization.h"
 
@@ -127,25 +125,7 @@ NodeSettingsPanel::centerOnItem()
     getNode()->centerGraphOnIt();
 }
 
-RotoPanel*
-NodeSettingsPanel::initializeRotoPanel()
-{
-    if ( getNode()->getNode()->isRotoPaintingNode() ) {
-        return new RotoPanel(_nodeGUI.lock(), this);
-    } else {
-        return NULL;
-    }
-}
 
-TrackerPanel*
-NodeSettingsPanel::initializeTrackerPanel()
-{
-    if ( getNode()->getNode()->getEffectInstance()->isBuiltinTrackerNode() ) {
-        return new TrackerPanel(_nodeGUI.lock(), this);
-    } else {
-        return NULL;
-    }
-}
 
 QColor
 NodeSettingsPanel::getCurrentColor() const

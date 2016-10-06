@@ -62,6 +62,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h" // triggerButtonIsRight...
+#include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/KnobGuiGroup.h"
@@ -76,10 +77,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/PropertiesBinWrapper.h"
-#include "Gui/RotoPanel.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
-#include "Gui/TrackerPanel.h"
 #include "Gui/VerticalColorBar.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -719,50 +718,8 @@ DockablePanel::onKnobsInitialized()
 {
     assert(_imp->_tabWidget);
     _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
-
-
-    RotoPanel* roto = initializeRotoPanel();
-    if (roto) {
-        _imp->_rightContainerLayout->addWidget(roto);
-    }
-
-
-    assert(!_imp->_trackerPanel);
-    _imp->_trackerPanel = initializeTrackerPanel();
-
-    if (_imp->_trackerPanel) {
-        if ( !_imp->_tabWidget->count() ) {
-            // No page, add it to the bottom
-            _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
-        } else {
-            // There is a page, add it to the first page
-
-            QGridLayout* layout = dynamic_cast<QGridLayout*>( _imp->_tabWidget->widget(0)->layout() );
-            assert(layout);
-            if (layout) {
-                layout->addWidget(_imp->_trackerPanel, layout->rowCount(), 0, 1, 2);
-            }
-        }
-    }
-
-
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (isNodePanel) {
-        NodeCollectionPtr collec = isNodePanel->getNode()->getNode()->getGroup();
-        NodeGroupPtr isGroup = toNodeGroup(collec);
-        if (isGroup) {
-            if ( !isGroup->isSubGraphEditedByUser() ) {
-                setEnabled(false);
-            }
-        }
-    }
 } // DockablePanel::initializeKnobsInternal
 
-TrackerPanel*
-DockablePanel::getTrackerPanel() const
-{
-    return _imp->_trackerPanel;
-}
 
 void
 DockablePanel::refreshTabWidgetMaxHeight()
@@ -1590,6 +1547,17 @@ DockablePanel::getHolderFullyQualifiedScriptName() const
         assert(false);
         return std::string();
     }
+}
+
+KnobItemsTableGuiPtr
+DockablePanel::createKnobItemsTable(QWidget* parent)
+{
+    KnobItemsTablePtr table = getHolder()->getItemsTable();
+    if (!table) {
+        return KnobItemsTableGuiPtr();
+    }
+    KnobItemsTableGuiPtr ret(new KnobItemsTableGui(table, this, parent));
+    return ret;
 }
 
 

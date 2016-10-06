@@ -45,11 +45,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobItemsTableGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabGroup.h"
+#include "Gui/TableModelView.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
@@ -71,6 +73,9 @@ struct KnobGuiContainerHelperPrivate
     bool clearedStackDuringPush;
     boost::scoped_ptr<KnobGuiContainerSignalsHandler> signals;
 
+    KnobItemsTableGuiPtr knobsTable;
+
+
     KnobGuiContainerHelperPrivate(KnobGuiContainerHelper* p,
                                   const KnobHolderPtr& holder,
                                   const boost::shared_ptr<QUndoStack>& stack)
@@ -83,6 +88,7 @@ struct KnobGuiContainerHelperPrivate
         , cmdBeingPushed(0)
         , clearedStackDuringPush(false)
         , signals( new KnobGuiContainerSignalsHandler(p) )
+        , knobsTable()
     {
         if (stack) {
             undoStack = stack;
@@ -384,12 +390,45 @@ KnobGuiContainerHelper::getKnobsMapping() const
     return _imp->knobsMap;
 }
 
+KnobItemsTableGuiPtr
+KnobGuiContainerHelper::getKnobItemsTable() const
+{
+    return _imp->knobsTable;
+}
+
 void
 KnobGuiContainerHelper::initializeKnobs()
 {
     initializeKnobVector( _imp->holder.lock()->getKnobs() );
     _imp->refreshPagesEnabledness();
     refreshCurrentPage();
+
+    // Add the table if not done before
+    KnobHolderPtr holder = _imp->holder.lock();
+    KnobItemsTablePtr table = holder->getItemsTable();
+    if (table && !_imp->knobsTable) {
+        std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+        KnobIPtr foundKnob = holder->getKnobByName(knobTableName);
+        KnobPagePtr page = toKnobPage(foundKnob);
+        KnobPageGuiPtr guiPage;
+        if (!page) {
+            // Look for the first page available
+            if (!_imp->pages.empty()) {
+                guiPage = _imp->pages.begin()->second;
+            }
+        } else {
+            PagesMap::const_iterator found = _imp->pages.find(page);
+            if (found != _imp->pages.end()) {
+                guiPage = found->second;
+            }
+        }
+        if (guiPage) {
+            _imp->knobsTable = createKnobItemsTable(guiPage->tab);
+            guiPage->gridLayout->addWidget(_imp->knobsTable->getTableView(), guiPage->currentRow, 0, 1, 2);
+            ++guiPage->currentRow;
+        }
+    }
+
 
     onKnobsInitialized();
 }
@@ -887,6 +926,18 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
 
         if (parentIsGroup && parentGui) {
             parentGui->addKnob(ret);
+        }
+
+        // If the node wants a knobtable after this knob, create it
+        KnobHolderPtr holder = _imp->holder.lock();
+        KnobItemsTablePtr table = holder->getItemsTable();
+        if (table && !_imp->knobsTable) {
+            std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+            if (knobTableName == knob->getName()) {
+                _imp->knobsTable = createKnobItemsTable(page->tab);
+                layout->addWidget(_imp->knobsTable->getTableView(), page->currentRow, 0, 1, 2);
+                ++page->currentRow;
+            }
         }
     } //  if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {
 

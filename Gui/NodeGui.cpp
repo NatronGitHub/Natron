@@ -1949,6 +1949,15 @@ NodeGui::initializeKnobs()
 {
     if (_settingsPanel) {
         _settingsPanel->initializeKnobs();
+
+        // If the node holding this settings panel is in a group, and the group is not editable, make it disabled
+        NodeCollectionPtr collec = getNode()->getGroup();
+        NodeGroupPtr isGroup = toNodeGroup(collec);
+        if (isGroup) {
+            if ( !isGroup->isSubGraphEditedByUser() ) {
+                setEnabled(false);
+            }
+        }
     }
 }
 
@@ -3135,11 +3144,13 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
     }
 }
 
-
-TrackerPanel*
-NodeGui::getTrackerPanel() const
+KnobItemsTableGuiPtr
+NodeGui::getKnobItemsTable() const
 {
-    return _settingsPanel ? _settingsPanel->getTrackerPanel() : 0;
+    if (!_settingsPanel) {
+        return KnobItemsTableGuiPtr();
+    }
+    return _settingsPanel->getKnobItemsTable();
 }
 
 void

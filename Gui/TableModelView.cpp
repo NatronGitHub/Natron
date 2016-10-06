@@ -125,6 +125,9 @@ struct TableItemPrivate
         if ((int)columns.size() != nCols) {
             columns.resize(nCols);
         }
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            children[i]->_imp->setModelAndInitColumns(m);
+        }
     }
 
     // Ensure the col index is ok, otherwise throw an exc
@@ -240,7 +243,7 @@ TableItem::insertChild(int row, const TableItemPtr& child)
 
     TableItemPtr thisShared = shared_from_this();
     child->_imp->parent = thisShared;
-    child->_imp->model = model;
+    child->_imp->setModelAndInitColumns(model);
     
     QModelIndex thisIdx = model->getItemIndex(thisShared);
     if (row == -1 || row == (int)_imp->children.size()) {
@@ -499,7 +502,7 @@ TableModel::insertRows(int row, int count, const QModelIndex & parent)
         int rowsToAdd = count;
         while (rowsToAdd > 0) {
             TableItemPtr newItem = TableItem::create();
-            newItem->_imp->model = thisShared;
+            newItem->_imp->setModelAndInitColumns(thisShared);
             newItem->_imp->parent = parentItem;
 
             if (parentItem) {
@@ -938,20 +941,42 @@ TableModel::setHorizontalHeaderData(const std::vector<std::pair<QString, QIcon> 
     if ((int)sections.size() != _imp->colCount) {
         throw std::invalid_argument("TableModel::setHorizontalHeaderData: invalid number of columns");
     }
-
+    TableModelPtr thisShared = shared_from_this();
+    TableItemPtr item = _imp->headerItem;
+    if (!item) {
+        item = TableItem::create();
+        item->_imp->setModelAndInitColumns(thisShared);
+    }
     for (std::size_t i = 0; i < sections.size(); ++i) {
-        TableItemPtr item = _imp->headerItem;
-        if (!item) {
-            item = TableItem::create();
-        }
         if (!sections[i].first.isEmpty()) {
             item->setText(i, sections[i].first);
         }
         if (!sections[i].second.isNull()) {
             item->setIcon(i, sections[i].second);
         }
-        setHorizontalHeaderItem(item);
     }
+    setHorizontalHeaderItem(item);
+}
+
+void
+TableModel::setHorizontalHeaderData(const QStringList& sections)
+{
+    if ((int)sections.size() != _imp->colCount) {
+        throw std::invalid_argument("TableModel::setHorizontalHeaderData: invalid number of columns");
+    }
+    TableModelPtr thisShared = shared_from_this();
+    TableItemPtr item = _imp->headerItem;
+    if (!item) {
+        item = TableItem::create();
+        item->_imp->setModelAndInitColumns(thisShared);
+    }
+    for (int i = 0; i < sections.size(); ++i) {
+        if (!sections[i].isEmpty()) {
+            item->setText(i, sections[i]);
+        }
+    }
+    setHorizontalHeaderItem(item);
+
 }
 
 int
@@ -1010,6 +1035,7 @@ TableModel::setData(const QModelIndex &index, const QVariant &value, int role)
     }
 
     itm = TableItem::create();
+    itm->_imp->setModelAndInitColumns(shared_from_this());
     itm->setData(index.column(), role, value);
     setRow(index.row(), itm);
 
@@ -1043,6 +1069,7 @@ TableModel::setItemData(const QModelIndex &index, const QMap<int, QVariant> &rol
             return false;
         }
         itm = TableItem::create();
+        itm->_imp->setModelAndInitColumns(shared_from_this());
         for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
             itm->setData( index.column(), it.key(), it.value() );
         }

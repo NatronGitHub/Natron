@@ -176,6 +176,11 @@ public:
     const KnobsGuiMapping& getKnobsMapping() const;
 
     /**
+     * @brief If this container has a knob items table, this is a pointer to its gui
+     **/
+    KnobItemsTableGuiPtr getKnobItemsTable() const;
+
+    /**
      * @brief Returns the undo/redo stack used for commands applied on knobs
      **/
     boost::shared_ptr<QUndoStack> getUndoStack() const;
@@ -333,6 +338,11 @@ protected:
      * @brief Returns the page that should be used by default for knobs without a page.
      **/
     KnobPageGuiPtr getOrCreateDefaultPage();
+
+    /**
+     * @brief If the knobs container can display a knob items table GUI, implement it to create it
+     **/
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* /*parent*/) { return KnobItemsTableGuiPtr(); };
 
 private:
 

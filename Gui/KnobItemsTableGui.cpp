@@ -158,7 +158,7 @@ struct KnobItemsTableGuiPrivate
     
     void showItemMenu(const TableItemPtr& item, const QPoint & globalPos);
     
-    bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col);
+    bool createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int row, int col);
 
     void createCustomWidgetRecursively(const KnobTableItemPtr& item);
     
@@ -172,7 +172,7 @@ struct KnobItemsTableGuiPrivate
 };
 
 bool
-KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int col)
+KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int row, int col)
 {
     int dim;
     KnobIPtr knob = item->getColumnKnob(col, &dim);
@@ -220,7 +220,7 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     {
         ModelItemsVec::iterator foundItem = findItem(item);
         assert((int)foundItem->columnItems.size() == tableModel->columnCount());
-        tableView->setCellWidget(foundItem->columnItems[col].item->row(), col, rowContainer);
+        tableView->setCellWidget(row, col, rowContainer);
     }
     
     // We must call this otherwise this is never called by Qt for custom widgets in an item view (this is a Qt bug)
@@ -239,9 +239,10 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
 void
 KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& item)
 {
+    int row = item->getIndexInParent();
     int nCols = tableModel->columnCount();
     for (int i = 0; i < nCols; ++i) {
-        createItemCustomWidgetAtCol(item, i);
+        createItemCustomWidgetAtCol(item, row, i);
     }
 
     const std::vector<KnobTableItemPtr>& children = item->getChildren();
@@ -523,6 +524,11 @@ KnobItemsTableGui::~KnobItemsTableGui()
     
 }
 
+TableView*
+KnobItemsTableGui::getTableView() const
+{
+    return _imp->tableView;
+}
 
 void
 KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
@@ -895,7 +901,7 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
         NodeSettingsPanel* originalPanel = originalNodeUI->getSettingPanel();
         assert(originalPanel);
         if (originalPanel) {
-            KnobItemsTableGui* originalTableUI = originalPanel->getKnobItemsTable();
+            KnobItemsTableGuiPtr originalTableUI = originalPanel->getKnobItemsTable();
             if (originalTableUI) {
                 originalTable = originalTableUI->getInternalTable();
             }
@@ -1318,7 +1324,7 @@ KnobItemsTableGuiPrivate::selectionFromIndexList(const QModelIndexList& indexes,
         assert(it->isValid() && it->row() >= 0 && it->row() < (int)items.size() && it->column() >= 0 && it->column() < tableModel->columnCount());
         
         // Get the table item corresponding to the index
-        TableItemPtr tableItem = tableModel->item(it->row(), it->column());
+        TableItemPtr tableItem = tableModel->getItem(it->row());
         assert(tableItem);
         
         // Get the internal knobtableitem corresponding to the table item
@@ -1352,10 +1358,10 @@ KnobItemsTableGuiPrivate::itemsToSelection(const std::list<KnobTableItemPtr>& in
             continue;
         }
         assert(!found->columnItems.empty());
-        QModelIndex leftMostColumnIndex = tableModel->index(found->columnItems[0].item);
-        QModelIndex rightMostColumnIndex = tableModel->index(found->columnItems[found->columnItems.size() - 1].item);
-        
-        QItemSelectionRange t(leftMostColumnIndex, rightMostColumnIndex);
+        int row_i = found->item->getRowInParent();
+        QModelIndex leftMost = tableModel->index(row_i, 0);
+        QModelIndex rightMost = tableModel->index(row_i, tableModel->columnCount() - 1);
+        QItemSelectionRange t(leftMost, rightMost);
         for (std::size_t i = 0; i < found->columnItems.size(); ++i) {
             selection->append(t);
         }
@@ -1493,7 +1499,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
         
         if (d.knob.lock()) {
             // If we have a knob, create the custom widget
-            createItemCustomWidgetAtCol(item, i);
+            createItemCustomWidgetAtCol(item, itemRow, i);
         } else {
             // Ok the column must be kKnobTableItemColumnLabel
             // otherwise we don't know what the user want

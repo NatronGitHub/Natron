@@ -499,9 +499,10 @@ public:
     void setHorizontalHeaderItem(const TableItemPtr& item);
 
     /**
-     * @brief Convenience function wrapping setHorizontalHeaderItem calls for each column
+     * @brief Convenience function wrapping setHorizontalHeaderItem calls for each column to provide an a text and/or icon
      **/
     void setHorizontalHeaderData(const std::vector<std::pair<QString, QIcon> >& sections);
+    void setHorizontalHeaderData(const QStringList& sections);
 
     /**
      * @brief For table type only: this pre-allocates the table with empty items.

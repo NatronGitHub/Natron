@@ -5442,6 +5442,12 @@ struct KnobHolder::KnobHolderPrivate
 
     std::list<KnobIWPtr> overlaySlaves;
 
+    // A knobs table owned by the holder
+    KnobItemsTablePtr knobsTable;
+
+    // The script-name of the knob right before where the table should be inserted in the gui
+    std::string knobsTableParamBefore;
+
 
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
@@ -5467,6 +5473,9 @@ struct KnobHolder::KnobHolderPrivate
         , hasAnimationMutex()
         , hasAnimation(false)
         , settingsPanel(0)
+        , overlaySlaves()
+        , knobsTable()
+        , knobsTableParamBefore()
 
     {
     }
@@ -5535,6 +5544,26 @@ KnobHolder::~KnobHolder()
 
         }
     }
+}
+
+void
+KnobHolder::setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore)
+{
+    assert(!paramScriptNameBefore.empty());
+    _imp->knobsTableParamBefore = paramScriptNameBefore;
+    _imp->knobsTable = table;
+}
+
+KnobItemsTablePtr
+KnobHolder::getItemsTable() const
+{
+    return _imp->knobsTable;
+}
+
+std::string
+KnobHolder::getItemsTablePreviousKnobScriptName() const
+{
+    return _imp->knobsTableParamBefore;
 }
 
 void

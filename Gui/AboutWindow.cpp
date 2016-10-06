@@ -430,11 +430,10 @@ AboutWindow::AboutWindow(QWidget* parent)
     QSplitter *splitter = new QSplitter();
 
     _view = new TableView(thirdPartyContainer);
-    _model = TableModel::create(0, 0);
+    _model = TableModel::create(1, TableModel::eTableModelTypeTable);
     _view->setTableModel(_model);
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
-    _view->setColumnCount(1);
 
     _view->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _view->setUniformRowHeights(true);
@@ -471,7 +470,7 @@ AboutWindow::AboutWindow(QWidget* parent)
             }
         }
     }
-    _view->setRowCount( rowsTmp.size() );
+    _model->setRowCount( rowsTmp.size() );
 
     TableItemPtr readmeIndex;
     for (int i = 0; i < rowsTmp.size(); ++i) {
@@ -479,9 +478,9 @@ AboutWindow::AboutWindow(QWidget* parent)
             continue;
         }
         TableItemPtr item = TableItem::create();
-        item->setText( rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-        _view->setItem(i, 0, item);
+        item->setText(0, rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
+        item->setFlags(0, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        _model->setRow(i, item);
         if ( rowsTmp[i] == QString::fromUtf8("README") ) {
             readmeIndex = item;
         }
@@ -505,7 +504,7 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
     if ( indexes.empty() ) {
         _thirdPartyBrowser->clear();
     } else {
-        TableItemPtr item = _view->item(indexes.front().row(), 0);
+        TableItemPtr item = _model->getItem(indexes.front().row());
         assert(item);
         if (!item) {
             return;
@@ -513,8 +512,9 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
         QString fileName = QString::fromUtf8(THIRD_PARTY_LICENSE_DIR_PATH);
         fileName += QChar::fromLatin1('/');
         fileName += QString::fromUtf8("LICENSE-");
-        fileName += item->text();
-        fileName += ( item->text() == QString::fromUtf8("README") ) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
+        QString itemText = item->getText(0);
+        fileName += itemText;
+        fileName += ( itemText == QString::fromUtf8("README") ) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
         QFile file(fileName);
         if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QString content = QTextCodec::codecForName("UTF-8")->toUnicode( file.readAll() );

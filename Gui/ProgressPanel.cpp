@@ -126,12 +126,8 @@ struct ProgressPanelPrivate
         assert( !tasksMutex.tryLock() );
 
         for (TasksMap::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
-            std::vector<TableItemPtr> items;
-            it->second->getTableItems(&items);
-            for (std::size_t i = 0; i < items.size(); ++i) {
-                if (items[i] == item) {
-                    return it->second;
-                }
+            if (it->second->getTableItem() == item) {
+                return it->second;
             }
         }
 
@@ -505,11 +501,8 @@ ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
     int rc = _imp->model->rowCount();
     _imp->model->insertRows(rc);
 
-    std::vector<TableItemPtr> items;
-    task->getTableItems(&items);
-    assert(items.size() == COL_LAST);
-
-    _imp->view->setRow(rc, item);
+    TableItemPtr item = task->getTableItem();
+    _imp->model->setRow(rc, item);
 
     task->setCellWidgets(rc, _imp->view);
 

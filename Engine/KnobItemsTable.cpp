@@ -509,7 +509,7 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeR
 
     {
         QMutexLocker k(&item->_imp->lock);
-        item->_imp->parent = shared_from_this();
+        item->_imp->parent = toKnobTableItem(shared_from_this());
     }
 
 
@@ -652,6 +652,7 @@ KnobTableItem::getItemRow() const
     // If this fails here, that means the item is not yet in the model.
     if (indexInParent != -1) {
         return indexInParent;
+    }
     
     int rowI = indexInParent;
     KnobTableItemPtr parent = getParent();
@@ -1016,24 +1017,30 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
         // Remove from selection and unslave from master knobs
         for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
-            std::list<KnobTableItemWPtr>::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), *it);
-            if ( found == _imp->selectedItems.end() ) {
-                // Not in selection
-                continue;
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+                if ( it2->lock() == *it) {
+                    itemsRemoved.push_back(*it);
+                    _imp->selectedItems.erase(it2);
+                    break;
+                }
+
             }
-            itemsRemoved.push_back(*it);
-            _imp->selectedItems.erase(found);
+
         }
 
         // Add to selection and slave to master knobs
         for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
-            std::list<KnobTableItemWPtr>::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), *it);
-            if ( found != _imp->selectedItems.end() ) {
-                // Already in selection
-                continue;
+            bool found = false;
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+                if ( it2->lock() == *it) {
+                    found = true;
+                    break;
+                }
             }
-            itemsAdded.push_back(*it);
-            _imp->selectedItems.push_back(*it);
+            if (!found) {
+                itemsAdded.push_back(*it);
+                _imp->selectedItems.push_back(*it);
+            }
         }
 
 

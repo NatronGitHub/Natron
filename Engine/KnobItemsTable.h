@@ -62,7 +62,7 @@ class KnobTableItem
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+
 
 public:
 
@@ -162,6 +162,12 @@ private:
     friend class KnobItemsTable;
     boost::scoped_ptr<KnobTableItemPrivate> _imp;
 };
+
+inline
+KnobTableItemPtr toKnobTableItem(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<KnobTableItem>(holder);
+}
 
 /**
  * @class KnobItemsTable A class abstracting an item-view which can be either represented as a tree or table.

@@ -107,7 +107,6 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
     , _pluginVersionMajor(0)
     , _pluginVersionMinor(0)
     , _pagesEnabled(true)
-    , _trackerPanel(0)
     , _iconLabel(0)
 {
 }
