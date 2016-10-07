@@ -1156,27 +1156,13 @@ RotoPaint::onKnobsLoaded()
 {
     _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
 
-    // Figure out which toolbutton was selected last
-    boost::shared_ptr<KnobPage> toolbar = _imp->ui->toolbarPage.lock();
-    if (toolbar) {
-        std::vector<KnobPtr> toolbarChildren = toolbar->getChildren();
-        for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
-            boost::shared_ptr<KnobGroup> isChildGroup = boost::dynamic_pointer_cast<KnobGroup>(toolbarChildren[i]);
-            if ( isChildGroup && isChildGroup->getValue() ) {
-                std::vector<KnobPtr> toolbuttonsChildren = isChildGroup->getChildren();
-                for (std::vector<KnobPtr>::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
-                    boost::shared_ptr<KnobButton> isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
-                    if ( isButton && isButton->getValue() ) {
-                        _imp->ui->setCurrentTool(isButton);
-                        _imp->ui->onRoleChangedInternal(isChildGroup);
-                        _imp->ui->onToolChangedInternal(isButton);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-    }
+    // When loading a roto node, always switch to selection mode by default
+    boost::shared_ptr<KnobButton> defaultAction = _imp->ui->selectAllAction.lock();
+    boost::shared_ptr<KnobGroup> defaultRole = _imp->ui->selectToolGroup.lock();;
+
+    _imp->ui->setCurrentTool(defaultAction);
+    _imp->ui->onRoleChangedInternal(defaultRole);
+    _imp->ui->onToolChangedInternal(defaultAction);
 }
 
 bool
