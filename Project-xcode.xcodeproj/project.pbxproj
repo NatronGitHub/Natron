@@ -311,6 +311,20 @@
 		1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = LibMV.xcodeproj; path = libs/libmv/LibMV.xcodeproj; sourceTree = "<group>"; };
 		1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openMVG.xcodeproj; path = libs/openMVG/openMVG.xcodeproj; sourceTree = "<group>"; };
 		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
+		1E1FB6201DA7BBD1009F547D /* AngleBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = AngleBlur.py; sourceTree = "<group>"; };
+		1E1FB6211DA7BBD1009F547D /* DropShadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = DropShadow.png; sourceTree = "<group>"; };
+		1E1FB6221DA7BBD1009F547D /* DropShadow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = DropShadow.py; sourceTree = "<group>"; };
+		1E1FB6231DA7BBD1009F547D /* Fill.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Fill.png; sourceTree = "<group>"; };
+		1E1FB6241DA7BBD1009F547D /* Fill.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Fill.py; sourceTree = "<group>"; };
+		1E1FB6251DA7BBD1009F547D /* Glow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Glow.png; sourceTree = "<group>"; };
+		1E1FB6261DA7BBD1009F547D /* Glow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Glow.py; sourceTree = "<group>"; };
+		1E1FB6271DA7BBD2009F547D /* LightWrap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LightWrap.png; sourceTree = "<group>"; };
+		1E1FB6281DA7BBD2009F547D /* LightWrap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = LightWrap.py; sourceTree = "<group>"; };
+		1E1FB6291DA7BBD2009F547D /* PIKColor.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = PIKColor.py; sourceTree = "<group>"; };
+		1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = SplitAndJoin.py; sourceTree = "<group>"; };
+		1E1FB62B1DA7BBD2009F547D /* ZMask.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZMask.py; sourceTree = "<group>"; };
+		1E1FB62C1DA7BBD2009F547D /* ZRemap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ZRemap.png; sourceTree = "<group>"; };
+		1E1FB62D1DA7BBD2009F547D /* ZRemap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZRemap.py; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
 		1E70D14F1CF33A0C000D2932 /* BUGS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = BUGS.md; sourceTree = "<group>"; };
 		1E70D1501CF33A0C000D2932 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
@@ -481,6 +495,28 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1E1FB61F1DA7BB8B009F547D /* PyPlugs */ = {
+			isa = PBXGroup;
+			children = (
+				1E1FB6201DA7BBD1009F547D /* AngleBlur.py */,
+				1E1FB6211DA7BBD1009F547D /* DropShadow.png */,
+				1E1FB6221DA7BBD1009F547D /* DropShadow.py */,
+				1E1FB6231DA7BBD1009F547D /* Fill.png */,
+				1E1FB6241DA7BBD1009F547D /* Fill.py */,
+				1E1FB6251DA7BBD1009F547D /* Glow.png */,
+				1E1FB6261DA7BBD1009F547D /* Glow.py */,
+				1E1FB6271DA7BBD2009F547D /* LightWrap.png */,
+				1E1FB6281DA7BBD2009F547D /* LightWrap.py */,
+				1E1FB6291DA7BBD2009F547D /* PIKColor.py */,
+				1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */,
+				1E1FB62B1DA7BBD2009F547D /* ZMask.py */,
+				1E1FB62C1DA7BBD2009F547D /* ZRemap.png */,
+				1E1FB62D1DA7BBD2009F547D /* ZRemap.py */,
+			);
+			name = PyPlugs;
+			path = Gui/Resources/PyPlugs;
+			sourceTree = "<group>";
+		};
 		1E306DEE1C49497200BAC6E3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -534,6 +570,7 @@
 			isa = PBXGroup;
 			children = (
 				1E70D1631CF33B22000D2932 /* Documentation */,
+				1E1FB61F1DA7BB8B009F547D /* PyPlugs */,
 				1E70D1621CF33AF3000D2932 /* QMake files */,
 				ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */,
 				AC77629C1D1ACE460006A58E /* tess.xcodeproj */,
