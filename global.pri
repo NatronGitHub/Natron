@@ -250,7 +250,9 @@ win32 {
 win32-g++ {
     # -municode is needed for linking because it uses wmain() instead of the traditional main()
     # https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
-    LIBS += -municode
+    QMAKE_CFLAGS += -municode
+    QMAKE_CXXFLAGS += -municode
+    QMAKE_LFLAGS += -municode
 }
 
 win32-msvc* {
