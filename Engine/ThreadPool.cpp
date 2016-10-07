@@ -191,6 +191,8 @@ public:
     {
     }
 
+    virtual bool isThreadPoolThread() const { return true; }
+
     virtual ~ThreadPoolThread() {}
 };
 

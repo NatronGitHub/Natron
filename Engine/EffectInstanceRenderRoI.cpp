@@ -76,6 +76,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
+#include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -1181,6 +1182,24 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if (tryIdentityOptim) {
         optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
     } else {
+        // If plug-in wants host frame threading and there is only 1 rect to render, split it
+        if (frameArgs->currentThreadSafety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1) {
+            QThreadPool* tp = QThreadPool::globalInstance();
+            int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
+
+            std::vector<RectI> splits;
+            if (nThreads > 1) {
+                splits = rectsLeftToRender.front().splitIntoSmallerRects(nThreads);
+            } else {
+                splits.push_back(rectsLeftToRender.front());
+            }
+            for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
+                RectToRender r;
+                r.rect = *it;
+                r.isIdentity = false;
+                planesToRender->rectsToRender.push_back(r);
+            }
+        }
         for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
             RectToRender r;
             r.rect = *it;
