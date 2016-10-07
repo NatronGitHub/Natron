@@ -129,9 +129,6 @@ CLArgs::CLArgs(int& argc,
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
-#ifdef DEBUG
-        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
-#endif
         _imp->args.push_back(str);
     }
 
@@ -156,9 +153,6 @@ CLArgs::CLArgs(int& argc,
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
-#ifdef DEBUG
-        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
-#endif
         _imp->args.push_back(str);
 
     }

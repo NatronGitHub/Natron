@@ -389,6 +389,12 @@ bool
 AppManager::loadFromArgs(const CLArgs& cl)
 {
 
+#ifdef DEBUG
+    for (std::size_t i = 0; i < _imp->commandLineArgsUtf8.size(); ++i) {
+        std::cout << "argv[" << i << "] = " << _imp->commandLineArgsUtf8[i] << std::endl;
+    }
+#endif
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
