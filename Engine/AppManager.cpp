@@ -1650,6 +1650,7 @@ AppManager::getAllNonOFXPluginsPaths() const
 
     //This is the bundled location for PyPlugs
     QDir cwd( QCoreApplication::applicationDirPath() );
+    std::cout << "QCoreApplication dir path is: " << cwd.absolutePath().toStdString() << std::endl;
     cwd.cdUp();
     QString natronBundledPluginsPath = QString( cwd.absolutePath() +  QString::fromUtf8("/Plugins/PyPlugs") );
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
