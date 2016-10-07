@@ -1273,7 +1273,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         node->load(args);
     } catch (const std::exception & e) {
         if (argsGroup) {
-            argsGroup->removeNode(node);
+            argsGroup->removeNode(node.get());
         }
         std::string error( e.what() );
         if ( !error.empty() ) {

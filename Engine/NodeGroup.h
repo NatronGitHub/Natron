@@ -88,7 +88,7 @@ public:
     /**
      * @brief Removes a node from the collection. MT-safe.
      **/
-    void removeNode(const NodePtr& node);
+    void removeNode(const Node* node);
 
     /**
      * @brief Get the last node added with the given id

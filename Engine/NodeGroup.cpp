@@ -155,13 +155,14 @@ NodeCollection::addNode(const NodePtr& node)
 }
 
 void
-NodeCollection::removeNode(const NodePtr& node)
+NodeCollection::removeNode(const Node* node)
 {
     QMutexLocker k(&_imp->nodesMutex);
-    NodesList::iterator found = std::find(_imp->nodes.begin(), _imp->nodes.end(), node);
-
-    if ( found != _imp->nodes.end() ) {
-        _imp->nodes.erase(found);
+    for (NodesList::iterator it =_imp->nodes.begin(); it != _imp->nodes.end();++it) {
+        if ( it->get() == node ) {
+            _imp->nodes.erase(it);
+            break;
+        }
     }
 }
 

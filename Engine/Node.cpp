@@ -6441,9 +6441,9 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     ///thisShared ptr
 
     ///If not inside a gorup or inside fromDest the shared_ptr is probably invalid at this point
-    NodePtr thisShared = shared_from_this();
-    if ( getGroup() ) {
-        getGroup()->removeNode(thisShared);
+    boost::shared_ptr<NodeCollection> thisGroup = getGroup();
+    if ( thisGroup ) {
+        thisGroup->removeNode(this);
     }
 
 } // Node::doDestroyNodeInternalEnd
