@@ -125,7 +125,7 @@ public:
      * main process.
      **/
     bool load( int argc, char **argv, const CLArgs& cl);
-    bool load( int argc, wchar_t **argv, const CLArgs& cl);
+    bool loadW( int argc, wchar_t **argv, const CLArgs& cl);
 
 private:
 

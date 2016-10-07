@@ -54,6 +54,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/GlobalDefines.h"
 #include "Global/GLIncludes.h"
 #include "Global/ProcInfo.h"
+#include "Global/StrUtils.h"
 
 #include "Engine/FStreamsSupport.h"
 #include "Engine/CacheSerialization.h"
@@ -903,7 +904,7 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     if (argv) {
         for (int i = 0; i < argc; ++i) {
             std::wstring ws(argv[i]);
-            utf8Args.push_back(Global::utf16_to_utf8(ws));
+            utf8Args.push_back(StrUtils::utf16_to_utf8(ws));
         }
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),

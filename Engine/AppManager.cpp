@@ -75,6 +75,7 @@
 
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
+#include "Global/StrUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -454,7 +455,7 @@ AppManager::load(int argc,
 }
 
 bool
-AppManager::load(int argc,
+AppManager::loadW(int argc,
                  wchar_t **argv,
                  const CLArgs& cl)
 {
@@ -2913,11 +2914,11 @@ AppManager::initPython()
 
 #ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome( Global::utf8_to_utf16(".") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16(".") );
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome( Global::utf8_to_utf16("../lib") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../lib") );
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome( Global::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib") );
 #endif
     Py_SetPythonHome( const_cast<wchar_t*>( pythonHome.c_str() ) );
     PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import

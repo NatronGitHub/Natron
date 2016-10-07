@@ -64,6 +64,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 #include <ofxhXml.h> // OFX::XML::escape
 
+#include "Global/StrUtils.h"
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
@@ -191,7 +193,7 @@ Project::loadProject(const QString & path,
 
     try {
         QString realPath = path;
-        Global::ensureLastPathSeparator(realPath);
+        StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
         bool isAutoSave = isUntitledAutosave;
         if (!getApp()->isBackground() && !isUntitledAutosave) {
@@ -518,7 +520,7 @@ Project::saveProjectInternal(const QString & path,
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-    Global::ensureLastPathSeparator(tmpFilename);
+    StrUtils::ensureLastPathSeparator(tmpFilename);
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
@@ -1667,7 +1669,7 @@ Project::getLockFileInfos(const QString& projectPath,
                           qint64* appPID) const
 {
     QString realPath = projectPath;
-    Global::ensureLastPathSeparator(realPath);
+    StrUtils::ensureLastPathSeparator(realPath);
     QString lockFilePath = realPath + projectName + QString::fromUtf8(".lock");
     QFile f(lockFilePath);
 
@@ -1719,7 +1721,7 @@ Project::removeLastAutosave()
      */
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-    Global::ensureLastPathSeparator(projectPath);
+    StrUtils::ensureLastPathSeparator(projectPath);
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
     if ( QFile::exists(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
@@ -1759,7 +1761,7 @@ QString
 Project::autoSavesDir()
 {
     QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
-    Global::ensureLastPathSeparator(str);
+    StrUtils::ensureLastPathSeparator(str);
 
     str += QString::fromUtf8("Autosaves");
 

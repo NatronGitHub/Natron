@@ -90,7 +90,11 @@ extern "C" {
     AppManager manager;
 
     // coverity[tainted_data]
-    if ( !manager.load(argc, argv, args) ) {
+#ifdef Q_OS_WIN
+        if ( !manager.loadW(argc, argv, args) ) {
+#else
+        if ( !manager.load(argc, argv, args) ) {
+#endif
         return 1;
     } else {
         return 0;

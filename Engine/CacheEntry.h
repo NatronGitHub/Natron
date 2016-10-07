@@ -57,6 +57,7 @@
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -282,7 +283,7 @@ public:
     {
 #ifdef _WIN32
         WIN32_FIND_DATAW FindFileData;
-        std::wstring wpath = Global::utf8_to_utf16 (filename);
+        std::wstring wpath = StrUtils::utf8_to_utf16 (filename);
         HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData);
         if (handle != INVALID_HANDLE_VALUE) {
             FindClose(handle);

@@ -84,6 +84,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 #include "Global/MemoryInfo.h"
+#include "Global/StrUtils.h"
+
 #include "Gui/GuiDefines.h"
 
 #include "Engine/CreateNodeArgs.h"
@@ -1416,7 +1418,7 @@ SequenceFileDialog::createDir()
         if ( !newFolderString.isEmpty() ) {
             QString folderName = newFolderString;
             QString prefix  = currentDirectory().absolutePath();
-            Global::ensureLastPathSeparator(prefix);
+            StrUtils::ensureLastPathSeparator(prefix);
             if ( QFile::exists(prefix + folderName) ) {
                 qlonglong suffix = 2;
                 while ( QFile::exists(prefix + folderName) ) {

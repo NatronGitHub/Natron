@@ -39,6 +39,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
+#include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
@@ -1397,7 +1398,7 @@ public:
     QString getCachePath() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
-        Global::ensureLastPathSeparator(cacheFolderName);
+        StrUtils::ensureLastPathSeparator(cacheFolderName);
 
         cacheFolderName.append( QString::fromUtf8( cacheName().c_str() ) );
 
@@ -1407,7 +1408,7 @@ public:
     std::string getRestoreFilePath() const
     {
         QString newCachePath( getCachePath() );
-        Global::ensureLastPathSeparator(newCachePath);
+        StrUtils::ensureLastPathSeparator(newCachePath);
 
         newCachePath.append( QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT) );
 

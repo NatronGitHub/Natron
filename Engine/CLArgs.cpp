@@ -37,6 +37,8 @@
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 #include "Global/QtCompat.h"
+#include "Global/StrUtils.h"
+
 #include "Engine/AppManager.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -1152,7 +1154,7 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
     wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
     for (int i = 0; i < nArgsOut; ++i) {
         std::wstring wide(argList[i]);
-        utf8Args->push_back(Global::utf16_to_utf8(wide));
+        utf8Args->push_back(StrUtils::utf16_to_utf8(wide));
         if (argv) {
             std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
         }
