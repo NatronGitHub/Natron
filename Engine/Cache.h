@@ -814,17 +814,9 @@ private:
                     break;
                 }
 
-                //Refresh now memory cache size && maximum in memory size as they might have been changed
-                //in tryEvictEntry
-                {
-                    QMutexLocker k(&_sizeLock);
-                    memoryCacheSize = _memoryCacheSize;
-                    maximumInMemorySize = std::max( (std::size_t)1, _maximumInMemorySize );
-                }
-
-
                 for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
                     entriesToBeDeleted.push_back(*it);
+                    memoryCacheSize -= (*it)->size();
                 }
 
                 occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;

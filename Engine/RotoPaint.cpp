@@ -1269,27 +1269,13 @@ RotoPaint::onKnobsLoaded()
     ctx->onFeatherLinkChanged(featherLink);
     ctx->onRippleEditChanged(rippleEdit);
 
-    // Figure out which toolbutton was selected last
-    KnobPagePtr toolbar = _imp->ui->toolbarPage.lock();
-    if (toolbar) {
-        KnobsVec toolbarChildren = toolbar->getChildren();
-        for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
-            KnobGroupPtr isChildGroup = toKnobGroup(toolbarChildren[i]);
-            if ( isChildGroup && isChildGroup->getValue() ) {
-                KnobsVec toolbuttonsChildren = isChildGroup->getChildren();
-                for (KnobsVec::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
-                    KnobButtonPtr isButton = toKnobButton(*it);
-                    if ( isButton && isButton->getValue() ) {
-                        _imp->ui->setCurrentTool(isButton);
-                        _imp->ui->onRoleChangedInternal(isChildGroup);
-                        _imp->ui->onToolChangedInternal(isButton);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-    }
+    // When loading a roto node, always switch to selection mode by default
+    KnobButtonPtr defaultAction = _imp->ui->selectAllAction.lock();
+    KnobGroupPtr defaultRole = _imp->ui->selectToolGroup.lock();;
+
+    _imp->ui->setCurrentTool(defaultAction);
+    _imp->ui->onRoleChangedInternal(defaultRole);
+    _imp->ui->onToolChangedInternal(defaultAction);
 }
 
 bool
