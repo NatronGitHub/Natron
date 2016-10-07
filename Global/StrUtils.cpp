@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #else
 #include <cstdlib>
+#include <climits>
 #endif
 
 NATRON_NAMESPACE_ENTER
