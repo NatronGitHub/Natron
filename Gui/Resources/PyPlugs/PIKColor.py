@@ -22,13 +22,13 @@ def getLabel():
     return "PIKColor"
 
 def getVersion():
-    return 0
+    return 1
 
 def getGrouping():
     return "Keyer"
 
 def getPluginDescription():
-    return "This node provides PIK a color reference in which to base its keying algorithm on a per pixel basis.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the \'c\' input of a default PIK. Attach the input of this node along with the \'fg\' input of the PIK to the original screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from the PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of this PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The \'erode\' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe \'patch black\' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it\'ll fix it.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with \'erode\' and \'patch black\' activated isn\'t really gonna work."
+    return "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the \'C\' input of a PIK node. Attach the input of this node and the \'PFg\' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The \'erode\' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe \'Patch Black\' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it\'ll fix it.\nThe optional \'InM\' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with \'erode\' and \'patch black\' activated is not really going to work."
 
 def createInstance(app,group):
     # Create all nodes in the group
@@ -385,29 +385,14 @@ def createInstance(app,group):
         param.setValue("Color.RGBA")
         del param
 
-    param = lastNode.getParam("outputR")
-    if param is not None:
-        param.set("B.r")
-        del param
-
     param = lastNode.getParam("outputRChoice")
     if param is not None:
         param.setValue("B.r")
         del param
 
-    param = lastNode.getParam("outputG")
-    if param is not None:
-        param.set("B.g")
-        del param
-
     param = lastNode.getParam("outputGChoice")
     if param is not None:
         param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputB")
-    if param is not None:
-        param.set("B.b")
         del param
 
     param = lastNode.getParam("outputBChoice")
@@ -508,19 +493,9 @@ def createInstance(app,group):
         param.setValue("Color.RGBA")
         del param
 
-    param = lastNode.getParam("outputR")
-    if param is not None:
-        param.set("B.r")
-        del param
-
     param = lastNode.getParam("outputRChoice")
     if param is not None:
         param.setValue("B.r")
-        del param
-
-    param = lastNode.getParam("outputG")
-    if param is not None:
-        param.set("B.g")
         del param
 
     param = lastNode.getParam("outputGChoice")
@@ -528,19 +503,9 @@ def createInstance(app,group):
         param.setValue("B.g")
         del param
 
-    param = lastNode.getParam("outputB")
-    if param is not None:
-        param.set("B.b")
-        del param
-
     param = lastNode.getParam("outputBChoice")
     if param is not None:
         param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputA")
-    if param is not None:
-        param.set("A.r")
         del param
 
     param = lastNode.getParam("outputAChoice")
@@ -577,19 +542,9 @@ def createInstance(app,group):
         param.setValue("Color.RGBA")
         del param
 
-    param = lastNode.getParam("outputR")
-    if param is not None:
-        param.set("B.r")
-        del param
-
     param = lastNode.getParam("outputRChoice")
     if param is not None:
         param.setValue("B.r")
-        del param
-
-    param = lastNode.getParam("outputG")
-    if param is not None:
-        param.set("B.g")
         del param
 
     param = lastNode.getParam("outputGChoice")
@@ -597,19 +552,9 @@ def createInstance(app,group):
         param.setValue("B.g")
         del param
 
-    param = lastNode.getParam("outputB")
-    if param is not None:
-        param.set("B.b")
-        del param
-
     param = lastNode.getParam("outputBChoice")
     if param is not None:
         param.setValue("B.b")
-        del param
-
-    param = lastNode.getParam("outputA")
-    if param is not None:
-        param.set("A.r")
         del param
 
     param = lastNode.getParam("outputAChoice")
@@ -775,29 +720,14 @@ def createInstance(app,group):
         param.setValue("Color.RGBA")
         del param
 
-    param = lastNode.getParam("outputR")
-    if param is not None:
-        param.set("B.r")
-        del param
-
     param = lastNode.getParam("outputRChoice")
     if param is not None:
         param.setValue("B.r")
         del param
 
-    param = lastNode.getParam("outputG")
-    if param is not None:
-        param.set("B.g")
-        del param
-
     param = lastNode.getParam("outputGChoice")
     if param is not None:
         param.setValue("B.g")
-        del param
-
-    param = lastNode.getParam("outputB")
-    if param is not None:
-        param.set("B.b")
         del param
 
     param = lastNode.getParam("outputBChoice")
@@ -859,7 +789,6 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setScriptName("Output1")
     lastNode.setLabel("Output")
     lastNode.setPosition(272, 859)
     lastNode.setSize(104, 30)
@@ -873,7 +802,7 @@ def createInstance(app,group):
     lastNode = app.createNode("net.sf.openfx.PIK", 1, group)
     lastNode.setScriptName("PIK2")
     lastNode.setLabel("PIK2")
-    lastNode.setPosition(26, -33)
+    lastNode.setPosition(26, -35)
     lastNode.setSize(80, 34)
     lastNode.setColor(0, 1, 0)
     groupPIK2 = lastNode
@@ -957,6 +886,28 @@ def createInstance(app,group):
     del lastNode
     # End of node "Blur4"
 
+    # Start of node "InM"
+    lastNode = app.createNode("fr.inria.built-in.Input", 1, group)
+    lastNode.setScriptName("InM")
+    lastNode.setLabel("InM")
+    lastNode.setPosition(-171, -35)
+    lastNode.setSize(104, 34)
+    lastNode.setColor(0.3, 0.5, 0.2)
+    groupInM = lastNode
+
+    param = lastNode.getParam("optional")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    param = lastNode.getParam("isMask")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    del lastNode
+    # End of node "InM"
+
     # Now that all nodes are created we can connect them together, restore expressions
     groupGrade11.connectInput(0, groupDot2)
     groupClamp2.connectInput(0, groupGrade11)
@@ -993,6 +944,7 @@ def createInstance(app,group):
     groupPIK2.connectInput(0, groupClamp2)
     groupPIK2.connectInput(1, groupClamp2)
     groupPIK2.connectInput(2, groupClamp2)
+    groupPIK2.connectInput(4, groupInM)
     groupBlur2.connectInput(0, groupChannelCopy1)
     groupBlur4.connectInput(0, groupPremult3)
 
