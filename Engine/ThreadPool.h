@@ -98,6 +98,8 @@ public:
 
     QThread* getThread() const;
 
+    virtual bool isThreadPoolThread() const { return false; }
+
 private:
 
     boost::scoped_ptr<AbortableThreadPrivate> _imp;

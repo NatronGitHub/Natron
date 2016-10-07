@@ -79,6 +79,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
+#include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -1449,18 +1450,42 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
         if ( tryIdentityOptim && !rectsLeftToRender.empty() ) {
             optimizeRectsToRender(_publicInterface->shared_from_this(), inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
         } else {
-            for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
-                if ( it->isNull() ) {
-                    continue;
-                }
-                RectToRender r;
-                r.rect = *it;
-                r.identityTime = 0;
-                r.isIdentity = false;
-                planesToRender->rectsToRender.push_back(r);
-            }
-        }
 
+            // If plug-in wants host frame threading and there is only 1 rect to render, split it
+            if (frameArgs->currentThreadSafety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1) {
+                QThreadPool* tp = QThreadPool::globalInstance();
+                int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
+
+                std::vector<RectI> splits;
+                if (nThreads > 1) {
+                    splits = rectsLeftToRender.front().splitIntoSmallerRects(nThreads);
+                } else {
+                    splits.push_back(rectsLeftToRender.front());
+                }
+                for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
+                    if ( it->isNull() ) {
+                        continue;
+                    }
+                    RectToRender r;
+                    r.rect = *it;
+                    r.isIdentity = false;
+                    planesToRender->rectsToRender.push_back(r);
+                }
+            } else {
+                for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
+                    if ( it->isNull() ) {
+                        continue;
+                    }
+                    RectToRender r;
+                    r.rect = *it;
+                    r.identityTime = 0;
+                    r.isIdentity = false;
+                    planesToRender->rectsToRender.push_back(r);
+                }
+            }
+            
+        }
+        
         ///We must re-copute input images because we might not have rendered what's needed
         for (std::list<RectToRender>::iterator it = planesToRender->rectsToRender.begin();
              it != planesToRender->rectsToRender.end(); ++it) {
