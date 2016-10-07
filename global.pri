@@ -354,7 +354,7 @@ unix {
          LIBS += -ldl
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
-         glfw:      LIBS += -framework OpenGL
+         LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
      }
 
