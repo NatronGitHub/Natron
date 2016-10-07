@@ -47,6 +47,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
+#include "Global/StrUtils.h"
+
 #include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/CreateNodeArgs.h"
@@ -476,7 +478,7 @@ NodeGui::getInitialSize(int *w,
         return;
     }
     QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
-    Global::ensureLastPathSeparator(resourcesPath);
+    StrUtils::ensureLastPathSeparator(resourcesPath);
     resourcesPath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
 
     if ( !resourcesPath.isEmpty() && QFile::exists(resourcesPath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
@@ -517,7 +519,7 @@ NodeGui::createGui()
     PluginPtr plugin = node->getPlugin();
     
     QString iconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
-    Global::ensureLastPathSeparator(iconFilePath);
+    StrUtils::ensureLastPathSeparator(iconFilePath);
     iconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
 
 
@@ -3931,7 +3933,7 @@ NodeGui::onNodePresetsChanged()
     if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
 
         QString pluginIconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
-        Global::ensureLastPathSeparator(pluginIconFilePath);
+        StrUtils::ensureLastPathSeparator(pluginIconFilePath);
         pluginIconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
 
         if (QFile::exists(pluginIconFilePath)) {

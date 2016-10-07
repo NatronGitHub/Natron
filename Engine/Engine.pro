@@ -217,6 +217,7 @@ SOURCES += \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
+    ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/natron_namespace_wrapper.cpp \
@@ -453,6 +454,7 @@ HEADERS += \
     ../Global/MemoryInfo.h \
     ../Global/ProcInfo.h \
     ../Global/QtCompat.h \
+    ../Global/StrUtils.h \
     ../libs/SequenceParsing/SequenceParsing.h \
     ../libs/OpenFX/include/ofxCore.h \
     ../libs/OpenFX/include/ofxDialog.h \

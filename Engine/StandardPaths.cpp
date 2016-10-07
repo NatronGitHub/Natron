@@ -97,21 +97,17 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 static QString
 qSystemDirectory()
 {
-    QVarLengthArray<TCHAR, MAX_PATH> fullPath;
-    UINT retLen = ::GetSystemDirectory(fullPath.data(), MAX_PATH);
+    QVarLengthArray<wchar_t, MAX_PATH> fullPath;
+    UINT retLen = ::GetSystemDirectoryW(fullPath.data(), MAX_PATH);
     if (retLen > MAX_PATH) {
         fullPath.resize(retLen);
-        retLen = ::GetSystemDirectory(fullPath.data(), retLen);
+        retLen = ::GetSystemDirectoryW(fullPath.data(), retLen);
     }
-#ifdef UNICODE
+    if (!fullPath.constData()) {
+        return QString();
+    }
     std::wstring ws(fullPath.constData(), retLen);
-    std::string str = OFX::wideStringToString(ws);
-#else
-    std::string str (fullPath.constData(), retLen);
-#endif
-
-    // in some rare cases retLen might be 0
-    return QString::fromUtf8( str.c_str() );
+    return QString::fromStdWString(ws);
 }
 
 static HINSTANCE
@@ -143,12 +139,9 @@ load(const wchar_t *libraryName,
         }
         fullPathAttempt.append(fileName);
 
-#ifdef UNICODE
-        std::wstring ws = Global::utf8_to_utf16( fullPathAttempt.toStdString() );
-        HINSTANCE inst = ::LoadLibrary( ws.c_str() );
-#else
-        HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
-#endif
+        std::wstring ws = fullPathAttempt.toStdWString();
+        HINSTANCE inst = ::LoadLibraryW( ws.c_str() );
+
         if (inst != 0) {
             return inst;
         }

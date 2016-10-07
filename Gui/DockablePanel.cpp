@@ -154,7 +154,7 @@ DockablePanel::DockablePanel(Gui* gui,
             QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
 
             QString iconFilePath = resourcesPath;
-            Global::ensureLastPathSeparator(iconFilePath);
+            StrUtils::ensureLastPathSeparator(iconFilePath);
             iconFilePath += QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
 ;
             if (QFile::exists(iconFilePath)) {

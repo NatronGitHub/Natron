@@ -41,9 +41,15 @@
 
 NATRON_NAMESPACE_USING
 
-int
-main(int argc,
-     char *argv[])
+
+#ifdef Q_OS_WIN
+// g++ knows nothing about wmain
+// https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
+extern "C" {
+    int wmain(int argc, wchar_t** argv)
+#else
+    int main(int argc, char *argv[])
+#endif
 {
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -84,7 +90,11 @@ main(int argc,
     AppManager manager;
 
     // coverity[tainted_data]
-    if ( !manager.load(argc, argv, args) ) {
+#ifdef Q_OS_WIN
+        if ( !manager.loadW(argc, argv, args) ) {
+#else
+        if ( !manager.load(argc, argv, args) ) {
+#endif
         return 1;
     } else {
         return 0;
@@ -92,4 +102,6 @@ main(int argc,
 
     return 0;
 } //main
-
+#ifdef Q_OS_WIN
+} // extern "C"
+#endif

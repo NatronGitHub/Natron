@@ -2596,6 +2596,7 @@ Node::abortAnyProcessing_blocking()
 }
 
 
+
 const std::vector<std::string> &
 Node::getInputLabels() const
 {
@@ -4261,8 +4262,8 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     int curIndex = choice->getValue();
     choice->populateChoices(entries);
     choice->beginChanges();
-    choice->setDefaultValue(defValue);
 
+    choice->setDefaultValueWithoutApplying(defValue);
     // We don't want to serialize the default value even if it changed, because it will be restored by the project
     choice->setCurrentDefaultValueAsInitialValue();
 
@@ -6321,6 +6322,7 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 void
 Node::destroyNode(bool blockingDestroy,
                           bool autoReconnect)
+
 {
     if (!_imp->effect) {
         return;
@@ -6339,6 +6341,7 @@ Node::destroyNode(bool blockingDestroy,
         doDestroyNodeInternalEnd(false);
     } else {
         NodeGroupPtr isGrp = isEffectNodeGroup();
+
         NodesList nodesToWatch;
         nodesToWatch.push_back( shared_from_this() );
         if (isGrp) {

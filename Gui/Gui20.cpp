@@ -70,6 +70,7 @@
 #include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h" // removeFileExtension
+#include "Global/StrUtils.h"
 
 #include "SequenceParsing.h"
 
@@ -764,7 +765,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
     }
     QString iconFilePath = resourcesPath;
-    Global::ensureLastPathSeparator(iconFilePath);
+    StrUtils::ensureLastPathSeparator(iconFilePath);
     iconFilePath += treeNode->getTreeNodeIconFilePath();
 
     QIcon toolButtonIcon, menuIcon;
@@ -1049,6 +1050,8 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
+
+
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {

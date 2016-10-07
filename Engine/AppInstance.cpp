@@ -1244,6 +1244,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         return NodePtr();
     }
 
+
     return node;
 } // createNodeInternal
 

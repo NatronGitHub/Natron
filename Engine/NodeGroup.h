@@ -101,14 +101,12 @@ public:
      **/
     void clearNodesBlocking();
     void clearNodesNonBlocking();
+
 private:
 
     void clearNodesInternal(bool blocking);
 
 public:
-
-
-
 
 
     /**
@@ -298,6 +296,7 @@ protected:
 
 private:
     void quitAnyProcessingInternal(bool blocking);
+
     void recomputeFrameRangeForAllReadersInternal(int* firstFrame,
                                                   int* lastFrame,
                                                   bool setFrameRange);
@@ -305,6 +304,7 @@ private:
                              const NodePtr& upperLevelGroupNode,
                              const QString& upperLevelGroupName,
                              QTextStream& ts);
+
 
 private:
     boost::scoped_ptr<NodeCollectionPrivate> _imp;

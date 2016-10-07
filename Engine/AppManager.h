@@ -124,7 +124,14 @@ public:
      * @param cl The parsed arguments passed to the command line
      * main process.
      **/
-    bool load( int &argc, char **argv, const CLArgs& cl);
+    bool load( int argc, char **argv, const CLArgs& cl);
+    bool loadW( int argc, wchar_t **argv, const CLArgs& cl);
+
+private:
+
+    bool loadFromArgs(const CLArgs& cl);
+
+public:
 
     virtual ~AppManager();
 
@@ -724,7 +731,7 @@ private:
 
     void loadAllPlugins();
 
-    void initPython(int argc, char* argv[]);
+    void initPython();
 
     void tearDownPython();
 

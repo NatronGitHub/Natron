@@ -46,8 +46,11 @@
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h"
 #include "Global/GLIncludes.h"
+#include "Global/ProcInfo.h"
+#include "Global/StrUtils.h"
 
 #include "Engine/FStreamsSupport.h"
+#include "Engine/CLArgs.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
@@ -101,7 +104,8 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
-    , args()
+    , commandLineArgsUtf8()
+    , nArgs(0)
     , mainModule(0)
     , mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
@@ -128,10 +132,16 @@ AppManagerPrivate::AppManagerPrivate()
 
 AppManagerPrivate::~AppManagerPrivate()
 {
-    for (U32 i = 0; i < args.size(); ++i) {
-        free(args[i]);
+    
+
+    for (std::size_t i = 0; i < commandLineArgsUtf8.size(); ++i) {
+        free(commandLineArgsUtf8[i]);
     }
-    args.clear();
+#ifndef IS_PYTHON_2
+    for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
+        free(commandLineArgsWide[i]);
+    }
+#endif
 }
 
 #ifdef NATRON_USE_BREAKPAD
@@ -845,6 +855,61 @@ AppManagerPrivate::tearDownGL()
         OSGLContext_x11::destroyGLXData( glxInfo.get() );
     }
 #endif
+}
+
+void
+AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args)
+{
+    // Copy command line args to local members that live throughout the lifetime of AppManager
+#ifndef IS_PYTHON_2
+    commandLineArgsWide.resize(utf8Args.size());
+#endif
+    commandLineArgsUtf8.resize(utf8Args.size());
+    nArgs = (int)utf8Args.size();
+    for (std::size_t i = 0; i < utf8Args.size(); ++i) {
+        commandLineArgsUtf8[i] = strdup(utf8Args[i].c_str());
+
+        // Python 3 needs wchar_t arguments
+#ifndef IS_PYTHON_2
+        commandLineArgsWide[i] = char2wchar(utf8Args[i].c_str());
+#endif
+    }
+}
+
+void
+AppManagerPrivate::handleCommandLineArgs(int argc, char** argv)
+{
+    // Ensure the arguments are Utf-8 encoded
+    std::vector<std::string> utf8Args;
+    if (argv) {
+        CLArgs::ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
+    } else {
+        // If the user didn't specify launch arguments (e.g unit testing),
+        // At least append the binary path
+        QString path = ProcInfo::applicationDirPath(0);
+        utf8Args.push_back(path.toStdString());
+    }
+
+    copyUtf8ArgsToMembers(utf8Args);
+}
+
+void
+AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
+{
+    std::vector<std::string> utf8Args;
+    if (argv) {
+        for (int i = 0; i < argc; ++i) {
+            std::wstring ws(argv[i]);
+            utf8Args.push_back(StrUtils::utf16_to_utf8(ws));
+        }
+    } else {
+        // If the user didn't specify launch arguments (e.g unit testing),
+        // At least append the binary path
+        QString path = ProcInfo::applicationDirPath(0);
+        utf8Args.push_back(path.toStdString());
+    }
+
+    copyUtf8ArgsToMembers(utf8Args);
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -391,6 +391,7 @@ WriteNodePrivate::destroyWriteNode()
         
         try {
 
+
             for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
 
@@ -456,6 +457,7 @@ WriteNodePrivate::destroyWriteNode()
     
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
+
     if (embeddedNode) {
         embeddedNode->destroyNode(true, false);
     }

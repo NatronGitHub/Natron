@@ -67,6 +67,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 #include <ofxhXml.h> // OFX::XML::escape
 
+#include "Global/StrUtils.h"
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
@@ -102,18 +104,13 @@ static std::string
 getUserName()
 {
 #ifdef __NATRON_WIN32__
-    TCHAR user_name[UNLEN + 1];
+    wchar_t user_name[UNLEN + 1];
     DWORD user_name_size = sizeof(user_name);
-    GetUserName(user_name, &user_name_size);
-#ifdef UNICODE
+    GetUserNameW(user_name, &user_name_size);
+
     std::wstring wUserName(user_name);
     std::string sUserName = OFX::wideStringToString(wUserName);
-
     return sUserName;
-#else
-
-    return std::string(user_name);
-#endif
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;
     passwd = getpwuid( getuid() );
@@ -203,7 +200,7 @@ Project::loadProject(const QString & path,
 
     try {
         QString realPath = path;
-        Global::ensureLastPathSeparator(realPath);
+        StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
         bool isAutoSave = isUntitledAutosave;
         if (!getApp()->isBackground() && !isUntitledAutosave) {
@@ -536,7 +533,7 @@ Project::saveProjectInternal(const QString & path,
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-    Global::ensureLastPathSeparator(tmpFilename);
+    StrUtils::ensureLastPathSeparator(tmpFilename);
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
@@ -1552,6 +1549,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         NodesList nodes;
         getNodes_recursive(nodes, true);
 
+        // Refresh nodes with a format parameter
         std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
@@ -1712,7 +1710,7 @@ Project::getLockFileInfos(const QString& projectPath,
                           qint64* appPID) const
 {
     QString realPath = projectPath;
-    Global::ensureLastPathSeparator(realPath);
+    StrUtils::ensureLastPathSeparator(realPath);
     QString lockFilePath = realPath + projectName + QString::fromUtf8(".lock");
     QFile f(lockFilePath);
 
@@ -1764,7 +1762,7 @@ Project::removeLastAutosave()
      */
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-    Global::ensureLastPathSeparator(projectPath);
+    StrUtils::ensureLastPathSeparator(projectPath);
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
     if ( QFile::exists(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
@@ -1804,7 +1802,7 @@ QString
 Project::autoSavesDir()
 {
     QString str = StandardPaths::writableLocation(StandardPaths::eStandardLocationData);
-    Global::ensureLastPathSeparator(str);
+    StrUtils::ensureLastPathSeparator(str);
 
     str += QString::fromUtf8("Autosaves");
 
@@ -2031,6 +2029,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         return;
     }
 
+    bool mustRefreshNodeFormats = false;
     Format dispW;
     {
         QMutexLocker l(&_imp->formatMutex);
@@ -2049,7 +2048,19 @@ Project::setOrAddProjectFormat(const Format & frmt,
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW, true);
+            mustRefreshNodeFormats = true;
         }
+    }
+    if (mustRefreshNodeFormats) {
+        // Refresh nodes with a format parameter
+        NodesList nodes;
+        getNodes_recursive(nodes, true);
+        int index = _imp->formatKnob->getValue();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->refreshFormatParamChoice(entries, index, false);
+        }
+
     }
 }
 

@@ -286,6 +286,7 @@ NodeCollection::quitAnyProcessingInternal(bool blocking)
             (*it)->quitAnyProcessing_non_blocking();
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+
         if (isGrp) {
             isGrp->quitAnyProcessingInternal(blocking);
         }
@@ -300,6 +301,7 @@ void
 NodeCollection::quitAnyProcessingForAllNodes_blocking()
 {
     quitAnyProcessingInternal(true);
+
 }
 
 void

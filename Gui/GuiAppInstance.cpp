@@ -49,6 +49,7 @@
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
+#include "Global/StrUtils.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
@@ -384,7 +385,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
             ///Otherwise just load the project specified.
             QString name = info.fileName();
             QString path = info.path();
-            Global::ensureLastPathSeparator(path);
+            StrUtils::ensureLastPathSeparator(path);
             appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
             getProject()->loadProject(path, name);
             ///remove any file open event that might have occured

@@ -40,6 +40,7 @@
 #endif
 
 #include "Global/MemoryInfo.h"
+#include "Global/StrUtils.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -100,7 +101,7 @@ static QStringList
 getDefaultOcioConfigPaths()
 {
     QString binaryPath = appPTR->getApplicationBinaryPath();
-    Global::ensureLastPathSeparator(binaryPath);
+    StrUtils::ensureLastPathSeparator(binaryPath);
 
 #ifdef __NATRON_LINUX__
     QStringList ret;

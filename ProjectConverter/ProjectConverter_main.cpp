@@ -38,6 +38,8 @@
 #include "Engine/FStreamsSupport.h"
 #include "Engine/StandardPaths.h"
 
+#include "Global/StrUtils.h"
+
 #include "Gui/BackdropGui.h"
 
 #include "Serialization/WorkspaceSerialization.h"
@@ -473,7 +475,7 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
         if (replaceOriginal) {
             // To replace the original, first we save to a temporary file then we save onto the original file
             QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-            Global::ensureLastPathSeparator(tmpFilename);
+            StrUtils::ensureLastPathSeparator(tmpFilename);
             tmpFilename.append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
             outFileName = tmpFilename;
         } else {
@@ -621,13 +623,26 @@ static void cleanupCreatedFiles(const ProcessData& data)
     }
 } // cleanupCreatedFiles
 
-int
-main(int argc, char *argv[])
+#ifdef Q_OS_WIN
+// g++ knows nothing about wmain
+// https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
+// If it fails to compile it means either UNICODE or _UNICODE is not defined (it should be in global.pri) and
+// the project is not linking against -municode
+extern "C" {
+int wmain(int argc, wchar_t** argv)
+#else
+int main(int argc, char *argv[])
+#endif
 {
     //QCoreApplication app(argc,argv);
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {
+#ifdef Q_OS_WIN
+        std::wstring ws(argv[i]);
+        arguments.push_back(QString::fromStdWString(ws));
+#else
         arguments.push_back(QString::fromUtf8(argv[i]));
+#endif
     }
 
     // Parse app args
@@ -637,7 +652,7 @@ main(int argc, char *argv[])
         parseArgs(arguments, &inputPath, &outputPath, &replaceOriginal, &recurse);
     } catch (const std::exception &e) {
         std::cerr << QString::fromUtf8("Error while parsing command line arguments: %1").arg(QString::fromUtf8(e.what())).toStdString() << std::endl;
-        printUsage(argv[0]);
+        printUsage(arguments[0].toStdString());
         return 1;
     }
 
@@ -665,4 +680,6 @@ main(int argc, char *argv[])
     cleanupApp();
     return 0;
 } // main
-
+#ifdef Q_OS_WIN
+} // extern "C"
+#endif

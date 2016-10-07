@@ -47,6 +47,8 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Global/StrUtils.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -147,7 +149,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
     PluginPtr internalPlugin = node->getNode()->getPlugin();
 
     QString resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
-    Global::ensureLastPathSeparator(resourcesPath);
+    StrUtils::ensureLastPathSeparator(resourcesPath);
 
 
     QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);

@@ -6,13 +6,20 @@
 
 ## Version 2.1.5
 
+- Introduce the notion of "Format", which is basically the area of the image to be displayed (similar to the display window in OpenEXR). Each clip has a format attached, so a project can contain images of different sizes.
 - Fix a bug where deprecated plugins would not be loaded from project file 2561778
 - macOS: clicking the dock icon now raises all windows
+- macOS: fix ColorLookUp curves parameter display
+- PyPlug: fix a bug where removing a node inside a Group would break any expression on its siblings
+- Reader: fix a bug where copy/pasting a node would display a "Bad Image Format" error
 - The whole user interface now uses the same font, and dialogs were cleaned up to use standard buttons
 
 ### Plugins
 
 - Crop: add the "Extent" choice, to chose either a predefined format or a custom size
+- Blur: add the "Crop To Format" option.
+- Reformat: if input has a format, use it to compute the reformated output.
+- NoOp: can also set the format.
 - Shuffle: re-enable the "Output Components" choice"
 - Premult/UnPremult: don't try to check processed channel when rewiring the input
 - (beta feature) ErodeBlur: Erode or dilate a mask by smoothing.

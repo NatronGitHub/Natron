@@ -42,6 +42,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 
+#include "Global/StrUtils.h"
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/DopeSheetEditor.h"
@@ -177,7 +179,7 @@ Gui::reloadProject()
     }
     QString filename = proj->getProjectFilename();
     QString projectPath = proj->getProjectPath();
-    Global::ensureLastPathSeparator(projectPath);
+    StrUtils::ensureLastPathSeparator(projectPath);
 
     projectPath.append(filename);
 
