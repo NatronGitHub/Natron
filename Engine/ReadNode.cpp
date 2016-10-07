@@ -429,6 +429,7 @@ ReadNodePrivate::destroyReadNode()
                 // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
                 embeddedPlugin->getEffectInstance()->removeKnobFromList(*it);
 
+
                 if ( !(*it)->isDeclaredByPlugin() ) {
                     continue;
                 }
@@ -486,6 +487,7 @@ ReadNodePrivate::destroyReadNode()
     QMutexLocker k(&embeddedPluginMutex);
     embeddedPlugin->destroyNode(true, false);
     embeddedPlugin.reset();
+
 } // ReadNodePrivate::destroyReadNode
 
 void

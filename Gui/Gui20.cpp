@@ -1049,6 +1049,8 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
+
+
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {

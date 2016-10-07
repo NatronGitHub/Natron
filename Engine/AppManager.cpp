@@ -76,6 +76,7 @@
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
 #include "Global/QtCompat.h"
+#include "Global/StrUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -228,6 +229,132 @@ setSigSegvSignal()
 
 #endif // if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
 
+
+#ifndef IS_PYTHON_2
+//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
+//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
+static wchar_t*
+char2wchar(char* arg)
+{
+    wchar_t *res = NULL;
+
+#ifdef HAVE_BROKEN_MBSTOWCS
+    /* Some platforms have a broken implementation of
+     * mbstowcs which does not count the characters that
+     * would result from conversion.  Use an upper bound.
+     */
+    size_t argsize = strlen(arg);
+#else
+    size_t argsize = mbstowcs(NULL, arg, 0);
+#endif
+    size_t count;
+    unsigned char *in;
+    wchar_t *out;
+#ifdef HAVE_MBRTOWC
+    mbstate_t mbs;
+#endif
+    if (argsize != (size_t)-1) {
+        res = (wchar_t *)malloc( (argsize + 1) * sizeof(wchar_t) );
+        if (!res) {
+            goto oom;
+        }
+        count = mbstowcs(res, arg, argsize + 1);
+        if (count != (size_t)-1) {
+            wchar_t *tmp;
+            /* Only use the result if it contains no
+             surrogate characters. */
+            for (tmp = res; *tmp != 0 &&
+                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++) {
+                ;
+            }
+            if (*tmp == 0) {
+                return res;
+            }
+        }
+        free(res);
+    }
+    /* Conversion failed. Fall back to escaping with surrogateescape. */
+#ifdef HAVE_MBRTOWC
+    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
+    /* Overallocate; as multi-byte characters are in the argument, the
+     actual output could use less memory. */
+    argsize = strlen(arg) + 1;
+    res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
+    if (!res) {
+        goto oom;
+    }
+    in = (unsigned char*)arg;
+    out = res;
+    std::memset(&mbs, 0, sizeof mbs);
+    while (argsize) {
+        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
+        if (converted == 0) {
+            /* Reached end of string; null char stored. */
+            break;
+        }
+        if (converted == (size_t)-2) {
+            /* Incomplete character. This should never happen,
+             since we provide everything that we have -
+             unless there is a bug in the C library, or I
+             misunderstood how mbrtowc works. */
+            fprintf(stderr, "unexpected mbrtowc result -2\n");
+            free(res);
+
+            return NULL;
+        }
+        if (converted == (size_t)-1) {
+            /* Conversion error. Escape as UTF-8b, and start over
+             in the initial shift state. */
+            *out++ = 0xdc00 + *in++;
+            argsize--;
+            std::memset(&mbs, 0, sizeof mbs);
+            continue;
+        }
+        if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {
+            /* Surrogate character.  Escape the original
+             byte sequence with surrogateescape. */
+            argsize -= converted;
+            while (converted--) {
+                *out++ = 0xdc00 + *in++;
+            }
+            continue;
+        }
+        /* successfully converted some bytes */
+        in += converted;
+        argsize -= converted;
+        out++;
+    }
+#else
+    /* Cannot use C locale for escaping; manually escape as if charset
+     is ASCII (i.e. escape all bytes > 128. This will still roundtrip
+     correctly in the locale's charset, which must be an ASCII superset. */
+    res = (wchar_t*)malloc( (strlen(arg) + 1) * sizeof(wchar_t) );
+    if (!res) {
+        goto oom;
+    }
+    in = (unsigned char*)arg;
+    out = res;
+    while (*in) {
+        if (*in < 128) {
+            *out++ = *in++;
+        } else {
+            *out++ = 0xdc00 + *in++;
+        }
+    }
+    *out = 0;
+#endif // ifdef HAVE_MBRTOWC
+
+    return res;
+oom:
+    fprintf(stderr, "out of memory\n");
+    free(res);
+
+    return NULL;
+} // char2wchar
+
+#endif // ifndef IS_PYTHON_2
+
+
 //} // anon namespace
 
 void
@@ -292,7 +419,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
         if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
             // This is an old boost serialization file, convert the project first
             QString path = appPTR->getApplicationBinaryPath();
-            Global::ensureLastPathSeparator(path);
+            StrUtils::ensureLastPathSeparator(path);
             path += QLatin1String("NatronProjectConverter");
 
             if (!QFile::exists(path)) {
@@ -311,7 +438,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
 
             filePathOut->clear();
             filePathOut->append(StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp));
-            Global::ensureLastPathSeparator(*filePathOut);
+            StrUtils::ensureLastPathSeparator(*filePathOut);
             filePathOut->append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
             filePathOut->append(baseNameIn);
 
@@ -333,20 +460,9 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
 }
 
 bool
-AppManager::load(int &argc,
-                 char *argv[],
-                 const CLArgs& cl)
+AppManager::loadFromArgs(const CLArgs& cl)
 {
-    ///if the user didn't specify launch arguments (e.g unit testing)
-    ///find out the binary path
-    char* argv0;
-    std::string argv0QString = QDir::currentPath().toStdString();
 
-    if (!argv) {
-        argv0 = const_cast<char*>( argv0QString.c_str() );
-        argc = 1;
-        argv = &argv0;
-    }
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -354,7 +470,9 @@ AppManager::load(int &argc,
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
-    initializeQApp(argc, argv);
+    //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
+    //  Thus ensure that the QCoreApplication is destroyed when returning this function.
+    initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
 
 #ifdef QT_CUSTOM_THREADPOOL
     // Set the global thread pool
@@ -375,7 +493,7 @@ AppManager::load(int &argc,
     }
 
     try {
-        initPython(argc, argv);
+        initPython();
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
 
@@ -394,15 +512,31 @@ AppManager::load(int &argc,
     QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
 #endif
 
-    assert(argv);
-
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
     bool ret = loadInternal(cl);
-
+    
     return ret;
-} // AppManager::load
+} // loadFromArgs
+
+bool
+AppManager::load(int argc,
+                 char **argv,
+                 const CLArgs& cl)
+{
+    _imp->handleCommandLineArgs(argc, argv);
+    return loadFromArgs(cl);
+}
+
+bool
+AppManager::loadW(int argc,
+                 wchar_t **argv,
+                 const CLArgs& cl)
+{
+    _imp->handleCommandLineArgsW(argc, argv);
+    return loadFromArgs(cl);
+}
 
 AppManager::~AppManager()
 {
@@ -2918,130 +3052,6 @@ AppManager::getPluginIDs(const std::string& filter)
     return ret;
 }
 
-#ifndef IS_PYTHON_2
-//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
-//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
-static wchar_t*
-char2wchar(char* arg)
-{
-    wchar_t *res = NULL;
-
-#ifdef HAVE_BROKEN_MBSTOWCS
-    /* Some platforms have a broken implementation of
-     * mbstowcs which does not count the characters that
-     * would result from conversion.  Use an upper bound.
-     */
-    size_t argsize = strlen(arg);
-#else
-    size_t argsize = mbstowcs(NULL, arg, 0);
-#endif
-    size_t count;
-    unsigned char *in;
-    wchar_t *out;
-#ifdef HAVE_MBRTOWC
-    mbstate_t mbs;
-#endif
-    if (argsize != (size_t)-1) {
-        res = (wchar_t *)malloc( (argsize + 1) * sizeof(wchar_t) );
-        if (!res) {
-            goto oom;
-        }
-        count = mbstowcs(res, arg, argsize + 1);
-        if (count != (size_t)-1) {
-            wchar_t *tmp;
-            /* Only use the result if it contains no
-               surrogate characters. */
-            for (tmp = res; *tmp != 0 &&
-                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++) {
-                ;
-            }
-            if (*tmp == 0) {
-                return res;
-            }
-        }
-        free(res);
-    }
-    /* Conversion failed. Fall back to escaping with surrogateescape. */
-#ifdef HAVE_MBRTOWC
-    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
-    /* Overallocate; as multi-byte characters are in the argument, the
-       actual output could use less memory. */
-    argsize = strlen(arg) + 1;
-    res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    std::memset(&mbs, 0, sizeof mbs);
-    while (argsize) {
-        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
-        if (converted == 0) {
-            /* Reached end of string; null char stored. */
-            break;
-        }
-        if (converted == (size_t)-2) {
-            /* Incomplete character. This should never happen,
-               since we provide everything that we have -
-               unless there is a bug in the C library, or I
-               misunderstood how mbrtowc works. */
-            fprintf(stderr, "unexpected mbrtowc result -2\n");
-            free(res);
-
-            return NULL;
-        }
-        if (converted == (size_t)-1) {
-            /* Conversion error. Escape as UTF-8b, and start over
-               in the initial shift state. */
-            *out++ = 0xdc00 + *in++;
-            argsize--;
-            std::memset(&mbs, 0, sizeof mbs);
-            continue;
-        }
-        if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {
-            /* Surrogate character.  Escape the original
-               byte sequence with surrogateescape. */
-            argsize -= converted;
-            while (converted--) {
-                *out++ = 0xdc00 + *in++;
-            }
-            continue;
-        }
-        /* successfully converted some bytes */
-        in += converted;
-        argsize -= converted;
-        out++;
-    }
-#else
-    /* Cannot use C locale for escaping; manually escape as if charset
-       is ASCII (i.e. escape all bytes > 128. This will still roundtrip
-       correctly in the locale's charset, which must be an ASCII superset. */
-    res = (wchar_t*)malloc( (strlen(arg) + 1) * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    while (*in) {
-        if (*in < 128) {
-            *out++ = *in++;
-        } else {
-            *out++ = 0xdc00 + *in++;
-        }
-    }
-    *out = 0;
-#endif // ifdef HAVE_MBRTOWC
-
-    return res;
-oom:
-    fprintf(stderr, "out of memory\n");
-    free(res);
-
-    return NULL;
-} // char2wchar
-
-#endif // ifndef IS_PYTHON_2
-
 
 std::string
 NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
@@ -3075,8 +3085,7 @@ NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
 }
 
 void
-AppManager::initPython(int argc,
-                       char* argv[])
+AppManager::initPython()
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -3126,19 +3135,11 @@ AppManager::initPython(int argc,
     pythonPath.prepend(toPrepend);
     qputenv( "PYTHONPATH", pythonPath.toLatin1() );
 
-    _imp->args.resize(argc);
-    for (int i = 0; i < argc; ++i) {
 #ifndef IS_PYTHON_2
-        _imp->args[i] = char2wchar(argv[i]);
+    Py_SetProgramName(_imp->commandLineArgsWide[0]);
 #else
-        _imp->args[i] = strdup(argv[i]); // free'd in ~AppManagerPrivate()
+    Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
 #endif
-    }
-
-
-    if (argc >= 1) {
-        Py_SetProgramName(_imp->args[0]);
-    }
 
 
     ///Must be called prior to Py_Initialize
@@ -3164,11 +3165,11 @@ AppManager::initPython(int argc,
 
 #ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome( Global::utf8_to_utf16(".") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16(".") );
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome( Global::utf8_to_utf16("../lib") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../lib") );
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome( Global::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib") );
+    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib") );
 #endif
     Py_SetPythonHome( const_cast<wchar_t*>( pythonHome.c_str() ) );
     PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
@@ -3181,7 +3182,11 @@ AppManager::initPython(int argc,
     static const std::string pythonHome("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib");
 #endif
     Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-    PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
+#ifndef IS_PYTHON_2
+    PySys_SetArgv( _imp->commandLineArgsWide.size(), &_imp->commandLineArgsWide.front() ); /// relative module import
+#else
+    PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
+#endif
 #endif
 
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
@@ -3344,8 +3349,12 @@ AppManager::launchPythonInterpreter()
     }
 
     // PythonGILLocker pgl;
+#ifndef IS_PYTHON_2
+    Py_Main(1, &_imp->commandLineArgsWide[0]);
+#else
+    Py_Main(1, &_imp->commandLineArgsUtf8[0]);
+#endif
 
-    Py_Main(1, &_imp->args[0]);
 }
 
 int

@@ -507,24 +507,16 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
     QString ret;
     if ( path[0].isLetter() && ( path[1] == QLatin1Char(':') ) ) {
         QString driveName = path.mid(0, 2);
-        TCHAR szDeviceName[512];
+        wchar_t szDeviceName[512];
         DWORD dwResult, cchBuff = sizeof(szDeviceName);
-#ifdef UNICODE
-        dwResult = WNetGetConnection(Global::utf8_to_utf16( driveName.toStdString() ).c_str(), szDeviceName, &cchBuff);
-#else
-        dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
-#endif
+
+        dwResult = WNetGetConnectionW(driveName.toStdWString().c_str(), szDeviceName, &cchBuff);
         if (dwResult == NO_ERROR) {
             ret = path.mid(2, -1);
 
             //Replace \\ with /
-#ifdef UNICODE
             std::wstring wstr(szDeviceName);
-            std::string str = OFX::wideStringToString(wstr);
-            QString qDeviceName( QString::fromUtf8( str.c_str() ) );
-#else
-            QString qDeviceName = QString::fromUtf8(szDeviceName);
-#endif
+            QString qDeviceName = QString::fromStdWString(wstr);
 
             qDeviceName.replace( QLatin1Char('\\'), QLatin1Char('/') );
 
@@ -1630,7 +1622,6 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             sequences.push_back( std::make_pair(SequenceParsing::SequenceFromFilesPtr(), all[i]) );
         } else {
             QString filename = all[i].fileName();
-
             /// If the item does not match the filter regexp set by the user, discard it
             if ( !model->isAcceptedByRegexps(filename) ) {
                 KERNEL_INCR();

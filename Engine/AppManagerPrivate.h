@@ -132,10 +132,14 @@ public:
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #ifndef IS_PYTHON_2
-    std::vector<wchar_t*> args;
+    std::vector<wchar_t*> commandLineArgsWide;
 #else
-    std::vector<char*> args;
+    std::vector<char*> commandLineArgsUtf8;
 #endif
+
+    //  QCoreApplication will hold a reference to that int until QCoreApplication destructor is invoked.
+    //  Thus ensure that the QCoreApplication is destroyed before AppManager itself
+    int nArgs;
 
     PyObject* mainModule;
     PyThreadState* mainThreadState;
@@ -229,6 +233,11 @@ public:
     void tearDownGL();
 
     void setViewerCacheTileSize();
+
+    void handleCommandLineArgs(int argc, char** argv);
+    void handleCommandLineArgsW(int argc, wchar_t** argv);
+
+    void copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args);
 };
 
 NATRON_NAMESPACE_EXIT;

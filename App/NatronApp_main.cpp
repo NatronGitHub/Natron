@@ -44,9 +44,16 @@
 
 NATRON_NAMESPACE_USING
 
-int
-main(int argc,
-     char *argv[])
+#ifdef Q_OS_WIN
+// g++ knows nothing about wmain
+// https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
+// If it fails to compile it means either UNICODE or _UNICODE is not defined (it should be in global.pri) and
+// the project is not linking against -municode
+extern "C" {
+int wmain(int argc, wchar_t** argv)
+#else
+int main(int argc, char *argv[])
+#endif
 {
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -89,7 +96,11 @@ main(int argc,
         AppManager manager;
 
         // coverity[tainted_data]
+#ifdef Q_OS_WIN
+        if ( !manager.loadW(argc, argv, args) ) {
+#else
         if ( !manager.load(argc, argv, args) ) {
+#endif
             return 1;
         } else {
             return 0;
@@ -98,9 +109,15 @@ main(int argc,
         GuiApplicationManager manager;
 
         // coverity[tainted_data]
+#ifdef Q_OS_WIN
+        return manager.loadW(argc, argv, args);
+#else
         return manager.load(argc, argv, args);
-
+#endif
         //exec() is called within the GuiApplicationManager
     }
 } // main
+#ifdef Q_OS_WIN
+} // extern "C"
+#endif
 

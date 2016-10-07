@@ -54,7 +54,8 @@ SOURCES += \
     Lut_Test.cpp \
     KnobFile_Test.cpp \
     Curve_Test.cpp \
-    Tracker_Test.cpp
+    Tracker_Test.cpp \
+    wmain.cpp
 
 HEADERS += \
     BaseTest.h

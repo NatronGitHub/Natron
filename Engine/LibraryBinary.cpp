@@ -29,6 +29,8 @@
 #include <stdexcept>
 
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
+
 #ifdef __NATRON_UNIX__
 #include <dlfcn.h>
 #endif
@@ -90,12 +92,8 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 
     _binaryPath = binaryPath;
 #ifdef __NATRON_WIN32__
-#ifdef UNICODE
-    std::wstring ws = Global::utf8_to_utf16(binaryPath);
-    _library = LoadLibrary( ws.c_str() );
-#else
-    _library = LoadLibrary( binaryPath.c_str() );
-#endif
+    std::wstring ws = StrUtils::utf8_to_utf16(binaryPath);
+    _library = LoadLibraryW( ws.c_str() );
 
 #elif defined(__NATRON_UNIX__)
     _library = dlopen(binaryPath.c_str(), RTLD_LAZY | RTLD_LOCAL);

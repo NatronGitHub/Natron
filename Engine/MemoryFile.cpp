@@ -43,6 +43,7 @@
 #include <stdexcept>
 
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
 
 #define MIN_FILE_SIZE 4096
 
@@ -230,13 +231,13 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
      ********************************************************
      *********************************************************/
-    std::wstring wpath = Global::utf8_to_utf16(path);
+    std::wstring wpath = StrUtils::utf8_to_utf16(path);
     file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                 0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
 
     if (file_handle == INVALID_HANDLE_VALUE) {
-        std::string winError = Global::GetLastErrorAsString();
+        std::string winError = StrUtils::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
         str.append(winError);
