@@ -129,9 +129,6 @@ CLArgs::CLArgs(int& argc,
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
-#ifdef DEBUG
-        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
-#endif
         _imp->args.push_back(str);
     }
 
@@ -156,9 +153,6 @@ CLArgs::CLArgs(int& argc,
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
         }
-#ifdef DEBUG
-        std::cout << "argv[" << i << "] = " << str.toStdString() << std::endl;
-#endif
         _imp->args.push_back(str);
 
     }
@@ -1148,7 +1142,7 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
     wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
     for (int i = 0; i < nArgsOut; ++i) {
         std::wstring wide(argList[i]);
-        utf8Args->push_back(StrUtils::utf16_to_utf8(wide));
+        utf8Args->push_back(QString::fromStdWString(wide).toStdString());
         if (argv) {
             std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
         }
