@@ -1,6 +1,6 @@
 --- Source/QtDialog/CMakeLists.txt.orig
 +++ Source/QtDialog/CMakeLists.txt
-@@ -16,7 +16,9 @@
+@@ -7,7 +7,9 @@
  endif()
  CMake_OPTIONAL_COMPONENT(cmake-gui)
  find_package(Qt5Widgets QUIET)
@@ -11,7 +11,7 @@
    include_directories(${Qt5Widgets_INCLUDE_DIRS})
    add_definitions(${Qt5Widgets_DEFINITONS})
    macro(qt4_wrap_ui)
-@@ -91,19 +93,6 @@
+@@ -82,19 +84,6 @@
        get_filename_component(Qt_BIN_DIR "${Qt_BIN_DIR}" PATH)
      endif()
    endif()
@@ -31,7 +31,7 @@
  
  set(SRCS
    AddCacheEntry.cxx
-@@ -149,7 +138,7 @@
+@@ -140,7 +129,7 @@
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -40,7 +40,7 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -166,10 +155,10 @@
+@@ -157,10 +146,10 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
@@ -53,7 +53,7 @@
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -215,18 +204,18 @@
+@@ -206,18 +195,18 @@
      ${COMPONENT})
  endif()
  
@@ -77,7 +77,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -657,12 +657,6 @@
+@@ -649,12 +649,6 @@
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

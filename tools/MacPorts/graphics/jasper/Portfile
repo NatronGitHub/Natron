@@ -1,10 +1,9 @@
-# $Id: Portfile 136995 2015-06-02 06:41:52Z jmr@macports.org $
+# $Id: Portfile 153683 2016-10-07 18:26:54Z jmr@macports.org $
 
 PortSystem      1.0
 
 name            jasper
-version         1.900.1
-revision        10
+version         1.900.2
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -18,22 +17,13 @@ long_description \
 
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
-use_zip         yes
 
-checksums       md5     a342b2b4495b3e1394e161eb5d85d754 \
-                sha1    9c5735f773922e580bf98c7c7dfda9bbed4c5191 \
-                rmd160  fb2c188abf5b8c297078ac1f913101734f72db5c
+checksums       rmd160 8429067584acf86a056f900f1f5da49906c7b633 \
+                sha256 2a31a38e8f2c84e8e2d011833d5a71a4334a90d63739a17aa342cb81a15c712e
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
-patchfiles      patch-src_libjasper_base_jas_cm.c.diff \
-                patch-src_libjasper_jpc_jpc_dec.c.diff
-
-configure.args  --enable-shared \
-                --enable-static \
-                --disable-opengl \
-                --mandir=${prefix}/share/man \
-                --infodir=${prefix}/share/info
+configure.args  --disable-opengl
 
 test.run        yes
 test.target     check
