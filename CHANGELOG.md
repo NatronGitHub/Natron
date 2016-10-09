@@ -27,6 +27,7 @@
 - (beta feature) PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
 - (beta feature) PIKColor: Generate a clean plate from each frame for keying with PIK.
 - (beta feature) Sharpen & Soften: new plugins.
+- (beta featur) EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
 
 ## Version 2.1.4
 
