@@ -227,20 +227,26 @@ class CreateNodeArgs
     };
     
     template <typename T>
-    boost::shared_ptr<Property<T> > getProp(const std::string& name) const
+    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
     {
         const boost::shared_ptr<PropertyBase>* propPtr = 0;
 
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         if (found == _properties.end()) {
-            throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
+            if (throwOnFailure) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
+            }
+            return boost::shared_ptr<Property<T> >();
         }
         propPtr = &(found->second);
         boost::shared_ptr<Property<T> > propTemplate;
         propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
         assert(propPtr);
         if (!propTemplate) {
-            throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
+            if (throwOnFailure) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
+            }
+            return boost::shared_ptr<Property<T> >();
         }
 
         assert(propTemplate);
@@ -331,12 +337,8 @@ public:
     void setProperty(const std::string& name, const T& value, int index = 0, bool failIfNotExisting = true)
     {
         boost::shared_ptr<Property<T> > propTemplate;
-        try {
-            propTemplate = getProp<T>(name);
-        } catch(const std::exception& e) {
-            if (failIfNotExisting) {
-                throw;
-            }
+        propTemplate = getProp<T>(name, failIfNotExisting);
+        if (!propTemplate) {
             propTemplate = createProperty<T>(name, value);
         }
         if (index >= (int)propTemplate->value.size()) {
@@ -350,15 +352,11 @@ public:
     void setPropertyN(const std::string& name, const std::vector<T>& values, bool failIfNotExisting = true)
     {
         boost::shared_ptr<Property<T> > propTemplate;
-        try {
-            propTemplate = getProp<T>(name);
-            propTemplate->value = values;
-        } catch(const std::exception& e) {
-            if (failIfNotExisting) {
-                throw;
-            }
+        propTemplate = getProp<T>(name, failIfNotExisting);
+        if (!propTemplate) {
             propTemplate = createProperty<T>(name, values);
         }
+        propTemplate->value = values;
     }
 
     int getPropertyDimension(const std::string& name, bool throwIfFailed = true) const
