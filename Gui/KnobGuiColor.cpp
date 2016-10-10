@@ -207,7 +207,7 @@ KnobGuiColor::KnobGuiColor(KnobIPtr knob,
     , _knob( toKnobColor(knob) )
     , _colorLabel(0)
     , _colorDialogButton(0)
-    , _lastColor( knob->getDimension() )
+    , _lastColor( knob->getNDimensions() )
     , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
 {
 }
@@ -224,7 +224,7 @@ KnobGuiColor::connectKnobSignalSlots()
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    int nDims = _knob.lock()->getDimension();
+    int nDims = _knob.lock()->getNDimensions();
 
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -235,7 +235,7 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    int nDims = _knob.lock()->getDimension();
+    int nDims = _knob.lock()->getNDimensions();
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -377,7 +377,7 @@ void
 KnobGuiColor::onDimensionsFolded()
 {
     KnobColorPtr knob = _knob.lock();
-    int nDims = knob->getDimension();
+    int nDims = knob->getNDimensions();
 
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
@@ -399,7 +399,7 @@ KnobGuiColor::onDimensionsExpanded()
     colors[3].setRgbF(0.398979, 0.398979, 0.398979);
 
     KnobColorPtr knob = _knob.lock();
-    int nDims = knob->getDimension();
+    int nDims = knob->getNDimensions();
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
         Label* label = 0;
@@ -422,7 +422,7 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
     KnobColorPtr knob = _knob.lock();
     bool isSimple = _useSimplifiedUI;
-    int nDims = knob->getDimension();
+    int nDims = knob->getNDimensions();
 
     if (nDims == 1) {
         knob->setValue(color.redF(), ViewSpec::all(), 0);
@@ -452,7 +452,7 @@ KnobGuiColor::showColorDialog()
 
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     KnobColorPtr knob = _knob.lock();
-    const int nDims = knob->getDimension();
+    const int nDims = knob->getNDimensions();
     double curR = knob->getValue(0);
 
     _lastColor[0] = curR;

@@ -883,17 +883,17 @@ TrackerContext::exportTrackDataFromExportOptions()
         for (unsigned int i = 0; i < 4; ++i) {
             cornerPinFromPoints[i] = getCornerPinPoint(createdNode, true, i);
             assert(cornerPinFromPoints[i]);
-            for (int j = 0; j < cornerPinFromPoints[i]->getDimension(); ++j) {
+            for (int j = 0; j < cornerPinFromPoints[i]->getNDimensions(); ++j) {
                 cornerPinFromPoints[i]->setValue(_imp->fromPoints[i].lock()->getValueAtTime(timeForFromPoints, j), ViewSpec(0), j);
             }
 
             cornerPinToPoints[i] = getCornerPinPoint(createdNode, false, i);
             assert(cornerPinToPoints[i]);
             if (!linked) {
-                cornerPinToPoints[i]->cloneAndUpdateGui( _imp->toPoints[i].lock() );
+                cornerPinToPoints[i]->clone( _imp->toPoints[i].lock() );
             } else {
                 bool ok = false;
-                for (int d = 0; d < cornerPinToPoints[i]->getDimension(); ++d) {
+                for (int d = 0; d < cornerPinToPoints[i]->getNDimensions(); ++d) {
                     ok = cornerPinToPoints[i]->slaveTo(d, _imp->toPoints[i].lock(), d);
                 }
                 (void)ok;
@@ -905,7 +905,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             if (knob) {
                 KnobDoublePtr isType = toKnobDouble(knob);
                 if (isType) {
-                    isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock() );
+                    isType->clone( _imp->cornerPinMatrix.lock() );
                 }
             }
         }
@@ -917,7 +917,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = toKnobDouble(translateKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->translate.lock() );
+                    isDbl->clone( _imp->translate.lock() );
                 } else {
                     isDbl->slaveTo(0, _imp->translate.lock(), 0);
                     isDbl->slaveTo(1, _imp->translate.lock(), 1);
@@ -930,7 +930,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = toKnobDouble(scaleKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->scale.lock() );
+                    isDbl->clone( _imp->scale.lock() );
                 } else {
                     isDbl->slaveTo(0, _imp->scale.lock(), 0);
                     isDbl->slaveTo(1, _imp->scale.lock(), 1);
@@ -943,7 +943,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = toKnobDouble(rotateKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->rotate.lock() );
+                    isDbl->clone( _imp->rotate.lock() );
                 } else {
                     isDbl->slaveTo(0, _imp->rotate.lock(), 0);
                 }
@@ -953,7 +953,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (centerKnob) {
             KnobDoublePtr isDbl = toKnobDouble(centerKnob);
             if (isDbl) {
-                isDbl->cloneAndUpdateGui( _imp->center.lock() );
+                isDbl->clone( _imp->center.lock() );
             }
         }
         break;
@@ -965,7 +965,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         KnobBoolPtr isBool = toKnobBool(cpInvertKnob);
         if (isBool) {
             if (!linked) {
-                isBool->cloneAndUpdateGui( _imp->invertTransform.lock() );
+                isBool->clone( _imp->invertTransform.lock() );
             } else {
                 isBool->slaveTo(0, _imp->invertTransform.lock(), 0);
             }
@@ -977,7 +977,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->motionBlur.lock() );
+                isType->clone( _imp->motionBlur.lock() );
             }
         }
     }
@@ -986,7 +986,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->shutter.lock() );
+                isType->clone( _imp->shutter.lock() );
             }
         }
     }
@@ -995,7 +995,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobChoicePtr isType = toKnobChoice(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->shutterOffset.lock() );
+                isType->clone( _imp->shutterOffset.lock() );
             }
         }
     }
@@ -1004,7 +1004,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->customShutterOffset.lock() );
+                isType->clone( _imp->customShutterOffset.lock() );
             }
         }
     }
@@ -2016,7 +2016,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
             tracks[i]->natronMarker->notifyTrackingEnded();
             contextEnabledKnob->blockListenersNotification();
-            contextEnabledKnob->cloneAndUpdateGui( enabledKnob );
+            contextEnabledKnob->clone( enabledKnob );
             contextEnabledKnob->unblockListenersNotification();
             enabledKnob->slaveTo(0, contextEnabledKnob, 0);
         }

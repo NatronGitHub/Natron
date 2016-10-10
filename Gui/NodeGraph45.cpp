@@ -150,7 +150,7 @@ NodeGraph::refreshAllKnobsGui()
             for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
+                    for (int i = 0; i < knob->getNDimensions(); ++i) {
                         if ( knob->isAnimated(i) ) {
                             it2->second->onInternalValueChanged(ViewSpec::all(), i, eValueChangedReasonPluginEdited);
                             it2->second->onAnimationLevelChanged(ViewSpec::all(), i);

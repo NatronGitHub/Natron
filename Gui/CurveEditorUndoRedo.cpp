@@ -46,555 +46,337 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-                               const KeysToAddList & keys,
-                               QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _keys(keys)
-    , _curveWidget(editor)
+
+template <typename T>
+T variantToType(const Variant& v);
+
+template <>
+int variantToType(const Variant& v)
 {
+    return v.toInt();
 }
 
-AddKeysCommand::AddKeysCommand(CurveWidget *editor,
-                               const CurveGuiPtr& curve,
-                               const std::vector<KeyFrame> & keys,
-                               QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _keys()
-    , _curveWidget(editor)
+template <>
+bool variantToType(const Variant& v)
 {
-    KeyToAdd k;
+    return v.toBool();
+}
 
-    k.curveUI = curve;
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
-    KnobGuiPtr guiKnob;
-    if (isKnobCurve) {
-        guiKnob = isKnobCurve->getKnobGui();
-        k.dimension = isKnobCurve->getDimension();
-    } else {
-        k.dimension = 0;
+template <>
+double variantToType(const Variant& v)
+{
+    return v.toDouble();
+}
+
+template <>
+std::string variantToType(const Variant& v)
+{
+    return v.toString().toStdString();
+}
+
+template <typename T>
+static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeValuePair>& inList,
+                                                   std::list<TimeValuePair<T> >* outList)
+{
+    for (std::list<VariantTimeValuePair>::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+        TimeValuePair<T> p;
+        p.value = variantToType<T>(*it);
+        p.time = it->time;
+        outList->push_back(p);
     }
-    k.knobUI = guiKnob;
-    k.keyframes = keys;
-    _keys.push_back(k);
 }
 
 void
-AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
-                                    bool add)
+AddOrRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->curveUI.get() );
-        BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->curveUI.get() );
-        KnobGuiPtr guiKnob = it->knobUI.lock();
-        KnobIPtr knob;
+    for (ObjectKeysToAddMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
 
-        if (guiKnob) {
-            knob = guiKnob->getKnob();
-        } else if (isKnobCurve) {
-            knob = isKnobCurve->getInternalKnob();
-        }
-        KnobParametricPtr isParametric;
-        if (knob) {
-            isParametric = toKnobParametric(knob);
+        AnimatingObjectIPtr obj = it->first.lock();
+        if (!obj) {
+            continue;
         }
 
-        if (add && isSetKeyCommand) {
-            if (isKnobCurve) {
-                if (isParametric) {
-                    StatusEnum st = isParametric->deleteAllControlPoints( eValueChangedReasonUserEdited, isKnobCurve->getDimension() );
-                    assert(st == eStatusOK);
-                    if (st != eStatusOK) {
-                        throw std::logic_error("addOrRemoveKeyframe");
-                    }
-                } else {
-                    knob->removeAnimation( ViewIdx(0), isKnobCurve->getDimension() );
-                }
-            } else if (isBezierCurve) {
-                BezierPtr b = isBezierCurve->getBezier();
-                assert(b);
-                if (b) {
-                    b->removeAnimation();
-                }
-            }
-        }
 
-        if (guiKnob && !isParametric) {
-            if (isKnobCurve) {
-                if (add) {
-                    guiKnob->setKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
-                } else {
-                    guiKnob->removeKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+        if (!add) {
+            for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                std::list<double> keyTimes;
+                for (std::list<VariantTimeValuePair> ::const_iterator it2 = it->second.keyframesPerDim[i].begin(); it2 != it->second.keyframesPerDim[i].end(); ++it2) {
+                    keyTimes.push_back(it2->time);
                 }
+                obj->deleteValuesAtTime(eCurveChangeReasonInternal, keyTimes, ViewSpec::all(), i + it->second.dimensionStartIndex);
             }
         } else {
-            for (std::size_t i = 0; i < it->keyframes.size(); ++i) {
-                if (knob) {
-                    knob->beginChanges();
 
-                    if (add) {
-                        int time = it->keyframes[i].getTime();
-                        if (isParametric) {
-                            // keyframes added to parametric params are Cubic by default
-                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue(), eKeyframeTypeCubic );
-                            assert(st == eStatusOK);
-                            Q_UNUSED(st);
-                        } else {
-                            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-                            KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-                            KnobIntBasePtr isInt = toKnobIntBase(knob);
-                            KnobStringBasePtr isString = toKnobStringBase(knob);
-                            if (isDouble) {
-                                isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isBool) {
-                                isBool->setValueAtTime( time,   isBool->getValueAtTime( time, 0, ViewIdx(0) ),   ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isInt) {
-                                isInt->setValueAtTime( time,    isInt->getValueAtTime( time, 0, ViewIdx(0) ),    ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isString) {
-                                isString->setValueAtTime( time, isString->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            }
-                        }
-                    } else {
-                        KnobParametricPtr parametricKnob = toKnobParametric( isKnobCurve->getInternalKnob() );
-
-                        if (parametricKnob) {
-                            StatusEnum st = parametricKnob->deleteControlPoint( eValueChangedReasonUserEdited, it->dimension,
-                                                                                it->curveUI->getInternalCurve()->keyFrameIndex( it->keyframes[i].getTime() ) );
-                            assert(st == eStatusOK);
-                            Q_UNUSED(st);
-                        } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension(), i == 0 );
-                        }
+            AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();
+            switch (dataType) {
+                case AnimatingObjectI::eKeyframeDataTypeNone:
+                case AnimatingObjectI::eKeyframeDataTypeDouble:
+                {
+                    std::vector<std::list<DoubleTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                        convertVariantTimeValuePairToTypedList<double>(it->second.keyframesPerDim[i], &keyframes[i]);
                     }
-                } else if (isBezierCurve) {
-                    if (add) {
-                        isBezierCurve->getBezier()->setKeyframe( it->keyframes[i].getTime() );
-                    } else {
-                        isBezierCurve->getBezier()->removeKeyframe( it->keyframes[i].getTime() );
+                    obj->setMultipleDoubleValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                }   break;
+                case AnimatingObjectI::eKeyframeDataTypeBool:
+                {
+                    std::vector<std::list<BoolTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                        convertVariantTimeValuePairToTypedList<bool>(it->second.keyframesPerDim[i], &keyframes[i]);
                     }
-                } // if (isKnobCurve) {
-            } // for (std::size_t i = 0; i < it->second.size(); ++i) {
-        } // if (guiKnob) {
-        if (knob) {
-            knob->endChanges();
-        }
-    }
+                    obj->setMultipleBoolValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
-    _curveWidget->update();
+                }   break;
+                case AnimatingObjectI::eKeyframeDataTypeString:
+                {
+                    std::vector<std::list<StringTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                        convertVariantTimeValuePairToTypedList<std::string>(it->second.keyframesPerDim[i], &keyframes[i]);
+                    }
+                    obj->setMultipleStringValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
-    setText( tr("Add multiple keyframes") );
+                }   break;
+                case AnimatingObjectI::eKeyframeDataTypeInt:
+                {
+                    std::vector<std::list<IntTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                        convertVariantTimeValuePairToTypedList<int>(it->second.keyframesPerDim[i], &keyframes[i]);
+                    }
+                    obj->setMultipleIntValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                    
+                }   break;
+            } // end switch
+        } // !add
+    } // for all objects
+
 } // addOrRemoveKeyframe
 
-void
-AddKeysCommand::undo()
-{
-    addOrRemoveKeyframe(false, false);
-}
 
 void
-AddKeysCommand::redo()
+AddOrRemoveKeysCommand::undo()
 {
-    addOrRemoveKeyframe(false, true);
+    addOrRemoveKeyframe(!_initialCommandIsAdd);
 }
 
-SetKeysCommand::SetKeysCommand(CurveWidget *editor,
-                               const AddKeysCommand::KeysToAddList & keys,
-                               QUndoCommand *parent)
-    : AddKeysCommand(editor, keys, parent)
+void
+AddOrRemoveKeysCommand::redo()
 {
+
+    addOrRemoveKeyframe(_initialCommandIsAdd);
 }
 
-SetKeysCommand::SetKeysCommand(CurveWidget *editor,
-                               const CurveGuiPtr& curve,
-                               const std::vector<KeyFrame> & keys,
-                               QUndoCommand *parent)
-    : AddKeysCommand(editor, curve, keys, parent)
-    , _guiCurve(curve)
-    , _oldCurve()
-{
-    CurvePtr internalCurve = curve->getInternalCurve();
-
-    assert(internalCurve);
-    _oldCurve.reset( new Curve(*internalCurve) );
-}
 
 void
 SetKeysCommand::undo()
 {
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( _guiCurve.get() );
-    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( _guiCurve.get() );
-
-    if (isKnobCurve) {
-        KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = toKnobParametric(knob);
-        if (!isParametric) {
-            knob->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *_oldCurve);
-        } else {
-            _guiCurve->getInternalCurve()->clone(*_oldCurve);
+    for (ObjectKeysToSetMap::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        AnimatingObjectIPtr obj = it->first.lock();
+        if (!obj) {
+            continue;
         }
-    } else if (isBezierCurve) {
-        // not implemented
+
+        std::vector<int> dims(it->second.keyframesPerDim.size());
+        for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+            dims[i] = i + it->second.dimensionStartIndex;
+        }
+
+        for (std::size_t i = 0; i < dims.size(); ++i) {
+            CurvePtr curve = obj->getAnimationCurve(ViewIdx(0), dims[i]);
+            if (!curve) {
+                continue;
+            }
+
+            // Clone the old curve state
+            obj->cloneCurve(ViewSpec::all(), dims[i], *it->second.keyframesPerDim[i].oldCurveState, 0 /*offset*/, 0 /*range*/, 0 /*stringAnimation*/, eCurveChangeReasonInternal);
+        }
     }
 }
 
 void
 SetKeysCommand::redo()
 {
-    addOrRemoveKeyframe(true, true);
-}
-
-//////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
-                                     const std::map<CurveGuiPtr, std::vector<KeyFrame> > & keys,
-                                     QUndoCommand *parent )
-    : QUndoCommand(parent)
-    , _keys(keys)
-    , _curveWidget(editor)
-{
-}
-
-void
-RemoveKeysCommand::addOrRemoveKeyframe(bool add)
-{
-    std::set<KnobIPtr> knobsSet;
-    for (std::map<CurveGuiPtr, std::vector<KeyFrame> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
-        BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-        KnobGuiPtr guiKnob;
-        if (isKnobCurve) {
-            guiKnob = isKnobCurve->getKnobGui();
+    for (ObjectKeysToSetMap::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        AnimatingObjectIPtr obj = it->first.lock();
+        if (!obj) {
+            continue;
         }
 
-        KnobIPtr knob;
-
-        if (isKnobCurve) {
-            knob = isKnobCurve->getInternalKnob();
+        std::vector<int> dims(it->second.keyframesPerDim.size());
+        for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+            dims[i] = i + it->second.dimensionStartIndex;
         }
-        KnobParametricPtr isParametric;
 
-        std::pair<std::set<KnobIPtr>::iterator, bool> insertOk;
-        if (knob) {
-            insertOk = knobsSet.insert(knob);
-            if (insertOk.second) {
-                knob->beginChanges();
-                knob->blockValueChanges();
+        // The first time clone previous animation
+        if (_isFirstRedo) {
+            for (std::size_t i = 0; i < dims.size(); ++i) {
+                CurvePtr curve = obj->getAnimationCurve(ViewIdx(0), dims[i]);
+                if (!curve) {
+                    continue;
+                }
+                it->second.keyframesPerDim[i].oldCurveState.reset(new Curve);
+                it->second.keyframesPerDim[i].oldCurveState->clone(*curve);
             }
-            isParametric = toKnobParametric(knob);
         }
 
-        if (guiKnob && isKnobCurve && !isParametric) {
-            if (add) {
-                guiKnob->setKeyframes( it->second, isKnobCurve->getDimension(), ViewIdx(0) );
-            } else {
-                guiKnob->removeKeyframes( it->second, isKnobCurve->getDimension(), ViewIdx(0) );
-            }
-        } else {
-            for (std::size_t i = 0; i < it->second.size(); ++i) {
-                if (isKnobCurve) {
+        // Remove all existing animation
+        obj->removeAnimationAcrossDimensions(ViewSpec::all(), dims, eCurveChangeReasonInternal);
 
-                    if (add) {
-                        int time = it->second[i].getTime();
+        // Add new keyframes
+        AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();
+        switch (dataType) {
+            case AnimatingObjectI::eKeyframeDataTypeNone:
+            case AnimatingObjectI::eKeyframeDataTypeDouble:
+            {
+                std::vector<std::list<DoubleTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                    convertVariantTimeValuePairToTypedList<double>(it->second.keyframesPerDim[i].newKeys, &keyframes[i]);
+                }
+                obj->setMultipleDoubleValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+            }   break;
+            case AnimatingObjectI::eKeyframeDataTypeBool:
+            {
+                std::vector<std::list<BoolTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                    convertVariantTimeValuePairToTypedList<bool>(it->second.keyframesPerDim[i].newKeys, &keyframes[i]);
+                }
+                obj->setMultipleBoolValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
-                        if (isParametric) {
-                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(), it->second[i].getTime(), it->second[i].getValue() );
-                            assert(st == eStatusOK);
-                            Q_UNUSED(st);
-                        } else {
-                            KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-                            KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-                            KnobIntBasePtr isInt = toKnobIntBase(knob);
-                            KnobStringBasePtr isString = toKnobStringBase(knob);
-                            if (isDouble) {
-                                isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isBool) {
-                                isBool->setValueAtTime( time,   isBool->getValueAtTime( time,   0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isInt) {
-                                isInt->setValueAtTime( time,    isInt->getValueAtTime( time,    0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            } else if (isString) {
-                                isString->setValueAtTime( time, isString->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
-                            }
-                        }
-                    } else {
-                        KnobParametricPtr knob = toKnobParametric( isKnobCurve->getInternalKnob() );
+            }   break;
+            case AnimatingObjectI::eKeyframeDataTypeString:
+            {
+                std::vector<std::list<StringTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                    convertVariantTimeValuePairToTypedList<std::string>(it->second.keyframesPerDim[i].newKeys, &keyframes[i]);
+                }
+                obj->setMultipleStringValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
-                        if (knob) {
-                            StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),
-                                                                      it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
-                            assert(st == eStatusOK);
-                            Q_UNUSED(st);
-                        } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension(), i == 0 );
-                        }
-                    }
-                } else if (isBezierCurve) {
-                    BezierPtr b = isBezierCurve->getBezier();
-                    assert(b);
-                    if (add) {
-                        b->setKeyframe( it->second[i].getTime() );
-                    } else {
-                        b->removeKeyframe( it->second[i].getTime() );
-                    }
-                } // if (isKnobCurve) {
-            } // for (std::size_t i = 0; i < it->second.size(); ++i) {
-        } // if (guiKnob) {
- 
-    }
+            }   break;
+            case AnimatingObjectI::eKeyframeDataTypeInt:
+            {
+                std::vector<std::list<IntTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
+                for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+                    convertVariantTimeValuePairToTypedList<int>(it->second.keyframesPerDim[i].newKeys, &keyframes[i]);
+                }
+                obj->setMultipleIntValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
-    for (std::set<KnobIPtr>::iterator it = knobsSet.begin(); it!=knobsSet.end(); ++it) {
-        (*it)->unblockValueChanges();
-        (*it)->evaluateValueChange(0, (*it)->getCurrentTime(), ViewSpec(0), eValueChangedReasonUserEdited);
-        (*it)->endChanges();
-    }
+            }   break;
+        } // end switch
 
-    _curveWidget->update();
-    setText( tr("Remove multiple keyframes") );
-} // RemoveKeysCommand::addOrRemoveKeyframe
+    } // for all objects
+} // redo
 
-void
-RemoveKeysCommand::undo()
-{
-    addOrRemoveKeyframe(true);
-}
 
-void
-RemoveKeysCommand::redo()
-{
-    addOrRemoveKeyframe(false);
-}
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
-                                 const std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > &keys,
+WarpKeysCommand::WarpKeysCommand(const ObjectKeysToMoveMap &keys,
                                  double dt,
                                  double dv,
-                                 bool updateOnFirstRedo,
                                  QUndoCommand *parent )
-    : QUndoCommand(parent)
-    , _firstRedoCalled(false)
-    , _updateOnFirstRedo(updateOnFirstRedo)
-    , _dt(dt)
-    , _dv(dv)
-    , _keys(keys)
-    , _widget(widget)
+: QUndoCommand(parent)
+, _keys(keys)
 {
+    _warp.reset(new Curve::TranslationKeyFrameWarp(dt, dv));
+    setText( tr("Move keyframes") );
 }
 
-static void
-moveKeys(CurveGui* curve,
-         std::vector<MoveKeysCommand::KeyToMove> &vect,
-         double dt,
-         double dv)
+WarpKeysCommand::WarpKeysCommand(const ObjectKeysToMoveMap& keys,
+                const Transform::Matrix3x3& matrix,
+                QUndoCommand *parent)
+: QUndoCommand(parent)
+, _keys(keys)
 {
-    if (!curve) {
-        return;
-    }
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve);
-    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(curve);
-
-    if (isBezierCurve) {
-        for (std::size_t i = 0; i < vect.size(); ++i) {
-            const MoveKeysCommand::KeyToMove& k = vect[i];
-            double oldTime = k.key->key.getTime();
-            k.key->key.setTime(oldTime + dt);
-            isBezierCurve->getBezier()->moveKeyframe( oldTime, k.key->key.getTime() );
-        }
-    } else if (isKnobCurve) {
-
-        KnobIPtr knob = isKnobCurve->getInternalKnob();
-        if (!knob) {
-            return;
-        }
-        KnobParametricPtr isParametric = toKnobParametric(knob);
-
-        if (!isParametric) {
-            std::vector<KeyFrame> keysToChange( vect.size() );
-            for (std::size_t i = 0; i < vect.size(); ++i) {
-                keysToChange[i] = vect[i].key->key;
-            }
-            knob->moveValuesAtTime(eCurveChangeReasonCurveEditor, ViewSpec::all(), isKnobCurve->getDimension(), dt, dv, &keysToChange);
-            for (std::size_t i = 0; i < vect.size(); ++i) {
-                vect[i].key->key = keysToChange[i];
-            }
-        } else {
-            CurvePtr internalCurve = curve->getInternalCurve();
-
-            for (std::size_t i = 0; i < vect.size(); ++i) {
-                const MoveKeysCommand::KeyToMove& k = vect[i];
-                double oldTime = k.key->key.getTime();
-                double newX = oldTime + dt;
-                double newY = k.key->key.getValue() + dv;
-                int keyframeIndex = internalCurve->keyFrameIndex(oldTime);
-                int newIndex;
-
-                k.key->key = internalCurve->setKeyFrameValueAndTime(newX, newY, keyframeIndex, &newIndex);
-            }
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
-        }
-    }
+    _warp.reset(new Curve::AffineKeyFrameWarp(matrix));
+    setText( tr("Transform keyframes") );
 }
 
 void
-MoveKeysCommand::move(double dt,
-                      double dv)
+WarpKeysCommand::warpKeys()
 {
-    //Prevent all redraws from moveKey
-    _widget->setUpdatesEnabled(false);
-
-    std::list<KnobHolderPtr> differentKnobs;
-
-    for (std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
-        if (isKnobCurve) {
-            KnobIPtr k = isKnobCurve->getInternalKnob();
-            if ( k->getHolder() ) {
-                if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
-                    differentKnobs.push_back( k->getHolder() );
-                    k->getHolder()->beginChanges();
-                }
-            }
-
+    for (ObjectKeysToMoveMap::const_iterator it = _keys.begin(); it!=_keys.end();++it) {
+        AnimatingObjectIPtr obj = it->first.lock();
+        if (!obj) {
+            continue;
         }
-        moveKeys(it->first.get(), it->second, dt, dv);
-        _widget->updateSelectionAfterCurveChange( it->first.get() );
-    }
-
-    if (_firstRedoCalled || _updateOnFirstRedo) {
-        for (std::list<KnobHolderPtr>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
-            (*it)->endChanges();
+        for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+            obj->warpValuesAtTime(eCurveChangeReasonInternal, it->second.keyframesPerDim[i].keysToMove, ViewSpec::all(), it->second.dimensionStartIndex + i, *_warp, _warp->allowReplacingExistingKeyframes());
         }
-    }
 
-    _widget->setUpdatesEnabled(true);
-
-    _widget->refreshSelectedKeysAndUpdate();
+    } // for all objects
 }
 
 void
-MoveKeysCommand::undo()
+WarpKeysCommand::undo()
 {
-    move(-_dt, -_dv);
-    setText( tr("Move multiple keys") );
+    _warp->setWarpInverted(true);
+    warpKeys();
 }
 
 void
-MoveKeysCommand::redo()
+WarpKeysCommand::redo()
 {
-    move(_dt, _dv);
-    _firstRedoCalled = true;
-    setText( tr("Move multiple keys") );
+    _warp->setWarpInverted(false);
+    warpKeys();
 }
 
 bool
-MoveKeysCommand::mergeWith(const QUndoCommand * command)
+WarpKeysCommand::mergeWith(const QUndoCommand * command)
 {
-    const MoveKeysCommand* cmd = dynamic_cast<const MoveKeysCommand*>(command);
+    const WarpKeysCommand* cmd = dynamic_cast<const WarpKeysCommand*>(command);
+    if (!cmd || cmd->id() != id()) {
+        return false;
+    }
+    if ( cmd->_keys.size() != _keys.size() ) {
+        return false;
+    }
 
-    if ( cmd && ( cmd->id() == id() ) ) {
-        if ( cmd->_keys.size() != _keys.size() ) {
+    ObjectKeysToMoveMap::const_iterator itother = cmd->_keys.begin();
+    for (ObjectKeysToMoveMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
+        if (itother->first.lock() != it->first.lock()) {
             return false;
         }
 
-        std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator itother = cmd->_keys.begin();
-        for (std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> >::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
-            if (itother->first != it->first) {
+        if ( itother->second.keyframesPerDim.size() != it->second.keyframesPerDim.size() ) {
+            return false;
+        }
+
+        for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
+            if (it->second.keyframesPerDim[i].keysToMove.size() != itother->second.keyframesPerDim[i].keysToMove.size()) {
                 return false;
             }
-
-            if ( itother->second.size() != it->second.size() ) {
-                return false;
-            }
-
-            for (std::size_t i = 0; i < it->second.size(); ++i) {
-                if (it->second[i].key != itother->second[i].key) {
+            std::list<double>::const_iterator it2 = it->second.keyframesPerDim[i].keysToMove.begin();
+            std::list<double>::const_iterator itother2 = itother->second.keyframesPerDim[i].keysToMove.begin();
+            for (; it2 != it->second.keyframesPerDim[i].keysToMove.end(); ++it2, ++itother2) {
+                if (*it2 != *itother2) {
                     return false;
                 }
             }
         }
-
-        _dt += cmd->_dt;
-        _dv += cmd->_dv;
-
-        return true;
-    } else {
-        return false;
     }
+
+    return _warp->mergeWith(*cmd->_warp);
 }
 
 int
-MoveKeysCommand::id() const
+WarpKeysCommand::id() const
 {
     return kCurveEditorMoveMultipleKeysCommandCompressionID;
 }
 
-//////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
-SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,
-                                                         const std::list< KeyInterpolationChange > & keys,
-                                                         QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _keys(keys)
-    , _widget(widget)
-{
-}
 
 void
 SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 {
-    std::set<KnobHolderPtr> differentKnobs;
-
-    for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
-        if (isKnobCurve) {
-
-            KnobIPtr k = isKnobCurve->getInternalKnob();
-            differentKnobs.insert(k->getHolder());
-        } else {
-            BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>( it->key->curve.get() );
-            assert(bezierCurve);
-            if (bezierCurve) {
-                assert( bezierCurve->getBezier() );
-                differentKnobs.insert(bezierCurve->getBezier());
-            }
+    for (ObjectKeyFramesDataMap::const_iterator it = _keys.begin(); it!=_keys.end(); ++it) {
+        AnimatingObjectIPtr obj = it->first.lock();
+        if (!obj) {
+            continue;
         }
-    }
+        for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
 
-    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
-        (*it)->beginChanges();
-    }
-
-    for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KeyframeTypeEnum interp = undo ? it->oldInterp : it->newInterp;
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
-        if (isKnobCurve) {
-            KnobIPtr knob = isKnobCurve->getInternalKnob();
-            KnobParametricPtr isParametric = toKnobParametric(knob);
-
-            if (isParametric) {
-                int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
-                if (keyframeIndex != -1) {
-                    it->key->key = it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
-                }
-                isParametric->evaluateValueChange(isKnobCurve->getDimension(), it->key->key.getTime(), ViewIdx(0), eValueChangedReasonUserEdited);
-            } else {
-                knob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, ViewIdx(0),  isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
-            }
-        } else {
-            ///interpolation for bezier curve is either linear or constant
-            interp = interp == eKeyframeTypeConstant ? eKeyframeTypeConstant :
-                     eKeyframeTypeLinear;
-            int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
-            if (keyframeIndex != -1) {
-                it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
-            }
+            KeyframeTypeEnum type = undo ? it->second.keyframesPerDim[i].oldInterp : it->second.keyframesPerDim[i].newInterp;
+            obj->setInterpolationAtTimes(eCurveChangeReasonInternal, ViewSpec::all(), it->second.dimensionStartIndex + i, it->second.keyframesPerDim[i].keysToChange, type);
         }
-    }
-
-    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
-        (*it)->endChanges();
-    }
-
-    _widget->refreshSelectedKeysAndUpdate();
-    setText( tr("Set multiple keys interpolation") );
+    } // for all objects
 } // SetKeysInterpolationCommand::setNewInterpolation
 
 void
@@ -609,28 +391,30 @@ SetKeysInterpolationCommand::redo()
     setNewInterpolation(false);
 }
 
-/////////////////////////// MoveTangentCommand
 
-MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
-                                       SelectedTangentEnum deriv,
-                                       const KeyPtr& key,
+MoveTangentCommand::MoveTangentCommand(SelectedTangentEnum deriv,
+                                       const AnimatingObjectIPtr& object,
+                                       int dimension,
+                                       const KeyFrame& k,
                                        double dx,
-                                       double dy,           //< dx dy relative to the center of the keyframe
-                                       bool updateOnFirstRedo,
+                                       double dy,
                                        QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _widget(widget)
-    , _key(key)
-    , _deriv(deriv)
-    , _oldInterp( key->key.getInterpolation() )
-    , _oldLeft( key->key.getLeftDerivative() )
-    , _oldRight( key->key.getRightDerivative() )
-    , _setBoth(false)
-    , _updateOnFirstRedo(updateOnFirstRedo)
-    , _firstRedoCalled(false)
+: QUndoCommand(parent)
+, _object(object)
+, _dimension(dimension)
+, _keyTime(k.getTime())
+, _deriv(deriv)
+, _oldInterp( k.getInterpolation() )
+, _oldLeft( k.getLeftDerivative() )
+, _oldRight( k.getRightDerivative() )
+, _setBoth(false)
+, _firstRedoCalled(false)
 {
-    KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
-    KeyFrameSet::const_iterator cur = keys.find(key->key);
+    CurvePtr curve = object->getAnimationCurve(ViewIdx(0), dimension);
+    assert(curve);
+
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    KeyFrameSet::const_iterator cur = keys.find(k);
 
     assert( cur != keys.end() );
 
@@ -649,7 +433,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     // handle first and last keyframe correctly:
     // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
     // - in all other cases it becomes eKeyframeTypeBroken
-    KeyframeTypeEnum interp = key->key.getInterpolation();
+    KeyframeTypeEnum interp = k.getInterpolation();
     bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
     bool interpIsNotBroken = (interp != eKeyframeTypeBroken);
     bool interpIsCatmullRomOrCubicOrFree = (interp == eKeyframeTypeCatmullRom ||
@@ -687,22 +471,26 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
         }
         _newInterp = eKeyframeTypeBroken;
     }
+
+    setText( tr("Move keyframe slope") );
+
 }
 
-MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
-                                       SelectedTangentEnum deriv,
-                                       const KeyPtr& key,
+MoveTangentCommand::MoveTangentCommand(SelectedTangentEnum deriv,
+                                       const AnimatingObjectIPtr& object,
+                                       int dimension,
+                                       const KeyFrame& k,
                                        double derivative,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-    , _widget(widget)
-    , _key(key)
+    , _object(object)
+    , _dimension(dimension)
+    , _keyTime(k.getTime())
     , _deriv(deriv)
-    , _oldInterp( key->key.getInterpolation() )
-    , _oldLeft( key->key.getLeftDerivative() )
-    , _oldRight( key->key.getRightDerivative() )
+    , _oldInterp( k.getInterpolation() )
+    , _oldLeft( k.getLeftDerivative() )
+    , _oldRight( k.getRightDerivative() )
     , _setBoth(true)
-    , _updateOnFirstRedo(true)
     , _firstRedoCalled(false)
 {
     _newInterp = _oldInterp == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
@@ -727,50 +515,35 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     default:
         break;
     }
+    setText( tr("Move keyframe slope") );
+
 }
 
 void
 MoveTangentCommand::setNewDerivatives(bool undo)
 {
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( _key->curve.get() );
-
-    if (isKnobCurve) {
-        KnobIPtr attachedKnob = isKnobCurve->getInternalKnob();
-        assert(attachedKnob);
-        KnobParametricPtr isParametric = toKnobParametric(attachedKnob);
-        double left = undo ? _oldLeft : _newLeft;
-        double right = undo ? _oldRight : _newRight;
-        KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
-
-        if (!isParametric) {
-            attachedKnob->beginChanges();
-            if (_setBoth) {
-                attachedKnob->moveDerivativesAtTime(eCurveChangeReasonCurveEditor, ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(), left, right);
-            } else {
-                attachedKnob->moveDerivativeAtTime(eCurveChangeReasonCurveEditor, ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(),
-                                                   _deriv == eSelectedTangentLeft ? left : right,
-                                                   _deriv == eSelectedTangentLeft);
-            }
-            attachedKnob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
-            if (_firstRedoCalled || _updateOnFirstRedo) {
-                attachedKnob->endChanges();
-            }
-        } else {
-            int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
-            _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
-            _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right, keyframeIndexInCurve);
-            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), _key->key.getTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
-        }
-
-        _widget->refreshCurveDisplayTangents( _key->curve.get() );
+    AnimatingObjectIPtr obj = _object.lock();
+    if (!obj) {
+        return;
     }
+
+    double left = undo ? _oldLeft : _newLeft;
+    double right = undo ? _oldRight : _newRight;
+    KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
+    if (_setBoth) {
+        obj->setLeftAndRightDerivativesAtTime(eCurveChangeReasonInternal, ViewSpec::all(), _dimension, _keyTime, left, right);
+    } else {
+        bool isLeft = _deriv == eSelectedTangentLeft;
+        obj->setDerivativeAtTime(eCurveChangeReasonInternal, ViewSpec::all(), _dimension, _keyTime, isLeft ? left : right, isLeft);
+    }
+    obj->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::all(), _dimension, _keyTime, interp);
+
 }
 
 void
 MoveTangentCommand::undo()
 {
     setNewDerivatives(true);
-    setText( tr("Move keyframe slope") );
 }
 
 void
@@ -778,7 +551,6 @@ MoveTangentCommand::redo()
 {
     setNewDerivatives(false);
     _firstRedoCalled = true;
-    setText( tr("Move keyframe slope") );
 }
 
 int
@@ -791,203 +563,21 @@ bool
 MoveTangentCommand::mergeWith(const QUndoCommand * command)
 {
     const MoveTangentCommand* cmd = dynamic_cast<const MoveTangentCommand*>(command);
-
-    if ( cmd && ( cmd->id() == id() ) ) {
-        if (cmd->_key != _key) {
-            return false;
-        }
-
-
-        _newInterp = cmd->_newInterp;
-        _newLeft = cmd->_newLeft;
-        _newRight = cmd->_newRight;
-
-        return true;
-    } else {
+    if (!cmd || cmd->id() == id()) {
         return false;
     }
-}
 
-TransformKeysCommand::TransformKeysCommand(CurveWidget* widget,
-                                           const SelectedKeys & keys,
-                                           double centerX,
-                                           double centerY,
-                                           double tx,
-                                           double ty,
-                                           double sx,
-                                           double sy,
-                                           bool updateOnFirstRedo,
-                                           QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _firstRedoCalled(false)
-    , _updateOnFirstRedo(updateOnFirstRedo)
-    , _keys(keys)
-    , _widget(widget)
-    , _matrix()
-    , _invMatrix()
-{
-    _matrix = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, centerX, centerY);
-    _invMatrix = Transform::matTransformCanonical(-tx, -ty, 1. / sx, 1. / sy, 0, 0, true, 0, centerX, centerY);
-}
-
-TransformKeysCommand::~TransformKeysCommand()
-{
-}
-
-static void
-transformKeyFrame(KeyFrame* key,
-                  const Transform::Matrix3x3& m)
-{
-    double oldTime = key->getTime();
-    Transform::Point3D p;
-
-    p.x = oldTime;
-    p.y = key->getValue();
-    p.z = 1;
-    p = Transform::matApply(m, p);
-    key->setTime(p.x);
-}
-
-static void
-transform(const Transform::Matrix3x3& matrix,
-          CurveGui* curve,
-          const std::list<KeyPtr>& keyframes)
-{
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve);
-    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(curve);
-
-    if (isKnobCurve) {
-        KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = toKnobParametric(knob);
-
-        if (isParametric) {
-            CurvePtr internalCurve = curve->getInternalCurve();
-            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-                const KeyPtr& k = (*it);
-                Transform::Point3D p;
-                p.x = k->key.getTime();
-                p.y = k->key.getValue();
-                p.z = 1;
-                p = Transform::matApply(matrix, p);
-
-
-                double oldTime = k->key.getTime();
-                int keyframeIndex = internalCurve->keyFrameIndex(oldTime);
-                int newIndex;
-
-                k->key = internalCurve->setKeyFrameValueAndTime(p.x, p.y, keyframeIndex, &newIndex);
-            }
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
-        } else {
-            std::vector<KeyFrame> keys( keyframes.size() );
-            int i = 0;
-            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-                keys[i] = (*it)->key;
-            }
-            knob->transformValuesAtTime(eCurveChangeReasonCurveEditor, ViewSpec::all(), isKnobCurve->getDimension(), matrix, &keys);
-            i = 0;
-            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-                (*it)->key = keys[i];
-            }
-        }
-    } else if (isBezierCurve) {
-        for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-            double oldTime = (*it)->key.getTime();
-            transformKeyFrame(&(*it)->key, matrix);
-            //transformKeyFrame(&(*it)->prevKey,*_matrix);
-            //transformKeyFrame(&(*it)->nextKey,*_matrix);
-            isBezierCurve->getBezier()->moveKeyframe( oldTime, (*it)->key.getTime() );
-        }
-    }
-}
-
-void
-TransformKeysCommand::transformKeys(const Transform::Matrix3x3& matrix)
-{
-
-    std::set<KnobHolderPtr> differentKnobs;
-
-    for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
-        if (isKnobCurve) {
-
-            KnobIPtr k = isKnobCurve->getInternalKnob();
-            differentKnobs.insert(k->getHolder());
-        } else {
-            BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
-            assert(bezierCurve);
-            if (bezierCurve) {
-                assert( bezierCurve->getBezier() );
-                differentKnobs.insert(bezierCurve->getBezier());
-            }
-        }
-    }
-
-    for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
-        (*it)->beginChanges();
-    }
-
-
-    for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        transform(matrix, it->first.get(), it->second);
-        _widget->updateSelectionAfterCurveChange( it->first.get() );
-    }
-
-
-    if (_firstRedoCalled || _updateOnFirstRedo) {
-        for (std::set<KnobHolderPtr>::iterator it = differentKnobs.begin(); it!=differentKnobs.end(); ++it) {
-            (*it)->endChanges();
-        }
-
-    }
-
-
-    _widget->setSelectedKeys(_keys);
-    _firstRedoCalled = true;
-}
-
-void
-TransformKeysCommand::undo()
-{
-    transformKeys(_invMatrix);
-}
-
-void
-TransformKeysCommand::redo()
-{
-    transformKeys(_matrix);
-}
-
-int
-TransformKeysCommand::id() const
-{
-    return kCurveEditorTransformKeysCommandCompressionID;
-}
-
-bool
-TransformKeysCommand::mergeWith(const QUndoCommand * command)
-{
-    const TransformKeysCommand* cmd = dynamic_cast<const TransformKeysCommand*>(command);
-
-    if ( cmd && ( cmd->id() == id() ) ) {
-        if ( cmd->_keys.size() != _keys.size() ) {
-            return false;
-        }
-
-        SelectedKeys::const_iterator itother = cmd->_keys.begin();
-        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
-            if (*itother != *it) {
-                return false;
-            }
-        }
-
-        _matrix = matMul(_matrix, cmd->_matrix);
-        _invMatrix = matMul(_invMatrix, cmd->_invMatrix);
-
-        return true;
-    } else {
+    if (cmd->_object.lock() != _object.lock() || cmd->_dimension != _dimension || cmd->_keyTime != _keyTime) {
         return false;
     }
+
+
+    _newInterp = cmd->_newInterp;
+    _newLeft = cmd->_newLeft;
+    _newRight = cmd->_newRight;
+
+    return true;
+
 }
 
 NATRON_NAMESPACE_EXIT;

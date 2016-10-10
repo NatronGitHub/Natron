@@ -71,7 +71,7 @@ createDuplicateKnob( const std::string& knobName,
     if (otherNode) {
         KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
         assert(otherNodeKnob);
-        for (int i = 0; i < otherNodeKnob->getDimension(); ++i) {
+        for (int i = 0; i < otherNodeKnob->getNDimensions(); ++i) {
             otherNodeKnob->slaveTo(i, duplicateKnob, i);
         }
     }
@@ -1348,12 +1348,12 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
 
             //Clone current state only for the last marker
             found->blockListenersNotification();
-            found->cloneAndUpdateGui(*it2);
+            found->clone(*it2);
             found->unblockListenersNotification();
 
             //Slave internal knobs
-            assert( (*it2)->getDimension() == found->getDimension() );
-            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+            assert( (*it2)->getNDimensions() == found->getNDimensions() );
+            for (int i = 0; i < (*it2)->getNDimensions(); ++i) {
                 if (slave) {
                     (*it2)->slaveTo(i, found, i);
                 } else {
@@ -2357,7 +2357,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        int nDims = (*it)->getDimension();
+        int nDims = (*it)->getNDimensions();
         for (int i = 0; i < nDims; ++i) {
             (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
         }
@@ -2535,7 +2535,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
 
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        int nDims = (*it)->getDimension();
+        int nDims = (*it)->getNDimensions();
         for (int i = 0; i < nDims; ++i) {
             (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
         }

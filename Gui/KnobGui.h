@@ -142,14 +142,6 @@ public:
     void pushUndoCommand(QUndoCommand* cmd);
     const QUndoCommand* getLastUndoCommand() const;
 
-
-    void setKeyframe(double time, int dimension, ViewSpec view);
-    void setKeyframe(double time, const KeyFrame& key, int dimension, ViewSpec view);
-    void removeKeyFrame(double time, int dimension, ViewSpec view);
-
-    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
-    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
-
     QString getScriptNameHtml() const;
 
     // Apply the tooltip on the widget if non-null, otherwise return it
@@ -181,69 +173,6 @@ public:
 
     int getKnobsCountOnSameLine() const;
 
-
-    void removeAllKeyframeMarkersOnTimeline(int dim);
-    void setAllKeyframeMarkersOnTimeline(int dim);
-    void setKeyframeMarkerOnTimeline(double time);
-
-    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-       signal/slot sequence can cause an infinite loop.*/
-    template<typename T>
-    int setValue(int dimension,
-                 const T & v,
-                 KeyFrame* newKey,
-                 bool refreshGui,
-                 ValueChangedReasonEnum reason)
-    {
-        KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
-
-        Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        assert(knob);
-        if (knob) {
-            ret = knob->setValue(v, ViewSpec::current(), dimension, reason, newKey);
-        }
-        if ( (ret > 0) && (ret != KnobHelper::eValueChangedReturnCodeNothingChanged) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
-                setKeyframeMarkerOnTimeline( newKey->getTime() );
-            }
-            Q_EMIT keyFrameSet();
-        }
-        if (refreshGui) {
-            updateGUI(dimension);
-        }
-
-        return (int)ret;
-    }
-
-    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-       signal/slot sequence can cause an infinite loop.*/
-    template<typename T>
-    bool setValueAtTime(int dimension,
-                        const T & v,
-                        double time,
-                        ViewSpec view,
-                        KeyFrame* newKey,
-                        bool refreshGui,
-                        ValueChangedReasonEnum reason)
-    {
-        Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        assert(knob);
-        KnobHelper::ValueChangedReturnCodeEnum addedKey = KnobHelper::eValueChangedReturnCodeNothingChanged;
-        if (knob) {
-            addedKey = knob->setValueAtTime(time, v, view, dimension, reason, newKey);
-        }
-        if ( (knob) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            setKeyframeMarkerOnTimeline( newKey->getTime() );
-        }
-        if (refreshGui) {
-            updateGUI(dimension);
-        }
-
-        return ( (addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
-                 (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
-    }
 
     virtual RectD getViewportRect() const OVERRIDE FINAL;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
@@ -319,29 +248,20 @@ public Q_SLOTS:
 
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(int reason, ViewSpec view, int dimension);
+    void onRedrawGuiCurve(CurveChangeReason reason, ViewSpec view, int dimension);
 
     void onDimensionNameChanged(int dimension);
+
+    void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
+                                           const std::list<double>& keysRemoved,
+                                           ViewSpec view,
+                                           int dimension,
+                                           CurveChangeReason reason);
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
     void onInternalValueChanged(ViewSpec view, int dimension, int reason);
-
-    void onInternalKeySet(double time, ViewSpec view, int dimension, int reason, bool added);
-
-    void onInternalKeyRemoved(double time, ViewSpec view, int dimension, int reason);
-
-    void onMultipleKeySet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-
-    void onMultipleKeyRemoved(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-
-    void onInternalAnimationAboutToBeRemoved(ViewSpec view, int dimension);
-
-    void onInternalAnimationRemoved();
-
-    ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(ViewSpec view, int dimension, double oldTime, double newTime);
 
     void setSecret();
 
@@ -406,8 +326,6 @@ public Q_SLOTS:
 
     void onFrozenChanged(bool frozen);
 
-    void updateCurveEditorKeyframes();
-
     void onSetExprActionTriggered();
 
     void onClearExprActionTriggered();
@@ -426,32 +344,13 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    void knobUndoneChange();
+    // Emitted when the any curve associated in the Curve Editor for this knob should be re-drawn
+    void mustRefreshCurveEditor();
 
-    void knobRedoneChange();
+    // Emitted when the any keyframe associated in the Dope Shert for this knob should be re-drawn
+    void mustRefreshDopeSheet();
 
-    void refreshCurveEditor();
-
-    void refreshDopeSheet();
-
-    void expressionChanged();
-
-    /**
-     *@brief Emitted whenever a keyframe is set by the user or by the plugin.
-     **/
-    void keyFrameSet();
-
-    /**
-     *@brief Emitted whenever a keyframe is removed by the user or by the plugin.
-     **/
-    void keyFrameRemoved();
-
-    /**
-     *@brief Emitted whenever a keyframe's interpolation method is changed by the user or by the plugin.
-     **/
-    void keyInterpolationChanged();
-
-    ///emitted when the description label is clicked
+    // Emitted when the description label is clicked
     void labelClicked(bool);
 
 protected:

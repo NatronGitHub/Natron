@@ -1054,7 +1054,7 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 KnobIntBasePtr isInt = toKnobIntBase(nodeKnobs[j]);
                 KnobDoubleBasePtr isDbl = toKnobDoubleBase(nodeKnobs[j]);
                 KnobStringBasePtr isStr = toKnobStringBase(nodeKnobs[j]);
-                int nDims = nodeKnobs[j]->getDimension();
+                int nDims = nodeKnobs[j]->getNDimensions();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
                 propName += "_";
@@ -1209,7 +1209,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
 
                     if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
                         // Knob name empty, assume this is the same knob unless it has a single dimension
-                        if (knob->getDimension() == 1) {
+                        if (knob->getNDimensions() == 1) {
                             continue;
                         }
                         masterKnobName = knob->getName();
@@ -1224,10 +1224,10 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                     if (master) {
                         // Find dimension in master by name
                         int dimIndex = -1;
-                        if (master->getDimension() == 1) {
+                        if (master->getNDimensions() == 1) {
                             dimIndex = 0;
                         } else {
-                            for (int d = 0; d < master->getDimension(); ++d) {
+                            for (int d = 0; d < master->getNDimensions(); ++d) {
                                 if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
                                     dimIndex = d;
                                     break;
@@ -1238,7 +1238,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                                 dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
                             }
                         }
-                        if (dimIndex >=0 && dimIndex < master->getDimension()) {
+                        if (dimIndex >=0 && dimIndex < master->getNDimensions()) {
                             knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
                         } else {
                             throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
@@ -1908,7 +1908,7 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
                 KnobBoolBasePtr isBool = toKnobBoolBase(*it);
                 KnobStringBasePtr isString = toKnobStringBase(*it);
                 KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
-                for (int d = 0; d < (*it)->getDimension(); ++d) {
+                for (int d = 0; d < (*it)->getNDimensions(); ++d) {
                     if ((*it)->isAnimated(d)) {
                         continue;
                     }
@@ -2139,7 +2139,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 continue;
             }
             (*it)->blockValueChanges();
-            for (int d = 0; d < (*it)->getDimension(); ++d) {
+            for (int d = 0; d < (*it)->getNDimensions(); ++d) {
                 (*it)->resetToDefaultValue(d);
             }
             (*it)->unblockValueChanges();
@@ -2188,7 +2188,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                     KnobBoolBasePtr isBool = toKnobBoolBase(*it);
                     KnobStringBasePtr isString = toKnobStringBase(*it);
                     KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
-                    for (int d = 0; d < (*it)->getDimension(); ++d) {
+                    for (int d = 0; d < (*it)->getNDimensions(); ++d) {
                         if ((*it)->isAnimated(d)) {
                             continue;
                         }
@@ -4411,7 +4411,7 @@ Node::makeDocumentation(bool genHTML) const
         }
 
         if (!isGroup && !isPage) {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
+            for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                 QString valueStr;
 
                 if (!isBtn && !isSep && !isParametric) {
@@ -5976,7 +5976,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 }
 
                 isEffect->beginChanges();
-                for (int dim = 0; dim < listener->getDimension(); ++dim) {
+                for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
                     std::pair<int, KnobIPtr > master = listener->getMaster(dim);
                     if (master.second == knobs[i]) {
                         listener->unSlave(dim, true);
@@ -7917,7 +7917,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
     KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
         KnobIntPtr originalFrameRange = toKnobInt(knob);
-        if ( originalFrameRange && (originalFrameRange->getDimension() == 2) ) {
+        if ( originalFrameRange && (originalFrameRange->getNDimensions() == 2) ) {
             KnobFilePtr isFile = toKnobFile(fileKnob);
             assert(isFile);
             if (!isFile) {
@@ -9164,7 +9164,7 @@ Node::hasAnimatedKnob() const
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->canAnimate() ) {
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
                 if ( knobs[i]->isAnimated(j) ) {
                     hasAnimation = true;
                     break;
@@ -9192,7 +9192,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
         if ( !knobs[i]->canAnimate() ) {
             continue;
         }
-        int dim = knobs[i]->getDimension();
+        int dim = knobs[i]->getNDimensions();
         KnobFilePtr isFile = toKnobFile(knobs[i]);
         if (isFile) {
             ///skip file knobs

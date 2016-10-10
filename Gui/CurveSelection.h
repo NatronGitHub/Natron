@@ -28,6 +28,9 @@
 #include "Global/Macros.h"
 
 #include <vector>
+#include <map>
+
+#include "Engine/Curve.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -45,6 +48,60 @@ public:
 
     virtual void getSelectedCurves(std::vector<CurveGuiPtr >* selection) = 0;
 };
+
+struct SelectedKey
+{
+    CurveGuiPtr curve;
+    KeyFrame key, prevKey, nextKey;
+    bool hasPrevious;
+    bool hasNext;
+    std::pair<double, double> leftTan, rightTan;
+
+    SelectedKey()
+    : hasPrevious(false)
+    , hasNext(false)
+    {
+    }
+
+    SelectedKey(const CurveGuiPtr& c,
+                const KeyFrame & k,
+                const bool hasPrevious,
+                const KeyFrame & previous,
+                const bool hasNext,
+                const KeyFrame & next)
+    : curve(c)
+    , key(k)
+    , prevKey(previous)
+    , nextKey(next)
+    , hasPrevious(hasPrevious)
+    , hasNext(hasNext)
+    {
+    }
+
+    SelectedKey(const SelectedKey & o)
+    : curve(o.curve)
+    , key(o.key)
+    , prevKey(o.prevKey)
+    , nextKey(o.nextKey)
+    , hasPrevious(o.hasPrevious)
+    , hasNext(o.hasNext)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
+    {
+    }
+};
+
+struct SelectedKey_compare_time
+{
+    bool operator() (const SelectedKey & lhs,
+                     const SelectedKey & rhs) const
+    {
+        return lhs.key.getTime() < rhs.key.getTime();
+    }
+};
+
+typedef boost::shared_ptr<SelectedKey> KeyPtr;
+typedef std::map<CurveGuiPtr, std::list<KeyPtr> > SelectedKeys;
 
 NATRON_NAMESPACE_EXIT;
 

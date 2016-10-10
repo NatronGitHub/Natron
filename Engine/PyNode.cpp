@@ -372,7 +372,7 @@ Effect::getPluginID() const
 Param*
 Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
-    int dims = knob->getDimension();
+    int dims = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDouble = toKnobDouble(knob);
     KnobBoolPtr isBool = toKnobBool(knob);

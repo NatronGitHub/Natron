@@ -209,7 +209,11 @@ KnobGuiFile::updateGUI(int /*dimension*/)
 {
     KnobFilePtr knob = _knob.lock();
 
-    _lineEdit->setText( QString::fromUtf8( knob->getValue().c_str() ) );
+    QString filePath = QString::fromUtf8( knob->getValue().c_str() );
+    if (_lineEdit->text() == filePath) {
+        return;
+    }
+    _lineEdit->setText(filePath);
 
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if ( useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
@@ -675,8 +679,11 @@ KnobGuiPath::updateGUI(int dimension)
     KnobPathPtr knob = _knob.lock();
 
     if ( !knob->isMultiPath() ) {
-        std::string value = knob->getValue();
-        _lineEdit->setText( QString::fromUtf8( value.c_str() ) );
+        QString value =  QString::fromUtf8( knob->getValue().c_str() );
+        if (_lineEdit->text() == value) {
+            return;
+        }
+        _lineEdit->setText(value);
     } else {
         KnobGuiTable::updateGUI(dimension);
     }

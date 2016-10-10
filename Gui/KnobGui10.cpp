@@ -97,7 +97,7 @@ KnobGui::onUnlinkActionTriggered()
     }
     int dim = action->data().toInt();
     KnobIPtr thisKnob = getKnob();
-    int dims = thisKnob->getDimension();
+    int dims = thisKnob->getNDimensions();
     KnobIPtr aliasMaster = thisKnob->getAliasMaster();
     if (aliasMaster) {
         thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
@@ -154,7 +154,7 @@ KnobGui::onEditExprDialogFinished()
             bool hasRetVar;
             QString expr = dialog->getExpression(&hasRetVar);
             std::string stdExpr = expr.toStdString();
-            int dim = dialog->getDimension();
+            int dim = dialog->getNDimensions();
             std::string existingExpr = getKnob()->getExpression(dim);
             if (existingExpr != stdExpr) {
                 pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, stdExpr) );
@@ -172,6 +172,13 @@ KnobGui::onEditExprDialogFinished()
 void
 KnobGui::setSecret()
 {
+
+    KnobIPtr knob = getKnob();
+    if (!knob)  {
+        return;
+    }
+
+
     bool showit = !isSecretRecursive();
 
     if (showit) {
@@ -179,6 +186,19 @@ KnobGui::setSecret()
     } else {
         hide();
     }
+    KnobHolderPtr holder = knob->getHolder();
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+    if (isEffect) {
+        NodePtr node = isEffect->getNode();
+        if (node) {
+            NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+            if (nodeUi) {
+                nodeUi->onKnobSecretChanged(knob, knob->getIsSecret());
+            }
+        }
+    }
+
+
     KnobGuiGroup* isGrp = dynamic_cast<KnobGuiGroup*>(this);
     if (isGrp) {
         const std::list<KnobGuiWPtr>& children = isGrp->getChildren();
@@ -236,7 +256,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     assert( knob->getHolder()->getApp() );
     getGui()->setCurveEditorOnTop();
     std::vector<CurvePtr > curves;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         CurvePtr c = getCurve(ViewIdx(0), i);
         if ( c->isAnimated() ) {
             curves.push_back(c);
@@ -257,7 +277,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     KnobIPtr knob = getKnob();
     std::map<CurveGuiPtr, std::vector<KeyFrame > > toRemove;
     KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         if ( (dim == -1) || (dim == i) ) {
             std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
@@ -285,27 +305,22 @@ KnobGui::setInterpolationForDimensions(QAction* action,
     }
     int dimension = action->data().toInt();
     KnobIPtr knob = getKnob();
-
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    knob->beginChanges();
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         if ( (dimension == -1) || (dimension == i) ) {
-            CurvePtr c = knob->getCurve(ViewIdx(0), i);
-            if (c) {
-                int kfCount = c->getKeyFramesCount();
-                for (int j = 0; j < kfCount; ++j) {
-                    c->setKeyFrameInterpolation(interp, j);
-                }
-                CurvePtr guiCurve = getCurve(ViewIdx(0), i);
-                if (guiCurve) {
-                    guiCurve->clone(*c);
-                }
+            CurvePtr curve = knob->getCurve(ViewSpec::current(), i);
+            if (!curve) {
+                continue;
             }
+            KeyFrameSet keysSet = curve->getKeyFrames_mt_safe();
+            std::list<double> keysList;
+            for (KeyFrameSet::iterator it = keysSet.begin(); it!=keysSet.end(); ++it) {
+                keysList.push_back(it->getTime());
+            }
+            knob->setInterpolationAtTimes(eCurveChangeReasonInternal, ViewSpec::all(), i, keysList, interp, 0);
         }
     }
-    if ( knob->getHolder() ) {
-        knob->getHolder()->invalidateCacheHashAndEvaluate(knob->getEvaluateOnChange(), false);
-    }
-    Q_EMIT keyInterpolationChanged();
+    knob->endChanges();
 }
 
 void
@@ -344,39 +359,6 @@ KnobGui::onHorizontalInterpActionTriggered()
     setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeHorizontal);
 }
 
-void
-KnobGui::setKeyframe(double time,
-                     int dimension,
-                     ViewSpec view)
-{
-    KnobIPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-
-    bool keyAdded = knob->onKeyFrameSet(time, view, dimension);
-    Q_EMIT keyFrameSet();
-
-    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addKeyframeIndicator(time);
-    }
-}
-
-void
-KnobGui::setKeyframe(double time,
-                     const KeyFrame& key,
-                     int dimension,
-                     ViewSpec view)
-{
-    KnobIPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-
-    bool keyAdded = knob->onKeyFrameSet(time, view, key, dimension);
-    Q_EMIT keyFrameSet();
-    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addKeyframeIndicator(time);
-    }
-}
 
 void
 KnobGui::onSetKeyActionTriggered()
@@ -392,7 +374,7 @@ KnobGui::onSetKeyActionTriggered()
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     AddKeysCommand::KeysToAddList toAdd;
     KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         if ( (dim == -1) || (i == dim) ) {
             std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
@@ -428,77 +410,6 @@ KnobGui::onSetKeyActionTriggered()
     pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), toAdd) );
 }
 
-void
-KnobGui::removeKeyFrame(double time,
-                        int dimension,
-                        ViewSpec view)
-{
-    KnobIPtr knob = getKnob();
-
-    CurvePtr curve = knob->getCurve(view, dimension);
-    bool copyCurveValueAtTimeToInternalValue = false;
-    if (curve) {
-        copyCurveValueAtTimeToInternalValue = curve->getKeyFramesCount() == 1;
-    }
-    knob->onKeyFrameRemoved(time, view, dimension, copyCurveValueAtTimeToInternalValue);
-    Q_EMIT keyFrameRemoved();
-
-
-    assert( knob->getHolder()->getApp() );
-    if ( !knob->getIsSecret() ) {
-        knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
-    }
-    updateGUI(dimension);
-}
-
-void
-KnobGui::setKeyframes(const std::vector<KeyFrame>& keys,
-                      int dimension,
-                      ViewSpec view)
-{
-    KnobIPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-    knob->beginChanges();
-    std::list<SequenceTime> times;
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        bool keyAdded = knob->onKeyFrameSet(keys[i].getTime(), view, keys[i], dimension);
-        if (keyAdded) {
-            times.push_back( keys[i].getTime() );
-        }
-    }
-    knob->endChanges();
-    Q_EMIT keyFrameSet();
-    if ( !knob->getIsSecret() && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(times, true);
-    }
-}
-
-void
-KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys,
-                         int dimension,
-                         ViewSpec view)
-{
-    KnobIPtr knob = getKnob();
-
-    knob->beginChanges();
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        knob->onKeyFrameRemoved(keys[i].getTime(), view, dimension, i == 0);
-    }
-    knob->endChanges();
-    /*assert( knob->getHolder()->getApp() );
-       if ( !knob->getIsSecret() ) {
-        std::list<SequenceTime> times;
-        for (std::size_t i = 0; i < keys.size(); ++i) {
-            times.push_back(keys[i].getTime());
-        }
-        knob->getHolder()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(times, true);
-       }*/
-
-    Q_EMIT keyFrameRemoved();
-    updateGUI(dimension);
-}
-
 QString
 KnobGui::getScriptNameHtml() const
 {
@@ -532,7 +443,7 @@ KnobGui::toolTip(QWidget* w) const
 
     std::vector<std::string> expressions;
     bool exprAllSame = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         expressions.push_back( knob->getExpression(i) );
         if ( (i > 0) && (expressions[i] != expressions[0]) ) {
             exprAllSame = false;
@@ -549,7 +460,7 @@ KnobGui::toolTip(QWidget* w) const
             }
         }
     } else {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
             std::string dimName = knob->getDimensionName(i);
             QString toAppend;
             if (isMarkdown) {
@@ -670,7 +581,7 @@ KnobGui::onRemoveKeyActionTriggered()
     std::map<CurveGuiPtr, std::vector<KeyFrame > > toRemove;
     KnobGuiPtr thisShared = shared_from_this();
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         if ( (dim == -1) || (i == dim) ) {
             std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
             for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
@@ -764,10 +675,18 @@ KnobGui::show(int /*index*/)
 
     //also show the curve from the curve editor if there's any
     KnobIPtr knob = getKnob();
-    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
-        getGui()->getCurveEditor()->showCurves( shared_from_this() );
+    if (!knob) {
+        return;
     }
+    KnobHolderPtr holder = knob->getHolder();
+    EffectInstancePtr isEffect = toEffectInstance(holder);
 
+    if (isEffect) {
+        getGui()->getCurveEditor()->showCurves( shared_from_this() );
+
+    }
+    
+    
     //if (_imp->isOnNewLine) {
     if (_imp->field) {
         _imp->field->show();
@@ -838,7 +757,7 @@ KnobGui::setEnabledSlot()
     }
     KnobGuiPtr thisShared = shared_from_this();
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
             if ( !knob->isEnabled(i) ) {
                 getGui()->getCurveEditor()->hideCurve(thisShared, i);
             } else {

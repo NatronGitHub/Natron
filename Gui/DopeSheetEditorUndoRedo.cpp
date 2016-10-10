@@ -65,7 +65,7 @@ moveReader(const NodePtr &reader,
 {
     KnobIntBasePtr startingTimeKnob = toKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
     assert(startingTimeKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -75,7 +75,7 @@ moveTimeOffset(const NodePtr& node,
 {
     KnobIntBasePtr timeOffsetKnob = toKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
     assert(timeOffsetKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -85,7 +85,10 @@ moveFrameRange(const NodePtr& node,
 {
     KnobIntBasePtr frameRangeKnob = toKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange) );
     assert(frameRangeKnob);
-    frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+    std::vector<int> values(2);
+    values[0] = frameRangeKnob->getValue(0) + dt;
+    values[1] = frameRangeKnob->getValue(1) + dt;
+    frameRangeKnob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
 
 void
@@ -125,7 +128,7 @@ moveGroupNode(DopeSheetEditor* model,
                 continue;
             }
 
-            for (int dim = 0; dim < knob->getDimension(); ++dim) {
+            for (int dim = 0; dim < knob->getNDimensions(); ++dim) {
                 if ( !knob->isAnimated( dim, ViewIdx(0) ) ) {
                     continue;
                 }
@@ -363,7 +366,7 @@ DSTransformKeysCommand::undo()
     }
 
     for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        it->first->getInternalKnob()->cloneCurve(ViewSpec::all(), it->first->getDimension(), *it->second.oldCurve);
+        it->first->getInternalKnob()->cloneCurve(ViewSpec::all(), it->first->getDimension(), *it->second.oldCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/, eCurveChangeReasonDopeSheet);
     }
     for (std::list<KnobHolderPtr>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->endChanges();
@@ -413,7 +416,7 @@ DSTransformKeysCommand::redo()
         _firstRedoCalled = true;
     } else {
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            it->first->getInternalKnob()->cloneCurve(ViewIdx(0), it->first->getDimension(), *it->second.newCurve);
+            it->first->getInternalKnob()->cloneCurve(ViewIdx(0), it->first->getDimension(), *it->second.newCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/, eCurveChangeReasonDopeSheet);
         }
     }
 
@@ -530,7 +533,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -617,7 +620,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -753,7 +756,7 @@ DSSlipReaderCommand::slipReader(double dt)
     }
     effectInstance->beginChanges();
     {
-        KnobHelper::ValueChangedReturnCodeEnum r;
+        ValueChangedReturnCodeEnum r;
 
         r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
@@ -811,12 +814,14 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         KnobGuiPtr knobGui = knobContext->getKnobGui();
         assert(knobGui);
 
+        KnobIPtr knob = knobGui->getKnob();
+        assert(knob);
         std::pair<std::set<KnobGuiPtr>::iterator,bool> ok = knobsSet.insert(knobGui);
         if (ok.second) {
-            knobGui->getKnob()->beginChanges();
+            knob->beginChanges();
         }
         if (add) {
-            knobGui->setKeyframe( selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0) );
+            knob->setKeyframe( selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0) );
         } else {
             knobGui->removeKeyFrame( selected.key.getTime(), knobContext->getDimension(), ViewIdx(0) );
             knobContext->getTreeItem()->setSelected(false);

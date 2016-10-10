@@ -29,6 +29,7 @@
 
 #include <list>
 #include <vector>
+#include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -42,232 +43,178 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AnimatingObjectI.h"
 #include "Engine/Curve.h"
 #include "Engine/Transform.h"
-
+#include "Engine/Variant.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct SelectedKey
-{
-    CurveGuiPtr curve;
-    KeyFrame key, prevKey, nextKey;
-    bool hasPrevious;
-    bool hasNext;
-    std::pair<double, double> leftTan, rightTan;
 
-    SelectedKey()
-        : hasPrevious(false)
-        , hasNext(false)
-    {
-    }
-
-    SelectedKey(const CurveGuiPtr& c,
-                const KeyFrame & k,
-                const bool hasPrevious,
-                const KeyFrame & previous,
-                const bool hasNext,
-                const KeyFrame & next)
-        : curve(c)
-        , key(k)
-        , prevKey(previous)
-        , nextKey(next)
-        , hasPrevious(hasPrevious)
-        , hasNext(hasNext)
-    {
-    }
-
-    SelectedKey(const SelectedKey & o)
-        : curve(o.curve)
-        , key(o.key)
-        , prevKey(o.prevKey)
-        , nextKey(o.nextKey)
-        , hasPrevious(o.hasPrevious)
-        , hasNext(o.hasNext)
-        , leftTan(o.leftTan)
-        , rightTan(o.rightTan)
-    {
-    }
-};
-
-struct SelectedKey_compare_time
-{
-    bool operator() (const SelectedKey & lhs,
-                     const SelectedKey & rhs) const
-    {
-        return lhs.key.getTime() < rhs.key.getTime();
-    }
-};
-
-typedef boost::shared_ptr<SelectedKey> KeyPtr;
-typedef std::map<CurveGuiPtr, std::list<KeyPtr> > SelectedKeys;
-
-
-//////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
-
-class AddKeysCommand
+/**
+ * @class An undo command that can add or remove keyframes on multiple curves at once
+ **/
+class AddOrRemoveKeysCommand
     : public QUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(AddKeysCommand)
 
 public:
 
-    struct KeyToAdd
+    struct ObjectKeyFramesData
     {
-        CurveGuiPtr curveUI;
-        KnobGuiWPtr knobUI;
-        int dimension;
-        std::vector<KeyFrame> keyframes;
+        std::vector<std::list<VariantTimeValuePair> > keyframesPerDim;
+        int dimensionStartIndex;
+
     };
 
-    typedef std::list< KeyToAdd > KeysToAddList;
 
-    AddKeysCommand(CurveWidget *editor,
-                   const KeysToAddList & keys,
-                   QUndoCommand *parent = 0);
+    typedef std::map<AnimatingObjectIWPtr, ObjectKeyFramesData > ObjectKeysToAddMap;
 
-    AddKeysCommand(CurveWidget *editor,
-                   const CurveGuiPtr& curve,
-                   const std::vector<KeyFrame> & keys,
-                   QUndoCommand *parent = 0);
+    AddOrRemoveKeysCommand(const ObjectKeysToAddMap & keys,
+                           bool initialCommandIsAdd,
+                           QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _initialCommandIsAdd(initialCommandIsAdd)
+    , _keys(keys)
+    {
+        setText( tr("Add keyframe(s)") );
+    }
 
-    virtual ~AddKeysCommand() OVERRIDE
+    virtual ~AddOrRemoveKeysCommand() OVERRIDE
     {
     }
 
 protected:
 
-    void addOrRemoveKeyframe(bool isSetKeyCommand, bool add);
+    /**
+     * @brief Add or remove keyframes.
+     * @param clearAndSet If true, this will clear existing keyframes before adding them
+     * @param add True if operation is add, false if it should remove
+     **/
+    void addOrRemoveKeyframe(bool add);
 
 
     virtual void undo() OVERRIDE;
     virtual void redo() OVERRIDE;
 
 private:
-    KeysToAddList _keys;
-    CurveWidget *_curveWidget;
+
+    bool _initialCommandIsAdd;
+    ObjectKeysToAddMap _keys;
 };
 
-
-class SetKeysCommand
-    : public AddKeysCommand
+/**
+ * @class An undo command that can set all keyframes on multiple curves at once. Existing keyframes are deleted (and restored in undo)
+ **/
+class SetKeysCommand : public QUndoCommand
 {
+
+    Q_DECLARE_TR_FUNCTIONS(SetKeysCommand)
+
 public:
 
+    struct PerDimensionObjectKeyframes
+    {
+        std::list<VariantTimeValuePair> newKeys;
+        CurvePtr oldCurveState;
+    };
 
-    SetKeysCommand(CurveWidget *editor,
-                   const AddKeysCommand::KeysToAddList & keys,
-                   QUndoCommand *parent = 0);
+    struct SetObjectKeyFramesData
+    {
 
-    SetKeysCommand(CurveWidget *editor,
-                   const CurveGuiPtr& curve,
-                   const std::vector<KeyFrame> & keys,
-                   QUndoCommand *parent = 0);
+        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
+        int dimensionStartIndex;
+
+    };
+
+
+    typedef std::map<AnimatingObjectIWPtr, SetObjectKeyFramesData > ObjectKeysToSetMap;
+
+
+    SetKeysCommand(const ObjectKeysToSetMap & keys,
+                   QUndoCommand *parent = 0)
+    : QUndoCommand(parent)
+    , _isFirstRedo(true)
+    , _keys(keys)
+    {
+        setText( tr("Set keyframe(s)") );
+    }
+
 
     virtual ~SetKeysCommand() OVERRIDE
     {
     }
 
 private:
+
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    CurveGuiPtr _guiCurve;
-    CurvePtr _oldCurve;
+
+    bool _isFirstRedo;
+    ObjectKeysToSetMap _keys;
 };
 
-//////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 
-class RemoveKeysCommand
-    : public QUndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(RemoveKeysCommand)
-
-public:
-    RemoveKeysCommand(CurveWidget* editor,
-                      const std::map<CurveGuiPtr, std::vector<KeyFrame> > & curveEditorElement
-                      ,
-                      QUndoCommand *parent = 0);
-    virtual ~RemoveKeysCommand() OVERRIDE
-    {
-    }
-
-private:
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-    void addOrRemoveKeyframe(bool add);
-
-private:
-    std::map<CurveGuiPtr, std::vector<KeyFrame> > _keys;
-    CurveWidget* _curveWidget;
-};
-
-//////////////////////////////MOVE KEY COMMAND//////////////////////////////////////////////
-
-class MoveKeysCommand
+/**
+ * @class An undo command that can warp keyframes of multiple curves
+ **/
+class WarpKeysCommand
     : public QUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(MoveKeysCommand)
 
 public:
 
-    struct KeyToMove
+    struct PerDimensionObjectKeyframes
     {
-        KeyPtr key;
-        bool prevIsSelected, nextIsSelected;
+        std::list<double> keysToMove;
     };
 
-    MoveKeysCommand(CurveWidget* widget,
-                    const std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > & keys,
+    struct WarpObjectKeyFramesData
+    {
+        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
+        int dimensionStartIndex;
+    };
+
+    typedef std::map<AnimatingObjectIWPtr, WarpObjectKeyFramesData > ObjectKeysToMoveMap;
+
+    WarpKeysCommand(const ObjectKeysToMoveMap& keys,
                     double dt,
                     double dv,
-                    bool updateOnFirstRedo,
                     QUndoCommand *parent = 0);
-    virtual ~MoveKeysCommand() OVERRIDE
+
+    WarpKeysCommand(const ObjectKeysToMoveMap& keys,
+                    const Transform::Matrix3x3& matrix,
+                    QUndoCommand *parent = 0);
+    
+    virtual ~WarpKeysCommand() OVERRIDE
     {
     }
 
 private:
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
-
-    void move(double dt, double dv);
+    void warpKeys();
 
 private:
-    bool _firstRedoCalled;
-    bool _updateOnFirstRedo;
-    double _dt;
-    double _dv;
-    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > _keys;
-    CurveWidget* _widget;
+    boost::scoped_ptr<Curve::KeyFrameWarp> _warp;
+    ObjectKeysToMoveMap _keys;
 };
 
 
 //////////////////////////////SET MULTIPLE KEYS INTERPOLATION COMMAND//////////////////////////////////////////////
 
-struct KeyInterpolationChange
-{
-    KeyframeTypeEnum oldInterp;
-    KeyframeTypeEnum newInterp;
-    KeyPtr key;
-
-
-    KeyInterpolationChange(KeyframeTypeEnum oldType,
-                           KeyframeTypeEnum newType,
-                           const KeyPtr & k)
-        : oldInterp(oldType)
-        , newInterp(newType)
-        , key(k)
-    {
-    }
-};
-
-
+/**
+ * @class An undo command that can set the interpolation type of multiple keyframes of multiple curves
+ **/
 class SetKeysInterpolationCommand
     : public QUndoCommand
 {
@@ -275,9 +222,31 @@ class SetKeysInterpolationCommand
 
 public:
 
-    SetKeysInterpolationCommand(CurveWidget* widget,
-                                const std::list< KeyInterpolationChange > & keys,
-                                QUndoCommand *parent = 0);
+
+
+    struct PerDimensionObjectKeyframes
+    {
+        std::list<double> keysToChange;
+        KeyframeTypeEnum oldInterp, newInterp;
+    };
+
+    struct InterpolationObjectKeyFramesData
+    {
+        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
+        int dimensionStartIndex;
+    };
+
+    typedef std::map<AnimatingObjectIWPtr, InterpolationObjectKeyFramesData> ObjectKeyFramesDataMap;
+
+    SetKeysInterpolationCommand(const ObjectKeyFramesDataMap & keys,
+                                QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , _keys(keys)
+    {
+        setText( tr("Set keyframes interpolation") );
+
+    }
+
     virtual ~SetKeysInterpolationCommand() OVERRIDE
     {
     }
@@ -290,10 +259,12 @@ private:
     void setNewInterpolation(bool undo);
 
 private:
-    std::list< KeyInterpolationChange > _keys;
-    CurveWidget* _widget;
+   ObjectKeyFramesDataMap _keys;
 };
 
+/**
+ * @class An undo command that can move derivatives of a control point of a curve
+ **/
 class MoveTangentCommand
     : public QUndoCommand
 {
@@ -308,17 +279,18 @@ public:
     };
 
 
-    MoveTangentCommand(CurveWidget* widget,
-                       SelectedTangentEnum deriv,
-                       const KeyPtr& key,
+    MoveTangentCommand(SelectedTangentEnum deriv,
+                       const AnimatingObjectIPtr& object,
+                       int dimension,
+                       const KeyFrame& k,
                        double dx,
                        double dy,
-                       bool updateOnFirstRedo,
                        QUndoCommand *parent = 0);
 
-    MoveTangentCommand(CurveWidget* widget,
-                       SelectedTangentEnum deriv,
-                       const KeyPtr& key,
+    MoveTangentCommand(SelectedTangentEnum deriv,
+                       const AnimatingObjectIPtr& object,
+                       int dimension,
+                       const KeyFrame& k,
                        double derivative,
                        QUndoCommand *parent = 0);
 
@@ -337,48 +309,14 @@ private:
 
 private:
 
-    CurveWidget* _widget;
-    KeyPtr _key;
+    AnimatingObjectIWPtr _object;
+    int _dimension;
+    double _keyTime;
     SelectedTangentEnum _deriv;
     KeyframeTypeEnum _oldInterp, _newInterp;
     double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
-    bool _updateOnFirstRedo;
     bool _firstRedoCalled;
-};
-
-class TransformKeysCommand
-    : public QUndoCommand
-{
-public:
-
-    TransformKeysCommand(CurveWidget* widget,
-                         const SelectedKeys & keys,
-                         double centerX,
-                         double centerY,
-                         double tx,
-                         double ty,
-                         double sx,
-                         double sy,
-                         bool updateOnFirstRedo,
-                         QUndoCommand *parent = 0);
-    virtual ~TransformKeysCommand();
-
-private:
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
-
-
-    void transformKeys(const Transform::Matrix3x3& matrix);
-
-private:
-    bool _firstRedoCalled;
-    bool _updateOnFirstRedo;
-    SelectedKeys _keys;
-    CurveWidget* _widget;
-    Transform::Matrix3x3 _matrix, _invMatrix;
 };
 
 NATRON_NAMESPACE_EXIT;

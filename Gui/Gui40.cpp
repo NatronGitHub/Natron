@@ -66,6 +66,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/TimelineGui.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -860,5 +861,37 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         instance->renderCurrentFrame(!isPlayback);
     }
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
+
+void
+Gui::refreshTimelineGuiKeyframes()
+{
+    _imp->keyframesVisibleOnTimeline.clear();
+
+    std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it!=openedPanels.end(); ++it) {
+        NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+        if (!isNodePanel) {
+            continue;
+        }
+        NodeGuiPtr node = isNodePanel->getNode();
+        if (!node) {
+            continue;
+        }
+        node->getAllVisibleKnobsKeyframes(&_imp->keyframesVisibleOnTimeline);
+    }
+
+    // Now redraw timelines
+    const std::list<ViewerTab*>& viewers = getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->redrawTimeline();
+    }
+
+}
+
+const TimeLineKeysSet&
+Gui::getTimelineGuiKeyframes() const
+{
+    return _imp->keyframesVisibleOnTimeline;
+}
 
 NATRON_NAMESPACE_EXIT;

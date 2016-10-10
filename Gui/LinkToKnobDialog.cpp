@@ -210,7 +210,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;
-                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
+                for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
                     if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
                         canInsertKnob = false;
                     }

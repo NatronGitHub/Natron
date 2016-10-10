@@ -46,7 +46,7 @@ class PropertiesHolder
         {
         }
 
-        virtual int getDimension() const = 0;
+        virtual int getNDimensions() const = 0;
 
         virtual ~PropertyBase()
         {
@@ -68,7 +68,7 @@ class PropertiesHolder
         {
         }
 
-        virtual int getDimension() const OVERRIDE FINAL
+        virtual int getNDimensions() const OVERRIDE FINAL
         {
             return (int)value.size();
         }
@@ -247,7 +247,7 @@ public:
             }
         }
 
-        return found->second->getDimension();
+        return found->second->getNDimensions();
     }
 
 

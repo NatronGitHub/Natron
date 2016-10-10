@@ -24,6 +24,8 @@
 
 #include "Knob.h"
 #include "KnobImpl.h"
+#include "KnobGetValueImpl.h"
+#include "KnobSetValueImpl.h"
 
 #include <algorithm> // min, max
 #include <cassert>
@@ -82,72 +84,29 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobIPtr& knob)
 }
 
 void
-KnobSignalSlotHandler::onAnimationRemoved(ViewSpec view,
-                                          int dimension)
-{
-    getKnob()->onAnimationRemoved(view, dimension);
-}
-
-void
-KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
-                                           ViewSpec view,
-                                           int dimension,
-                                           int reason,
-                                           bool added)
+KnobSignalSlotHandler::onMasterCurveAnimationChanged(const std::list<double>& /*keysAdded*/,
+                                                     const std::list<double>& /*keysRemoved*/,
+                                                     ViewSpec view,
+                                                     int dimension,
+                                                     CurveChangeReason reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    assert(handler);
+    if (!handler) {
+        return;
+    }
     KnobIPtr master = handler->getKnob();
+    if (!master) {
+        return;
+    }
+    CurvePtr masterCurve = master->getCurve(view, dimension);
+    if (!masterCurve) {
+        return;
+    }
 
-    getKnob()->clone(master, dimension);
-    Q_EMIT keyFrameSet(time, view, dimension, reason, added);
+    getKnob()->cloneCurve(view, dimension, *masterCurve, 0 /*offset*/, 0 /*range*/, reason);
 }
 
-void
-KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time,
-                                               ViewSpec view,
-                                               int dimension,
-                                               int reason)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
-    assert(handler);
-    KnobIPtr master = handler->getKnob();
-
-    getKnob()->clone(master, dimension);
-    Q_EMIT keyFrameRemoved(time, view, dimension, reason);
-}
-
-void
-KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewSpec view,
-                                             int dimension,
-                                             double oldTime,
-                                             double newTime)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    assert(handler);
-    KnobIPtr master = handler->getKnob();
-
-    getKnob()->clone(master, dimension);
-    Q_EMIT keyFrameMoved(view, dimension, oldTime, newTime);
-}
-
-void
-KnobSignalSlotHandler::onMasterAnimationRemoved(ViewSpec view,
-                                                int dimension)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    assert(handler);
-    KnobIPtr master = handler->getKnob();
-
-    getKnob()->clone(master, dimension);
-    Q_EMIT animationRemoved(view, dimension);
-}
-
-/***************** KNOBI**********************/
 
 bool
 KnobI::slaveTo(int dimension,
@@ -179,23 +138,7 @@ KnobI::onKnobUnSlaved(int dimension)
     unSlaveInternal(dimension, eValueChangedReasonUserEdited, true);
 }
 
-void
-KnobI::removeAnimation(ViewSpec view,
-                       int dimension)
-{
-    if ( canAnimate() ) {
-        removeAnimationWithReason(view, dimension, eValueChangedReasonNatronInternalEdited);
-    }
-}
 
-void
-KnobI::onAnimationRemoved(ViewSpec view,
-                          int dimension)
-{
-    if ( canAnimate() ) {
-        removeAnimationWithReason(view, dimension, eValueChangedReasonUserEdited);
-    }
-}
 
 KnobPagePtr
 KnobI::getTopLevelPage() const
@@ -419,6 +362,9 @@ struct KnobHelperPrivate
     // Recursive counter to prevent calls to knobChanged callback for listeners knob (i.e: knobs that refer to this one)
     int listenersNotificationBlocked;
 
+    // Recursive counter to prevent autokeying in setValue
+    int autoKeyingDisabled;
+
     // If true, when this knob change, it is required to refresh the meta-data on a Node
     bool isClipPreferenceSlave;
 
@@ -482,6 +428,7 @@ struct KnobHelperPrivate
         , valueChangedBlockedMutex()
         , valueChangedBlocked(0)
         , listenersNotificationBlocked(0)
+        , autoKeyingDisabled(0)
         , isClipPreferenceSlave(false)
     {
         {
@@ -595,7 +542,7 @@ KnobHelper::deleteKnob()
         if (aliasKnob.get() == this) {
             knob->setKnobAsAliasOfThis(aliasKnob, false);
         }
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
             knob->setExpressionInvalid( i, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
             knob->unSlave(i, false);
         }
@@ -607,7 +554,7 @@ KnobHelper::deleteKnob()
         holder->getApp()->recheckInvalidExpressions();
     }
 
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         clearExpression(i, true);
     }
 
@@ -825,7 +772,7 @@ void
 KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                const std::list<double>& times,
                                ViewSpec view,
-                               int dimension, bool copyCurveValueAtTimeToInternalValue)
+                               int dimension)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
@@ -835,49 +782,51 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
         return;
     }
 
+    // If not animated, don't bother
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
     }
-    CurvePtr curve;
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
-    }
+    // Figure out which curve to use depending on whether we are rendering or not
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
 
-    assert(curve);
+    int nKeys = curve->getKeyFramesCount();
 
     // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
-    if (copyCurveValueAtTimeToInternalValue) {
+    if (nKeys - times.size() == 0) {
         copyValuesFromCurve(dimension);
     }
 
+    // Update internal curve
+    std::list<double> keysRemoved;
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             curve->removeKeyFrameWithTime(*it);
+            keysRemoved.push_back(*it);
         }
-    } catch (const std::exception & e) {
-        //qDebug() << e.what();
+    } catch (const std::exception & /*e*/) {
     }
 
-    if (!useGuiCurve && hasGui) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
+    // If we are directly editing the internal curve, also update the gui curve
+    if (mustRefreshGuiCurve) {
+        CurvePtr guiCurve = getKnobGuiPointer()->getCurve(view, dimension);
         assert(guiCurve);
-        for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-            guiCurve->removeKeyFrameWithTime(*it);
+        try {
+            for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
+                guiCurve->removeKeyFrameWithTime(*it);
+            }
+        } catch (...) {
+
         }
     }
+    
+
+    // virtual portion
+    onKeyframesRemoved(times, view, dimension, curveChangeReason);
 
 
-    //virtual portion
-    for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-        keyframeRemoved_virtual(dimension, *it);
-    }
-
+    // Refresh the has animation flag on the holder
     {
         KnobHolderPtr holder = getHolder();
         if (holder) {
@@ -886,491 +835,341 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
     }
     
 
+    // Now refresh animation level and notify we changed to the holder...
+    // If we are editing the gui curve it will be taken care of in the dequeueValues action
     ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
-
-    if (!useGuiCurve) {
+    if (mustRefreshGuiCurve) {
         checkAnimationLevel(view, dimension);
         evaluateValueChange(dimension, *times.begin(), view, reason);
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
-    }
 
+    _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
 
-    if (_signalSlotHandler /* && reason != eValueChangedReasonUserEdited*/) {
-        _signalSlotHandler->s_multipleKeyFramesRemoved(times, view, dimension, (int)reason);
-    }
-} // KnobHelper::deleteValuesAtTime
+    std::list<double> keysAdded;
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, curveChangeReason);
+
+} // deleteValuesAtTime
 
 void
-KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
-                              double time,
-                              ViewSpec view,
-                              int dimension, bool copyCurveValueAtTimeToInternalValue)
+KnobHelper::deleteAnimationConditional(double time,
+                                       ViewSpec view,
+                                       int dimension,
+                                       CurveChangeReason reason,
+                                       bool before)
 {
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
-    }
-
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
+    if (!_imp->curves[dimension]) {
         return;
     }
+    assert( 0 <= dimension && dimension < getNDimensions() );
 
-    CurvePtr curve;
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
+    // Figure out which curve to use depending on whether we are rendering or not
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
 
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
+    std::list<double> keysRemoved;
+    if (before) {
+        curve->removeKeyFramesBeforeTime(time, &keysRemoved);
     } else {
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
+        curve->removeKeyFramesAfterTime(time, &keysRemoved);
     }
 
-    assert(curve);
-
-    // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
-    if (copyCurveValueAtTimeToInternalValue) {
-        copyValuesFromCurve(dimension);
-    }
-
-
-    try {
-        curve->removeKeyFrameWithTime(time);
-    } catch (const std::exception & e) {
-        //qDebug() << e.what();
-    }
-
-    if (!useGuiCurve && hasGui) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
-        assert(guiCurve);
-        guiCurve->removeKeyFrameWithTime(time);
-    }
-
-
-    //virtual portion
-    keyframeRemoved_virtual(dimension, time);
-
-
-    {
-        KnobHolderPtr holder = getHolder();
-        if (holder) {
-            holder->updateHasAnimation();
-        }
-    }
-    
-    
-    ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
-
-    if (!useGuiCurve) {
+    if (mustRefreshGuiCurve) {
         checkAnimationLevel(view, dimension);
-        evaluateValueChange(dimension, time, view, reason);
-    }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
+        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
 
+    std::list<double> keysAdded;
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, reason);
 
-    if (_signalSlotHandler /* && reason != eValueChangedReasonUserEdited*/) {
-        _signalSlotHandler->s_keyFrameRemoved(time, view, dimension, (int)reason);
-    }
-} // KnobHelper::deleteValueAtTime
+} // deleteAnimationConditional
 
 void
-KnobHelper::onKeyFrameRemoved(double time,
-                              ViewSpec view,
-                              int dimension,
-                              bool copyCurveValueAtTimeToInternalValue)
+KnobHelper::deleteAnimationBeforeTime(double time,
+                                      ViewSpec view,
+                                      int dimension,
+                                      CurveChangeReason reason)
 {
-    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension, copyCurveValueAtTimeToInternalValue);
+    deleteAnimationConditional(time, view, dimension, reason, true);
 }
 
-bool
-KnobHelper::moveValuesAtTime(CurveChangeReason reason,
-                             ViewSpec view,
-                             int dimension,
-                             double dt,
-                             double dv,
-                             std::vector<KeyFrame>* keyframes)
+void
+KnobHelper::deleteAnimationAfterTime(double time,
+                                     ViewSpec view,
+                                     int dimension,
+                                     CurveChangeReason reason)
 {
-    assert(keyframes);
-    assert( QThread::currentThread() == qApp->thread() );
-    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
+    deleteAnimationConditional(time, view, dimension, reason, false);
+}
 
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
-        return false;
+
+bool
+KnobHelper::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& times, ViewSpec view,  int dimension, const Curve::KeyFrameWarp& warp, bool allowReplacingExistingKeys, std::vector<KeyFrame>* outKeys)
+{
+    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+        throw std::invalid_argument("KnobHelper::warpValuesAtTimeInternal(): Dimension out of range");
+    }
+    if (times.empty()) {
+        return true;
     }
 
-    /*
-       We write on the "GUI" curve if the engine is either:
-       - using it
-       - is still marked as different from the "internal" curve
-     */
+    // Don't bother if not animated
+    if ( !canAnimate() || !isAnimated(dimension, view) ) {
+        return true;
+    }
 
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
 
-    for (std::size_t i = 0; i < keyframes->size(); ++i) {
-        if ( !moveValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i]) ) {
-            return false;
+    // Figure out which curve to use depending on whether we are rendering or not
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
+
+
+    double firstKeyTime = 0.;
+
+    // Make sure string animation follows up
+    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
+
+    if (outKeys) {
+        outKeys->clear();
+    }
+
+    std::list<double> keysAdded, keysRemoved;
+
+    std::vector<std::string> oldStringValues;
+    if (isString) {
+        oldStringValues.resize(times.size());
+        int i = 0;
+        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
+            isString->stringFromInterpolatedValue(*it, view, &oldStringValues[i]);
         }
     }
-
-
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
-    } else {
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-    //notify that the gui curve has changed to redraw it
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-    }
-
-    return true;
-}
-
-bool
-KnobHelper::moveValueAtTimeInternal(bool useGuiCurve,
-                                    double time,
-                                    ViewSpec view,
-                                    int dimension,
-                                    double dt,
-                                    double dv,
-                                    KeyFrame* newKey)
-{
-    CurvePtr curve;
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-    }
-    assert(curve);
-
-    if ( !curve->moveKeyFrameValueAndTime(time, dt, dv, newKey) ) {
+    // This may fail if we cannot find a keyframe at the given time
+    std::vector<KeyFrame> newKeys;
+    if ( !curve->transformKeyframesValueAndTime(times, warp, allowReplacingExistingKeys, &newKeys, &keysAdded, &keysAdded) ) {
         return false;
     }
-    if (!useGuiCurve && hasGui) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
+    if (outKeys) {
+        *outKeys = newKeys;
+    }
+
+    // If we are updating internal curve, also update gui curve
+    if (mustRefreshGuiCurve) {
+        CurvePtr guiCurve = getKnobGuiPointer()->getCurve(view, dimension);
         assert(guiCurve);
-        guiCurve->moveKeyFrameValueAndTime(time, dt, dv, 0);
+        guiCurve->transformKeyframesValueAndTime(times, warp, allowReplacingExistingKeys);
     }
 
-
-    ///Make sure string animation follows up
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    std::string v;
+    // update string animation
     if (isString) {
-        isString->stringFromInterpolatedValue(time, view, &v);
-    }
-    keyframeRemoved_virtual(dimension, time);
-    if (isString) {
-        double ret;
-        isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
-    }
-
-
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved( view, dimension, time, newKey->getTime() );
-    }
-
-    return true;
-}
-
-bool
-KnobHelper::moveValueAtTime(CurveChangeReason reason,
-                            double time,
-                            ViewSpec view,
-                            int dimension,
-                            double dt,
-                            double dv,
-                            KeyFrame* newKey)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
-
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
-        return false;
-    }
-
-    /*
-       We write on the "GUI" curve if the engine is either:
-       - using it
-       - is still marked as different from the "internal" curve
-     */
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    if ( !moveValueAtTimeInternal(useGuiCurve, time, view, dimension, dt, dv, newKey) ) {
-        return false;
-    }
-
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension, newKey->getTime(), view, eValueChangedReasonNatronInternalEdited);
-    } else {
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-    //notify that the gui curve has changed to redraw it
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-    }
-
-    return true;
-}
-
-bool
-KnobHelper::transformValuesAtTime(CurveChangeReason curveChangeReason,
-                                  ViewSpec view,
-                                  int dimension,
-                                  const Transform::Matrix3x3& matrix,
-                                  std::vector<KeyFrame>* keyframes)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
-
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
-        return false;
-    }
-
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    for (std::size_t i = 0; i < keyframes->size(); ++i) {
-        if ( !transformValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, matrix, &(*keyframes)[i]) ) {
-            return false;
+        onKeyframesRemoved(times, view, dimension, reason);
+        assert(newKeys.size() == oldStringValues.size());
+        for (std::size_t i = 0; i < newKeys.size(); ++i) {
+            double ret;
+            isString->stringToKeyFrameValue(newKeys[i].getTime(), view, oldStringValues[i], &ret);
         }
     }
 
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
+
+
+    // Now refresh animation level and notify we changed to the holder...
+    // If we are editing the gui curve it will be taken care of in the dequeueValues action
+    if (!mustRefreshGuiCurve) {
+        evaluateValueChange(dimension, firstKeyTime, view, eValueChangedReasonNatronInternalEdited);
     }
 
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
-    } else {
-        setGuiCurveHasChanged(view, dimension, true);
-    }
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, reason);
 
     return true;
-}
 
-bool
-KnobHelper::transformValueAtTimeInternal(bool useGuiCurve,
-                                         double time,
-                                         ViewSpec view,
-                                         int dimension,
-                                         const Transform::Matrix3x3& matrix,
-                                         KeyFrame* newKey)
+} // warpValuesAtTime
+
+
+
+CurvePtr
+KnobHelper::getCurveToOperateOn(ViewSpec view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve)
 {
-    CurvePtr curve;
+    // Figure out whether to use gui curves or internal curves, depending on whether we are rendering
     KnobGuiIPtr hasGui = getKnobGuiPointer();
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
 
+    CurvePtr ret;
     if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
+        ret = _imp->curves[dimension];
     } else {
         assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-    }
-    assert(curve);
-
-    KeyFrame k;
-    int keyindex = curve->keyFrameIndex(time);
-    if (keyindex == -1) {
-        return false;
-    }
-
-    bool gotKey = curve->getKeyFrameWithIndex(keyindex, &k);
-    if (!gotKey) {
-        return false;
-    }
-
-    Transform::Point3D p;
-    p.x = k.getTime();
-    p.y = k.getValue();
-    p.z = 1;
-
-    p = Transform::matApply(matrix, p);
-
-
-    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-        p.y = std::floor(p.y + 0.5);
-    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-        p.y = p.y < 0.5 ? 0 : 1;
-    }
-
-    ///Make sure string animation follows up
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    std::string v;
-    if (isString) {
-        isString->stringFromInterpolatedValue(k.getValue(), view, &v);
-    }
-    keyframeRemoved_virtual(dimension, time);
-    if (isString) {
-        double ret;
-        isString->stringToKeyFrameValue(p.x, view, v, &ret);
-    }
-
-
-    try {
-        *newKey = curve->setKeyFrameValueAndTime(p.x, p.y, keyindex, NULL);
-    } catch (...) {
-        return false;
-    }
-
-    if (!useGuiCurve && hasGui) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
-        try {
-            guiCurve->setKeyFrameValueAndTime(p.x, p.y, keyindex, NULL);
-        } catch (...) {
-            return false;
-        }
-    }
-
-
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension, time, p.x);
-    }
-
-    return true;
-} // KnobHelper::transformValueAtTimeInternal
-
-bool
-KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
-                                 double time,
-                                 ViewSpec view,
-                                 int dimension,
-                                 const Transform::Matrix3x3& matrix,
-                                 KeyFrame* newKey)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
-
-    if ( !canAnimate() || !isAnimated(dimension, view) ) {
-        return false;
-    }
-
-
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    if ( !transformValueAtTimeInternal(useGuiCurve, time, view, dimension, matrix, newKey) ) {
-        return false;
-    }
-
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
-    }
-
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
-    } else {
+        ret = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension, true);
     }
-
-    return true;
+    if (!ret && throwIfNotPresent) {
+        throw std::runtime_error("KnobHelper::getCurveToOperateOn: curve is NULL");
+    }
+    if (hasGui && !useGuiCurve) {
+        *mustRefreshGuiCurve = true;
+    } else {
+        *mustRefreshGuiCurve = false;
+    }
+    return ret;
 }
 
-void
+bool
 KnobHelper::cloneCurve(ViewSpec view,
                        int dimension,
-                       const Curve& curve)
+                       const Curve& curve,
+                       double offset, const RangeD* range,
+                       const StringAnimationManager* stringAnimation,
+                       CurveChangeReason reason)
 {
     assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
-    CurvePtr thisCurve;
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-    if (!useGuiCurve) {
-        thisCurve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        thisCurve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
+    if (dimension < 0 || dimension >= (int)_imp->curves.size()) {
+        throw std::invalid_argument("KnobHelper::cloneCurve: invalid dimension index");
     }
-    assert(thisCurve);
 
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
-        _signalSlotHandler->s_animationRemoved(view, dimension);
+    // Figure out whether to use gui curves or internal curves, depending on whether we are rendering
+    bool mustRefreshGuiCurve;
+    CurvePtr thisCurve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+    if (!thisCurve) {
+        return false;
     }
-    animationRemoved_virtual(dimension);
-    thisCurve->clone(curve);
-    if (!useGuiCurve) {
+
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
+
+    // Only track keyframe changes if there is a knob gui
+    KeyFrameSet oldKeys;
+    if (hasGui) {
+        oldKeys = thisCurve->getKeyFrames_mt_safe();
+    }
+
+    // When there's no gui, we don't have to update keyframes on gui, so just clone fast without checking for changes
+    bool hasChanged ;
+    if (!hasGui) {
+        if (range) {
+            thisCurve->clone(curve, offset, range);
+        } else {
+            thisCurve->clone(curve);
+        }
+        hasChanged = true;
+    } else {
+        // Check for changes, slower but may avoid computing diff of keyframes
+        hasChanged = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
+    }
+
+    // If we are editing the gui curve it will be taken care of in the dequeueValues action
+    if (!mustRefreshGuiCurve) {
         evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, eValueChangedReasonNatronInternalEdited);
     }
 
-    if (_signalSlotHandler) {
-        std::list<double> keysList;
+    if (hasGui && hasChanged) {
         KeyFrameSet keys = thisCurve->getKeyFrames_mt_safe();
+
+        std::list<double> keysRemoved, keysAdded;
         for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-            keysList.push_back( it->getTime() );
+            KeyFrameSet::iterator foundInOldKeys = Curve::findWithTime(oldKeys, oldKeys.end(), it->getTime());
+            if (foundInOldKeys == oldKeys.end()) {
+                keysAdded.push_back(it->getTime());
+            } else {
+                oldKeys.erase(foundInOldKeys);
+            }
         }
-        if ( !keysList.empty() ) {
-            _signalSlotHandler->s_multipleKeyFramesSet(keysList, view, dimension, (int)eValueChangedReasonNatronInternalEdited);
+
+        for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
+            KeyFrameSet::iterator foundInNextKeys = Curve::findWithTime(keys, keys.end(), it->getTime());
+            if (foundInNextKeys == keys.end()) {
+                keysRemoved.push_back(it->getTime());
+            }
+        }
+
+        if (!keysAdded.empty() || !keysRemoved.empty()) {
+            _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, reason);
         }
     }
-}
+    return hasChanged;
+} // cloneCurve
 
 bool
-KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
-                                   ViewSpec view,
-                                   int dimension,
-                                   double time,
-                                   KeyframeTypeEnum interpolation,
-                                   KeyFrame* newKey)
+KnobHelper::cloneCurvesAndCheckIfChanged(const KnobIPtr& other,
+                                         double offset, const RangeD* range,
+                                         int dimension,
+                                         int otherDimension)
+{
+    assert( (dimension == otherDimension) || (dimension != -1) );
+    assert(other);
+    assert( (dimension == otherDimension) || (dimension != -1) );
+    assert(other);
+    bool hasChanged = false;
+    if (dimension == -1) {
+        int dimMin = std::min( getNDimensions(), other->getNDimensions() );
+        for (int i = 0; i < dimMin; ++i) {
+            CurvePtr otherCurve = other->getCurve(ViewIdx(0), i);
+            if (!otherCurve) {
+                continue;
+            }
+            hasChanged |= cloneCurve(ViewSpec::all(), i, *otherCurve, offset, range, eCurveChangeReasonInternal);
+        }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert( dimension >= 0 && dimension < getNDimensions() &&
+               otherDimension >= 0 && otherDimension < getNDimensions() );
+        CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension);
+        if (!otherCurve) {
+            return false;
+        }
+        hasChanged |= cloneCurve(ViewSpec::all(), dimension, *otherCurve, offset, range, eCurveChangeReasonInternal);
+    }
+    
+    return hasChanged;
+}
+
+void
+KnobHelper::setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys)
 {
     assert( QThread::currentThread() == qApp->thread() );
     assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
 
+    if (times.empty()) {
+        return;
+    }
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
-        return false;
+        return;
     }
 
-    CurvePtr curve;
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-    assert(curve);
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
 
-    int keyIndex = curve->keyFrameIndex(time);
-    if (keyIndex == -1) {
-        return false;
+    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        KeyFrame k;
+        if (curve->setKeyFrameInterpolation(interpolation, *it, &k)) {
+            if (newKeys) {
+                newKeys->push_back(k);
+            }
+        }
     }
 
-    *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
-
-    if (!useGuiCurve && hasGui) {
+    if (!mustRefreshGuiCurve) {
         CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
-        guiCurve->setKeyFrameInterpolation(interpolation, keyIndex);
+        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
     }
 
-    if (!useGuiCurve) {
+    double time = getCurrentTime();
+
+    if (!mustRefreshGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-    }
 
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameInterpolationChanged(time, view, dimension);
-    }
+    _signalSlotHandler->s_keyFrameInterpolationChanged(time, view, dimension, reason);
 
-    return true;
 }
 
 bool
-KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
-                                  ViewSpec view,
-                                  int dimension,
-                                  double time,
-                                  double left,
-                                  double right)
+KnobHelper::setLeftAndRightDerivativesAtTime(CurveChangeReason reason,
+                                             ViewSpec view,
+                                             int dimension,
+                                             double time,
+                                             double left,
+                                             double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
@@ -1381,19 +1180,8 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
         return false;
     }
 
-    CurvePtr curve;
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-
-    assert(curve);
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
 
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -1403,29 +1191,24 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
 
-    if (!useGuiCurve && hasGui) {
+    if (!mustRefreshGuiCurve) {
         CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
         guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
     }
 
-    if (!useGuiCurve) {
+    if (!mustRefreshGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-    }
 
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_derivativeMoved(time, view, dimension);
-    }
+    _signalSlotHandler->s_derivativeMoved(time, view, dimension, reason);
 
     return true;
 } // KnobHelper::moveDerivativesAtTime
 
 bool
-KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
+KnobHelper::setDerivativeAtTime(CurveChangeReason reason,
                                  ViewSpec view,
                                  int dimension,
                                  double time,
@@ -1441,17 +1224,8 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         return false;
     }
 
-    CurvePtr curve;
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-    assert(curve);
+    bool mustRefreshGuiCurve;
+    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
 
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -1465,7 +1239,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
 
-    if (!useGuiCurve && hasGui) {
+    if (!mustRefreshGuiCurve) {
         CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
@@ -1477,63 +1251,78 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
     }
 
 
-    if (!useGuiCurve) {
+    if (!mustRefreshGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-    }
-
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_derivativeMoved(time, view, dimension);
-    }
+    _signalSlotHandler->s_derivativeMoved(time, view, dimension, reason);
 
     return true;
 } // KnobHelper::moveDerivativeAtTime
 
+
 void
-KnobHelper::removeAnimationWithReason(ViewSpec view,
-                                      int dimension,
-                                      ValueChangedReasonEnum reason)
+KnobHelper::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& dimensions, CurveChangeReason reason)
 {
-    assert(0 <= dimension);
-    if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
-        throw std::invalid_argument("KnobHelper::removeAnimationWithReason(): Dimension out of range");
-    }
-
-
-    if ( !canAnimate() || (isAnimationEnabled() && !isAnimated(dimension, view)) ) {
+    if (dimensions.empty()) {
         return;
     }
 
-    CurvePtr curve;
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
+    if (!canAnimate()) {
+        return;
     }
 
-    if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
-        _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
-    }
 
-    copyValuesFromCurve(dimension);
+    bool animationEnabled = isAnimationEnabled();
+    for (std::size_t i = 0; i < dimensions.size(); ++i) {
 
-    assert(curve);
-    if (curve) {
-        curve->clearKeyFrames();
-    }
+        int dimension = dimensions[i];
+        if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
+            throw std::invalid_argument("KnobHelper::removeAnimationOnDimensions(): Dimension out of range");
+        }
 
-    if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
-        _signalSlotHandler->s_animationRemoved(view, dimension);
-    }
+        if (animationEnabled && !isAnimated(dimension, view)) {
+            continue;
+        }
 
-    animationRemoved_virtual(dimension);
+        bool mustRefreshGuiCurve;
+        CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+
+
+        // Ensure the underlying values are the values of the current curve at the current time
+        copyValuesFromCurve(dimension);
+
+        // Notify the user of the keyframes that were removed
+        std::list<double> timesRemoved;
+
+        assert(curve);
+        if (curve) {
+            KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+            for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+                timesRemoved.push_back(it->getTime());
+            }
+            curve->clearKeyFrames();
+        }
+
+        // Nothing changed
+        if (timesRemoved.empty()) {
+            continue;
+        }
+
+        onKeyframesRemoved(timesRemoved, view, dimension, reason);
+
+
+        if (!mustRefreshGuiCurve) {
+            //virtual portion
+            evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+            guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, eValueChangedReasonNatronInternalEdited);
+        }
+    
+        
+        std::list<double> timesAdded;
+        _signalSlotHandler->s_curveAnimationChanged(timesAdded, timesRemoved, view, dimension, reason);
+
+    } // for dimensions
+
 
     {
         KnobHolderPtr holder = getHolder();
@@ -1541,18 +1330,7 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
             holder->updateHasAnimation();
         }
     }
-
-
-    if (!useGuiCurve) {
-        //virtual portion
-        evaluateValueChange(dimension, getCurrentTime(), view, reason);
-        guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
-    } else {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(eCurveChangeReasonInternal, view, dimension);
-        }
-    }
-} // KnobHelper::removeAnimationWithReason
+}
 
 
 void
@@ -1560,7 +1338,7 @@ KnobHelper::cloneInternalCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& m
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
 
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         if (_imp->mustCloneInternalCurves[i]) {
             guiCurveCloneInternalCurve(eCurveChangeReasonInternal, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited);
             _imp->mustCloneInternalCurves[i] = false;
@@ -1588,7 +1366,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifi
 
     bool hasChanged = false;
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         if (_imp->mustCloneGuiCurves[i]) {
             hasChanged = true;
             CurvePtr curve = _imp->curves[i];
@@ -1692,6 +1470,12 @@ CurvePtr KnobHelper::getCurve(ViewSpec view,
     return _imp->curves[dimension];
 }
 
+CurvePtr
+KnobHelper::getAnimationCurve(ViewIdx idx, int dimension) const
+{
+    return getCurve(ViewSpec(idx), dimension);
+}
+
 bool
 KnobHelper::isAnimated(int dimension,
                        ViewSpec view) const
@@ -1712,7 +1496,7 @@ KnobHelper::getCurves() const
 }
 
 int
-KnobHelper::getDimension() const
+KnobHelper::getNDimensions() const
 {
     return _imp->dimension;
 }
@@ -1783,6 +1567,25 @@ KnobHelper::isListenersNotificationBlocked() const
     return _imp->listenersNotificationBlocked > 0;
 }
 
+
+void
+KnobHelper::setAutoKeyingEnabled(bool enabled)
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    if (enabled) {
+        ++_imp->autoKeyingDisabled;
+    } else {
+        --_imp->autoKeyingDisabled;
+    }
+}
+
+bool
+KnobHelper::isAutoKeyingEnabled() const
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    return _imp->autoKeyingDisabled;
+}
+
 bool
 KnobHelper::evaluateValueChangeInternal(int dimension,
                                         double time,
@@ -1800,8 +1603,6 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         app = holder->getApp();
     }
 
-    bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
-
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
     onInternalValueChanged(dimension, time, view);
@@ -1811,16 +1612,14 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         holder->beginChanges();
         KnobIPtr thisShared = shared_from_this();
         assert(thisShared);
-        holder->appendValueChange(thisShared, dimension, refreshWidget, time, view, originalReason, reason);
+        holder->appendValueChange(thisShared, dimension, time, view, originalReason, reason);
         ret |= holder->endChanges();
     }
 
 
     if (!holder) {
         computeHasModifications();
-        if (refreshWidget) {
-            _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
-        }
+        _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
         if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(view, originalReason, dimension);
         }
@@ -2106,7 +1905,7 @@ KnobHelper::getIconLabel(bool checked) const
 bool
 KnobHelper::hasAnimation() const
 {
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         if (getKeyFramesCount(ViewIdx(0), i) > 0) {
             return true;
         }
@@ -2620,7 +2419,7 @@ KnobHelper::validateExpression(const std::string& expression,
 bool
 KnobHelper::checkInvalidExpressions()
 {
-    int ndims = getDimension();
+    int ndims = getNDimensions();
     std::vector<std::pair<std::string, bool> > exprToReapply(ndims);
     {
         QMutexLocker k(&_imp->expressionMutex);
@@ -2649,7 +2448,7 @@ bool
 KnobHelper::isExpressionValid(int dimension,
                               std::string* error) const
 {
-    int ndims = getDimension();
+    int ndims = getNDimensions();
 
     if ( (dimension < 0) || (dimension >= ndims) ) {
         return false;
@@ -2669,7 +2468,7 @@ KnobHelper::setExpressionInvalid(int dimension,
                                  bool valid,
                                  const std::string& error)
 {
-    int ndims = getDimension();
+    int ndims = getNDimensions();
 
     if ( (dimension < 0) || (dimension >= ndims) ) {
         return;
@@ -2721,7 +2520,7 @@ KnobHelper::setExpressionInternal(int dimension,
 
     return;
 #endif
-    assert( dimension >= 0 && dimension < getDimension() );
+    assert( dimension >= 0 && dimension < getNDimensions() );
 
     PythonGILLocker pgl;
 
@@ -3171,7 +2970,7 @@ KnobHelper::setIsFrozen(bool frozen)
 bool
 KnobHelper::isEnabled(int dimension) const
 {
-    assert( 0 <= dimension && dimension < getDimension() );
+    assert( 0 <= dimension && dimension < getNDimensions() );
 
     QMutexLocker k(&_imp->stateMutex);
 
@@ -3460,7 +3259,7 @@ bool
 KnobI::shouldDrawOverlayInteract() const
 {
     // If there is one dimension disabled, don't draw it
-    int nDims = getDimension();
+    int nDims = getNDimensions();
     for (int i = 0; i < nDims; ++i) {
         if (!isEnabled(i)) {
             return false;
@@ -3689,74 +3488,13 @@ KnobHelper::getAnimationLevel(int dimension) const
     return _imp->animationLevel[dimension];
 }
 
-void
-KnobHelper::deleteAnimationConditional(double time,
-                                       ViewSpec view,
-                                       int dimension,
-                                       ValueChangedReasonEnum reason,
-                                       bool before)
-{
-    if (!_imp->curves[dimension]) {
-        return;
-    }
-    assert( 0 <= dimension && dimension < getDimension() );
-
-    CurvePtr curve;
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-    bool useGuiCurve = _imp->shouldUseGuiCurve();
-
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        assert(hasGui);
-        curve = hasGui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension, true);
-    }
-
-    std::list<int> keysRemoved;
-    if (before) {
-        curve->removeKeyFramesBeforeTime(time, &keysRemoved);
-    } else {
-        curve->removeKeyFramesAfterTime(time, &keysRemoved);
-    }
-
-    if (!useGuiCurve) {
-        checkAnimationLevel(view, dimension);
-        guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
-        evaluateValueChange(dimension, time, view, reason);
-    }
-
-    KnobHolderPtr holder = getHolder();
-    if ( holder && holder->getApp() ) {
-        holder->getApp()->removeMultipleKeyframeIndicator(keysRemoved, true);
-    }
-}
-
-void
-KnobHelper::deleteAnimationBeforeTime(double time,
-                                      ViewSpec view,
-                                      int dimension,
-                                      ValueChangedReasonEnum reason)
-{
-    deleteAnimationConditional(time, view, dimension, reason, true);
-}
-
-void
-KnobHelper::deleteAnimationAfterTime(double time,
-                                     ViewSpec view,
-                                     int dimension,
-                                     ValueChangedReasonEnum reason)
-{
-    deleteAnimationConditional(time, view, dimension, reason, false);
-}
-
 bool
 KnobHelper::getKeyFrameTime(ViewSpec view,
                             int index,
                             int dimension,
                             double* time) const
 {
-    assert( 0 <= dimension && dimension < getDimension() );
+    assert( 0 <= dimension && dimension < getNDimensions() );
     if ( !isAnimated(dimension, view) ) {
         return false;
     }
@@ -3776,7 +3514,7 @@ KnobHelper::getLastKeyFrameTime(ViewSpec view,
                                 int dimension,
                                 double* time) const
 {
-    assert( 0 <= dimension && dimension < getDimension() );
+    assert( 0 <= dimension && dimension < getNDimensions() );
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
@@ -3816,7 +3554,7 @@ KnobHelper::getNearestKeyFrameTime(ViewSpec view,
                                    double time,
                                    double* nearestTime) const
 {
-    assert( 0 <= dimension && dimension < getDimension() );
+    assert( 0 <= dimension && dimension < getNDimensions() );
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
     }
@@ -3837,7 +3575,7 @@ KnobHelper::getKeyFrameIndex(ViewSpec view,
                              int dimension,
                              double time) const
 {
-    assert( 0 <= dimension && dimension < getDimension() );
+    assert( 0 <= dimension && dimension < getNDimensions() );
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return -1;
     }
@@ -3911,11 +3649,11 @@ KnobHelper::cloneExpressions(const KnobIPtr& other,
                              int dimension,
                              int otherDimension)
 {
-    assert( (int)_imp->expressions.size() == getDimension() );
+    assert( (int)_imp->expressions.size() == getNDimensions() );
     assert( (dimension == otherDimension) || (dimension != -1) );
     try {
         if (dimension == -1) {
-            int dims = std::min( getDimension(), other->getDimension() );
+            int dims = std::min( getNDimensions(), other->getNDimensions() );
             for (int i = 0; i < dims; ++i) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
@@ -3928,8 +3666,8 @@ KnobHelper::cloneExpressions(const KnobIPtr& other,
             if (otherDimension == -1) {
                 otherDimension = dimension;
             }
-            assert( dimension >= 0 && dimension < getDimension() &&
-                    otherDimension >= 0 && otherDimension < other->getDimension() );
+            assert( dimension >= 0 && dimension < getNDimensions() &&
+                    otherDimension >= 0 && otherDimension < other->getNDimensions() );
             std::string expr = other->getExpression(otherDimension);
             bool hasRet = other->isExpressionUsingRetVariable(otherDimension);
             if ( !expr.empty() ) {
@@ -3947,12 +3685,12 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(const KnobIPtr& other,
                                               int dimension,
                                               int otherDimension)
 {
-    assert( (int)_imp->expressions.size() == getDimension() );
+    assert( (int)_imp->expressions.size() == getNDimensions() );
     assert( (dimension == otherDimension) || (dimension != -1) );
     assert(other);
     bool ret = false;
     try {
-        int dims = std::min( getDimension(), other->getDimension() );
+        int dims = std::min( getNDimensions(), other->getNDimensions() );
         for (int i = 0; i < dims; ++i) {
             if ( (i == dimension) || (dimension == -1) ) {
                 std::string expr = other->getExpression(i);
@@ -3971,156 +3709,6 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(const KnobIPtr& other,
     return ret;
 }
 
-void
-KnobHelper::cloneOneCurve(const KnobIPtr& other,
-                          int offset,
-                          const RangeD* range,
-                          int dimension,
-                          int otherDimension)
-{
-    assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
-    CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
-    CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
-    if (thisCurve && otherCurve) {
-        if (!range) {
-            thisCurve->clone(*otherCurve);
-        } else {
-            thisCurve->clone(*otherCurve, offset, range);
-        }
-    }
-    CurvePtr guiCurve = getGuiCurve(ViewIdx(0), dimension);
-    CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
-    if (guiCurve) {
-        if (otherGuiCurve) {
-            if (!range) {
-                guiCurve->clone(*otherGuiCurve);
-            } else {
-                guiCurve->clone(*otherGuiCurve, offset, range);
-            }
-        } else {
-            if (otherCurve) {
-                if (!range) {
-                    guiCurve->clone(*otherCurve);
-                } else {
-                    guiCurve->clone(*otherCurve, offset, range);
-                }
-            }
-        }
-    }
-    checkAnimationLevel(ViewIdx(0), dimension);
-}
-
-void
-KnobHelper::cloneCurves(const KnobIPtr& other,
-                        int offset,
-                        const RangeD* range,
-                        int dimension,
-                        int otherDimension)
-{
-    assert( (dimension == otherDimension) || (dimension != -1) );
-    assert(other);
-    if (dimension == -1) {
-        int dimMin = std::min( getDimension(), other->getDimension() );
-        for (int i = 0; i < dimMin; ++i) {
-            cloneOneCurve(other, offset, range, i, i);
-        }
-    } else {
-        if (otherDimension == -1) {
-            otherDimension = dimension;
-        }
-        cloneOneCurve(other, offset, range, dimension, otherDimension);
-    }
-}
-
-bool
-KnobHelper::cloneOneCurveAndCheckIfChanged(const KnobIPtr& other,
-                                           bool updateGui,
-                                           int dimension,
-                                           int otherDimension)
-{
-    assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
-    bool cloningCurveChanged = false;
-    CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
-    CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
-    KeyFrameSet oldKeys;
-    if (thisCurve && otherCurve) {
-        if (updateGui) {
-            oldKeys = thisCurve->getKeyFrames_mt_safe();
-        }
-        cloningCurveChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
-    }
-
-    CurvePtr guiCurve = getGuiCurve(ViewIdx(0), dimension);
-    CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
-    if (guiCurve) {
-        if (otherGuiCurve) {
-            cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
-        } else {
-            cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
-        }
-    }
-
-    if (updateGui && cloningCurveChanged) {
-        // Indicate that old keyframes are removed
-
-        std::list<double> oldKeysList;
-        for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
-            oldKeysList.push_back( it->getTime() );
-        }
-        if ( !oldKeysList.empty() ) {
-            _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
-        }
-
-        // Indicate new keyframes
-
-        std::list<double> keysList;
-        KeyFrameSet keys;
-        if (thisCurve) {
-            keys = thisCurve->getKeyFrames_mt_safe();
-        }
-        for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-            keysList.push_back( it->getTime() );
-        }
-        if ( !keysList.empty() ) {
-            _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
-        }
-        checkAnimationLevel(ViewIdx(0), dimension);
-    } else if (!updateGui) {
-        checkAnimationLevel(ViewIdx(0), dimension);
-    }
-
-    return cloningCurveChanged;
-} // KnobHelper::cloneOneCurveAndCheckIfChanged
-
-bool
-KnobHelper::cloneCurvesAndCheckIfChanged(const KnobIPtr& other,
-                                         bool updateGui,
-                                         int dimension,
-                                         int otherDimension)
-{
-    assert( (dimension == otherDimension) || (dimension != -1) );
-    assert(other);
-    assert( (dimension == otherDimension) || (dimension != -1) );
-    assert(other);
-    bool hasChanged = false;
-    if (dimension == -1) {
-        int dimMin = std::min( getDimension(), other->getDimension() );
-        for (int i = 0; i < dimMin; ++i) {
-            hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, i, i);
-        }
-    } else {
-        if (otherDimension == -1) {
-            otherDimension = dimension;
-        }
-        assert( dimension >= 0 && dimension < getDimension() &&
-                otherDimension >= 0 && otherDimension < getDimension() );
-        hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, dimension, otherDimension);
-    }
-
-    return hasChanged;
-}
 
 //The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
 void
@@ -4154,7 +3742,7 @@ KnobHelper::addListener(const bool isExpression,
             foundListening->second[listenerDimension].targetDim = listenedToDimension;
         } else {
             std::vector<ListenerDim>& dims = _imp->listeners[listener];
-            dims.resize( listener->getDimension() );
+            dims.resize( listener->getNDimensions() );
             dims[listenerDimension].isListening = true;
             dims[listenerDimension].isExpr = isExpression;
             dims[listenerDimension].targetDim = listenedToDimension;
@@ -4412,7 +4000,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         KnobBoolPtr newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isInt) {
-        KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         if ( isInt->isSliderDisabled() ) {
@@ -4420,12 +4008,12 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         }
         output = newKnob;
     } else if (isDbl) {
-        KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
         newKnob->setSpatial( isDbl->getIsSpatial() );
         if ( isDbl->isRectangle() ) {
             newKnob->setAsRectangle();
         }
-        for (int i = 0; i < getDimension(); ++i) {
+        for (int i = 0; i < getNDimensions(); ++i) {
             newKnob->setValueIsNormalized( i, isDbl->getValueIsNormalized(i) );
         }
         if ( isDbl->isSliderDisabled() ) {
@@ -4441,7 +4029,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         }
         output = newKnob;
     } else if (isColor) {
-        KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getNDimensions(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isColor->getMinimums(), isColor->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
@@ -4484,13 +4072,13 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         KnobButtonPtr newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isParametric) {
-        KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
+        KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), isUserKnob);
         output = newKnob;
     }
     if (!output) {
         return KnobIPtr();
     }
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         output->setDimensionName( i, getDimensionName(i) );
     }
     output->setName(newScriptName, true);
@@ -4530,7 +4118,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         } else {
             ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
         }
-        if (output->getDimension() > 1) {
+        if (output->getNDimensions() > 1) {
             ss << ".get()[dimension]";
         } else {
             ss << ".get()";
@@ -4538,7 +4126,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
 
         try {
             std::string script = ss.str();
-            for (int i = 0; i < getDimension(); ++i) {
+            for (int i = 0; i < getNDimensions(); ++i) {
                 clearExpression(i, true);
                 setExpression(i, script, false, false);
             }
@@ -4592,7 +4180,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,
                                  bool doAlias)
 {
     //Sanity check
-    if ( !master || ( master->getDimension() != getDimension() ) ||
+    if ( !master || ( master->getNDimensions() != getNDimensions() ) ||
          ( master->typeName() != typeName() ) ) {
         return false;
     }
@@ -4604,7 +4192,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,
         master->onKnobAboutToAlias( shared_from_this() );
     }
     beginChanges();
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         if ( isSlave(i) ) {
             unSlave(i, false);
         }
@@ -4615,7 +4203,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,
             Q_UNUSED(ok);
         }
     }
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         master->setDimensionName( i, getDimensionName(i) );
     }
     handleSignalSlotsForAliasLink(master, doAlias);
@@ -4718,7 +4306,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const int dimension, V
         // - the knob wants the slave/master link to be persistent and
         // - the effect is not a clone of another one OR the master knob is an alias of this one
         if ( master.second && !knob->isMastersPersistenceIgnored() && (!isEffectCloned || knob->getAliasMaster())) {
-            if (master.second->getDimension() > 1) {
+            if (master.second->getNDimensions() > 1) {
                 serialization->_slaveMasterLink.masterDimensionName = master.second->getDimensionName(master.first);
             }
             serialization->_slaveMasterLink.hasLink = true;
@@ -4857,7 +4445,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     // We do the opposite of what is done in initializeValueSerializationStorage()
     if (isInt) {
         if (obj._serializeValue) {
-            isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension);
+            isInt->setValue(obj._value.isInt, ViewSpec::all(), targetDimension, eValueChangedReasonNatronInternalEdited, 0);
         }
         if (restoreDefaultValue) {
             if (obj._serializeValue) {
@@ -4870,7 +4458,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isBool || isGrp || isButton) {
         assert(isBoolBase);
         if (obj._serializeValue) {
-            isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension);
+            isBoolBase->setValue(obj._value.isBool, ViewSpec::all(), targetDimension, eValueChangedReasonNatronInternalEdited, 0);
         }
         if (restoreDefaultValue) {
             if (obj._serializeValue) {
@@ -4883,7 +4471,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
         assert(isDoubleBase);
 
         if (obj._serializeValue) {
-            isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension);
+            isDoubleBase->setValue(obj._value.isDouble, ViewSpec::all(), targetDimension, eValueChangedReasonNatronInternalEdited, 0);
         }
         if (restoreDefaultValue) {
             if (obj._serializeValue) {
@@ -4896,7 +4484,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
 
         if (obj._serializeValue) {
-            isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension);
+            isStringBase->setValue(obj._value.isString, ViewSpec::all(), targetDimension, eValueChangedReasonNatronInternalEdited, 0);
         }
         if (restoreDefaultValue) {
             if (obj._serializeValue) {
@@ -4922,7 +4510,7 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
                 // Just remember the active entry if not found
                 isChoice->setActiveEntry(obj._value.isString);
             } else {
-                isChoice->setValue(foundValue);
+                isChoice->setValue(foundValue, ViewSpec::all(), targetDimension, eValueChangedReasonNatronInternalEdited, 0);
             }
          }
         if (foundDefault != -1) {
@@ -5000,7 +4588,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         KnobIPtr thisShared = shared_from_this();
 
         serialization->_typeName = typeName();
-        serialization->_dimension = getDimension();
+        serialization->_dimension = getNDimensions();
         serialization->_scriptName = getName();
 
         serialization->_isUserKnob = isUserKnob() && !isDeclaredByPlugin();
@@ -5260,7 +4848,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
         KnobPath* isPath = dynamic_cast<KnobPath*>(this);
 
-        int nDims = std::min( getDimension(), serialization->_dimension );
+        int nDims = std::min( getNDimensions(), serialization->_dimension );
 
         if (isInt) {
             const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
@@ -5436,7 +5024,12 @@ struct KnobHolder::KnobHolderPrivate
     int nbChangesRequiringMetadataRefresh;
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
+
+    // Protects hasAnimation
     mutable QMutex hasAnimationMutex;
+
+    // True if one knob held by this object is animated.
+    // This is held here for fast access, otherwise it requires looping over all knobs
     bool hasAnimation;
     DockablePanelI* settingsPanel;
 
@@ -6387,6 +5980,7 @@ KnobHolder::endChanges(bool discardRendering)
         if (!guiFrozen) {
             boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
             if (handler) {
+#pragma message WARN("Don't update GUI if value changes are blocked")
                 handler->s_valueChanged(it->view, dimension, it->reason);
             }
             it->knob->checkAnimationLevel(it->view, dimension);
@@ -6427,11 +6021,13 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Call getClipPreferences & render
     if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
+        endKnobsValuesChanged_public(firstKnobReason);
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
         } else {
             evaluate(hasHadSignificantChange, mustRefreshMetadatas);
         }
+
     }
 
     return ret;
@@ -6451,7 +6047,6 @@ KnobHolder::onDoValueChangeOnMainThread(const KnobIPtr& knob,
 void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
                               int dimension,
-                              bool refreshGui,
                               double time,
                               ViewSpec view,
                               ValueChangedReasonEnum originalReason,
@@ -6462,6 +6057,12 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
     }
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
+
+        if (_imp->nbChangesDuringEvaluationBlock == 0) {
+            // This is the first change, call begin action
+            beginKnobsValuesChanged_public(originalReason);
+        }
+
         KnobChange* foundChange = 0;
         for (KnobChanges::iterator it = _imp->knobChanged.begin(); it != _imp->knobChanged.end(); ++it) {
             if (it->knob == knob) {
@@ -6479,13 +6080,12 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
-        foundChange->refreshGui |= refreshGui;
         foundChange->time = time;
         foundChange->view = view;
         foundChange->knob = knob;
         foundChange->valueChangeBlocked = knob->isValueChangesBlocked();
         if (dimension == -1) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
+            for (int i = 0; i < knob->getNDimensions(); ++i) {
                 foundChange->dimensionChanged.insert(i);
                 // Make sure expressions are invalidated
                 knob->clearExpressionsResults(i);
@@ -6506,12 +6106,6 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         }
         ++_imp->nbChangesDuringEvaluationBlock;
 
-        //We do not call instanceChanged now since the hash did not change!
-        //Make sure to call it after
-
-        /*if (reason == eValueChangedReasonTimeChanged) {
-            return;
-           }*/
     }
 } // KnobHolder::appendValueChange
 
@@ -6720,7 +6314,7 @@ KnobHolder::slaveAllKnobs(const KnobHolderPtr& other)
             if (!foundKnob) {
                 continue;
             }
-            int dims = foundKnob->getDimension();
+            int dims = foundKnob->getNDimensions();
             for (int j = 0; j < dims; ++j) {
                 foundKnob->slaveTo(j, otherKnobs[i], j);
             }
@@ -6746,7 +6340,7 @@ KnobHolder::unslaveAllKnobs()
     const KnobsVec & thisKnobs = getKnobs();
     beginChanges();
     for (U32 i = 0; i < thisKnobs.size(); ++i) {
-        int dims = thisKnobs[i]->getDimension();
+        int dims = thisKnobs[i]->getNDimensions();
         for (int j = 0; j < dims; ++j) {
             if ( thisKnobs[i]->isSlave(j) ) {
                 thisKnobs[i]->unSlave(j, true);
@@ -6962,17 +6556,7 @@ KnobHolder::appendToHash(double time, ViewIdx view, Hash64* hash)
 
 
 /***************************STRING ANIMATION******************************************/
-void
-AnimatingKnobStringHelper::cloneExtraData(const KnobIPtr& other,
-                                          int /*dimension*/,
-                                          int /*otherDimension*/)
-{
-    AnimatingKnobStringHelperPtr isAnimatedString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(other);
 
-    if (isAnimatedString) {
-        _animation->clone( isAnimatedString->getAnimation() );
-    }
-}
 
 bool
 AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
@@ -7009,6 +6593,7 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(const KnobHolderPtr& holder
     : KnobStringBase(holder, description, dimension, declaredByPlugin)
     , _animation()
 {
+
 }
 
 AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
@@ -7042,16 +6627,12 @@ AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
 }
 
 void
-AnimatingKnobStringHelper::animationRemoved_virtual(int /*dimension*/)
+AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemoved,
+                                          ViewSpec /*view*/,
+                                          int /*dimension*/,
+                                          CurveChangeReason /*reason*/)
 {
-    _animation->clearKeyFrames();
-}
-
-void
-AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
-                                                   double time)
-{
-    _animation->removeKeyFrame(time);
+    _animation->removeKeyframes(keysRemoved);
 }
 
 std::string

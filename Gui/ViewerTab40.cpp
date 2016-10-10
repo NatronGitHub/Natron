@@ -303,6 +303,12 @@ ViewerTab::redrawGLWidgets()
     _imp->timeLineGui->update();
 }
 
+void
+ViewerTab::redrawTimeline()
+{
+    _imp->timeLineGui->update();
+}
+
 
 void
 ViewerTab::centerOn(SequenceTime left,

@@ -218,6 +218,9 @@ KnobGuiButton::updateGUI(int /*dimension*/)
 
     if ( k->getIsCheckable() ) {
         bool checked = k->getValue();
+        if (_button->isChecked() == checked) {
+            return;
+        }
         _button->setDown(checked);
         _button->setChecked(checked);
     }

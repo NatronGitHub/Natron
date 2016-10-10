@@ -177,6 +177,18 @@ public:
 
     void getSelectedDSKnobs(std::list<DSKnobPtr >* knobs) const;
 
+    /**
+     * @brief Checks if the item associated with 'dsKnob' must be shown
+     * or hidden. Checks also the visible state of the item associated
+     * with its node.
+     *
+     * If the knob has no keyframes then the item is hidden.
+     *
+     * This slot is automatically called when a keyframe associated with
+     * 'dsKnob' is set or removed.
+     */
+    void refreshKnobVisibility(const DSKnobPtr& dsKnob);
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
@@ -216,18 +228,6 @@ private Q_SLOTS:
      * remove 'dsNode'.
      */
     void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
-
-    /**
-     * @brief Checks if the item associated with 'dsKnob' must be shown
-     * or hidden. Checks also the visible state of the item associated
-     * with its node.
-     *
-     * If the knob has no keyframes then the item is hidden.
-     *
-     * This slot is automatically called when a keyframe associated with
-     * 'dsKnob' is set or removed.
-     */
-    void onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob);
 
     /**
      * @brief Check the selected state of the knob context items which have

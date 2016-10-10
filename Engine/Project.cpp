@@ -1506,16 +1506,6 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
 
 }
 
-void
-Project::beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
-}
-
-void
-Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
-}
-
 ///this function is only called on the main thread
 bool
 Project::onKnobValueChanged(const KnobIPtr& knob,
@@ -1926,7 +1916,7 @@ Project::doResetEnd(bool aboutToQuit)
 
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+            for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
                 knobs[i]->resetToDefaultValue(j);
             }
         }

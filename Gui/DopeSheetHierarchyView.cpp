@@ -321,9 +321,6 @@ HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq)
 HierarchyViewPrivate::~HierarchyViewPrivate()
 {}
 
-/**
- * @see HierarchyView::onKeyframeSetOrRemoved()
- */
 void
 HierarchyViewPrivate::checkKnobsVisibleState(const DSNodePtr& dsNode)
 {
@@ -344,9 +341,6 @@ HierarchyViewPrivate::checkKnobsVisibleState(const DSNodePtr& dsNode)
     }
 }
 
-/**
- * @see HierarchyView::onKeyframeSetOrRemoved()
- */
 void
 HierarchyViewPrivate::checkNodeVisibleState(const DSNodePtr& dsNode)
 {
@@ -370,9 +364,6 @@ HierarchyViewPrivate::checkNodeVisibleState(const DSNodePtr& dsNode)
     nodeItem->setHidden(!showNode);
 }
 
-/**
- * @see HierarchyView::onKeyframeSetOrRemoved()
- */
 void
 HierarchyViewPrivate::checkKnobVisibleState(const DSKnobPtr& dsKnob)
 {
@@ -978,7 +969,7 @@ HierarchyView::onNodeAboutToBeRemoved(const DSNodePtr& dsNode)
 }
 
 void
-HierarchyView::onKeyframeSetOrRemoved(const DSKnobPtr& dsKnob)
+HierarchyView::refreshKnobVisibility(const DSKnobPtr& dsKnob)
 {
     _imp->checkKnobVisibleState(dsKnob);
 

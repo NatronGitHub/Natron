@@ -150,7 +150,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     KnobGuiPtr thisShared = shared_from_this();
     std::vector<CurveGuiPtr > visibleCurves;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         QString curveName = QString::fromUtf8( knob->getDimensionName(i).c_str() );
         KnobCurveGuiPtr curve( new KnobCurveGui(_curveWidget, knob->getParametricCurve(i), thisShared, i, curveName, QColor(255, 255, 255), 1.) );
         _curveWidget->addCurveAndSetColor(curve);
@@ -288,7 +288,7 @@ KnobGuiParametric::resetSelectedCurves()
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
             if ( it->treeItem == selected.at(i) ) {
-                k->resetToDefaultValue( it->curve->getDimension() );
+                k->resetToDefaultValue( it->curve->getNDimensions() );
                 break;
             }
         }

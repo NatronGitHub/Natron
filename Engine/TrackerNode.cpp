@@ -1786,7 +1786,7 @@ TrackerNode::onOverlayPenMotion(double time,
                                             view,
                                             eValueChangedReasonPluginEdited);
                 for (int i = 0; i < 4; ++i) {
-                    for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                    for (int d = 0; d < patternCorners[i]->getNDimensions(); ++d) {
                         patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
                     }
                 }
@@ -2246,7 +2246,7 @@ TrackerNode::onOverlayPenMotion(double time,
             y += dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
             for (int i = 0; i < 4; ++i) {
-                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                for (int d = 0; d < patternCorners[i]->getNDimensions(); ++d) {
                     patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
                 }
             }

@@ -89,7 +89,7 @@ getOfxKeyFrames(const KnobIPtr& knob,
         startDim = 0;
     }
     if (endDim == -1) {
-        endDim = knob->getDimension();
+        endDim = knob->getNDimensions();
     }
     assert(startDim < endDim && startDim >= 0);
     if ( knob->canAnimate() ) {
@@ -230,12 +230,14 @@ deleteKey(const KnobIPtr& knob,
         startDim = 0;
     }
     if (endDim == -1) {
-        endDim = knob->getDimension();
+        endDim = knob->getNDimensions();
     }
     assert(startDim < endDim && startDim >= 0);
+    knob->beginChanges();
     for (int i = startDim; i < endDim; ++i) {
-        knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i, false);
+        knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i);
     }
+    knob->endChanges();
 
     return kOfxStatOK;
 }
@@ -250,12 +252,15 @@ deleteAllKeys(const KnobIPtr& knob,
         startDim = 0;
     }
     if (endDim == -1) {
-        endDim = knob->getDimension();
+        endDim = knob->getNDimensions();
     }
     assert(startDim < endDim && startDim >= 0);
+
+    std::vector<int> dimensions;
     for (int i = startDim; i < endDim; ++i) {
-        knob->removeAnimation(ViewSpec::all(), i);
+        dimensions.push_back(i);
     }
+    knob->removeAnimationAcrossDimensions(ViewSpec::all(), dimensions, eCurveChangeReasonInternal);
 
     return kOfxStatOK;
 }
@@ -274,12 +279,7 @@ copyFrom(const KnobIPtr & from,
     if ( from->typeName() == to->typeName() ) {
         to->beginChanges();
         for (int i = startDim; i < endDim; ++i) {
-            to->clone(from, offset, range, i);
-        }
-        int dims = std::min( endDim, to->getDimension() );
-        double curTime = from->getCurrentTime();
-        for (int i = startDim; i < dims; ++i) {
-            to->evaluateValueChange(i, curTime, ViewIdx(0),  eValueChangedReasonPluginEdited);
+            to->clone(from, i, i, range, offset);
         }
         to->endChanges();
     }
@@ -681,7 +681,7 @@ OfxIntegerInstance::set(int v)
 {
     KnobIntPtr knob = _knob.lock();
 
-    knob->setValueFromPlugin(v, ViewSpec::current(), 0);
+    knob->setValue(v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -692,7 +692,7 @@ OfxIntegerInstance::set(OfxTime time,
 {
     KnobIntPtr knob = _knob.lock();
 
-    knob->setValueAtTimeFromPlugin(time, v, ViewSpec::current(), 0);
+    knob->setValueAtTime(time, v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -921,7 +921,7 @@ OfxDoubleInstance::set(double v)
 {
     KnobDoublePtr knob = _knob.lock();
 
-    knob->setValueFromPlugin(v, ViewSpec::current(), 0);
+    knob->setValue(v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -932,7 +932,7 @@ OfxDoubleInstance::set(OfxTime time,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    knob->setValueAtTimeFromPlugin(time, v, ViewSpec::current(), 0);
+    knob->setValueAtTime(time, v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1142,7 +1142,7 @@ OfxBooleanInstance::set(bool b)
 {
     KnobBoolPtr knob = _knob.lock();
 
-    knob->setValueFromPlugin(b, ViewSpec::current(), 0);
+    knob->setValue(b, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1153,7 +1153,7 @@ OfxBooleanInstance::set(OfxTime time,
 {
     assert( KnobBool::canAnimateStatic() );
     KnobBoolPtr knob = _knob.lock();
-    knob->setValueAtTimeFromPlugin(time, b, ViewSpec::current(), 0);
+    knob->setValueAtTime(time, b, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -1349,7 +1349,7 @@ OfxChoiceInstance::set(int v)
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
-        knob->setValueFromPlugin(v, ViewSpec::current(), 0);
+        knob->setValue(v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
         return kOfxStatOK;
     } else {
@@ -1368,7 +1368,7 @@ OfxChoiceInstance::set(OfxTime time,
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
-        knob->setValueAtTimeFromPlugin(time, v, ViewSpec::current(), 0);
+        knob->setValueAtTime(time, v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
         return kOfxStatOK;
     } else {
@@ -1612,9 +1612,14 @@ OfxRGBAInstance::set(double r,
                      double b,
                      double a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
 
-    color->setValues(r, g, b, a, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    std::vector<double> vals(4);
+    vals[0] = r;
+    vals[1] = g;
+    vals[2] = b;
+    vals[3] = a;
+    knob->setValueAcrossDimensions(vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -1626,9 +1631,14 @@ OfxRGBAInstance::set(OfxTime time,
                      double b,
                      double a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
 
-    color->setValuesAtTime(time, r, g, b, a, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    std::vector<double> vals(4);
+    vals[0] = r;
+    vals[1] = g;
+    vals[2] = b;
+    vals[3] = a;
+    knob->setValueAtTimeAcrossDimensions(time, vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -1718,7 +1728,12 @@ void
 OfxRGBAInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2), _properties.getDoubleProperty(kOfxParamPropDefault, 3));
+    KnobColorPtr knob = _knob.lock();
+    std::vector<double> color(4);
+    for (int i = 0; i < 4; ++i) {
+        color[i] = _properties.getDoubleProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(color, 0);
 }
 
 void
@@ -1869,9 +1884,13 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
 
-    color->setValues(r, g, b, ViewSpec::current(),  eValueChangedReasonPluginEdited);
+    std::vector<double> vals(4);
+    vals[0] = r;
+    vals[1] = g;
+    vals[2] = b;
+    knob->setValueAcrossDimensions(vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -1882,10 +1901,13 @@ OfxRGBInstance::set(OfxTime time,
                     double g,
                     double b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
 
-    color->setValuesAtTime(time, r, g, b, ViewSpec::current(), eValueChangedReasonPluginEdited);
-
+    std::vector<double> vals(4);
+    vals[0] = r;
+    vals[1] = g;
+    vals[2] = b;
+    knob->setValueAtTimeAcrossDimensions(time, vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1931,7 +1953,12 @@ void
 OfxRGBInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2));
+    KnobColorPtr knob = _knob.lock();
+    std::vector<double> color(3);
+    for (int i = 0; i < 3; ++i) {
+        color[i] = _properties.getDoubleProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(color, 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -2187,8 +2214,10 @@ OfxDouble2DInstance::set(double x1,
                          double x2)
 {
     KnobDoublePtr knob = _knob.lock();
-
-    knob->setValues(x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
+    std::vector<double> vals(2);
+    vals[0] = x1;
+    vals[1] = x2;
+    knob->setValueAcrossDimensions(vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -2199,8 +2228,10 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x2)
 {
     KnobDoublePtr knob = _knob.lock();
-
-    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
+    std::vector<double> vals(2);
+    vals[0] = x1;
+    vals[1] = x2;
+    knob->setValueAtTimeAcrossDimensions(time, vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -2243,7 +2274,12 @@ void
 OfxDouble2DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1));
+    KnobDoublePtr knob = _knob.lock();
+    std::vector<double> color(2);
+    for (int i = 0; i < 2; ++i) {
+        color[i] = _properties.getDoubleProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(color, 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -2332,16 +2368,6 @@ OfxDouble2DInstance::getKnob() const
     return _knob.lock();
 }
 
-#if 0
-bool
-OfxDouble2DInstance::isAnimated(int dimension) const
-{
-    KnobDoublePtr knob = _knob.lock();
-
-    return knob->isAnimated( dimension + _startIndex, ViewSpec::current() );
-}
-
-#endif
 bool
 OfxDouble2DInstance::isAnimated() const
 {
@@ -2493,7 +2519,10 @@ OfxInteger2DInstance::set(int x1,
 {
     KnobIntPtr knob = _knob.lock();
 
-    knob->setValues(x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
+    std::vector<int> vals(2);
+    vals[0] = x1;
+    vals[1] = x2;
+    knob->setValueAcrossDimensions(vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -2504,8 +2533,10 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x2)
 {
     KnobIntPtr knob = _knob.lock();
-
-    knob->setValuesAtTime(time, x1, x2, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
+    std::vector<int> vals(2);
+    vals[0] = x1;
+    vals[1] = x2;
+    knob->setValueAtTimeAcrossDimensions(time, vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -2595,7 +2626,12 @@ void
 OfxInteger2DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), _properties.getIntProperty(kOfxParamPropDefault, 1));
+    KnobIntPtr knob = _knob.lock();
+    std::vector<int> values(2);
+    for (int i = 0; i < 2; ++i) {
+        values[i] = _properties.getIntProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(values, 0);
 }
 
 void
@@ -2766,7 +2802,11 @@ OfxDouble3DInstance::set(double x1,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    knob->setValues(x1, x2, x3, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
+    std::vector<double> vals(3);
+    vals[0] = x1;
+    vals[1] = x2;
+    vals[2] = x3;
+    knob->setValueAcrossDimensions(vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -2778,8 +2818,12 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x3)
 {
     KnobDoublePtr knob = _knob.lock();
+    std::vector<double> vals(3);
+    vals[0] = x1;
+    vals[1] = x2;
+    vals[2] = x3;
+    knob->setValueAtTimeAcrossDimensions(time, vals, _startIndex, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
-    knob->setValuesAtTime(time, x1, x2, x3, ViewSpec::current(), eValueChangedReasonPluginEdited, _startIndex);
 
     return kOfxStatOK;
 }
@@ -2826,7 +2870,13 @@ void
 OfxDouble3DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2));
+    KnobDoublePtr knob = _knob.lock();
+
+    std::vector<double> values(3);
+    for (int i = 0; i < 3; ++i) {
+        values[i] = _properties.getDoubleProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(values, 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -3056,8 +3106,11 @@ OfxInteger3DInstance::set(int x1,
                           int x3)
 {
     KnobIntPtr knob = _knob.lock();
-
-    knob->setValues(x1, x2, x3, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    std::vector<int> vals(3);
+    vals[0] = x1;
+    vals[1] = x2;
+    vals[2] = x3;
+    knob->setValueAcrossDimensions(vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -3069,8 +3122,11 @@ OfxInteger3DInstance::set(OfxTime time,
                           int x3)
 {
     KnobIntPtr knob = _knob.lock();
-
-    knob->setValuesAtTime(time, x1, x2, x3, ViewSpec::current(), eValueChangedReasonPluginEdited);
+    std::vector<int> vals(3);
+    vals[0] = x1;
+    vals[1] = x2;
+    vals[2] = x3;
+    knob->setValueAtTimeAcrossDimensions(time, vals, 0, ViewSpec::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -3086,7 +3142,13 @@ void
 OfxInteger3DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), _properties.getIntProperty(kOfxParamPropDefault, 1), _properties.getIntProperty(kOfxParamPropDefault, 2));
+    KnobIntPtr knob = _knob.lock();
+
+    std::vector<int> values(3);
+    for (int i = 0; i < 3; ++i) {
+        values[i] = _properties.getIntProperty(kOfxParamPropDefault, i);
+    }
+    knob->setDefaultValuesWithoutApplying(values, 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -3301,7 +3363,7 @@ OfxGroupInstance::setOpen()
 {
     DYNAMIC_PROPERTY_CHECK();
     int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
-    _groupKnob.lock()->setValue((bool)opened);
+    _groupKnob.lock()->setValue((bool)opened, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0);
 }
 
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
@@ -3547,15 +3609,15 @@ OfxStringInstance::set(const char* str)
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValueFromPlugin(s, ViewSpec::current(), 0);
+        fileKnob->setValue(s, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
     if (strknob) {
-        strknob->setValueFromPlugin(str, ViewSpec::current(), 0);
+        strknob->setValue(str, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
     if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValueFromPlugin(s, ViewSpec::current(), 0);
+        pathKnob->setValue(s, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
 
     return kOfxStatOK;
@@ -3575,15 +3637,15 @@ OfxStringInstance::set(OfxTime time,
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValueAtTimeFromPlugin(time, s, ViewSpec::current(), 0);
+        fileKnob->setValueAtTime(time, s, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
     if (strknob) {
-        strknob->setValueAtTimeFromPlugin(time, str, ViewSpec::current(), 0);
+        strknob->setValueAtTime(time, str, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
     if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValueAtTimeFromPlugin(time, s, ViewSpec::current(), 0);
+        pathKnob->setValueAtTime(time, s, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
     }
 
     return kOfxStatOK;
@@ -3935,7 +3997,7 @@ OfxCustomInstance::set(const char* str)
 {
     KnobStringPtr knob = _imp->knob.lock();
 
-    knob->setValueFromPlugin(str, ViewSpec::current(), 0);
+    knob->setValue(str, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -3946,7 +4008,7 @@ OfxCustomInstance::set(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
     KnobStringPtr knob = _imp->knob.lock();
-    knob->setValueAtTimeFromPlugin(time, str, ViewSpec::current(), 0);
+    knob->setValueAtTime(time, str, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
 }
@@ -4194,7 +4256,7 @@ OfxParametricInstance::setLabel()
         return;
     }
     k->setLabel( getParamLabel(this) );
-    for (int i = 0; i < k->getDimension(); ++i) {
+    for (int i = 0; i < k->getNDimensions(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
         k->setDimensionName(i, curveName);
     }

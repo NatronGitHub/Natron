@@ -138,7 +138,6 @@ struct GuiAppInstancePrivate
     int overlayRedrawRequests;
     mutable QMutex rotoDataMutex;
     RotoPaintData rotoData;
-    std::list<SequenceTime> timelineKeyframes, timelineUserKeys;
     KnobDnDData knobDnd;
 
     // The viewer that's mastering others when all viewports are in sync
@@ -157,8 +156,6 @@ struct GuiAppInstancePrivate
         , overlayRedrawRequests(0)
         , rotoDataMutex()
         , rotoData()
-        , timelineKeyframes()
-        , timelineUserKeys()
         , knobDnd()
         , masterSyncViewer()
     {
@@ -1280,228 +1277,21 @@ GuiAppInstance::getPaintStrokeWholeBbox() const
 }
 
 void
-GuiAppInstance::removeAllKeyframesIndicators()
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool wasEmpty = _imp->timelineKeyframes.empty();
-    _imp->timelineKeyframes.clear();
-    if (!wasEmpty) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::addKeyframeIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.push_back(time);
-    Q_EMIT keyframeIndicatorsChanged();
-}
-
-void
-GuiAppInstance::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
-                                                   bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.insert( _imp->timelineKeyframes.begin(), keys.begin(), keys.end() );
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeKeyFrameIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<SequenceTime>::iterator it = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), time);
-    if ( it != _imp->timelineKeyframes.end() ) {
-        _imp->timelineKeyframes.erase(it);
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
-                                                bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), *it);
-        if ( it2 != _imp->timelineKeyframes.end() ) {
-            _imp->timelineKeyframes.erase(it2);
-        }
-    }
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeAllUserKeyframesIndicators()
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool wasEmpty = _imp->timelineUserKeys.empty();
-    _imp->timelineUserKeys.clear();
-    if (!wasEmpty) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::addUserKeyframeIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineUserKeys.push_back(time);
-    Q_EMIT keyframeIndicatorsChanged();
-}
-
-void
-GuiAppInstance::addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
-                                                       bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineUserKeys.insert( _imp->timelineUserKeys.begin(), keys.begin(), keys.end() );
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeUserKeyFrameIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<SequenceTime>::iterator it = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), time);
-    if ( it != _imp->timelineUserKeys.end() ) {
-        _imp->timelineUserKeys.erase(it);
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
-                                                    bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), *it);
-        if ( it2 != _imp->timelineUserKeys.end() ) {
-            _imp->timelineUserKeys.erase(it2);
-        }
-    }
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::getUserKeyframes(std::list<SequenceTime>* keys) const
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    *keys = _imp->timelineUserKeys;
-}
-
-void
-GuiAppInstance::addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<NodePtr>::const_iterator next = nodes.begin();
-    if ( next != nodes.end() ) {
-        ++next;
-    }
-    for (std::list<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->showKeyframesOnTimeline( next == nodes.end() );
-
-        // increment for next iteration
-        if ( next != nodes.end() ) {
-            ++next;
-        }
-    } // for()
-}
-
-void
-GuiAppInstance::addNodeKeyframesToTimeline(const NodePtr& node)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    node->showKeyframesOnTimeline(true);
-}
-
-void
-GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<NodePtr> & nodes)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<NodePtr>::const_iterator next = nodes.begin();
-    if ( next != nodes.end() ) {
-        ++next;
-    }
-    for (std::list<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->hideKeyframesFromTimeline( next == nodes.end() );
-
-        // increment for next iteration
-        if ( next != nodes.end() ) {
-            ++next;
-        }
-    } // for(it)
-}
-
-void
-GuiAppInstance::removeNodeKeyframesFromTimeline(const NodePtr& node)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    node->hideKeyframesFromTimeline(true);
-}
-
-void
-GuiAppInstance::getKeyframes(std::list<SequenceTime>* keys) const
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    *keys = _imp->timelineKeyframes;
-}
-
-void
 GuiAppInstance::goToPreviousKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.sort();
     TimeLinePtr timeline = getProject()->getTimeLine();
-    SequenceTime currentFrame = timeline->currentFrame();
-    std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
-    if ( lowerBound != _imp->timelineKeyframes.begin() ) {
-        --lowerBound;
-        timeline->seekFrame(*lowerBound, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+    int currentFrame = timeline->currentFrame();
+    const TimeLineKeysSet& keys = _imp->_gui->getTimelineGuiKeyframes();
+    if (keys.size() == 0) {
+        return;
+    }
+    for (TimeLineKeysSet::const_reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
+        if (it->frame < currentFrame) {
+            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            break;
+        }
     }
 }
 
@@ -1510,13 +1300,17 @@ GuiAppInstance::goToNextKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.sort();
     TimeLinePtr timeline = getProject()->getTimeLine();
-    SequenceTime currentFrame = timeline->currentFrame();
-    std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
-    if ( upperBound != _imp->timelineKeyframes.end() ) {
-        timeline->seekFrame(*upperBound, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+    int currentFrame = timeline->currentFrame();
+    const TimeLineKeysSet& keys = _imp->_gui->getTimelineGuiKeyframes();
+    if (keys.size() == 0) {
+        return;
+    }
+    for (TimeLineKeysSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        if (it->frame > currentFrame) {
+            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            break;
+        }
     }
 }
 

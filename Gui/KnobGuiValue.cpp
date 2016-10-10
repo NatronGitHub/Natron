@@ -238,7 +238,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     }
 
     KnobIPtr knob = _imp->getKnob();
-    const int nDims = knob->getDimension();
+    const int nDims = knob->getNDimensions();
     std::vector<double> increments, displayMins, displayMaxs, mins, maxs;
     std::vector<int> decimals;
     KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
@@ -601,7 +601,7 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
         KnobIPtr knob = _imp->getKnob();
         KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
         KnobIntBasePtr intKnob = _imp->getKnobAsInt();
-        const int nDims = knob->getDimension();
+        const int nDims = knob->getNDimensions();
         if (nDims > 1) {
             SequenceTime time = knob->getCurrentTime();
             double firstDimensionValue = _imp->spinBoxes[0].first->value();
@@ -768,8 +768,8 @@ KnobGuiValue::updateGUI(const int dimension)
     if ( (knobDim < 1) || (dimension >= knobDim) ) {
         return;
     }
-    assert(1 <= knobDim);
     assert( dimension == -1 || (dimension >= 0 && dimension < knobDim) );
+
     std::vector<double> values(knobDim);
     double refValue = 0.;
     std::vector<std::string> expressions(knobDim);
@@ -779,6 +779,7 @@ KnobGuiValue::updateGUI(const int dimension)
         time = knob->getCurrentTime();
     }
 
+    bool isGuiDifferentFromInternalValues = false;
     for (int i = 0; i < knobDim; ++i) {
         double v = _imp->getKnobValue(i);
         if (getNormalizationPolicy(i) != eValueIsNormalizedNone) {
@@ -794,7 +795,13 @@ KnobGuiValue::updateGUI(const int dimension)
             }
         }
         values[i] = v;
+        isGuiDifferentFromInternalValues |= v != _imp->spinBoxes[i].first->value();
         expressions[i] = knob->getExpression(i);
+    }
+
+    // If spinbox values did not change, just don't do anything
+    if (!isGuiDifferentFromInternalValues) {
+        return;
     }
 
     if (dimension == -1) {
@@ -1348,7 +1355,7 @@ KnobGuiInt::onKeybindRecorderEditingFinished()
     newValues.push_back(mods);
 
     KnobIntPtr knob = _knob.lock();
-    std::list<int> oldValues = knob->getValueForEachDimension_mt_safe();
+    std::vector<int> oldValues = knob->getValueForEachDimension_mt_safe();
 
     pushUndoCommand(new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues));
 }
@@ -1360,7 +1367,7 @@ KnobGuiInt::updateGUI(int dimension)
         KnobGuiValue::updateGUI(dimension);
     } else {
         KnobIntPtr knob = _knob.lock();
-        assert(knob->getDimension() == 2);
+        assert(knob->getNDimensions() == 2);
         Key symbol = (Key)knob->getValue(0);
         KeyboardModifiers modifiers = (KeyboardModifiers)knob->getValue(1);
         QKeySequence sequence = makeKeySequence(QtEnumConvert::toQtModifiers(modifiers), QtEnumConvert::toQtKey(symbol));

@@ -215,7 +215,7 @@ public:
 
 public Q_SLOTS:
 
-    void onKnobInternalCurveChanged();
+    void refreshSelectedKeyframes();
     void onKnobInterpolationChanged();
 
 private:

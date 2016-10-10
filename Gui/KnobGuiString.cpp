@@ -692,9 +692,16 @@ KnobGuiString::updateGUI(int /*dimension*/)
         QString txt = QString::fromUtf8( value.c_str() );
 
         if ( knob->isCustomHTMLText() ) {
+            QString oldText = _textEdit->toHtml();
+            if (oldText == txt) {
+                return;
+            }
             _textEdit->setHtml(txt);
         } else {
-            //QString text = knob->decorateStringWithCurrentState(txt);
+            QString oldText = _textEdit->toPlainText();
+            if (oldText == txt) {
+                return;
+            }
             _textEdit->setPlainText(txt);
         }
 
@@ -718,11 +725,18 @@ KnobGuiString::updateGUI(int /*dimension*/)
         if ( _label && !iconFilePath.empty() ) {
             QString txt = QString::fromUtf8( knob->getValue().c_str() );
             txt.replace( QLatin1String("\n"), QLatin1String("<br>") );
+            if (_label->text() == txt) {
+                return;
+            }
             _label->setText(txt);
         }
     } else {
         assert(_lineEdit);
-        _lineEdit->setText( QString::fromUtf8( value.c_str() ) );
+        QString text = QString::fromUtf8( value.c_str() );
+        if (_lineEdit->text() == text) {
+            return;
+        }
+        _lineEdit->setText(text);
     }
 } // KnobGuiString::updateGUI
 

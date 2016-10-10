@@ -205,49 +205,49 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeBlur) {
             // Link effect knob to size
             KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            for (int i = 0; i < knob->getDimension(); ++i) {
+            for (int i = 0; i < knob->getNDimensions(); ++i) {
                 knob->slaveTo(i, _imp->effectStrength.lock(), 0);
             }
         } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
             // Link transform knobs
             KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            for (int i = 0; i < translateKnob->getDimension(); ++i) {
+            for (int i = 0; i < translateKnob->getNDimensions(); ++i) {
                 translateKnob->slaveTo(i, _imp->cloneTranslate.lock(), i);
             }
             KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            for (int i = 0; i < rotateKnob->getDimension(); ++i) {
+            for (int i = 0; i < rotateKnob->getNDimensions(); ++i) {
                 rotateKnob->slaveTo(i, _imp->cloneRotate.lock(), i);
             }
             KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            for (int i = 0; i < scaleKnob->getDimension(); ++i) {
+            for (int i = 0; i < scaleKnob->getNDimensions(); ++i) {
                 scaleKnob->slaveTo(i, _imp->cloneScale.lock(), i);
             }
             KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            for (int i = 0; i < uniformKnob->getDimension(); ++i) {
+            for (int i = 0; i < uniformKnob->getNDimensions(); ++i) {
                 uniformKnob->slaveTo(i, _imp->cloneScaleUniform.lock(), i);
             }
             KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            for (int i = 0; i < skewxKnob->getDimension(); ++i) {
+            for (int i = 0; i < skewxKnob->getNDimensions(); ++i) {
                 skewxKnob->slaveTo(i, _imp->cloneSkewX.lock(), i);
             }
             KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            for (int i = 0; i < skewyKnob->getDimension(); ++i) {
+            for (int i = 0; i < skewyKnob->getNDimensions(); ++i) {
                 skewyKnob->slaveTo(i, _imp->cloneSkewY.lock(), i);
             }
             KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            for (int i = 0; i < skewOrderKnob->getDimension(); ++i) {
+            for (int i = 0; i < skewOrderKnob->getNDimensions(); ++i) {
                 skewOrderKnob->slaveTo(i, _imp->cloneSkewOrder.lock(), i);
             }
             KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            for (int i = 0; i < centerKnob->getDimension(); ++i) {
+            for (int i = 0; i < centerKnob->getNDimensions(); ++i) {
                 centerKnob->slaveTo(i, _imp->cloneCenter.lock(), i);
             }
             KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            for (int i = 0; i < filterKnob->getDimension(); ++i) {
+            for (int i = 0; i < filterKnob->getNDimensions(); ++i) {
                 filterKnob->slaveTo(i, _imp->cloneFilter.lock(), i);
             }
             KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            for (int i = 0; i < boKnob->getDimension(); ++i) {
+            for (int i = 0; i < boKnob->getNDimensions(); ++i) {
                 boKnob->slaveTo(i, _imp->cloneBlackOutside.lock(), i);
             }
 
@@ -1454,7 +1454,7 @@ RotoDrawableItem::resetTransformCenter()
 
     std::pair<int, KnobIPtr> hasMaster = centerKnob->getMaster(0);
     if (hasMaster.second) {
-        for (int i = 0; i < centerKnob->getDimension(); ++i) {
+        for (int i = 0; i < centerKnob->getNDimensions(); ++i) {
             centerKnob->unSlave(i, false);
         }
     }
@@ -1462,7 +1462,7 @@ RotoDrawableItem::resetTransformCenter()
     centerKnob->removeAnimation(ViewSpec::all(), 1);
     centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
     if (hasMaster.second) {
-        for (int i = 0; i < centerKnob->getDimension(); ++i) {
+        for (int i = 0; i < centerKnob->getNDimensions(); ++i) {
             centerKnob->slaveTo(i, hasMaster.second, i);
         }
     }

@@ -2279,7 +2279,7 @@ NodeGui::onKnobExpressionChanged(const KnobGui* knob)
             if (slave == internalKnob) {
                 isCurrentLink = true;
             }
-            int ndims = slave->getDimension();
+            int ndims = slave->getNDimensions();
             int invalid = 0;
             for (int i = 0; i < ndims; ++i) {
                 if ( !slave->getExpression(i).empty() && !slave->isExpressionValid(i, 0) ) {
@@ -3526,7 +3526,7 @@ NodeGui::refreshAnimationIcon()
     bool hasAnimation = false;
     const KnobsVec& knobs = getNode()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end() ;++it) {
-        int nDims = (*it)->getDimension();
+        int nDims = (*it)->getNDimensions();
         for (int i = 0; i < nDims; ++i) {
             if ((*it)->getKeyFramesCount(ViewIdx(0), i) > 0) {
                 hasAnimation = true;
@@ -3908,6 +3908,60 @@ NodeGui::onInputVisibilityChanged(int /*inputNb*/)
     refreshEdgesVisility();
 }
 
+
+
+void
+NodeGui::onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved)
+{
+
+    KnobKeyFramesData& data = _knobsWithKeyframesDisplayed[knob];
+
+    for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
+        data.keyframes.insert((int)*it);
+    }
+    for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
+        std::set<int>::iterator found = data.keyframes.find((int)*it);
+        if (found != data.keyframes.end()) {
+            data.keyframes.erase(found);
+        }
+    }
+}
+
+void
+NodeGui::onKnobSecretChanged(const KnobIPtr& knob, bool /*isSecret*/)
+{
+    // If the knob has keyframes, we must redraw the timeline
+    KnobsKeyFramesDataMap::iterator foundKnob = _knobsWithKeyframesDisplayed.find(knob);
+    if (foundKnob != _knobsWithKeyframesDisplayed.end()) {
+        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
+    }
+
+}
+
+void
+NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
+{
+    for (KnobsKeyFramesDataMap::const_iterator it = _knobsWithKeyframesDisplayed.begin(); it!= _knobsWithKeyframesDisplayed.end(); ++it) {
+        KnobIPtr knob = it->first.lock();
+        if (!knob) {
+            continue;
+        }
+        if (knob->getIsSecret()) {
+            continue;
+        }
+        for (std::set<int>::const_iterator it2 = it->second.userKeyframes.begin(); it2 != it->second.userKeyframes.end(); ++it2) {
+            TimeLineKey k(*it2);
+            k.isUserKey = true;
+            insertTimelineKey(k, keys);
+        }
+        for (std::set<int>::const_iterator it2 = it->second.keyframes.begin(); it2 != it->second.keyframes.end(); ++it2) {
+            TimeLineKey k(*it2);
+            k.isUserKey = false;
+            insertTimelineKey(k, keys);
+        }
+    }
+}
+
 void
 NodeGui::onNodePresetsChanged()
 {
@@ -3981,9 +4035,8 @@ NodeGui::onNodePresetsChanged()
             }
         }
     }
-
-
 }
+
 
 NATRON_NAMESPACE_EXIT;
 

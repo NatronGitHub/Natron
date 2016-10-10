@@ -58,6 +58,7 @@ struct KnobTableItemPrivate;
 class KnobTableItem
 : public NamedKnobHolder
 , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+, public AnimatingObjectI
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -147,15 +148,86 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
+
+    //////////// Overriden from AnimatingObjectI
+    virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, int dimension) const OVERRIDE FINAL;
+    virtual bool cloneCurve(ViewSpec view, int dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual bool warpValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view,  int dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) OVERRIDE FINAL;
+    virtual void removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& dimensions, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteAnimationBeforeTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteAnimationAfterTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE FINAL;
+    virtual bool setLeftAndRightDerivativesAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double left, double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setDerivativeAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double derivative, bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    //////////// End from AnimatingObjectI
+
+private:
+
+    template <typename T>
+    void convertTimeValuePairListToTimeList(const std::list<TimeValuePair<T> >& inList,
+                                       std::list<double>* outList)
+    {
+        for (typename std::list<TimeValuePair<T> >::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+            outList->push_back(it->time);
+        }
+    }
+
+    ValueChangedReturnCodeEnum setKeyFrame(double time,
+                                           ViewSpec view,
+                                           CurveChangeReason reason,
+                                           KeyFrame* newKey);
+
+    ValueChangedReturnCodeEnum setKeyFrameInternal(double time,
+                                                   ViewSpec view,
+                                                   CurveChangeReason reason,
+                                                   KeyFrame* newKey);
+
+    void deleteAnimationConditional(double time, ViewSpec view, CurveChangeReason reason, bool before);
+
+    void setMultipleKeyFrames(const std::list<double>& keys, ViewSpec view, CurveChangeReason reason, std::vector<KeyFrame>* newKeys = 0);
+
+
 protected:
 
+    /**
+     * @brief Implement to initialize the knobs of the item and add them to the table by calling setColumn
+     **/
     virtual void initializeKnobs() OVERRIDE = 0;
+
+    /**
+     * @brief To be called whenever a keyframe controlling the whole item is added. For example, for a bezier curve the whole shape animation can be represented by keyframes.
+     * For a tracker, that could be the keyframes edited by the user.
+     **/
+    virtual void onItemMasterKeyFrameAdded(double time);
 
 Q_SIGNALS:
 
     void labelChanged(QString, TableChangeReasonEnum);
     void childRemoved(KnobTableItemPtr, TableChangeReasonEnum);
     void childInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
+    void curveAnimationChanged(std::list<double> added, std::list<double> removed, ViewSpec view, CurveChangeReason reason);
 
 private:
 

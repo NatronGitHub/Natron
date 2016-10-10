@@ -344,7 +344,7 @@ PickKnobDialog::onNodeComboEditingFinished()
             if (!isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;
-                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
+                for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
                     if ( name.isEmpty() ) {
                         canInsertKnob = false;
                     }

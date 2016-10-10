@@ -211,6 +211,8 @@ public:
 
     void redrawGLWidgets();
 
+    void redrawTimeline();
+
     void centerOn(SequenceTime left, SequenceTime right);
 
     void setFrameRangeEdited(bool edited);

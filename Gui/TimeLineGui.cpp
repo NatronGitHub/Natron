@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TimelineKeys.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
@@ -280,36 +281,6 @@ TimeLineGui::discardGuiPointer()
 {
     _imp->gui = 0;
 }
-
-struct TimeLineKey
-{
-    SequenceTime time;
-    bool isUserKey;
-
-    explicit TimeLineKey(SequenceTime t,
-                         bool isUserKey = false)
-        : time(t)
-        , isUserKey(isUserKey)
-    {
-    }
-
-    explicit TimeLineKey()
-        : time(0)
-        , isUserKey(false)
-    {
-    }
-};
-
-struct TimeLineKey_compare
-{
-    bool operator() (const TimeLineKey& lhs,
-                     const TimeLineKey& rhs) const
-    {
-        return lhs.time < rhs.time;
-    }
-};
-
-typedef std::set<TimeLineKey, TimeLineKey_compare> TimeLineKeysSet;
 
 void
 TimeLineGui::paintGL()
@@ -553,25 +524,7 @@ TimeLineGui::paintGL()
                                                       rightBoundWidgetCoord.y() - cursorHeight);
 
         /// pair<time, isUserKey>
-        TimeLineKeysSet keyframes;
-
-        {
-            std::list<SequenceTime> userKeys;
-            _imp->gui->getApp()->getUserKeyframes(&userKeys);
-            for (std::list<SequenceTime>::iterator it = userKeys.begin(); it != userKeys.end(); ++it) {
-                TimeLineKey k(*it, true);
-                keyframes.insert(k);
-            }
-
-            ///THere may be duplicates in this list
-            std::list<SequenceTime> keyframesList;
-            _imp->gui->getApp()->getKeyframes(&keyframesList);
-            for (std::list<SequenceTime>::iterator it = keyframesList.begin(); it != keyframesList.end(); ++it) {
-                TimeLineKey k(*it, false);
-                keyframes.insert(k);
-            }
-        }
-
+        const TimeLineKeysSet& keyframes = _imp->gui->getTimelineGuiKeyframes();
 
         //draw an alpha cursor if the mouse is hovering the timeline
         GL_GPU::glEnable(GL_POLYGON_SMOOTH);
@@ -725,12 +678,12 @@ TimeLineGui::paintGL()
         GL_GPU::glColor4f(kfR, kfG, kfB, 1.);
         std::list<SequenceTime> remainingUserKeys;
         for (TimeLineKeysSet::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
-            if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
+            if ( ( i->frame >= btmLeft.x() ) && ( i->frame <= topRight.x() ) ) {
                 if (!i->isUserKey) {
-                    GL_GPU::glVertex2f(i->time, lineYpos);
-                    GL_GPU::glVertex2f(i->time + 1, lineYpos);
+                    GL_GPU::glVertex2f(i->frame, lineYpos);
+                    GL_GPU::glVertex2f(i->frame + 1, lineYpos);
                 } else {
-                    remainingUserKeys.push_back(i->time);
+                    remainingUserKeys.push_back(i->frame);
                 }
             }
         }

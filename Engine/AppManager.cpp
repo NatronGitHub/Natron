@@ -2631,6 +2631,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<NodePtr >("NodePtr");
     qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
+    qRegisterMetaType<CurveChangeReason>("CurveChangeReason");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

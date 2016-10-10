@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TimelineKeys.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -388,6 +389,12 @@ public:
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
     virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
+    void onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved);
+
+    void onKnobSecretChanged(const KnobIPtr& knob, bool isSecret);
+
+    void getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const;
+
 protected:
 
     virtual int getBaseDepth() const { return 20; }
@@ -656,6 +663,15 @@ private:
     NodeWPtr _identityInput;
     bool identityStateSet;
     boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
+
+    struct KnobKeyFramesData
+    {
+        std::set<int> keyframes, userKeyframes;
+    };
+    typedef std::map<KnobIWPtr, KnobKeyFramesData > KnobsKeyFramesDataMap;
+    // All keyframes that should be display for the node on the timeline
+    KnobsKeyFramesDataMap _knobsWithKeyframesDisplayed;
+
 };
 
 inline NodeGuiPtr

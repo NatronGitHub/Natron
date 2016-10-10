@@ -504,7 +504,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     toAppend.append( QLatin1Char('.') );
     toAppend.append( QString::fromUtf8( fromKnob->getName().c_str() ) );
     toAppend.append( QString::fromUtf8(".get()") );
-    if (fromKnob->getDimension() > 1) {
+    if (fromKnob->getNDimensions() > 1) {
         toAppend.append( QLatin1Char('[') );
         if ( (cbDim == -1) || ( (cbDim == 0) && !fromKnob->getAllDimensionVisible() ) ) {
             toAppend.append( QString::fromUtf8("dimension") );

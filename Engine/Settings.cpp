@@ -1921,9 +1921,9 @@ Settings::saveSettings(const KnobsVec& knobs,
         KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+        for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
             QString dimensionName;
-            if (knobs[i]->getDimension() > 1) {
+            if (knobs[i]->getNDimensions() > 1) {
                 dimensionName =  QString::fromUtf8( name.c_str() ) + QLatin1Char('.') + QString::fromUtf8( knobs[i]->getDimensionName(j).c_str() );
             } else {
                 dimensionName = QString::fromUtf8( name.c_str() );
@@ -1977,7 +1977,7 @@ Settings::saveSettings(const KnobsVec& knobs,
             } catch (std::logic_error) {
                 // ignore
             }
-        } // for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+        } // for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
     } // for (U32 i = 0; i < knobs.size(); ++i) {
 
     if (doWarnings) {
@@ -1999,8 +1999,8 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
 
         const std::string& name = knobs[i]->getName();
 
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+        for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
+            std::string dimensionName = knobs[i]->getNDimensions() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
             QString qDimName = QString::fromUtf8( dimensionName.c_str() );
 
             if ( settings.contains(qDimName) ) {
@@ -2665,7 +2665,7 @@ Settings::restoreDefault()
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+        for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
     }
@@ -3596,7 +3596,7 @@ Settings::restoreDefaultAppearance()
         KnobColorPtr isColorKnob = toKnobColor(children[i]);
         if ( isColorKnob && isColorKnob->isSimplified() ) {
             isColorKnob->blockValueChanges();
-            for (int j = 0; j < isColorKnob->getDimension(); ++j) {
+            for (int j = 0; j < isColorKnob->getNDimensions(); ++j) {
                 isColorKnob->resetToDefaultValue(j);
             }
             isColorKnob->unblockValueChanges();

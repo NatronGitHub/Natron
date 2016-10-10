@@ -1415,22 +1415,31 @@ DockablePanel::setKeyOnAllParameters()
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
-    std::map< CurveGuiPtr, std::vector<KeyFrame > > keysToRemove;
+    std::map< CurveGuiPtr, std::vector<RemoveKeysCommand::ValueAtTime > > keysToRemove;
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         KnobIPtr knob = it->first.lock();
+        AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
-
                 for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
-                    std::vector<KeyFrame > vect;
+                    std::vector<RemoveKeysCommand::ValueAtTime >& vect = keysToRemove[*it2];
+
                     for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
-                        vect.push_back(*it3);
+                        RemoveKeysCommand::ValueAtTime v;
+                        v.time = it3->getTime();
+                        if (isString) {
+                            // For string knobs, we have to store the string because we need to remember the string we removed
+                            v.value = Variant(QString::fromUtf8(isString->getStringAtTime(v.time, ViewSpec::current(), 0).c_str()));
+                        } else {
+                            v.value = Variant(it3->getValue());
+                        }
+                        vect.push_back(v);
                     }
-                    keysToRemove.insert( std::make_pair(*it2, vect) );
                 }
             }
         }

@@ -63,11 +63,11 @@ public:
 
     void removeKeyFrame(double time);
 
+    void removeKeyframes(const std::list<double>& keysRemoved);
+
     void clearKeyFrames();
 
     void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
-
-    void clone(const StringAnimationManager & other);
 
     bool cloneAndCheckIfChanged(const StringAnimationManager & other);
 

@@ -393,6 +393,15 @@ enum ValueChangedReasonEnum
     eValueChangedReasonRestoreDefault,
 };
 
+// Controls the return value of a setValue call on a knob
+enum ValueChangedReturnCodeEnum
+{
+    eValueChangedReturnCodeNoKeyframeAdded = 0,
+    eValueChangedReturnCodeKeyframeModified,
+    eValueChangedReturnCodeKeyframeAdded,
+    eValueChangedReturnCodeNothingChanged,
+};
+
 
 // Used to add stretch before or after widgets
 enum ViewerContextLayoutTypeEnum

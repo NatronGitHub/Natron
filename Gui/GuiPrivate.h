@@ -43,6 +43,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Enums.h"
 
+#include "Engine/TimelineKeys.h"
+
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/GuiFwd.h"
@@ -237,6 +239,9 @@ public:
 
     // If we steal the focus from the user, give it back when entering
     boost::weak_ptr<KnobWidgetDnD> currentKnobFocus;
+
+    // List of keyframes that should be visible on all timeline GUI
+    TimeLineKeysSet keyframesVisibleOnTimeline;
 
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;

@@ -331,7 +331,7 @@ EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
     // because the result of the expression might depend on the state of the node
     const KnobsVec & knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        for (int i = 0; i < (*it)->getDimension(); ++i) {
+        for (int i = 0; i < (*it)->getNDimensions(); ++i) {
             std::string expr = (*it)->getExpression(i);
             if (!expr.empty()) {
                 (*it)->clearExpressionsResults(i);
@@ -3316,7 +3316,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobFilePtr fk = toKnobFile(knobs[i]);
         if ( fk && fk->getName() == kOfxImageEffectFileParamName ) {
-            fk->setValue(pattern);
+            fk->setValue(pattern, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
             break;
         }
 

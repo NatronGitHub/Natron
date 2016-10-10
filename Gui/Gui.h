@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <set>
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -46,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/SerializableWindow.h"
+#include "Engine/TimelineKeys.h"
 
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
@@ -512,6 +514,10 @@ public:
     virtual SplitterI* isMainWidgetSplitter() const OVERRIDE FINAL;
 
     virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
+
+    void refreshTimelineGuiKeyframes();
+
+    const TimeLineKeysSet& getTimelineGuiKeyframes() const;
 
 protected:
 

@@ -1135,11 +1135,11 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                 KnobIPtr thisKnob = it2->lock();
                 if ( thisKnob->getName() == (*it)->getName() ) {
                     //Clone current state
-                    thisKnob->cloneAndUpdateGui(*it);
+                    thisKnob->clone(*it);
 
                     //Slave internal knobs of the bezier
-                    assert( (*it)->getDimension() == thisKnob->getDimension() );
-                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                    assert( (*it)->getNDimensions() == thisKnob->getNDimensions() );
+                    for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                         (*it)->slaveTo(i, thisKnob, i, true);
                     }
 
@@ -1291,11 +1291,11 @@ RotoContext::deselectInternal(RotoItemPtr b)
                 KnobIPtr knob = it2->lock();
                 if ( knob->getName() == (*it)->getName() ) {
                     //Clone current state
-                    knob->cloneAndUpdateGui(*it);
+                    knob->clone(*it);
 
                     //Slave internal knobs of the bezier
-                    assert( (*it)->getDimension() == knob->getDimension() );
-                    for (int i = 0; i < (*it)->getDimension(); ++i) {
+                    assert( (*it)->getNDimensions() == knob->getNDimensions() );
+                    for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                         (*it)->unSlave(i, isBezier ? !bezierDirty : !strokeDirty);
                     }
 
@@ -1403,7 +1403,7 @@ RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
     }
     bool wasEnabled = translate->isEnabled(0);
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        for (int i = 0; i < (*it)->getDimension(); ++i) {
+        for (int i = 0; i < (*it)->getNDimensions(); ++i) {
             (*it)->resetToDefaultValue(i);
         }
         (*it)->setAllDimensionsEnabled(wasEnabled);
@@ -2110,7 +2110,7 @@ RotoContext::isAnimated() const
 
         const KnobsVec& knobs = (*it)->getKnobs();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
-            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+            for (int i = 0; i < (*it2)->getNDimensions(); ++i) {
                 if ((*it2)->isAnimated(i)) {
                     return true;
                 }

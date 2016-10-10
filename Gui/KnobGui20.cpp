@@ -45,100 +45,66 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+
 void
-KnobGui::onInternalValueChanged(ViewSpec /*view*/,
+KnobGui::onInternalValueChanged(ViewSpec view,
                                 int dimension,
-                                int reason)
+                                int /*reason*/)
 {
     if (_imp->guiRemoved) {
         return;
     }
-    if ( _imp->widgetCreated && ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) ) {
+    if (_imp->widgetCreated) {
         updateGuiInternal(dimension);
+
+        // If the knob has an expression, also redrawn the curve editor
         if ( !getKnob()->getExpression(dimension).empty() ) {
-            Q_EMIT refreshCurveEditor();
+            onRedrawGuiCurve(eCurveChangeReasonInternal, view, dimension);
         }
     }
 }
 
-void
-KnobGui::updateCurveEditorKeyframes()
-{
-    Q_EMIT keyFrameSet();
-}
 
 void
-KnobGui::onMultipleKeySet(const std::list<double>& keys,
-                          ViewSpec /*view*/,
-                          int /*dimension*/,
-                          int reason)
-{
-    if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
-        KnobIPtr knob = getKnob();
-        if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin()  || knob->isUserKnob() ) ) {
-            std::list<SequenceTime> intKeys;
-            for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                intKeys.push_back(*it);
-            }
-            knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(intKeys, true);
-        }
-    }
-
-    updateCurveEditorKeyframes();
-}
-
-void
-KnobGui::onMultipleKeyRemoved(const std::list<double>& keys,
-                              ViewSpec /*view*/,
-                              int /*dimension*/,
-                              int reason)
-{
-    if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
-        KnobIPtr knob = getKnob();
-        if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin()  || knob->isUserKnob() ) ) {
-            std::list<SequenceTime> intKeys;
-            for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-                intKeys.push_back(*it);
-            }
-            knob->getHolder()->getApp()->removeMultipleKeyframeIndicator(intKeys, true);
-        }
-    }
-
-    Q_EMIT keyFrameRemoved();
-}
-
-void
-KnobGui::onInternalKeySet(double time,
-                          ViewSpec /*view*/,
-                          int /*dimension*/,
-                          int reason,
-                          bool added )
-{
-    if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
-        if (added) {
-            KnobIPtr knob = getKnob();
-            if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
-                knob->getHolder()->getApp()->addKeyframeIndicator(time);
-            }
-        }
-    }
-
-    updateCurveEditorKeyframes();
-}
-
-void
-KnobGui::onInternalKeyRemoved(double time,
-                              ViewSpec /*view*/,
-                              int /*dimension*/,
-                              int /*reason*/)
+KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
+                                           const std::list<double>& keysRemoved,
+                                           ViewSpec view,
+                                           int dimension,
+                                           CurveChangeReason reason)
 {
     KnobIPtr knob = getKnob();
-
-    if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
-        knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
+    if (!knob) {
+        return;
     }
-    Q_EMIT keyFrameRemoved();
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+    if (!isEffect) {
+        return;
+    }
+    NodePtr node = isEffect->getNode();
+    if (!node || !node->isActivated()) {
+        return;
+    }
+
+    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+    if (!nodeUi) {
+        return;
+    }
+
+    nodeUi->onKnobKeyFramesChanged(knob, keysAdded, keysRemoved);
+
+
+    onRedrawGuiCurve(reason, view, dimension);
+
 }
+
 
 void
 KnobGui::copyAnimationToClipboard(int dimension) const
@@ -247,7 +213,7 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
 
-    if ( ( (targetDimension == -1) || (cbDim == -1) ) && ( fromKnob->getDimension() != knob->getDimension() ) ) {
+    if ( ( (targetDimension == -1) || (cbDim == -1) ) && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
         Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
 
         return;
@@ -269,14 +235,10 @@ KnobGui::onPasteActionTriggered()
 }
 
 void
-KnobGui::onKnobSlavedChanged(int /*dimension*/,
-                             bool b)
+KnobGui::onKnobSlavedChanged(int dimension,
+                             bool /*b*/)
 {
-    if (b) {
-        Q_EMIT keyFrameRemoved();
-    } else {
-        Q_EMIT keyFrameSet();
-    }
+    onRedrawGuiCurve(eCurveChangeReasonInternal, ViewSpec::all(), dimension);
 }
 
 void
@@ -291,7 +253,7 @@ KnobGui::linkTo(int dimension)
     }
 
 
-    for (int i = 0; i < thisKnob->getDimension(); ++i) {
+    for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
         if ( (i == dimension) || (dimension == -1) ) {
             std::string expr = thisKnob->getExpression(dimension);
             if ( !expr.empty() ) {
@@ -314,7 +276,7 @@ KnobGui::linkTo(int dimension)
             }
 
 
-            for (int i = 0; i < thisKnob->getDimension(); ++i) {
+            for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
                 std::pair<int, KnobIPtr > existingLink = thisKnob->getMaster(i);
                 if (existingLink.second) {
                     Dialogs::errorDialog( tr("Param Link").toStdString(),
@@ -341,12 +303,12 @@ KnobGui::linkTo(int dimension)
                 expr << otherEffect->getNode()->getFullyQualifiedName();
             }
             expr << "." << otherKnob->getName() << ".get()";
-            if (otherKnob->getDimension() > 1) {
+            if (otherKnob->getNDimensions() > 1) {
                 expr << "[dimension]";
             }
 
             thisKnob->beginChanges();
-            for (int i = 0; i < thisKnob->getDimension(); ++i) {
+            for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
                 if ( (i == dimension) || (dimension == -1) ) {
                     thisKnob->setExpression(i, expr.str(), false, false);
                 }
@@ -404,7 +366,7 @@ KnobGui::setReadOnly_(bool readOnly,
     }
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
     bool hasDimensionEnabled = false;
-    for (int i = 0; i < getKnob()->getDimension(); ++i) {
+    for (int i = 0; i < getKnob()->getNDimensions(); ++i) {
         if ( getKnob()->isEnabled(i) ) {
             hasDimensionEnabled = true;
         }
@@ -627,112 +589,7 @@ KnobGui::setKnobGuiPointer()
     getKnob()->setKnobGuiPointer( shared_from_this() );
 }
 
-void
-KnobGui::onInternalAnimationAboutToBeRemoved(ViewSpec /*view*/,
-                                             int dimension)
-{
-    removeAllKeyframeMarkersOnTimeline(dimension);
-}
 
-void
-KnobGui::onInternalAnimationRemoved()
-{
-    Q_EMIT keyFrameRemoved();
-}
-
-void
-KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
-{
-    KnobIPtr knob = getKnob();
-
-    if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
-        AppInstancePtr app = knob->getHolder()->getApp();
-        assert(app);
-        std::list<SequenceTime> times;
-        std::set<SequenceTime> tmpTimes;
-        if (dimension == -1) {
-            int dim = knob->getDimension();
-            for (int i = 0; i < dim; ++i) {
-                CurvePtr curve = knob->getCurve(ViewIdx(0), i);
-                if (curve) {
-                    KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
-                    for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                        tmpTimes.insert( it->getTime() );
-                    }
-                }
-            }
-            for (std::set<SequenceTime>::iterator it = tmpTimes.begin(); it != tmpTimes.end(); ++it) {
-                times.push_back(*it);
-            }
-        } else {
-            CurvePtr curve = knob->getCurve(ViewIdx(0), dimension);
-            if (curve) {
-                KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    times.push_back( it->getTime() );
-                }
-            }
-        }
-        if ( !times.empty() ) {
-            app->removeMultipleKeyframeIndicator(times, true);
-        }
-    }
-}
-
-void
-KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
-{
-    KnobIPtr knob = getKnob();
-    AppInstancePtr app = knob->getHolder()->getApp();
-
-    assert(app);
-    std::list<SequenceTime> times;
-
-    if (dimension == -1) {
-        int dim = knob->getDimension();
-        for (int i = 0; i < dim; ++i) {
-            KeyFrameSet kfs = knob->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
-            for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                times.push_back( it->getTime() );
-            }
-        }
-    } else {
-        KeyFrameSet kfs = knob->getCurve(ViewIdx(0), dimension)->getKeyFrames_mt_safe();
-        for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-            times.push_back( it->getTime() );
-        }
-    }
-    app->addMultipleKeyframeIndicatorsAdded(times, true);
-}
-
-void
-KnobGui::setKeyframeMarkerOnTimeline(double time)
-{
-    KnobIPtr knob = getKnob();
-
-    if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
-        knob->getHolder()->getApp()->addKeyframeIndicator(time);
-    }
-}
-
-void
-KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
-                         int /*dimension*/,
-                         double oldTime,
-                         double newTime)
-{
-    KnobIPtr knob = getKnob();
-
-    if ( !knob->isAnimationEnabled() || !knob->canAnimate() ) {
-        return;
-    }
-    if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
-        AppInstancePtr app = knob->getHolder()->getApp();
-        assert(app);
-        app->removeKeyFrameIndicator(oldTime);
-        app->addKeyframeIndicator(newTime);
-    }
-}
 
 void
 KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
@@ -740,7 +597,7 @@ KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
 {
     if (!_imp->customInteract) {
         KnobIPtr knob = getKnob();
-        int dim = knob->getDimension();
+        int dim = knob->getNDimensions();
         for (int i = 0; i < dim; ++i) {
             if ( (i == dimension) || (dimension == -1) ) {
                 reflectAnimationLevel( i, knob->getAnimationLevel(i) );
@@ -770,7 +627,7 @@ KnobGui::onFrozenChanged(bool frozen)
     if ( isBtn && !isBtn->isRenderButton() ) {
         return;
     }
-    int dims = knob->getDimension();
+    int dims = knob->getNDimensions();
 
     for (int i = 0; i < dims; ++i) {
         ///Do not unset read only if the knob is slaved in this dimension because we are still using it.
@@ -797,7 +654,7 @@ KnobGui::getCurve(ViewSpec /*view*/,
 }
 
 void
-KnobGui::onRedrawGuiCurve(int reason,
+KnobGui::onRedrawGuiCurve(CurveChangeReason reason,
                           ViewSpec /*view*/,
                           int /*dimension*/)
 {
@@ -805,14 +662,14 @@ KnobGui::onRedrawGuiCurve(int reason,
 
     switch (curveChangeReason) {
     case eCurveChangeReasonCurveEditor:
-        Q_EMIT refreshDopeSheet();
+        Q_EMIT mustRefreshDopeSheet();
         break;
     case eCurveChangeReasonDopeSheet:
-        Q_EMIT refreshCurveEditor();
+        Q_EMIT mustRefreshCurveEditor();
         break;
     case eCurveChangeReasonInternal:
-        Q_EMIT refreshDopeSheet();
-        Q_EMIT refreshCurveEditor();
+        Q_EMIT mustRefreshDopeSheet();
+        Q_EMIT mustRefreshCurveEditor();
         break;
     }
 }
@@ -874,7 +731,7 @@ KnobGui::onExprChanged(int dimension)
         if (_imp->warningIndicator) {
             bool invalid = false;
             QString fullErrToolTip;
-            int dims = knob->getDimension();
+            int dims = knob->getNDimensions();
             for (int i = 0; i < dims; ++i) {
                 std::string err;
                 if ( !knob->isExpressionValid(i, &err) ) {
@@ -901,7 +758,6 @@ KnobGui::onExprChanged(int dimension)
                 setWarningValue( eKnobWarningExpressionInvalid, QString() );
             }
         }
-        Q_EMIT expressionChanged();
     }
     onHelpChanged();
     updateGUI(dimension);

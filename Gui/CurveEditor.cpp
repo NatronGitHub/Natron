@@ -443,7 +443,7 @@ createElementsForKnob(QTreeWidgetItem* parent,
     CurveGuiPtr knobCurve;
     bool hideKnob = true;
 
-    if (k->getDimension() == 1) {
+    if (k->getNDimensions() == 1) {
         if (kgui) {
             knobCurve.reset( new KnobCurveGui(curveWidget, kgui->getCurve(ViewIdx(0), 0), kgui, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) );
         } else {
@@ -460,7 +460,7 @@ createElementsForKnob(QTreeWidgetItem* parent,
         }
         knobCurve->setVisible(false);
     } else {
-        for (int j = 0; j < k->getDimension(); ++j) {
+        for (int j = 0; j < k->getNDimensions(); ++j) {
             QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
             dimItem->setExpanded(true);
             dimItem->setText( 0, QString::fromUtf8( k->getDimensionName(j).c_str() ) );
@@ -918,7 +918,7 @@ NodeCurveEditorContext::findElement(const KnobGuiPtr& knob,
                                     int dimension) const
 {
     for (Elements::const_iterator it = _nodeElements.begin(); it != _nodeElements.end(); ++it) {
-        if ( ( (*it)->getKnobGui() == knob ) && ( (*it)->getDimension() == dimension ) ) {
+        if ( ( (*it)->getKnobGui() == knob ) && ( (*it)->getNDimensions() == dimension ) ) {
             return *it;
         }
     }
@@ -1000,7 +1000,7 @@ CurveEditor::hideCurve(const KnobGuiPtr& knob,
 void
 CurveEditor::hideCurves(const KnobGuiPtr& knob)
 {
-    for (int i = 0; i < knob->getKnob()->getDimension(); ++i) {
+    for (int i = 0; i < knob->getKnob()->getNDimensions(); ++i) {
         for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
              it != _imp->nodes.end(); ++it) {
             NodeCurveEditorElement* elem = (*it)->findElement(knob, i);
@@ -1044,7 +1044,7 @@ CurveEditor::showCurve(const KnobGuiPtr& knob,
 void
 CurveEditor::showCurves(const KnobGuiPtr& knob)
 {
-    for (int i = 0; i < knob->getKnob()->getDimension(); ++i) {
+    for (int i = 0; i < knob->getKnob()->getNDimensions(); ++i) {
         for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
              it != _imp->nodes.end(); ++it) {
             NodeCurveEditorElement* elem = (*it)->findElement(knob, i);
@@ -1247,7 +1247,7 @@ RotoItemEditorContext::findElement(const KnobGuiPtr& knob,
     const std::string& name = knob->getKnob()->getName();
 
     for (std::list<NodeCurveEditorElement*>::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if ( ( (*it)->getInternalKnob()->getName() == name ) && ( (*it)->getDimension() == dimension ) ) {
+        if ( ( (*it)->getInternalKnob()->getName() == name ) && ( (*it)->getNDimensions() == dimension ) ) {
             return *it;
         }
     }
@@ -1614,16 +1614,16 @@ CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
                 ss << effect->getNode()->getFullyQualifiedName();
                 ss << '.';
                 ss << knob->getName();
-                if (knob->getDimension() > 1) {
+                if (knob->getNDimensions() > 1) {
                     ss << '.';
-                    ss << knob->getDimensionName( knobCurve->getDimension() );
+                    ss << knob->getDimensionName( knobCurve->getNDimensions() );
                 }
                 _imp->knobLabel->setText( QString::fromUtf8( ss.str().c_str() ) );
                 _imp->knobLabel->setAltered(false);
-                std::string expr = knob->getExpression( knobCurve->getDimension() );
+                std::string expr = knob->getExpression( knobCurve->getNDimensions() );
                 if ( !expr.empty() ) {
                     _imp->knobLineEdit->setText( QString::fromUtf8( expr.c_str() ) );
-                    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension() );
+                    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getNDimensions() );
                     _imp->resultLabel->setText( QString::fromUtf8("= ") + QString::number(v) );
                 } else {
                     _imp->knobLineEdit->clear();
@@ -1653,8 +1653,8 @@ CurveEditor::refreshCurrentExpression()
         return;
     }
     KnobIPtr knob = curve->getInternalKnob();
-    std::string expr = knob->getExpression( curve->getDimension() );
-    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), curve->getDimension() );
+    std::string expr = knob->getExpression( curve->getNDimensions() );
+    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), curve->getNDimensions() );
     _imp->knobLineEdit->setText( QString::fromUtf8( expr.c_str() ) );
     _imp->resultLabel->setText( QString::fromUtf8("= ") + QString::number(v) );
 }
@@ -1679,7 +1679,7 @@ CurveEditor::setSelectedCurveExpression(const QString& expression)
     if (!knob) {
         throw std::logic_error("CurveEditor::setSelectedCurveExpression: knob is NULL");
     }
-    int dim = curve->getDimension();
+    int dim = curve->getNDimensions();
     std::string exprResult;
     if ( !expr.empty() ) {
         try {

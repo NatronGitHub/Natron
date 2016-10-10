@@ -260,20 +260,20 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
 
-    SelectedKeys::iterator found = _imp->_selectedKeyFrames.end();
+    SelectedKeys::iterator foundCurve = _imp->_selectedKeyFrames.end();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
         if (it->first.get() == curve) {
-            found = it;
+            foundCurve = it;
             break;
         }
     }
-    if ( found == _imp->_selectedKeyFrames.end() ) {
+    if ( foundCurve == _imp->_selectedKeyFrames.end() ) {
         return;
     }
-    KeyFrameSet set = found->first->getKeyFrames();
+    KeyFrameSet set = foundCurve->first->getKeyFrames();
     std::list<KeyPtr> newSelection;
-    for (std::list<KeyPtr>::iterator it2 = found->second.begin(); it2 != found->second.end(); ++it2) {
-        KeyFrameSet::const_iterator found = Curve::findWithTime( set, (*it2)->key.getTime() );
+    for (std::list<KeyPtr>::iterator it2 = foundCurve->second.begin(); it2 != foundCurve->second.end(); ++it2) {
+        KeyFrameSet::const_iterator found = Curve::findWithTime( set, set.end(), (*it2)->key.getTime() );
         if ( found != set.end() ) {
             (*it2)->key = *found;
             KeyFrameSet::const_iterator next = found;
@@ -293,7 +293,7 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
         }
     }
 
-    found->second = newSelection;
+    foundCurve->second = newSelection;
 
     refreshCurveDisplayTangents(curve);
     refreshSelectedKeysBbox();
@@ -1729,11 +1729,25 @@ CurveWidget::deleteSelectedKeyFrames()
 
     //apply the same strategy than for moveSelectedKeyFrames()
 
-    std::map<CurveGuiPtr, std::vector<KeyFrame> >  toRemove;
+    std::map<CurveGuiPtr, std::vector<RemoveKeysCommand::ValueAtTime> >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        std::vector<KeyFrame>& vect = toRemove[it->first];
+        std::vector<RemoveKeysCommand::ValueAtTime>& vect = toRemove[it->first];
         for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            vect.push_back( (*it2)->key );
+
+            RemoveKeysCommand::ValueAtTime v;
+            v.time = (*it2)->key.getTime();
+            v.value = Variant((*it2)->key.getValue());
+            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
+
+            // For string knobs, we have to store the string because we need to remember the string we removed
+            if (isKnobCurve) {
+                KnobIPtr knob = isKnobCurve->getInternalKnob();
+                AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
+                if (isString) {
+                    v.value = Variant(QString::fromUtf8(isString->getStringAtTime(v.time, ViewSpec::current(), 0).c_str()));
+                }
+            }
+            vect.push_back(v);
         }
     }
 
@@ -2304,9 +2318,16 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
     if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
         QString err =  tr("Out of curve y range ") +
         QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
-        Dialogs::warningDialog( "", err.toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), err.toStdString() );
 
         return;
+    }
+
+    if (!curve->isYComponentMovable()) {
+        QString err =  tr("You cannot add keyframes on the animation of a String parameter from the Curve Editor");
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), err.toStdString() );
+        return;
+
     }
     std::vector<KeyFrame> keys(1);
     keys[0] = KeyFrame(xCurve, yCurve, 0, 0);
@@ -2320,7 +2341,7 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
     _imp->_selectedKeyFrames.clear();
 
     KeyFrameSet keySet = curve->getKeyFrames();
-    KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
+    KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, keySet.end(), xCurve);
     assert( foundKey != keySet.end() );
 
     KeyFrame prevKey, nextKey;

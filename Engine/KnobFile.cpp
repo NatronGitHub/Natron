@@ -235,7 +235,7 @@ void
 KnobPath::prependPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path);
+        setValue(path, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     } else {
         std::list<std::vector<std::string> > paths;
         getTable(&paths);
@@ -252,7 +252,7 @@ void
 KnobPath::appendPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path);
+        setValue(path, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     } else {
         std::list<std::vector<std::string> > paths;
         getTable(&paths);

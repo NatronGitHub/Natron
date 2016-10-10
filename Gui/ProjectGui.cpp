@@ -463,7 +463,7 @@ ProjectGui::setPickersColor(double r,
         if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {
             _colorPickersEnabled[i]->activateAllDimensions();
         }
-        if (_colorPickersEnabled[i]->getDimension() == 3) {
+        if (_colorPickersEnabled[i]->getNDimensions() == 3) {
             _colorPickersEnabled[i]->setValues(r, g, b, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         } else {
             _colorPickersEnabled[i]->setValues(r, g, b, a, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);

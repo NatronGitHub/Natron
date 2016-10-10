@@ -219,6 +219,9 @@ KnobGuiGroup::updateGUI(int /*dimension*/)
 
     setCheckedInternal(b, false);
     if (_button) {
+        if (_button->isChecked() == b) {
+            return;
+        }
         _button->setChecked(b);
     }
 }

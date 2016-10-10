@@ -979,7 +979,7 @@ DopeSheet::onNodeNameChanged(const QString &name)
 }
 
 void
-DopeSheet::onKeyframeSetOrRemoved()
+DopeSheet::refreshKnobVisibility()
 {
     KnobGui* k = qobject_cast<KnobGui *>( sender() );
 
@@ -988,7 +988,7 @@ DopeSheet::onKeyframeSetOrRemoved()
     }
     DSKnobPtr dsKnob = findDSKnob(k->shared_from_this());
     if (dsKnob) {
-        Q_EMIT keyframeSetOrRemoved( dsKnob );
+        _imp->editor->getHierarchyView()->refreshKnobVisibility(dsKnob);
     }
 
     Q_EMIT modelChanged();
@@ -1513,12 +1513,8 @@ DSNode::DSNode(DopeSheet *model,
             }
         }
 
-        QObject::connect( knobGui.get(), SIGNAL(keyFrameSet()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
-        QObject::connect( knobGui.get(), SIGNAL(keyFrameRemoved()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
-        QObject::connect( knobGui.get(), SIGNAL(refreshDopeSheet()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
+        QObject::connect( knobGui.get(), SIGNAL(mustRefreshDopeSheet()),
+                          _imp->dopeSheetModel, SLOT(refreshKnobVisibility()) );
     }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update

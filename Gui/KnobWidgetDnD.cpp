@@ -247,7 +247,7 @@ KnobWidgetDnD::startDrag()
     knobLine += QString::fromUtf8( internalKnob->getName().c_str() );
 
 
-    if (internalKnob->getDimension() > 1) {
+    if (internalKnob->getNDimensions() > 1) {
         if (dragDim != -1) {
             knobLine += QLatin1Char('.');
             knobLine += QString::fromUtf8( internalKnob->getDimensionName(dragDim).c_str() );
@@ -358,7 +358,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
             ret = false;
         }
 
-        if ( ret && ( (targetDim == -1) || (srcDim == -1) ) && ( source->getDimension() != thisKnob->getDimension() ) ) {
+        if ( ret && ( (targetDim == -1) || (srcDim == -1) ) && ( source->getNDimensions() != thisKnob->getNDimensions() ) ) {
             if (warn) {
                 Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
             }
@@ -414,7 +414,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 }
                 ss << effect->getNode()->getScriptName_mt_safe() << "." << source->getName();
                 ss << ".getValue(";
-                if (source->getDimension() > 1) {
+                if (source->getNDimensions() > 1) {
                     if (srcDim == -1) {
                         ss << "dimension";
                     } else {

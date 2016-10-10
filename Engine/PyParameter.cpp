@@ -60,7 +60,7 @@ Param::getParent() const
 int
 Param::getNumDimensions() const
 {
-    return getInternalKnob()->getDimension();
+    return getInternalKnob()->getNDimensions();
 }
 
 QString
@@ -358,7 +358,7 @@ Param::copy(Param* other,
     if ( !thisKnob->isTypeCompatible(otherKnob) ) {
         return false;
     }
-    thisKnob->cloneAndUpdateGui(otherKnob, dimension);
+    thisKnob->clone(otherKnob, dimension);
 
     return true;
 }
@@ -374,7 +374,7 @@ Param::slaveTo(Param* other,
     if ( !KnobI::areTypesCompatibleForSlave(thisKnob, otherKnob) ) {
         return false;
     }
-    if ( (thisDimension < 0) || ( thisDimension >= thisKnob->getDimension() ) || (otherDimension < 0) || ( otherDimension >= otherKnob->getDimension() ) ) {
+    if ( (thisDimension < 0) || ( thisDimension >= thisKnob->getNDimensions() ) || (otherDimension < 0) || ( otherDimension >= otherKnob->getNDimensions() ) ) {
         return false;
     }
 
@@ -454,7 +454,7 @@ Param::setAsAlias(Param* other)
     KnobIPtr otherKnob = other->_knob.lock();
     KnobIPtr thisKnob = getInternalKnob();
     if ( !otherKnob || !thisKnob || ( otherKnob->typeName() != thisKnob->typeName() ) ||
-         ( otherKnob->getDimension() != thisKnob->getDimension() ) ) {
+         ( otherKnob->getNDimensions() != thisKnob->getNDimensions() ) ) {
         return false;
     }
 
@@ -563,10 +563,10 @@ Param::_addAsDependencyOf(int fromExprDimension,
     KnobIPtr expressionKnob = param->_knob.lock();
     KnobIPtr getValueCallerKnob = _knob.lock();
 
-    if ( (fromExprDimension < 0) || ( fromExprDimension >= expressionKnob->getDimension() ) ) {
+    if ( (fromExprDimension < 0) || ( fromExprDimension >= expressionKnob->getNDimensions() ) ) {
         return;
     }
-    if ( (thisDimension != -1) && (thisDimension != 0) && ( thisDimension >= getValueCallerKnob->getDimension() ) ) {
+    if ( (thisDimension != -1) && (thisDimension != 0) && ( thisDimension >= getValueCallerKnob->getNDimensions() ) ) {
         return;
     }
     if (getValueCallerKnob == expressionKnob) {
@@ -1127,7 +1127,7 @@ ColorParam::get() const
     ret.r = knob->getValue(0);
     ret.g = knob->getValue(1);
     ret.b = knob->getValue(2);
-    ret.a = knob->getDimension() == 4 ? knob->getValue(3) : 1.;
+    ret.a = knob->getNDimensions() == 4 ? knob->getValue(3) : 1.;
 
     return ret;
 }
@@ -1141,7 +1141,7 @@ ColorParam::get(double frame) const
     ret.r = knob->getValueAtTime(frame, 0);
     ret.g = knob->getValueAtTime(frame, 1);
     ret.b = knob->getValueAtTime(frame, 2);
-    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 2) : 1.;
+    ret.a = knob->getNDimensions() == 4 ? knob->getValueAtTime(frame, 2) : 1.;
 
     return ret;
 }
@@ -1158,7 +1158,7 @@ ColorParam::set(double r,
     knob->setValue(r, ViewSpec::current(), 0);
     knob->setValue(g, ViewSpec::current(), 1);
     knob->setValue(b, ViewSpec::current(), 2);
-    if (knob->getDimension() == 4) {
+    if (knob->getNDimensions() == 4) {
         knob->setValue(a, ViewSpec::current(), 3);
     }
     knob->endChanges();
@@ -1176,7 +1176,7 @@ ColorParam::set(double r,
     knob->beginChanges();
     knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
     knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
-    int dims = knob->getDimension();
+    int dims = knob->getNDimensions();
     knob->setValueAtTime(frame, b, ViewSpec::current(), 2);
     if (dims == 4) {
         knob->setValueAtTime(frame, a, ViewSpec::current(), 3);

@@ -76,6 +76,7 @@ DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
     AbortableRenderInfo.cpp \
+    AnimatingObjectI.cpp \
     AppInstance.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
@@ -273,6 +274,7 @@ SOURCES += \
 HEADERS += \
     AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
+    AnimatingObjectI.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \
@@ -329,6 +331,8 @@ HEADERS += \
     Knob.h \
     KnobGuiI.h \
     KnobImpl.h \
+    KnobGetValueImpl.h \
+    KnobSetValueImpl.h \
     KnobFactory.h \
     KnobFile.h \
     KnobTypes.h \
@@ -423,7 +427,7 @@ HEADERS += \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \
-    TimeLineKeyFrames.h \
+    TImelineKeys.h \
     Timer.h \
     TrackerContext.h \
     TrackerContextPrivate.h \

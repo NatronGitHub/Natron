@@ -615,7 +615,7 @@ TrackMarker::setMotionModelFromGui(int index)
     }
     knob->onValueChanged(index, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
     if (master.second) {
-        master.second->cloneAndUpdateGui(knob);
+        master.second->clone(knob);
         knob->slaveTo(0, master.second, master.first);
     }
 }
@@ -638,7 +638,7 @@ TrackMarker::setEnabledFromGui(double /*time*/,
     }
     knob->onValueChanged(enabled, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
     if (master.second) {
-        master.second->cloneAndUpdateGui(knob);
+        master.second->clone(knob);
         knob->slaveTo(0, master.second, master.first);
     }
 
@@ -732,7 +732,7 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
                     DeleteKnobAnimationEnum type,
                     int currentTime)
 {
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         CurvePtr curve = knob->getCurve(ViewSpec(0), i);
         assert(curve);
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
@@ -841,7 +841,7 @@ TrackMarker::resetOffset()
 {
     KnobDoublePtr knob = getOffsetKnob();
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         knob->resetToDefaultValue(i);
     }
 }
@@ -861,11 +861,11 @@ TrackMarker::resetTrack()
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if (*it != knob) {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
+            for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                 (*it)->resetToDefaultValue(i);
             }
         } else {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
+            for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                 (*it)->removeAnimation(ViewSpec::current(), i);
             }
             knob->setValue(curCenter.x, ViewSpec::current(), 0);
@@ -891,7 +891,7 @@ TrackMarker::setKeyFrameOnCenterAndPatternAtTime(int time)
 {
     KnobDoublePtr center = _imp->center.lock();
 
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         double v = center->getValueAtTime(time, i);
         center->setValueAtTime(time, v, ViewSpec::all(), i);
     }
@@ -899,7 +899,7 @@ TrackMarker::setKeyFrameOnCenterAndPatternAtTime(int time)
     KnobDoublePtr patternCorners[4] = {_imp->patternBtmLeft.lock(), _imp->patternTopLeft.lock(), _imp->patternTopRight.lock(), _imp->patternBtmRight.lock()};
     for (int c = 0; c < 4; ++c) {
         KnobDoublePtr k = patternCorners[c];
-        for (int i = 0; i < k->getDimension(); ++i) {
+        for (int i = 0; i < k->getNDimensions(); ++i) {
             double v = k->getValueAtTime(time, i);
             k->setValueAtTime(time, v, ViewSpec::all(), i);
         }
@@ -1270,7 +1270,7 @@ TrackMarkerPM::trackMarker(bool forward,
 
     // Unslave the center knob since the trackerNode will update it, then update the marker center
     KnobDoublePtr center = centerKnob.lock();
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         center->unSlave(i, true);
     }
 
@@ -1281,7 +1281,7 @@ TrackMarkerPM::trackMarker(bool forward,
     // The TrackerPM plug-in has set a keyframe at the refFrame and frame, copy them
     bool ret = true;
     double centerPoint[2];
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         {
             int index = center->getKeyFrameIndex(ViewSpec::current(), i, frame);
             if (index != -1) {
@@ -1338,7 +1338,7 @@ TrackMarkerPM::trackMarker(bool forward,
         }
     }
 
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         center->slaveTo(i, markerCenter, i);
     }
 
@@ -1393,14 +1393,14 @@ TrackMarkerPM::initializeKnobs()
     KnobDoublePtr center = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingCenterPoint);
     centerKnob = center;
     // Slave the center knob and unslave when tracking
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         center->slaveTo(i, getCenterKnob(), i);
     }
 
     KnobDoublePtr offset = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingOffset);
 
     // Slave the offset knob
-    for (int i = 0; i < offset->getDimension(); ++i) {
+    for (int i = 0; i < offset->getNDimensions(); ++i) {
         offset->slaveTo(i, getOffsetKnob(), i);
     }
     offsetKnob = offset;
@@ -1423,24 +1423,24 @@ TrackMarkerPM::initializeKnobs()
     patternBtmLeftKnob = patternBtmLeft;
 
     // Slave the search window and pattern of the node to the parameters of the marker
-    for (int i = 0; i < patternBtmLeft->getDimension(); ++i) {
+    for (int i = 0; i < patternBtmLeft->getNDimensions(); ++i) {
         patternBtmLeft->slaveTo(i, getPatternBtmLeftKnob(), i);
     }
     KnobDoublePtr patternTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingPatternBoxTopRight);
     patternTopRightKnob = patternTopRight;
-    for (int i = 0; i < patternTopRight->getDimension(); ++i) {
+    for (int i = 0; i < patternTopRight->getNDimensions(); ++i) {
         patternTopRight->slaveTo(i, getPatternTopRightKnob(), i);
     }
 
     KnobDoublePtr searchWindowBtmLeft = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxBtmLeft);
     searchWindowBtmLeftKnob = searchWindowBtmLeft;
-    for (int i = 0; i < searchWindowBtmLeft->getDimension(); ++i) {
+    for (int i = 0; i < searchWindowBtmLeft->getNDimensions(); ++i) {
         searchWindowBtmLeft->slaveTo(i, getSearchWindowBottomLeftKnob(), i);
     }
 
     KnobDoublePtr searchWindowTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxTopRight);
     searchWindowTopRightKnob = searchWindowTopRight;
-    for (int i = 0; i < searchWindowTopRight->getDimension(); ++i) {
+    for (int i = 0; i < searchWindowTopRight->getNDimensions(); ++i) {
         searchWindowTopRight->slaveTo(i, getSearchWindowTopRightKnob(), i);
     }
 } // TrackMarkerPM::initializeKnobs

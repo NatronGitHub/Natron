@@ -82,12 +82,11 @@ public:
         , _newValue()
         , _knob(knob)
         , _valueChangedReturnCode(1)
-        , _newKeys(1)
-        , _oldKeys(1)
         , _merge(true)
         , _refreshGuiFirstTime(refreshGui)
         , _firstRedoCalled(false)
     {
+        assert(dimension >= 0 && dimension < knob->getKnob()->getNDimensions());
         _oldValue.push_back(oldValue);
         _newValue.push_back(newValue);
     }
@@ -95,8 +94,8 @@ public:
     ///We moved from std::vector to std::list instead because std::vector<bool> expands to a bit field(std::_Bit_reference)
     ///and produces an unresolved symbol error.
     KnobUndoCommand(const KnobGuiPtr& knob,
-                    const std::list<T> &oldValue,
-                    const std::list<T> &newValue,
+                    const std::vector<T> &oldValue,
+                    const std::vector<T> &newValue,
                     bool refreshGui = true,
                     QUndoCommand *parent = 0)
         : QUndoCommand(parent)
@@ -105,12 +104,15 @@ public:
         , _newValue(newValue)
         , _knob(knob)
         , _valueChangedReturnCode( oldValue.size() )
-        , _newKeys( oldValue.size() )
-        , _oldKeys( oldValue.size() )
         , _merge(true)
         , _refreshGuiFirstTime(refreshGui)
         , _firstRedoCalled(false)
+        , _timelineTime(knob->getKnob()->getCurrentTime())
     {
+        assert(oldValue.size() == newValue.size() && oldValue.size() == knob->getKnob()->getNDimensions());
+
+
+        setText( tr("Set value of %1").arg( QString::fromUtf8( knob->getKnob()->getLabel().c_str() ) ) );
     }
 
     virtual ~KnobUndoCommand() OVERRIDE
@@ -120,150 +122,67 @@ public:
 private:
     virtual void undo() OVERRIDE FINAL
     {
-        bool modifiedKeyFrame = false;
-        int i = 0;
         KnobGuiPtr knobUI = _knob.lock();
-
         if (!knobUI) {
             return;
         }
-        KnobIPtr knob = knobUI->getKnob();
-
-        KnobHolderPtr holder = knob->getHolder();
-
-        // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
-        bool refreshUI = holder ? holder->getInViewerContextKnobIndex(knob) != -1 : false;
-
-        knob->beginChanges();
-
-        assert( (int)_oldValue.size() == knob->getDimension() || _dimension != -1 );
-
-        typename std::list<T>::iterator next = _oldValue.end();
-        if ( next != _oldValue.end() ) {
-            ++next;
-        }
-
-        for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
-            int dimension = _dimension == -1 ? i : _dimension;
-
-            if ( ( it == _oldValue.begin() ) && (_oldValue.size() > 1) ) {
-                knob->blockValueChanges();
-            }
-
-            if ( ( next == _oldValue.end() ) && (_oldValue.size() > 1) ) {
-                knob->unblockValueChanges();
-            }
+        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(knobUI->getKnob());
+        assert(knob);
 
 
-            knobUI->setValue(dimension, *it, NULL, refreshUI, !refreshUI ? eValueChangedReasonUserEdited : eValueChangedReasonNatronGuiEdited);
+        assert( (int)_oldValue.size() == knob->getNDimensions() || _dimension != -1 );
 
-            if ( knob->getHolder()->getApp() ) {
-                if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
-                    knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
-                    modifiedKeyFrame = true;
-                } else if (_valueChangedReturnCode[i] == 2) {
-                    //the value change moved a keyframe
-                    knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
-                    knobUI->setKeyframe( _oldKeys[i].getTime(), dimension, ViewIdx(0) );
-                    modifiedKeyFrame = true;
+        // If any keyframe was added due to auto-keying, remove it
+        for (std::size_t i = 0; i < _oldValue.size(); ++i) {
+            if (_dimension == -1 || i == _dimension) {
+                if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+                    knob->deleteValueAtTime(eCurveChangeReasonInternal, _timelineTime, ViewSpec::all(), i);
                 }
             }
-
-            if ( next != _oldValue.end() ) {
-                ++next;
-            }
-            ++i;
         }
 
-        ///This will refresh all dimensions
-        knobUI->onInternalValueChanged(ViewSpec::all(), -1, eValueChangedReasonNatronGuiEdited);
+        // Ensure that no keyframe gets added by the setValue
+        knob->setAutoKeyingEnabled(false);
+        if (_dimension == -1) {
+            // Multiple dimensions set at once
+            knob->setValues(_oldValue, ViewSpec::all(), eValueChangedReasonUserEdited, 0);
+        } else {
+            // Only one dimension set
+            ignore_result(knob->setValue(_oldValue[0], ViewSpec::all(), _dimension, eValueChangedReasonUserEdited, 0));
 
-        knob->endChanges();
-        if (modifiedKeyFrame) {
-            knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        knob->setAutoKeyingEnabled(true);
+
     } // undo
 
     virtual void redo() OVERRIDE FINAL
     {
-        double time = 0;
         KnobGuiPtr knobUI = _knob.lock();
-
         if (!knobUI) {
             return;
         }
-        KnobIPtr knob = knobUI->getKnob();
+        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(knobUI->getKnob());
+        assert(knob);
 
-        KnobHolderPtr holder = knob->getHolder();
 
-        // If the knob has several UI (one in the viewer and one in the settings panel) refreshUI
-        bool refreshUI = holder ? holder->getInViewerContextKnobIndex(knob) != -1 : false;
+        assert( (int)_oldValue.size() == knob->getNDimensions() || _dimension != -1 );
 
-        if ( holder && holder->getApp() ) {
-            time = holder->getApp()->getTimeLine()->currentFrame();
+        if (_dimension == -1 && (int)_newValue.size() > 1) {
+            // Multiple dimensions set at once
+            knob->setValues(_newValue, ViewSpec::all(), eValueChangedReasonUserEdited, &_valueChangedReturnCode);
+        } else {
+            // Only one dimension set
+            _valueChangedReturnCode[0] = knob->setValue(_newValue[0], ViewSpec::all(), _dimension, eValueChangedReasonUserEdited, 0);
         }
 
-        assert( (int)_oldValue.size() == knob->getDimension() || _dimension != -1 );
 
-        bool modifiedKeyFrames = false;
-
-        knob->beginChanges();
-        int i = 0;
-        typename std::list<T>::iterator next = _newValue.end();
-        if ( next != _newValue.end() ) {
-            ++next;
-        }
-        for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
-            int dimension = _dimension == -1 ? i : _dimension;
-
-            if ( ( it == _newValue.begin() ) && (_newValue.size() > 1) ) {
-                knob->blockValueChanges();
-            }
-
-            CurvePtr c = knob->getCurve(ViewIdx(0), dimension);
-            //find out if there's already an existing keyframe before calling setValue
-            if (c) {
-                bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
-                Q_UNUSED(found); // we don't care if it existed or not
-            }
-
-            if ( ( next == _newValue.end() ) && (_newValue.size() > 1) ) {
-                knob->unblockValueChanges();
-            }
-
-            _valueChangedReturnCode[i] = knobUI->setValue(dimension, *it, &_newKeys[i], refreshUI, !refreshUI ? eValueChangedReasonUserEdited : eValueChangedReasonNatronGuiEdited);
-            if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
-                modifiedKeyFrames = true;
-            }
-
-            ///if we added a keyframe, prevent this command to merge with any other command
+        // If we added a keyframe, prevent this command to merge with any other command
+        for (std::size_t i = 0; i < _valueChangedReturnCode.size(); ++i) {
             if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 _merge = false;
             }
-            ++i;
-            if ( next != _newValue.end() ) {
-                ++next;
-            }
         }
-
-
-        ///This will refresh all dimensions
-        if (_firstRedoCalled || _refreshGuiFirstTime) {
-            knobUI->onInternalValueChanged(ViewSpec::all(), -1, eValueChangedReasonNatronGuiEdited);
-        }
-
-
-        knob->endChanges();
-
-        if (modifiedKeyFrames) {
-            knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
-        }
-
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
 
         _firstRedoCalled = true;
     } // redo
@@ -293,17 +212,16 @@ private:
     }
 
 private:
-    // TODO: PIMPL
+
     int _dimension;
-    std::list<T> _oldValue;
-    std::list<T> _newValue;
+    std::vector<T> _oldValue;
+    std::vector<T> _newValue;
     KnobGuiWPtr _knob;
-    std::vector<int> _valueChangedReturnCode;
-    std::vector<KeyFrame> _newKeys;
-    std::vector<KeyFrame>  _oldKeys;
+    std::vector<KnobHelper::ValueChangedReturnCodeEnum> _valueChangedReturnCode;
     bool _merge;
     bool _refreshGuiFirstTime;
     bool _firstRedoCalled;
+    double _timelineTime;
 };
 
 

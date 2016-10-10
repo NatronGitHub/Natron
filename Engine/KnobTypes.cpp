@@ -114,7 +114,7 @@ KnobInt::setIncrement(int incr,
 void
 KnobInt::setIncrement(const std::vector<int> &incr)
 {
-    assert( (int)incr.size() == getDimension() );
+    assert( (int)incr.size() == getNDimensions() );
     _increments = incr;
     for (U32 i = 0; i < _increments.size(); ++i) {
         if (_increments[i] <= 0) {
@@ -304,7 +304,7 @@ KnobDouble::setDecimals(int decis,
 void
 KnobDouble::setIncrement(const std::vector<double> &incr)
 {
-    assert( incr.size() == (U32)getDimension() );
+    assert( incr.size() == (U32)getNDimensions() );
     _increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
         Q_EMIT incrementChanged(_increments[i], i);
@@ -314,7 +314,7 @@ KnobDouble::setIncrement(const std::vector<double> &incr)
 void
 KnobDouble::setDecimals(const std::vector<int> &decis)
 {
-    assert( decis.size() == (U32)getDimension() );
+    assert( decis.size() == (U32)getNDimensions() );
     _decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
         Q_EMIT decimalsChanged(decis[i], i);
@@ -539,6 +539,8 @@ KnobChoice::typeName() const
 
 void
 KnobChoice::cloneExtraData(const KnobIPtr& other,
+                           double /*offset*/,
+                           const RangeD* /*range*/,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
@@ -575,22 +577,7 @@ KnobChoice::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
     return false;
 }
 
-void
-KnobChoice::cloneExtraData(const KnobIPtr& other,
-                           double /*offset*/,
-                           const RangeD* /*range*/,
-                           int /*dimension*/,
-                           int /*otherDimension*/)
-{
-    KnobChoicePtr isChoice = toKnobChoice(other);
 
-    if (!isChoice) {
-        return;
-    }
-
-    QMutexLocker k(&_entriesMutex);
-    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
-}
 
 bool
 KnobChoice::hasModificationsVirtual(int dimension) const
@@ -680,13 +667,8 @@ KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
         }
         if (found != -1) {
             blockValueChanges();
-            setValue(found);
+            setValue(found, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
             unblockValueChanges();
-        } else {
-            /*// We are in invalid state
-               blockValueChanges();
-               setValue(-1);
-               unblockValueChanges();*/
         }
     }
 }
@@ -998,43 +980,34 @@ KnobChoice::getHintToolTipFull() const
     return ss.str();
 } // KnobChoice::getHintToolTipFull
 
-KnobHelper::ValueChangedReturnCodeEnum
-KnobChoice::setValueFromLabel(const std::string & value,
-                              int dimension,
-                              bool turnOffAutoKeying)
+ValueChangedReturnCodeEnum
+KnobChoice::setValueFromLabel(const std::string & value)
 {
     for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
         if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
+            return setValue(i, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
     }
-    /*{
-        QMutexLocker k(&_entriesMutex);
-        _currentEntryLabel = value;
-       }
-       return setValue(-1, ViewIdx(0), dimension, turnOffAutoKeying);*/
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
 }
 
 void
-KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,
-                                                    int dimension)
+KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
 {
     for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
         if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setDefaultValueWithoutApplying(i, dimension);
+            return setDefaultValueWithoutApplying(i, 0);
         }
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 void
-KnobChoice::setDefaultValueFromLabel(const std::string & value,
-                                     int dimension)
+KnobChoice::setDefaultValueFromLabel(const std::string & value)
 {
     for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
         if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setDefaultValue(i, dimension);
+            return setDefaultValue(i, 0);
         }
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
@@ -1049,10 +1022,6 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
     if (isChoice) {
         populateChoices(isChoice->getEntries_mt_safe(),
                         isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
-        /*{
-            QMutexLocker k(&_entriesMutex);
-            _currentEntryLabel = isChoice->_currentEntryLabel;
-        }*/
     }
 }
 
@@ -1896,7 +1865,7 @@ void
 KnobParametric::populate()
 {
     KnobDoubleBase::populate();
-    for (int i = 0; i < getDimension(); ++i) {
+    for (int i = 0; i < getNDimensions(); ++i) {
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
@@ -1923,6 +1892,15 @@ const std::string &
 KnobParametric::typeName() const
 {
     return typeNameStatic();
+}
+
+CurvePtr
+KnobParametric::getAnimationCurve(ViewIdx /*idx*/, int dimension) const
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    return _curves[dimension];
 }
 
 void
@@ -2252,6 +2230,8 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
 
 void
 KnobParametric::cloneExtraData(const KnobIPtr& other,
+                               double offset,
+                               const RangeD* range,
                                int dimension,
                                int otherDimension)
 {
@@ -2261,16 +2241,16 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
         return;
     }
     if (dimension == -1) {
-        int dimMin = std::min( getDimension(), isParametric->getDimension() );
+        int dimMin = std::min( getNDimensions(), isParametric->getNDimensions() );
         for (int i = 0; i < dimMin; ++i) {
-            _curves[i]->clone(*isParametric->_curves[i]);
+            _curves[i]->clone(*isParametric->_curves[i], offset, range);
         }
     } else {
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
-        _curves[dimension]->clone(*isParametric->_curves[otherDimension]);
+        assert( dimension >= 0 && dimension < getNDimensions() && otherDimension >= 0 && otherDimension < getNDimensions() );
+        _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
     }
 }
 
@@ -2287,46 +2267,22 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
     }
     bool hasChanged = false;
     if (dimension == -1) {
-        int dimMin = std::min( getDimension(), isParametric->getDimension() );
+        int dimMin = std::min( getNDimensions(), isParametric->getNDimensions() );
         for (int i = 0; i < dimMin; ++i) {
-            hasChanged |= _curves[i]->cloneAndCheckIfChanged(*isParametric->_curves[i]);
+            hasChanged |= _curves[i]->cloneAndCheckIfChanged(*isParametric->_curves[i], 0 /*offset*/, 0 /*range*/);
         }
     } else {
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
-        hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension]);
+        assert( dimension >= 0 && dimension < getNDimensions() && otherDimension >= 0 && otherDimension < getNDimensions() );
+        hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension], 0 /*offset*/, 0 /*range*/);
     }
 
     return hasChanged;
 }
 
-void
-KnobParametric::cloneExtraData(const KnobIPtr& other,
-                               double offset,
-                               const RangeD* range,
-                               int dimension,
-                               int otherDimension)
-{
-    KnobParametricPtr isParametric = toKnobParametric(other);
 
-    if (!isParametric) {
-        return;
-    }
-    if (dimension == -1) {
-        int dimMin = std::min( getDimension(), isParametric->getDimension() );
-        for (int i = 0; i < dimMin; ++i) {
-            _curves[i]->clone(*isParametric->_curves[i], offset, range);
-        }
-    } else {
-        if (otherDimension == -1) {
-            otherDimension = dimension;
-        }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
-        _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
-    }
-}
 
 void
 KnobParametric::saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const
@@ -2418,6 +2374,323 @@ KnobParametric::appendToHash(double /*time*/, ViewIdx /*view*/, Hash64* hash)
 
     }
 
+}
+
+bool
+KnobParametric::cloneCurve(ViewSpec view, int dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/, CurveChangeReason /*reason*/)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    _curves[dimension]->clone(curve, offset, range);
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+}
+
+void
+KnobParametric::deleteValuesAtTime(CurveChangeReason /*curveChangeReason*/, const std::list<double>& times, ViewSpec view, int dimension)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        _curves[dimension]->removeKeyFrameWithTime(*it);
+    }
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+}
+
+bool
+KnobParametric::warpValuesAtTime(CurveChangeReason /*curveChangeReason*/, const std::list<double>& times, ViewSpec view,  int dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    if (_curves[dimension]->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes)) {
+        Q_EMIT curveChanged(dimension);
+        evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+        return true;
+    }
+    return false;
+}
+
+void
+KnobParametric::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& dimensions, CurveChangeReason /*reason*/)
+{
+    for (std::size_t i = 0; i < dimensions.size(); ++i) {
+        if (dimensions[i] < 0 || dimensions[i] >= (int)_curves.size()) {
+            throw std::invalid_argument("KnobParametric: dimension out of range");
+        }
+        _curves[dimensions[i]]->clearKeyFrames();
+        Q_EMIT curveChanged(dimensions[i]);
+    }
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+
+}
+
+void
+KnobParametric::deleteAnimationBeforeTime(double time, ViewSpec view, int dimension, CurveChangeReason /*reason*/)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    _curves[dimension]->removeKeyFramesBeforeTime(time, 0);
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+
+}
+
+void
+KnobParametric::deleteAnimationAfterTime(double time, ViewSpec view, int dimension, CurveChangeReason /*reason*/)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    _curves[dimension]->removeKeyFramesAfterTime(time, 0);
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+}
+
+void
+KnobParametric::setInterpolationAtTimes(CurveChangeReason /*reason*/, ViewSpec view, int dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
+        KeyFrame k;
+        if (_curves[dimension]->setKeyFrameInterpolation(interpolation, *it, &k)) {
+            if (newKeys) {
+                newKeys->push_back(k);
+            }
+        }
+    }
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+}
+
+bool
+KnobParametric::setLeftAndRightDerivativesAtTime(CurveChangeReason /*reason*/, ViewSpec view, int dimension, double time, double left, double right)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    int keyIndex = _curves[dimension]->keyFrameIndex(time);
+    if (keyIndex == -1) {
+        return false;
+    }
+
+    _curves[dimension]->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
+    _curves[dimension]->setKeyFrameDerivatives(left, right, keyIndex);
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    return true;
+}
+
+bool
+KnobParametric::setDerivativeAtTime(CurveChangeReason /*reason*/, ViewSpec view, int dimension, double time, double derivative, bool isLeft)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    int keyIndex = _curves[dimension]->keyFrameIndex(time);
+    if (keyIndex == -1) {
+        return false;
+    }
+
+    _curves[dimension]->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
+    if (isLeft) {
+        _curves[dimension]->setKeyFrameLeftDerivative(derivative, keyIndex);
+    } else {
+        _curves[dimension]->setKeyFrameRightDerivative(derivative, keyIndex);
+    }
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    return true;
+}
+
+ValueChangedReturnCodeEnum
+KnobParametric::setIntValueAtTime(double /*time*/, int /*value*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /*keys*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setIntValueAtTimeAcrossDimensions(double /*time*/, const std::vector<int>& /*values*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+ValueChangedReturnCodeEnum
+KnobParametric::setKeyFrameInternal(double time, double value, const CurvePtr& curve, KeyFrame* newKey)
+{
+    KeyFrame existingKey;
+    ValueChangedReturnCodeEnum ret;
+    bool hasExistingKey = curve->getKeyFrameWithTime(time, &existingKey);
+    if (hasExistingKey) {
+        if (newKey) {
+            *newKey = existingKey;
+        }
+        if (existingKey.getValue() == value) {
+            ret = eValueChangedReturnCodeNothingChanged;
+        } else {
+            ret = eValueChangedReturnCodeKeyframeModified;
+        }
+    } else {
+        KeyFrame k(time, 0);
+        k.setInterpolation(eKeyframeTypeLinear);
+        if (newKey) {
+            *newKey = k;
+        }
+        bool newKeyFrame = curve->addKeyFrame(k);
+        if (newKeyFrame) {
+            ret = eValueChangedReturnCodeKeyframeAdded;
+        } else {
+            ret = eValueChangedReturnCodeNothingChanged;
+        }
+    }
+
+    return ret;
+}
+
+ValueChangedReturnCodeEnum
+KnobParametric::setDoubleValueAtTime(double time, double value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    ValueChangedReturnCodeEnum ret = setKeyFrameInternal(time, value, _curves[dimension], newKey);
+    if (ret != eValueChangedReturnCodeNothingChanged) {
+        Q_EMIT curveChanged(dimension);
+        evaluateValueChange(0, getCurrentTime(), view, reason);
+    }
+    return ret;
+}
+
+void
+KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey)
+{
+    if (dimension < 0 || dimension >= (int)_curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    if (keys.empty()) {
+        return;
+    }
+    if (newKey) {
+        newKey->clear();
+    }
+    KeyFrame key;
+    for (std::list<DoubleTimeValuePair>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        setKeyFrameInternal(it->time, it->value, _curves[dimension], newKey ? &key : 0);
+        if (newKey) {
+            newKey->push_back(key);
+        }
+    }
+    Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), view, reason);
+}
+
+void
+KnobParametric::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
+{
+    if (values.empty()) {
+        return;
+    }
+    if (dimensionStartIndex < 0 || dimensionStartIndex + values.size() > _curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        ValueChangedReturnCodeEnum ret = setKeyFrameInternal(time, values[i], _curves[dimensionStartIndex + i], 0);
+        if (retCodes) {
+            retCodes->push_back(ret);
+        }
+        Q_EMIT curveChanged(i + dimensionStartIndex);
+    }
+    evaluateValueChange(0, getCurrentTime(), view, reason);
+
+}
+
+void
+KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason)
+{
+    if (keysPerDimension.empty()) {
+        return;
+    }
+    if (dimensionStartIndex < 0 || dimensionStartIndex + keysPerDimension.size() > _curves.size()) {
+        throw std::invalid_argument("KnobParametric: dimension out of range");
+    }
+    for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
+        if (keysPerDimension[i].empty()) {
+            continue;
+        }
+        for (std::list<DoubleTimeValuePair>::const_iterator it2 = keysPerDimension[i].begin(); it2!=keysPerDimension[i].end(); ++it2) {
+            setKeyFrameInternal(it2->time, it2->value, _curves[i + dimensionStartIndex], 0);
+        }
+        Q_EMIT curveChanged(i + dimensionStartIndex);
+
+    }
+    evaluateValueChange(0, getCurrentTime(), view, reason);
+}
+
+ValueChangedReturnCodeEnum
+KnobParametric::setBoolValueAtTime(double /*time*/, bool /*value*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& /*keys*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setBoolValueAtTimeAcrossDimensions(double /*time*/, const std::vector<bool>& /*values*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+
+void
+KnobParametric::setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+ValueChangedReturnCodeEnum
+KnobParametric::setStringValueAtTime(double /*time*/, const std::string& /*value*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& /*keys*/, ViewSpec /*view*/, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setStringValueAtTimeAcrossDimensions(double /*time*/, const std::vector<std::string>& /*values*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
+}
+
+void
+KnobParametric::setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+{
+    throw std::logic_error("KnobParametric: invalid function call");
 }
 
 /******************************KnobTable**************************************/
@@ -2600,7 +2873,7 @@ KnobTable::setTableSingleCol(const std::list<std::string>& table)
 void
 KnobTable::setTable(const std::list<std::vector<std::string> >& table)
 {
-    setValue( encodeToKnobTableFormat(table) );
+    setValue(encodeToKnobTableFormat(table), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void

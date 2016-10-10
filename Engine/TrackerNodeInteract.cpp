@@ -363,7 +363,7 @@ TrackerNodeInteract::onResetOffsetButtonClicked()
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
-        for (int i = 0; i < offsetKnob->getDimension(); ++i) {
+        for (int i = 0; i < offsetKnob->getNDimensions(); ++i) {
             offsetKnob->resetToDefaultValue(i);
         }
     }
@@ -1463,7 +1463,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
                                         ViewSpec::all(),
                                         eValueChangedReasonPluginEdited);
             for (int i = 0; i < 4; ++i) {
-                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                for (int d = 0; d < patternCorners[i]->getNDimensions(); ++d) {
                     patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), ViewSpec::all(), d);
                 }
             }

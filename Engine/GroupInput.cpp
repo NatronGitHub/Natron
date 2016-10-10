@@ -90,9 +90,9 @@ GroupInput::knobChanged(const KnobIPtr& k,
     } else if ( k == mask.lock() ) {
         bool isMask = mask.lock()->getValue();
         if (isMask) {
-            optional.lock()->setValue(true);
+            optional.lock()->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         } else {
-            optional.lock()->setValue(false);
+            optional.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );

@@ -116,9 +116,6 @@ DopeSheetEditor::DopeSheetEditor(const std::string& scriptName,
     connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNodePtr)),
              _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNodePtr)) );
 
-    connect( _imp->model, SIGNAL(keyframeSetOrRemoved(DSKnobPtr)),
-             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnobPtr)) );
-
     connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
              _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)) );
 

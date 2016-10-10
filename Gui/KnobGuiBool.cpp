@@ -237,7 +237,11 @@ KnobGuiBool::removeSpecificGui()
 void
 KnobGuiBool::updateGUI(int /*dimension*/)
 {
-    _checkBox->setChecked( _knob.lock()->getValue(0) );
+    bool checked = _knob.lock()->getValue(0);
+    if (_checkBox->isChecked() == checked) {
+        return;
+    }
+    _checkBox->setChecked(checked);
 }
 
 void
@@ -361,7 +365,7 @@ void
 KnobGuiBool::updateToolTip()
 {
     if ( hasToolTip() ) {
-        for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
+        for (int i = 0; i < _knob.lock()->getNDimensions(); ++i) {
             toolTip(_checkBox);
         }
     }

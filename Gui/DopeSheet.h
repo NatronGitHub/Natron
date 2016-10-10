@@ -300,6 +300,9 @@ public:
 
     boost::weak_ptr<DSKnob> context;
     KeyFrame key;
+
+    // For animating string params we need to also store the string
+    std::string animatingStringValue;
 };
 
 typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
@@ -394,14 +397,13 @@ Q_SIGNALS:
     void nodeAdded(const DSNodePtr& dsNode);
     void nodeAboutToBeRemoved(const DSNodePtr& dsNode);
     void nodeRemoved(const DSNodePtr& dsNode);
-    void keyframeSetOrRemoved(const DSKnobPtr& dsKnob);
 
 private: /* functions */
     DSNodePtr createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);
-    void onKeyframeSetOrRemoved();
+    void refreshKnobVisibility();
     void onNodeNameEditDialogFinished();
 
 private:

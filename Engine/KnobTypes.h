@@ -127,7 +127,7 @@ public:
 
     void setAsRectangle()
     {
-        if (getDimension() == 4) {
+        if (getNDimensions() == 4) {
             _isRectangle = true;
             disableSlider();
         }
@@ -403,7 +403,7 @@ public:
 
     void setAsRectangle()
     {
-        if (getDimension() == 4) {
+        if (getNDimensions() == 4) {
             _isRectangle = true;
         }
     }
@@ -713,13 +713,11 @@ public:
     }
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
-                                                 int dimension,
-                                                 bool turnOffAutoKeying = false);
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value);
 
     /// set the KnobChoice default value from the label
-    void setDefaultValueFromLabel(const std::string & value, int dimension = 0);
-    void setDefaultValueFromLabelWithoutApplying(const std::string & value, int dimension = 0);
+    void setDefaultValueFromLabel(const std::string & value);
+    void setDefaultValueFromLabelWithoutApplying(const std::string & value);
 
     void setMissingEntryWarningEnabled(bool enabled);
     bool isMissingEntryWarningEnabled() const;
@@ -757,7 +755,6 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
-    virtual void cloneExtraData(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
 
@@ -1432,6 +1429,40 @@ public:
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
+
+    //////////// Overriden from AnimatingObjectI
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, int dimension) const OVERRIDE FINAL;
+    virtual bool cloneCurve(ViewSpec view, int dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual bool warpValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view,  int dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) OVERRIDE FINAL;
+    virtual void removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& dimensions, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteAnimationBeforeTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void deleteAnimationAfterTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) OVERRIDE FINAL;
+    virtual void setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE FINAL;
+    virtual bool setLeftAndRightDerivativesAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double left, double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setDerivativeAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double derivative, bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) OVERRIDE FINAL;
+    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) OVERRIDE FINAL;
+    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
+    virtual void setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    //////////// End from AnimatingObjectI
+
 Q_SIGNALS:
 
 
@@ -1442,12 +1473,13 @@ Q_SIGNALS:
 
 private:
 
+    ValueChangedReturnCodeEnum setKeyFrameInternal(double time, double value, const CurvePtr& curve, KeyFrame* newKey);
+
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void cloneExtraData(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;

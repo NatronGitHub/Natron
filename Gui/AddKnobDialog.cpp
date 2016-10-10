@@ -346,7 +346,7 @@ AddKnobDialog::dataTypeDim(ParamDataTypeEnum t)
 AddKnobDialog::ParamDataTypeEnum
 AddKnobDialog::getChoiceIndexFromKnobType(const KnobIPtr& knob)
 {
-    int dim = knob->getDimension();
+    int dim = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
     KnobColorPtr isColor = toKnobColor(knob);
@@ -885,21 +885,21 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
         } else if (isDbl) {
             _imp->default0->setValue( isDbl->getDefaultValue(0) );
-            if (isDbl->getDimension() >= 2) {
+            if (isDbl->getNDimensions() >= 2) {
                 _imp->default1->setValue( isDbl->getDefaultValue(1) );
             }
-            if (isDbl->getDimension() >= 3) {
+            if (isDbl->getNDimensions() >= 3) {
                 _imp->default2->setValue( isDbl->getDefaultValue(2) );
             }
-            if (isDbl->getDimension() >= 4) {
+            if (isDbl->getNDimensions() >= 4) {
                 _imp->default3->setValue( isDbl->getDefaultValue(3) );
             }
         } else if (isInt) {
             _imp->default0->setValue( isInt->getDefaultValue(0) );
-            if (isInt->getDimension() >= 2) {
+            if (isInt->getNDimensions() >= 2) {
                 _imp->default1->setValue( isInt->getDefaultValue(1) );
             }
-            if (isInt->getDimension() >= 3) {
+            if (isInt->getNDimensions() >= 3) {
                 _imp->default2->setValue( isInt->getDefaultValue(2) );
             }
         } else if (isBool) {
@@ -1346,7 +1346,7 @@ template <typename T>
 void
 AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
 {
-    int dim = knob->getDimension();
+    int dim = knob->getNDimensions();
 
     boost::shared_ptr<Knob<T> > k = boost::dynamic_pointer_cast<Knob<T> >(knob);
     assert(k);
@@ -1761,7 +1761,7 @@ AddKnobDialog::onOkClicked()
                 }
             }
         }
-        expressions.resize( _imp->knob->getDimension() );
+        expressions.resize( _imp->knob->getNDimensions() );
         for (std::size_t i = 0; i < expressions.size(); ++i) {
             std::string expr = _imp->knob->getExpression(i);
             bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
@@ -1944,8 +1944,8 @@ AddKnobDialog::onOkClicked()
 
     //Recover listeners expressions
     for (std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
-        assert( it->first->getDimension() == (int)it->second.size() );
-        for (int i = 0; i < it->first->getDimension(); ++i) {
+        assert( it->first->getNDimensions() == (int)it->second.size() );
+        for (int i = 0; i < it->first->getNDimensions(); ++i) {
             try {
                 std::string expr;
                 if ( oldKnobScriptName != _imp->knob->getName() ) {

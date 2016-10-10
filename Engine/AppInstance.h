@@ -39,7 +39,6 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
-#include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -84,7 +83,6 @@ class AppInstance
     : public QObject
     , public boost::noncopyable
     , public boost::enable_shared_from_this<AppInstance>
-    , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -276,6 +274,13 @@ public:
     }
 
     virtual void onRenderQueuingChanged(bool /*queueingEnabled*/)
+    {
+    }
+
+    virtual void goToPreviousKeyframe()
+    {
+    }
+    virtual void goToNextKeyframe()
     {
     }
 
