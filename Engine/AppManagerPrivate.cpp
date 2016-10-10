@@ -142,13 +142,13 @@ AppManagerPrivate::~AppManagerPrivate()
 {
     
 
-    for (std::size_t i = 0; i < commandLineArgsUtf8.size(); ++i) {
-        free(commandLineArgsUtf8[i]);
+    for (std::size_t i = 0; i < commandLineArgsUtf8Original.size(); ++i) {
+        free(commandLineArgsUtf8Original[i]);
     }
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
-        free(commandLineArgsWide[i]);
+    for (std::size_t i = 0; i < commandLineArgsWideOriginal.size(); ++i) {
+        free(commandLineArgsWideOriginal[i]);
     }
 #endif
 }
@@ -873,14 +873,19 @@ AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Arg
     commandLineArgsUtf8.resize(utf8Args.size());
     nArgs = (int)utf8Args.size();
     for (std::size_t i = 0; i < utf8Args.size(); ++i) {
-        commandLineArgsUtf8[i] = strdup(utf8Args[i].c_str());
+        commandLineArgsUtf8Original[i] = strdup(utf8Args[i].c_str());
 
         // Python 3 needs wchar_t arguments
 #if PY_MAJOR_VERSION >= 3
         // Python 3
-        commandLineArgsWide[i] = char2wchar(utf8Args[i].c_str());
+        commandLineArgsWideOriginal[i] = char2wchar(utf8Args[i].c_str());
 #endif
     }
+    commandLineArgsUtf8 = commandLineArgsUtf8Original;
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    commandLineArgsWide = commandLineArgsWideOriginal;
+#endif
 }
 
 void

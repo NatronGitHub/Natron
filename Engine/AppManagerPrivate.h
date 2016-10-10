@@ -131,9 +131,11 @@ public:
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    std::vector<wchar_t*> commandLineArgsWide;
+    std::vector<wchar_t*> commandLineArgsWideOriginal; // must be free'd on exit
+    std::vector<wchar_t*> commandLineArgsWide; // a copy of the above, may be modified
 #else
-    std::vector<char*> commandLineArgsUtf8;
+    std::vector<char*> commandLineArgsUtf8Original; // must be free'd on exit
+    std::vector<char*> commandLineArgsUtf8; // a copy of the above, may be modified
 #endif
 
     //  QCoreApplication will hold a reference to that int until QCoreApplication destructor is invoked.
