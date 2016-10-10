@@ -36,7 +36,6 @@
 
 #ifdef WINDOWS
 #include <tchar.h>
-#include <ofxhUtilities.h> // for wideStringToString
 #endif
 
 #include "Global/MemoryInfo.h"
@@ -1317,7 +1316,7 @@ Settings::initializeKnobsPlugins()
 
     std::wstring basePath = std::wstring( OFX::Host::PluginCache::getStdOFXPluginPath() );
     basePath.append( std::wstring(L" and C:\\Program Files\\Common Files\\OFX\\Plugins") );
-    std::string searchPath = OFX::wideStringToString(basePath);
+    std::string searchPath = StrUtils::utf16_to_utf8(basePath);
 
 #endif
 

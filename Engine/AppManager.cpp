@@ -723,8 +723,7 @@ AppManager::loadInternal(const CLArgs& cl)
     assert(!_imp->_loaded);
 
     _imp->_binaryPath = QCoreApplication::applicationDirPath();
-    std::cout << "QCoreApplication dir path is: " << _imp->_binaryPath.toStdString() << std::endl;
-
+    assert(StrUtils::is_utf8(_imp->_binaryPath.toStdString().c_str()));
 
     registerEngineMetaTypes();
     registerGuiMetaTypes();

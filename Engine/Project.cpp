@@ -59,9 +59,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtNetwork/QHostInfo>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
-#ifdef __NATRON_WIN32__
-#include <ofxhUtilities.h> // for wideStringToString
-#endif
 #include <ofxhXml.h> // OFX::XML::escape
 
 #include "Global/StrUtils.h"
@@ -102,7 +99,7 @@ getUserName()
     GetUserNameW(user_name, &user_name_size);
 
     std::wstring wUserName(user_name);
-    std::string sUserName = OFX::wideStringToString(wUserName);
+    std::string sUserName = StrUtils::utf16_to_utf8(wUserName);
     return sUserName;
 #elif defined(__NATRON_UNIX__)
     struct passwd *passwd;

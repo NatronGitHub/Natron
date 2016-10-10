@@ -109,10 +109,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabWidget.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
-
-#ifdef __NATRON_WIN32__
-#include <ofxhUtilities.h> // for wideStringToString
-#endif
 #include "Global/QtCompat.h" // removeFileExtension
 
 #define FILE_DIALOG_DISABLE_ICONS

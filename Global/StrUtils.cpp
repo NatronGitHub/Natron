@@ -33,7 +33,6 @@ NATRON_NAMESPACE_ENTER
 
 namespace StrUtils {
 
-#ifndef NDEBUG
     bool is_utf8(const char * string)
     {
         if(!string)
@@ -113,7 +112,6 @@ namespace StrUtils {
         
         return true;
     } // is_utf8
-#endif
     
     /*Converts a std::string to wide string*/
     std::wstring

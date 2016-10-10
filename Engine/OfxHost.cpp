@@ -66,10 +66,6 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 #include <ofxNatron.h>
 
-#ifdef __NATRON_WIN32__
-#include <ofxhUtilities.h> // for wideStringToString
-#endif
-
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
