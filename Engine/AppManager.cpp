@@ -428,7 +428,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
         QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts");
         QString pathcfg = path + QString::fromUtf8("/fonts.conf");
         if ( !QFile(pathcfg).exists() ) {
-            qWarning() << "Fontconfig configuration file" << pathcfg << "does not exist, not setting FONTCONFIG_PATH";
+            std::cerr <<  "Fontconfig configuration file " << pathcfg.toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
         } else {
             qDebug() << "Setting FONTCONFIG_PATH to" << path;
             qputenv( "FONTCONFIG_PATH", path.toUtf8() );
