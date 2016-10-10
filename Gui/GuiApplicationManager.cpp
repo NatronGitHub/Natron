@@ -845,6 +845,15 @@ GuiApplicationManager::initGui(const CLArgs& args)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
+#ifdef __NATRON_UNIX__
+#ifndef __NATRON_OSX__
+#if QT_VERSION < 0x050000
+    // workaround for issues with KDE4
+    QApplication::setStyle( QString::fromUtf8("plastique") );
+#endif
+#endif
+#endif
+
     //load custom fonts
     QString fontResource = QString::fromUtf8(":/Resources/Fonts/%1.ttf");
     QStringList fontFilenames;
