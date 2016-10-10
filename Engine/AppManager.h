@@ -587,6 +587,8 @@ public:
     std::string getReaderPluginIDForFileType(const std::string & extension) const;
     std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
+    static void setApplicationLocale();
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()

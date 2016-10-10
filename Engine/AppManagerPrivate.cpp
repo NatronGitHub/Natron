@@ -904,7 +904,9 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     if (argv) {
         for (int i = 0; i < argc; ++i) {
             std::wstring wide(argv[i]);
-            utf8Args.push_back(QString::fromStdWString(wide).toStdString());
+            std::string str = StrUtils::utf16_to_utf8(wide);
+            assert(StrUtils::is_utf8(str.c_str()));
+            utf8Args.push_back(str);
         }
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),

@@ -120,6 +120,9 @@ CLArgs::CLArgs(int& argc,
         _imp->isBackground = true;
     }
 
+    // Ensure application has correct locale before doing anything
+    AppManager::setApplicationLocale();
+
     std::vector<std::string> utf8Args;
     ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
 
@@ -144,11 +147,16 @@ CLArgs::CLArgs(int& argc,
     if (forceBackground) {
         _imp->isBackground = true;
     }
-    
+
+    // Ensure application has correct locale before doing anything
+    AppManager::setApplicationLocale();
+
     std::vector<std::string> utf8Args;
     for (int i = 0; i < argc; ++i) {
         std::wstring ws(argv[i]);
-        QString str = QString::fromStdWString(ws);
+        std::string utf8Str = StrUtils::utf16_to_utf8(ws);
+        assert(StrUtils::is_utf8(utf8Str.c_str()));
+        QString str = QString::fromUtf8(utf8Str.c_str());
         if ( (str.size() >= 2) && ( str[0] == QChar::fromLatin1('"') ) && ( str[str.size() - 1] == QChar::fromLatin1('"') ) ) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
@@ -160,7 +168,7 @@ CLArgs::CLArgs(int& argc,
 
 }
 
-CLArgs:: CLArgs(const QStringList &arguments,
+CLArgs::CLArgs(const QStringList &arguments,
                 bool forceBackground)
     : _imp( new CLArgsPrivate() )
 {
@@ -168,6 +176,10 @@ CLArgs:: CLArgs(const QStringList &arguments,
     if (forceBackground) {
         _imp->isBackground = true;
     }
+
+    // Ensure application has correct locale before doing anything
+    AppManager::setApplicationLocale();
+    
     Q_FOREACH(const QString &arg, arguments) {
         QString str = arg;
 
@@ -1137,7 +1149,9 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
     // On Unix, command line args are Utf8
     assert(!argc || argv);
     for (int i = 0; i < argc; ++i) {
-        utf8Args->push_back(argv[i]);
+        std::string str(argv[i]);
+        assert(StrUtils::is_utf8(str.c_str()));
+        utf8Args->push_back(str);
     }
 #else
     // On Windows, it must be converted: http://stackoverflow.com/questions/5408730/what-is-the-encoding-of-argv
@@ -1148,7 +1162,9 @@ CLArgs::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string
     wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
     for (int i = 0; i < nArgsOut; ++i) {
         std::wstring wide(argList[i]);
-        utf8Args->push_back(QString::fromStdWString(wide).toStdString());
+        std::string utf8Str = StrUtils::utf16_to_utf8(wide);
+        assert(StrUtils::is_utf8(utf8Str.c_str()));
+        utf8Args->push_back(utf8Str);
         if (argv) {
             std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
         }

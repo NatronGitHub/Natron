@@ -118,6 +118,8 @@ NATRON_NAMESPACE_ENTER;
 
 AppManager* AppManager::_instance = 0;
 
+static bool g_localeSet = false;
+
 
 #ifdef __NATRON_UNIX__
 
@@ -395,6 +397,14 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 #endif
 
+    // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
+#if QT_VERSION < 0x050000
+    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
+    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
+    QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
+#endif
+
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
@@ -437,11 +447,6 @@ AppManager::loadFromArgs(const CLArgs& cl)
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
-#if QT_VERSION < 0x050000
-    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
-    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
-    QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
-#endif
 
     ///the QCoreApplication must have been created so far.
     assert(qApp);
@@ -456,6 +461,8 @@ AppManager::load(int argc,
                  char **argv,
                  const CLArgs& cl)
 {
+    // Ensure application has correct locale before doing anything
+    setApplicationLocale();
     _imp->handleCommandLineArgs(argc, argv);
     return loadFromArgs(cl);
 }
@@ -465,6 +472,8 @@ AppManager::loadW(int argc,
                  wchar_t **argv,
                  const CLArgs& cl)
 {
+    // Ensure application has correct locale before doing anything
+    setApplicationLocale();
     _imp->handleCommandLineArgsW(argc, argv);
     return loadFromArgs(cl);
 }
@@ -635,23 +644,12 @@ AppManager::initializeQApp(int &argc,
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
-bool
-AppManager::loadInternal(const CLArgs& cl)
+void
+AppManager::setApplicationLocale()
 {
-    assert(!_imp->_loaded);
-
-    _imp->_binaryPath = QCoreApplication::applicationDirPath();
-
-    registerEngineMetaTypes();
-    registerGuiMetaTypes();
-
-    qApp->setOrganizationName( QString::fromUtf8(NATRON_ORGANIZATION_NAME) );
-    qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
-    qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-    //Set it once setApplicationName is set since it relies on it
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-
+    if (g_localeSet) {
+        return;
+    }
     // Natron is not yet internationalized, so it is better for now to use the "C" locale,
     // until it is tested for robustness against locale choice.
     // The locale affects numerics printing and scanning, date and time.
@@ -713,6 +711,30 @@ AppManager::loadInternal(const CLArgs& cl)
     }
     std::setlocale(LC_NUMERIC, "C"); // set the locale for LC_NUMERIC only
     QLocale::setDefault( QLocale(QLocale::English, QLocale::UnitedStates) );
+
+    g_localeSet = true;
+}
+
+bool
+AppManager::loadInternal(const CLArgs& cl)
+{
+    assert(!_imp->_loaded);
+
+    _imp->_binaryPath = QCoreApplication::applicationDirPath();
+    std::cout << "QCoreApplication dir path is: " << _imp->_binaryPath.toStdString() << std::endl;
+
+
+    registerEngineMetaTypes();
+    registerGuiMetaTypes();
+
+    qApp->setOrganizationName( QString::fromUtf8(NATRON_ORGANIZATION_NAME) );
+    qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
+    qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
+    //Set it once setApplicationName is set since it relies on it
+    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -1650,7 +1672,6 @@ AppManager::getAllNonOFXPluginsPaths() const
 
     //This is the bundled location for PyPlugs
     QDir cwd( QCoreApplication::applicationDirPath() );
-    std::cout << "QCoreApplication dir path is: " << cwd.absolutePath().toStdString() << std::endl;
     cwd.cdUp();
     QString natronBundledPluginsPath = QString( cwd.absolutePath() +  QString::fromUtf8("/Plugins/PyPlugs") );
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
