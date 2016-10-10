@@ -2159,9 +2159,9 @@ Settings::tryLoadOpenColorIOConfig()
 #ifdef DEBUG
     qDebug() << "setting OCIO=" << configFile;
 #endif
-    qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
-
     std::string stdConfigFile = configFile.toStdString();
+    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
+
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
     if ( !configPath.empty() && (configPath[configPath.size() - 1] == '/') ) {
         configPath.erase(configPath.size() - 1, 1);

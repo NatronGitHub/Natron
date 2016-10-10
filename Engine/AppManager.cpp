@@ -425,13 +425,14 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // set fontconfig path on all platforms
     if ( qgetenv("FONTCONFIG_PATH").isNull() ) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
-        QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts");
-        QString pathcfg = path + QString::fromUtf8("/fonts.conf");
-        if ( !QFile(pathcfg).exists() ) {
-            std::cerr <<  "Fontconfig configuration file " << pathcfg.toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
+        QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts/fonts.conf");
+        QFileInfo fileInfo(path);
+        if ( !fileInfo.exists() ) {
+            std::cerr <<  "Fontconfig configuration file " << fileInfo.canonicalFilePath().toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
         } else {
-            qDebug() << "Setting FONTCONFIG_PATH to" << path;
-            qputenv( "FONTCONFIG_PATH", path.toUtf8() );
+            std::string fontConfigPath = fileInfo.canonicalFilePath().toStdString();
+            qDebug() << "Setting FONTCONFIG_PATH to" << fontConfigPath.c_str();
+            qputenv( "FONTCONFIG_PATH", fontConfigPath.c_str() );
         }
     }
 
@@ -2911,7 +2912,7 @@ AppManager::initPython()
 
 
     pythonPath.prepend(toPrepend);
-    qputenv( "PYTHONPATH", pythonPath.toLatin1() );
+    qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
 
 #if PY_MAJOR_VERSION >= 3
     // Python 3

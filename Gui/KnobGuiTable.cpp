@@ -297,7 +297,6 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
                 flags |= Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsUserCheckable;
             }
         }
-
         TableItem* cell = new TableItem;
         cell->setText(*it);
         cell->setFlags(flags);
