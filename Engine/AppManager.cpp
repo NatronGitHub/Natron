@@ -416,6 +416,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
     initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
+    // see C++ standard 23.2.4.2 vector capacity [lib.vector.capacity]
+    // resizing to a smaller size doesn't free/move memory, so the data pointer remains valid
+    assert(_imp->nArgs <= _imp->commandLineArgsUtf8.size());
+    _imp->commandLineArgsUtf8.resize(_imp->nArgs); // Qt may have reduced the numlber of args
 
 #ifdef QT_CUSTOM_THREADPOOL
     // Set the global thread pool
