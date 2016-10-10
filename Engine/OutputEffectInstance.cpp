@@ -96,7 +96,6 @@ OutputEffectInstance::OutputEffectInstance(const OutputEffectInstance& other)
 , _renderSequenceRequests()
 , _engine(other._engine)
 {
-
 }
 
 OutputEffectInstance::~OutputEffectInstance()

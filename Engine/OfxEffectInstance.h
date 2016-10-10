@@ -64,12 +64,13 @@ public:
     {
     }
 
-
+protected:
     AbstractOfxEffectInstance(const AbstractOfxEffectInstance& other)
     : OutputEffectInstance(other)
     {
     }
 
+public:
     virtual ~AbstractOfxEffectInstance()
     {
     }

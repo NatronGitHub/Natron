@@ -233,6 +233,7 @@ public:
      **/
     explicit EffectInstance(NodePtr node);
 
+protected:
     EffectInstance(const EffectInstance& other);
 
 public:
