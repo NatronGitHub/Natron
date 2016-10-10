@@ -868,9 +868,9 @@ AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Arg
     // Copy command line args to local members that live throughout the lifetime of AppManager
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    commandLineArgsWide.resize(utf8Args.size());
+    commandLineArgsWideOriginal.resize(utf8Args.size());
 #endif
-    commandLineArgsUtf8.resize(utf8Args.size());
+    commandLineArgsUtf8Original.resize(utf8Args.size());
     nArgs = (int)utf8Args.size();
     for (std::size_t i = 0; i < utf8Args.size(); ++i) {
         commandLineArgsUtf8Original[i] = strdup(utf8Args[i].c_str());
