@@ -145,7 +145,8 @@ AppManagerPrivate::~AppManagerPrivate()
     for (std::size_t i = 0; i < commandLineArgsUtf8.size(); ++i) {
         free(commandLineArgsUtf8[i]);
     }
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
         free(commandLineArgsWide[i]);
     }
@@ -865,7 +866,8 @@ void
 AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args)
 {
     // Copy command line args to local members that live throughout the lifetime of AppManager
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     commandLineArgsWide.resize(utf8Args.size());
 #endif
     commandLineArgsUtf8.resize(utf8Args.size());
@@ -874,7 +876,8 @@ AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Arg
         commandLineArgsUtf8[i] = strdup(utf8Args[i].c_str());
 
         // Python 3 needs wchar_t arguments
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+        // Python 3
         commandLineArgsWide[i] = char2wchar(utf8Args[i].c_str());
 #endif
     }

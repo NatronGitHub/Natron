@@ -129,7 +129,8 @@ public:
     bool lastProjectLoadedCreatedDuringRC2Or3;
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     std::vector<wchar_t*> commandLineArgsWide;
 #else
     std::vector<char*> commandLineArgsUtf8;
