@@ -2163,7 +2163,7 @@ Settings::tryLoadOpenColorIOConfig()
 #ifdef __NATRON_WIN32__
     _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
 #else
-    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile).c_str() );
+    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
 #endif
 
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
