@@ -438,9 +438,10 @@ GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
 void
 GuiApplicationManagerPrivate::updateFontConfigCache()
 {
+    qDebug() << "Building Fontconfig fonts...";
     FcConfig *fcConfig = FcInitLoadConfig();
-
     FcConfigBuildFonts(fcConfig);
+    qDebug() << "Fontconfig fonts built";
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -858,7 +858,6 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     QDir dir( QCoreApplication::applicationDirPath() );
     dir.cdUp();
     std::string natronBundledPluginsPath = QString( dir.absolutePath() +  QString::fromUtf8("/Plugins/OFX/") + QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
-    std::cout << "natron bundled OpenFX plug-ins path: " << natronBundledPluginsPath << std::endl;
     try {
         if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {
             if ( appPTR->getCurrentSettings()->preferBundledPlugins() ) {

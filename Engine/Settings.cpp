@@ -2160,7 +2160,11 @@ Settings::tryLoadOpenColorIOConfig()
     qDebug() << "setting OCIO=" << configFile;
 #endif
     std::string stdConfigFile = configFile.toStdString();
-    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
+#ifdef __NATRON_WIN32__
+    _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
+#else
+    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile).c_str() );
+#endif
 
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
     if ( !configPath.empty() && (configPath[configPath.size() - 1] == '/') ) {

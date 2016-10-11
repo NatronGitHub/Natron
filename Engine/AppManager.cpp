@@ -429,14 +429,22 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // set fontconfig path on all platforms
     if ( qgetenv("FONTCONFIG_PATH").isNull() ) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
-        QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts/fonts.conf");
+        QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts");
         QFileInfo fileInfo(path);
         if ( !fileInfo.exists() ) {
             std::cerr <<  "Fontconfig configuration file " << fileInfo.canonicalFilePath().toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
         } else {
-            std::string fontConfigPath = fileInfo.canonicalFilePath().toStdString();
-            qDebug() << "Setting FONTCONFIG_PATH to" << fontConfigPath.c_str();
-            qputenv( "FONTCONFIG_PATH", fontConfigPath.c_str() );
+            QString fcPath = fileInfo.canonicalFilePath();
+
+            std::string stdFcPath = fcPath.toStdString();
+
+            // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+            qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
+#ifdef __NATRON_WIN32__
+            _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
+#else
+             qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
+#endif
         }
     }
 
@@ -1761,10 +1769,10 @@ operateOnPathRecursive(NatronPathFunctor functor,
 static void
 addToPythonPathFunctor(const QDir& directory)
 {
-    std::string addToPythonPath("sys.path.append(\"");
+    std::string addToPythonPath("sys.path.append(str('");
 
     addToPythonPath += directory.absolutePath().toStdString();
-    addToPythonPath += "\")\n";
+    addToPythonPath += "').decode('utf-8'))\n";
 
     std::string err;
     bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
@@ -2916,7 +2924,13 @@ AppManager::initPython()
 
 
     pythonPath.prepend(toPrepend);
-    qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
+    // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+#ifdef __NATRON_WIN32__
+    _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+#else
+     qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
+#endif
+
 
 #if PY_MAJOR_VERSION >= 3
     // Python 3
