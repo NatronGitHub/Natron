@@ -407,12 +407,12 @@ ReadNodePrivate::cloneGenericKnobs()
                 } else {
                     (*it2)->clone( serializedKnob.get() );
                 }
-                (*it2)->setSecret( serializedKnob->getIsSecret() );
-                if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
+                //(*it2)->setSecret( serializedKnob->getIsSecret() );
+                /*if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
                     for (int i = 0; i < (*it2)->getDimension(); ++i) {
                         (*it2)->setEnabled( i, serializedKnob->isEnabled(i) );
                     }
-                }
+                }*/
 
                 break;
             }
@@ -473,10 +473,10 @@ ReadNodePrivate::destroyReadNode()
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
             if (!isGeneric || mustSerializeKnob) {
 
-                if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+               /* if (!isGeneric && !(*it)->getDefaultIsSecret()) {
                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
                     (*it)->setSecret(false);
-                }
+                }*/
 
                 boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
                 serialized.push_back(s);
