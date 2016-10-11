@@ -114,6 +114,8 @@ EffectInstance::EffectInstance(NodePtr node)
 
 EffectInstance::EffectInstance(const EffectInstance& other)
     : NamedKnobHolder(other)
+    , LockManagerI<Image>()
+    , boost::enable_shared_from_this<EffectInstance>()
     , _node( other.getNode() )
     , _imp( new Implementation(*other._imp) )
 {

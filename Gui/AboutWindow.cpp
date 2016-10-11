@@ -308,8 +308,7 @@ AboutWindow::AboutWindow(QWidget* parent)
 #endif
         ;
 #else
-        //#define BOOST_VERSION_NUMBER(major,minor,patch)               \
-        //( (((major)%100)*10000000) + (((minor)%100)*100000) + ((patch)%100000) )
+        //#define BOOST_VERSION_NUMBER(major,minor,patch) ( (((major)%100)*10000000) + (((minor)%100)*100000) + ((patch)%100000) )
         const unsigned major = BOOST_OS/10000000;
         const unsigned minor = (BOOST_OS-10000000*major)/100000;
         const unsigned patch = BOOST_OS % 100000;
