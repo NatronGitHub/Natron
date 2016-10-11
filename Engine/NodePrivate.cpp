@@ -97,7 +97,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , imageBeingRenderedCond()
 , imagesBeingRendered()
 , supportedDepths()
-, keyframesDisplayedOnTimeline(false)
 , lastRenderStartedMutex()
 , lastRenderStartedSlotCallTime()
 , renderStartedCounter(0)
@@ -314,12 +313,12 @@ NodePrivate::onMaskSelectorChanged(int inputNb,
     KnobBoolPtr enabled = selector.enabled.lock();
 
     if ( (index == 0) && enabled->isEnabled(0) ) {
-        enabled->setValue(false);
+        enabled->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         enabled->setEnabled(0, false);
     } else if ( !enabled->isEnabled(0) ) {
         enabled->setEnabled(0, true);
         if ( _publicInterface->getInput(inputNb) ) {
-            enabled->setValue(true);
+            enabled->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
     }
 

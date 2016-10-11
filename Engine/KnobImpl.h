@@ -116,8 +116,6 @@ Knob<T>::Knob(const KnobHolderPtr& holder,
     , _displayMaxs(dimension)
     , _setValuesQueueMutex()
     , _setValuesQueue()
-    , _setValueRecursionLevelMutex(QMutex::Recursive)
-    , _setValueRecursionLevel(0)
 {
     initMinMax();
 }
@@ -599,22 +597,27 @@ Knob<T>::QueuedSetValue::valueChangesBlocked() const
 
 template <typename T>
 void
-Knob<T>::makeKeyFrame(Curve* curve,
-                      double time,
-                      ViewSpec /*view*/,
+Knob<T>::makeKeyFrame(double time,
                       const T& v,
+                      ViewIdx /*view*/,
                       KeyFrame* key)
 {
+    AnimatingObjectI::KeyframeDataTypeEnum type = getKeyFrameDataType();
     double keyFrameValue;
-
-    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-        keyFrameValue = std::floor(v + 0.5);
-    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-        keyFrameValue = (bool)v;
-    } else {
-        keyFrameValue = (double)v;
+    switch (type) {
+        case AnimatingObjectI::eKeyframeDataTypeBool:
+            keyFrameValue = (bool)v;
+            break;
+        case AnimatingObjectI::eKeyframeDataTypeInt:
+            keyFrameValue = std::floor(v + 0.5);
+            break;
+        default:
+            keyFrameValue = (double)v;
+            break;
     }
-    if ( (keyFrameValue != keyFrameValue) || boost::math::isinf(keyFrameValue) ) { // check for NaN or infinity
+
+    // check for NaN or infinity
+    if ( (keyFrameValue != keyFrameValue) || boost::math::isinf(keyFrameValue) ) {
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
@@ -623,15 +626,13 @@ Knob<T>::makeKeyFrame(Curve* curve,
 
 template <>
 void
-KnobStringBase::makeKeyFrame(Curve* /*curve*/,
-                                double time,
-                                ViewSpec view,
-                                const std::string& v,
-                                KeyFrame* key)
+KnobStringBase::makeKeyFrame(double time,
+                             const std::string& v,
+                             ViewIdx view,
+                             KeyFrame* key)
 {
     double keyFrameValue = 0.;
     AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
-
     assert(isStringAnimatedKnob);
     if (isStringAnimatedKnob) {
         isStringAnimatedKnob->stringToKeyFrameValue(time, view, v, &keyFrameValue);
@@ -1127,7 +1128,7 @@ Knob<T>::resetAllDimensionsToDefaultValue()
         clearExpression(i, true);
         resetExtraToDefaultValue(i);
     }
-    setValues(defaultV, 0, ViewSpec::all(), eValueChangedReasonRestoreDefault);
+    setValueAcrossDimensions(defaultV, 0, ViewSpec::all(), eValueChangedReasonRestoreDefault);
 }
 
 
@@ -1188,6 +1189,23 @@ KnobDoubleBase::resetToDefaultValue(int dimension)
 
 }
 
+template <typename T>
+std::vector<T>
+Knob<T>::getRawValues() const
+{
+    QMutexLocker ok(&_valueMutex);
+    return _values;
+}
+
+template <typename T>
+T
+Knob<T>::getRawValue(int dimension) const
+{
+    assert(dimension >= 0 && dimension < getNDimensions());
+    QMutexLocker ok(&_valueMutex);
+    return _values[dimension];
+}
+
 template<typename T>
 template<typename OTHERTYPE>
 void
@@ -1199,11 +1217,8 @@ Knob<T>::copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other,
     QMutexLocker k(&_valueMutex);
     if (dimension == -1) {
         int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-        std::vector<OTHERTYPE> v;
-        {
-            QMutexLocker ok(&other->_valueMutex);
-            v = other->_values;
-        }
+        std::vector<OTHERTYPE> v = other->getRawValues();
+
         for (int i = 0; i < dimMin; ++i) {
             _values[i] = v[i];
             _guiValues[i] = v[i];
@@ -1214,11 +1229,7 @@ Knob<T>::copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other,
         }
         assert( dimension >= 0 && dimension < getNDimensions() &&
                 otherDimension >= 0 && otherDimension < other->getNDimensions() );
-        T otherValue;
-        {
-            QMutexLocker k2(&other->_valueMutex);
-            otherValue = other->_values[otherDimension];
-        }
+        T otherValue = other->getRawValue(otherDimension);
         _values[dimension] = _guiValues[dimension] = otherValue;
     }
 }
@@ -1235,11 +1246,7 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(const boost::shared_ptr<Knob<OTHERTYP
     QMutexLocker k(&_valueMutex);
     if (dimension == -1) {
         int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-        std::vector<OTHERTYPE> v;
-        {
-            QMutexLocker ok(&other->_valueMutex);
-            v = other->_values;
-        }
+        std::vector<OTHERTYPE> v = other->getRawValues();
         for (int i = 0; i < dimMin; ++i) {
             if (_values[i] != v[i]) {
                 _values[i] = v[i];
@@ -1254,11 +1261,7 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(const boost::shared_ptr<Knob<OTHERTYP
         assert( dimension >= 0 && dimension < getNDimensions() &&
                 otherDimension >= 0 && otherDimension < other->getNDimensions() );
 
-        T otherValue;
-        {
-            QMutexLocker k2(&other->_valueMutex);
-            otherValue = other->_values[otherDimension];
-        }
+        T otherValue = other->getRawValue(otherDimension);
         if (otherValue != _values[dimension]) {
             _values[dimension] = _guiValues[dimension] = otherValue;
             ret = true;
@@ -1610,9 +1613,9 @@ void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, int dimension,
     AnimatingKnobStringHelper* isAnimated = dynamic_cast<AnimatingKnobStringHelper*>(knob);
     assert(isAnimated);
     if (isAnimated) {
-        const StringAnimationManager& mng = isAnimated->getAnimation();
+        StringAnimationManagerPtr mng = isAnimated->getStringAnimation();
         std::map<int, std::string> keys;
-        mng.save(&keys);
+        mng->save(&keys);
         for (std::map<int, std::string>::iterator it = keys.begin(); it!=keys.end(); ++it) {
             Hash64::appendQString(QString::fromUtf8(it->second.c_str()), hash);
         }
@@ -1663,31 +1666,31 @@ Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
 }
 
 template <>
-KeyframeDataTypeEnum
+AnimatingObjectI::KeyframeDataTypeEnum
 Knob<int>::getKeyFrameDataType() const
 {
-    return eKeyFrameDataTypeInt;
+    return AnimatingObjectI::eKeyframeDataTypeInt;
 }
 
 template <>
-KeyframeDataTypeEnum
+AnimatingObjectI::KeyframeDataTypeEnum
 Knob<bool>::getKeyFrameDataType() const
 {
-    return eKeyFrameDataTypeBool;
+    return AnimatingObjectI::eKeyframeDataTypeBool;
 }
 
 template <>
-KeyframeDataTypeEnum
+AnimatingObjectI::KeyframeDataTypeEnum
 Knob<double>::getKeyFrameDataType() const
 {
-    return eKeyFrameDataTypeDouble;
+    return AnimatingObjectI::eKeyframeDataTypeDouble;
 }
 
 template <>
-KeyframeDataTypeEnum
+AnimatingObjectI::KeyframeDataTypeEnum
 Knob<std::string>::getKeyFrameDataType() const
 {
-    return eKeyFrameDataTypeString;
+    return AnimatingObjectI::eKeyframeDataTypeString;
 }
 
 NATRON_NAMESPACE_EXIT;

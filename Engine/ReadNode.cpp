@@ -683,7 +683,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
 
         if (pluginIDKnob) {
-            pluginIDKnob->setValue(readerPluginID);
+            pluginIDKnob->setValue(readerPluginID, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         placeReadNodeKnobsInPage();
 
@@ -788,7 +788,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
     pluginIDKnob->blockValueChanges();
-    pluginIDKnob->setValue(pluginID);
+    pluginIDKnob->setValue(pluginID, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     pluginIDKnob->unblockValueChanges();
 
     refreshFileInfoVisibility(pluginID);
@@ -1112,7 +1112,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
             entry.clear();
         }
 
-        pluginIDKnob->setValue(entry);
+        pluginIDKnob->setValue(entry, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);

@@ -322,7 +322,7 @@ public Q_SLOTS:
 
     void onAnimationLevelChanged(ViewSpec view, int dim);
 
-    void onAppendParamEditChanged(int reason, const Variant & v, ViewSpec view, int dim, double time, bool createNewCommand, bool setKeyFrame);
+    void onAppendParamEditChanged(int reason, const Variant & v, ViewSpec view, int dim, double time, bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

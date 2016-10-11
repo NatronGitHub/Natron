@@ -888,19 +888,19 @@ Node::setProcessChannelsValues(bool doR,
     KnobBoolPtr eR = _imp->enabledChan[0].lock();
 
     if (eR) {
-        eR->setValue(doR);
+        eR->setValue(doR, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     }
     KnobBoolPtr eG = _imp->enabledChan[1].lock();
     if (eG) {
-        eG->setValue(doG);
+        eG->setValue(doG, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     }
     KnobBoolPtr eB = _imp->enabledChan[2].lock();
     if (eB) {
-        eB->setValue(doB);
+        eB->setValue(doB, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     }
     KnobBoolPtr eA = _imp->enabledChan[3].lock();
     if (eA) {
-        eA->setValue(doA);
+        eA->setValue(doA, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     }
 }
 
@@ -1063,25 +1063,25 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                     std::vector<bool> v = args.getPropertyN<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isBool->setValue(v[d], ViewSpec(0), d);
+                        isBool->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
                     }
                 } else if (isInt) {
                     std::vector<int> v = args.getPropertyN<int>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isInt->setValue(v[d], ViewSpec(0), d);
+                        isInt->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
                     }
                 } else if (isDbl) {
                     std::vector<double> v = args.getPropertyN<double>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isDbl->setValue(v[d], ViewSpec(0), d );
+                        isDbl->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
                     }
                 } else if (isStr) {
                     std::vector<std::string> v = args.getPropertyN<std::string>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isStr->setValue(v[d],ViewSpec(0), d );
+                        isStr->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
                     }
                 }
                 break;
@@ -1346,7 +1346,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!found && _imp->isLoadingPreset) {
                 _imp->presetKnobs.push_back(group);
             }
-            grp->setValue(groupSerialization->_isOpened);
+            grp->setValue(groupSerialization->_isOpened, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(grp, page, **it, recursionLevel + 1);
             }
@@ -3572,7 +3572,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginID);
         if (pyPlug) {
-            param->setValue(pyPlug->getPluginID());
+            param->setValue(pyPlug->getPluginID(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip(tr(kNatronNodeKnobPyPlugPluginIDHint));
@@ -3583,7 +3583,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginLabelLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginLabel);
         if (pyPlug) {
-            param->setValue(pyPlug->getPluginLabel());
+            param->setValue(pyPlug->getPluginLabel(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginLabelHint));
@@ -3594,9 +3594,9 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginGroupingLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginGrouping);
         if (pyPlug) {
-            param->setValue(pyPlug->getGroupingString());
+            param->setValue(pyPlug->getGroupingString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         } else {
-            param->setValue("PyPlugs");
+            param->setValue("PyPlugs", ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
@@ -3609,7 +3609,7 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
         param->setAddNewLine(false);
@@ -3621,7 +3621,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
+            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
         page->addKnob(param);
@@ -3634,8 +3634,8 @@ Node::createPyPlugPage()
         param->setDimensionName(0, "Major");
         param->setDimensionName(1, "Minor");
         if (pyPlug) {
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), ViewSpec(0), 0);
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSpec(0), 1);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
@@ -3647,8 +3647,8 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), ViewSpec(0), 0);
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSpec(0), 1);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
@@ -3659,7 +3659,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
         page->addKnob(param);
@@ -3670,7 +3670,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginIconFile);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);
@@ -4238,10 +4238,13 @@ Node::handleFormatKnob(const KnobIPtr& knob)
 
     _imp->effect->beginChanges();
     size->blockValueChanges();
-    size->setValues(f.width(), f.height(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    std::vector<int> values(2);
+    values[0] = f.width();
+    values[1] = f.height();
+    size->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     size->unblockValueChanges();
     par->blockValueChanges();
-    par->setValue( f.getPixelAspectRatio() );
+    par->setValue( f.getPixelAspectRatio(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
     par->unblockValueChanges();
 
     _imp->effect->endChanges();
@@ -4272,7 +4275,7 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
         handleFormatKnob(choice);
     } else {
         if ( curIndex < (int)entries.size() ) {
-            choice->setValue(curIndex);
+            choice->setValue(curIndex, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
     }
 
@@ -4607,7 +4610,7 @@ Node::setForceCachingEnabled(bool value)
     if (!b) {
         return;
     }
-    b->setValue(value);
+    b->setValue(value, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -6944,7 +6947,7 @@ Node::togglePreview()
     if (!b) {
         return;
     }
-    b->setValue( !b->getValue() );
+    b->setValue( !b->getValue(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
 }
 
 bool
@@ -7840,7 +7843,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
                     pattern = pattern.substr(foundSlash + 1);
                 }
 
-                isString->setValue(pattern);
+                isString->setValue(pattern, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
             }
         }
 
@@ -7926,7 +7929,10 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
 
             if (pluginID == PLUGINID_OFX_READFFMPEG) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                std::vector<int> frameRange(2);
+                frameRange[0] = INT_MIN;
+                frameRange[1] = INT_MAX;
+                originalFrameRange->setValueAcrossDimensions(frameRange, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -7939,7 +7945,10 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                     leftBound = seq.begin()->first;
                     rightBound = seq.rbegin()->first;
                 }
-                originalFrameRange->setValues(leftBound, rightBound, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                std::vector<int> frameRange(2);
+                frameRange[0] = leftBound;
+                frameRange[1] = rightBound;
+                originalFrameRange->setValueAcrossDimensions(frameRange, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
         }
     }
@@ -8454,7 +8463,7 @@ Node::setHideInputsKnobValue(bool hidden)
     if (!k) {
         return;
     }
-    k->setValue(hidden);
+    k->setValue(hidden, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -8655,7 +8664,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                 break;
         }
         ssinfo << "</font>";
-        _imp->nodeInfos.lock()->setValue( ssinfo.str() );
+        _imp->nodeInfos.lock()->setValue( ssinfo.str(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
     } else if ( what == _imp->openglRenderingEnabledKnob.lock() ) {
         bool enabled = true;
         int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
@@ -8679,11 +8688,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         // Trigger a knob changed action on the group
         KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
         if (k) {
-            if ( k->getValue() ) {
-                k->setValue(false);
-            } else {
-                k->setValue(true);
-            }
+            k->setValue(!k->getValue(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
     } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {
@@ -8691,9 +8696,9 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         } catch (const std::exception& e) {
             Dialogs::errorDialog(tr("Export").toStdString(), e.what());
         }
-        _imp->pyPlugExportDialog.lock()->setValue(false);
+        _imp->pyPlugExportDialog.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     } else if (what == _imp->pyPlugExportDialogCancelButton.lock()) {
-        _imp->pyPlugExportDialog.lock()->setValue(false);
+        _imp->pyPlugExportDialog.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
     } else {
         ret = false;
     }
@@ -9115,46 +9120,13 @@ Node::setNodeDisabled(bool disabled)
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
 
     if (b) {
-        b->setValue(disabled);
+        b->setValue(disabled, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 
         // Clear the actions cache because if this function is called from another thread, the hash will not be incremented
         _imp->effect->clearActionsCache();
     }
 }
 
-void
-Node::showKeyframesOnTimeline(bool emitSignal)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( _imp->keyframesDisplayedOnTimeline || appPTR->isBackground() ) {
-        return;
-    }
-    _imp->keyframesDisplayedOnTimeline = true;
-    std::list<SequenceTime> keys;
-    getAllKnobsKeyframes(&keys);
-    getApp()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
-}
-
-void
-Node::hideKeyframesFromTimeline(bool emitSignal)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( !_imp->keyframesDisplayedOnTimeline || appPTR->isBackground() ) {
-        return;
-    }
-    _imp->keyframesDisplayedOnTimeline = false;
-    std::list<SequenceTime> keys;
-    getAllKnobsKeyframes(&keys);
-    getApp()->removeMultipleKeyframeIndicator(keys, emitSignal);
-}
-
-bool
-Node::areKeyframesVisibleOnTimeline() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->keyframesDisplayedOnTimeline;
-}
 
 bool
 Node::hasAnimatedKnob() const
@@ -9335,7 +9307,7 @@ Node::updateEffectSubLabelKnob(const QString & name)
     }
     KnobStringPtr strKnob = _imp->ofxSubLabelKnob.lock();
     if (strKnob) {
-        strKnob->setValue( name.toStdString() );
+        strKnob->setValue( name.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
     }
 }
 
@@ -9770,7 +9742,7 @@ Node::refreshMaskEnabledNess(int inputNb)
         bool newValue = inp ? true : false;
         changed = curValue != newValue;
         if (changed) {
-            enabled->setValue(newValue);
+            enabled->setValue(newValue, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         }
         enabled->unblockValueChanges();
     }
@@ -11286,7 +11258,7 @@ Node::addUserComponents(const ImageComponents& comps)
         ///Set the selector to the new channel
         KnobChoicePtr layerChoice = toKnobChoice(outputLayerKnob);
         if (layerChoice) {
-            layerChoice->setValueFromLabel(comps.getLayerName(), 0);
+            layerChoice->setValueFromLabel(comps.getLayerName());
         }
     }
 

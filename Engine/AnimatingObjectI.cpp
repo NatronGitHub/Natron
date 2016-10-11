@@ -76,7 +76,7 @@ AnimatingObjectI::removeAnimation(ViewSpec view, int dimension, CurveChangeReaso
 {
     std::vector<int> dims(1);
     dims[0] = dimension;
-    removeAnimationOnDimensions(view, dims, reason);
+    removeAnimationAcrossDimensions(view, dims, reason);
 }
 
 void

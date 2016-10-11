@@ -131,10 +131,9 @@ public:
                                  ViewSpec view,
                                  int dim,
                                  double time,
-                                 bool createNewCommand,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange( (int)reason, v, view,  dim, time, createNewCommand, setKeyFrame );
+        Q_EMIT appendParamEditChange( (int)reason, v, view,  dim, time, setKeyFrame );
     }
 
     void s_setDirty(bool b)
@@ -277,7 +276,7 @@ Q_SIGNALS:
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
-    void appendParamEditChange(int reason, Variant v, ViewSpec view, int dim, double time, bool createNewCommand, bool setKeyFrame);
+    void appendParamEditChange(int reason, Variant v, ViewSpec view, int dim, double time, bool setKeyFrame);
 
     // Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -507,7 +506,11 @@ public:
 
     // Prevent autokeying
     virtual void setAutoKeyingEnabled(bool enabled) = 0;
-    virtual bool isAutoKeyingEnabled() const = 0;
+
+    /**
+     * @brief Returns the value previously set by setAutoKeyingEnabled
+     **/
+    virtual bool isAutoKeyingEnabled(int dimension, ValueChangedReasonEnum reason) const = 0;
 
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
@@ -1276,7 +1279,7 @@ public:
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAutoKeyingEnabled(bool enabled) OVERRIDE FINAL;
-    virtual bool isAutoKeyingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAutoKeyingEnabled(int dimension, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 protected:
@@ -1553,7 +1556,17 @@ public:
 
 protected:
 
-    CurvePtr getCurveToOperateOn(ViewSpec view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve);
+    /**
+     * @brief Helper for all functions related to animation curves. Since we hold two sets of curves (one edited by the gui 
+     * and one seen by the engine) we need to maintain their state together.
+     * @param view The index of the view corresponding to the curve we want in return
+     * @param dimension The index of the dimension corresponding to the curve we want in return
+     * @param throwIfNotPresent Throws an exception if somehow the animation curve is NULL (because the Knob is not animated)
+     * @param mustRefreshGuiCurve[out] If true, then this  means right away after changes applied on the curve returned by this function,
+     * the GUI curve should be updated.
+     * @return The curve to operate on.
+     **/
+    CurvePtr getCurveToOperateOn(ViewIdx view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve);
 
 
     virtual void copyValuesFromCurve(int /*dim*/) {}
@@ -1615,6 +1628,8 @@ protected:
 
     void cloneInternalCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions);
 
+    /**
+     **/
     void setInternalCurveHasChanged(ViewSpec view, int dimension, bool changed);
 
     void guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason, ViewSpec view, int dimension, ValueChangedReasonEnum reason);
@@ -1707,8 +1722,23 @@ public:
      **/
     T getValueAtTime(double time, int dimension = 0, ViewSpec view = ViewSpec::current(), bool clampToMinMax = true, bool byPassMaster = false)  WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Same as getValueAtTime excepts that it ignores expression, hard-links (slave/master) and doesn't clamp to min/max.
+     * This is useful to display the internal curve on the Curve Editor
+     **/
     virtual double getRawCurveValueAt(double time, ViewSpec view,  int dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Same as getValueAtTime excepts that the expression is evaluated to return a double value, mainly to display the curve corresponding to an expression
+     **/
     virtual double getValueAtWithExpression(double time, ViewSpec view, int dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns a vector of the internal values held by the knob (not the animation)
+     * This is used only internally for the implementation and should not be used, instead use getValue()
+     **/
+    std::vector<T> getRawValues() const;
+    T getRawValue(int dimension) const;
 
 private:
 
@@ -1995,6 +2025,7 @@ protected:
 
 private:
 
+    void addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ViewSpec view, int dimension, double time, bool setKeyFrame);
 
     virtual void copyValuesFromCurve(int dim) OVERRIDE FINAL;
 
@@ -2019,14 +2050,8 @@ private:
 
     void valueToVariant(const T & v, Variant* vari);
 
-    int get_SetValueRecursionLevel() const
-    {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
 
-        return _setValueRecursionLevel;
-    }
-
-    void makeKeyFrame(Curve* curve, double time, ViewSpec view, const T& v, KeyFrame* key);
+    void makeKeyFrame(double time, const T& v, ViewIdx view, KeyFrame* key);
 
     void queueSetValue(const T& v, ViewSpec view, int dimension);
 
@@ -2037,8 +2062,6 @@ private:
         _exprRes[dimension].clear();
     }
 
-
-private:
 
     bool evaluateExpression(double time, ViewIdx view, int dimension, T* ret, std::string* error);
 
@@ -2137,9 +2160,6 @@ private:
     mutable QMutex _setValuesQueueMutex;
     std::list< QueuedSetValuePtr > _setValuesQueue;
 
-    ///this flag is to avoid recursive setValue calls
-    mutable QMutex _setValueRecursionLevelMutex;
-    int _setValueRecursionLevel;
 };
 
 
@@ -2168,7 +2188,7 @@ public:
 
     virtual ~AnimatingKnobStringHelper();
 
-    void stringToKeyFrameValue(double time, ViewSpec view, const std::string & v, double* returnValue);
+    void stringToKeyFrameValue(double time, ViewIdx view, const std::string & v, double* returnValue);
 
     //for integration of openfx custom params
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
@@ -2224,6 +2244,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    friend class KnobHelper;
     friend class RecursionLevelRAII;
     struct KnobHolderPrivate;
     boost::scoped_ptr<KnobHolderPrivate> _imp;
@@ -2349,11 +2370,44 @@ protected:
     virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/,
                                                    double /*time*/) {}
 
+
 public:
 
-    KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
+    /**
+     * @brief Calls beginChanges() and flags that all subsequent calls to setValue/setValueAtTime should be 
+     * gathered under the same undo/redo action in the GUI. To stop actions to be in this undo/redo action
+     * call endMultipleEdits(). 
+     * Note that each beginMultipleEdits must have a corresponding call to endMultipleEdits. No render will be
+     * issued until endMultipleEdits is called. 
+     * Note that however, the knobChanged handler IS called at each setValue/setValueAtTime call made in-between
+     * the begin/endMultipleEdits.
+     * If beginMultipleEdits is called while another call to beginMultipleEdits is on, then it will create a new
+     * undo/redo action that will be different from the first one. Note that when calling recursively
+     * begin/end, the render is issued once the last endMultipleEdits function is called (i.e: when recursion reaches its toplevel).
+     * @param commandName The name of the command that should appear under the Edit menu of the application.
+     * Note: Undo/Redo only works if knob have a gui, otherwise this function does nothing more than beginChanges().
+     **/
+    void beginMultipleEdits(const std::string& commandName);
 
-    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
+    /**
+     * @brief When in-between beginMultipleEdits/endMultipleEdits, returns whether a knob should create a new command
+     * or append it to an existing one.
+     **/
+    KnobHolder::MultipleParamsEditEnum getMultipleEditsLevel() const;
+
+    /**
+     * @brief Returns the name of the current command during a beginMultipleEdits/endMultipleEdits bracket.
+     * If not in-between the 2 functions called, the returned string is empty.
+     **/
+    std::string getCurrentMultipleEditsCommandName() const;
+
+    /**
+     * @brief To be called when changes applied after a beginMultipleEdits group are finished. If this call
+     * to endMultipleEdits matches the last beginMultipleEdits function call in the recursion stack then 
+     * if a significant knob was modified, a render is triggered.
+     **/
+    void endMultipleEdits();
+
 
     virtual bool isProject() const
     {

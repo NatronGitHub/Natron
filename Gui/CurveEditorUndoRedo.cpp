@@ -48,40 +48,11 @@ NATRON_NAMESPACE_ENTER;
 
 
 template <typename T>
-T variantToType(const Variant& v);
-
-template <>
-int variantToType(const Variant& v)
-{
-    return v.toInt();
-}
-
-template <>
-bool variantToType(const Variant& v)
-{
-    return v.toBool();
-}
-
-template <>
-double variantToType(const Variant& v)
-{
-    return v.toDouble();
-}
-
-template <>
-std::string variantToType(const Variant& v)
-{
-    return v.toString().toStdString();
-}
-
-template <typename T>
 static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeValuePair>& inList,
                                                    std::list<TimeValuePair<T> >* outList)
 {
     for (std::list<VariantTimeValuePair>::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<T> p;
-        p.value = variantToType<T>(*it);
-        p.time = it->time;
+        TimeValuePair<T> p(it->time, variantToType<T>(it->value));
         outList->push_back(p);
     }
 }

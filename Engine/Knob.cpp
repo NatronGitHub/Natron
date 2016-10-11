@@ -103,7 +103,9 @@ KnobSignalSlotHandler::onMasterCurveAnimationChanged(const std::list<double>& /*
         return;
     }
 
-    getKnob()->cloneCurve(view, dimension, *masterCurve, 0 /*offset*/, 0 /*range*/, reason);
+    StringAnimationManagerPtr stringAnim = master->getStringAnimation();
+
+    getKnob()->cloneCurve(view, dimension, *masterCurve, 0 /*offset*/, 0 /*range*/, stringAnim.get(), reason);
 }
 
 
@@ -789,7 +791,8 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
 
     // Figure out which curve to use depending on whether we are rendering or not
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
+#pragma message WARN("deleteValuesAtTime does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, true, &mustRefreshGuiCurve);
 
     int nKeys = curve->getKeyFramesCount();
 
@@ -864,7 +867,8 @@ KnobHelper::deleteAnimationConditional(double time,
 
     // Figure out which curve to use depending on whether we are rendering or not
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
+#pragma message WARN("deleteAnimationConditional does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, true, &mustRefreshGuiCurve);
 
     std::list<double> keysRemoved;
     if (before) {
@@ -921,7 +925,8 @@ KnobHelper::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& 
 
     // Figure out which curve to use depending on whether we are rendering or not
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, true, &mustRefreshGuiCurve);
+#pragma message WARN("warpValuesAtTime does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, true, &mustRefreshGuiCurve);
 
 
     double firstKeyTime = 0.;
@@ -965,7 +970,7 @@ KnobHelper::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& 
         assert(newKeys.size() == oldStringValues.size());
         for (std::size_t i = 0; i < newKeys.size(); ++i) {
             double ret;
-            isString->stringToKeyFrameValue(newKeys[i].getTime(), view, oldStringValues[i], &ret);
+            isString->stringToKeyFrameValue(newKeys[i].getTime(), ViewIdx(view.value()), oldStringValues[i], &ret);
         }
     }
 
@@ -973,8 +978,9 @@ KnobHelper::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& 
 
     // Now refresh animation level and notify we changed to the holder...
     // If we are editing the gui curve it will be taken care of in the dequeueValues action
-    if (!mustRefreshGuiCurve) {
+    if (mustRefreshGuiCurve) {
         evaluateValueChange(dimension, firstKeyTime, view, eValueChangedReasonNatronInternalEdited);
+
     }
 
     _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, reason);
@@ -986,7 +992,7 @@ KnobHelper::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& 
 
 
 CurvePtr
-KnobHelper::getCurveToOperateOn(ViewSpec view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve)
+KnobHelper::getCurveToOperateOn(ViewIdx view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve)
 {
     // Figure out whether to use gui curves or internal curves, depending on whether we are rendering
     KnobGuiIPtr hasGui = getKnobGuiPointer();
@@ -994,15 +1000,22 @@ KnobHelper::getCurveToOperateOn(ViewSpec view, int dimension, bool throwIfNotPre
 
     CurvePtr ret;
     if (!useGuiCurve) {
+        // Not rendering, work directly on internal curve
         ret = _imp->curves[dimension];
     } else {
+        // Rendering, work on gui curve and flag that we need to copy the gui curve when rendering is done (i.e: in dequeueActions)
         assert(hasGui);
         ret = hasGui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension, true);
     }
+
+    // hmm no curve, this parameter isn't animated?
     if (!ret && throwIfNotPresent) {
         throw std::runtime_error("KnobHelper::getCurveToOperateOn: curve is NULL");
     }
+
+    // If we work the internal curve, we must update
+    // the gui curve immediately after the changes made to the curve
     if (hasGui && !useGuiCurve) {
         *mustRefreshGuiCurve = true;
     } else {
@@ -1026,7 +1039,8 @@ KnobHelper::cloneCurve(ViewSpec view,
 
     // Figure out whether to use gui curves or internal curves, depending on whether we are rendering
     bool mustRefreshGuiCurve;
-    CurvePtr thisCurve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+#pragma message WARN("cloneCurve does not support multi-view yet")
+    CurvePtr thisCurve = getCurveToOperateOn(ViewIdx(view.value()), dimension, false, &mustRefreshGuiCurve);
     if (!thisCurve) {
         return false;
     }
@@ -1054,7 +1068,7 @@ KnobHelper::cloneCurve(ViewSpec view,
     }
 
     // If we are editing the gui curve it will be taken care of in the dequeueValues action
-    if (!mustRefreshGuiCurve) {
+    if (mustRefreshGuiCurve) {
         evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, eValueChangedReasonNatronInternalEdited);
     }
@@ -1104,7 +1118,8 @@ KnobHelper::cloneCurvesAndCheckIfChanged(const KnobIPtr& other,
             if (!otherCurve) {
                 continue;
             }
-            hasChanged |= cloneCurve(ViewSpec::all(), i, *otherCurve, offset, range, eCurveChangeReasonInternal);
+            StringAnimationManagerPtr stringAnim = other->getStringAnimation();
+            hasChanged |= cloneCurve(ViewSpec::all(), i, *otherCurve, offset, range, stringAnim.get(), eCurveChangeReasonInternal);
         }
     } else {
         if (otherDimension == -1) {
@@ -1116,7 +1131,8 @@ KnobHelper::cloneCurvesAndCheckIfChanged(const KnobIPtr& other,
         if (!otherCurve) {
             return false;
         }
-        hasChanged |= cloneCurve(ViewSpec::all(), dimension, *otherCurve, offset, range, eCurveChangeReasonInternal);
+        StringAnimationManagerPtr stringAnim = other->getStringAnimation();
+        hasChanged |= cloneCurve(ViewSpec::all(), dimension, *otherCurve, offset, range, stringAnim.get(), eCurveChangeReasonInternal);
     }
     
     return hasChanged;
@@ -1136,7 +1152,8 @@ KnobHelper::setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int
     }
 
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+#pragma message WARN("setInterpolationAtTimes does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, false, &mustRefreshGuiCurve);
 
     for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it) {
         KeyFrame k;
@@ -1146,18 +1163,16 @@ KnobHelper::setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int
             }
         }
     }
-
-    if (!mustRefreshGuiCurve) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
-        assert(guiCurve);
-        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
-    }
-
     double time = getCurrentTime();
 
-    if (!mustRefreshGuiCurve) {
+    if (mustRefreshGuiCurve) {
+        CurvePtr guiCurve = getKnobGuiPointer()->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+
     }
+
 
     _signalSlotHandler->s_keyFrameInterpolationChanged(time, view, dimension, reason);
 
@@ -1181,7 +1196,8 @@ KnobHelper::setLeftAndRightDerivativesAtTime(CurveChangeReason reason,
     }
 
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+#pragma message WARN("setLeftAndRightDerivativesAtTime does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, false, &mustRefreshGuiCurve);
 
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -1191,16 +1207,15 @@ KnobHelper::setLeftAndRightDerivativesAtTime(CurveChangeReason reason,
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
 
-    if (!mustRefreshGuiCurve) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
+    if (mustRefreshGuiCurve) {
+        CurvePtr guiCurve = getKnobGuiPointer()->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
         guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
+        evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+
     }
 
-    if (!mustRefreshGuiCurve) {
-        evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
-    }
 
     _signalSlotHandler->s_derivativeMoved(time, view, dimension, reason);
 
@@ -1225,7 +1240,8 @@ KnobHelper::setDerivativeAtTime(CurveChangeReason reason,
     }
 
     bool mustRefreshGuiCurve;
-    CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+#pragma message WARN("setDerivativeAtTime does not support multi-view yet")
+    CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, false, &mustRefreshGuiCurve);
 
     int keyIndex = curve->keyFrameIndex(time);
     if (keyIndex == -1) {
@@ -1239,8 +1255,8 @@ KnobHelper::setDerivativeAtTime(CurveChangeReason reason,
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
 
-    if (!mustRefreshGuiCurve) {
-        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
+    if (mustRefreshGuiCurve) {
+        CurvePtr guiCurve = getKnobGuiPointer()->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
         if (isLeft) {
@@ -1248,12 +1264,10 @@ KnobHelper::setDerivativeAtTime(CurveChangeReason reason,
         } else {
             guiCurve->setKeyFrameRightDerivative(derivative, keyIndex);
         }
-    }
-
-
-    if (!mustRefreshGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+
     }
+
     _signalSlotHandler->s_derivativeMoved(time, view, dimension, reason);
 
     return true;
@@ -1285,7 +1299,8 @@ KnobHelper::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int
         }
 
         bool mustRefreshGuiCurve;
-        CurvePtr curve = getCurveToOperateOn(view, dimension, false, &mustRefreshGuiCurve);
+#pragma message WARN("removeAnimationAcrossDimensions does not support multi-view yet")
+        CurvePtr curve = getCurveToOperateOn(ViewIdx(view.value()), dimension, false, &mustRefreshGuiCurve);
 
 
         // Ensure the underlying values are the values of the current curve at the current time
@@ -1311,8 +1326,7 @@ KnobHelper::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int
         onKeyframesRemoved(timesRemoved, view, dimension, reason);
 
 
-        if (!mustRefreshGuiCurve) {
-            //virtual portion
+        if (mustRefreshGuiCurve) {
             evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
             guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, eValueChangedReasonNatronInternalEdited);
         }
@@ -1580,8 +1594,42 @@ KnobHelper::setAutoKeyingEnabled(bool enabled)
 }
 
 bool
-KnobHelper::isAutoKeyingEnabled() const
+KnobHelper::isAutoKeyingEnabled(int dimension, ValueChangedReasonEnum reason) const
 {
+    if (dimension < 0 || dimension >= _imp->dimension) {
+        return false;
+    }
+
+    // The knob cannot animate
+    if (!isAnimationEnabled()) {
+        return false;
+    }
+
+    // The knob doesn't have any animation don't start keying automatically
+    if (getAnimationLevel(dimension) == eAnimationLevelNone) {
+        return false;
+    }
+
+    // Knobs without an effect cannot auto-key
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return false;
+    }
+
+    // Hmm this is a custom Knob used somewhere, don't allow auto-keying
+    if (!holder->getApp()) {
+        return false;
+    }
+
+    // Check for reason appropriate for auto-keying
+    if ( (reason != eValueChangedReasonUserEdited) &&
+        (reason != eValueChangedReasonPluginEdited) &&
+        (reason != eValueChangedReasonNatronGuiEdited) &&
+        (reason != eValueChangedReasonNatronInternalEdited)) {
+        return false;
+    }
+
+    // Finally return the value set to setAutoKeyingEnabled
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
     return _imp->autoKeyingDisabled;
 }
@@ -4688,7 +4736,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         KnobString* isString = dynamic_cast<KnobString*>(this);
         if (isString) {
             TextExtraData* extraData = new TextExtraData;
-            isString->getAnimation().save(&extraData->keyframes);
+            isString->getStringAnimation()->save(&extraData->keyframes);
             serialization->_extraData.reset(extraData);
             extraData->fontFamily = isString->getFontFamily();
             extraData->fontSize = isString->getFontSize();
@@ -5011,8 +5059,22 @@ struct KnobHolder::KnobHolderPrivate
     int overlayRedrawStack;
     bool isDequeingValuesSet;
     mutable QMutex paramsEditLevelMutex;
-    KnobHolder::MultipleParamsEditEnum paramsEditLevel;
-    int paramsEditRecursionLevel;
+
+    struct MultipleParamsEditData {
+        std::string commandName;
+        int nActionsInBracket;
+
+        MultipleParamsEditData()
+        : commandName()
+        , nActionsInBracket(0)
+        {
+
+        }
+    };
+
+    // We use a stack in case user calls it recursively
+    std::list<MultipleParamsEditData> paramsEditStack;
+
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
@@ -5052,8 +5114,6 @@ struct KnobHolder::KnobHolderPrivate
         , overlayRedrawStackMutex()
         , overlayRedrawStack(0)
         , isDequeingValuesSet(false)
-        , paramsEditLevel(eMultipleParamsEditOff)
-        , paramsEditRecursionLevel(0)
         , evaluationBlockedMutex(QMutex::Recursive)
         , evaluationBlocked(0)
         , canCurrentlySetValue(true)
@@ -5083,8 +5143,6 @@ struct KnobHolder::KnobHolderPrivate
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
     , isDequeingValuesSet(other.isDequeingValuesSet)
-    , paramsEditLevel(other.paramsEditLevel)
-    , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
     , canCurrentlySetValue(other.canCurrentlySetValue)
@@ -6156,40 +6214,59 @@ KnobHolder::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     }
 }
 
+
+void
+KnobHolder::beginMultipleEdits(const std::string& commandName)
+{
+    {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        KnobHolderPrivate::MultipleParamsEditData data;
+        data.commandName = commandName;
+        _imp->paramsEditStack.push_back(data);
+    }
+    beginChanges();
+}
+
 KnobHolder::MultipleParamsEditEnum
-KnobHolder::getMultipleParamsEditLevel() const
+KnobHolder::getMultipleEditsLevel() const
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
+    if (_imp->paramsEditStack.empty()) {
+        return eMultipleParamsEditOff;
+    }
+    const KnobHolderPrivate::MultipleParamsEditData& last = _imp->paramsEditStack.back();
+    if (last.nActionsInBracket > 0) {
+        return eMultipleParamsEditOn;
+    } else {
+        return eMultipleParamsEditOnCreateNewCommand;
+    }
+}
 
-    return _imp->paramsEditLevel;
+std::string
+KnobHolder::getCurrentMultipleEditsCommandName() const
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    if (_imp->paramsEditStack.empty()) {
+        return std::string();
+    }
+    return _imp->paramsEditStack.back().commandName;
 }
 
 void
-KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
+KnobHolder::endMultipleEdits()
 {
-    QMutexLocker l(&_imp->paramsEditLevelMutex);
-
-    if ( appPTR->isBackground() ) {
-        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-    } else {
-        if (level == KnobHolder::eMultipleParamsEditOff) {
-            if (_imp->paramsEditRecursionLevel > 0) {
-                --_imp->paramsEditRecursionLevel;
-            }
-            if (_imp->paramsEditRecursionLevel == 0) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-            }
-            endChanges();
-        } else if (level == KnobHolder::eMultipleParamsEditOn) {
-            _imp->paramsEditLevel = level;
-        } else {
-            assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
-            beginChanges();
-            if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
-            }
-            ++_imp->paramsEditRecursionLevel;
+    bool mustCallEndChanges = false;
+    {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        if (_imp->paramsEditStack.empty()) {
+            qDebug() << "[BUG]: Call to endMultipleEdits without a matching call to beginMultipleEdits";
+            return;
         }
+        _imp->paramsEditStack.pop_back();
+        mustCallEndChanges = _imp->paramsEditStack.empty();
+    }
+    if (mustCallEndChanges) {
+        endChanges();
     }
 }
 
@@ -6566,7 +6643,7 @@ AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other
     AnimatingKnobStringHelperPtr isAnimatedString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(other);
 
     if (isAnimatedString) {
-        return _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
+        return _animation->cloneAndCheckIfChanged( *isAnimatedString->getStringAnimation() );
     }
 
     return false;
@@ -6582,7 +6659,7 @@ AnimatingKnobStringHelper::cloneExtraData(const KnobIPtr& other,
     AnimatingKnobStringHelperPtr isAnimatedString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(other);
 
     if (isAnimatedString) {
-        _animation->clone(isAnimatedString->getAnimation(), offset, range);
+        _animation->clone(*isAnimatedString->getStringAnimation(), offset, range);
     }
 }
 
@@ -6609,7 +6686,7 @@ AnimatingKnobStringHelper::populate()
 
 void
 AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
-                                                 ViewSpec /*view*/,
+                                                 ViewIdx /*view*/,
                                                  const std::string & v,
                                                  double* returnValue)
 {

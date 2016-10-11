@@ -374,7 +374,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
         if (knob) {
             KnobChoicePtr choice = toKnobChoice(knob);
             if (choice) {
-                choice->setValue( errorBehaviourKnbo.lock()->getValue() );
+                choice->setValue( errorBehaviourKnbo.lock()->getValue(), ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0 );
             }
         }
     }
@@ -402,7 +402,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     }
     QString fileUnPathed = file.fileName();
 
-    subLabelKnob.lock()->setValue( fileUnPathed.toStdString() );
+    subLabelKnob.lock()->setValue( fileUnPathed.toStdString(), ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0 );
 
     QString path = file.path() + QLatin1Char('/');
 
@@ -476,7 +476,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 
     if (setWriteNodeChoice) {
         if (choices.size() > 1) {
-            param->setValue(1);
+            param->setValue(1, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0);
         }
     }
 }
@@ -637,10 +637,10 @@ PrecompNodePrivate::setFirstAndLastFrame()
     KnobIntPtr firstFrame = toKnobInt(writefirstFrameKnob);
     KnobIntPtr lastFrame = toKnobInt(writelastFrameKnob);
     if (firstFrame) {
-        firstFrameKnob.lock()->setValue( firstFrame->getValue() );
+        firstFrameKnob.lock()->setValue( firstFrame->getValue(), ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0 );
     }
     if (lastFrame) {
-        lastFrameKnob.lock()->setValue( lastFrame->getValue() );
+        lastFrameKnob.lock()->setValue( lastFrame->getValue() , ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0);
     }
 }
 

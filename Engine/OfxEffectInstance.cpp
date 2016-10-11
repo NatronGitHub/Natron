@@ -2332,7 +2332,7 @@ public:
     {
         setText(textKnob->getValue());
         stateKnob->blockValueChanges();
-        stateKnob->setValue(true);
+        stateKnob->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         stateKnob->unblockValueChanges();
     }
 
@@ -2349,7 +2349,7 @@ public:
         KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(!currentValue);
-        state->setValue(true);
+        state->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         if (currentValue) {
             state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
         }
@@ -2363,7 +2363,7 @@ public:
         KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(currentValue);
-        state->setValue(false);
+        state->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
         if (!currentValue) {
             state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
         }
@@ -2984,7 +2984,7 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
 
-    k->setValue(0);
+    k->setValue(0, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 
@@ -2997,7 +2997,7 @@ OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bo
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    k->setValue(onRelease ? 2 : 1);
+    k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 NATRON_NAMESPACE_EXIT;

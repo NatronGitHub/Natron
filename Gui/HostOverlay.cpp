@@ -2119,7 +2119,7 @@ TransformInteract::penMotion(double time,
     if ( (_mouseState != TransformInteract::eReleased) && _interactiveDrag && valuesChanged ) {
         // no need to redraw overlay since it is slave to the paramaters
         EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        holder->beginMultipleEdits(tr("Modify transform handle"));
         KeyFrame k;
         if (centerChanged) {
             KnobDoublePtr knob = _center.lock();
@@ -2145,7 +2145,7 @@ TransformInteract::penMotion(double time,
             KnobDoublePtr knob = _skewY.lock();
             knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        holder->endMultipleEdits();
     } else if (didSomething || valuesChanged) {
         requestRedraw();
     }
@@ -2347,7 +2347,7 @@ TransformInteract::penUp(double /*time*/,
            see Knob::setValue
          */
         EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        holder->holder->beginMultipleEdits(tr("Modify transform handle"));
         {
             KnobDoublePtr knob = _center.lock();
             knob->setValues(_centerDrag.x, _centerDrag.y, ViewSpec::all(),  eValueChangedReasonPluginEdited);
@@ -2375,7 +2375,7 @@ TransformInteract::penUp(double /*time*/,
             KeyFrame k;
             knob->setValue(_skewYDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
         }
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        holder->endMultipleEdits();
     } else if (_mouseState != TransformInteract::eReleased) {
         requestRedraw();
     }

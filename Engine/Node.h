@@ -1058,23 +1058,6 @@ public:
 
     std::string getNodeExtraLabel() const;
 
-    /**
-     * @brief Show keyframe markers on the timeline. The signal to refresh the timeline's gui
-     * will be emitted only if emitSignal is set to true.
-     * Calling this function without calling hideKeyframesFromTimeline() has no effect.
-     **/
-    void showKeyframesOnTimeline(bool emitSignal);
-
-    /**
-     * @brief Hide keyframe markers on the timeline. The signal to refresh the timeline's gui
-     * will be emitted only if emitSignal is set to true.
-     * Calling this function without calling showKeyframesOnTimeline() has no effect.
-     **/
-    void hideKeyframesFromTimeline(bool emitSignal);
-
-    bool areKeyframesVisibleOnTimeline() const;
-
-
 private:
 
     void restoreSublabel();

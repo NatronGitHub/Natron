@@ -612,10 +612,19 @@ KnobGui::onAppendParamEditChanged(int reason,
                                   ViewSpec /*view*/,
                                   int dimension,
                                   double time,
-                                  bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), (ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
+    KnobIPtr knob = getKnob();
+    if (knob) {
+        return;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return;
+    }
+    bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+    QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), commandName, (ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
 }
 
 void

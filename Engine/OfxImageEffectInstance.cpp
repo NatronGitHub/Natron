@@ -579,7 +579,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             if (isBtn) {
                 isBtn->setCheckable(true);
                 int def = descriptor.getProperties().getIntProperty(kOfxParamPropDefault);
-                isBtn->setValue((bool)def);
+                isBtn->setValue((bool)def, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 
                 bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
                 isBtn->setInViewerContextCanHaveShortcut(haveShortcut);
@@ -934,13 +934,13 @@ OfxImageEffectInstance::addParamsToTheirParents()
 
  */
 OfxStatus
-OfxImageEffectInstance::editBegin(const std::string & /*name*/)
+OfxImageEffectInstance::editBegin(const std::string & name)
 {
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingNode() ) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        effect->beginMultipleEdits(name);
     }
 
     return kOfxStatOK;
@@ -956,7 +956,7 @@ OfxImageEffectInstance::editEnd()
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingNode() ) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        effect->endMultipleEdits();
     }
 
     return kOfxStatOK;

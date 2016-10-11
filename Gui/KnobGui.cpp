@@ -86,8 +86,8 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(setValueWithUndoStack(Variant,ViewSpec,int)), this, SLOT(onSetValueUsingUndoStack(Variant,ViewSpec,int)) );
         QObject::connect( handler, SIGNAL(dirty(bool)), this, SLOT(onSetDirty(bool)) );
         QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSpec,int)), this, SLOT(onAnimationLevelChanged(ViewSpec,int)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(int,Variant,ViewSpec,int,double,bool,bool)), this,
-                          SLOT(onAppendParamEditChanged(int,Variant,ViewSpec,int,double,bool,bool)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(int,Variant,ViewSpec,int,double,bool)), this,
+                          SLOT(onAppendParamEditChanged(int,Variant,ViewSpec,int,double,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
         QObject::connect( handler, SIGNAL(expressionChanged(int)), this, SLOT(onExprChanged(int)) );

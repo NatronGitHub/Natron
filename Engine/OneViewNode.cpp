@@ -163,12 +163,12 @@ OneViewNode::onProjectViewsChanged()
     for (std::size_t i = 0; i < views.size(); ++i) {
         if (views[i] == currentView) {
             foundView = true;
-            viewKnob->setValue(i);
+            viewKnob->setValue(i, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0);
             break;
         }
     }
     if (!foundView) {
-        viewKnob->setValue(0);
+        viewKnob->setValue(0, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, 0);
     }
 }
 

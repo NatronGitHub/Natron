@@ -507,13 +507,13 @@ void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
+    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension);
 }
 
 void
 AnimatedParam::removeAnimation(int dimension)
 {
-    getInternalKnob()->removeAnimation(ViewSpec::all(), dimension);
+    getInternalKnob()->removeAnimation(ViewSpec::all(), dimension, eCurveChangeReasonInternal);
 }
 
 double
@@ -547,9 +547,8 @@ AnimatedParam::setInterpolationAtTime(double time,
     if (!knob) {
         return false;
     }
-    KeyFrame newKey;
-
-    return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
+    knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation);
+    return true;
 }
 
 void
@@ -682,7 +681,7 @@ Int3DParam::get(double frame) const
 void
 IntParam::set(int x)
 {
-    _intKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    _intKnob.lock()->setValue(x, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -690,11 +689,10 @@ Int2DParam::set(int x,
                 int y)
 {
     KnobIntPtr knob = _intKnob.lock();
-
-    knob->beginChanges();
-    knob->setValue(x, ViewSpec::current(), 0);
-    knob->setValue(y, ViewSpec::current(), 1);
-    knob->endChanges();
+    std::vector<int> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -704,18 +702,18 @@ Int3DParam::set(int x,
 {
     KnobIntPtr knob = _intKnob.lock();
 
-    knob->beginChanges();
-    knob->setValue(x, ViewSpec::current(), 0);
-    knob->setValue(y, ViewSpec::current(), 1);
-    knob->setValue(z, ViewSpec::current(), 2);
-    knob->endChanges();
+    std::vector<int> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
 IntParam::set(int x,
               double frame)
 {
-    _intKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    _intKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -724,8 +722,10 @@ Int2DParam::set(int x,
                 double frame)
 {
     KnobIntPtr knob = _intKnob.lock();
-
-    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<int> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAtTimeAcrossDimensions(frame, values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -735,8 +735,11 @@ Int3DParam::set(int x,
                 double frame)
 {
     KnobIntPtr knob = _intKnob.lock();
-
-    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<int> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAtTimeAcrossDimensions(frame, values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 int
@@ -749,7 +752,7 @@ void
 IntParam::setValue(int value,
                    int dimension)
 {
-    _intKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    _intKnob.lock()->setValue(value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 int
@@ -764,7 +767,7 @@ IntParam::setValueAtTime(int value,
                          double time,
                          int dimension)
 {
-    _intKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    _intKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -777,7 +780,7 @@ IntParam::setDefaultValue(int value,
 int
 IntParam::getDefaultValue(int dimension) const
 {
-    return _intKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    return _intKnob.lock()->getDefaultValue(dimension);
 }
 
 void
@@ -932,7 +935,7 @@ Double3DParam::get(double frame) const
 void
 DoubleParam::set(double x)
 {
-    _doubleKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    _doubleKnob.lock()->setValue(x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -940,8 +943,10 @@ Double2DParam::set(double x,
                    double y)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-
-    knob->setValues(x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<double> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -950,15 +955,18 @@ Double3DParam::set(double x,
                    double z)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-
-    knob->setValues(x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<double> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
 DoubleParam::set(double x,
                  double frame)
 {
-    _doubleKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    _doubleKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -967,8 +975,10 @@ Double2DParam::set(double x,
                    double frame)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-
-    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<double> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAtTimeAcrossDimensions(frame, values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -987,8 +997,11 @@ Double3DParam::set(double x,
                    double frame)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-
-    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<double> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAtTimeAcrossDimensions(frame, values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 double
@@ -1001,7 +1014,7 @@ void
 DoubleParam::setValue(double value,
                       int dimension)
 {
-    _doubleKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    _doubleKnob.lock()->setValue(value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 double
@@ -1016,7 +1029,7 @@ DoubleParam::setValueAtTime(double value,
                             double time,
                             int dimension)
 {
-    _doubleKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    _doubleKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1029,7 +1042,7 @@ DoubleParam::setDefaultValue(double value,
 double
 DoubleParam::getDefaultValue(int dimension) const
 {
-    return _doubleKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    return _doubleKnob.lock()->getDefaultValue(dimension);
 }
 
 void
@@ -1153,15 +1166,15 @@ ColorParam::set(double r,
                 double a)
 {
     KnobColorPtr knob = _colorKnob.lock();
-
-    knob->beginChanges();
-    knob->setValue(r, ViewSpec::current(), 0);
-    knob->setValue(g, ViewSpec::current(), 1);
-    knob->setValue(b, ViewSpec::current(), 2);
-    if (knob->getNDimensions() == 4) {
-        knob->setValue(a, ViewSpec::current(), 3);
+    int nDims = knob->getNDimensions();
+    std::vector<double> values(nDims);
+    values[0] = r;
+    values[1] = g;
+    values[2] = b;
+    if (nDims == 4) {
+        values[3] = a;
     }
-    knob->endChanges();
+    knob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -1172,16 +1185,15 @@ ColorParam::set(double r,
                 double frame)
 {
     KnobColorPtr knob = _colorKnob.lock();
-
-    knob->beginChanges();
-    knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
-    knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
-    int dims = knob->getNDimensions();
-    knob->setValueAtTime(frame, b, ViewSpec::current(), 2);
-    if (dims == 4) {
-        knob->setValueAtTime(frame, a, ViewSpec::current(), 3);
+    int nDims = knob->getNDimensions();
+    std::vector<double> values(nDims);
+    values[0] = r;
+    values[1] = g;
+    values[2] = b;
+    if (nDims == 4) {
+        values[3] = a;
     }
-    knob->endChanges();
+    knob->setValueAtTimeAcrossDimensions(frame, values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
 }
 
 double
@@ -1194,7 +1206,7 @@ void
 ColorParam::setValue(double value,
                      int dimension)
 {
-    _colorKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    _colorKnob.lock()->setValue(value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 double
@@ -1209,7 +1221,7 @@ ColorParam::setValueAtTime(double value,
                            double time,
                            int dimension)
 {
-    _colorKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    _colorKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1222,7 +1234,7 @@ ColorParam::setDefaultValue(double value,
 double
 ColorParam::getDefaultValue(int dimension) const
 {
-    return _colorKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    return _colorKnob.lock()->getDefaultValue(dimension);
 }
 
 void
@@ -1325,14 +1337,14 @@ ChoiceParam::get(double frame) const
 void
 ChoiceParam::set(int x)
 {
-    _choiceKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    _choiceKnob.lock()->setValue(x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
 ChoiceParam::set(int x,
                  double frame)
 {
-    _choiceKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    _choiceKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1343,7 +1355,7 @@ ChoiceParam::set(const QString& label)
         return;
     }
     try {
-        KnobHelper::ValueChangedReturnCodeEnum s = k->setValueFromLabel(label.toStdString(), 0);
+        ValueChangedReturnCodeEnum s = k->setValueFromLabel(label.toStdString());
         Q_UNUSED(s);
     } catch (const std::exception& e) {
         KnobHolderPtr holder =  k->getHolder();
@@ -1369,7 +1381,7 @@ ChoiceParam::getValue() const
 void
 ChoiceParam::setValue(int value)
 {
-    _choiceKnob.lock()->setValue(value, ViewSpec::current(), 0);
+    _choiceKnob.lock()->setValue(value, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 int
@@ -1382,7 +1394,7 @@ void
 ChoiceParam::setValueAtTime(int value,
                             double time)
 {
-    _choiceKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0);
+    _choiceKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1400,7 +1412,7 @@ ChoiceParam::setDefaultValue(const QString& value)
 int
 ChoiceParam::getDefaultValue() const
 {
-    return _choiceKnob.lock()->getDefaultValues_mt_safe()[0];
+    return _choiceKnob.lock()->getDefaultValue(0);
 }
 
 void
@@ -1509,14 +1521,14 @@ BooleanParam::get(double frame) const
 void
 BooleanParam::set(bool x)
 {
-    _boolKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    _boolKnob.lock()->setValue(x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
 BooleanParam::set(bool x,
                   double frame)
 {
-    _boolKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    _boolKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 bool
@@ -1528,7 +1540,7 @@ BooleanParam::getValue() const
 void
 BooleanParam::setValue(bool value)
 {
-    _boolKnob.lock()->setValue(value, ViewSpec::current(), 0);
+    _boolKnob.lock()->setValue(value, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 bool
@@ -1541,7 +1553,7 @@ void
 BooleanParam::setValueAtTime(bool value,
                              double time)
 {
-    _boolKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0);
+    _boolKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1553,7 +1565,7 @@ BooleanParam::setDefaultValue(bool value)
 bool
 BooleanParam::getDefaultValue() const
 {
-    return _boolKnob.lock()->getDefaultValues_mt_safe()[0];
+    return _boolKnob.lock()->getDefaultValue(0);
 }
 
 void
@@ -1600,14 +1612,14 @@ StringParamBase::get(double frame) const
 void
 StringParamBase::set(const QString& x)
 {
-    _stringKnob.lock()->setValue(x.toStdString(), ViewSpec::current(), 0);
+    _stringKnob.lock()->setValue(x.toStdString(), ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
 StringParamBase::set(const QString& x,
                      double frame)
 {
-    _stringKnob.lock()->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
+    _stringKnob.lock()->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 QString
@@ -1619,7 +1631,7 @@ StringParamBase::getValue() const
 void
 StringParamBase::setValue(const QString& value)
 {
-    _stringKnob.lock()->setValue(value.toStdString(), ViewSpec::current(), 0);
+    _stringKnob.lock()->setValue(value.toStdString(), ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 QString
@@ -1632,7 +1644,7 @@ void
 StringParamBase::setValueAtTime(const QString& value,
                                 double time)
 {
-    _stringKnob.lock()->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
+    _stringKnob.lock()->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 void
@@ -1644,7 +1656,7 @@ StringParamBase::setDefaultValue(const QString& value)
 QString
 StringParamBase::getDefaultValue() const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getDefaultValues_mt_safe()[0].c_str() );
+    return QString::fromUtf8( _stringKnob.lock()->getDefaultValue(0).c_str() );
 }
 
 void
@@ -1825,7 +1837,7 @@ ButtonParam::isCheckable() const
 void
 ButtonParam::setDown(bool down)
 {
-    _buttonKnob.lock()->setValue(down);
+    _buttonKnob.lock()->setValue(down, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 
@@ -1886,7 +1898,7 @@ GroupParam::setAsTab()
 void
 GroupParam::setOpened(bool opened)
 {
-    _groupKnob.lock()->setValue(opened, ViewSpec::current(), 0);
+    _groupKnob.lock()->setValue(opened, ViewSpec::current(), 0, eValueChangedReasonNatronInternalEdited, 0);
 }
 
 bool

@@ -31,6 +31,49 @@
 NATRON_NAMESPACE_ENTER
 
 template <typename T>
+void
+Knob<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ViewSpec view, int dimension, double time, bool setKeyFrame)
+{
+
+    // If the user called beginMultipleEdits to group undo/redo, then use the undo/stack
+    // This can only be done if the knob has a GUI though...
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return;
+    }
+    KnobGuiIPtr guiPtr = getKnobGuiPointer();
+    if (!guiPtr) {
+        return;
+    }
+    KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleEditsLevel();
+
+    // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
+    bool mustEndEdits = false;
+    if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && holder->isDoingInteractAction()) {
+        holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
+        mustEndEdits = true;
+    }
+    switch (paramEditLevel) {
+        case KnobHolder::eMultipleParamsEditOnCreateNewCommand:
+        case KnobHolder::eMultipleParamsEditOn: {
+            // Add the set value using the undo/redo stack
+            Variant vari;
+            valueToVariant(value, &vari);
+            _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, setKeyFrame);
+            break;
+        }
+        case KnobHolder::eMultipleParamsEditOff:
+        default:
+            // Multiple params undo/redo is disabled, don't do anything special
+            break;
+    } // switch (paramEditLevel) {
+
+    if (mustEndEdits) {
+        holder->endMultipleEdits();
+    }
+}
+
+template <typename T>
 ValueChangedReturnCodeEnum
 Knob<T>::setValue(const T & v,
                   ViewSpec view,
@@ -39,6 +82,7 @@ Knob<T>::setValue(const T & v,
                   KeyFrame* newKey,
                   bool forceHandlerEvenIfNoChange)
 {
+    // Check dimension index
     if ( (dimension < 0) || ( dimension >= (int)_values.size() ) ) {
         return eValueChangedReturnCodeNothingChanged;
     }
@@ -47,6 +91,8 @@ Knob<T>::setValue(const T & v,
     KnobHolderPtr holder = getHolder();
 
 #ifdef DEBUG
+    // Check that setValue is possible in this context (only in debug mode)
+    // Some actions (e.g: render) do not allow setting values in OpenFX spec.
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
         EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
@@ -55,69 +101,14 @@ Knob<T>::setValue(const T & v,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
-        switch (paramEditLevel) {
-            case KnobHolder::eMultipleParamsEditOff:
-            default:
-                break;
-            case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
-                if ( !get_SetValueRecursionLevel() ) {
-                    Variant vari;
-                    valueToVariant(v, &vari);
-                    holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        ++_setValueRecursionLevel;
-                    }
-                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, true, false);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        --_setValueRecursionLevel;
-                    }
+    if ( !holder || holder->isSetValueCurrentlyPossible() ) {
+        // Set value is possible
+        // There might be stuff in the queue that must be processed first
+        dequeueValuesSet(true);
+    } else {
 
-                    return ret;
-                }
-                break;
-            }
-            case KnobHolder::eMultipleParamsEditOn: {
-                if ( !get_SetValueRecursionLevel() ) {
-                    Variant vari;
-                    valueToVariant(v, &vari);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        ++_setValueRecursionLevel;
-                    }
-                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, false, false);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        --_setValueRecursionLevel;
-                    }
-
-                    return ret;
-                }
-                break;
-            }
-        } // switch (paramEditLevel) {
-
-        ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
-        ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
-        ///to bracket the setValue()  calls within the same undo/redo command.
-        if ( holder->isDoingInteractAction() ) {
-            if ( !get_SetValueRecursionLevel() ) {
-                Variant vari;
-                valueToVariant(v, &vari);
-                _signalSlotHandler->s_setValueWithUndoStack(vari, view, dimension);
-
-                return ret;
-            }
-        }
-    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-
-
-    if ( holder && !holder->isSetValueCurrentlyPossible() ) {
-        ///If we cannot set value, queue it
-        if ( holder && getEvaluateOnChange() ) {
+        // If we cannot set value, queue it
+        if (getEvaluateOnChange()) {
             //We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
             //because the actual value change (which will call evaluate()) may arise well later
             holder->abortAnyEvaluation();
@@ -137,7 +128,8 @@ Knob<T>::setValue(const T & v,
                     hasKeyAtTime = curve->getKeyFrameWithTime(time, &existingKey);
                 }
                 if (hasAnimation) {
-                    makeKeyFrame(curve.get(), time, view, v, &k);
+#pragma message WARN("setValue does not support multi-view yet")
+                    makeKeyFrame(time, v,ViewIdx(view.value()), &k);
                 }
                 if (hasAnimation && hasKeyAtTime) {
                     returnValue =  eValueChangedReturnCodeKeyframeModified;
@@ -178,16 +170,10 @@ Knob<T>::setValue(const T & v,
         }
 
         return returnValue;
-    } else {
-        ///There might be stuff in the queue that must be processed first
-        dequeueValuesSet(true);
-    }
+    } // setvalue possible
 
-    {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
-        ++_setValueRecursionLevel;
-    }
 
+    // Check if setValue actually changed something
     bool hasChanged = forceHandlerEvenIfNoChange;
     {
         QMutexLocker l(&_valueMutex);
@@ -196,36 +182,18 @@ Knob<T>::setValue(const T & v,
         _guiValues[dimension] = v;
     }
 
-    double time;
-    bool timeSet = false;
 
     // Check if we can add automatically a new keyframe
-    if ( isAnimationEnabled() && (getAnimationLevel(dimension) != eAnimationLevelNone) && //< if the knob is animated
-        holder && //< the knob is part of a KnobHolder
-        holder->getApp() && //< the app pointer is not NULL
-        isAutoKeyingEnabled() &&
-        ( (reason == eValueChangedReasonUserEdited) ||
-         ( reason == eValueChangedReasonPluginEdited) ||
-         ( reason == eValueChangedReasonNatronGuiEdited) ||
-         ( reason == eValueChangedReasonNatronInternalEdited) ) //< the change was made by the user or plugin
-        ) {
-        time = getCurrentTime();
-        timeSet = true;
+    if (isAutoKeyingEnabled(dimension, reason)) {
+        double time = getCurrentTime();
         ret = setValueAtTime(time, v, view, dimension, reason, newKey);
-        hasChanged = true;
-    }
-
-    if ( hasChanged && (ret == eValueChangedReturnCodeNoKeyframeAdded) ) { //the other cases already called this in setValueAtTime()
-        if (!timeSet) {
-            time = getCurrentTime();
-        }
+    } else {
+        double time = getCurrentTime();
+        addSetValueToUndoRedoStackIfNeeded(v, reason, view, dimension, time, false);
         evaluateValueChange(dimension, time, view, reason);
     }
-    {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
-        --_setValueRecursionLevel;
-        assert(_setValueRecursionLevel >= 0);
-    }
+
+
     if ( !hasChanged && (ret == eValueChangedReturnCodeNoKeyframeAdded) ) {
         return eValueChangedReturnCodeNothingChanged;
     }
@@ -260,7 +228,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
         effect = toEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() ) {
-                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                effect->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
                 doEditEnd = true;
             }
         }
@@ -291,7 +259,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
         endChanges();
     }
     if (doEditEnd) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        effect->endMultipleEdits();
     }
 } // setValueAcrossDimensions
 
@@ -310,15 +278,18 @@ Knob<T>::setValueAtTime(double time,
     if ( (dimension < 0) || ( dimension >= (int)_values.size() ) ) {
         return eValueChangedReturnCodeNothingChanged;
     }
+
+    // If no animated, do not even set a keyframe
     if ( !canAnimate() || !isAnimationEnabled() ) {
-        qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
         setValue(v, view, dimension, reason, newKey);
     }
 
-    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
+    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
     KnobHolderPtr holder = getHolder();
 
 #ifdef DEBUG
+    // Check that setValue is possible in this context (only in debug mode)
+    // Some actions (e.g: render) do not allow setting values in OpenFX spec.
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
         EffectInstancePtr isEffect = toEffectInstance(holder);
         if (isEffect) {
@@ -327,71 +298,28 @@ Knob<T>::setValueAtTime(double time,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
-        switch (paramEditLevel) {
-            case KnobHolder::eMultipleParamsEditOff:
-            default:
-                break;
-            case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
-                if ( !get_SetValueRecursionLevel() ) {
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        ++_setValueRecursionLevel;
-                    }
-
-                    Variant vari;
-                    valueToVariant(v, &vari);
-                    holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
-                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        --_setValueRecursionLevel;
-                    }
-
-                    return eValueChangedReturnCodeKeyframeAdded;
-                }
-                break;
-            }
-            case KnobHolder::eMultipleParamsEditOn: {
-                if ( !get_SetValueRecursionLevel() ) {
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        ++_setValueRecursionLevel;
-                    }
-
-                    Variant vari;
-                    valueToVariant(v, &vari);
-                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, false, true);
-                    {
-                        QMutexLocker l(&_setValueRecursionLevelMutex);
-                        --_setValueRecursionLevel;
-                    }
-
-                    return eValueChangedReturnCodeKeyframeAdded;
-                }
-                break;
-            }
-        } // switch (paramEditLevel) {
-    }
-
-
-    CurvePtr curve = getCurve(view, dimension, true);
-    assert(curve);
-
+#pragma message WARN("setValueAtTime does not support multi-view yet")
     KeyFrame key;
-    makeKeyFrame(curve.get(), time, view, v, &key);
-
+    makeKeyFrame(time, v, ViewIdx(view.value()), &key);
     if (newKey) {
         *newKey = key;
     }
 
 
+    // Get the curve for the given view/dimension
+    CurvePtr curve = getCurve(view, dimension, true);
+    assert(curve);
+
+    if (!holder || holder->isSetValueCurrentlyPossible()) {
+        // SetValue is possible
+        // There might be stuff in the queue that must be processed first
+        dequeueValuesSet(true);
+    }
     if ( holder && !holder->isSetValueCurrentlyPossible() ) {
-        ///If we cannot set value, queue it
+        // If we cannot set value, queue it
         if ( holder && getEvaluateOnChange() ) {
-            //We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
-            //because the actual value change (which will call evaluate()) may arise well later
+            // We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
+            // because the actual value change (which will call evaluate()) may arise well later
             holder->abortAnyEvaluation();
         }
 
@@ -404,8 +332,6 @@ Knob<T>::setValueAtTime(double time,
             _setValuesQueue.push_back(qv);
         }
 
-        assert(curve);
-
         setInternalCurveHasChanged(view, dimension, true);
 
         KeyFrame k;
@@ -416,11 +342,9 @@ Knob<T>::setValueAtTime(double time,
         } else {
             return eValueChangedReturnCodeKeyframeAdded;
         }
-    } else {
-        ///There might be stuff in the queue that must be processed first
-        dequeueValuesSet(true);
     }
 
+    // Check if a keyframe already exists at this time, if so modify it
     bool hasChanged = forceHandlerEvenIfNoChange;
     KeyFrame existingKey;
     bool hasExistingKey = curve->getKeyFrameWithTime(time, &existingKey);
@@ -436,26 +360,32 @@ Knob<T>::setValueAtTime(double time,
         }
         hasChanged |= modifiedKeyFrame;
     }
+
+    // Add or modify keyframe
     bool newKeyFrame = curve->addKeyFrame(key);
     if (newKeyFrame) {
         ret = eValueChangedReturnCodeKeyframeAdded;
     }
 
-
+    // Refresh holder animation flag
     if (holder) {
         holder->setHasAnimation(true);
     }
+
+    // Sync the gui curve to this internal curve
     guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
 
     if (newKeyFrame) {
+        // Notify animation changed
         std::list<double> keysAdded, keysRemoved;
         keysAdded.push_back(time);
         _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension, eCurveChangeReasonInternal);
     } else {
         _signalSlotHandler->s_redrawGuiCurve(eCurveChangeReasonInternal, view, dimension);
     }
-    if (hasChanged) {
 
+    if (hasChanged) {
+        addSetValueToUndoRedoStackIfNeeded(v, reason, view, dimension, time, true);
         evaluateValueChange(dimension, time, view, reason);
     } else {
         return eValueChangedReturnCodeNothingChanged;
@@ -481,8 +411,8 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSp
     KnobHolderPtr holder = getHolder();
     bool doEditEnd = false;
     if (holder) {
-        if (holder->getMultipleParamsEditLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
+            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
             doEditEnd = true;
         }
     }
@@ -510,7 +440,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSp
     }
 
     if (doEditEnd) {
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        holder->endMultipleEdits();
     }
     if (keys.size() > 1) {
         endChanges();
@@ -540,11 +470,12 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     KnobHolderPtr holder = getHolder();
     bool doEditEnd = false;
     if (holder) {
-        if (holder->getMultipleParamsEditLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
+            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
             doEditEnd = true;
         }
     }
+
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
@@ -567,7 +498,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     }
     if (doEditEnd) {
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        holder->endMultipleEdits();
     }
     if (values.size() > 1) {
         endChanges();
@@ -592,8 +523,8 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::list<Time
     KnobHolderPtr holder = getHolder();
     bool doEditEnd = false;
     if (holder) {
-        if (holder->getMultipleParamsEditLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
+            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
             doEditEnd = true;
         }
     }
@@ -616,7 +547,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::list<Time
             if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].end()) {
                 unblockValueChanges();
             }
-            ret = setValueAtTime(time, it->value, view, dimensionStartIndex + i, reason, 0 /*outKey*/, hasChanged);
+            ret = setValueAtTime(it->time, it->value, view, dimensionStartIndex + i, reason, 0 /*outKey*/, hasChanged);
             hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
 
             if (next != keysPerDimension[i].end()) {
@@ -626,7 +557,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::list<Time
     }
 
     if (doEditEnd) {
-        holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        holder->endMultipleEdits();
     }
     endChanges();
 

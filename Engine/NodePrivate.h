@@ -293,8 +293,6 @@ public:
     std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
 
-    bool keyframesDisplayedOnTimeline;
-
     ///This is to avoid the slots connected to the main-thread to be called too much
     QMutex lastRenderStartedMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
     timeval lastRenderStartedSlotCallTime;

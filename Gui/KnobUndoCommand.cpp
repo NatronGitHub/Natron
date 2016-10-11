@@ -194,6 +194,7 @@ PasteUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSerializationPtr& 
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
+                                                           const QString& commandName,
                                                            ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
@@ -208,66 +209,54 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
 {
     assert(knob);
     std::list<ValueToSet>& vlist = knobs[knob];
+
+    // Add the new value to set to the list (which may be not empty)
     ValueToSet v;
     v.newValue = value;
     v.dimension = dimension;
     assert(dimension != -1);
-    v.time = time;
+
+    if (!setKeyFrame) {
+        // Ensure the time is correct in case auto-keying is on and we add a keyframe
+        v.time = knob->getKnob()->getCurrentTime();
+    } else {
+        v.time = time;
+    }
     v.setKeyFrame = setKeyFrame;
     v.setValueRetCode = -1;
+
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobStringBasePtr isString = toKnobStringBase(knob);
+    if (isInt) {
+        v.oldValue.setValue( isInt->getValueAtTime(time, dimension) );
+    } else if (isBool) {
+        v.oldValue.setValue( isBool->getValueAtTime(time, dimension) );
+    } else if (isDouble) {
+        v.oldValue.setValue( isDouble->getValueAtTime(time, dimension) );
+    } else if (isString) {
+        v.oldValue.setValue( isString->getValueAtTime(time, dimension) );
+    }
+
     vlist.push_back(v);
 
+    // Set the command name in the Edit menu
     KnobHolderPtr holder = knob->getKnob()->getHolder();
     EffectInstancePtr effect = toEffectInstance(holder);
     QString holderName;
     if (effect) {
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
-
-    setText( tr("Multiple edits for %1").arg(holderName) );
+    if (!commandName.isEmpty()) {
+        setText(QString::fromUtf8("%1: ").arg(holderName) + commandName);
+    } else {
+        setText( tr("%1: Multiple parameter edits").arg(holderName) );
+    }
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
-}
-
-KnobIPtr
-MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
-{
-    const std::string & typeName = originalKnob->typeName();
-    KnobIPtr copy;
-    int dimension = originalKnob->getNDimensions();
-
-    if ( typeName == KnobInt::typeNameStatic() ) {
-        copy = KnobInt::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobBool::typeNameStatic() ) {
-        copy = KnobBool::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        copy = KnobDouble::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        copy = KnobChoice::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobString::typeNameStatic() ) {
-        copy = KnobString::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        copy = KnobParametric::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobColor::typeNameStatic() ) {
-        copy = KnobColor::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobPath::typeNameStatic() ) {
-        copy = KnobPath::create(KnobHolderPtr(), std::string(), dimension, false);
-    } else if ( typeName == KnobFile::typeNameStatic() ) {
-        copy = KnobFile::create(KnobHolderPtr(), std::string(), dimension, false);
-    } 
-    ///If this is another type of knob this is wrong since they do not hold any value
-    assert(copy);
-    if (!copy) {
-        return KnobIPtr();
-    }
-    copy->populate();
-
-    ///make a clone of the original knob at that time and stash it
-    copy->clone(originalKnob);
-
-    return copy;
 }
 
 void
@@ -288,47 +277,71 @@ MultipleKnobEditsUndoCommand::undo()
         if (!knob) {
             continue;
         }
-        knob->beginChanges();
+
+        if (it->second.empty()) {
+            continue;
+        }
+
+        // All knobs must belong to the same node!
+        assert(knob->getHolder() == holder);
+
+
         KnobIntBasePtr isInt = toKnobIntBase(knob);
         KnobBoolBasePtr isBool = toKnobBoolBase(knob);
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
         KnobStringBasePtr isString = toKnobStringBase(knob);
-        KeyFrame k;
-        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
 
-            if (retCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+        bool hasChanged = false;
+
+        std::list<ValueToSet>::iterator next = it->second.begin();
+        ++next;
+
+        if (it->second.size() > 1) {
+            // block knobChanged handler for this knob until the last change so we don't clutter the main-thread with useless action calls
+            knob->blockValueChanges();
+        }
+
+        ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
+            if (next == it->second.end() && it->second.size() > 1) {
+                // Re-enable knobChanged for the last change on this knob
+                knob->unblockValueChanges();
+            }
+
+            // If we added a keyframe (due to auto-keying or not) remove it
+            if (it2->setValueRetCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 knob->deleteValueAtTime(eCurveChangeReasonInternal, it2->time, ViewSpec::all(), it2->dimension);
             }
 
             if (it2->setKeyFrame && retCode != KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 if (isInt) {
-                    isInt->setValueAtTime(it2->time, it2->oldValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isInt->setValueAtTime(it2->time, it2->oldValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isBool) {
-                    isBool->setValueAtTime(it2->time, it2->oldValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isBool->setValueAtTime(it2->time, it2->oldValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isDouble) {
-                    isDouble->setValueAtTime(it2->time, it2->oldValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isDouble->setValueAtTime(it2->time, it2->oldValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isString) {
-                    isString->setValueAtTime(it2->time, it2->oldValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0);
-                } else {
-                    assert(false);
+                    ret = isString->setValueAtTime(it2->time, it2->oldValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 }
             } else {
                 if (isInt) {
-                    isInt->setValue(it2->oldValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isInt->setValue(it2->oldValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isBool) {
-                    isBool->setValue(it2->oldValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isBool->setValue(it2->oldValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isDouble) {
-                    isDouble->setValue(it2->oldValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    ret = isDouble->setValue(it2->oldValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isString) {
-                    isString->setValue(it2->oldValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0);
-                } else {
-                    assert(false);
+                    ret = isString->setValue(it2->oldValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 }
+            }
+            hasChanged |= ret != eValueChangedReturnCodeNothingChanged;
+
+            if (next != it->second.end()) {
+                ++next;
             }
 
         }
-        knob->endChanges();
     } // for all knobs
 
 
@@ -340,13 +353,18 @@ MultipleKnobEditsUndoCommand::undo()
 void
 MultipleKnobEditsUndoCommand::redo()
 {
+    // The first time, everything is handled within setValue/setValueAtTime already
+    if (!firstRedoCalled) {
+        firstRedoCalled = true;
+        return;
+    }
+
     assert( !knobs.empty() );
     KnobHolderPtr holder = knobs.begin()->first.lock()->getKnob()->getHolder();
     if (holder) {
         holder->beginChanges();
     }
 
-    ///this is the first redo command, set values
     for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobGuiPtr knobUI = it->first.lock();
         if (!knobUI) {
@@ -356,67 +374,71 @@ MultipleKnobEditsUndoCommand::redo()
         if (!knob) {
             continue;
         }
-        knob->beginChanges();
+
+        if (it->second.empty()) {
+            continue;
+        }
+
+        // All knobs must belong to the same node!
+        assert(knob->getHolder() == holder);
+
         KnobIntBasePtr isInt = toKnobIntBase(knob);
         KnobBoolBasePtr isBool = toKnobBoolBase(knob);
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
         KnobStringBasePtr isString = toKnobStringBase(knob);
 
+        bool hasChanged = false;
+
+        std::list<ValueToSet>::iterator next = it->second.begin();
+        ++next;
+
+        if (it->second.size() > 1) {
+            // block knobChanged handler for this knob until the last change so we don't clutter the main-thread with useless action calls
+            knob->blockValueChanges();
+        }
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            KeyFrame k;
-
-            if (!firstRedoCalled) {
-                if (isInt) {
-                    it2->oldValue.setValue( isInt->getValueAtTime(it2->time, it2->dimension) );
-                } else if (isBool) {
-                    it2->oldValue.setValue( isBool->getValueAtTime(it2->time, it2->dimension) );
-                } else if (isDouble) {
-                    it2->oldValue.setValue( isDouble->getValueAtTime(it2->time, it2->dimension) );
-                } else if (isString) {
-                    it2->oldValue.setValue( isString->getValueAtTime(it2->time, it2->dimension) );
-                }
+            if (next == it->second.end() && it->second.size() > 1) {
+                // Re-enable knobChanged for the last change on this knob
+                knob->unblockValueChanges();
             }
-
             if (it2->setKeyFrame) {
                 if (isInt) {
-                    it2->setValueRetCode = isInt->setValueAtTime(it2->time, it2->newValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isInt->setValueAtTime(it2->time, it2->newValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isBool) {
-                    it2->setValueRetCode = isBool->setValueAtTime(it2->time, it2->newValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isBool->setValueAtTime(it2->time, it2->newValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isDouble) {
-                    it2->setValueRetCode = isDouble->setValueAtTime(it2->time, it2->newValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isDouble->setValueAtTime(it2->time, it2->newValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isString) {
-                    it2->setValueRetCode = isString->setValueAtTime(it2->time, it2->newValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isString->setValueAtTime(it2->time, it2->newValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else {
                     assert(false);
                 }
             } else {
                 if (isInt) {
-                    it2->setValueRetCode = isInt->setValue(it2->newValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isInt->setValue(it2->newValue.toInt(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isBool) {
-                    it2->setValueRetCode = isBool->setValue(it2->newValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isBool->setValue(it2->newValue.toBool(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isDouble) {
-                    it2->setValueRetCode = isDouble->setValue(it2->newValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isDouble->setValue(it2->newValue.toDouble(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else if (isString) {
-                    it2->setValueRetCode = isString->setValue(it2->newValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0);
+                    it2->setValueRetCode = isString->setValue(it2->newValue.toString().toStdString(), ViewSpec::all(), it2->dimension, _reason, 0, hasChanged);
                 } else {
                     assert(false);
                 }
+            }
+            hasChanged |= it2->setValueRetCode != eValueChangedReturnCodeNothingChanged;
 
-                // Still remember the time in case auto-keying is on and we add a keyframe
-                if (!firstRedoCalled && !it2->setKeyFrame) {
-                    it2->time = knob->getCurrentTime();
-                }
+            if (next != it->second.end()) {
+                ++next;
             }
 
         }
-        knob->endChanges();
     }
 
     if (holder) {
         holder->endChanges();
     }
 
-    firstRedoCalled = true;
 } // redo
 
 int
@@ -438,7 +460,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
-    ///if all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
+    // If all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
     bool ignoreCreateNew = false;
     if ( knobs.size() == knobCommand->knobs.size() ) {
         ParamsMap::const_iterator thisIt = knobs.begin();
@@ -459,14 +481,14 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
+    // Ok merge it, add parameters to the map
     for (ParamsMap::const_iterator otherIt = knobCommand->knobs.begin(); otherIt != knobCommand->knobs.end(); ++otherIt) {
         ParamsMap::iterator foundExistinKnob =  knobs.find(otherIt->first);
         if ( foundExistinKnob == knobs.end() ) {
             knobs.insert(*otherIt);
         } else {
-            //copy the other dimension of that knob which changed and set the dimension to -1 so
-            //that subsequent calls to undo() and redo() clone all dimensions at once
-            //foundExistinKnob->second.copy->clone(otherIt->second.copy,otherIt->second.dimension);
+            // copy the other dimension of that knob which changed and set the dimension to -1 so
+            // that subsequent calls to undo() and redo() clone all dimensions at once
             foundExistinKnob->second.insert( foundExistinKnob->second.end(), otherIt->second.begin(), otherIt->second.end() );
         }
     }

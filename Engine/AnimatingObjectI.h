@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <list>
+#include <string>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
@@ -66,6 +67,39 @@ struct VariantTimeValuePair
     double time;
     Variant value;
 };
+
+template <typename T>
+inline T variantToType(const Variant& v);
+
+template <>
+inline int variantToType(const Variant& v)
+{
+    return v.toInt();
+}
+
+template <>
+inline bool variantToType(const Variant& v)
+{
+    return v.toBool();
+}
+
+template <>
+inline double variantToType(const Variant& v)
+{
+    return v.toDouble();
+}
+
+template <>
+inline std::string variantToType(const Variant& v)
+{
+    return v.toString().toStdString();
+}
+
+template <typename T>
+inline TimeValuePair<T> variantTimevaluePairToTemplated(const VariantTimeValuePair& v)
+{
+     return TimeValuePair<T>(v.time, variantToType<T>(v.value));
+}
 
 class AnimatingObjectI
 {

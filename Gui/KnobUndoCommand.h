@@ -135,7 +135,7 @@ private:
         // If any keyframe was added due to auto-keying, remove it
         for (std::size_t i = 0; i < _oldValue.size(); ++i) {
             if (_dimension == -1 || i == _dimension) {
-                if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+                if (_valueChangedReturnCode[i] == eValueChangedReturnCodeKeyframeAdded) {
                     knob->deleteValueAtTime(eCurveChangeReasonInternal, _timelineTime, ViewSpec::all(), i);
                 }
             }
@@ -179,7 +179,7 @@ private:
 
         // If we added a keyframe, prevent this command to merge with any other command
         for (std::size_t i = 0; i < _valueChangedReturnCode.size(); ++i) {
-            if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+            if (_valueChangedReturnCode[i] == eValueChangedReturnCodeKeyframeAdded) {
                 _merge = false;
             }
         }
@@ -217,7 +217,7 @@ private:
     std::vector<T> _oldValue;
     std::vector<T> _newValue;
     KnobGuiWPtr _knob;
-    std::vector<KnobHelper::ValueChangedReturnCodeEnum> _valueChangedReturnCode;
+    std::vector<ValueChangedReturnCodeEnum> _valueChangedReturnCode;
     bool _merge;
     bool _refreshGuiFirstTime;
     bool _firstRedoCalled;
@@ -237,14 +237,15 @@ class MultipleKnobEditsUndoCommand
 private:
     struct ValueToSet
     {
+        // Since knobs with different types may be grouped here, we need to use variants
         Variant newValue, oldValue;
         int dimension;
         double time;
         bool setKeyFrame;
-        int setValueRetCode;
+        ValueChangedReturnCodeEnum setValueRetCode;
     };
 
-    ///For each knob, the second member points to a clone of the knob before the first redo() call was made
+    // For each knob, the second member points to a clone of the knob before the first redo() call was made
     typedef std::map < KnobGuiWPtr, std::list<ValueToSet> >  ParamsMap;
     ParamsMap knobs;
     bool createNew;
@@ -259,6 +260,7 @@ public:
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
     MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
+                                 const QString& commandName,
                                  ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
@@ -272,7 +274,6 @@ public:
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
-    static KnobIPtr createCopyForKnob(const KnobIPtr & originalKnob);
 };
 
 struct PasteUndoCommandPrivate;
