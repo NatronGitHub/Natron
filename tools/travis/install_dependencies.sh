@@ -63,9 +63,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6
-    else
 	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:mc3man/trusty-media; fi #3.1.4
+    else
+	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
     fi
 
     # Note: Python 3 packages are python3-dev and python3-pyside
