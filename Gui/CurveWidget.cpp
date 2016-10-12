@@ -537,11 +537,13 @@ CurveWidget::paintGL()
     }
 
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
+        //GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        //GLProtectMatrix p(GL_PROJECTION);
+        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
-        GLProtectMatrix m(GL_MODELVIEW);
+        //GLProtectMatrix m(GL_MODELVIEW);
+        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         glCheckError();
 
@@ -551,11 +553,12 @@ CurveWidget::paintGL()
 
         boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
         if (customInteract) {
-            GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+            //GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
             
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
+            glCheckError();
         }
 
         _imp->drawScale();
