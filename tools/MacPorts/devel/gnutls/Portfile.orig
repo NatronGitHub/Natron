@@ -1,12 +1,12 @@
 # -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153676 2016-10-07 10:58:17Z mps@macports.org $
+# $Id: Portfile 153774 2016-10-10 23:47:01Z mps@macports.org $
 
 PortSystem      1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.4.15
-revision        2
+version         3.4.16
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -26,8 +26,8 @@ master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://archive.hmug.org/src/gnutls/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  b49b33a3af479ac00044676f84050391806fc8f2 \
-                sha256  eb2a013905f5f2a0cbf7bcc1d20c85a50065063ee87bd33b496c4e19815e3498
+checksums       rmd160  a9ec303e93396ab8f7b0ddf57c9a19e7fd0a0322 \
+                sha256  d99abb1b320771b58c949bab85e4b654dd1e3e9d92e2572204b7dc479d923927
 
 use_xz          yes
 
@@ -39,7 +39,6 @@ depends_lib     port:gmp \
                 port:libtasn1 \
                 port:p11-kit \
                 port:nettle \
-                path:share/curl/curl-ca-bundle.crt:curl-ca-bundle \
                 port:zlib
 
 patchfiles      patch-tests-pkcs11-pkcs11-mock.c.diff
@@ -60,7 +59,7 @@ configure.args  --disable-guile \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
-                --with-default-trust-store-file="${prefix}/share/curl/curl-ca-bundle.crt" \
+                --with-default-trust-store-pkcs11=pkcs11: \
                 ac_cv_prog_AWK=/usr/bin/awk
 
 variant dane description {Build libdane using unbound libraries} {

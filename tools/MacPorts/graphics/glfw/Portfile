@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153639 2016-10-06 14:21:59Z michaelld@macports.org $
+# $Id: Portfile 153790 2016-10-11 13:03:42Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -34,10 +34,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    github.setup    glfw glfw c156b50e4c61f8d9d32d137f252190ead4d6f1a4
-    version         20160928
-    checksums       rmd160 144d8d39f3d089c5e689868c16a210d105199c23 \
-                    sha256 fda45fcbf1a00041d1eea9595be06b5072d254d22054928c25004946fb426a5f
+    github.setup    glfw glfw aa10ec6e455a4c767c5feed83e2e8623adb3e775
+    version         20161010
+    checksums       rmd160 5235fb6db8d7882a51b18b841b30050b3f691dea \
+                    sha256 df2898ee8b58e02f0f240254429cc87f1af52e4d1add4a9f3fba9eeaede0b7e5
 
     conflicts       glfw
     long_description ${description}: \
