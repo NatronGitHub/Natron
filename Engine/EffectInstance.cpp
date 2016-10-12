@@ -113,6 +113,7 @@ EffectInstance::EffectInstance(const NodePtr& node)
 
 EffectInstance::EffectInstance(const EffectInstance& other)
     : NamedKnobHolder(other)
+    , LockManagerI<Image>()
     , _node( other.getNode() )
     , _imp( new Implementation(*other._imp) )
 {

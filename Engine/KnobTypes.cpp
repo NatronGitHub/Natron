@@ -2513,11 +2513,9 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
                 throw std::logic_error(err.toStdString());
             }
 
-            std::string value;
-            while (lastFoundIndex < endNamePos) {
-                value.push_back( raw[lastFoundIndex].toLatin1() );
-                ++lastFoundIndex;
-            }
+            std::string value = raw.mid(lastFoundIndex, endNamePos - lastFoundIndex).toStdString();
+            lastFoundIndex += (endNamePos - lastFoundIndex);
+
 
             // In order to use XML tags, the text inside the tags has to be unescaped.
             value = Project::unescapeXML(value);

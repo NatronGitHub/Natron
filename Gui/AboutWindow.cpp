@@ -288,25 +288,28 @@ AboutWindow::AboutWindow(QWidget* parent)
         //#define MAC_OS_X_VERSION_10_11_2    101102
         //#define MAC_OS_X_VERSION_10_11_3    101103
         //#define MAC_OS_X_VERSION_10_11_4    101104
-        osVer += QString::fromUtf8(" %1.%2-%3.%4")
+        osVer += QString::fromUtf8(" %1.%2.%3-%4.%5.%6")
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 100000
         .arg(MAC_OS_X_VERSION_MIN_REQUIRED / 100)
-        .arg(MAC_OS_X_VERSION_MIN_REQUIRED % 100)
+        .arg( (MAC_OS_X_VERSION_MIN_REQUIRED % 100) / 10)
+        .arg(MAC_OS_X_VERSION_MIN_REQUIRED % 10)
 #else
         .arg(MAC_OS_X_VERSION_MIN_REQUIRED / 10000)
         .arg((MAC_OS_X_VERSION_MIN_REQUIRED % 10000) / 100)
+        .arg(MAC_OS_X_VERSION_MIN_REQUIRED % 100)
 #endif
 #if MAC_OS_X_VERSION_MAX_ALLOWED < 100000
         .arg(MAC_OS_X_VERSION_MAX_ALLOWED / 100)
-        .arg(MAC_OS_X_VERSION_MAX_ALLOWED % 100)
+        .arg( (MAC_OS_X_VERSION_MAX_ALLOWED % 100) / 10)
+        .arg(MAC_OS_X_VERSION_MAX_ALLOWED % 10)
 #else
         .arg(MAC_OS_X_VERSION_MAX_ALLOWED / 10000)
         .arg((MAC_OS_X_VERSION_MAX_ALLOWED % 10000) / 100)
+        .arg(MAC_OS_X_VERSION_MAX_ALLOWED % 100)
 #endif
         ;
 #else
-        //#define BOOST_VERSION_NUMBER(major,minor,patch)               \
-        //( (((major)%100)*10000000) + (((minor)%100)*100000) + ((patch)%100000) )
+        //#define BOOST_VERSION_NUMBER(major,minor,patch) ( (((major)%100)*10000000) + (((minor)%100)*100000) + ((patch)%100000) )
         const unsigned major = BOOST_OS/10000000;
         const unsigned minor = (BOOST_OS-10000000*major)/100000;
         const unsigned patch = BOOST_OS % 100000;

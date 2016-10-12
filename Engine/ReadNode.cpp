@@ -446,6 +446,7 @@ ReadNodePrivate::destroyReadNode()
                     continue;
                 }
 
+
                 //Keep pages around they will be re-used
                 KnobPagePtr isPage = toKnobPage(*it);
                 if (isPage) {

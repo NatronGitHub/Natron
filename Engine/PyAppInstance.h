@@ -32,10 +32,12 @@
  * Engine module.
  **/
 
+#include <map>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
+#include <QtCore/QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -82,6 +84,7 @@ public:
 
 };
 
+typedef std::map<QString, NodeCreationProperty*> NodeCreationPropertyMap;
 
 class IntNodeCreationProperty : public NodeCreationProperty
 {
@@ -280,13 +283,13 @@ public:
     Effect* createNode(const QString& pluginID,
                        int majorVersion = -1,
                        Group* group = 0,
-                       const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
+                       const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
     Effect* createReader(const QString& filename,
                          Group* group = 0,
-                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
+                         const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
     Effect* createWriter(const QString& filename,
                          Group* group = 0,
-                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
+                         const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
 
     int timelineGetTime() const;
 

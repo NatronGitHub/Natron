@@ -2363,9 +2363,13 @@ ViewerGL::setFormat(const std::string& formatName, const RectD& format, double p
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-
-    _imp->displayTextures[textureIndex].format = format;
-    _imp->displayTextures[textureIndex].pixelAspectRatio = par;
+    if (_imp->displayTextures[textureIndex].format != format || _imp->displayTextures[textureIndex].pixelAspectRatio != par) {
+        _imp->displayTextures[textureIndex].format = format;
+        _imp->displayTextures[textureIndex].pixelAspectRatio = par;
+        if (!getZoomOrPannedSinceLastFit() && _imp->zoomCtx.screenWidth() != 0 && _imp->zoomCtx.screenHeight() != 0) {
+            fitImageToFormat();
+        }
+    }
 
     _imp->currentViewerInfo_resolutionOverlay[textureIndex] = QString::fromUtf8(formatName.c_str());
 }

@@ -36,7 +36,6 @@
 
 #ifdef WINDOWS
 #include <tchar.h>
-#include <ofxhUtilities.h> // for wideStringToString
 #endif
 
 #include "Global/MemoryInfo.h"
@@ -1370,7 +1369,7 @@ Settings::initializeKnobsPlugins()
 
     std::wstring basePath = std::wstring( OFX::Host::PluginCache::getStdOFXPluginPath() );
     basePath.append( std::wstring(L" and C:\\Program Files\\Common Files\\OFX\\Plugins") );
-    std::string searchPath = OFX::wideStringToString(basePath);
+    std::string searchPath = StrUtils::utf16_to_utf8(basePath);
 
 #endif
 
@@ -2195,9 +2194,13 @@ Settings::tryLoadOpenColorIOConfig()
 #ifdef DEBUG
     qDebug() << "setting OCIO=" << configFile;
 #endif
-    qputenv( NATRON_OCIO_ENV_VAR_NAME, configFile.toUtf8() );
-
     std::string stdConfigFile = configFile.toStdString();
+#ifdef __NATRON_WIN32__
+    _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
+#else
+    qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
+#endif
+
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
     if ( !configPath.empty() && (configPath[configPath.size() - 1] == '/') ) {
         configPath.erase(configPath.size() - 1, 1);

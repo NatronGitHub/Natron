@@ -65,17 +65,13 @@ protected: // derives from EffectInstance, parent of OfxEffectInstance
     {
     }
 
-
+protected:
     AbstractOfxEffectInstance(const AbstractOfxEffectInstance& other)
     : OutputEffectInstance(other)
     {
     }
 
 public:
-    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
-    //{
-    //    return EffectInstancePtr( new AbstractOfxEffectInstance(node) );
-    //}
 
     virtual ~AbstractOfxEffectInstance()
     {

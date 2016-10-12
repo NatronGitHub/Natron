@@ -99,7 +99,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
                                const QString& pluginID,
                                int majorVersion,
                                const NodeCollectionPtr& collection,
-                               const std::map<QString, NodeCreationProperty*>& props,
+                               const NodeCreationPropertyMap& props,
                                CreateNodeArgs* args)
 {
 
@@ -115,7 +115,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
     args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
 
     bool skipNoNodeGuiProp = false;
-    for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {
+    for (NodeCreationPropertyMap::const_iterator it = props.begin(); it!=props.end(); ++it) {
         IntNodeCreationProperty* isInt = dynamic_cast<IntNodeCreationProperty*>(it->second);
         BoolNodeCreationProperty* isBool = dynamic_cast<BoolNodeCreationProperty*>(it->second);
         FloatNodeCreationProperty* isDouble = dynamic_cast<FloatNodeCreationProperty*>(it->second);
@@ -159,7 +159,7 @@ Effect*
 App::createNode(const QString& pluginID,
                 int majorVersion,
                 Group* group,
-                const std::map<QString, NodeCreationProperty*>& props) const
+                const NodeCreationPropertyMap& props) const
 {
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
@@ -178,7 +178,7 @@ App::createNode(const QString& pluginID,
 Effect*
 App::createReader(const QString& filename,
                   Group* group,
-                  const std::map<QString, NodeCreationProperty*>& props) const
+                  const NodeCreationPropertyMap& props) const
 {
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
@@ -198,7 +198,7 @@ App::createReader(const QString& filename,
 Effect*
 App::createWriter(const QString& filename,
                   Group* group,
-                  const std::map<QString, NodeCreationProperty*>& props) const
+                  const NodeCreationPropertyMap& props) const
 {
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 

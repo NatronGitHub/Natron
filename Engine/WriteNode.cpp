@@ -413,6 +413,7 @@ WriteNodePrivate::destroyWriteNode()
                 }
                 if (isWriteNodeKnob) {
                     continue;
+
                 }
 
                 //Keep pages around they will be re-used

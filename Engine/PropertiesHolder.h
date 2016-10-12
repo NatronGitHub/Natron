@@ -84,29 +84,29 @@ class PropertiesHolder
      * or it is not of the requested data type T.
      **/
     template <typename T>
-    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool failIfNotExisting = true) const
+    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
     {
         const boost::shared_ptr<PropertyBase>* propPtr = 0;
-        boost::shared_ptr<Property<T> > propTemplate;
 
         std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         if (found == _properties.end()) {
-            if (failIfNotExisting) {
-                throw std::invalid_argument("PropertiesHolder::getProp(): Invalid property " + name);
+            if (throwOnFailure) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
             }
-            return propTemplate;
+            return boost::shared_ptr<Property<T> >();
         }
         propPtr = &(found->second);
+        boost::shared_ptr<Property<T> > propTemplate;
         propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
         assert(propPtr);
         if (!propTemplate) {
-            if (failIfNotExisting) {
-                throw std::invalid_argument("PropertiesHolder::getProp(): Invalid property type for " + name);
+            if (throwOnFailure) {
+                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
             }
-            return propTemplate;
+            return boost::shared_ptr<Property<T> >();
         }
-        assert(propTemplate);
 
+        assert(propTemplate);
         return propTemplate;
     }
 
@@ -127,9 +127,7 @@ class PropertiesHolder
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
         }
         assert(propTemplate);
-
-        return propTemplate;
-    }
+        return propTemplate;    }
 
 
     void ensurePropertiesCreated() const
@@ -204,7 +202,8 @@ public:
     {
         ensurePropertiesCreated();
 
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, failIfNotExisting);
+        boost::shared_ptr<Property<T> > propTemplate;
+        propTemplate = getProp<T>(name, failIfNotExisting);
         if (!propTemplate) {
             propTemplate = createProperty<T>(name, value);
         }
@@ -222,13 +221,12 @@ public:
     {
         ensurePropertiesCreated();
 
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, failIfNotExisting);
-        if (propTemplate) {
-            propTemplate->value = values;
-        } else {
+        boost::shared_ptr<Property<T> > propTemplate;
+        propTemplate = getProp<T>(name, failIfNotExisting);
+        if (!propTemplate) {
             propTemplate = createProperty<T>(name, values);
         }
-    }
+        propTemplate->value = values;    }
 
     /**
      * @brief Returns the number of dimensions of the property associated to the given name
@@ -246,7 +244,6 @@ public:
                 return 0;
             }
         }
-
         return found->second->getDimension();
     }
 

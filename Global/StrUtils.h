@@ -28,6 +28,10 @@
 NATRON_NAMESPACE_ENTER;
 
 namespace StrUtils {
+
+// Should be used in asserts to ensure strings are utf8
+bool is_utf8(const char * string);
+
 /*Converts a std::string to wide string*/
 std::wstring utf8_to_utf16(const std::string & s);
 

@@ -2111,7 +2111,11 @@ AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
 void
 AppInstance::recheckInvalidExpressions()
 {
+    if (getProject()->isProjectClosing()) {
+        return;
+    }
     std::list<KnobIPtr> knobs;
+
     {
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
         for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
