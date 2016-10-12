@@ -212,7 +212,7 @@ public:
     virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
     virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
     virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual CurvePtr getCurve(ViewSpec view, int dimension) const OVERRIDE FINAL;
+    virtual CurvePtr getCurve(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -248,20 +248,19 @@ public Q_SLOTS:
 
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(CurveChangeReason reason, ViewSpec view, int dimension);
+    void onRedrawGuiCurve(ViewSetSpec view, DimSpec dimension);
 
     void onDimensionNameChanged(int dimension);
 
     void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            const std::list<double>& keysRemoved,
-                                           ViewSpec view,
-                                           int dimension,
-                                           CurveChangeReason reason);
+                                           ViewIdx view,
+                                           DimIdx dimension);
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(ViewSpec view, int dimension, int reason);
+    void onInternalValueChanged(ViewIdx view, DimIdx dimension, ValueChangedReasonEnum reason);
 
     void setSecret();
 
@@ -316,13 +315,11 @@ public Q_SLOTS:
 
     void onKnobSlavedChanged(int dimension, bool b);
 
-    void onSetValueUsingUndoStack(const Variant & v, ViewSpec view, int dim);
-
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(ViewSpec view, int dim);
+    void onAnimationLevelChanged(ViewIdx view, int dim);
 
-    void onAppendParamEditChanged(int reason, const Variant & v, ViewSpec view, int dim, double time, bool setKeyFrame);
+    void onAppendParamEditChanged(int reason, int setValueRetCode, const Variant & v, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

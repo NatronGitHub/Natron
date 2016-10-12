@@ -196,11 +196,13 @@ PasteUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSerializationPtr& 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                                            const QString& commandName,
                                                            ValueChangedReasonEnum reason,
+                                                           ValueChangedReturnCodeEnum setValueRetCode,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,
                                                            int dimension,
-                                                           double time)
+                                                           double time,
+                                                           ViewSpec view)
     : QUndoCommand()
     , knobs()
     , createNew(createNew)
@@ -223,7 +225,8 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         v.time = time;
     }
     v.setKeyFrame = setKeyFrame;
-    v.setValueRetCode = -1;
+    v.view = view;
+    v.setValueRetCode = setValueRetCode;
 
     KnobIntBasePtr isInt = toKnobIntBase(knob);
     KnobBoolBasePtr isBool = toKnobBoolBase(knob);

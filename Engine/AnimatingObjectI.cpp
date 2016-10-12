@@ -25,21 +25,158 @@ AnimatingObjectI::AnimatingObjectI()
 
 }
 
+ValueChangedReturnCodeEnum
+AnimatingObjectI::setIntValueAtTime(double /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+        throw std::invalid_argument("Invalid call to setIntValueAtTime on an object that does not support integer");
+    }
+    return eValueChangedReturnCodeNothingChanged;
+}
+
+ValueChangedReturnCodeEnum
+AnimatingObjectI::setDoubleValueAtTime(double /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+        throw std::invalid_argument("Invalid call to setDoubleValueAtTime on an object that does not support double");
+    }
+    return eValueChangedReturnCodeNothingChanged;
+}
+
+ValueChangedReturnCodeEnum
+AnimatingObjectI::setBoolValueAtTime(double /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+        throw std::invalid_argument("Invalid call to setBoolValueAtTime on an object that does not support bool");
+    }
+    return eValueChangedReturnCodeNothingChanged;
+}
+
+ValueChangedReturnCodeEnum
+AnimatingObjectI::setStringValueAtTime(double /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+        throw std::invalid_argument("Invalid call to setStringValueAtTime on an object that does not support string");
+    }
+    return eValueChangedReturnCodeNothingChanged;
+}
+
 void
-AnimatingObjectI::deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension)
+AnimatingObjectI::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+        throw std::invalid_argument("Invalid call to setMultipleIntValueAtTime on an object that does not support integer");
+    }
+}
+
+void
+AnimatingObjectI::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+        throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTime on an object that does not support double");
+    }
+}
+
+
+void
+AnimatingObjectI::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+        throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTime on an object that does not support boolean");
+    }
+}
+
+void
+AnimatingObjectI::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& /*keys*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* /*newKey*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+        throw std::invalid_argument("Invalid call to setMultipleStringValueAtTime on an object that does not support string");
+    }
+}
+
+void
+AnimatingObjectI::setIntValueAtTimeAcrossDimensions(double /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+        throw std::invalid_argument("Invalid call to setIntValueAtTimeAcrossDimensions on an object that does not support integer");
+    }
+}
+
+void
+AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(double /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+        throw std::invalid_argument("Invalid call to setDoubleValueAtTimeAcrossDimensions on an object that does not support double");
+    }
+
+}
+
+void
+AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(double /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+        throw std::invalid_argument("Invalid call to setBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
+    }
+}
+
+void
+AnimatingObjectI::setStringValueAtTimeAcrossDimensions(double /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+        throw std::invalid_argument("Invalid call to setStringValueAtTimeAcrossDimensions on an object that does not support string");
+    }
+}
+
+void
+AnimatingObjectI::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
+        throw std::invalid_argument("Invalid call to setMultipleIntValueAtTimeAcrossDimensions on an object that does not support integer");
+    }
+}
+
+void
+AnimatingObjectI::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
+        throw std::invalid_argument("Invalid call to setMultipleDoubleValueAtTimeAcrossDimensions on an object that does not support double");
+    }
+}
+
+
+void
+AnimatingObjectI::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
+        throw std::invalid_argument("Invalid call to setMultipleBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
+    }
+}
+
+
+void
+AnimatingObjectI::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
+{
+    if (getKeyFrameDataType() != eKeyframeDataTypeString) {
+        throw std::invalid_argument("Invalid call to setMultipleStringValueAtTimeAcrossDimensions on an object that does not support string");
+    }
+}
+
+
+void
+AnimatingObjectI::deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension)
 {
     std::list<double> times;
     times.push_back(time);
-    deleteValuesAtTime(curveChangeReason, times, view, dimension);
+    deleteValuesAtTime(times, view, dimension);
 }
 
 bool
-AnimatingObjectI::moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view,  int dimension, double dt, double dv, KeyFrame* newKey)
+AnimatingObjectI::moveValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);
     std::vector<KeyFrame> keys;
-    bool ret = moveValuesAtTime(reason, times, view, dimension, dt, dv, newKey ? &keys : 0);
+    bool ret = moveValuesAtTime(times, view, dimension, dt, dv, newKey ? &keys : 0);
     if (newKey && !keys.empty()) {
         *newKey = keys.front();
     }
@@ -47,18 +184,18 @@ AnimatingObjectI::moveValueAtTime(CurveChangeReason reason, double time, ViewSpe
 }
 
 bool
-AnimatingObjectI::moveValuesAtTime(CurveChangeReason reason, const std::list<double>& times, ViewSpec view,  int dimension, double dt, double dv, std::vector<KeyFrame>* outKeys)
+AnimatingObjectI::moveValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, double dt, double dv, std::vector<KeyFrame>* outKeys)
 {
-    return warpValuesAtTime(reason, times, view, dimension, Curve::TranslationKeyFrameWarp(dt, dv), false /*allowReplacingKeys*/, outKeys);
+    return warpValuesAtTime(times, view, dimension, Curve::TranslationKeyFrameWarp(dt, dv), false /*allowReplacingKeys*/, outKeys);
 }
 
 bool
-AnimatingObjectI::transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey)
+AnimatingObjectI::transformValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);
     std::vector<KeyFrame> keys;
-    bool ret = transformValuesAtTime(curveChangeReason, times, view, dimension, matrix, newKey ? &keys : 0);
+    bool ret = transformValuesAtTime(times, view, dimension, matrix, newKey ? &keys : 0);
     if (newKey && !keys.empty()) {
         *newKey = keys.front();
     }
@@ -66,26 +203,19 @@ AnimatingObjectI::transformValueAtTime(CurveChangeReason curveChangeReason, doub
 }
 
 bool
-AnimatingObjectI::transformValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view,  int dimension, const Transform::Matrix3x3& matrix, std::vector<KeyFrame>* outKeys)
+AnimatingObjectI::transformValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, std::vector<KeyFrame>* outKeys)
 {
-    return warpValuesAtTime(curveChangeReason, times, view, dimension, Curve::AffineKeyFrameWarp(matrix), true /*allowReplacingKeys*/, outKeys);
+    return warpValuesAtTime(times, view, dimension, Curve::AffineKeyFrameWarp(matrix), true /*allowReplacingKeys*/, outKeys);
 }
 
-void
-AnimatingObjectI::removeAnimation(ViewSpec view, int dimension, CurveChangeReason reason)
-{
-    std::vector<int> dims(1);
-    dims[0] = dimension;
-    removeAnimationAcrossDimensions(view, dims, reason);
-}
 
 void
-AnimatingObjectI::setInterpolationAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey)
+AnimatingObjectI::setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);
     std::vector<KeyFrame> keys;
-    setInterpolationAtTimes(reason, view, dimension, times, interpolation, newKey ? &keys : 0);
+    setInterpolationAtTimes(view, dimension, times, interpolation, newKey ? &keys : 0);
     if (newKey && !keys.empty()) {
         *newKey = keys.front();
     }

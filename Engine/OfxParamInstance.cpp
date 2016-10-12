@@ -256,11 +256,7 @@ deleteAllKeys(const KnobIPtr& knob,
     }
     assert(startDim < endDim && startDim >= 0);
 
-    std::vector<int> dimensions;
-    for (int i = startDim; i < endDim; ++i) {
-        dimensions.push_back(i);
-    }
-    knob->removeAnimationAcrossDimensions(ViewSpec::all(), dimensions, eCurveChangeReasonInternal);
+    knob->removeAnimation(ViewSpec::all(), DimSpec::all(), eCurveChangeReasonInternal);
 
     return kOfxStatOK;
 }

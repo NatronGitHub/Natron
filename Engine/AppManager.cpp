@@ -83,6 +83,7 @@
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/FStreamsSupport.h"
@@ -2663,11 +2664,15 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsPtr>("RenderStatsPtr");
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
-    qRegisterMetaType<ViewSpec>("ViewSpec");
+    qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
+    qRegisterMetaType<ViewGetSpec>("ViewGetSpec");
     qRegisterMetaType<NodePtr >("NodePtr");
     qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
-    qRegisterMetaType<CurveChangeReason>("CurveChangeReason");
+    qRegisterMetaType<DimIdx>("DimIdx");
+    qRegisterMetaType<DimSpec>("DimSpec");
+    qRegisterMetaType<ValueChangedReturnCodeEnum>("ValueChangedReturnCodeEnum");
+    qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

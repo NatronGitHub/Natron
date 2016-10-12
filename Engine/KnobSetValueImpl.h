@@ -32,7 +32,7 @@ NATRON_NAMESPACE_ENTER
 
 template <typename T>
 void
-Knob<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ViewSpec view, int dimension, double time, bool setKeyFrame)
+Knob<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSpec view, int dimension, double time, bool setKeyFrame)
 {
 
     // If the user called beginMultipleEdits to group undo/redo, then use the undo/stack
@@ -59,7 +59,7 @@ Knob<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEn
             // Add the set value using the undo/redo stack
             Variant vari;
             valueToVariant(value, &vari);
-            _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, setKeyFrame);
+            _signalSlotHandler->s_appendParamEditChange(reason, setValueRetCode, vari, view, dimension, time, setKeyFrame);
             break;
         }
         case KnobHolder::eMultipleParamsEditOff:
@@ -654,14 +654,14 @@ Knob<T>::setIntValueAtTimeAcrossDimensions(double /*time*/, const std::vector<in
 
 template <>
 void
-Knob<int>::setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason)
+Knob<int>::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason)
 {
     setMultipleValueAtTimeAcrossDimensions(keysPerDimension, dimensionStartIndex, view, reason);
 }
 
 template <typename T>
 void
-Knob<T>::setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+Knob<T>::setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& /*keysPerDimension*/,  ValueChangedReasonEnum /*reason*/)
 {
     throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
 }
@@ -760,14 +760,14 @@ Knob<T>::setDoubleValueAtTimeAcrossDimensions(double /*time*/, const std::vector
 
 template <>
 void
-Knob<double>::setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason)
+Knob<double>::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason)
 {
     setMultipleValueAtTimeAcrossDimensions(keysPerDimension, dimensionStartIndex, view, reason);
 }
 
 template <typename T>
 void
-Knob<T>::setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+Knob<T>::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason)
 {
     throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
 }
@@ -868,14 +868,14 @@ Knob<T>::setBoolValueAtTimeAcrossDimensions(double /*time*/, const std::vector<b
 
 template <>
 void
-Knob<bool>::setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason)
+Knob<bool>::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason)
 {
     setMultipleValueAtTimeAcrossDimensions(keysPerDimension, dimensionStartIndex, view, reason);
 }
 
 template <typename T>
 void
-Knob<T>::setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+Knob<T>::setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum /*reason*/)
 {
     throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
 }
@@ -976,14 +976,14 @@ Knob<T>::setStringValueAtTimeAcrossDimensions(double /*time*/, const std::vector
 
 template <>
 void
-Knob<std::string>::setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason)
+Knob<std::string>::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason)
 {
     setMultipleValueAtTimeAcrossDimensions(keysPerDimension, dimensionStartIndex, view, reason);
 }
 
 template <typename T>
 void
-Knob<T>::setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& /*keysPerDimension*/, int /*dimensionStartIndex*/, ViewSpec /*view*/, ValueChangedReasonEnum /*reason*/)
+Knob<T>::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& /*keysPerDimension*/, ValueChangedReasonEnum /*reason*/)
 {
     throw std::invalid_argument("Attempt to call a function for a wrong Knob A.P.I type");
 }

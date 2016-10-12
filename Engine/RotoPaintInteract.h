@@ -40,6 +40,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/KnobItemsTable.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -390,6 +391,31 @@ NATRON_NAMESPACE_ENTER;
 
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
+
+
+class RotoPaintKnobItemsTable : public KnobItemsTable
+{
+public:
+
+    RotoPaintKnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount)
+    : KnobItemsTable(originalHolder, type, colsCount)
+    {
+
+    }
+
+    virtual ~RotoPaintKnobItemsTable()
+    {
+
+    }
+
+    virtual std::string getTableIdentifier() const OVERRIDE FINAL
+    {
+        return "RotoPaint_Table";
+    }
+
+    virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+};
+
 
 class RotoPaintInteract;
 struct RotoPaintPrivate

@@ -112,7 +112,7 @@ NATRON_NAMESPACE_ENTER;
 RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    QObject::connect( _imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( _imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewIdx,DimIdx,ValueChangedReasonEnum)), this, SLOT(onLifeTimeKnobValueChanged(ViewIdx,DimIdx,ValueChangedReasonEnum)) );
 }
 
 bool

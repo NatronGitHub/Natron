@@ -16,14 +16,15 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_ViewIdx_h
-#define Engine_ViewIdx_h
+#ifndef ENGINE_DIMENSIONIDX_H
+#define ENGINE_DIMENSIONIDX_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
 
 #include "Global/Macros.h"
 
@@ -33,21 +34,19 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
-
-class ViewSetSpec
+class DimSpec
 {
     int i;
 
 public:
-    ViewSetSpec()
-    : i(0)
+    DimSpec()
+        : i(0)
     {
     }
 
     // cast from int must be explicit
-    explicit ViewSetSpec(int index)
-    : i(index)
+    explicit DimSpec(int index)
+        : i(index)
     {
         assert(index >= -2);
     }
@@ -60,7 +59,7 @@ public:
         return i;
     }
 
-    bool operator<(const ViewSetSpec& b) const {
+    bool operator<(const DimSpec& b) const {
         return i < b.i;
     }
 
@@ -71,75 +70,23 @@ public:
 
     bool isAll() const { return i == -1; }
 
-    bool isCurrent() const { return i == -2; }
+    bool isDimIdx() const { return i >= 0; }
 
-    bool isViewIdx() const { return i >= 0; }
-
-    static ViewSetSpec all() { return ViewSetSpec(-1); };
-    static ViewSetSpec current() { return ViewSetSpec(-2); };
+    static DimSpec all() { return DimSpec(-1); };
 };
 
-
-class ViewGetSpec
+class DimIdx
+    : public DimSpec
 {
-    int i;
-
 public:
-    ViewGetSpec()
-    : i(0)
+    DimIdx()
+        : DimSpec(0)
     {
     }
 
     // cast from int must be explicit
-    explicit ViewGetSpec(int index)
-    : i(index)
-    {
-        assert(index == -2 || index >= 0);
-    }
-
-    // cast to int is implicit
-    operator int() const
-    {
-        assert(i >= 0);
-
-        return i;
-    }
-
-    bool operator<(const ViewGetSpec& b) const {
-        return i < b.i;
-    }
-
-    int value() const
-    {
-        return static_cast<int>(*this);
-    }
-
-    bool isCurrent() const { return i == -2; }
-
-    bool isViewIdx() const { return i >= 0; }
-
-    static ViewGetSpec current() { return ViewGetSpec(-2); };
-
-private:
-
-    bool isAll() const { return false; }
-
-    static ViewIdx all(); // overload with no implementation
-
-};
-
-class ViewIdx
-    : public ViewGetSpec
-{
-public:
-    ViewIdx()
-        : ViewGetSpec(0)
-    {
-    }
-
-    // cast from int must be explicit
-    explicit ViewIdx(int index)
-        : ViewGetSpec(index)
+    explicit DimIdx(int index)
+        : DimSpec(index)
     {
         assert(index >= 0);
     }
@@ -154,12 +101,14 @@ public:
     }
 
 private:
+    bool isAll() const { return false; }
 
-    bool isCurrent() const { return false; }
-
-    static ViewIdx current(); // overload with no implementation
+    static DimIdx all(); // overload with no implementation
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Engine_ViewIdx_h
+
+
+#endif // DIMENSIONIDX_H
+

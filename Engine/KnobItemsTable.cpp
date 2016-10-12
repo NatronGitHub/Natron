@@ -706,7 +706,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
             continue;
         }
 
-        if (!knobs[i]->hasModificationsForSerialization()) {
+        if (!knobs[i]->hasModifications()) {
             continue;
         }
 
@@ -959,6 +959,13 @@ KnobItemsTable::selectAll(TableChangeReasonEnum reason)
 void
 KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
 {
+    if (!masterKnob) {
+        return;
+    }
+    
+    masterKnob->setEnabled(false);
+    masterKnob->setIsPersistent(false);
+
     _imp->perItemMasterKnobs.push_back(masterKnob);
 }
 
@@ -1177,7 +1184,7 @@ KnobTableItem::getKeyFrameDataType() const
 }
 
 CurvePtr
-KnobTableItem::getAnimationCurve(ViewIdx idx, int /*dimension*/) const
+KnobTableItem::getAnimationCurve(ViewIdx /*idx*/, int /*dimension*/) const
 {
     return _imp->animation;
 }
@@ -1224,8 +1231,7 @@ KnobTableItem::setKeyFrameInternal(double time,
 
 ValueChangedReturnCodeEnum
 KnobTableItem::setKeyFrame(double time,
-                           ViewSpec view,
-                           CurveChangeReason reason,
+                           ViewSpec /*view*/,
                            KeyFrame* newKey)
 {
     ValueChangedReturnCodeEnum ret;
@@ -1236,13 +1242,13 @@ KnobTableItem::setKeyFrame(double time,
     if (ret == eValueChangedReturnCodeKeyframeAdded) {
         std::list<double> added,removed;
         added.push_back(time);
-        Q_EMIT curveAnimationChanged(added, removed, view, reason);
+        Q_EMIT curveAnimationChanged(added, removed, ViewIdx(0));
     }
     return ret;
 }
 
 void
-KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec view, CurveChangeReason reason, std::vector<KeyFrame>* newKeys)
+KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec /*view*/,  std::vector<KeyFrame>* newKeys)
 {
     if (keys.empty()) {
         return;
@@ -1265,12 +1271,12 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec view
         }
     }
     if (!added.empty()) {
-        Q_EMIT curveAnimationChanged(added, removed, view, reason);
+        Q_EMIT curveAnimationChanged(added, removed, ViewIdx(0));
     }
 }
 
 void
-KnobTableItem::deleteAnimationConditional(double time, ViewSpec view, CurveChangeReason reason, bool before)
+KnobTableItem::deleteAnimationConditional(double time, ViewSpec /*view*/, bool before)
 {
     std::list<double> keysRemoved;
     {
@@ -1284,12 +1290,12 @@ KnobTableItem::deleteAnimationConditional(double time, ViewSpec view, CurveChang
     }
     if (!keysRemoved.empty()) {
         std::list<double> keysAdded;
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, view, reason);
+        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
 }
 
 bool
-KnobTableItem::cloneCurve(ViewSpec view, int /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/, CurveChangeReason reason)
+KnobTableItem::cloneCurve(ViewSpec /*view*/, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
 {
     std::list<double> keysAdded, keysRemoved;
     bool hasChanged;
@@ -1321,13 +1327,13 @@ KnobTableItem::cloneCurve(ViewSpec view, int /*dimension*/, const Curve& curve, 
     }
 
     if (!keysAdded.empty() || !keysRemoved.empty()) {
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, view, reason);
+        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
     return hasChanged;
 }
 
 void
-KnobTableItem::deleteValuesAtTime(CurveChangeReason reason, const std::list<double>& times, ViewSpec view, int /*dimension*/)
+KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSpec /*view*/, DimIdx /*dimension*/)
 {
     
     std::list<double> keysRemoved, keysAdded;
@@ -1342,12 +1348,12 @@ KnobTableItem::deleteValuesAtTime(CurveChangeReason reason, const std::list<doub
         }
     }
     if (!keysRemoved.empty()) {
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, view, reason);
+        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
 }
 
 bool
-KnobTableItem::warpValuesAtTime(CurveChangeReason reason, const std::list<double>& times, ViewSpec view,  int /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSpec /*view*/,  DimIdx /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
 {
     std::list<double> keysAdded, keysRemoved;
     {
@@ -1359,13 +1365,13 @@ KnobTableItem::warpValuesAtTime(CurveChangeReason reason, const std::list<double
 
     }
     if (!keysAdded.empty() || !keysRemoved.empty()) {
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, view, reason);
+        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
     return true;
 }
 
 void
-KnobTableItem::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& /*dimensions*/, CurveChangeReason reason)
+KnobTableItem::removeAnimation(ViewSpec /*view*/, DimSpec /*dimensions*/)
 {
     std::list<double> keysAdded, keysRemoved;
     {
@@ -1378,190 +1384,79 @@ KnobTableItem::removeAnimationAcrossDimensions(ViewSpec view, const std::vector<
         _imp->animation->clearKeyFrames();
     }
     if (!keysRemoved.empty()) {
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, view, reason);
+        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
 }
 
 void
-KnobTableItem::deleteAnimationBeforeTime(double time, ViewSpec view, int /*dimension*/, CurveChangeReason reason)
+KnobTableItem::deleteAnimationBeforeTime(double time, ViewSpec view, DimSpec /*dimension*/)
 {
     deleteAnimationConditional(time, view, reason, true);
 }
 
 void
-KnobTableItem::deleteAnimationAfterTime(double time, ViewSpec view, int /*dimension*/, CurveChangeReason reason)
+KnobTableItem::deleteAnimationAfterTime(double time, ViewSpec view, DimSpec /*dimension*/)
 {
     deleteAnimationConditional(time, view, reason, false);
 }
 
 void
-KnobTableItem::setInterpolationAtTimes(CurveChangeReason /*reason*/, ViewSpec /*view*/, int /*dimension*/, const std::list<double>& /*times*/, KeyframeTypeEnum /*interpolation*/, std::vector<KeyFrame>* /*newKeys*/)
+KnobTableItem::setInterpolationAtTimes(ViewSpec /*view*/, int /*dimension*/, const std::list<double>& /*times*/, KeyframeTypeEnum /*interpolation*/, std::vector<KeyFrame>* /*newKeys*/)
 {
     // user keyframes should always have linear interpolation
     return;
 }
 
 bool
-KnobTableItem::setLeftAndRightDerivativesAtTime(CurveChangeReason /*reason*/, ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*left*/, double /*right*/)
+KnobTableItem::setLeftAndRightDerivativesAtTime(ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*left*/, double /*right*/)
 {
     // user keyframes should always have linear interpolation
     return false;
 }
 
 bool
-KnobTableItem::setDerivativeAtTime(CurveChangeReason /*reason*/, ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*derivative*/, bool /*isLeft*/)
+KnobTableItem::setDerivativeAtTime(ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*derivative*/, bool /*isLeft*/)
 {
     // user keyframes should always have linear interpolation
     return false;
 }
 
+
 ValueChangedReturnCodeEnum
-KnobTableItem::setIntValueAtTime(double time, int /*value*/, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
+KnobTableItem::setDoubleValueAtTime(double time, double /*value*/, ViewSpec /*view*/, DimIdx /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
 {
-    return setKeyFrame(time, view, eCurveChangeReasonInternal, newKey);
+    return setKeyFrame(time, view, newKey);
 }
 
 void
-KnobTableItem::setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
+KnobTableItem::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, DimIdx /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
 {
     std::list<double> keyTimes;
     convertTimeValuePairListToTimeList(keys, &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, newKey);
+    setMultipleKeyFrames(keyTimes, view, newKey);
 }
 
 void
-KnobTableItem::setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
+KnobTableItem::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
 {
     if (values.empty()) {
         return;
     }
-    ValueChangedReturnCodeEnum ret = setKeyFrame(time, view, eCurveChangeReasonInternal, 0);
-    if (retCodes) {
-        retCodes->push_back(ret);
-    }
-
-}
-
-void
-KnobTableItem::setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& keysPerDimension, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/)
-{
-    if (keysPerDimension.empty()) {
-        return;
-    }
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keysPerDimension.front(), &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, 0);
-}
-
-ValueChangedReturnCodeEnum
-KnobTableItem::setDoubleValueAtTime(double time, double /*value*/, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
-{
-    return setKeyFrame(time, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
-{
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keys, &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    if (values.empty()) {
-        return;
-    }
-    ValueChangedReturnCodeEnum ret = setKeyFrame(time, view, eCurveChangeReasonInternal, 0);
+    ValueChangedReturnCodeEnum ret = setKeyFrame(time, view, 0);
     if (retCodes) {
         retCodes->push_back(ret);
     }
 }
 
 void
-KnobTableItem::setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/)
+KnobTableItem::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum /*reason*/)
 {
     if (keysPerDimension.empty()) {
         return;
     }
     std::list<double> keyTimes;
     convertTimeValuePairListToTimeList(keysPerDimension.front(), &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, 0);
-}
-
-ValueChangedReturnCodeEnum
-KnobTableItem::setBoolValueAtTime(double time, bool /*value*/, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
-{
-    return setKeyFrame(time, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
-{
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keys, &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    if (values.empty()) {
-        return;
-    }
-    ValueChangedReturnCodeEnum ret = setKeyFrame(time, view, eCurveChangeReasonInternal, 0);
-    if (retCodes) {
-        retCodes->push_back(ret);
-    }
-}
-
-void
-KnobTableItem::setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& keysPerDimension, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/)
-{
-    if (keysPerDimension.empty()) {
-        return;
-    }
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keysPerDimension.front(), &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, 0);
-}
-
-ValueChangedReturnCodeEnum
-KnobTableItem::setStringValueAtTime(double time, const std::string& /*value*/, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
-{
-    return setKeyFrame(time, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSpec view, int /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey )
-{
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keys, &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, newKey);
-}
-
-void
-KnobTableItem::setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
-{
-    if (values.empty()) {
-        return;
-    }
-    ValueChangedReturnCodeEnum ret = setKeyFrame(time, view, eCurveChangeReasonInternal, 0);
-    if (retCodes) {
-        retCodes->push_back(ret);
-    }
-}
-
-void
-KnobTableItem::setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& keysPerDimension, int /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/)
-{
-    if (keysPerDimension.empty()) {
-        return;
-    }
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keysPerDimension.front(), &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, eCurveChangeReasonInternal, 0);
+    setMultipleKeyFrames(keyTimes, view, 0);
 }
 
 

@@ -292,6 +292,7 @@ HEADERS += \
     CreateNodeArgs.h \
     Curve.h \
     CurvePrivate.h \
+    DimensionIdx.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \

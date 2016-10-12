@@ -162,7 +162,8 @@ public:
      * @brief An empty curve, held by owner. This is the "normal" constructor.
      **/
     Curve(const KnobIPtr& owner,
-          int dimensionInOwner);
+          int dimensionInOwner,
+          ViewIdx viewInOwner);
 
     Curve(const Curve & other);
 

@@ -354,7 +354,7 @@ public:
 
     bool knobChanged(const KnobIPtr& k,
                      ValueChangedReasonEnum reason,
-                     ViewSpec view,
+                     ViewSetSpec view,
                      double time,
                      bool originatedFromMainThread);
 
@@ -395,7 +395,7 @@ public Q_SLOTS:
 
     void onSelectedKnobCurveChanged();
 
-    void onLifeTimeKnobValueChanged(ViewSpec, int, int);
+    void onLifeTimeKnobValueChanged(ViewSetSpec, DimSpec, ValueChangedReasonEnum);
 
 private:
 

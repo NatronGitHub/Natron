@@ -77,7 +77,7 @@ private:
 
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum /*reason*/,
-                             ViewSpec /*view*/,
+                             ViewSetSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;

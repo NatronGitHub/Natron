@@ -77,17 +77,16 @@ KnobGui::initialize()
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
-        QObject::connect( handler, SIGNAL(redrawGuiCurve(CurveChangeReason,ViewSpec,int)), this, SLOT(onRedrawGuiCurve(CurveChangeReason,ViewSpec,int)) );
-        QObject::connect( handler, SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onInternalValueChanged(ViewSpec,int,int)) );
-        QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewSpec,int,CurveChangeReason)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewSpec,int,CurveChangeReason)));
+        QObject::connect( handler, SIGNAL(redrawGuiCurve(CurveChangeReason,ViewIdx,int)), this, SLOT(onRedrawGuiCurve(CurveChangeReason,ViewIdx,int)) );
+        QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewIdx,DimIdx,ValueChangedReasonEnum)), this, SLOT(onInternalValueChanged(ViewIdx,DimIdx,ValueChangedReasonEnum)) );
+        QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,int,CurveChangeReason)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewIdx,int,CurveChangeReason)));
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(knobSlaved(int,bool)), this, SLOT(onKnobSlavedChanged(int,bool)) );
-        QObject::connect( handler, SIGNAL(setValueWithUndoStack(Variant,ViewSpec,int)), this, SLOT(onSetValueUsingUndoStack(Variant,ViewSpec,int)) );
         QObject::connect( handler, SIGNAL(dirty(bool)), this, SLOT(onSetDirty(bool)) );
-        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSpec,int)), this, SLOT(onAnimationLevelChanged(ViewSpec,int)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(int,Variant,ViewSpec,int,double,bool)), this,
-                          SLOT(onAppendParamEditChanged(int,Variant,ViewSpec,int,double,bool)) );
+        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewIdx,int)), this, SLOT(onAnimationLevelChanged(ViewIdx,int)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(int,int,Variant,ViewSpec,int,double,bool)), this,
+                          SLOT(onAppendParamEditChanged(int,int,Variant,ViewSpec,int,double,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
         QObject::connect( handler, SIGNAL(expressionChanged(int)), this, SLOT(onExprChanged(int)) );

@@ -241,6 +241,7 @@ private:
         Variant newValue, oldValue;
         int dimension;
         double time;
+        ViewSpec view;
         bool setKeyFrame;
         ValueChangedReturnCodeEnum setValueRetCode;
     };
@@ -262,11 +263,13 @@ public:
     MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                  const QString& commandName,
                                  ValueChangedReasonEnum reason,
+                                 ValueChangedReturnCodeEnum setValueRetCode,
                                  bool createNew,
                                  bool setKeyFrame,
                                  const Variant & value,
                                  int dimension,
-                                 double time);
+                                 double time,
+                                 ViewSpec view);
 
     virtual ~MultipleKnobEditsUndoCommand();
 

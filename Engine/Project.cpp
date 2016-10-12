@@ -2781,7 +2781,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
             continue;
         }
 
-        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
+        if (!isFullSaveMode && !knobs[i]->hasModifications()) {
             continue;
         }
 

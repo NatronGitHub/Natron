@@ -48,8 +48,8 @@ NATRON_NAMESPACE_ENTER;
 
 void
 KnobGui::onInternalValueChanged(ViewSpec view,
-                                int dimension,
-                                int /*reason*/)
+                                DimIdx dimension,
+                                ValueChangedReasonEnum /*reason*/)
 {
     if (_imp->guiRemoved) {
         return;
@@ -414,29 +414,6 @@ KnobGui::hasWidgetBeenCreated() const
 }
 
 void
-KnobGui::onSetValueUsingUndoStack(const Variant & v,
-                                  ViewSpec /*view*/,
-                                  int dim)
-{
-    KnobIPtr knob = getKnob();
-
-    KnobIntBasePtr isInt = toKnobIntBase(knob);
-    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-    KnobStringBasePtr isString = toKnobStringBase(knob);
-
-    if (isInt) {
-        pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), isInt->getValue(dim), v.toInt(), dim) );
-    } else if (isBool) {
-        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), isBool->getValue(dim), v.toBool(), dim) );
-    } else if (isDouble) {
-        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), isDouble->getValue(dim), v.toDouble(), dim) );
-    } else if (isString) {
-        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(), isString->getValue(dim), v.toString().toStdString(), dim) );
-    }
-}
-
-void
 KnobGui::onSetDirty(bool d)
 {
     if (!_imp->customInteract) {
@@ -592,7 +569,7 @@ KnobGui::setKnobGuiPointer()
 
 
 void
-KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
+KnobGui::onAnimationLevelChanged(ViewIdx /*idx*/,
                                  int dimension)
 {
     if (!_imp->customInteract) {
@@ -608,8 +585,9 @@ KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
 
 void
 KnobGui::onAppendParamEditChanged(int reason,
+                                  int setValueRetCode,
                                   const Variant & v,
-                                  ViewSpec /*view*/,
+                                  ViewSpec view,
                                   int dimension,
                                   double time,
                                   bool setKeyFrame)
@@ -624,7 +602,7 @@ KnobGui::onAppendParamEditChanged(int reason,
     }
     bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
     QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), commandName, (ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), commandName, (ValueChangedReasonEnum)reason, (ValueChangedReturnCodeEnum)setValueRetCode, createNewCommand, setKeyFrame, v, dimension, time, view) );
 }
 
 void

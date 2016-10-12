@@ -207,13 +207,15 @@ Curve::Curve()
 }
 
 Curve::Curve(const KnobIPtr& owner,
-             int dimensionInOwner)
+             int dimensionInOwner,
+             ViewIdx viewInOwner)
     : SERIALIZATION_NAMESPACE::SerializableObjectBase()
     , _imp(new CurvePrivate)
 {
     assert(owner);
     _imp->owner = owner;
     _imp->dimensionInOwner = dimensionInOwner;
+    _imp->viewInOwner = viewInOwner;
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     bool found = false;
     // use RTTI to guess curve type
@@ -1787,7 +1789,7 @@ Curve::onCurveChanged()
     // PRIVATE - should not lock
     KnobIPtr owner = _imp->owner.lock();
     if (owner) {
-        owner->clearExpressionsResults(_imp->dimensionInOwner);
+        owner->clearExpressionsResults(_imp->dimensionInOwner, _imp->viewInOwner);
     }
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();

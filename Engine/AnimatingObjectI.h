@@ -32,6 +32,7 @@
 #include <string>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Curve.h"
 #include "Engine/ViewIdx.h"
@@ -101,6 +102,18 @@ inline TimeValuePair<T> variantTimevaluePairToTemplated(const VariantTimeValuePa
      return TimeValuePair<T>(v.time, variantToType<T>(v.value));
 }
 
+// A pair identifying a curve for a given view/dimension
+struct DimensionViewPair
+{
+    DimIdx dimension;
+    ViewIdx view;
+};
+
+typedef std::vector<std::pair<DimensionViewPair, std::list<DoubleTimeValuePair> > > PerCurveDoubleValuesList;
+typedef std::vector<std::pair<DimensionViewPair, std::list<IntTimeValuePair> > > PerCurveIntValuesList;
+typedef std::vector<std::pair<DimensionViewPair, std::list<BoolTimeValuePair> > > PerCurveBoolValuesList;
+typedef std::vector<std::pair<DimensionViewPair, std::list<StringTimeValuePair> > > PerCurveStringValuesList;
+
 class AnimatingObjectI
 {
 public:
@@ -136,9 +149,9 @@ public:
     virtual int getNDimensions() const { return 1; }
 
     /**
-     * @brief Returns a pointer to the underlying animation curve
+     * @brief Returns a pointer to the underlying animation curve for the given view/dimension
      **/
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, int dimension) const = 0;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const = 0;
 
     /**
      * @brief For an object that supports animating strings, this is should return a pointer to it
@@ -149,30 +162,44 @@ public:
 
     /**
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type int.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) = 0;
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type int.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) = 0;
+    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type int.
      * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
-     * @brief Set multiple keyframes across multiple dimensions on the curve at the given view and dimension. This is only relevant on curves of type int.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + keysPerDimension.size() <= getNDimensions()
+     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type int.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleIntValueAtTimeAcrossDimensions(const std::vector<std::list<IntTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
 
     ////////////////////////// Double based animating objects
 
@@ -180,88 +207,125 @@ public:
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type double.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) = 0;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type double.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) = 0;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type double.
      * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
-     * @brief Set multiple keyframes across multiple dimensions on the curve at the given view and dimension. This is only relevant on curves of type double.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + keysPerDimension.size() <= getNDimensions()
+     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type double.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const std::vector<std::list<DoubleTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
 
     ////////////////////////// Bool based animating objects
 
 
     /**
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type bool.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) = 0;
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type bool.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0) = 0;
+    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type bool.
      * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
+    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
-     * @brief Set multiple keyframes across multiple dimensions on the curve at the given view and dimension. This is only relevant on curves of type bool.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + keysPerDimension.size() <= getNDimensions()
+     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type bool.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const std::vector<std::list<BoolTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
 
 
     ////////////////////////// String based animating objects
 
     /**
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type string.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSpec view, int dimension, ValueChangedReasonEnum reason, KeyFrame* newKey = 0) = 0;
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type string.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSpec view, int dimension, ValueChangedReasonEnum reason, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type string.
      * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + values.size() <= getNDimensions()
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
-     * @brief Set multiple keyframes across multiple dimensions on the curve at the given view and dimension. This is only relevant on curves of type string.
-     * @param dimensionStartIndex The dimension to start from. The caller should ensure that dimensionStartIndex + keysPerDimension.size() <= getNDimensions()
+     * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type string.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleStringValueAtTimeAcrossDimensions(const std::vector<std::list<StringTimeValuePair> >& keysPerDimension, int dimensionStartIndex, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
 
     ///////////////////////// Curve manipulation
 
@@ -272,120 +336,190 @@ public:
      * @param stringAnimation If non NULL, the implementation should also clone any string animation with the given parameters
      * @return True if something has changed, false otherwise
      **/
-    virtual bool cloneCurve(ViewSpec view, int dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation, CurveChangeReason reason) = 0;
+    virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) = 0;
 
     /**
      * @brief Removes a keyframe at the given time if it matches any on the curve for the given view and dimension.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * The default implementation just calls deleteValuesAtTime.
      **/
-    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension);
+    virtual void deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension);
 
     /**
      * @brief Removes the keyframes at the given times if they exist on the curve for the given view and dimension.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      **/
-    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) = 0;
+    virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief If a keyframe at the given time exists in the curve at the given view and dimension then it will be moved by dt in time
      * and dv in value. 
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, the new keyframe in return will be assigned to this parameter.
      * @returns True If the keyframe could be moved, false otherwise
      * The default implementation just calls moveValuesAtTime.
      **/
-    virtual bool moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view,  int dimension, double dt, double dv, KeyFrame* newKey = 0);
+    virtual bool moveValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey = 0);
 
     /**
      * @brief If keyframes at the given times exist in the curve at the given view and dimension then they will be moved by dt in time
      * and dv in value.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param keyframes[out] If non null, the new keyframes in return will be assigned to this parameter.
      * @returns True If all the keyframe could be moved, false otherwise
      * Note that if this function succeeds, it is guaranteed that all keyframes have moved.
      * The default implementation just calls warpValuesAtTime.
      **/
-    virtual bool moveValuesAtTime(CurveChangeReason reason, const std::list<double>& times, ViewSpec view,  int dimension, double dt, double dv, std::vector<KeyFrame>* keyframes = 0) ;
+    virtual bool moveValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, double dt, double dv, std::vector<KeyFrame>* keyframes = 0) ;
 
     /**
      * @brief If a keyframe at the given time exists in the curve at the given view and dimension then it will be warped by the given
      * affine transform, assuming the X coordinate is the time and the Y coordinate is the value. Z always equals 1.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, the new keyframe in return will be assigned to this parameter.
      * @returns True If the keyframe could be warped, false otherwise
      * The default implementation just calls transformValuesAtTime.
      **/
-    virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey);
+    virtual bool transformValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey);
 
     /**
      * @brief If keyframes at the given times exist in the curve at the given view and dimension then they will be warped by the given
      * affine transform, assuming the X coordinate is the time and the Y coordinate is the value. Z always equals 1.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, the new keyframes in return will be assigned to this parameter.
      * @returns True If the keyframes could be warped, false otherwise
      * Note that if this function succeeds, it is guaranteed that all keyframes have been warped.
      * The default implementation just calls warpValuesAtTime.
      **/
-    virtual bool transformValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view,  int dimension, const Transform::Matrix3x3& matrix, std::vector<KeyFrame>* keyframes) ;
+    virtual bool transformValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, std::vector<KeyFrame>* keyframes) ;
 
     /**
      * @brief If keyframes at the given times exist in the curve at the given view and dimension then they will be warped by the given
      * warp, assuming the X coordinate is the time and the Y coordinate is the value. Z always equals 1.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param allowKeysOverlap If false, then if a warped keyframe is on the same time as another existing keyframe, then this function will 
      * return false, otherwise it will just substitute the existing keyframe
      * @param newKey[out] If non null, the new keyframes in return will be assigned to this parameter.
      * @returns True If the keyframes could be warped, false otherwise
      * Note that if this function succeeds, it is guaranteed that all keyframes have been warped.
      **/
-    virtual bool warpValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view,  int dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) = 0;
+    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) = 0;
 
     /**
      * @brief Removes all keyframes on the object for the given view in the given dimension.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
+     * @param dimension If set to all, all dimensions will have their animation removed, otherwise
+     * only the dimension at the given index will have its animation removed.
      * @param reason Identifies who called the function to optimize redraws of the Gui
      * The default implementation just calls removeAnimationAcrossDimensions.
      **/
-    virtual void removeAnimation(ViewSpec view, int dimension, CurveChangeReason reason);
+    virtual void removeAnimation(ViewSetSpec view, DimSpec dimension) = 0;
 
-    /**
-     * @brief Removes all keyframes on the object for the given view in the given dimensions.
-     * @param dimensions A vector of dimensions index which must be 0 <= dimension <
-     * @param reason Identifies who called the function to optimize redraws of the Gui
-     **/
-    virtual void removeAnimationAcrossDimensions(ViewSpec view, const std::vector<int>& dimensions, CurveChangeReason reason) = 0;
 
     /**
      * @brief Removes animation on the curve at the given view and dimension before the given time. 
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * If a keyframe at the given time exists it is not removed.
+     * @param dimension If set to all, all dimensions will have their animation removed, otherwise
+     * only the dimension at the given index will have its animation removed.
      **/
-    virtual void deleteAnimationBeforeTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) = 0;
+    virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief Removes animation on the curve at the given view and dimension after the given time.
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * If a keyframe at the given time exists it is not removed.
+     * @param dimension If set to all, all dimensions will have their animation removed, otherwise
+     * only the dimension at the given index will have its animation removed.
      **/
-    virtual void deleteAnimationAfterTime(double time, ViewSpec view, int dimension, CurveChangeReason reason) = 0;
+    virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief Set the interpolation type for the given keyframe on the curve at the given dimension and view
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, the new keyframe in return will be assigned to this parameter
      * The default implementation just calls setInterpolationAtTimes.
      **/
-    virtual void setInterpolationAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey = 0);
+    virtual void setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey = 0);
     
     /**
      * @brief Set the interpolation type for the given keyframes on the curve at the given dimension and view
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, the new keyframes in return will be assigned to this parameter
      **/
-    virtual void setInterpolationAtTimes(CurveChangeReason reason, ViewSpec view, int dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) = 0;
+    virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) = 0;
 
     /**
      * @brief Set the left and right derivatives of the control point at the given time on the curve at the given view and dimension
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param left The new value to set for the left derivative of the keyframe at the given time
      * @param right The new value to set for the right derivative of the keyframe at the given time
      **/
-    virtual bool setLeftAndRightDerivativesAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double left, double right) = 0;
+    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right) = 0;
 
     /**
      * @brief Set the left or right derivative of the control point at the given time on the curve at the given view and dimension
+     * @param view If set to all, all views on the knob will be modified.
+     * If set to current and views are split-off only the "current" view
+     * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
+     * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
+     * at the given index will receive the change, otherwise no change occurs.
      * @param derivative The new value to set for the derivative of the keyframe at the given time
      * @param isLeft If true, the left derivative will be set, otherwise the right derivative will be set
      **/
-    virtual bool setDerivativeAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double derivative, bool isLeft) = 0;
+    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

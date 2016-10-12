@@ -177,46 +177,71 @@ Knob<T>::getValue(int dimension,
                   bool clamp)
 {
     assert( !view.isAll() );
+    if (view.isAll()) {
+        throw std::invalid_argument("Knob::getValue: Invalid ViewSpec: all views has no meaning in this function");
+    }
+
+    if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
+        return T();
+    }
+
     bool useGuiValues = QThread::currentThread() == qApp->thread();
     if (useGuiValues) {
         //Never clamp when using gui values
         clamp = false;
     }
 
-    if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
-        return T();
-    }
+    // If an expression is set, read from expression
     std::string hasExpr = getExpression(dimension);
     if ( !hasExpr.empty() ) {
         T ret;
         double time = getCurrentTime();
-        if ( getValueFromExpression(time, /*view*/ ViewIdx(0), dimension, clamp, &ret) ) {
+        if ( getValueFromExpression(time, /*view*/ view, dimension, clamp, &ret) ) {
             return ret;
         }
     }
 
+    // If animated, call getValueAtTime instead
     if ( isAnimated(dimension, view) ) {
         return getValueAtTime(getCurrentTime(), dimension, view, clamp);
     }
 
-    ///if the knob is slaved to another knob, returns the other knob value
+    // If the knob is slaved to another knob, returns the other knob value
     std::pair<int, KnobIPtr > master = getMaster(dimension);
     if (master.second) {
         return getValueFromMaster(view, master.first, master.second, clamp);
     }
 
-    QMutexLocker l(&_valueMutex);
-    if (useGuiValues) {
-        return _guiValues[dimension];
-    } else {
-        if (clamp) {
-            T ret = _values[dimension];
 
+    // Figure out the view to read
+    // Read main view by default if the knob is not multi-view
+    ViewIdx view_i(0);
+    {
+        QMutexLocker k(&_valueMutex);
+        // If the knob has at least one view split-off, figure out which view we are going to read
+        if (hasViewsSplitOff(dimension)) {
+            if (view.isCurrent()) {
+                view_i = getCurrentView();
+            } else {
+                assert(view.isViewIdx());
+                view_i = ViewIdx(view.value());
+            }
+        }
+        typename PerViewValueMap::const_iterator foundView;
+        if (useGuiValues) {
+            foundView = _guiValues[dimension].find(view_i);
+        } else {
+            foundView = _values[dimension].find(view_i);
+        }
+        if (clamp) {
+            const T& ret = foundView->second;
             return clampToMinMax(ret, dimension);
         } else {
-            return _values[dimension];
+            return foundView->second;
         }
-    }
+    } // QMutexLocker k(&_valueMutex);
+
+
 } // getValue
 
 
@@ -431,6 +456,9 @@ Knob<T>::getValueAtTime(double time,
                         bool byPassMaster)
 {
     assert( !view.isAll() );
+    if (view.isAll()) {
+        throw std::invalid_argument("Knob::getValueAtTime: Invalid ViewSpec: all views has no meaning in this function");
+    }
     if  ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
         return T();
     }

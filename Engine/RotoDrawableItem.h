@@ -231,7 +231,7 @@ public:
 
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE;
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE;
 
     virtual void dequeueGuiActions(bool /*force*/) {}
 
@@ -241,17 +241,17 @@ Q_SIGNALS:
 
     void shapeColorChanged();
 
-    void compositingOperatorChanged(ViewSpec, int, int);
+    void compositingOperatorChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 
-    void onRotoKnobChanged(ViewSpec, int, int);
+    void onRotoKnobChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 protected:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSpec view,
+                                    ViewSetSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
 
     virtual void onTransformSet(double /*time*/) {}

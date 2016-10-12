@@ -39,6 +39,7 @@
 #define ROTOPAINT_MASK_INPUT_INDEX 10
 
 
+
 NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
@@ -130,6 +131,15 @@ public Q_SLOTS:
 
     void onBreakMultiStrokeTriggered();
 
+protected:
+
+    void initGeneralPageKnobs();
+    void initShapePageKnobs();
+    void initStrokePageKnobs();
+    void initTransformPageKnobs();
+    void initClonePageKnobs();
+    void initMotionBlurPageKnobs();
+
 private:
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
@@ -161,7 +171,7 @@ private:
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 

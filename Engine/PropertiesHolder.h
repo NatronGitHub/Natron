@@ -244,12 +244,8 @@ public:
                 return 0;
             }
         }
-<<<<<<< HEAD
 
         return found->second->getNDimensions();
-=======
-        return found->second->getDimension();
->>>>>>> master
     }
 
 

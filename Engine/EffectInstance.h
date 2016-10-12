@@ -679,7 +679,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1450,7 +1450,7 @@ public:
      **/
     virtual bool knobChanged(const KnobIPtr& /*k*/,
                              ValueChangedReasonEnum /*reason*/,
-                             ViewSpec /*view*/,
+                             ViewSetSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
     {
@@ -1512,7 +1512,7 @@ public:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSpec view,
+                                    ViewSetSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
     StatusEnum beginSequenceRender_public(double first, double last,
                                           double step, bool interactive, const RenderScale & scale,
@@ -1666,7 +1666,7 @@ public:
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE FINAL;
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
 
 protected:
 
