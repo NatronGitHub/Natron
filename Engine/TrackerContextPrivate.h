@@ -43,13 +43,13 @@ GCC_DIAG_OFF(maybe-uninitialized)
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
-#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
-GCC_DIAG_ON(maybe-uninitialized)
-#endif
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+GCC_DIAG_ON(maybe-uninitialized)
+#endif
 
 #include <QFuture>
 #include <QFutureWatcher>
