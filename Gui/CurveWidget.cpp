@@ -553,8 +553,12 @@ CurveWidget::paintGL()
 
         boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
         if (customInteract) {
+            // Don't protect GL_COLOR_BUFFER_BIT, because it seems to hit an OpenGL bug on
+            // some macOS configurations (10.10-10.12), where garbage is displayed in the viewport.
+            // see https://github.com/MrKepzie/Natron/issues/1460
             //GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-            
+            GLProtectAttrib a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
