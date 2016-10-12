@@ -237,6 +237,7 @@ protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, Out
      **/
     explicit EffectInstance(const NodePtr& node);
 
+protected:
     EffectInstance(const EffectInstance& other);
 
 public:

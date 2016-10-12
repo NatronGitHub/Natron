@@ -128,6 +128,8 @@ NATRON_NAMESPACE_ENTER;
 
 AppManager* AppManager::_instance = 0;
 
+static bool g_localeSet = false;
+
 
 #ifdef __NATRON_UNIX__
 
@@ -230,7 +232,9 @@ setSigSegvSignal()
 #endif // if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
 
 
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+// Python 3
+
 //Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
 //Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
 static wchar_t*
@@ -352,7 +356,7 @@ oom:
     return NULL;
 } // char2wchar
 
-#endif // ifndef IS_PYTHON_2
+#endif // if PY_MAJOR_VERSION >= 3
 
 
 //} // anon namespace
@@ -464,6 +468,14 @@ AppManager::loadFromArgs(const CLArgs& cl)
 {
 
 
+    // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
+#if QT_VERSION < 0x050000
+    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
+    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
+    QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
+#endif
+
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
@@ -473,6 +485,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
     initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
+    // see C++ standard 23.2.4.2 vector capacity [lib.vector.capacity]
+    // resizing to a smaller size doesn't free/move memory, so the data pointer remains valid
+    assert(_imp->nArgs <= (int)_imp->commandLineArgsUtf8.size());
+    _imp->commandLineArgsUtf8.resize(_imp->nArgs); // Qt may have reduced the numlber of args
 
 #ifdef QT_CUSTOM_THREADPOOL
     // Set the global thread pool
@@ -483,12 +499,21 @@ AppManager::loadFromArgs(const CLArgs& cl)
     if ( qgetenv("FONTCONFIG_PATH").isNull() ) {
         // set FONTCONFIG_PATH to Natron/Resources/etc/fonts (required by plugins using fontconfig)
         QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts");
-        QString pathcfg = path + QString::fromUtf8("/fonts.conf");
-        if ( !QFile(pathcfg).exists() ) {
-            qWarning() << "Fontconfig configuration file" << pathcfg << "does not exist, not setting FONTCONFIG_PATH";
+        QFileInfo fileInfo(path);
+        if ( !fileInfo.exists() ) {
+            std::cerr <<  "Fontconfig configuration file " << fileInfo.canonicalFilePath().toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
         } else {
-            qDebug() << "Setting FONTCONFIG_PATH to" << path;
-            qputenv( "FONTCONFIG_PATH", path.toUtf8() );
+            QString fcPath = fileInfo.canonicalFilePath();
+
+            std::string stdFcPath = fcPath.toStdString();
+
+            // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+            qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
+#ifdef __NATRON_WIN32__
+            _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
+#else
+             qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
+#endif
         }
     }
 
@@ -506,11 +531,6 @@ AppManager::loadFromArgs(const CLArgs& cl)
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
-#if QT_VERSION < 0x050000
-    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
-    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
-    QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
-#endif
 
     ///the QCoreApplication must have been created so far.
     assert(qApp);
@@ -525,6 +545,8 @@ AppManager::load(int argc,
                  char **argv,
                  const CLArgs& cl)
 {
+    // Ensure application has correct locale before doing anything
+    setApplicationLocale();
     _imp->handleCommandLineArgs(argc, argv);
     return loadFromArgs(cl);
 }
@@ -534,6 +556,8 @@ AppManager::loadW(int argc,
                  wchar_t **argv,
                  const CLArgs& cl)
 {
+    // Ensure application has correct locale before doing anything
+    setApplicationLocale();
     _imp->handleCommandLineArgsW(argc, argv);
     return loadFromArgs(cl);
 }
@@ -699,23 +723,12 @@ AppManager::initializeQApp(int &argc,
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
-bool
-AppManager::loadInternal(const CLArgs& cl)
+void
+AppManager::setApplicationLocale()
 {
-    assert(!_imp->_loaded);
-
-    _imp->_binaryPath = QCoreApplication::applicationDirPath();
-
-    registerEngineMetaTypes();
-    registerGuiMetaTypes();
-
-    qApp->setOrganizationName( QString::fromUtf8(NATRON_ORGANIZATION_NAME) );
-    qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
-    qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-    //Set it once setApplicationName is set since it relies on it
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-
+    if (g_localeSet) {
+        return;
+    }
     // Natron is not yet internationalized, so it is better for now to use the "C" locale,
     // until it is tested for robustness against locale choice.
     // The locale affects numerics printing and scanning, date and time.
@@ -777,6 +790,29 @@ AppManager::loadInternal(const CLArgs& cl)
     }
     std::setlocale(LC_NUMERIC, "C"); // set the locale for LC_NUMERIC only
     QLocale::setDefault( QLocale(QLocale::English, QLocale::UnitedStates) );
+
+    g_localeSet = true;
+}
+
+bool
+AppManager::loadInternal(const CLArgs& cl)
+{
+    assert(!_imp->_loaded);
+
+    _imp->_binaryPath = QCoreApplication::applicationDirPath();
+    assert(StrUtils::is_utf8(_imp->_binaryPath.toStdString().c_str()));
+
+    registerEngineMetaTypes();
+    registerGuiMetaTypes();
+
+    qApp->setOrganizationName( QString::fromUtf8(NATRON_ORGANIZATION_NAME) );
+    qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
+    qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
+    //Set it once setApplicationName is set since it relies on it
+    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -1802,10 +1838,10 @@ operateOnPathRecursive(NatronPathFunctor functor,
 static void
 addToPythonPathFunctor(const QDir& directory)
 {
-    std::string addToPythonPath("sys.path.append(\"");
+    std::string addToPythonPath("sys.path.append(str('");
 
     addToPythonPath += directory.absolutePath().toStdString();
-    addToPythonPath += "\")\n";
+    addToPythonPath += "').decode('utf-8'))\n";
 
     std::string err;
     bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
@@ -3134,11 +3170,19 @@ AppManager::initPython()
 
 
     pythonPath.prepend(toPrepend);
-    qputenv( "PYTHONPATH", pythonPath.toLatin1() );
+    // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+#ifdef __NATRON_WIN32__
+    _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+#else
+     qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
+#endif
 
-#ifndef IS_PYTHON_2
+
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     Py_SetProgramName(_imp->commandLineArgsWide[0]);
 #else
+    // Python 2
     Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
 #endif
 
@@ -3164,30 +3208,22 @@ AppManager::initPython()
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
-#ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome( StrUtils::utf8_to_utf16(".") );
+    const char* pythonHome = ".";
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../lib") );
+    const char* pythonHome = "../lib";
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome( StrUtils::utf8_to_utf16("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib") );
+    const char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib";
 #endif
-    Py_SetPythonHome( const_cast<wchar_t*>( pythonHome.c_str() ) );
+
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    Py_SetPythonHome( const_cast<wchar_t*>( StrUtils::utf8_to_utf16(pythonHome).c_str() ) );
     PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
 #else
-#ifdef __NATRON_WIN32__
-    static const std::string pythonHome(".");
-#elif defined(__NATRON_LINUX__)
-    static const std::string pythonHome("../lib");
-#elif defined(__NATRON_OSX__)
-    static const std::string pythonHome("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib");
-#endif
-    Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#ifndef IS_PYTHON_2
-    PySys_SetArgv( _imp->commandLineArgsWide.size(), &_imp->commandLineArgsWide.front() ); /// relative module import
-#else
+    // Python 2
+    Py_SetPythonHome( const_cast<char*>(pythonHome) );
     PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
-#endif
 #endif
 
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
@@ -3290,7 +3326,8 @@ AppManager::getMainModule()
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
 extern "C"
 {
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+// Python 3
 PyObject* PyInit_NatronEngine();
 #else
 void initNatronEngine();
@@ -3300,7 +3337,8 @@ void initNatronEngine();
 void
 AppManager::initBuiltinPythonModules()
 {
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
 #else
     int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &initNatronEngine);
@@ -3350,7 +3388,8 @@ AppManager::launchPythonInterpreter()
     }
 
     // PythonGILLocker pgl;
-#ifndef IS_PYTHON_2
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     Py_Main(1, &_imp->commandLineArgsWide[0]);
 #else
     Py_Main(1, &_imp->commandLineArgsUtf8[0]);

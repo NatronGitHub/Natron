@@ -3761,7 +3761,8 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     if (state == eThreadStateActive) {
         state = resolveState();
     }
-    if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
+    // Do not uncomment the second part: if we don't update on the viewer aborted tasks then user will never even see valid images that were fully rendered
+    if (state == eThreadStateStopped /*|| (state == eThreadStateAborted)*/ ) {
         return state;
     }
 

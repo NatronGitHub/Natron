@@ -110,10 +110,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabWidget.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
-
-#ifdef __NATRON_WIN32__
-#include <ofxhUtilities.h> // for wideStringToString
-#endif
 #include "Global/QtCompat.h" // removeFileExtension
 
 #define FILE_DIALOG_DISABLE_ICONS
@@ -1757,11 +1753,11 @@ SequenceFileDialog::getEnvironmentVariable(const QString &string)
 {
 #ifdef Q_OS_UNIX
     if ( (string.size() > 1) && string.startsWith( QLatin1Char('$') ) ) {
-        return QString::fromLocal8Bit( getenv( string.mid(1).toLatin1().constData() ) );
+        return QString::fromLocal8Bit( getenv( string.mid(1).toStdString().c_str() ) );
     }
 #else
     if ( (string.size() > 2) && string.startsWith( QLatin1Char('%') ) && string.endsWith( QLatin1Char('%') ) ) {
-        return QString::fromLocal8Bit( qgetenv( string.mid(1, string.size() - 2).toLatin1().constData() ) );
+        return QString::fromLocal8Bit( qgetenv( string.mid(1, string.size() - 2).toStdString().c_str() ) );
     }
 #endif
 

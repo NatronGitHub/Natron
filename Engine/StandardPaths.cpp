@@ -37,7 +37,6 @@
 #include "Global/GlobalDefines.h"
 
 #if defined(Q_OS_WIN)
-#include <ofxhUtilities.h> // for wideStringToString
 #include <windows.h>
 #include <IntShCut.h>
 #include <ShlObj.h>

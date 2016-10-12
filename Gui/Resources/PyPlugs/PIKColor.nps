@@ -7,7 +7,7 @@ Params:
   - ScriptName: pyPlugPluginGrouping
     Value: Keyer
   - ScriptName: pyPlugPluginDescription
-    Value: "This node provides PIK a color reference in which to base its keying algorithm on a per pixel basis.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'c' input of a default PIK. Attach the input of this node along with the 'fg' input of the PIK to the original screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from the PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of this PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'patch black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated isn't really gonna work."
+    Value: "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'C' input of a PIK node. Attach the input of this node and the 'PFg' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'Patch Black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe optional 'InM' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated is not really going to work."
   - ScriptName: pyPlugPluginVersion
     Value: [1, 0]
   - ScriptName: exportDialogOkButton
@@ -118,9 +118,6 @@ Children:
         Value: [{Expr: thisGroup.mult.get().r}, {Expr: thisGroup.mult.get().g}, {Expr: thisGroup.mult.get().b}, 0]
       - ScriptName: offset
         Value: [{Expr: thisGroup.off.get().r}, {Expr: thisGroup.off.get().g}, {Expr: thisGroup.off.get().b}, 0]
-      - ScriptName: clampBlack
-        Value: true
-        Default: false
       - ScriptName: mix
         Value: 0.326
     PagesOrder: [Controls, nodePage, infoPage]
@@ -177,16 +174,10 @@ Children:
     Params:
       - ScriptName: outputChannelsChoice
         Value: Color.RGBA
-      - ScriptName: outputR
-        Value: B.r
       - ScriptName: outputRChoice
         Value: B.r
-      - ScriptName: outputG
-        Value: B.g
       - ScriptName: outputGChoice
         Value: B.g
-      - ScriptName: outputB
-        Value: B.b
       - ScriptName: outputBChoice
         Value: B.b
       - ScriptName: outputAChoice
@@ -231,20 +222,12 @@ Children:
     Params:
       - ScriptName: outputChannelsChoice
         Value: Color.RGBA
-      - ScriptName: outputR
-        Value: B.r
       - ScriptName: outputRChoice
         Value: B.r
-      - ScriptName: outputG
-        Value: B.g
       - ScriptName: outputGChoice
         Value: B.g
-      - ScriptName: outputB
-        Value: B.b
       - ScriptName: outputBChoice
         Value: B.b
-      - ScriptName: outputA
-        Value: A.r
       - ScriptName: outputAChoice
         Value: A.r
     PagesOrder: [Controls, nodePage, infoPage]
@@ -260,20 +243,12 @@ Children:
     Params:
       - ScriptName: outputChannelsChoice
         Value: Color.RGBA
-      - ScriptName: outputR
-        Value: B.r
       - ScriptName: outputRChoice
         Value: B.r
-      - ScriptName: outputG
-        Value: B.g
       - ScriptName: outputGChoice
         Value: B.g
-      - ScriptName: outputB
-        Value: B.b
       - ScriptName: outputBChoice
         Value: B.b
-      - ScriptName: outputA
-        Value: A.r
       - ScriptName: outputAChoice
         Value: A.r
     PagesOrder: [Controls, nodePage, infoPage]
@@ -352,16 +327,10 @@ Children:
     Params:
       - ScriptName: outputChannelsChoice
         Value: Color.RGBA
-      - ScriptName: outputR
-        Value: B.r
       - ScriptName: outputRChoice
         Value: B.r
-      - ScriptName: outputG
-        Value: B.g
       - ScriptName: outputGChoice
         Value: B.g
-      - ScriptName: outputB
-        Value: B.b
       - ScriptName: outputBChoice
         Value: B.b
       - ScriptName: outputAChoice
@@ -379,9 +348,6 @@ Children:
     Params:
       - ScriptName: multiply
         Value: [{Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}]
-      - ScriptName: clampBlack
-        Value: true
-        Default: false
     PagesOrder: [Controls, nodePage, infoPage]
     Pos: [272, 791]
   - PluginID: fr.inria.built-in.Input
@@ -395,7 +361,7 @@ Children:
     Pos: [272, 859]
   - PluginID: net.sf.openfx.PIK
     ScriptName: PIK2
-    Inputs: {C: Clamp2, Fg: Clamp2, PFg: Clamp2}
+    Inputs: {C: Clamp2, Fg: Clamp2, InM: InM, PFg: Clamp2}
     Params:
       - ScriptName: screenType
         Value: {Expr: thisGroup.screenType.getValue()}
@@ -406,7 +372,7 @@ Children:
       - ScriptName: luma
         Value: 1
     PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [26, -33]
+    Pos: [26, -35]
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur2
     Label: Blur1
@@ -434,3 +400,12 @@ Children:
         Value: false
     PagesOrder: [Controls, nodePage, infoPage]
     Pos: [272, 159]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: InM
+    Params:
+      - ScriptName: optional
+        Value: true
+      - ScriptName: isMask
+        Value: true
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [-171, -35]

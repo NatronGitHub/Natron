@@ -1403,15 +1403,15 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             throw;
         }
 
-        ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
-        ///refresh the viewer.
-        if ( !_imp->checkAgeNoUpdate( inArgs.params->textureIndex, inArgs.params->abortInfo->getRenderAge() ) ) {
+
+        // Don't uncomment: if the image was rendered so far, render it to the display texture so that the user get some feedback
+        /*if ( !_imp->checkAgeNoUpdate( inArgs.params->textureIndex, inArgs.params->abortInfo->getRenderAge() ) ) {
             return eViewerRenderRetCodeRedraw;
         }
 
         if ( inArgs.activeInputToRender->aborted() ) {
             return eViewerRenderRetCodeRedraw;
-        }
+        }*/
 
         const bool viewerRenderRoiOnly = !inArgs.useViewerCache;
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
@@ -2697,9 +2697,15 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         return;
     }
     bool doUpdate = true;
-    if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge( params->textureIndex, params->abortInfo->getRenderAge() ) ) {
+
+
+    bool isImageUpToDate = checkAndUpdateDisplayAge( params->textureIndex, params->abortInfo->getRenderAge() );
+    (void)isImageUpToDate;
+
+    // Don't uncomment: if the image was rendered so far, render it to the display texture so that the user get some feedback
+   /* if ( !params->isPartialRect && !params->isSequential && !isImageUpToDate) {
         doUpdate = false;
-    }
+    }*/
     if (doUpdate) {
         /*RectI bounds;
            params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/

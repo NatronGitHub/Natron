@@ -617,6 +617,8 @@ public:
 
     virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* /*serialization*/) {}
 
+    static void setApplicationLocale();
+
 public Q_SLOTS:
 
     void printCacheMemoryStats() const;

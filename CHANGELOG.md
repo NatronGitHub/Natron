@@ -1,6 +1,6 @@
 # Bugs
 
-- Viewer is not refreshing when the reader's paths contain unicode characters https://github.com/MrKepzie/Natron/issues/1416
+- Windows: If Natron is not installed in Program Files using the installer, Fontconfig does not work properly thus the Text node will not work
 
 # History
 
@@ -13,6 +13,9 @@
 - PyPlug: fix a bug where removing a node inside a Group would break any expression on its siblings
 - Reader: fix a bug where copy/pasting a node would display a "Bad Image Format" error
 - The whole user interface now uses the same font, and dialogs were cleaned up to use standard buttons
+- Roto: fix a bug where the selected tool in the viewer would not refresh properly
+- Fix a bug where Natron would not work properly when installed in a directory containing unicode characters 
+- OpenEXR: fix a bug where auto-crop files would not have their origin placed correctly
 
 ### Plugins
 
@@ -27,6 +30,7 @@
 - (beta feature) PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
 - (beta feature) PIKColor: Generate a clean plate from each frame for keying with PIK.
 - (beta feature) Sharpen & Soften: new plugins.
+- (beta featur) EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
 
 ## Version 2.1.4
 

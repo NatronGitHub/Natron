@@ -134,12 +134,13 @@ AppManagerPrivate::~AppManagerPrivate()
 {
     
 
-    for (std::size_t i = 0; i < commandLineArgsUtf8.size(); ++i) {
-        free(commandLineArgsUtf8[i]);
+    for (std::size_t i = 0; i < commandLineArgsUtf8Original.size(); ++i) {
+        free(commandLineArgsUtf8Original[i]);
     }
-#ifndef IS_PYTHON_2
-    for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
-        free(commandLineArgsWide[i]);
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    for (std::size_t i = 0; i < commandLineArgsWideOriginal.size(); ++i) {
+        free(commandLineArgsWideOriginal[i]);
     }
 #endif
 }
@@ -861,19 +862,26 @@ void
 AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args)
 {
     // Copy command line args to local members that live throughout the lifetime of AppManager
-#ifndef IS_PYTHON_2
-    commandLineArgsWide.resize(utf8Args.size());
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    commandLineArgsWideOriginal.resize(utf8Args.size());
 #endif
-    commandLineArgsUtf8.resize(utf8Args.size());
+    commandLineArgsUtf8Original.resize(utf8Args.size());
     nArgs = (int)utf8Args.size();
     for (std::size_t i = 0; i < utf8Args.size(); ++i) {
-        commandLineArgsUtf8[i] = strdup(utf8Args[i].c_str());
+        commandLineArgsUtf8Original[i] = strdup(utf8Args[i].c_str());
 
         // Python 3 needs wchar_t arguments
-#ifndef IS_PYTHON_2
-        commandLineArgsWide[i] = char2wchar(utf8Args[i].c_str());
+#if PY_MAJOR_VERSION >= 3
+        // Python 3
+        commandLineArgsWideOriginal[i] = char2wchar(utf8Args[i].c_str());
 #endif
     }
+    commandLineArgsUtf8 = commandLineArgsUtf8Original;
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    commandLineArgsWide = commandLineArgsWideOriginal;
+#endif
 }
 
 void
@@ -899,8 +907,10 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     std::vector<std::string> utf8Args;
     if (argv) {
         for (int i = 0; i < argc; ++i) {
-            std::wstring ws(argv[i]);
-            utf8Args.push_back(StrUtils::utf16_to_utf8(ws));
+            std::wstring wide(argv[i]);
+            std::string str = StrUtils::utf16_to_utf8(wide);
+            assert(StrUtils::is_utf8(str.c_str()));
+            utf8Args.push_back(str);
         }
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),

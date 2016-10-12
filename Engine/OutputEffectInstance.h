@@ -73,13 +73,10 @@ protected: // derives from EffectInstance, parent of AbstractOfxEffectInstance, 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     OutputEffectInstance(const NodePtr& node);
 
+protected:
     OutputEffectInstance(const OutputEffectInstance& other);
 
 public:
-    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
-    //{
-    //    return EffectInstancePtr( new OutputEffectInstance(node) );
-    //}
 
     virtual ~OutputEffectInstance();
 

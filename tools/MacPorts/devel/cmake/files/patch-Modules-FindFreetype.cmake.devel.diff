@@ -1,6 +1,6 @@
 --- Modules/FindFreetype.cmake.orig
 +++ Modules/FindFreetype.cmake
-@@ -56,10 +56,6 @@
+@@ -46,10 +46,6 @@
    HINTS
      ENV FREETYPE_DIR
    PATHS

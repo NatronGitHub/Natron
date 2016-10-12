@@ -186,12 +186,14 @@ struct CreateNodeArgsPrivate;
 class CreateNodeArgs : public PropertiesHolder
 {
 
+
 public:
 
     static CreateNodeArgsPtr create(const std::string& pluginID, const NodeCollectionPtr& group = NodeCollectionPtr());
 
 
     CreateNodeArgs();
+
 
     virtual ~CreateNodeArgs();
 
