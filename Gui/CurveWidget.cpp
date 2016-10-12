@@ -571,11 +571,13 @@ CurveWidget::paintGL()
     }
 
     {
-        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        //GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        //GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         GL_GPU::glLoadIdentity();
         GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
-        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        //GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        GL_GPU::glMatrixMode(GL_MODELVIEW);
         GL_GPU::glLoadIdentity();
         glCheckError(GL_GPU);
 
@@ -585,11 +587,16 @@ CurveWidget::paintGL()
 
         OfxParamOverlayInteractPtr customInteract = getCustomInteract();
         if (customInteract) {
-            GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-            
+            // Don't protect GL_COLOR_BUFFER_BIT, because it seems to hit an OpenGL bug on
+            // some macOS configurations (10.10-10.12), where garbage is displayed in the viewport.
+            // see https://github.com/MrKepzie/Natron/issues/1460
+            //GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+            GLProtectAttrib<GL_GPU> a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
+            glCheckError();
         }
 
         _imp->drawScale();

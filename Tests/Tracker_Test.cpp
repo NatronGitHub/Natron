@@ -30,9 +30,15 @@
 
 #include <gtest/gtest.h>
 
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+GCC_DIAG_OFF(maybe-uninitialized)
+#endif
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
+GCC_DIAG_ON(maybe-uninitialized)
+#endif
 
 #include "Engine/EngineFwd.h"
 #include "Engine/Transform.h"
