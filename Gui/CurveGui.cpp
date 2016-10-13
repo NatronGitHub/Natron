@@ -399,7 +399,7 @@ CurveGui::drawCurve(int curveIndex,
             GL_GPU::glDisable(GL_LINE_STIPPLE);
         }
 
-        glCheckError(GL_GPU);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
         //render the name of the curve
         GL_GPU::glColor4f(1.f, 1.f, 1.f, 1.f);
@@ -463,6 +463,7 @@ CurveGui::drawCurve(int curveIndex,
             GL_GPU::glBegin(GL_POINTS);
             GL_GPU::glVertex2f(x, y);
             GL_GPU::glEnd();
+            glCheckErrorIgnoreOSXBug(GL_GPU);
 
             if ( !isBezierGui && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 QFontMetrics m( _curveWidget->getFont() );

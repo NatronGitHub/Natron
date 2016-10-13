@@ -4111,7 +4111,11 @@ OfxParametricInstance::OfxParametricInstance(const OfxEffectInstancePtr& node,
         knob->setCurveColor(i, color[i * 3], color[i * 3 + 1], color[i * 3 + 2]);
     }
 
-
+    double range[2] = {0., 1.};
+    getProperties().getDoublePropertyN(kOfxParamPropParametricRange, range, 2);
+    if(range[1] > range[0]) {
+        knob->setParametricRange(range[0], range[1]);
+    }
     setDisplayRange();
 }
 
@@ -4205,34 +4209,44 @@ void
 OfxParametricInstance::setDisplayRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    // the display range is the Y range in the parametric range
+    // the display range is the Y display range in the parametric param
     // (as opposed to kOfxParamPropParametricRange, which is read-only on the instance and has no hook)
 
-    // do nothing when instance is live, let the used tune the y range.
-#if 0
-    KnobParametricPtr k = _knob.lock();
-    if (!k) {
+    KnobParametricPtr knob = _knob.lock();
+    if (!knob) {
         return;
     }
-    //k->setParametricRange(range_min, range_max);
-    double range_min = DBL_MAX;
-    double range_max = -DBL_MAX;
+
     for (int i = 0; i < knob->getDimension(); ++i) {
         double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, i);
         double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, i);
-        if (displayMin != 0. || displayMax != 0.) { // not the default value
-            if (displayMin < range_min) {
-                range_min = displayMin;
-            }
-            if (displayMax < range_max) {
-                range_max = displayMax;
-            }
+        if (displayMax > displayMin) {
+            knob->setDisplayMinimum(displayMin, i);
+            knob->setDisplayMaximum(displayMax, i);
         }
     }
-    if(range_max > range_min) {
-        k->setDisplayRange(range_min, range_max);
+}
+
+void
+OfxParametricInstance::setRange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    // the range is the Y range in the parametric param
+    // (as opposed to kOfxParamPropParametricRange, which is read-only on the instance and has no hook)
+
+    KnobParametricPtr knob = _knob.lock();
+    if (!knob) {
+        return;
     }
-#endif
+
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        double rmin = getProperties().getDoubleProperty(kOfxParamPropMin, i);
+        double rmax = getProperties().getDoubleProperty(kOfxParamPropMax, i);
+        if (rmax > rmin) {
+            knob->setMinimum(rmin, i);
+            knob->setMaximum(rmax, i);
+        }
+    }
 }
 
 OfxStatus

@@ -924,6 +924,7 @@ public:
 
     virtual void setInViewportLabel() OVERRIDE FINAL;
 
+    virtual void setRange() OVERRIDE FINAL;
 
     /// callback which should set
     virtual void setDisplayRange() OVERRIDE FINAL;
