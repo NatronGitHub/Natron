@@ -533,6 +533,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionCurveEditorSelectAll "selectAll"
 #define kShortcutDescActionCurveEditorSelectAll "Select All Keyframes"
 
+#define kShortcutIDActionCurveEditorCenterAll "frameAll"
+#define kShortcutDescActionCurveEditorCenterAll "Frame All Curves"
+
 #define kShortcutIDActionCurveEditorCenter "center"
 #define kShortcutDescActionCurveEditorCenter "Center on Curve"
 

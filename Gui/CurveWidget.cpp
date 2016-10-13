@@ -1502,6 +1502,8 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         horizontalInterpForSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak, modifiers, key) ) {
         breakDerivativesForSelectedKeyFrames();
+    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenterAll, modifiers, key) ) {
+        frameAll();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter, modifiers, key) ) {
         frameSelectedCurve();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, modifiers, key) ) {
@@ -1889,6 +1891,20 @@ CurveWidget::reverseSelectedCurve()
 }
 
 void
+CurveWidget::frameAll()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+#pragma message WARN("TODO: if the widget has an XRange and a DisplayRange (e.g. parametricparam), simply reset the zoom to the default one")
+    if ( _imp->_curves.empty() ) {
+        centerOn(-10, 500, -10, 10);
+    } else {
+        std::vector<boost::shared_ptr<CurveGui> > curves(_imp->_curves.begin(), _imp->_curves.end());
+        centerOn(curves);
+    }
+}
+
+void
 CurveWidget::frameSelectedCurve()
 {
     // always running in the main thread
@@ -1896,9 +1912,11 @@ CurveWidget::frameSelectedCurve()
 
     std::vector<boost::shared_ptr<CurveGui> > selection;
     _imp->_selectionModel->getSelectedCurves(&selection);
-    centerOn(selection);
     if ( selection.empty() ) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
+        frameAll();
+        //Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
+    } else {
+        centerOn(selection);
     }
 }
 
