@@ -78,7 +78,7 @@ GroupInput::initializeKnobs()
 bool
 GroupInput::knobChanged(const KnobIPtr& k,
                         ValueChangedReasonEnum /*reason*/,
-                        ViewSpec /*view*/,
+                        ViewSetSpec /*view*/,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
@@ -90,9 +90,9 @@ GroupInput::knobChanged(const KnobIPtr& k,
     } else if ( k == mask.lock() ) {
         bool isMask = mask.lock()->getValue();
         if (isMask) {
-            optional.lock()->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            optional.lock()->setValue(true);
         } else {
-            optional.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            optional.lock()->setValue(false);
         }
         NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );

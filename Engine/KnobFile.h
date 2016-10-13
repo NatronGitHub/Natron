@@ -126,7 +126,7 @@ public:
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time, ViewSpec view);
+    std::string getFileName(int frame, ViewGetSpec view);
 
 Q_SIGNALS:
 

@@ -7402,7 +7402,8 @@ Node::onAllKnobsSlaved(bool isSlave,
 void
 Node::onKnobSlaved(const KnobIPtr& slave,
                    const KnobIPtr& master,
-                   int dimension,
+                   DimIdx dimension,
+                   ViewIdx view,
                    bool isSlave)
 {
     // If this is a unslave action, remove the clone state
@@ -9455,7 +9456,6 @@ Node::dequeueActions()
     }
     bool hasChanged = false;
     if (_imp->effect) {
-        hasChanged |= _imp->effect->dequeueValuesSet();
         NodeGroupPtr isGroup = isEffectNodeGroup();
         if (isGroup) {
             isGroup->dequeueConnexions();

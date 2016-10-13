@@ -207,7 +207,7 @@ Curve::Curve()
 }
 
 Curve::Curve(const KnobIPtr& owner,
-             int dimensionInOwner,
+             DimIdx dimensionInOwner,
              ViewIdx viewInOwner)
     : SERIALIZATION_NAMESPACE::SerializableObjectBase()
     , _imp(new CurvePrivate)
@@ -405,6 +405,33 @@ Curve::addKeyFrame(KeyFrame key)
     l.unlock();
 
     return it.second;
+}
+
+ValueChangedReturnCodeEnum
+Curve::setOrAddKeyframe(KeyFrame key)
+{
+    if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
+        ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) {
+        key.setInterpolation(eKeyframeTypeConstant);
+    }
+
+    QMutexLocker l(&_imp->_lock);
+    std::pair<KeyFrameSet::iterator, bool> it = addKeyFrameNoUpdate(key);
+    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
+    if (!it.second) {
+        if (it.first->getValue() != key.getValue() || it.first->getTime() == key.getTime()) {
+            ret = eValueChangedReturnCodeKeyframeModified;
+        }
+        _imp->keyFrames.erase(it.first);
+    } else {
+        ret = eValueChangedReturnCodeKeyframeAdded;
+    }
+    it = addKeyFrameNoUpdate(key);
+    assert(it.second);
+    it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
+
+    return ret;
+    
 }
 
 std::pair<KeyFrameSet::iterator, bool> Curve::addKeyFrameNoUpdate(const KeyFrame & cp)
@@ -1042,19 +1069,19 @@ Curve::YRange Curve::getCurveYRange() const
         KnobDoubleBasePtr isDouble = toKnobDoubleBase(owner);
         KnobIntBasePtr isInt = toKnobIntBase(owner);
         if (isDouble) {
-            double min = isDouble->getMinimum(_imp->dimensionInOwner);
+            double min = isDouble->getMinimum(DimIdx(_imp->dimensionInOwner));
             if (min <= -DBL_MAX) {
                 min = -std::numeric_limits<double>::infinity();
             }
-            double max = isDouble->getMaximum(_imp->dimensionInOwner);
+            double max = isDouble->getMaximum(DimIdx(_imp->dimensionInOwner));
             if (max >= DBL_MAX) {
                 max = std::numeric_limits<double>::infinity();
             }
 
             return YRange(min, max);
         } else if (isInt) {
-            double min = isInt->getMinimum(_imp->dimensionInOwner);
-            double max = isInt->getMaximum(_imp->dimensionInOwner);
+            double min = isInt->getMinimum(DimIdx(_imp->dimensionInOwner));
+            double max = isInt->getMaximum(DimIdx(_imp->dimensionInOwner));
 
             return YRange(min, max);
         } else {
@@ -1789,7 +1816,7 @@ Curve::onCurveChanged()
     // PRIVATE - should not lock
     KnobIPtr owner = _imp->owner.lock();
     if (owner) {
-        owner->clearExpressionsResults(_imp->dimensionInOwner, _imp->viewInOwner);
+        owner->clearExpressionsResults(_imp->dimensionInOwner, ViewSetSpec(_imp->viewInOwner));
     }
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();

@@ -38,6 +38,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/DimensionIdx.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/Transform.h"
 
@@ -162,7 +163,7 @@ public:
      * @brief An empty curve, held by owner. This is the "normal" constructor.
      **/
     Curve(const KnobIPtr& owner,
-          int dimensionInOwner,
+          DimIdx dimensionInOwner,
           ViewIdx viewInOwner);
 
     Curve(const Curve & other);
@@ -217,6 +218,9 @@ public:
     ///returns true if a keyframe was successfully added, false if it just replaced an already
     ///existing key at this time.
     bool addKeyFrame(KeyFrame key);
+
+    // Returns true if a keyframe was added, false if it modified an existing one
+    ValueChangedReturnCodeEnum setOrAddKeyframe(KeyFrame key);
 
     void removeKeyFrameWithTime(double time);
 

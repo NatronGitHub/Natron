@@ -559,7 +559,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
                 if (fileKnob) {
                     KnobFilePtr outFile = toKnobFile(fileKnob);
                     if (outFile) {
-                        outFile->setValue(it->filename.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                        outFile->setValue(it->filename.toStdString());
                     }
                 }
             }
@@ -731,7 +731,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             if (fileKnob) {
                 KnobFilePtr outFile = toKnobFile(fileKnob);
                 if (outFile) {
-                    outFile->setValue(it->filename.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                    outFile->setValue(it->filename.toStdString());
                 }
             }
         }

@@ -993,16 +993,16 @@ KnobItemsTablePrivate::linkItemKnobsToGuiKnobs(const KnobTableItemPtr& item, boo
 
         //Clone current state only for the last marker
         found->blockListenersNotification();
-        found->clone(*it);
+        found->copyKnob(*it);
         found->unblockListenersNotification();
 
         //Slave internal knobs
         assert( (*it)->getNDimensions() == found->getNDimensions() );
         for (int i = 0; i < (*it)->getNDimensions(); ++i) {
             if (slave) {
-                (*it)->slaveTo(i, found, i);
+                (*it)->slaveTo(DimIdx(i), found, DimIdx(i));
             } else {
-                (*it)->unSlave(i, !multipleItemsSelected);
+                (*it)->unSlave(DimIdx(i), !multipleItemsSelected);
             }
         }
     }
@@ -1078,7 +1078,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
             if (!k) {
                 continue;
             }
-            k->setAllDimensionsEnabled(!selectionEmpty);
+            k->setEnabled(!selectionEmpty);
             k->setDirty(selectionIsDirty);
         }
     } //  QMutexLocker k(&_imp->selectionLock);
@@ -1184,15 +1184,14 @@ KnobTableItem::getKeyFrameDataType() const
 }
 
 CurvePtr
-KnobTableItem::getAnimationCurve(ViewIdx /*idx*/, int /*dimension*/) const
+KnobTableItem::getAnimationCurve(ViewIdx /*idx*/, DimIdx /*dimension*/) const
 {
     return _imp->animation;
 }
 
 ValueChangedReturnCodeEnum
 KnobTableItem::setKeyFrameInternal(double time,
-                                  ViewSpec /*view*/,
-                                   CurveChangeReason /*reason*/,
+                                  ViewSetSpec /*view*/,
                                   KeyFrame* newKey)
 {
     // Private - should not lock
@@ -1231,13 +1230,13 @@ KnobTableItem::setKeyFrameInternal(double time,
 
 ValueChangedReturnCodeEnum
 KnobTableItem::setKeyFrame(double time,
-                           ViewSpec /*view*/,
+                           ViewSetSpec view,
                            KeyFrame* newKey)
 {
     ValueChangedReturnCodeEnum ret;
     {
         QMutexLocker k(&_imp->lock);
-        ret = setKeyFrameInternal(time, view, reason, newKey);
+        ret = setKeyFrameInternal(time, view, newKey);
     }
     if (ret == eValueChangedReturnCodeKeyframeAdded) {
         std::list<double> added,removed;
@@ -1248,7 +1247,7 @@ KnobTableItem::setKeyFrame(double time,
 }
 
 void
-KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec /*view*/,  std::vector<KeyFrame>* newKeys)
+KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec view,  std::vector<KeyFrame>* newKeys)
 {
     if (keys.empty()) {
         return;
@@ -1261,7 +1260,7 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec /*vi
     {
         QMutexLocker k(&_imp->lock);
         for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-            ValueChangedReturnCodeEnum ret = setKeyFrameInternal(*it, view, reason, newKeys ? &key : 0);
+            ValueChangedReturnCodeEnum ret = setKeyFrameInternal(*it, view, newKeys ? &key : 0);
             if (ret == eValueChangedReturnCodeKeyframeAdded) {
                 added.push_back(*it);
             }
@@ -1276,7 +1275,7 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSpec /*vi
 }
 
 void
-KnobTableItem::deleteAnimationConditional(double time, ViewSpec /*view*/, bool before)
+KnobTableItem::deleteAnimationConditional(double time, ViewSetSpec /*view*/, bool before)
 {
     std::list<double> keysRemoved;
     {
@@ -1295,7 +1294,7 @@ KnobTableItem::deleteAnimationConditional(double time, ViewSpec /*view*/, bool b
 }
 
 bool
-KnobTableItem::cloneCurve(ViewSpec /*view*/, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
+KnobTableItem::cloneCurve(ViewIdx /*view*/, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
 {
     std::list<double> keysAdded, keysRemoved;
     bool hasChanged;
@@ -1333,7 +1332,7 @@ KnobTableItem::cloneCurve(ViewSpec /*view*/, DimIdx /*dimension*/, const Curve& 
 }
 
 void
-KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSpec /*view*/, DimIdx /*dimension*/)
+KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec /*view*/, DimSpec /*dimension*/)
 {
     
     std::list<double> keysRemoved, keysAdded;
@@ -1353,7 +1352,7 @@ KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSpec /*vie
 }
 
 bool
-KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSpec /*view*/,  DimIdx /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec /*view*/,  DimSpec /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
 {
     std::list<double> keysAdded, keysRemoved;
     {
@@ -1371,7 +1370,7 @@ KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSpec /*view*
 }
 
 void
-KnobTableItem::removeAnimation(ViewSpec /*view*/, DimSpec /*dimensions*/)
+KnobTableItem::removeAnimation(ViewSetSpec /*view*/, DimSpec /*dimensions*/)
 {
     std::list<double> keysAdded, keysRemoved;
     {
@@ -1389,33 +1388,33 @@ KnobTableItem::removeAnimation(ViewSpec /*view*/, DimSpec /*dimensions*/)
 }
 
 void
-KnobTableItem::deleteAnimationBeforeTime(double time, ViewSpec view, DimSpec /*dimension*/)
+KnobTableItem::deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec /*dimension*/)
 {
-    deleteAnimationConditional(time, view, reason, true);
+    deleteAnimationConditional(time, view, true);
 }
 
 void
-KnobTableItem::deleteAnimationAfterTime(double time, ViewSpec view, DimSpec /*dimension*/)
+KnobTableItem::deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec /*dimension*/)
 {
-    deleteAnimationConditional(time, view, reason, false);
+    deleteAnimationConditional(time, view, false);
 }
 
 void
-KnobTableItem::setInterpolationAtTimes(ViewSpec /*view*/, int /*dimension*/, const std::list<double>& /*times*/, KeyframeTypeEnum /*interpolation*/, std::vector<KeyFrame>* /*newKeys*/)
+KnobTableItem::setInterpolationAtTimes(ViewSetSpec /*view*/, DimSpec /*dimension*/, const std::list<double>& /*times*/, KeyframeTypeEnum /*interpolation*/, std::vector<KeyFrame>* /*newKeys*/)
 {
     // user keyframes should always have linear interpolation
     return;
 }
 
 bool
-KnobTableItem::setLeftAndRightDerivativesAtTime(ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*left*/, double /*right*/)
+KnobTableItem::setLeftAndRightDerivativesAtTime(ViewSetSpec /*view*/, DimSpec /*dimension*/, double /*time*/, double /*left*/, double /*right*/)
 {
     // user keyframes should always have linear interpolation
     return false;
 }
 
 bool
-KnobTableItem::setDerivativeAtTime(ViewSpec /*view*/, int /*dimension*/, double /*time*/, double /*derivative*/, bool /*isLeft*/)
+KnobTableItem::setDerivativeAtTime(ViewSetSpec /*view*/, DimSpec /*dimension*/, double /*time*/, double /*derivative*/, bool /*isLeft*/)
 {
     // user keyframes should always have linear interpolation
     return false;
@@ -1423,13 +1422,13 @@ KnobTableItem::setDerivativeAtTime(ViewSpec /*view*/, int /*dimension*/, double 
 
 
 ValueChangedReturnCodeEnum
-KnobTableItem::setDoubleValueAtTime(double time, double /*value*/, ViewSpec /*view*/, DimIdx /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
+KnobTableItem::setDoubleValueAtTime(double time, double /*value*/, ViewSetSpec view, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* newKey)
 {
     return setKeyFrame(time, view, newKey);
 }
 
 void
-KnobTableItem::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSpec view, DimIdx /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
+KnobTableItem::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, std::vector<KeyFrame>* newKey)
 {
     std::list<double> keyTimes;
     convertTimeValuePairListToTimeList(keys, &keyTimes);
@@ -1437,7 +1436,7 @@ KnobTableItem::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>
 }
 
 void
-KnobTableItem::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx /*dimensionStartIndex*/, ViewSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
+KnobTableItem::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx /*dimensionStartIndex*/, ViewSetSpec view, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* retCodes)
 {
     if (values.empty()) {
         return;
@@ -1454,9 +1453,12 @@ KnobTableItem::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDouble
     if (keysPerDimension.empty()) {
         return;
     }
-    std::list<double> keyTimes;
-    convertTimeValuePairListToTimeList(keysPerDimension.front(), &keyTimes);
-    setMultipleKeyFrames(keyTimes, view, 0);
+    for (std::size_t i = 0; i < keysPerDimension.size();++i) {
+        std::list<double> keyTimes;
+        convertTimeValuePairListToTimeList(keysPerDimension[i].second, &keyTimes);
+        setMultipleKeyFrames(keyTimes, ViewSetSpec::all(), 0);
+    }
+
 }
 
 

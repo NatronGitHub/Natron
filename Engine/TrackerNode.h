@@ -131,7 +131,7 @@ private:
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;

@@ -181,7 +181,7 @@ public:
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;

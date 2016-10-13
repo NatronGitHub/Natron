@@ -62,7 +62,7 @@ struct CurvePrivate
 #endif
 
     KnobIWPtr owner;
-    int dimensionInOwner;
+    DimIdx dimensionInOwner;
     ViewIdx viewInOwner;
     CurveTypeEnum type;
     double xMin, xMax;
@@ -78,7 +78,7 @@ struct CurvePrivate
         , resultCache()
 #endif
         , owner()
-        , dimensionInOwner(-1)
+        , dimensionInOwner(0)
         , viewInOwner(0)
         , type(eCurveTypeDouble)
         , xMin(INT_MIN)

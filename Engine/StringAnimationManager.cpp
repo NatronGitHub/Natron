@@ -88,6 +88,26 @@ StringAnimationManager::~StringAnimationManager()
 {
 }
 
+void
+StringAnimationManager::splitView(ViewIdx view)
+{
+    QMutexLocker k(&_imp->keyframesMutex);
+    const Keyframes& mainViewKeys = _imp->keyframes[ViewIdx(0)];
+    Keyframes& thisViewKeys = _imp->keyframes[view];
+    thisViewKeys = mainViewKeys;
+}
+
+void
+StringAnimationManager::unSplitView(ViewIdx view)
+{
+    QMutexLocker k(&_imp->keyframesMutex);
+    PerViewKeyFrames::iterator foundView = _imp->keyframes.find(view);
+    if (foundView == _imp->keyframes.end()) {
+        return;
+    }
+    _imp->keyframes.erase(foundView);
+}
+
 bool
 StringAnimationManager::hasCustomInterp() const
 {

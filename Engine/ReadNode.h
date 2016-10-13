@@ -114,7 +114,7 @@ private:
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;

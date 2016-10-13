@@ -1629,8 +1629,10 @@ public:
 
 
 
-    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
-                              int dimension,
+    virtual void onKnobSlaved(const KnobIPtr& slave,
+                              const KnobIPtr& master,
+                              DimIdx dimension,
+                              ViewIdx view,
                               bool isSlave) OVERRIDE FINAL;
 
     /**

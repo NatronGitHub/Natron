@@ -111,9 +111,10 @@ public:
     }
 
     void s_knobSlaved(DimIdx dim,
+                      ViewIdx view,
                       bool slaved)
     {
-        Q_EMIT knobSlaved(dim, slaved);
+        Q_EMIT knobSlaved(dim, view, slaved);
     }
 
     void s_appendParamEditChange(ValueChangedReasonEnum reason,
@@ -143,18 +144,14 @@ public:
         Q_EMIT redrawGuiCurve(view, dimension );
     }
 
-    void s_minMaxChanged(double mini,
-                         double maxi,
-                         DimIdx index)
+    void s_minMaxChanged(DimSpec index)
     {
-        Q_EMIT minMaxChanged(mini, maxi, index);
+        Q_EMIT minMaxChanged(index);
     }
 
-    void s_displayMinMaxChanged(double mini,
-                                double maxi,
-                                DimIdx index)
+    void s_displayMinMaxChanged(DimSpec index)
     {
-        Q_EMIT displayMinMaxChanged(mini, maxi, index);
+        Q_EMIT displayMinMaxChanged(index);
     }
 
     void s_helpChanged()
@@ -206,6 +203,11 @@ public:
         Q_EMIT dimensionNameChanged(dimension);
     }
 
+    void s_availableViewsChanged()
+    {
+        Q_EMIT availableViewsChanged();
+    }
+
 public Q_SLOTS:
 
 
@@ -253,7 +255,7 @@ Q_SIGNALS:
     void redrawGuiCurve(ViewSetSpec view, DimSpec dimension);
 
     // Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
-    void knobSlaved(DimIdx dimension, bool slaved);
+    void knobSlaved(DimIdx dimension, ViewIdx, bool slaved);
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
@@ -263,10 +265,10 @@ Q_SIGNALS:
     void dirty(bool);
 
     // Emitted when min/max changes for a value knob
-    void minMaxChanged(double mini, double maxi, DimIdx index);
+    void minMaxChanged(DimSpec index);
 
     // Emitted when display min/max changes for a value knob
-    void displayMinMaxChanged(double mini, double maxi, DimIdx index);
+    void displayMinMaxChanged(DimSpec index);
 
     // Emitted when tooltip is changed
     void helpChanged();
@@ -285,6 +287,9 @@ Q_SIGNALS:
 
     // Emitted when a dimension label hash changed
     void dimensionNameChanged(DimIdx dimension);
+
+    // Called when knob split/unsplit views
+    void availableViewsChanged();
 };
 
 struct KnobChange
@@ -633,17 +638,14 @@ public:
      *
      * @param dimension If -1 all dimensions will be cloned, otherwise you can clone only a specific dimension
      *
-     * Note: This knob and 'other' MUST have the same dimension as well as the same type.
+     * Note: This knob and 'other' MUST have the same dimension but not necessarily the same data type (e.g KnobInt can convert to KnobDouble
+     * etc..)
      * @return True if this function succeeded and the knob has had its state changed, false otherwise
      **/
-    virtual bool clone(const KnobIPtr& other, ViewSetSpec view, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) = 0;
+    virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) = 0;
 
     virtual void cloneDefaultValues(const KnobIPtr& other) = 0;
 
-    /**
-     * @brief Must return the curve used by the GUI of the parameter
-     **/
-    virtual CurvePtr getGuiCurve(ViewIdx view, DimIdx dimension, bool byPassMaster = false) const = 0;
     virtual double random(double time, unsigned int seed) const = 0;
     virtual double random(double min = 0., double max = 1.) const = 0;
     virtual int randomInt(double time, unsigned int seed) const = 0;
@@ -709,7 +711,7 @@ public:
                                              const std::string& newName) = 0;
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) = 0;
-    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view) const = 0;
+    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const = 0;
 
     /**
      * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
@@ -1164,12 +1166,6 @@ public:
     virtual void copyAnimationToClipboard() const = 0;
 
     /**
-     * @brief Dequeues any setValue/setValueAtTime calls that were queued in the queue.
-     * @returns true if any value was dequeued
-     **/
-    virtual bool dequeueValuesSet(bool disableEvaluation) = 0;
-
-    /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
      **/
     virtual double getCurrentTime() const = 0;
@@ -1216,21 +1212,20 @@ public:
 
 protected:
 
-    virtual bool setHasModifications(DimIdx dimension, bool value, bool lock) = 0;
+    virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) = 0;
 
     /**
      * @brief Slaves the value for the given dimension to the curve
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveToInternal(DimIdx dimension, const KnobIPtr &  other, DimIdx otherDimension, ValueChangedReasonEnum reason,
-                                 bool ignoreMasterPersistence) = 0;
+    virtual bool slaveToInternal(DimIdx dimension, ViewIdx view, const KnobIPtr &other, DimIdx otherDimension, ViewIdx otherView, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
      * the dimension was really slaved.
      **/
-    virtual void unSlaveInternal(DimIdx dimension, ValueChangedReasonEnum reason, bool copyState) = 0;
+    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, ValueChangedReasonEnum reason, bool copyState) = 0;
 
 public:
 
@@ -1241,9 +1236,11 @@ public:
      * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
-    bool slaveTo(DimIdx dimension, const KnobIPtr & other, DimIdx otherDimension, bool ignoreMasterPersistence = false);
+    bool slaveTo(DimIdx dimension, ViewIdx view, const KnobIPtr & other, DimIdx otherDimension, ViewIdx otherView);
 
     virtual bool isMastersPersistenceIgnored() const = 0;
+
+    virtual void setMastersPersistenceIgnore(bool ignored) = 0;
 
     virtual KnobIPtr createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                             const KnobPagePtr& page,
@@ -1263,15 +1260,9 @@ public:
     virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) = 0;
 
     /**
-     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonUserEdited.
-     **/
-    void onKnobSlavedTo(DimIdx dimension, const KnobIPtr& other, DimIdx otherDimension);
-
-
-    /**
      * @brief Calls unSlave with a value changed reason of eValueChangedReasonNatronInternalEdited.
      **/
-    void unSlave(DimIdx dimension, bool copyState);
+    void unSlave(DimIdx dimension, ViewIdx view, bool copyState);
 
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
@@ -1279,20 +1270,15 @@ public:
     virtual void getListeners(ListenerDimsMap & listeners) const = 0;
 
     /**
-     * @brief Calls unSlave with a value changed reason of eValueChangedReasonUserEdited.
-     **/
-    void onKnobUnSlaved(DimIdx dimension);
-
-    /**
      * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
      **/
-    virtual bool getMaster(DimIdx dimension, MasterKnobLink* masterLink) const = 0;
+    virtual bool getMaster(DimIdx dimension, ViewIdx view, MasterKnobLink* masterLink) const = 0;
 
     /**
      * @brief Returns true if the value at the given dimension is slave to another parameter
      **/
-    virtual bool isSlave(DimIdx dimension) const = 0;
+    virtual bool isSlave(DimIdx dimension, ViewIdx view) const = 0;
 
     /**
      * @brief Get the current animation level.
@@ -1314,6 +1300,17 @@ public:
      **/
     virtual bool isTypeCompatible(const KnobIPtr & other) const = 0;
     KnobPagePtr getTopLevelPage() const;
+
+    /**
+     * @brief Get list of views that are split off in the knob
+     **/
+    virtual std::list<ViewIdx> getViewsList() const = 0;
+
+    /**
+     * @brief Split the given view in the storage off the main view so that the user can give it different values
+     **/
+    virtual void splitView(ViewIdx view) = 0;
+    virtual void unSplitView(ViewIdx view) = 0;
 };
 
 
@@ -1488,7 +1485,7 @@ public:
 protected:
 
     template <typename T>
-    T pyObjectToType(PyObject* o) const;
+    T pyObjectToType(PyObject* o, ViewIdx view) const;
 
     virtual void refreshListenersAfterValueChange(ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension) OVERRIDE FINAL;
 
@@ -1496,7 +1493,7 @@ public:
 
     virtual bool isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<std::pair<KnobIWPtr, int> >& dependencies) const OVERRIDE FINAL;
-    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1578,6 +1575,7 @@ public:
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setMastersPersistenceIgnore(bool ignored) OVERRIDE FINAL;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1605,12 +1603,11 @@ public:
 private:
 
 
-    virtual bool slaveToInternal(DimIdx dimension, const KnobIPtr &  other, DimIdx otherDimension, ValueChangedReasonEnum reason
-                                 , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool slaveToInternal(DimIdx dimension, ViewIdx view, const KnobIPtr &  other, DimIdx otherDimension, ViewIdx otheView, ValueChangedReasonEnum reason) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
 
-    virtual bool setHasModifications(DimIdx dimension, bool value, bool lock) OVERRIDE FINAL;
+    virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) OVERRIDE FINAL;
 
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
@@ -1622,8 +1619,8 @@ protected:
 
 public:
 
-    virtual bool getMaster(DimIdx dimension, MasterKnobLink* masterLink) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isSlave(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getMaster(DimIdx dimension, ViewIdx view, MasterKnobLink* masterLink) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isSlave(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const KnobIPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
@@ -1674,24 +1671,18 @@ public:
 
     virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, bool restoreDefaultValue) OVERRIDE FINAL;
 
+
+    virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void splitView(ViewIdx view) OVERRIDE;
+
+    virtual void unSplitView(ViewIdx view) OVERRIDE;
+
 protected:
 
-    bool hasViewsSplitOff(int dimension) const;
-
-    /**
-     * @brief Helper for all functions related to animation curves. Since we hold two sets of curves (one edited by the gui 
-     * and one seen by the engine) we need to maintain their state together.
-     * @param view The index of the view corresponding to the curve we want in return
-     * @param dimension The index of the dimension corresponding to the curve we want in return
-     * @param throwIfNotPresent Throws an exception if somehow the animation curve is NULL (because the Knob is not animated)
-     * @param mustRefreshGuiCurve[out] If true, then this  means right away after changes applied on the curve returned by this function,
-     * the GUI curve should be updated.
-     * @return The curve to operate on.
-     **/
-    CurvePtr getCurveToOperateOn(ViewIdx view, int dimension, bool throwIfNotPresent, bool* mustRefreshGuiCurve);
 
 
-    virtual void copyValuesFromCurve(DimSpec /*dim*/) {}
+    virtual void copyValuesFromCurve(DimSpec /*dim*/, ViewSetSpec /*view*/) {}
 
 
     virtual void handleSignalSlotsForAliasLink(const KnobIPtr& /*alias*/,
@@ -1705,24 +1696,32 @@ protected:
      **/
     virtual bool cloneExtraData(const KnobIPtr& /*other*/,
                                 ViewSetSpec /*view*/,
+                                ViewSetSpec /*otherView*/,
+                                DimSpec /*dimension*/,
+                                DimSpec /*otherDimension*/,
                                 double /*offset*/,
-                                const RangeD* /*range*/,
-                                DimSpec dimension = DimSpec::all(),
-                                DimSpec otherDimension = DimSpec::all())
+                                const RangeD* /*range*/)
     {
-        
-        Q_UNUSED(dimension);
-        Q_UNUSED(otherDimension);
+
         return false;
     }
 
-    bool cloneExpressions(const KnobIPtr& other, ViewIdx view, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all());
+    bool cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension);
+
+private:
+
+    bool cloneExpressionInternal(const KnobIPtr& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension);
+
+public:
+
 
     virtual void cloneExpressionsResults(const KnobIPtr& /*other*/,
-                                         DimSpec /*dimension = DimSpec::all()*/,
-                                         DimSpec /*otherDimension = DimSpec::all()*/) {}
+                                         ViewSetSpec /*view*/,
+                                         ViewSetSpec /*otherView*/,
+                                         DimSpec /*dimension */,
+                                         DimSpec /*otherDimension */) {}
 
-    bool cloneCurves(const KnobIPtr& other, ViewIdx view, double offset, const RangeD* range, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all());
+    bool cloneCurves(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension, double offset, const RangeD* range);
 
 
     /**
@@ -1735,17 +1734,6 @@ protected:
     {
     }
 
-    void cloneGuiCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions);
-
-    void cloneInternalCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifiedDimensions);
-
-    /**
-     **/
-    void setInternalCurveHasChanged(ViewIdx view, DimIdx dimension, bool changed);
-
-    void guiCurveCloneInternalCurve(ViewIdx view, DimIdx dimension, ValueChangedReasonEnum reason);
-
-    virtual CurvePtr getGuiCurve(ViewIdx view, DimIdx dimension, bool byPassMaster = false) const OVERRIDE FINAL;
 
     void setGuiCurveHasChanged(ViewIdx view, DimIdx dimension, bool changed);
     bool hasGuiCurveChanged(ViewIdx view, DimIdx dimension) const;
@@ -1816,10 +1804,10 @@ public:
 
 protected:
 
-    virtual bool computeValuesHaveModifications(int dimension,
+    virtual bool computeValuesHaveModifications(DimIdx dimension,
                                                 const T& value,
                                                 const T& defaultValue) const;
-    virtual bool hasModificationsVirtual(int /*dimension*/) const { return false; }
+    virtual bool hasModificationsVirtual(DimIdx /*dimension*/, ViewIdx /*view*/) const { return false; }
 
 public:
 
@@ -1875,6 +1863,7 @@ private:
 
 
     virtual void unSlaveInternal(DimIdx dimension,
+                                 ViewIdx view,
                                  ValueChangedReasonEnum reason,
                                  bool copyState) OVERRIDE FINAL;
 
@@ -1960,7 +1949,7 @@ public:
     /**
      * @brief Wraps multiple calls to  setValueAtTimeAcrossDimensions on the curve at the given view and dimension
      **/
-    void setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<DimensionViewPair, std::list<TimeValuePair<T> > >& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
+    void setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<DimensionViewPair, std::list<TimeValuePair<T> > > >& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
 
 
     virtual ValueChangedReturnCodeEnum setIntValue(int value,
@@ -2123,17 +2112,14 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
-    virtual bool clone(const KnobIPtr& other, ViewSetSpec view, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
+    virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
     virtual void cloneDefaultValues(const KnobIPtr& other) OVERRIDE FINAL;
-    virtual bool dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
 
     ///MT-safe
-    void setMinimum(const T& mini, DimSpec dimension = DimSpec::all());
-    void setMaximum(const T& maxi, DimSpec dimension = DimSpec::all());
-    void setDisplayMinimum(const T& mini, DimSpec dimension = DimSpec::all());
-    void setDisplayMaximum(const T& maxi, DimSpec dimension = DimSpec::all());
-    void setMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
-    void setDisplayMinimumsAndMaximums(const std::vector<T> &minis, const std::vector<T> &maxis);
+    void setRange(const T& mini, const T& maxi, DimSpec dimension = DimSpec::all());
+    void setDisplayRange(const T& mini, const T& maxi, DimSpec dimension = DimSpec::all());
+    void setRangeAcrossDimensions(const std::vector<T> &minis, const std::vector<T> &maxis);
+    void setDisplayRangeAcrossDimensions(const std::vector<T> &minis, const std::vector<T> &maxis);
 
 
     ///Not MT-SAFE, can only be called from main thread
@@ -2150,41 +2136,50 @@ public:
 
     void getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) const;
 
-    T getValueFromMasterAt(double time, ViewGetSpec view, int dimension, const KnobIPtr& master);
+    T getValueFromMasterAt(double time, ViewGetSpec view, DimIdx dimension, const KnobIPtr& master);
     T getValueFromMaster(ViewGetSpec view, DimIdx dimension, const KnobIPtr& master, bool clamp);
 
-    bool getValueFromCurve(double time, ViewGetSpec view, DimIdx dimension, bool useGuiCurve, bool byPassMaster, bool clamp, T* ret);
+    bool getValueFromCurve(double time, ViewGetSpec view, DimIdx dimension, bool byPassMaster, bool clamp, T* ret);
 
     virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
 
+
+    virtual void splitView(ViewIdx view) OVERRIDE;
+
+    virtual void unSplitView(ViewIdx view) OVERRIDE;
+
 protected:
+
+    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 
     virtual void resetExtraToDefaultValue(DimSpec /*dimension*/, ViewSetSpec /*view*/) {}
 
-    virtual bool checkIfValueChanged(const T& a, const T& b)
-    {
-        return a != b;
-    }
+    virtual bool checkIfValueChanged(const T& a, DimIdx dimension, ViewIdx view) const;
+
 
 private:
 
+    void setValueOnCurveInternal(double time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
+
     void addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, double time, bool setKeyFrame);
 
-    virtual void copyValuesFromCurve(DimSpec dim) OVERRIDE FINAL;
+    virtual void copyValuesFromCurve(DimSpec dim, ViewSetSpec view) OVERRIDE FINAL;
 
     void initMinMax();
 
     T clampToMinMax(const T& value, DimIdx dimension) const;
 
-    void signalMinMaxChanged(const T& mini, const T& maxi, DimIdx dimension);
-    void signalDisplayMinMaxChanged(const T& mini, const T& maxi, DimIdx dimension);
 
     template <typename OTHERTYPE>
-    bool copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other, ViewIdx view, DimIdx dimension, int otherDimension);
+    bool copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension);
 
-    bool cloneValues(const KnobIPtr& other, ViewSetSpec view, DimIdx dimension, DimIdx otherDimension);
+    bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension);
 
-    virtual void cloneExpressionsResults(const KnobIPtr& other, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all()) OVERRIDE FINAL;
+    virtual void cloneExpressionsResults(const KnobIPtr& other,
+                                         ViewSetSpec view,
+                                         ViewSetSpec otherView,
+                                         DimSpec dimension,
+                                         DimSpec otherDimension) OVERRIDE FINAL;
 
     void valueToVariant(const T & v, Variant* vari);
 
@@ -2203,81 +2198,19 @@ private:
     bool evaluateExpression_pod(double time, ViewIdx view, DimIdx dimension, double* value, std::string* error);
 
 
-    bool getValueFromExpression(double time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
+    bool getValueFromExpression(double time, ViewGetSpec view, DimIdx dimension, bool clamp, T* ret);
 
-    bool getValueFromExpression_pod(double time, ViewIdx view, DimIdx dimension, bool clamp, double* ret);
+    bool getValueFromExpression_pod(double time, ViewGetSpec view, DimIdx dimension, bool clamp, double* ret);
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////
-    struct QueuedSetValuePrivate;
-    class QueuedSetValue
-    {
-public:
-        QueuedSetValue(ViewSetSpec view,
-                       DimSpec dimension,
-                       const T& value,
-                       const KeyFrame& key,
-                       bool useKey,
-                       ValueChangedReasonEnum reason,
-                       bool valueChangesBlocked);
-
-        virtual bool isSetValueAtTime() const { return false; }
-
-        virtual ~QueuedSetValue();
-
-        DimSpec dimension() const;
-
-        ViewSetSpec view() const;
-
-        const T& value() const;
-        const KeyFrame& key() const;
-
-        bool useKey() const;
-
-        ValueChangedReasonEnum reason() const;
-
-        bool valueChangesBlocked() const;
-
-private:
-        boost::scoped_ptr<QueuedSetValuePrivate> _imp;
-    };
-
-    typedef boost::shared_ptr<QueuedSetValue> QueuedSetValuePtr;
-
-    class QueuedSetValueAtTime
-        : public QueuedSetValue
-    {
-public:
-        QueuedSetValueAtTime(double time,
-                             ViewSetSpec view,
-                             DimSpec dimension,
-                             const T& value,
-                             const KeyFrame& key,
-                             ValueChangedReasonEnum reason,
-                             bool valueChangesBlocked)
-            : QueuedSetValue(view, dimension, value, key, true, reason, valueChangesBlocked)
-            , _time(time)
-        {
-        }
-
-        virtual bool isSetValueAtTime() const { return true; }
-
-        virtual ~QueuedSetValueAtTime() {}
-
-        double time() const { return _time; };
-
-private:
-        double _time;
-    };
-    
-    typedef boost::shared_ptr<QueuedSetValueAtTime> QueuedSetValueAtTimePtr;
 
 
     ///Here is all the stuff we couldn't get rid of the template parameter
     mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
 
-    PerDimensionValuesVec _values, _guiValues;
+    PerDimensionValuesVec _values;
 
     struct DefaultValue
     {
@@ -2290,8 +2223,6 @@ private:
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
-    mutable QMutex _setValuesQueueMutex;
-    std::list< QueuedSetValuePtr > _setValuesQueue;
 
 };
 
@@ -2334,9 +2265,9 @@ public:
         return _animation;
     }
 
-    void loadAnimation(const std::map<int, std::string> & keyframes);
+    void loadAnimation(const std::map<ViewIdx,std::map<double, std::string> > & keyframes);
 
-    void saveAnimation(std::map<int, std::string>* keyframes) const;
+    void saveAnimation(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const;
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
@@ -2344,9 +2275,21 @@ public:
 
     std::string getStringAtTime(double time, ViewGetSpec view);
 
+    virtual void splitView(ViewIdx view) OVERRIDE;
+
+    virtual void unSplitView(ViewIdx view) OVERRIDE;
+
 protected:
 
-    virtual bool cloneExtraData(const KnobIPtr& other, ViewSetSpec view, double offset, const RangeD* range, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all()) OVERRIDE;
+
+
+    virtual bool cloneExtraData(const KnobIPtr& other,
+                                ViewSetSpec view,
+                                ViewSetSpec otherView,
+                                DimSpec dimension,
+                                DimSpec otherDimension,
+                                double offset,
+                                const RangeD* range) OVERRIDE;
     virtual void onKeyframesRemoved(const std::list<double>& keysRemoved,
                                     ViewSetSpec view,
                                     DimSpec dimension) OVERRIDE FINAL;
@@ -2568,10 +2511,6 @@ public:
      **/
     virtual void abortAnyEvaluation(bool keepOldestRender = true) { Q_UNUSED(keepOldestRender); }
 
-    /**
-     * @brief Dequeues all values set in the queues for all knobs
-     **/
-    bool dequeueValuesSet();
 
     bool isDequeueingValuesSet() const;
 
@@ -2857,7 +2796,8 @@ public:
      **/
     virtual void onKnobSlaved(const KnobIPtr& /*slave*/,
                               const KnobIPtr& /*master*/,
-                              int /*dimension*/,
+                              DimIdx /*dimension*/,
+                              ViewIdx /*view*/,
                               bool /*isSlave*/)
     {
     }

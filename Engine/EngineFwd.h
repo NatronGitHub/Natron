@@ -120,7 +120,7 @@ class CLArgs;
 class CacheSignalEmitter;
 class CreateNodeArgs;
 class Curve;
-class Dimension;
+class DimIdx;
 class DiskCacheNode;
 class DockablePanelI;
 class Dot;

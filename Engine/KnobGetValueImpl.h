@@ -33,8 +33,8 @@ NATRON_NAMESPACE_ENTER
 template <typename T>
 bool
 Knob<T>::getValueFromExpression(double time,
-                                ViewIdx view,
-                                int dimension,
+                                ViewGetSpec view,
+                                DimIdx dimension,
                                 bool clamp,
                                 T* ret)
 {
@@ -43,24 +43,33 @@ Knob<T>::getValueFromExpression(double time,
         return false;
     }
 
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("Knob::getValueFromExpression: dimension out of range");
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
 
     ///Check first if a value was already computed:
 
     {
         QMutexLocker k(&_valueMutex);
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if ( found != _exprRes[dimension].end() ) {
-            *ret = found->second;
+        typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dimension].find(view_i);
+        if (foundView != _exprRes[dimension].end()) {
+            typename FrameValueMap::iterator foundValue = foundView->second.find(time);
+            if ( foundValue != foundView->second.end() ) {
+                *ret = foundValue->second;
 
-            return true;
+                return true;
+            }
         }
+
     }
 
     bool exprWasValid = isExpressionValid(dimension, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
-        bool exprOk = evaluateExpression(time, view,  dimension, ret, &error);
+        bool exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
             setExpressionInvalid(dimension, false, error);
 
@@ -77,7 +86,7 @@ Knob<T>::getValueFromExpression(double time,
     }
 
     QMutexLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    _exprRes[dimension][view_i][time] = *ret;
 
     return true;
 } // getValueFromExpression
@@ -85,8 +94,8 @@ Knob<T>::getValueFromExpression(double time,
 template <>
 bool
 KnobStringBase::getValueFromExpression_pod(double time,
-                                           ViewIdx view,
-                                           int dimension,
+                                           ViewGetSpec view,
+                                           DimIdx dimension,
                                            bool /*clamp*/,
                                            double* ret)
 {
@@ -97,18 +106,24 @@ KnobStringBase::getValueFromExpression_pod(double time,
         return false;
     }
 
-    bool exprWasValid = isExpressionValid(dimension, 0);
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("Knob::getValueFromExpression_pod: dimension out of range");
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
-        bool exprOk = evaluateExpression_pod(time, view,  dimension, ret, &error);
+        bool exprOk = evaluateExpression_pod(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
-            setExpressionInvalid(dimension, false, error);
+            setExpressionInvalid(dimension, ViewSetSpec(view_i), false, error);
 
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, true, error);
+                setExpressionInvalid(dimension, ViewSetSpec(view_i), true, error);
             }
         }
     }
@@ -119,8 +134,8 @@ KnobStringBase::getValueFromExpression_pod(double time,
 template <typename T>
 bool
 Knob<T>::getValueFromExpression_pod(double time,
-                                    ViewIdx view,
-                                    int dimension,
+                                    ViewGetSpec view,
+                                    DimIdx dimension,
                                     bool clamp,
                                     double* ret)
 {
@@ -131,31 +146,44 @@ Knob<T>::getValueFromExpression_pod(double time,
         return false;
     }
 
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("Knob::getValueFromExpression_pod: dimension out of range");
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    
 
     ///Check first if a value was already computed:
 
 
-    QMutexLocker k(&_valueMutex);
-    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-    if ( found != _exprRes[dimension].end() ) {
-        *ret = found->second;
+    {
+        QMutexLocker k(&_valueMutex);
+        typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dimension].find(view_i);
+        if (foundView != _exprRes[dimension].end()) {
+            typename FrameValueMap::iterator foundValue = foundView->second.find(time);
+            if ( foundValue != foundView->second.end() ) {
+                *ret = foundValue->second;
 
-        return true;
+                return true;
+            }
+        }
+        
     }
 
 
-    bool exprWasValid = isExpressionValid(dimension, 0);
+
+    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
-        bool exprOk = evaluateExpression_pod(time, view, dimension, ret, &error);
+        bool exprOk = evaluateExpression_pod(time, view_i, dimension, ret, &error);
         if (!exprOk) {
-            setExpressionInvalid(dimension, false, error);
+            setExpressionInvalid(dimension, ViewSetSpec(view_i), false, error);
 
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, true, error);
+                setExpressionInvalid(dimension, ViewSetSpec(view_i), true, error);
             }
         }
     }
@@ -165,31 +193,22 @@ Knob<T>::getValueFromExpression_pod(double time,
     }
     
     //QWriteLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    _exprRes[dimension][view_i][time] = *ret;
     
     return true;
 } // getValueFromExpression_pod
 
 template <typename T>
 T
-Knob<T>::getValue(int dimension,
-                  ViewSpec view,
+Knob<T>::getValue(DimIdx dimension,
+                  ViewGetSpec view,
                   bool clamp)
 {
-    assert( !view.isAll() );
-    if (view.isAll()) {
-        throw std::invalid_argument("Knob::getValue: Invalid ViewSpec: all views has no meaning in this function");
-    }
 
     if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
-        return T();
+        throw std::invalid_argument("Knob::getValue: dimension out of range");
     }
 
-    bool useGuiValues = QThread::currentThread() == qApp->thread();
-    if (useGuiValues) {
-        //Never clamp when using gui values
-        clamp = false;
-    }
 
     // If an expression is set, read from expression
     std::string hasExpr = getExpression(dimension);
@@ -206,32 +225,26 @@ Knob<T>::getValue(int dimension,
         return getValueAtTime(getCurrentTime(), dimension, view, clamp);
     }
 
-    // If the knob is slaved to another knob, returns the other knob value
-    std::pair<int, KnobIPtr > master = getMaster(dimension);
-    if (master.second) {
-        return getValueFromMaster(view, master.first, master.second, clamp);
-    }
-
 
     // Figure out the view to read
-    // Read main view by default if the knob is not multi-view
-    ViewIdx view_i(0);
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    // If the knob is slaved to another knob, returns the other knob value
     {
-        QMutexLocker k(&_valueMutex);
-        // If the knob has at least one view split-off, figure out which view we are going to read
-        if (hasViewsSplitOff(dimension)) {
-            if (view.isCurrent()) {
-                view_i = getCurrentView();
-            } else {
-                assert(view.isViewIdx());
-                view_i = ViewIdx(view.value());
+        MasterKnobLink linkData;
+        if (getMaster(dimension, view_i, &linkData)) {
+            KnobIPtr masterKnob = linkData.masterKnob.lock();
+            if (masterKnob) {
+                return getValueFromMaster(linkData.masterView, linkData.masterDimension, masterKnob, clamp);
             }
         }
-        typename PerViewValueMap::const_iterator foundView;
-        if (useGuiValues) {
-            foundView = _guiValues[dimension].find(view_i);
-        } else {
-            foundView = _values[dimension].find(view_i);
+
+    }
+    {
+        QMutexLocker k(&_valueMutex);
+        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
+        if (foundView == _values[dimension].end()) {
+            return T();
         }
         if (clamp) {
             const T& ret = foundView->second;
@@ -249,8 +262,8 @@ Knob<T>::getValue(int dimension,
 template <>
 std::string
 KnobStringBase::getValueFromMasterAt(double time,
-                                     ViewSpec view,
-                                     int dimension,
+                                     ViewGetSpec view,
+                                     DimIdx dimension,
                                      const KnobIPtr& master)
 {
     KnobStringBasePtr isString = toKnobStringBase(master);
@@ -265,8 +278,8 @@ KnobStringBase::getValueFromMasterAt(double time,
 
 template <>
 std::string
-KnobStringBase::getValueFromMaster(ViewSpec view,
-                                   int dimension,
+KnobStringBase::getValueFromMaster(ViewGetSpec view,
+                                   DimIdx dimension,
                                    const KnobIPtr& master,
                                    bool /*clamp*/)
 {
@@ -283,8 +296,8 @@ KnobStringBase::getValueFromMaster(ViewSpec view,
 template <typename T>
 T
 Knob<T>::getValueFromMasterAt(double time,
-                              ViewSpec view,
-                              int dimension,
+                              ViewGetSpec view,
+                              DimIdx dimension,
                               const KnobIPtr& master)
 {
     KnobIntBasePtr isInt = toKnobIntBase(master);
@@ -304,8 +317,8 @@ Knob<T>::getValueFromMasterAt(double time,
 
 template <typename T>
 T
-Knob<T>::getValueFromMaster(ViewSpec view,
-                            int dimension,
+Knob<T>::getValueFromMaster(ViewGetSpec view,
+                            DimIdx dimension,
                             const KnobIPtr& master,
                             bool clamp)
 {
@@ -329,21 +342,16 @@ Knob<T>::getValueFromMaster(ViewSpec view,
 template <typename T>
 bool
 Knob<T>::getValueFromCurve(double time,
-                           ViewSpec view,
-                           int dimension,
-                           bool useGuiCurve,
+                           ViewGetSpec view,
+                           DimIdx dimension,
                            bool byPassMaster,
                            bool clamp,
                            T* ret)
 {
-    CurvePtr curve;
 
-    if (useGuiCurve) {
-        curve = getGuiCurve(view, dimension, byPassMaster);
-    }
-    if (!curve) {
-        curve = getCurve(view, dimension, byPassMaster);
-    }
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    CurvePtr curve = getCurve(view_i, dimension, byPassMaster);
+
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
         *ret = (T)curve->getValueAt(time, clamp);
@@ -357,9 +365,8 @@ Knob<T>::getValueFromCurve(double time,
 template <>
 bool
 KnobStringBase::getValueFromCurve(double time,
-                                  ViewSpec view,
-                                  int dimension,
-                                  bool useGuiCurve,
+                                  ViewGetSpec view,
+                                  DimIdx dimension,
                                   bool byPassMaster,
                                   bool /*clamp*/,
                                   std::string* ret)
@@ -367,24 +374,19 @@ KnobStringBase::getValueFromCurve(double time,
     AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
 
     if (isStringAnimated) {
-        *ret = isStringAnimated->getStringAtTime(time, view, dimension);
+        *ret = isStringAnimated->getStringAtTime(time, view);
         ///ret is not empty if the animated string knob has a custom interpolation
         if ( !ret->empty() ) {
             return true;
         }
     }
     assert( ret->empty() );
-    CurvePtr curve;
-    if (useGuiCurve) {
-        curve = getGuiCurve(view, dimension, byPassMaster);
-    }
-    if (!curve) {
-        curve = getCurve(view, dimension, byPassMaster);
-    }
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    CurvePtr curve = getCurve(view_i, dimension, byPassMaster);
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         assert(isStringAnimated);
         if (isStringAnimated) {
-            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view, ret);
+            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view_i, ret);
         }
 
         return true;
@@ -397,10 +399,11 @@ KnobStringBase::getValueFromCurve(double time,
 template <>
 double
 KnobStringBase::getRawCurveValueAt(double time,
-                                   ViewSpec view,
-                                   int dimension)
+                                   ViewGetSpec view,
+                                   DimIdx dimension)
 {
-    CurvePtr curve  = getCurve(view, dimension, true);
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    CurvePtr curve  = getCurve(view_i, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -413,8 +416,8 @@ KnobStringBase::getRawCurveValueAt(double time,
 template <typename T>
 double
 Knob<T>::getRawCurveValueAt(double time,
-                            ViewSpec view,
-                            int dimension)
+                            ViewGetSpec view,
+                            DimIdx dimension)
 {
     CurvePtr curve  = getCurve(view, dimension, true);
 
@@ -431,15 +434,15 @@ Knob<T>::getRawCurveValueAt(double time,
 template <typename T>
 double
 Knob<T>::getValueAtWithExpression(double time,
-                                  ViewSpec view,
-                                  int dimension)
+                                  ViewGetSpec view,
+                                  DimIdx dimension)
 {
-    bool exprValid = isExpressionValid(dimension, 0);
-    std::string expr = getExpression(dimension);
+    bool exprValid = isExpressionValid(dimension, view, 0);
+    std::string expr = getExpression(dimension, view);
 
     if (!expr.empty() && exprValid) {
         double ret;
-        if ( getValueFromExpression_pod(time, /*view*/ ViewIdx(0), dimension, false, &ret) ) {
+        if ( getValueFromExpression_pod(time, view, dimension, false, &ret) ) {
             return ret;
         }
     }
@@ -450,20 +453,16 @@ Knob<T>::getValueAtWithExpression(double time,
 template<typename T>
 T
 Knob<T>::getValueAtTime(double time,
-                        int dimension,
-                        ViewSpec view,
+                        DimIdx dimension,
+                        ViewGetSpec view,
                         bool clamp,
                         bool byPassMaster)
 {
-    assert( !view.isAll() );
-    if (view.isAll()) {
-        throw std::invalid_argument("Knob::getValueAtTime: Invalid ViewSpec: all views has no meaning in this function");
-    }
+
     if  ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
-        return T();
+        throw std::invalid_argument("Knob::getValueAtTime: dimension out of range");
     }
 
-    bool useGuiValues = QThread::currentThread() == qApp->thread();
     std::string hasExpr = getExpression(dimension);
     if ( !hasExpr.empty() ) {
         T ret;
@@ -472,30 +471,46 @@ Knob<T>::getValueAtTime(double time,
         }
     }
 
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int, KnobIPtr > master = getMaster(dimension);
-    if (!byPassMaster && master.second) {
-        return getValueFromMasterAt(time, view, master.first, master.second);
+    // Figure out the view to read
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    // If the knob is slaved to another knob, returns the other knob value
+    MasterKnobLink linkData;
+    KnobIPtr masterKnob;
+    {
+        if (!byPassMaster && getMaster(dimension, view_i, &linkData)) {
+            masterKnob = linkData.masterKnob.lock();
+            if (masterKnob) {
+                return getValueFromMasterAt(time, linkData.masterView, linkData.masterDimension, masterKnob);
+            }
+        }
+
     }
 
+
     T ret;
-    if ( getValueFromCurve(time, view, dimension, useGuiValues, byPassMaster, clamp, &ret) ) {
+    if ( getValueFromCurve(time, view_i, dimension, byPassMaster, clamp, &ret) ) {
         return ret;
     }
 
-    /*if the knob as no keys at this dimension, return the value
-     at the requested dimension.*/
-    if (master.second && !byPassMaster) {
-        return getValueFromMaster(view, master.first, master.second, clamp);
+    // If the knob as no keys at this dimension/view, return the underlying value
+    if (masterKnob && !byPassMaster) {
+        return getValueFromMaster(linkData.masterView, linkData.masterDimension, masterKnob, clamp);
     }
-    QMutexLocker l(&_valueMutex);
-    if (clamp) {
-        ret = _values[dimension];
 
-        return clampToMinMax(ret, dimension);
-    } else {
-        return _values[dimension];
-    }
+    {
+        QMutexLocker k(&_valueMutex);
+        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
+        if (foundView == _values[dimension].end()) {
+            return T();
+        }
+        if (clamp) {
+            const T& ret = foundView->second;
+            return clampToMinMax(ret, dimension);
+        } else {
+            return foundView->second;
+        }
+    } // QMutexLocker k(&_valueMutex);
 } // getValueAtTime
 
 

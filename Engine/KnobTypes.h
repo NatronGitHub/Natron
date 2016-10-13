@@ -328,7 +328,7 @@ public:
         return _valueIsNormalized[dimension];
     }
 
-    void setValueIsNormalized(int dimension,
+    void setValueIsNormalized(DimIdx dimension,
                               ValueIsNormalizedEnum state)
     {
         _valueIsNormalized[dimension] = state;
@@ -422,7 +422,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual bool computeValuesHaveModifications(int dimension,
+    virtual bool computeValuesHaveModifications(DimIdx dimension,
                                                 const double& value,
                                                 const double& defaultValue) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -641,8 +641,7 @@ public:
     bool populateChoices(const std::vector<std::string> &entries,
                          const std::vector<std::string> &entriesHelp = std::vector<std::string>(),
                          MergeMenuEqualityFunctor mergingFunctor = 0,
-                         KnobChoiceMergeEntriesData* mergingData = 0,
-                         bool restoreOldChoice = true);
+                         KnobChoiceMergeEntriesData* mergingData = 0);
 
     /**
      * @brief Set optional shortcuts visible for menu entries. All items in the menu don't need a shortcut
@@ -650,38 +649,64 @@ public:
      * on the node during the getPluginShortcuts function on the same node.
      **/
     void setShortcuts(const std::map<int, std::string>& shortcuts);
+    const std::map<int, std::string>& getShortcuts() const;
 
     /**
      * @brief Set optional icons for menu entries. All items in the menu don't need an icon
      * so they are mapped against their index.
      **/
     void setIcons(const std::map<int, std::string>& icons);
-
     const std::map<int, std::string>& getIcons() const;
 
-    const std::map<int, std::string>& getShortcuts() const;
 
     /**
      * @brief Set a list of separators. Each item in the list will add a separator after the index
      * specified by the integer.
      **/
     void setSeparators(const std::vector<int>& separators);
-
     const std::vector<int>& getSeparators() const;
 
+    /**
+     * @brief Clears the menu, the current index will no longer correspond to a valid entry
+     **/
     void resetChoices();
 
+    /**
+     * @brief Append an option to the menu 
+     * @param help Optionnally specify the tooltip that should be displayed when the user hovers the entry in the menu
+     **/
     void appendChoice( const std::string& entry, const std::string& help = std::string() );
 
-    void refreshMenu();
+    /**
+     * @brief Returns true if the entry for the given view is valid, that is: it still belongs to the menu entries.
+     **/
+    bool isActiveEntryPresentInEntries(ViewIdx view) const;
 
-    bool isActiveEntryPresentInEntries() const;
+    /**
+     * @brief Get all menu entries
+     **/
+    std::vector<std::string> getEntries() const;
 
-    std::vector<std::string> getEntries_mt_safe() const;
-    const std::string& getEntry(int v) const;
-    std::vector<std::string> getEntriesHelp_mt_safe() const;
-    std::string getActiveEntryText_mt_safe();
-    void setActiveEntry(const std::string& entry);
+    /**
+     * @brief Get one menu entry. Throws an invalid_argument exception if index is invalid
+     **/
+    std::string getEntry(int v) const;
+
+    /**
+     * @brief Get all menu entry tooltips
+     **/
+    std::vector<std::string> getEntriesHelp() const;
+
+    /**
+     * @brief Get the active entry text
+     **/
+    std::string getActiveEntryText(ViewGetSpec view = ViewGetSpec::current());
+
+    /**
+     * @brief Set the active entry text. If the view does not exist in the knob an invalid
+     * argument exception is thrown
+     **/
+    void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::current());
 
     int getNumEntries() const;
 
@@ -714,7 +739,7 @@ public:
     }
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value);
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value, ViewSetSpec view = ViewSetSpec::current());
 
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value);
@@ -729,6 +754,10 @@ public:
     void setTextToFitHorizontally(const std::string& text);
     std::string getTextToFitHorizontally() const;
 
+    virtual void splitView(ViewIdx view) OVERRIDE FINAL;
+
+    virtual void unSplitView(ViewIdx view) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onOriginalKnobPopulated();
@@ -742,10 +771,11 @@ Q_SIGNALS:
     void entryAppended(QString, QString);
 
 private:
+    
 
-    virtual bool checkIfValueChanged(const int& a, const int& b) OVERRIDE FINAL;
+    virtual bool checkIfValueChanged(const int& a, DimIdx dimension, ViewIdx view) const OVERRIDE FINAL;
 
-    virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
+    virtual bool hasModificationsVirtual(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL;
 
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
@@ -756,17 +786,25 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
-    virtual bool cloneExtraData(const KnobIPtr& other, ViewSetSpec view, double offset, const RangeD* range, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all()) OVERRIDE FINAL;
+    virtual bool cloneExtraData(const KnobIPtr& other,
+                                ViewSetSpec view,
+                                ViewSetSpec otherView,
+                                DimSpec dimension,
+                                DimSpec otherDimension,
+                                double offset,
+                                const RangeD* range) OVERRIDE FINAL;
 
 private:
 
     mutable QMutex _entriesMutex;
-    std::vector<std::string> _newEntries, _mergedEntries;
-    std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
+    std::vector<std::string> _entries, _entriesHelp;
+    
     std::vector<int> _separators;
     std::map<int, std::string> _shortcuts;
     std::map<int, std::string> _menuIcons;
-    std::string _currentEntryLabel; // protected by _entriesMutex
+
+    typedef std::map<ViewIdx, std::string> PerViewActiveEntryMap;
+    PerViewActiveEntryMap _activeEntryMap; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
     std::string _textToFitHorizontally; // < this is so that the combobox can have a fixed custom width
@@ -1354,18 +1392,18 @@ private: // derives from KnobI
 public:
     static KnobHelperPtr create(const KnobHolderPtr& holder,
                                 const std::string &label,
-                                int dimension,
+                                int nDims,
                                 bool declaredByPlugin = true)
     {
-        return KnobHelperPtr(new KnobParametric(holder, label, dimension, declaredByPlugin));
+        return KnobHelperPtr(new KnobParametric(holder, label, nDims, declaredByPlugin));
     }
 
     static KnobParametricPtr create(const KnobHolderPtr& holder,
                                 const QString &label,
-                                int dimension,
+                                int nDims,
                                 bool declaredByPlugin = true)
     {
-        return KnobParametricPtr(new KnobParametric(holder, label.toStdString(), dimension, declaredByPlugin));
+        return KnobParametricPtr(new KnobParametric(holder, label.toStdString(), nDims, declaredByPlugin));
     }
 
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
@@ -1373,26 +1411,26 @@ public:
         return false;
     }
 
-    void setCurveColor(int dimension, double r, double g, double b);
+    void setCurveColor(DimIdx dimension, double r, double g, double b);
 
-    void getCurveColor(int dimension, double* r, double* g, double* b);
+    void getCurveColor(DimIdx dimension, double* r, double* g, double* b);
 
     void setParametricRange(double min, double max);
 
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    CurvePtr getParametricCurve(int dimension) const;
-    CurvePtr getDefaultParametricCurve(int dimension) const;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(int dimension, int *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(int dimension,
+    CurvePtr getParametricCurve(DimIdx dimension) const;
+    CurvePtr getDefaultParametricCurve(DimIdx dimension) const;
+    StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum getValue(DimIdx dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(DimIdx dimension, int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNthControlPoint(DimIdx dimension,
                                   int nthCtl,
                                   double *key,
                                   double *value) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(int dimension,
+    StatusEnum getNthControlPoint(DimIdx dimension,
                                   int nthCtl,
                                   double *key,
                                   double *value,
@@ -1400,18 +1438,18 @@ public:
                                   double *rightDerivative) const WARN_UNUSED_RETURN;
 
     StatusEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
-                                               int dimension,
+                                               DimIdx dimension,
                                                int nThCtl,
                                                KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
 
     StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
-                                  int dimension,
+                                  DimIdx dimension,
                                   int nthCtl,
                                   double key,
                                   double value) WARN_UNUSED_RETURN;
 
     StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
-                                  int dimension,
+                                  DimIdx dimension,
                                   int nthCtl,
                                   double key,
                                   double value,
@@ -1419,8 +1457,8 @@ public:
                                   double rightDerivative) WARN_UNUSED_RETURN;
 
 
-    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
+    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const;
@@ -1452,9 +1490,9 @@ Q_SIGNALS:
 
 
     ///emitted when the state of a curve changed at the indicated dimension
-    void curveChanged(DimIdx);
+    void curveChanged(DimSpec);
 
-    void curveColorChanged(DimIdx);
+    void curveColorChanged(DimSpec);
 
 private:
 
@@ -1462,10 +1500,16 @@ private:
 
     virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
-    virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
+    virtual bool hasModificationsVirtual(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual bool cloneExtraData(const KnobIPtr& other, ViewSetSpec view, double offset, const RangeD* range, DimSpec dimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all()) OVERRIDE FINAL;
+    virtual bool cloneExtraData(const KnobIPtr& other,
+                                ViewSetSpec view,
+                                ViewSetSpec otherView,
+                                DimSpec dimension,
+                                DimSpec otherDimension,
+                                double offset,
+                                const RangeD* range) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 

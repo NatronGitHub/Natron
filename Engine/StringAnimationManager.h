@@ -75,6 +75,10 @@ public:
 
     void save(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const;
 
+    void splitView(ViewIdx view);
+
+    void unSplitView(ViewIdx view);
+
 private:
 
     boost::scoped_ptr<StringAnimationManagerPrivate> _imp;

@@ -106,7 +106,7 @@ KnobGui::onUnlinkActionTriggered()
         for (int i = 0; i < dims; ++i) {
             if ( (dim == -1) || (i == dim) ) {
                 std::pair<int, KnobIPtr > other = thisKnob->getMaster(i);
-                thisKnob->onKnobUnSlaved(i);
+                thisKnob->unSlave(i);
                 onKnobSlavedChanged(i, false);
             }
         }

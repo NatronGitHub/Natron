@@ -333,9 +333,9 @@ EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
     const KnobsVec & knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         for (int i = 0; i < (*it)->getNDimensions(); ++i) {
-            std::string expr = (*it)->getExpression(i);
+            std::string expr = (*it)->getExpression(DimIdx(i));
             if (!expr.empty()) {
-                (*it)->clearExpressionsResults(i);
+                (*it)->clearExpressionsResults(DimSpec(i), ViewSetSpec::all());
                 (*it)->invalidateHashCache(false);
             }
         }
@@ -3125,7 +3125,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
 
 
 void
-EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, int /*dimension*/, double /*time*/, ViewSpec /*view*/)
+EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, DimSpec /*dimension*/, double /*time*/, ViewSetSpec /*view*/)
 {
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
@@ -3317,7 +3317,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobFilePtr fk = toKnobFile(knobs[i]);
         if ( fk && fk->getName() == kOfxImageEffectFileParamName ) {
-            fk->setValue(pattern, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            fk->setValue(pattern);
             break;
         }
 
@@ -3392,10 +3392,11 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 void
 EffectInstance::onKnobSlaved(const KnobIPtr& slave,
                              const KnobIPtr& master,
-                             int dimension,
+                             DimIdx dimension,
+                             ViewIdx view,
                              bool isSlave)
 {
-    getNode()->onKnobSlaved(slave, master, dimension, isSlave);
+    getNode()->onKnobSlaved(slave, master, dimension, view, isSlave);
 }
 
 void
@@ -4833,7 +4834,7 @@ bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   ViewSpec /*view*/,
+                                   ViewSetSpec /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
     return false;
@@ -4972,12 +4973,11 @@ bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          ViewSpec view,
+                                          ViewSetSpec view,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
     if (!node->isNodeCreated()) {
-#pragma message WARN("monitor this")
         return false;
     }
 

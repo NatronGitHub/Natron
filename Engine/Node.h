@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/ImageComponents.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
@@ -1012,7 +1013,11 @@ public:
 
     void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
 
-    void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master, int dimension, bool isSlave);
+    void onKnobSlaved(const KnobIPtr& slave,
+                      const KnobIPtr& master,
+                      DimIdx dimension,
+                      ViewIdx view,
+                      bool isSlave);
 
     NodePtr getMasterNode() const;
 

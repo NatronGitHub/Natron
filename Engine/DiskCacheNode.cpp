@@ -156,14 +156,14 @@ DiskCacheNode::initializeKnobs()
 bool
 DiskCacheNode::knobChanged(const KnobIPtr& k,
                            ValueChangedReasonEnum /*reason*/,
-                           ViewSpec /*view*/,
+                           ViewSetSpec /*view*/,
                            double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     bool ret = true;
 
     if (_imp->frameRange.lock() == k) {
-        int idx = _imp->frameRange.lock()->getValue(0);
+        int idx = _imp->frameRange.lock()->getValue(DimIdx(0));
         switch (idx) {
         case 0:
         case 1:
