@@ -36,7 +36,7 @@ addons:
     # NOT WHITELISTED
     - sourceline: 'ppa:spvkgn/ffmpeg-dev'
     # this one is for trusty ffmpeg
-    - sourceline: 'ppa:mc3man/trusty-media'
+    - sourceline: 'ppa:jonathonf/ffmpeg-3'
     - kalakris-cmake
     - pythonxy-devel
     packages:
