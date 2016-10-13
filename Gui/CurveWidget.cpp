@@ -562,7 +562,7 @@ CurveWidget::paintGL()
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
-            glCheckError();
+            glCheckErrorIgnoreOSXBug();
         }
 
         _imp->drawScale();
