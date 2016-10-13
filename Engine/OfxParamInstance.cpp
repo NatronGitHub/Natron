@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cfloat>
 #include <stdexcept>
 
 #include <boost/scoped_array.hpp>
@@ -4204,16 +4205,34 @@ void
 OfxParametricInstance::setDisplayRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    double range_min = getProperties().getDoubleProperty(kOfxParamPropParametricRange, 0);
-    double range_max = getProperties().getDoubleProperty(kOfxParamPropParametricRange, 1);
+    // the display range is the Y range in the parametric range
+    // (as opposed to kOfxParamPropParametricRange, which is read-only on the instance and has no hook)
 
-    assert(range_max > range_min);
-
+    // do nothing when instance is live, let the used tune the y range.
+#if 0
     KnobParametricPtr k = _knob.lock();
     if (!k) {
         return;
     }
-    k->setParametricRange(range_min, range_max);
+    //k->setParametricRange(range_min, range_max);
+    double range_min = DBL_MAX;
+    double range_max = -DBL_MAX;
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, i);
+        double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, i);
+        if (displayMin != 0. || displayMax != 0.) { // not the default value
+            if (displayMin < range_min) {
+                range_min = displayMin;
+            }
+            if (displayMax < range_max) {
+                range_max = displayMax;
+            }
+        }
+    }
+    if(range_max > range_min) {
+        k->setDisplayRange(range_min, range_max);
+    }
+#endif
 }
 
 OfxStatus
