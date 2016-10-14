@@ -9,6 +9,7 @@
 ### Plugins
 
 - DenoiseSharpen: Use a more intuitive "Sharpen Size" parameter instead of "Sharpen Radius", and do not sharpen the noise. Add "Denoise Amount" parameter, which can be set to 0 to sharpen only.
+- ErodeBlur: fix the "Crop To Format" parameter (which did not work)
 - (beta feature) HueCorrect: Apply hue-dependent color adjustments using lookup curves.
 - (beta feature) HueKeyer: Compute a key depending on hue value.
 
