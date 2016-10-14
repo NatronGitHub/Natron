@@ -118,9 +118,6 @@ NATRON_NAMESPACE_ENTER;
 
 AppManager* AppManager::_instance = 0;
 
-static bool g_localeSet = false;
-
-
 #ifdef __NATRON_UNIX__
 
 //namespace  {
@@ -477,6 +474,9 @@ AppManager::load(int argc,
                  const CLArgs& cl)
 {
     // Ensure application has correct locale before doing anything
+    // Warning: Qt resets it in the QCoreApplication constructor
+    // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
+    setApplicationLocale();
     setApplicationLocale();
     _imp->handleCommandLineArgs(argc, argv);
     return loadFromArgs(cl);
@@ -488,6 +488,8 @@ AppManager::loadW(int argc,
                  const CLArgs& cl)
 {
     // Ensure application has correct locale before doing anything
+    // Warning: Qt resets it in the QCoreApplication constructor
+    // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     _imp->handleCommandLineArgsW(argc, argv);
     return loadFromArgs(cl);
@@ -659,12 +661,14 @@ AppManager::initializeQApp(int &argc,
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
+// setApplicationLocale is called twice:
+// - before parsing the command-line arguments
+// - after the QCoreApplication was constructed, because the QCoreApplication
+// constructor resets the locale to the system locale
+// see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
 void
 AppManager::setApplicationLocale()
 {
-    if (g_localeSet) {
-        return;
-    }
     // Natron is not yet internationalized, so it is better for now to use the "C" locale,
     // until it is tested for robustness against locale choice.
     // The locale affects numerics printing and scanning, date and time.
@@ -726,8 +730,6 @@ AppManager::setApplicationLocale()
     }
     std::setlocale(LC_NUMERIC, "C"); // set the locale for LC_NUMERIC only
     QLocale::setDefault( QLocale(QLocale::English, QLocale::UnitedStates) );
-
-    g_localeSet = true;
 }
 
 bool
@@ -748,7 +750,10 @@ AppManager::loadInternal(const CLArgs& cl)
     //Set it once setApplicationName is set since it relies on it
     _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
 
-
+    // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
+    // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
+    setApplicationLocale();
+    
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
