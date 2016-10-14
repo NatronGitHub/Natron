@@ -1939,7 +1939,7 @@ Settings::saveSettings(const KnobsVec& knobs,
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         int newIndex = isChoice->getValue(j);
-                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        const std::vector<std::string> entries = isChoice->getEntries();
                         if ( newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
                             QString newValue = QString::fromUtf8( entries[newIndex].c_str() );
@@ -2009,7 +2009,7 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        const std::vector<std::string> entries = isChoice->getEntries();
                         int found = -1;
 
                         for (U32 k = 0; k < entries.size(); ++k) {
@@ -2052,7 +2052,7 @@ Settings::restoreSettings()
 
     // Restore opengl renderer
     {
-        std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
+        std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries();
         QString missingGLError;
         bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
 
@@ -2152,7 +2152,7 @@ Settings::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2262,7 +2262,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _nThreadsPerEffect ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob ) {
-        if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
@@ -2337,7 +2337,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _qssFile ) {
         appPTR->reloadStylesheets();
     } else if ( k == _hostName ) {
-        std::string hostName = _hostName->getActiveEntryText_mt_safe();
+        std::string hostName = _hostName->getActiveEntryText();
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
     } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -2922,7 +2922,7 @@ std::string
 Settings::getHostName() const
 {
     int entry_i =  _hostName->getValue();
-    std::vector<std::string> entries = _hostName->getEntries_mt_safe();
+    std::vector<std::string> entries = _hostName->getEntries();
 
     if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
         return _customHostName->getValue();
@@ -3047,7 +3047,7 @@ Settings::doOCIOStartupCheckIfNeeded()
 
     if (docheck && mainInstance) {
         int entry_i = _ocioConfigKnob->getValue();
-        std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _ocioConfigKnob->getEntries();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
@@ -3541,7 +3541,7 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _scriptEditorFontChoice->getActiveEntryText_mt_safe();
+    return _scriptEditorFontChoice->getActiveEntryText();
 }
 
 void

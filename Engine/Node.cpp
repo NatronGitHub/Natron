@@ -888,19 +888,19 @@ Node::setProcessChannelsValues(bool doR,
     KnobBoolPtr eR = _imp->enabledChan[0].lock();
 
     if (eR) {
-        eR->setValue(doR, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        eR->setValue(doR);
     }
     KnobBoolPtr eG = _imp->enabledChan[1].lock();
     if (eG) {
-        eG->setValue(doG, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        eG->setValue(doG);
     }
     KnobBoolPtr eB = _imp->enabledChan[2].lock();
     if (eB) {
-        eB->setValue(doB, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        eB->setValue(doB);
     }
     KnobBoolPtr eA = _imp->enabledChan[3].lock();
     if (eA) {
-        eA->setValue(doA, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        eA->setValue(doA);
     }
 }
 
@@ -4420,11 +4420,11 @@ Node::makeDocumentation(bool genHTML) const
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
                         int index = isChoice->getDefaultValue(i);
-                        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        std::vector<std::string> entries = isChoice->getEntries();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
                         }
-                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
                         if ( entries.size() == entriesHelp.size() ) {
                             knobHint.append( QString::fromUtf8("\n\n") );
                             for (size_t i = 0; i < entries.size(); i++) {
@@ -10915,7 +10915,7 @@ Node::getMaskChannel(int inputNb,
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
 
     if ( it != _imp->maskSelectors.end() ) {
-        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText_mt_safe();
+        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText();
         std::string nodeName, layerName, channelName;
         bool isColor;
         bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
@@ -11066,8 +11066,8 @@ Node::refreshChannelSelectors()
             }
         }
 
-        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        const std::string curLayer_FriendlyName = layerKnob->getActiveEntryText_mt_safe();
+        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries();
+        const std::string curLayer_FriendlyName = layerKnob->getActiveEntryText();
         const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(curLayer_FriendlyName);
 
 
@@ -11208,8 +11208,8 @@ Node::refreshChannelSelectors()
         }
 
         KnobChoicePtr channelKnob = it->second.channel.lock();
-        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries_mt_safe();
-        const std::string curChannelEncoded = channelKnob->getActiveEntryText_mt_safe();
+        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries();
+        const std::string curChannelEncoded = channelKnob->getActiveEntryText();
 
         // This will merge previous channels with new channels available while retaining previously existing channels.
         {

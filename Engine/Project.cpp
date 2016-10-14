@@ -1086,7 +1086,7 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    std::string formatSpec = _imp->formatKnob->getActiveEntryText_mt_safe();
+    std::string formatSpec = _imp->formatKnob->getActiveEntryText();
     if ( !formatSpec.empty() ) {
         ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
     } else {
@@ -1184,7 +1184,7 @@ void
 Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
                                  int* currentValue) const
 {
-    *formatStrings = _imp->formatKnob->getEntries_mt_safe();
+    *formatStrings = _imp->formatKnob->getEntries();
     *currentValue = _imp->formatKnob->getValue();
 }
 
@@ -1537,7 +1537,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         getNodes_recursive(nodes, true);
 
         // Refresh nodes with a format parameter
-        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2042,7 +2042,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         NodesList nodes;
         getNodes_recursive(nodes, true);
         int index = _imp->formatKnob->getValue();
-        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2703,7 +2703,7 @@ Project::onProjectFormatPopulated()
     NodesList nodes;
 
     getNodes_recursive(nodes, true);
-    std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+    std::vector<std::string> entries = _imp->formatKnob->getEntries();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);
     }

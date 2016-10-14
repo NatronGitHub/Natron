@@ -39,6 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobItemsTable.h"
 
 #include "Serialization/SerializationBase.h"
 
@@ -102,8 +103,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
 class TrackMarker
-    : public NamedKnobHolder
-    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    : public KnobTableItem
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -126,6 +126,11 @@ public:
 
     virtual ~TrackMarker();
 
+    virtual bool isItemContainer() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void clone(const TrackMarker& other);
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
@@ -134,8 +139,6 @@ public:
 
     TrackerContextPtr getContext() const;
 
-    bool setScriptName(const std::string& name);
-    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setLabel(const std::string& label);
     std::string getLabel() const;
@@ -201,8 +204,10 @@ public:
 
     RectI getMarkerImageRoI(int time) const;
 
-    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
-                              int dimension,
+    virtual void onKnobSlaved(const KnobIPtr& slave,
+                              const KnobIPtr& master,
+                              DimIdx dimension,
+                              ViewIdx view,
                               bool isSlave) OVERRIDE FINAL;
 
     void notifyTrackingStarted();
@@ -214,7 +219,7 @@ protected:
 
 public Q_SLOTS:
 
-    void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
+    /*void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
     void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
     void onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec view, int dimension, int reason);
     void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
@@ -227,16 +232,12 @@ public Q_SLOTS:
     void onWeightKnobValueChanged(ViewSpec, int dimension, int reason);
     void onMotionModelKnobValueChanged(ViewSpec, int dimension, int reason);
 
-    /*void onPatternTopLeftKnobValueChanged(int dimension,int reason);
-       void onPatternTopRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
     void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);
+    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);*/
 
 public Q_SLOTS:
 
-    void onEnabledValueChanged(ViewSpec, int dimension, int reason);
+    //void onEnabledValueChanged(ViewSpec, int dimension, int reason);
 
 Q_SIGNALS:
 

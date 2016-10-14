@@ -75,6 +75,8 @@ public:
 
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
 
+    bool setScriptName(const std::string& name);
+
     /**
      * @brief Same as getScriptName_mt_safe, except that if the item has a parent, it will recursively preprend the parent name
      * with a '.' separating each hierarchy level, e.g: "item1.child1.childchild1"
@@ -148,10 +150,10 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
-#pragma message WARN("KnobTableItem does not support multi-view")
+#pragma message WARN("KnobTableItem does not support multi-view for user keyframes")
     //////////// Overriden from AnimatingObjectI
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
+    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;

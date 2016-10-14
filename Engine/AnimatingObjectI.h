@@ -151,7 +151,7 @@ public:
     /**
      * @brief Returns a pointer to the underlying animation curve for the given view/dimension
      **/
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const = 0;
+    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const = 0;
 
     /**
      * @brief For an object that supports animating strings, this is should return a pointer to it

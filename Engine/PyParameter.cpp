@@ -1430,8 +1430,8 @@ ChoiceParam::addOption(const QString& option,
     if ( !knob->isUserKnob() ) {
         return;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    std::vector<std::string> helps = knob->getEntriesHelp_mt_safe();
+    std::vector<std::string> entries = knob->getEntries();
+    std::vector<std::string> helps = knob->getEntriesHelp();
     knob->appendChoice( option.toStdString(), help.toStdString() );
 }
 
@@ -1455,7 +1455,7 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 QString
 ChoiceParam::getOption(int index) const
 {
-    std::vector<std::string> entries =  _choiceKnob.lock()->getEntries_mt_safe();
+    std::vector<std::string> entries =  _choiceKnob.lock()->getEntries();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         return QString();
@@ -1474,7 +1474,7 @@ QStringList
 ChoiceParam::getOptions() const
 {
     QStringList ret;
-    std::vector<std::string> entries = _choiceKnob.lock()->getEntries_mt_safe();
+    std::vector<std::string> entries = _choiceKnob.lock()->getEntries();
 
     for (std::size_t i = 0; i < entries.size(); ++i) {
         ret.push_back( QString::fromUtf8( entries[i].c_str() ) );

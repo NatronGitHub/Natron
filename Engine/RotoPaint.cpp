@@ -773,7 +773,7 @@ RotoPaint::initStrokePageKnobs()
         mins.push_back(0);
         maxs.push_back(1);
         maxs.push_back(1);
-        param->setMinimumsAndMaximums(mins, maxs);
+        param->setRangeAcrossDimensions(mins, maxs);
         strokePage->addKnob(param);
         param->setDimensionName(DimIdx(0), tr("start").toStdString());
         param->setDimensionName(DimIdx(1), tr("end").toStdString());

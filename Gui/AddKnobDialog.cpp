@@ -618,8 +618,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         KnobChoicePtr isChoice = toKnobChoice(knob);
         if (isChoice) {
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-            std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+            std::vector<std::string> entries = isChoice->getEntries();
+            std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
             QString data;
             for (U32 i = 0; i < entries.size(); ++i) {
                 QString line( QString::fromUtf8( entries[i].c_str() ) );
@@ -1361,8 +1361,8 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
         maxs[i] = maxBox->value();
         dmaxs[i] = dmaxBox->value();
     }
-    k->setMinimumsAndMaximums(mins, maxs);
-    k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+    k->setRangeAcrossDimensions(mins, maxs);
+    k->setDisplayRangeAcrossDimensions(dmins, dmaxs);
     std::vector<T> defValues;
     if (dim >= 1) {
         defValues.push_back( default0->value() );
@@ -1885,7 +1885,7 @@ AddKnobDialog::onOkClicked()
         } else if (isChoice) {
             std::string defValue = _imp->defaultStr->text().toStdString();
             int defIndex = -1;
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> entries = isChoice->getEntries();
             for (std::size_t i = 0; i < entries.size(); ++i) {
                 if (entries[i] == defValue) {
                     defIndex = i;

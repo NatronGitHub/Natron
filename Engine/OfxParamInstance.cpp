@@ -400,8 +400,8 @@ OfxParamToKnob::onChoiceMenuPopulated()
     if (!isChoice) {
         return;
     }
-    std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-    std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+    std::vector<std::string> entries = isChoice->getEntries();
+    std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
     setStringPropertyN(entries, param, kOfxParamPropChoiceOption);
     setStringPropertyN(entriesHelp, param, kOfxParamPropChoiceLabelOption);
 }
@@ -1343,7 +1343,7 @@ OfxChoiceInstance::set(int v)
     if (!knob) {
         return kOfxStatFailed;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries = knob->getEntries();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
         knob->setValue(v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
@@ -1362,7 +1362,7 @@ OfxChoiceInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatFailed;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries = knob->getEntries();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
         knob->setValueAtTime(time, v, ViewSpec::current(), 0, eValueChangedReasonPluginEdited, 0);
 
@@ -1565,8 +1565,8 @@ OfxRGBAInstance::OfxRGBAInstance(const OfxEffectInstancePtr& node,
         color->setDimensionName(i, dimensionName);
     }
 
-    color->setMinimumsAndMaximums(minimum, maximum);
-    color->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    color->setRangeAcrossDimensions(minimum, maximum);
+    color->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 OfxStatus
@@ -1842,8 +1842,8 @@ OfxRGBInstance::OfxRGBInstance(const OfxEffectInstancePtr& node,
         color->setDimensionName(i, dimensionName);
     }
 
-    color->setMinimumsAndMaximums(minimum, maximum);
-    color->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    color->setRangeAcrossDimensions(minimum, maximum);
+    color->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 OfxStatus
@@ -3057,9 +3057,9 @@ OfxInteger3DInstance::OfxInteger3DInstance(const OfxEffectInstancePtr&node,
         knob->setDimensionName(i, dimensionName);
     }
 
-    knob->setMinimumsAndMaximums(minimum, maximum);
+    knob->setRangeAcrossDimensions(minimum, maximum);
     knob->setIncrement(increment);
-    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    knob->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
     knob->blockValueChanges();
     knob->setDefaultValue(def[0], 0);
     knob->setDefaultValue(def[1], 1);
@@ -3199,7 +3199,7 @@ OfxInteger3DInstance::setDisplayRange()
     displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 0);
     displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 1);
     displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 2);
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob.lock()->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 void
@@ -3215,7 +3215,7 @@ OfxInteger3DInstance::setRange()
     displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax, 0);
     displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax, 1);
     displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropMax, 2);
-    _knob.lock()->setMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob.lock()->setRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 void

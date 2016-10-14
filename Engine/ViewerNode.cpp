@@ -773,8 +773,8 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     ViewerInstancePtr internalInstance = toViewerInstance(getInternalViewerNode()->getEffectInstance());
     KnobChoicePtr aInputKnob = aInputNodeChoiceKnob.lock();
     KnobChoicePtr bInputKnob = bInputNodeChoiceKnob.lock();
-    std::string aCurChoice = aInputKnob->getActiveEntryText_mt_safe();
-    std::string bCurChoice = bInputKnob->getActiveEntryText_mt_safe();
+    std::string aCurChoice = aInputKnob->getActiveEntryText();
+    std::string bCurChoice = bInputKnob->getActiveEntryText();
 
     if (aCurChoice == "-") {
         aCurChoice.clear();
@@ -2436,7 +2436,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
     int index = -1;
     if (realNodeGroupInput) {
         // THe group effectively has an input, find it in the menu entries of the choice
-        std::vector<std::string> entries = inputChoiceKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = inputChoiceKnob->getEntries();
         for (std::size_t i = 0; i < entries.size(); ++i) {
             if (entries[i] == realNodeGroupInput->getLabel()) {
                 index = i;
@@ -2616,7 +2616,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
         _imp->bInputNodeChoiceKnob.lock()->setAllDimensionsEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
-        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText();
         if (zoomChoice == "Fit") {
             _imp->uiContext->fitImageToFormat();
         } else if (zoomChoice == "+") {
@@ -2741,8 +2741,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->rightClickSwitchAB.lock()) {
         NodePtr internalViewer = _imp->getInternalViewerNode();
-        std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
-        std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText();
+        std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
         internalViewer->switchInput0And1();
         try {
             _imp->aInputNodeChoiceKnob.lock()->blockValueChanges();
@@ -4072,7 +4072,7 @@ ViewerNode::invalidateUiContext()
 NodePtr
 ViewerNode::getCurrentAInput() const
 {
-    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText();
     if (curLabel == "-") {
         return NodePtr();
     }
@@ -4087,7 +4087,7 @@ ViewerNode::getCurrentAInput() const
 NodePtr
 ViewerNode::getCurrentBInput() const
 {
-    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
     if (curLabel == "-") {
         return NodePtr();
     }
@@ -4109,7 +4109,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     getInputs(&groupInputNodes, false);
 
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
-    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
 
     NodePtr nodeToConnect = getInternalViewerNode()->getInputRecursive(internalInputIdx);
     if (curLabel == "-") {

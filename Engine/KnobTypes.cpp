@@ -1963,7 +1963,7 @@ KnobParametric::typeName() const
 }
 
 CurvePtr
-KnobParametric::getAnimationCurve(ViewIdx /*idx*/, DimIdx dimension) const
+KnobParametric::getAnimationCurve(ViewGetSpec /*idx*/, DimIdx dimension) const
 {
     if (dimension < 0 || dimension >= (int)_curves.size()) {
         throw std::invalid_argument("KnobParametric::getAnimationCurve dimension out of range");

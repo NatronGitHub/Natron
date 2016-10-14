@@ -5281,12 +5281,6 @@ EffectInstance::getNearestNonIdentity(double time)
     }
 }
 
-bool
-EffectInstance::canSetValue() const
-{
-    return !getNode()->isNodeRendering() || appPTR->isBackground();
-}
-
 void
 EffectInstance::abortAnyEvaluation(bool keepOldestRender)
 {

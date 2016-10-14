@@ -245,7 +245,7 @@ NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& select
     if (!layerKnob) {
         return ImageComponents();
     }
-    std::string layer = layerKnob->getActiveEntryText_mt_safe();
+    std::string layer = layerKnob->getActiveEntryText();
 
 
     std::string mappedLayerName = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(layer);
@@ -312,13 +312,13 @@ NodePrivate::onMaskSelectorChanged(int inputNb,
     int index = channel->getValue();
     KnobBoolPtr enabled = selector.enabled.lock();
 
-    if ( (index == 0) && enabled->isEnabled(0) ) {
-        enabled->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-        enabled->setEnabled(0, false);
-    } else if ( !enabled->isEnabled(0) ) {
-        enabled->setEnabled(0, true);
+    if ( (index == 0) && enabled->isEnabled(DimIdx(0)) ) {
+        enabled->setValue(false);
+        enabled->setEnabled(false);
+    } else if ( !enabled->isEnabled(DimIdx(0)) ) {
+        enabled->setEnabled(true);
         if ( _publicInterface->getInput(inputNb) ) {
-            enabled->setValue(true, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            enabled->setValue(true);
         }
     }
 

@@ -47,7 +47,7 @@ ValueSerialization::setEnabledChanged(bool b)
 void
 KnobSerialization::encode(YAML::Emitter& em) const
 {
-    if (!_mustSerialize) {
+    if (!_mustSerialize || _values.empty()) {
         return;
     }
     em << YAML::BeginMap;
@@ -67,16 +67,19 @@ KnobSerialization::encode(YAML::Emitter& em) const
     int nDimsToSerialize = 0;
     int nDimsWithValue = 0;
     int nDimsWithDefValue = 0;
-    for (std::size_t i = 0; i < _values.size(); ++i) {
-        if (_values[i]._mustSerialize && _isPersistent) {
-            ++nDimsToSerialize;
-            if (_values[i]._serializeValue || !_values[i]._animationCurve.keys.empty() || _values[i]._slaveMasterLink.hasLink || !_values[i]._expression.empty()) {
-                ++nDimsWithValue;
-            }
-            if (_values[i]._serializeDefaultValue) {
-                ++nDimsWithDefValue;
+    for (PerViewValueSerializationMap::const_iterator it = _values.begin(); it != _values.end(); ++it) {
+        for (PerDimensionValueSerializationVec::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (it2->_mustSerialize && _isPersistent) {
+                ++nDimsToSerialize;
+                if (it2->_serializeValue || !it2->_animationCurve.keys.empty() || it2->_slaveMasterLink.hasLink || !it2->_expression.empty()) {
+                    ++nDimsWithValue;
+                }
+                if (it2->_serializeDefaultValue) {
+                    ++nDimsWithDefValue;
+                }
             }
         }
+
     }
 
 
@@ -85,107 +88,134 @@ KnobSerialization::encode(YAML::Emitter& em) const
         // application may not have created the corresponding knob already and may not know to what type it corresponds
         if (nDimsWithValue > 0) {
             em << YAML::Key << "Value" << YAML::Value;
-            // Starting dimensions
+
+
             if (_values.size() > 1) {
-                em << YAML::Flow << YAML::BeginSeq;
+                // Map against views
+                em << YAML::BeginMap;
             }
-            for (std::size_t i = 0; i < _values.size(); ++i) {
-                if (_values[i]._slaveMasterLink.hasLink) {
-                    // Wrap the link in a sequence of 1 element to distinguish with regular string knobs values
-                    em << YAML::Flow << YAML::BeginMap;
-                    std::stringstream ss;
-                    // Encode the hard-link into a single string
-                    if (!_values[i]._slaveMasterLink.masterNodeName.empty()) {
-                        em << YAML::Key << "N";
-                        em << YAML::Value << _values[i]._slaveMasterLink.masterNodeName;
-                    }
-                    if (!_values[i]._slaveMasterLink.masterTrackName.empty()) {
-                        em << YAML::Key << "T";
-                        em << YAML::Value << _values[i]._slaveMasterLink.masterTrackName;
-                    }
-                    if (!_values[i]._slaveMasterLink.masterKnobName.empty()) {
-                        em << YAML::Key << "K";
-                        em << YAML::Value << _values[i]._slaveMasterLink.masterKnobName;
-                    }
-                    if (!_values[i]._slaveMasterLink.masterDimensionName.empty()) {
-                        em << YAML::Key << "D";
-                        em << YAML::Value << _values[i]._slaveMasterLink.masterDimensionName;
-                    }
-                    em << YAML::EndMap;
-                } else if (!_values[i]._expression.empty()) {
-                    // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
-                    em << YAML::Flow << YAML::BeginMap;
-                    if (_values[i]._expresionHasReturnVariable) {
-                        // Multi-line expr
-                        em << YAML::Key << "MultiExpr";
-                    } else {
-                        // single line expr
-                        em << YAML::Key << "Expr";
-                    }
-                    em << YAML::Value << _values[i]._expression;
-                    em << YAML::EndMap;
-                } else if (!_values[i]._animationCurve.keys.empty()) {
-                    em << YAML::Flow << YAML::BeginMap;
-                    em << YAML::Key << "Curve" << YAML::Value;
-                    _values[i]._animationCurve.encode(em);
-                    em << YAML::EndMap;
-                } else {
-                    assert(_values[i]._type != ValueSerialization::eSerializationValueVariantTypeNone);
-                    switch (_values[i]._type) {
-                        case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                            em << _values[i]._value.isBool;
-                            break;
-                        case ValueSerialization::eSerializationValueVariantTypeInteger:
-                            em << _values[i]._value.isInt;
-                            break;
-                        case ValueSerialization::eSerializationValueVariantTypeDouble:
-                            em << _values[i]._value.isDouble;
-                            break;
-                        case ValueSerialization::eSerializationValueVariantTypeString:
-                            em << _values[i]._value.isString;
-                            break;
-                        default:
-                            break;
-                    }
+            for (PerViewValueSerializationMap::const_iterator it = _values.begin(); it != _values.end(); ++it) {
+
+                if (_values.size() > 1) {
+                    em << YAML::Key << it->first << YAML::Value;
                 }
-            }
+
+                // Starting dimensions
+                if (it->second.size() > 1) {
+                    em << YAML::Flow << YAML::BeginSeq;
+                }
+                for (PerDimensionValueSerializationVec::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
+                    const ValueSerialization& val = *it2;
+
+                    if (val._slaveMasterLink.hasLink) {
+                        // Wrap the link in a sequence of 1 element to distinguish with regular string knobs values
+                        em << YAML::Flow << YAML::BeginMap;
+                        std::stringstream ss;
+                        // Encode the hard-link into a single string
+                        if (!val._slaveMasterLink.masterNodeName.empty()) {
+                            em << YAML::Key << "N";
+                            em << YAML::Value << val._slaveMasterLink.masterNodeName;
+                        }
+                        if (!val._slaveMasterLink.masterTableItemName.empty()) {
+                            em << YAML::Key << "T";
+                            em << YAML::Value << val._slaveMasterLink.masterTableItemName;
+                        }
+                        if (!val._slaveMasterLink.masterKnobName.empty()) {
+                            em << YAML::Key << "K";
+                            em << YAML::Value << val._slaveMasterLink.masterKnobName;
+                        }
+                        if (!val._slaveMasterLink.masterDimensionName.empty()) {
+                            em << YAML::Key << "D";
+                            em << YAML::Value << val._slaveMasterLink.masterDimensionName;
+                        }
+                        em << YAML::EndMap;
+                    } else if (!val._expression.empty()) {
+                        // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
+                        em << YAML::Flow << YAML::BeginMap;
+                        if (val._expresionHasReturnVariable) {
+                            // Multi-line expr
+                            em << YAML::Key << "MultiExpr";
+                        } else {
+                            // single line expr
+                            em << YAML::Key << "Expr";
+                        }
+                        em << YAML::Value << val._expression;
+                        em << YAML::EndMap;
+                    } else if (!val._animationCurve.keys.empty()) {
+                        em << YAML::Flow << YAML::BeginMap;
+                        em << YAML::Key << "Curve" << YAML::Value;
+                        val._animationCurve.encode(em);
+                        em << YAML::EndMap;
+                    } else {
+                        assert(val._type != ValueSerialization::eSerializationValueVariantTypeNone);
+                        switch (val._type) {
+                            case ValueSerialization::eSerializationValueVariantTypeBoolean:
+                                em << val._value.isBool;
+                                break;
+                            case ValueSerialization::eSerializationValueVariantTypeInteger:
+                                em << val._value.isInt;
+                                break;
+                            case ValueSerialization::eSerializationValueVariantTypeDouble:
+                                em << val._value.isDouble;
+                                break;
+                            case ValueSerialization::eSerializationValueVariantTypeString:
+                                em << val._value.isString;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    if (it->second.size() > 1) {
+                        em << YAML::EndSeq;
+                    }
+                } // for each dimension
+            } // for each view
+
+
             if (_values.size() > 1) {
-                em << YAML::EndSeq;
+                em << YAML::EndMap;
             }
-        }
+        } // nDimsWithValue > 0
 
 
-        if (nDimsWithDefValue) {
+        if (nDimsWithDefValue > 0) {
             em << YAML::Key << "Default" << YAML::Value;
+
+            // Only encode default value for the main view
+            const PerDimensionValueSerializationVec& mainViewValues = _values.begin()->second;
             // Starting dimensions
-            if (_values.size() > 1) {
+            if (mainViewValues.size() > 1) {
                 em << YAML::Flow << YAML::BeginSeq;
             }
-            for (std::size_t i = 0; i < _values.size(); ++i) {
-                switch (_values[i]._type) {
+            for (PerDimensionValueSerializationVec::const_iterator it2 = mainViewValues.begin(); it2 != mainViewValues.end(); ++it2) {
+                const ValueSerialization& val = *it2;
+                switch (val._type) {
                     case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                        em << _values[i]._defaultValue.isBool;
+                        em << val._defaultValue.isBool;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeInteger:
-                        em << _values[i]._defaultValue.isInt;
+                        em << val._defaultValue.isInt;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeDouble:
-                        em << _values[i]._defaultValue.isDouble;
+                        em << val._defaultValue.isDouble;
                         break;
                     case ValueSerialization::eSerializationValueVariantTypeString:
-                        em << _values[i]._defaultValue.isString;
+                        em << val._defaultValue.isString;
                         break;
                     default:
                         break;
                 }
 
-            }
-            if (_values.size() > 1) {
+            } // for all dimensions
+            if (mainViewValues.size() > 1) {
                 em << YAML::EndSeq;
             }
-        }
 
-    } // hasDimensionToSerialize
+
+        } // nDimsWithDefValue > 0
+
+    } // nDimsToSerialize > 0
 
     TextExtraData* textData = dynamic_cast<TextExtraData*>(_extraData.get());
     if (_extraData && _isPersistent) {
@@ -202,12 +232,30 @@ KnobSerialization::encode(YAML::Emitter& em) const
         } else if (textData) {
             if (!textData->keyframes.empty()) {
                 em << YAML::Key << "TextAnim" << YAML::Value;
-                em << YAML::Flow;
-                em << YAML::BeginSeq;
-                for (std::map<int, std::string>::const_iterator it = textData->keyframes.begin(); it!=textData->keyframes.end(); ++it) {
-                    em << it->first << it->second;
+
+                if (textData->keyframes.size() > 1) {
+                    // Multi-view: start a map
+                    em << YAML::BeginMap;
                 }
-                em << YAML::EndSeq;
+                for (std::map<std::string,std::map<double, std::string> >::const_iterator it = textData->keyframes.begin(); it != textData->keyframes.end(); ++it) {
+                    if (textData->keyframes.size() > 1) {
+                        em << YAML::Key << it->first << YAML::Value;
+                    }
+                    if (it->second.empty()) {
+                        continue;
+                    }
+                    em << YAML::Flow;
+                    em << YAML::BeginSeq;
+                    for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it) {
+                        em << it->first << it->second;
+                    }
+                    em << YAML::EndSeq;
+                }
+                if (textData->keyframes.size() > 1) {
+                    em << YAML::EndMap;
+                }
+
+
             }
             if (std::abs(textData->fontColor[0] - 0.) > 0.01 || std::abs(textData->fontColor[1] - 0.) > 0.01 || std::abs(textData->fontColor[2] - 0.) > 0.01) {
                 em << YAML::Key << "FontColor" << YAML::Value << YAML::Flow << YAML::BeginSeq << textData->fontColor[0] << textData->fontColor[1] << textData->fontColor[2] << YAML::EndSeq;
@@ -423,18 +471,66 @@ static void decodeValueFromNode(const YAML::Node& node,
     
 }
 
-static void initValuesVec(KnobSerialization* serialization, int nDims)
+static void initValuesVec(KnobSerialization* knob, KnobSerialization::PerDimensionValueSerializationVec* serialization, int nDims)
 {
-    if ((int)serialization->_values.size() != nDims) {
-        serialization->_dimension = nDims;
-        serialization->_values.resize(nDims);
-        for (std::size_t i = 0; i < serialization->_values.size(); ++i) {
-            serialization->_values[i]._serialization = serialization;
-            serialization->_values[i]._mustSerialize = true;
-            serialization->_values[i]._dimension = i;
+    if ((int)serialization->size() != nDims) {
+        knob->_dimension = nDims;
+        serialization->resize(nDims);
+        for (std::size_t i = 0; i < serialization->size(); ++i) {
+            (*serialization)[i]._serialization = knob;
+            (*serialization)[i]._mustSerialize = true;
+            (*serialization)[i]._dimension = i;
         }
     }
 }
+
+void
+KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node& node)
+{
+
+    int nDims = node.IsSequence() ? node.size() : 1;
+
+    PerDimensionValueSerializationVec& dimVec = _values[viewName];
+    initValuesVec(this, &dimVec, nDims);
+
+    for (int i = 0; i < nDims; ++i) {
+
+        YAML::Node dimNode = node.IsSequence() ? node[i] : node;
+
+        if (!dimNode.IsMap()) {
+            // This is a value
+            decodeValueFromNode(dimNode, dimVec[i]._value, &dimVec[i]._type);
+            dimVec[i]._serializeValue = true;
+        } else { // !isMap
+            if (dimNode["Curve"]) {
+                // Curve
+                dimVec[i]._animationCurve.decode(dimNode["Curve"]);
+            } else if (dimNode["MultiExpr"]) {
+                dimVec[i]._expression = dimNode["MultiExpr"].as<std::string>();
+                dimVec[i]._expresionHasReturnVariable = true;
+            } else if (dimNode["Expr"]) {
+                dimVec[i]._expression = dimNode["Expr"].as<std::string>();
+            } else {
+                // This is most likely a regular slavr/master link
+                if (dimNode["N"]) {
+                    dimVec[i]._slaveMasterLink.masterNodeName = dimNode["N"].as<std::string>();
+                }
+                if (dimNode["T"]) {
+                    dimVec[i]._slaveMasterLink.masterTableItemName = dimNode["T"].as<std::string>();
+                }
+                if (dimNode["K"]) {
+                    dimVec[i]._slaveMasterLink.masterKnobName = dimNode["K"].as<std::string>();
+                }
+                if (dimNode["D"]) {
+                    dimVec[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
+                }
+
+            }
+
+        } // isMap
+    }
+
+} //decodeValueNode
 
 
 void
@@ -452,44 +548,13 @@ KnobSerialization::decode(const YAML::Node& node)
     if (node["Value"]) {
         YAML::Node valueNode = node["Value"];
 
-        int nDims = valueNode.IsSequence() ? valueNode.size() : 1;
-        initValuesVec(this, nDims);
-
-        for (int i = 0; i < nDims; ++i) {
-
-            YAML::Node dimNode = valueNode.IsSequence() ? valueNode[i] : valueNode;
-
-            if (!dimNode.IsMap()) {
-                // This is a value
-                decodeValueFromNode(dimNode, _values[i]._value, &_values[i]._type);
-                _values[i]._serializeValue = true;
-            } else { // if (dimNode[i].isMap())
-                if (dimNode["Curve"]) {
-                    // Curve
-                    _values[i]._animationCurve.decode(dimNode["Curve"]);
-                } else if (dimNode["MultiExpr"]) {
-                    _values[i]._expression = dimNode["MultiExpr"].as<std::string>();
-                    _values[i]._expresionHasReturnVariable = true;
-                } else if (dimNode["Expr"]) {
-                    _values[i]._expression = dimNode["Expr"].as<std::string>();
-                } else {
-                    // This is most likely a regular slavr/master link
-                    if (dimNode["N"]) {
-                        _values[i]._slaveMasterLink.masterNodeName = dimNode["N"].as<std::string>();
-                    }
-                    if (dimNode["T"]) {
-                        _values[i]._slaveMasterLink.masterTrackName = dimNode["T"].as<std::string>();
-                    }
-                    if (dimNode["K"]) {
-                        _values[i]._slaveMasterLink.masterKnobName = dimNode["K"].as<std::string>();
-                    }
-                    if (dimNode["D"]) {
-                        _values[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
-                    }
-
-                }
-
-            } // if (!valueNode[i].IsSequence())
+        if (valueNode.IsMap()) {
+            // Multi-view
+            for (YAML::const_iterator it = valueNode.begin(); it != valueNode.end(); ++it) {
+                decodeValueNode(it->first.as<std::string>(), it->second);
+            }
+        } else {
+            decodeValueNode("Main", valueNode);
         }
     }
 
@@ -497,13 +562,15 @@ KnobSerialization::decode(const YAML::Node& node)
 
         YAML::Node defNode = node["Default"];
         int nDims = defNode.IsSequence() ? defNode.size() : 1;
-        initValuesVec(this, nDims);
+        PerDimensionValueSerializationVec& dimVec = _values["Main"];
+        initValuesVec(this, &dimVec, nDims);
         for (int i = 0; i < nDims; ++i) {
-            _values[i]._serializeDefaultValue = true;
+            dimVec[i]._serializeDefaultValue = true;
             YAML::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
-            decodeValueFromNode(dimNode, _values[i]._defaultValue, &_values[i]._type);
-
+            decodeValueFromNode(dimNode, dimVec[i]._defaultValue, &dimVec[i]._type);
         }
+
+
     }
 
     if (node["ParametricCurves"]) {
@@ -518,19 +585,44 @@ KnobSerialization::decode(const YAML::Node& node)
     if (node["TextAnim"]) {
         YAML::Node curveNode = node["TextAnim"];
         TextExtraData *data = getOrCreateExtraData<TextExtraData>(_extraData);
-        // If type = 0 we expect a int, otherwise a string
-        int type = 0;
-        std::pair<int, std::string> p;
-        for (std::size_t i = 0; i < curveNode.size(); ++i) {
-            if (type == 0) {
-                p.first = curveNode[i].as<int>();
-                type = 1;
-            } else if (type == 1) {
-                type = 0;
-                p.second = curveNode[i].as<std::string>();
-                data->keyframes.insert(p);
+        if (curveNode.IsMap()) {
+            // Multi-view
+            for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
+                std::string viewName = it->first.as<std::string>();
+                YAML::Node keysForViewNode = it->second;
+
+                std::map<double, std::string>& keysForView = data->keyframes[viewName];
+                // If type = 0 we expect a int, otherwise a string
+                int type = 0;
+                std::pair<double, std::string> p;
+                for (std::size_t i = 0; i < keysForViewNode.size(); ++i) {
+                    if (type == 0) {
+                        p.first = keysForViewNode[i].as<double>();
+                        type = 1;
+                    } else if (type == 1) {
+                        type = 0;
+                        p.second = keysForViewNode[i].as<std::string>();
+                        keysForView.insert(p);
+                    }
+                }
+            }
+        } else {
+            // If type = 0 we expect a int, otherwise a string
+            std::map<double, std::string>& keysForView = data->keyframes["Main"];
+            int type = 0;
+            std::pair<double, std::string> p;
+            for (std::size_t i = 0; i < curveNode.size(); ++i) {
+                if (type == 0) {
+                    p.first = curveNode[i].as<double>();
+                    type = 1;
+                } else if (type == 1) {
+                    type = 0;
+                    p.second = curveNode[i].as<std::string>();
+                    keysForView.insert(p);
+                }
             }
         }
+
     }
 
     if (node["FontColor"]) {

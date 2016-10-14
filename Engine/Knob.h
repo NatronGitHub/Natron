@@ -208,14 +208,6 @@ public:
         Q_EMIT availableViewsChanged();
     }
 
-public Q_SLOTS:
-
-
-    void onMasterCurveAnimationChanged(const std::list<double>& keysAdded,
-                                       const std::list<double>& keysRemoved,
-                                       ViewIdx view,
-                                       DimIdx dimension);
-
 
 Q_SIGNALS:
 
@@ -299,7 +291,7 @@ struct KnobChange
     bool originatedFromMainThread;
     double time;
     ViewSetSpec view;
-    std::set<int> dimensionChanged;
+    std::set<DimIdx> dimensionChanged;
     bool valueChangeBlocked;
 };
 
@@ -343,16 +335,57 @@ protected:
 
 public:
 
-    struct ListenerDim
+    struct ListenerLink
     {
+        // Is the link made with an expression?
         bool isExpr;
-        bool isListening;
-        int targetDim;
-        ListenerDim()
-            : isExpr(false), isListening(false), targetDim(-1) {}
+
+        // The view of the listener that is listening
+        ViewIdx listenerView;
+
+        // The dimension of the listener that is listening
+        DimIdx listenerDimension;
+
+        // The dimension of the knob listened to
+        DimIdx targetDim;
+
+        // The view of the knob listened to
+        ViewIdx targetView;
+
+        ListenerLink()
+        : isExpr(false)
+        , listenerView()
+        , listenerDimension()
+        , targetDim()
+        , targetView()
+        {}
     };
 
-    typedef std::map<KnobIWPtr, std::vector<ListenerDim> > ListenerDimsMap;
+    typedef std::list<ListenerLink> ListenerLinkList;
+    typedef std::map<KnobIWPtr, ListenerLinkList> ListenerDimsMap;
+
+
+    struct Expr
+    {
+        std::string expression; //< the one modified by Natron
+        std::string originalExpression; //< the one input by the user
+        std::string exprInvalid;
+        bool hasRet;
+
+        ///The list of pair<knob, dimension> dpendencies for an expression
+        struct Dependency
+        {
+            KnobIWPtr knob;
+            DimIdx dimension;
+            ViewIdx view;
+        };
+        std::list<Dependency> dependencies;
+
+        //PyObject* code;
+
+        Expr()
+        : expression(), originalExpression(), exprInvalid(), hasRet(false) /*, code(0)*/ {}
+    };
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -590,7 +623,7 @@ public:
                                                 std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
     
     /**
-     * @brief When set to true the evaluate (render) action will not be called
+     * @brief When in-between a begin/endChanges bracket, evaluate (render) action will not be called
      * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
     virtual void beginChanges() = 0;
@@ -616,7 +649,7 @@ public:
     /**
      * @brief Returns the value previously set by setAutoKeyingEnabled
      **/
-    virtual bool isAutoKeyingEnabled(DimIdx dimension, ValueChangedReasonEnum reason) const = 0;
+    virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const = 0;
 
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
@@ -672,7 +705,8 @@ public:
      **/
 
 protected:
-    virtual void setExpressionInternal(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) = 0;
+
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) = 0;
 
 public:
 
@@ -681,7 +715,7 @@ public:
                            const std::string& expression,
                            bool hasRetVariable)
     {
-        setExpressionInternal(dimension, view, expression, hasRetVariable, false, false);
+        setExpressionCommon(dimension, view, expression, hasRetVariable, false, false);
     }
 
     void setExpression(DimSpec dimension,
@@ -690,7 +724,7 @@ public:
                        bool hasRetVariable,
                        bool failIfInvalid)
     {
-        setExpressionInternal(dimension, view, expression, hasRetVariable, true, failIfInvalid);
+        setExpressionCommon(dimension, view, expression, hasRetVariable, true, failIfInvalid);
     }
 
     /**
@@ -722,8 +756,7 @@ public:
      * @returns A new string containing the modified expression with the 'ret' variable declared if it wasn't already declared
      * by the user.
      **/
-    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, bool hasRetVariable,
-                                           std::string* resultAsString) = 0;
+    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) = 0;
 
 protected:
 
@@ -740,7 +773,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<std::pair<KnobIWPtr, int> >& dependencies) const = 0;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<KnobI::Expr::Dependency>& dependencies) const = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -821,7 +854,7 @@ public:
     /**
      * @brief Returns a pointer to the curve in the given dimension and view.
      **/
-    virtual CurvePtr getCurve(ViewIdx view, DimIdx dimension, bool byPassMaster = false) const = 0;
+    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension, bool byPassMaster = false) const = 0;
 
     /**
      * @brief Returns true if the curve corresponding to the dimension/view is animated with keyframes.
@@ -968,7 +1001,7 @@ public:
     /**
      * @brief Is the dimension enabled ?
      **/
-    virtual bool isEnabled(DimIdx dimension) const = 0;
+    virtual bool isEnabled(DimIdx dimension = DimIdx(0)) const = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
@@ -1187,6 +1220,8 @@ public:
     virtual void addListener(const bool isExpression,
                              const DimIdx listenerDimension,
                              const DimIdx listenedToDimension,
+                             const ViewIdx listenerView,
+                             const ViewIdx listenedToView,
                              const KnobIPtr& listener) = 0;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
 
@@ -1200,11 +1235,11 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&  serializationBase) OVERRIDE = 0;
 
-    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, bool restoreDefaultValue) = 0;
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view, bool restoreDefaultValue) = 0;
 
 private:
 
-    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension) = 0;
+    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension, ViewIdx listenerView) = 0;
 
 public:
 
@@ -1214,29 +1249,29 @@ protected:
 
     virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) = 0;
 
-    /**
-     * @brief Slaves the value for the given dimension to the curve
-     * at the same dimension for the knob 'other'.
-     * In case of success, this function returns true, otherwise false.
-     **/
-    virtual bool slaveToInternal(DimIdx dimension, ViewIdx view, const KnobIPtr &other, DimIdx otherDimension, ViewIdx otherView, ValueChangedReasonEnum reason) = 0;
-
-    /**
-     * @brief Unslaves a previously slaved dimension. The implementation should assert that
-     * the dimension was really slaved.
-     **/
-    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, ValueChangedReasonEnum reason, bool copyState) = 0;
-
 public:
 
     virtual void onKnobAboutToAlias(const KnobIPtr& /*slave*/) {}
 
 
     /**
-     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
-     * @param ignoreMasterPersistence If true the master will not be serialized.
+     * @brief Slaves this Knob given dimension to the other knob dimension. 
+     * @param otherKnob The knob to slave to
+     * @param thisDimension If set to all, each dimension will be respectively slaved to the other knob
+     * assuming they have a matching dimension in the other knob.
+     * @param thisView If set to all, then all views
+     * will be slaved, it is then expected that view == otherView == ViewSpec::all(). If not set to all valid view index should be given
+     * @return True on success, false otherwise
+     * Note that if this parameter is already slaved to another parameter this function will fail.
      **/
-    bool slaveTo(DimIdx dimension, ViewIdx view, const KnobIPtr & other, DimIdx otherDimension, ViewIdx otherView);
+    virtual bool slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) = 0;
+
+    /**
+     * @brief Unslave the given dimension(s)/view(s) if they are slaved to another knob
+     * @param copyState if true then the knob will copy the state of the master knob before removing the link, otherwise
+     * it will revert to the state it had prior to slaving to the master knob.
+     **/
+    virtual void unSlave(DimSpec dimension, ViewSetSpec view, bool copyState) = 0;
 
     virtual bool isMastersPersistenceIgnored() const = 0;
 
@@ -1259,10 +1294,6 @@ public:
     virtual KnobIPtr getAliasMaster() const = 0;
     virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) = 0;
 
-    /**
-     * @brief Calls unSlave with a value changed reason of eValueChangedReasonNatronInternalEdited.
-     **/
-    void unSlave(DimIdx dimension, ViewIdx view, bool copyState);
 
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
@@ -1398,8 +1429,12 @@ public:
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAutoKeyingEnabled(bool enabled) OVERRIDE FINAL;
-    virtual bool isAutoKeyingEnabled(DimIdx dimension, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool evaluateValueChange(DimSpec dimension, double time, ViewSetSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+private:
+
+    bool isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const WARN_UNUSED_RETURN;
 
 protected:
     // Returns true if the knobChanged handler was called
@@ -1446,12 +1481,19 @@ public:
     virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE ;
     virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
-    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE ;
+    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE ;
     //////////// End from AnimatingObjectI
 
 private:
 
+    void removeAnimationInternal(ViewIdx view, DimIdx dimension);
+    void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension);
     void deleteAnimationConditional(double time, ViewSetSpec view, DimSpec dimension, bool before);
+    void deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx dimension, bool before);
+    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes);
+    void setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys);
+    bool setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double left, double right);
+    bool setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double derivative, bool isLeft);
 
 public:
 
@@ -1462,7 +1504,7 @@ public:
     virtual int getKeyFramesCount(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getNearestKeyFrameTime(ViewGetSpec view, DimIdx dimension, double time, double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getKeyFrameIndex(ViewGetSpec view, DimIdx dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual CurvePtr getCurve(ViewIdx view, DimIdx dimension, bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension, bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated( DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidExpressions() OVERRIDE FINAL;
@@ -1471,16 +1513,40 @@ public:
 
 protected:
 
+    void setExpressionInternal(DimIdx dimension, ViewIdx view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid);
+
+private:
+
+    void setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool valid, const std::string& error);
+
+    void replaceNodeNameInExpressionInternal(DimIdx dimension,
+                                             ViewIdx view,
+                                             const std::string& oldName,
+                                             const std::string& newName);
+
+    void clearExpressionInternal(DimIdx dimension, ViewIdx view);
 public:
 
-    virtual void setExpressionInternal(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) OVERRIDE FINAL;
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) OVERRIDE FINAL;
+
     virtual void replaceNodeNameInExpression(DimSpec dimension,
                                              ViewSetSpec view,
                                              const std::string& oldName,
                                              const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) OVERRIDE FINAL;
-    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, bool hasRetVariable,
-                                           std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void unSlave(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
+
+protected:
+
+    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, bool copyState) = 0;
+
+private:
+
+    bool slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView) WARN_UNUSED_RETURN;
+
 
 protected:
 
@@ -1492,7 +1558,7 @@ protected:
 public:
 
     virtual bool isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<std::pair<KnobIWPtr, int> >& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<KnobI::Expr::Dependency>& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1528,7 +1594,7 @@ public:
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all()) OVERRIDE FINAL;
-    virtual bool isEnabled(DimIdx dimension) const OVERRIDE FINAL;
+    virtual bool isEnabled(DimIdx dimension = DimIdx(0)) const OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1599,11 +1665,9 @@ public:
 
     virtual bool hasDefaultValueChanged(DimIdx dimension) const = 0;
 
-
 private:
 
-
-    virtual bool slaveToInternal(DimIdx dimension, ViewIdx view, const KnobIPtr &  other, DimIdx otherDimension, ViewIdx otheView, ValueChangedReasonEnum reason) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    void refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension);
 
 protected:
 
@@ -1629,8 +1693,12 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr, DimIdx fromExprDimension, DimIdx thisDimension, const KnobIPtr& knob) OVERRIDE FINAL;
-    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,
+                             DimIdx fromExprDimension,
+                             DimIdx thisDimension,
+                             const ViewIdx listenerView,
+                             const ViewIdx listenedToView, const KnobIPtr& knob) OVERRIDE FINAL;
+    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension, ViewIdx listenerView) OVERRIDE FINAL;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
     virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     virtual void clearExpressionsResults(DimSpec /*dimension*/, ViewSetSpec /*view*/) OVERRIDE {}
@@ -1669,7 +1737,7 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, bool restoreDefaultValue) OVERRIDE FINAL;
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view, bool restoreDefaultValue) OVERRIDE FINAL;
 
 
     virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1680,7 +1748,7 @@ public:
 
 protected:
 
-
+    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 
     virtual void copyValuesFromCurve(DimSpec /*dim*/, ViewSetSpec /*view*/) {}
 
@@ -1735,15 +1803,13 @@ public:
     }
 
 
-    void setGuiCurveHasChanged(ViewIdx view, DimIdx dimension, bool changed);
-    bool hasGuiCurveChanged(ViewIdx view, DimIdx dimension) const;
 
 
     boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
 private:
 
-    void expressionChanged(int dimension);
+    void expressionChanged(DimIdx dimension, ViewIdx view);
 
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
@@ -1862,10 +1928,7 @@ public:
 private:
 
 
-    virtual void unSlaveInternal(DimIdx dimension,
-                                 ViewIdx view,
-                                 ValueChangedReasonEnum reason,
-                                 bool copyState) OVERRIDE FINAL;
+    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, bool copyState) OVERRIDE FINAL;
 
 public:
 
@@ -2150,7 +2213,6 @@ public:
 
 protected:
 
-    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 
     virtual void resetExtraToDefaultValue(DimSpec /*dimension*/, ViewSetSpec /*view*/) {}
 
@@ -2265,9 +2327,9 @@ public:
         return _animation;
     }
 
-    void loadAnimation(const std::map<ViewIdx,std::map<double, std::string> > & keyframes);
+    void loadAnimation(const std::map<std::string,std::map<double, std::string> > & keyframes);
 
-    void saveAnimation(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const;
+    void saveAnimation(std::map<std::string,std::map<double, std::string> >* keyframes) const;
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
@@ -2569,8 +2631,6 @@ public:
                            ValueChangedReasonEnum originalReason,
                            ValueChangedReasonEnum reason);
 
-    bool isSetValueCurrentlyPossible() const;
-
     void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
 
     /**
@@ -2595,12 +2655,6 @@ protected:
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * @brief Can be overriden to prevent values to be set directly.
-     * Instead the setValue/setValueAtTime actions are queued up
-     * They will be dequeued when dequeueValuesSet will be called.
-     **/
-    virtual bool canSetValue() const { return true; }
 
 
     /**

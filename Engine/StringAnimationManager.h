@@ -69,7 +69,7 @@ public:
 
     void stringFromInterpolatedIndex(double interpolated, ViewIdx view, std::string* returnValue) const;
 
-    bool clone(const StringAnimationManager & other, ViewIdx view, SequenceTime offset, const RangeD* range);
+    bool clone(const StringAnimationManager & other, ViewIdx view, ViewIdx otherView, SequenceTime offset, const RangeD* range);
 
     void load(const std::map<ViewIdx,std::map<double, std::string> > & keyframes);
 

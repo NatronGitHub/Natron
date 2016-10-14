@@ -451,6 +451,49 @@ KnobTableItem::getLabel() const
     return _imp->label;
 }
 
+
+bool
+KnobTableItem::setScriptName(const std::string& name)
+{
+
+    if ( name.empty() ) {
+        return false;
+    }
+
+    std::string currentName;
+    {
+        QMutexLocker l(&_imp->lock);
+        currentName = _imp->scriptName;
+    }
+
+    // Make sure the script-name is Python compliant
+    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
+
+    if ( cpy.empty() || cpy == currentName) {
+        return false;
+    }
+
+    KnobItemsTablePtr model = getModel();
+    KnobTableItemPtr existingItem = model->getItemByScriptName(name);
+    if ( existingItem && (existingItem.get() != this) ) {
+        return false;
+    }
+
+    KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
+    if (!currentName.empty()) {
+        model->removeItemAsPythonField(thisShared);
+    }
+
+    {
+        QMutexLocker l(&_imp->lock);
+        _imp->scriptName = cpy;
+    }
+
+    model->declareItemAsPythonField(thisShared);
+    
+    return true;
+}
+
 std::string
 KnobTableItem::getScriptName_mt_safe() const
 {
@@ -997,14 +1040,13 @@ KnobItemsTablePrivate::linkItemKnobsToGuiKnobs(const KnobTableItemPtr& item, boo
         found->unblockListenersNotification();
 
         //Slave internal knobs
-        assert( (*it)->getNDimensions() == found->getNDimensions() );
-        for (int i = 0; i < (*it)->getNDimensions(); ++i) {
-            if (slave) {
-                (*it)->slaveTo(DimIdx(i), found, DimIdx(i));
-            } else {
-                (*it)->unSlave(DimIdx(i), !multipleItemsSelected);
-            }
+
+        if (slave) {
+            (*it)->slaveTo(found);
+        } else {
+            (*it)->unSlave(DimSpec::all(), ViewSetSpec::all(), !multipleItemsSelected);
         }
+
     }
 
 }
@@ -1184,7 +1226,7 @@ KnobTableItem::getKeyFrameDataType() const
 }
 
 CurvePtr
-KnobTableItem::getAnimationCurve(ViewIdx /*idx*/, DimIdx /*dimension*/) const
+KnobTableItem::getAnimationCurve(ViewGetSpec /*idx*/, DimIdx /*dimension*/) const
 {
     return _imp->animation;
 }

@@ -79,7 +79,7 @@ Knob<T>::checkIfValueChanged(const T& a, DimIdx dimension, ViewIdx view) const
 {
     assert(dimension >= 0 && dimension < (int)_values.size());
     typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view);
-    if (foundView == _values.end()) {
+    if (foundView == _values[dimension].end()) {
         // Unexistant view, say yes!
         return true;
     }
@@ -128,10 +128,10 @@ Knob<T>::setValue(const T & v,
                         }
                     }
                 } else {
-                    T& curValue = _values[i][view];
-                    if (checkIfValueChanged(v, DimIdx(i), view)) {
+                    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                    if (checkIfValueChanged(v, DimIdx(i), view_i)) {
                         hasChanged = true;
-                        _values[i][*it] = v;
+                        _values[i][view_i] = v;
                     }
                 }
             }
@@ -143,16 +143,16 @@ Knob<T>::setValue(const T & v,
 
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
-                    if (checkIfValueChanged(v, dimension, *it)) {
+                    if (checkIfValueChanged(v, DimIdx(dimension), *it)) {
                         hasChanged = true;
-                        _values[i][*it] = v;
+                        _values[dimension][*it] = v;
                     }
                 }
             } else {
-                T& curValue = _values[dimension][view];
-                if (checkIfValueChanged(v, dimension, view)) {
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                if (checkIfValueChanged(v, DimIdx(dimension), view_i)) {
                     hasChanged = true;
-                    _values[i][*it] = v;
+                    _values[dimension][view_i] = v;
                 }
             }
 
@@ -161,23 +161,25 @@ Knob<T>::setValue(const T & v,
 
 
     // Check if we can add automatically a new keyframe
-    if (isAutoKeyingEnabled(dimension, reason)) {
+    if (isAutoKeyingEnabled(dimension, view, reason)) {
         double time = getCurrentTime();
         return setValueAtTime(time, v, view, dimension, reason, newKey);
     } else {
         double time = getCurrentTime();
 
+        ValueChangedReturnCodeEnum ret;
+        if (hasChanged) {
+            ret = eValueChangedReturnCodeNoKeyframeAdded;
+        } else {
+            ret = eValueChangedReturnCodeNothingChanged;
+        }
+
         // Add this action to the undo/redo stack if needed
-        addSetValueToUndoRedoStackIfNeeded(v, reason, view, dimension, time, false);
+        addSetValueToUndoRedoStackIfNeeded(v, reason, ret, view, dimension, time, false);
 
         // Evaluate the change
         evaluateValueChange(dimension, time, view, reason);
-
-        if (hasChanged) {
-            return eValueChangedReturnCodeNoKeyframeAdded;
-        } else {
-            return eValueChangedReturnCodeNothingChanged;
-        }
+        return ret;
     }
 
 } // setValue
@@ -321,16 +323,18 @@ Knob<T>::setValueAtTime(double time,
                     setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
                 }
             } else {
-                setValueOnCurveInternal(time, v, DimIdx(i), view, newKey, &ret);
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                setValueOnCurveInternal(time, v, DimIdx(i), view_i, newKey, &ret);
             }
         }
     } else {
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
-                setValueOnCurveInternal(time, v, dimension, *it, newKey, &ret);
+                setValueOnCurveInternal(time, v, DimIdx(dimension), *it, newKey, &ret);
             }
         } else {
-            setValueOnCurveInternal(time, v, dimension, view, newKey, &ret);
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            setValueOnCurveInternal(time, v, DimIdx(dimension), view_i, newKey, &ret);
         }
     }
 
@@ -348,7 +352,7 @@ Knob<T>::setValueAtTime(double time,
 
 
     if (ret != eValueChangedReturnCodeNothingChanged) {
-        addSetValueToUndoRedoStackIfNeeded(v, reason, view, dimension, time, true);
+        addSetValueToUndoRedoStackIfNeeded(v, reason, ret, view, dimension, time, true);
         evaluateValueChange(dimension, time, view, reason);
     } 
 
@@ -455,7 +459,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
         if (i == values.size() - 1 && values.size() > 1) {
             unblockValueChanges();
         }
-        ret = setValueAtTime(time, values[i], view, dimensionStartOffset + i, reason, &newKey, hasChanged);
+        ret = setValueAtTime(time, values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
             (*retCodes)[i] = ret;
         }
@@ -498,25 +502,25 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
 
-        if (keysPerDimension[i].empty()) {
+        if (keysPerDimension[i].second.empty()) {
             continue;
         }
 
 
-        DimIdx dimension = keysPerDimension[i].dimension;
-        ViewIdx view = keysPerDimension[i].view;
+        DimIdx dimension = keysPerDimension[i].first.dimension;
+        ViewIdx view = keysPerDimension[i].first.view;
 
 
-        typename std::list<TimeValuePair<T> >::const_iterator next = keysPerDimension[i].begin();
+        typename std::list<TimeValuePair<T> >::const_iterator next = keysPerDimension[i].second.begin();
         ++next;
-        for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].begin(); it!=keysPerDimension[i].end(); ++it) {
-            if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].end()) {
+        for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].second.begin(); it!=keysPerDimension[i].second.end(); ++it) {
+            if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].second.end()) {
                 unblockValueChanges();
             }
             ret = setValueAtTime(it->time, it->value, view, dimension, reason, 0 /*outKey*/, hasChanged);
             hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
 
-            if (next != keysPerDimension[i].end()) {
+            if (next != keysPerDimension[i].second.end()) {
                 ++next;
             }
         }
@@ -528,6 +532,88 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
     endChanges();
 
 } // setMultipleValueAtTimeAcrossDimensions
+
+
+
+template <typename T>
+void
+Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
+{
+    removeAnimation(view, dimension);
+
+
+
+    clearExpression(dimension, view, true);
+    resetExtraToDefaultValue(dimension, view);
+
+    int nDims = getNDimensions();
+    std::vector<T> defValues(nDims);
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() || i == dimension) {
+            {
+                QMutexLocker l(&_valueMutex);
+                defValues[i] = _defaultValues[i].value;
+            }
+        }
+    }
+    if (dimension.isAll()) {
+        setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
+    } else {
+        ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+    }
+
+}
+
+template<>
+void
+KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
+{
+    removeAnimation(view, dimension);
+
+    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
+    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
+
+    clearExpression(dimension, view, true);
+
+
+    resetExtraToDefaultValue(dimension, view);
+
+    if (isDouble) {
+        double time = getCurrentTime();
+
+        // Double default values may be normalized so denormalize it
+        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+        int nDims = getNDimensions();
+        std::vector<double> defValues(nDims);
+        for (int i = 0; i < nDims; ++i) {
+            if (dimension.isAll() || i == dimension) {
+                {
+                    QMutexLocker l(&_valueMutex);
+                    defValues[i] = _defaultValues[i].value;
+                }
+
+                if ( isDouble->getDefaultValuesAreNormalized() ) {
+                    if (isDouble->getValueIsNormalized(DimIdx(i)) == eValueIsNormalizedNone) {
+                        // default is normalized, value is non-normalized: denormalize it!
+                        defValues[i] = isDouble->denormalize(DimIdx(i), time, defValues[i]);
+                    }
+                } else {
+                    if (isDouble->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
+                        // default is non-normalized, value is normalized: normalize it!
+                        defValues[i] = isDouble->normalize(DimIdx(i), time, defValues[i]);
+                    }
+                }
+
+            }
+        }
+        if (dimension.isAll()) {
+            setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
+        } else {
+            ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+        }
+    }
+}
+
 
 ///////////// Explicit template instanciation for INT type
 template <>

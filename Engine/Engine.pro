@@ -122,6 +122,8 @@ SOURCES += \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
+    KnobAnimation.cpp \
+    KnobExpression.cpp \
     KnobFactory.cpp \
     KnobFile.cpp \
     KnobTypes.cpp \
@@ -330,6 +332,7 @@ HEADERS += \
     JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
+    KnobPrivate.h \
     KnobGuiI.h \
     KnobImpl.h \
     KnobGetValueImpl.h \

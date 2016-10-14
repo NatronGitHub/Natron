@@ -591,7 +591,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             //Use default
             readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
+            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
                 readerPluginID = entries[pluginChoice_i];
             }
@@ -1104,7 +1104,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }

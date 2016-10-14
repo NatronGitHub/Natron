@@ -315,6 +315,7 @@ StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
 bool
 StringAnimationManager::clone(const StringAnimationManager & other,
                               ViewIdx view,
+                              ViewIdx otherView,
                               SequenceTime offset,
                               const RangeD* range)
 {
@@ -322,7 +323,7 @@ StringAnimationManager::clone(const StringAnimationManager & other,
     QMutexLocker l2(&other._imp->keyframesMutex);
     bool hasChanged = false;
 
-    const PerViewKeyFrames::iterator foundOtherView = other._imp->keyframes.find(view);
+    const PerViewKeyFrames::iterator foundOtherView = other._imp->keyframes.find(otherView);
     if (foundOtherView == other._imp->keyframes.end()) {
         return false;
     }

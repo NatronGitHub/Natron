@@ -1784,7 +1784,7 @@ RotoDrawableItem::initializeKnobs()
         mins.push_back(0);
         maxs.push_back(1);
         maxs.push_back(1);
-        param->setMinimumsAndMaximums(mins, maxs);
+        param->setRangeAcrossDimensions(mins, maxs);
         _imp->visiblePortion = param;
     }
 

@@ -62,11 +62,25 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StringAnimationManager.h"
 
 
-#define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
 NATRON_NAMESPACE_ENTER;
 
-///template specializations
+template <typename T>
+const std::string &
+Knob<T>::typeName() const
+{
+    static std::string knobNoTypeName("NoType");
+
+    return knobNoTypeName;
+}
+
+template <typename T>
+bool
+Knob<T>::canAnimate() const
+{
+    return false;
+}
+
 
 template <typename T>
 void
@@ -468,7 +482,7 @@ Knob<T>::makeKeyFrame(double time,
 
     // check for NaN or infinity
     if ( (keyFrameValue != keyFrameValue) || boost::math::isinf(keyFrameValue) ) {
-        *key = KeyFrame( (double)time, getMaximum(0) );
+        *key = KeyFrame( (double)time, getMaximum() );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
     }
@@ -496,7 +510,6 @@ template<typename T>
 void
 Knob<T>::unSlaveInternal(DimIdx dimension,
                          ViewIdx view,
-                         ValueChangedReasonEnum reason,
                          bool copyState)
 {
 
@@ -508,28 +521,25 @@ Knob<T>::unSlaveInternal(DimIdx dimension,
     if (!masterHelper) {
         return;
     }
-    QObject::disconnect( masterHelper->_signalSlotHandler.get(), SIGNAL(curveAnimationChanged(std::list<double>, std::list<double>,ViewIdx,DimIdx)),
-                         _signalSlotHandler.get(), SLOT(onMasterCurveAnimationChanged(std::list<double>, std::list<double>,ViewIdx,DimIdx)));
 
-
+    // Re-enable the parameter. This is not wrong since anyway if the parameter was disabled in the first place, user shouldn't even have been able to slave it.
+    setEnabled(true, dimension);
 
     resetMaster(dimension, view);
     bool hasChanged = false;
-    setEnabled(dimension, true);
     if (copyState) {
         // Clone the master
-        hasChanged |= copyKnob( masterHelper, view, linkData.masterView, dimension, linkData.masterDimension );
+        hasChanged |= copyKnob( masterHelper, view, dimension, linkData.masterView, linkData.masterDimension );
     }
 
-    if (reason == eValueChangedReasonPluginEdited) {
-        _signalSlotHandler->s_knobSlaved(dimension, view, false);
-    }
+    _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
+
     
     if (getHolder()) {
-        getHolder()->onKnobSlaved( shared_from_this(), linkData.masterDimension, dimension, false );
+        getHolder()->onKnobSlaved( shared_from_this(), masterHelper, dimension, view, false );
     }
     if (masterHelper) {
-        masterHelper->removeListener(shared_from_this(), dimension);
+        masterHelper->removeListener(shared_from_this(), dimension, view);
     }
     if (!hasChanged) {
         // At least refresh animation level if clone did not change anything
@@ -757,6 +767,7 @@ void
 Knob<T>::populate()
 {
     for (int i = 0; i < getNDimensions(); ++i) {
+        // Somehow using initDefaultValue for bool type doesn't compile
         initDefaultValue<T>(&_values[i][ViewIdx(0)]);
         initDefaultValue<T>(&_defaultValues[i].value);
         _defaultValues[i].defaultValueSet = false;
@@ -850,14 +861,21 @@ Knob<T>::onTimeChanged(bool isPlayback,
         return;
     }
     bool shouldRefresh = false;
+    std::list<ViewIdx> views = getViewsList();
     for (int i = 0; i < dims; ++i) {
-        if (isAnimated( i, ViewIdx(0) )) {
-            shouldRefresh = true;
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            if (isAnimated( DimIdx(i), *it )) {
+                shouldRefresh = true;
+                break;
+            }
+        }
+        if (shouldRefresh) {
+            break;
         }
     }
 
     if (shouldRefresh) {
-        refreshAnimationLevel(ViewIdx(0), -1);
+        refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
         _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
@@ -865,257 +883,14 @@ Knob<T>::onTimeChanged(bool isPlayback,
         if (holder) {
             //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
             if ( holder->isEvaluationBlocked() ) {
-                holder->appendValueChange(shared_from_this(), -1, time, ViewIdx(0), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
+                holder->appendValueChange(shared_from_this(), DimSpec::all(), time, ViewSetSpec::all(), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
             } else {
                 holder->beginChanges();
-                holder->appendValueChange(shared_from_this(), -1, time, ViewIdx(0), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
+                holder->appendValueChange(shared_from_this(), DimSpec::all(), time, ViewSetSpec::all(), eValueChangedReasonTimeChanged, eValueChangedReasonTimeChanged);
                 holder->endChanges();
             }
         }
     }
-}
-
-template<typename T>
-double
-Knob<T>::getDerivativeAtTime(double time,
-                             ViewGetSpec view,
-                             DimIdx dimension)
-{
-    if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
-    }
-    {
-        std::string expr = getExpression(dimension);
-        if ( !expr.empty() ) {
-            // Compute derivative by finite differences, using values at t-0.5 and t+0.5
-            return ( getValueAtTime(time + 0.5, dimension, view) - getValueAtTime(time - 0.5, dimension, view) ) / 2.;
-        }
-    }
-
-    // If the knob is slaved to another knob, returns the other knob value
-    MasterKnobLink linkData;
-    if (getMaster(dimension, &linkData)) {
-        KnobIPtr masterKnob = linkData.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getDerivativeAtTime(time, linkData.masterView, linkData.masterDimension);
-        }
-    }
-
-    CurvePtr curve  = getCurve(view, dimension);
-    if (curve->getKeyFramesCount() > 0) {
-        return curve->getDerivativeAt(time);
-    } else {
-        /*if the knob as no keys at this dimension, the derivative is 0.*/
-        return 0.;
-    }
-}
-
-template<>
-double
-KnobStringBase::getDerivativeAtTime(double /*time*/,
-                                       ViewGetSpec /*view*/,
-                                       DimIdx /*dimension*/)
-{
-    throw std::invalid_argument("Knob<string>::getDerivativeAtTime() not available");
-}
-
-// Compute integral using Simpsons rule:
-// \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
-template<typename T>
-double
-Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
-                                           double time2,
-                                           ViewGetSpec view,
-                                           DimIdx dimension)
-{
-    double fa = getValueAtTime(time1, dimension, view);
-    double fm = getValueAtTime( (time1 + time2) / 2, dimension, view );
-    double fb = getValueAtTime(time2, dimension, view);
-
-    return (time2 - time1) / 6 * (fa + 4 * fm + fb);
-}
-
-template<typename T>
-double
-Knob<T>::getIntegrateFromTimeToTime(double time1,
-                                    double time2,
-                                    ViewGetSpec view,
-                                    DimIdx dimension)
-{
-    if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
-    }
-    {
-        std::string expr = getExpression(dimension);
-        if ( !expr.empty() ) {
-            // Compute integral using Simpsons rule:
-            // \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
-            // The interval from time1 to time2 is split into intervals where bounds are at integer values
-            int i = std::ceil(time1);
-            int j = std::floor(time2);
-            if (i > j) { // no integer values in the interval
-                return getIntegrateFromTimeToTimeSimpson(time1, time2, view, dimension);
-            }
-            double val = 0.;
-            // start integrating over the interval
-            // first chunk
-            if (time1 < i) {
-                val += getIntegrateFromTimeToTimeSimpson(time1, i, view, dimension);
-            }
-            // integer chunks
-            for (int t = i; t < j; ++t) {
-                val += getIntegrateFromTimeToTimeSimpson(t, t + 1, view, dimension);
-            }
-            // last chunk
-            if (j < time2) {
-                val += getIntegrateFromTimeToTimeSimpson(j, time2, view, dimension);
-            }
-
-            return val;
-        }
-    }
-
-
-    // If the knob is slaved to another knob, returns the other knob value
-    MasterKnobLink linkData;
-    if (getMaster(dimension, &linkData)) {
-        KnobIPtr masterKnob = linkData.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getIntegrateFromTimeToTime(time1, time2, linkData.masterView, linkData.masterDimension);
-        }
-    }
-
-
-    CurvePtr curve  = getCurve(view, dimension);
-    if (curve->getKeyFramesCount() > 0) {
-        return curve->getIntegrateFromTo(time1, time2);
-    } else {
-        // if the knob as no keys at this dimension, the integral is trivial
-        QMutexLocker l(&_valueMutex);
-
-        return (double)_values[dimension] * (time2 - time1);
-    }
-} // >::getIntegrateFromTimeToTime
-
-template<>
-double
-KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
-                                                     double /*time2*/,
-                                                     ViewGetSpec /*view*/,
-                                                     DimIdx /*dimension*/)
-{
-    return 0; // dummy value
-}
-
-template<>
-double
-KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
-                                              double /*time2*/,
-                                              ViewGetSpec /*view*/,
-                                              DimIdx /*dimension*/)
-{
-    throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");
-}
-
-
-template <typename T>
-void
-Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
-{
-    removeAnimation(view, dimension);
-
-
-
-    clearExpression(dimension, view, true);
-    resetExtraToDefaultValue(dimension, view);
-
-    int nDims = getNDimensions();
-    std::vector<double> defValues(nDims);
-    for (int i = 0; i < nDims; ++i) {
-        if (dimension.isAll() || i == dimension) {
-            {
-                QMutexLocker l(&_valueMutex);
-                defValues[i] = _defaultValues[i].value;
-            }
-        }
-    }
-    if (dimension.isAll()) {
-        setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
-    } else {
-        ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
-    }
-
-}
-
-
-// If *all* the following conditions hold:
-// - this is a double value
-// - this is a non normalised spatial double parameter, i.e. kOfxParamPropDoubleType is set to one of
-//   - kOfxParamDoubleTypeX
-//   - kOfxParamDoubleTypeXAbsolute
-//   - kOfxParamDoubleTypeY
-//   - kOfxParamDoubleTypeYAbsolute
-//   - kOfxParamDoubleTypeXY
-//   - kOfxParamDoubleTypeXYAbsolute
-// - kOfxParamPropDefaultCoordinateSystem is set to kOfxParamCoordinatesNormalised
-// Knob<T>::resetToDefaultValue should denormalize
-// the default value, using the input size.
-// Input size be defined as the first available of:
-// - the RoD of the "Source" clip
-// - the RoD of the first non-mask non-optional input clip (in case there is no "Source" clip) (note that if these clips are not connected, you get the current project window, which is the default value for GetRegionOfDefinition)
-
-// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-// and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
-template<>
-void
-KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
-{
-    removeAnimation(view, dimension);
-
-    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
-
-    clearExpression(dimension, view, true);
-
-
-    resetExtraToDefaultValue(dimension, view);
-
-    if (isDouble) {
-        double time = getCurrentTime();
-
-        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-        int nDims = getNDimensions();
-        std::vector<double> defValues(nDims);
-        for (int i = 0; i < nDims; ++i) {
-            if (dimension.isAll() || i == dimension) {
-                {
-                    QMutexLocker l(&_valueMutex);
-                    defValues[i] = _defaultValues[i].value;
-                }
-
-                if ( isDouble->getDefaultValuesAreNormalized() ) {
-                    if (isDouble->getValueIsNormalized(DimIdx(i)) == eValueIsNormalizedNone) {
-                        // default is normalized, value is non-normalized: denormalize it!
-                        defValues[i] = isDouble->denormalize(DimIdx(i), time, defValues[i]);
-                    }
-                } else {
-                    if (isDouble->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
-                        // default is non-normalized, value is normalized: normalize it!
-                        defValues[i] = isDouble->normalize(DimIdx(i), time, defValues[i]);
-                    }
-                }
-
-            }
-        }
-        if (dimension.isAll()) {
-            setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
-        } else {
-            ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
-        }
-    }
-
-
-    
 }
 
 template <typename T>
@@ -1324,21 +1099,21 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
                 }
             } else {
                 FrameValueMap results;
-                otherKnob->getExpressionResults(DimIdx(i), otherView, results);
-                _exprRes[i][view] = results;
+                otherKnob->getExpressionResults(DimIdx(i), ViewIdx(otherView), results);
+                _exprRes[i][ViewIdx(view)] = results;
             }
         }
     } else {
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
                 FrameValueMap results;
-                otherKnob->getExpressionResults(otherDimension, *it, results);
+                otherKnob->getExpressionResults(DimIdx(otherDimension), *it, results);
                 _exprRes[dimension][*it] = results;
             }
         } else {
             FrameValueMap results;
-            otherKnob->getExpressionResults(otherDimension, otherView, results);
-            _exprRes[dimension][view] = results;
+            otherKnob->getExpressionResults(DimIdx(otherDimension), ViewIdx(otherView), results);
+            _exprRes[dimension][ViewIdx(view)] = results;
         }
 
     }
@@ -1358,6 +1133,13 @@ Knob<T>::copyKnob(const KnobIPtr& other,
         // Cannot clone itself
         return false;
     }
+    if ((!dimension.isAll() || !otherDimension.isAll()) && (dimension.isAll() || otherDimension.isAll())) {
+        throw std::invalid_argument("KnobHelper::slaveTo: invalid dimension argument");
+    }
+    if ((!view.isAll() || !otherView.isAll()) && (!view.isViewIdx() || !otherView.isViewIdx())) {
+        throw std::invalid_argument("KnobHelper::slaveTo: invalid view argument");
+    }
+
     beginChanges();
 
     bool hasChanged = false;
@@ -1396,7 +1178,7 @@ Knob<T>::cloneDefaultValues(const KnobIPtr& other)
     }
     for (int i = 0; i < dims; ++i) {
         if (otherDef[i].defaultValueSet) {
-            setDefaultValueWithoutApplying(otherDef[i].value, i);
+            setDefaultValueWithoutApplying(otherDef[i].value, DimIdx(i));
         }
     }
 }
@@ -1483,7 +1265,7 @@ Knob<T>::copyValuesFromCurve(DimSpec dim, ViewSetSpec view)
                     T v = getValueAtTime(time, DimIdx(i), ViewGetSpec(*it));
 
                     QMutexLocker l(&_valueMutex);
-                    typename PerViewValueMap::const_iterator foundView = _values[i].find(*it);
+                    typename PerViewValueMap::iterator foundView = _values[i].find(*it);
                     if (foundView == _values[i].end()) {
                         continue;
                     }
@@ -1494,7 +1276,7 @@ Knob<T>::copyValuesFromCurve(DimSpec dim, ViewSetSpec view)
                 T v = getValueAtTime(time, DimIdx(i), ViewGetSpec(view_i));
 
                 QMutexLocker l(&_valueMutex);
-                typename PerViewValueMap::const_iterator foundView = _values[i].find(view_i);
+                typename PerViewValueMap::iterator foundView = _values[i].find(view_i);
                 if (foundView == _values[i].end()) {
                     continue;
                 }
@@ -1507,10 +1289,10 @@ Knob<T>::copyValuesFromCurve(DimSpec dim, ViewSetSpec view)
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                T v = getValueAtTime(time, dim, ViewGetSpec(*it));
+                T v = getValueAtTime(time, DimIdx(dim), ViewGetSpec(*it));
 
                 QMutexLocker l(&_valueMutex);
-                typename PerViewValueMap::const_iterator foundView = _values[dim].find(*it);
+                typename PerViewValueMap::iterator foundView = _values[dim].find(*it);
                 if (foundView == _values[dim].end()) {
                     return;
                 }
@@ -1518,10 +1300,10 @@ Knob<T>::copyValuesFromCurve(DimSpec dim, ViewSetSpec view)
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            T v = getValueAtTime(time, dim, ViewGetSpec(view_i));
+            T v = getValueAtTime(time, DimIdx(dim), ViewGetSpec(view_i));
 
             QMutexLocker l(&_valueMutex);
-            typename PerViewValueMap::const_iterator foundView = _values[dim].find(view_i);
+            typename PerViewValueMap::iterator foundView = _values[dim].find(view_i);
             if (foundView == _values[dim].end()) {
                 return;
             }
@@ -1595,10 +1377,10 @@ Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
 
 
     for (int i = 0; i < nDims; ++i) {
-        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(i)) {
-            handleAnimatedHashing(this, view, i, hash);
+        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(DimIdx(i), view)) {
+            handleAnimatedHashing(this, view, DimIdx(i), hash);
         } else {
-            T v = getValueAtTime(time, i, view);
+            T v = getValueAtTime(time, DimIdx(i), view);
             appendValueToHash(v, hash);
         }
     }
@@ -1640,14 +1422,13 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
 
     if (dimension.isAll()) {
         for (int i = 0; i < getNDimensions(); ++i) {
-            const PerViewFrameValueMap& retPerView = _exprRes[i];
             if (view.isAll()) {
-                for (typename PerViewFrameValueMap::const_iterator it = _exprRes[i].begin(); it!=_exprRes[i].end(); ++it) {
+                for (typename PerViewFrameValueMap::iterator it = _exprRes[i].begin(); it!=_exprRes[i].end(); ++it) {
                     it->second.clear();
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                typename PerViewFrameValueMap::const_iterator foundView = _exprRes[i].find(view_i);
+                typename PerViewFrameValueMap::iterator foundView = _exprRes[i].find(view_i);
                 if (foundView == _exprRes[i].end()) {
                     return;
                 }
@@ -1658,14 +1439,13 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
         if (dimension < 0 || dimension >= getNDimensions()) {
             throw std::invalid_argument("Knob::clearExpressionsResults: Dimension out of range");
         }
-        const PerViewFrameValueMap& retPerView = _exprRes[dimension];
         if (view.isAll()) {
-            for (typename PerViewFrameValueMap::const_iterator it = _exprRes[dimension].begin(); it!=_exprRes[dimension].end(); ++it) {
+            for (typename PerViewFrameValueMap::iterator it = _exprRes[dimension].begin(); it!=_exprRes[dimension].end(); ++it) {
                 it->second.clear();
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dimension].find(view_i);
+            typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
             if (foundView == _exprRes[dimension].end()) {
                 return;
             }
@@ -1687,7 +1467,6 @@ Knob<T>::getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) 
 
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    const PerViewFrameValueMap& retPerView = _exprRes[dim];
     typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dim].find(view_i);
     if (foundView == _exprRes[dim].end()) {
         return;

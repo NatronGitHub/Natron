@@ -108,7 +108,7 @@ OneViewNode::initializeKnobs()
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-    std::string currentView = viewKnob->getActiveEntryText_mt_safe();
+    std::string currentView = viewKnob->getActiveEntryText();
     viewKnob->populateChoices(views);
 
 
@@ -155,7 +155,7 @@ OneViewNode::onProjectViewsChanged()
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
-    std::string currentView = viewKnob->getActiveEntryText_mt_safe();
+    std::string currentView = viewKnob->getActiveEntryText();
 
     viewKnob->populateChoices(views);
 

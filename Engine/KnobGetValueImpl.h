@@ -53,7 +53,7 @@ Knob<T>::getValueFromExpression(double time,
 
     {
         QMutexLocker k(&_valueMutex);
-        typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dimension].find(view_i);
+        typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
         if (foundView != _exprRes[dimension].end()) {
             typename FrameValueMap::iterator foundValue = foundView->second.find(time);
             if ( foundValue != foundView->second.end() ) {
@@ -65,13 +65,13 @@ Knob<T>::getValueFromExpression(double time,
 
     }
 
-    bool exprWasValid = isExpressionValid(dimension, 0);
+    bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression(time, view_i,  dimension, ret, &error);
         if (!exprOk) {
-            setExpressionInvalid(dimension, false, error);
+            setExpressionInvalid(dimension, view_i, false, error);
 
             return false;
         } else {
@@ -158,7 +158,7 @@ Knob<T>::getValueFromExpression_pod(double time,
 
     {
         QMutexLocker k(&_valueMutex);
-        typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dimension].find(view_i);
+        typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
         if (foundView != _exprRes[dimension].end()) {
             typename FrameValueMap::iterator foundValue = foundView->second.find(time);
             if ( foundValue != foundView->second.end() ) {
@@ -425,8 +425,14 @@ Knob<T>::getRawCurveValueAt(double time,
         //getValueAt already clamps to the range for us
         return curve->getValueAt(time, false); //< no clamping to range!
     }
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
     QMutexLocker l(&_valueMutex);
-    T ret = _values[dimension];
+    typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
+    if (foundView == _values[dimension].end()) {
+        return 0;
+    }
+    T ret = foundView->second;
 
     return clampToMinMax(ret, dimension);
 } // getRawCurveValueAt
@@ -512,6 +518,157 @@ Knob<T>::getValueAtTime(double time,
         }
     } // QMutexLocker k(&_valueMutex);
 } // getValueAtTime
+
+
+template<typename T>
+double
+Knob<T>::getDerivativeAtTime(double time,
+                             ViewGetSpec view,
+                             DimIdx dimension)
+{
+    if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
+        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+    }
+    {
+        std::string expr = getExpression(dimension);
+        if ( !expr.empty() ) {
+            // Compute derivative by finite differences, using values at t-0.5 and t+0.5
+            return ( getValueAtTime(time + 0.5, dimension, view) - getValueAtTime(time - 0.5, dimension, view) ) / 2.;
+        }
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    // If the knob is slaved to another knob, returns the other knob value
+    MasterKnobLink linkData;
+    if (getMaster(dimension, view_i, &linkData)) {
+        KnobIPtr masterKnob = linkData.masterKnob.lock();
+        if (masterKnob) {
+            return masterKnob->getDerivativeAtTime(time, linkData.masterView, linkData.masterDimension);
+        }
+    }
+
+    CurvePtr curve  = getCurve(view_i, dimension);
+    if (curve->getKeyFramesCount() > 0) {
+        return curve->getDerivativeAt(time);
+    } else {
+        /*if the knob as no keys at this dimension, the derivative is 0.*/
+        return 0.;
+    }
+}
+
+template<>
+double
+KnobStringBase::getDerivativeAtTime(double /*time*/,
+                                    ViewGetSpec /*view*/,
+                                    DimIdx /*dimension*/)
+{
+    throw std::invalid_argument("Knob<string>::getDerivativeAtTime() not available");
+}
+
+// Compute integral using Simpsons rule:
+// \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
+template<typename T>
+double
+Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
+                                           double time2,
+                                           ViewGetSpec view,
+                                           DimIdx dimension)
+{
+    double fa = getValueAtTime(time1, dimension, view);
+    double fm = getValueAtTime( (time1 + time2) / 2, dimension, view );
+    double fb = getValueAtTime(time2, dimension, view);
+
+    return (time2 - time1) / 6 * (fa + 4 * fm + fb);
+}
+
+template<typename T>
+double
+Knob<T>::getIntegrateFromTimeToTime(double time1,
+                                    double time2,
+                                    ViewGetSpec view,
+                                    DimIdx dimension)
+{
+    if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
+        throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
+    }
+    {
+        std::string expr = getExpression(dimension);
+        if ( !expr.empty() ) {
+            // Compute integral using Simpsons rule:
+            // \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
+            // The interval from time1 to time2 is split into intervals where bounds are at integer values
+            int i = std::ceil(time1);
+            int j = std::floor(time2);
+            if (i > j) { // no integer values in the interval
+                return getIntegrateFromTimeToTimeSimpson(time1, time2, view, dimension);
+            }
+            double val = 0.;
+            // start integrating over the interval
+            // first chunk
+            if (time1 < i) {
+                val += getIntegrateFromTimeToTimeSimpson(time1, i, view, dimension);
+            }
+            // integer chunks
+            for (int t = i; t < j; ++t) {
+                val += getIntegrateFromTimeToTimeSimpson(t, t + 1, view, dimension);
+            }
+            // last chunk
+            if (j < time2) {
+                val += getIntegrateFromTimeToTimeSimpson(j, time2, view, dimension);
+            }
+
+            return val;
+        }
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    // If the knob is slaved to another knob, returns the other knob value
+    MasterKnobLink linkData;
+    if (getMaster(dimension, view_i, &linkData)) {
+        KnobIPtr masterKnob = linkData.masterKnob.lock();
+        if (masterKnob) {
+            return masterKnob->getIntegrateFromTimeToTime(time1, time2, linkData.masterView, linkData.masterDimension);
+        }
+    }
+
+
+    CurvePtr curve  = getCurve(view_i, dimension);
+    if (curve->getKeyFramesCount() > 0) {
+        return curve->getIntegrateFromTo(time1, time2);
+    } else {
+        // if the knob as no keys at this dimension, the integral is trivial
+        QMutexLocker l(&_valueMutex);
+        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
+        if (foundView == _values[dimension].end()) {
+            return T();
+        }
+
+        return founView->second * (time2 - time1);
+    }
+} // getIntegrateFromTimeToTime
+
+template<>
+double
+KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
+                                                  double /*time2*/,
+                                                  ViewGetSpec /*view*/,
+                                                  DimIdx /*dimension*/)
+{
+    return 0; // dummy value
+}
+
+template<>
+double
+KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
+                                           double /*time2*/,
+                                           ViewGetSpec /*view*/,
+                                           DimIdx /*dimension*/)
+{
+    throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");
+}
+
 
 
 NATRON_NAMESPACE_EXIT

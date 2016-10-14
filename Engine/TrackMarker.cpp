@@ -376,58 +376,7 @@ TrackMarker::getContext() const
     return _imp->context.lock();
 }
 
-bool
-TrackMarker::setScriptName(const std::string& name)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( name.empty() ) {
-        return false;
-    }
-
-    std::string currentName;
-    {
-        QMutexLocker l(&_imp->trackMutex);
-        currentName = _imp->trackScriptName;
-    }
-
-
-    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
-
-    if ( cpy.empty() || cpy == currentName) {
-        return false;
-    }
-
-    TrackMarkerPtr existingItem = getContext()->getMarkerByName(name);
-    if ( existingItem && (existingItem.get() != this) ) {
-        return false;
-    }
-
-    TrackMarkerPtr thisShared = shared_from_this();
-    if (!currentName.empty()) {
-        getContext()->removeItemAsPythonField(thisShared);
-    }
-
-    {
-        QMutexLocker l(&_imp->trackMutex);
-        _imp->trackScriptName = cpy;
-    }
-
-    getContext()->declareItemAsPythonField(thisShared);
-
-    return true;
-}
-
-std::string
-TrackMarker::getScriptName_mt_safe() const
-{
-    QMutexLocker l(&_imp->trackMutex);
-
-    return _imp->trackScriptName;
-}
-
-void
 TrackMarker::setLabel(const std::string& label)
 {
     QMutexLocker l(&_imp->trackMutex);

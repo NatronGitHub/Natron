@@ -320,7 +320,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     if (!knob) {
         return;
     }
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    std::string activeEntry = knob->getActiveEntryText();
 
     if ( knob->getHostCanAddOptions() &&
          ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
@@ -421,9 +421,9 @@ KnobGuiChoice::onEntriesPopulated()
     KnobChoicePtr knob = _knob.lock();
 
     _comboBox->clear();
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    std::vector<std::string> entries = knob->getEntries();
+    const std::vector<std::string> help =  knob->getEntriesHelp();
+    std::string activeEntry = knob->getActiveEntryText();
 
     std::string pluginShortcutGroup;
     EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
@@ -566,7 +566,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
     KnobChoicePtr knob = _knob.lock();
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    std::string activeEntry = knob->getActiveEntryText();
 
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();

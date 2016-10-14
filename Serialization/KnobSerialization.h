@@ -85,8 +85,8 @@ struct MasterSerialization
     // the node script-name holding this knob
     std::string masterNodeName;
 
-    // if the master knob is part of a track this is the track name
-    std::string masterTrackName;
+    // if the master knob is part of a table item this is the table item name
+    std::string masterTableItemName;
 
     // the script-name of the master knob
     std::string masterKnobName;
@@ -214,7 +214,8 @@ public:
 
 
     // Animation keyframes
-    std::map<int, std::string> keyframes;
+    // map<view name, map<frame, string> >
+    std::map<std::string,std::map<double, std::string> > keyframes;
 
 };
 
@@ -360,7 +361,12 @@ public:
     bool _isSecret; // true if the knob is hidden, only serialized for user knob,s
     bool _disabled; // true if the knob is disabled, only serialized for user knobs
     bool _masterIsAlias; // is the master/slave link an alias ?
-    std::vector<ValueSerialization> _values; // serialized value for each dimension
+
+    typedef std::vector<ValueSerialization> PerDimensionValueSerializationVec;
+    typedef std::map<std::string, PerDimensionValueSerializationVec> PerViewValueSerializationMap;
+
+    PerViewValueSerializationMap _values;
+
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
     bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
@@ -428,6 +434,10 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
+private:
+
+    void decodeValueNode(const std::string& viewName, const YAML::Node& node);
 
 };
 

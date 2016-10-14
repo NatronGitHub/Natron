@@ -1965,26 +1965,35 @@ AppManager::loadNodesPresets()
             int pyPlugShortcutModifiers = 0;
             int pyPlugVersionMajor = 0,pyPlugVersionMinor = 0;
             for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = obj._knobsValues.begin(); it != obj._knobsValues.end(); ++it) {
+                if ((*it)->_values.empty()) {
+                    continue;
+                }
+                const SERIALIZATION_NAMESPACE::KnobSerialization::PerDimensionValueSerializationVec& dimVec = (*it)->_values.begin()->second;
+                const SERIALIZATION_NAMESPACE::SerializationValueVariant& value0 = dimVec[0]._value;
                 if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginID) {
-                    pyPlugID = (*it)->_values[0]._value.isString;
+                    pyPlugID = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginLabel) {
-                    pyPlugLabel = (*it)->_values[0]._value.isString;
+                    pyPlugLabel = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescription) {
-                    pyPlugDescription = (*it)->_values[0]._value.isString;
+                    pyPlugDescription = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown) {
-                    pyPlugDescIsMarkdown = (*it)->_values[0]._value.isBool;
+                    pyPlugDescIsMarkdown = value0.isBool;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginGrouping) {
-                    pyPlugGrouping = (*it)->_values[0]._value.isString;
+                    pyPlugGrouping = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginIconFile) {
-                    pyPlugIconFilePath = (*it)->_values[0]._value.isString;
+                    pyPlugIconFilePath = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginCallbacksPythonScript) {
-                    pyPlugExtCallbacks = (*it)->_values[0]._value.isString;
+                    pyPlugExtCallbacks = value0.isString;
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginShortcut) {
-                    pyPlugShortcutSymbol = (*it)->_values[0]._value.isInt;
-                    pyPlugShortcutModifiers = (*it)->_values[1]._value.isInt;
+                    pyPlugShortcutSymbol = value0.isInt;
+                    if (dimVec.size() > 1) {
+                        pyPlugShortcutModifiers = dimVec[1]._value.isInt;
+                    }
                 } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginVersion) {
-                    pyPlugVersionMajor = (*it)->_values[0]._value.isInt;
-                    pyPlugVersionMinor = (*it)->_values[1]._value.isInt;
+                    pyPlugVersionMajor = value0.isInt;
+                    if (dimVec.size() > 1) {
+                        pyPlugVersionMinor = dimVec[1]._value.isInt;
+                    }
                 }
             }
 

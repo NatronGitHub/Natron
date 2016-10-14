@@ -484,7 +484,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText_mt_safe();
+    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText();
 
     if (userChoiceNodeName == "None") {
         return NodePtr();

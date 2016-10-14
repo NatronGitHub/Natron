@@ -152,7 +152,7 @@ SetKeysCommand::undo()
         }
 
         for (std::size_t i = 0; i < dims.size(); ++i) {
-            CurvePtr curve = obj->getAnimationCurve(ViewIdx(0), dims[i]);
+            CurvePtr curve = obj->getAnimationCurve(ViewGetSpec(0), dims[i]);
             if (!curve) {
                 continue;
             }
@@ -180,7 +180,7 @@ SetKeysCommand::redo()
         // The first time clone previous animation
         if (_isFirstRedo) {
             for (std::size_t i = 0; i < dims.size(); ++i) {
-                CurvePtr curve = obj->getAnimationCurve(ViewIdx(0), dims[i]);
+                CurvePtr curve = obj->ViewGetSpec(ViewIdx(0), dims[i]);
                 if (!curve) {
                     continue;
                 }
@@ -381,7 +381,7 @@ MoveTangentCommand::MoveTangentCommand(SelectedTangentEnum deriv,
 , _setBoth(false)
 , _firstRedoCalled(false)
 {
-    CurvePtr curve = object->getAnimationCurve(ViewIdx(0), dimension);
+    CurvePtr curve = object->getAnimationCurve(ViewGetSpec(0), dimension);
     assert(curve);
 
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();

@@ -351,8 +351,8 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
     KnobChoicePtr alphaChannelKnob = viewerGroup->getAlphaChannelKnob();
 
     // Remember the current choices
-    std::string layerCurChoice = layerKnob->getActiveEntryText_mt_safe();
-    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText_mt_safe();
+    std::string layerCurChoice = layerKnob->getActiveEntryText();
+    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText();
 
     // Merge components from A and B
     std::set<ImageComponents> components;

@@ -3792,7 +3792,7 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
 
 static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr& node, const NodeGui* self, Menu* m)
 {
-    std::vector<std::string> entries = choiceKnob->getEntries_mt_safe();
+    std::vector<std::string> entries = choiceKnob->getEntries();
     if ( entries.empty() ) {
         return;
     }

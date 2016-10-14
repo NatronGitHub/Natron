@@ -34,6 +34,8 @@
 NATRON_NAMESPACE_ENTER;
 
 
+class ViewIdx;
+class ViewGetSpec;
 
 class ViewSetSpec
 {
@@ -51,6 +53,9 @@ public:
     {
         assert(index >= -2);
     }
+
+    ViewSetSpec(const ViewIdx& view_i);
+    ViewSetSpec(const ViewGetSpec& view_get);
 
     // cast to int is implicit
     operator int() const
@@ -96,6 +101,8 @@ public:
     {
         assert(index == -2 || index >= 0);
     }
+
+    ViewGetSpec(const ViewIdx& view_i);
 
     // cast to int is implicit
     operator int() const
@@ -159,6 +166,24 @@ private:
 
     static ViewIdx current(); // overload with no implementation
 };
+
+ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
+: i(view_i.value())
+{
+    assert(i >= -2);
+}
+
+ViewSetSpec::ViewSetSpec(const ViewGetSpec& view_get)
+: i(view_get.value())
+{
+    assert(i >= -2);
+}
+
+ViewGetSpec::ViewGetSpec(const ViewIdx& view_i)
+: i(view_i.value())
+{
+    assert(i == -2 || i >= 0);
+}
 
 NATRON_NAMESPACE_EXIT;
 
