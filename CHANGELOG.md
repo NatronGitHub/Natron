@@ -4,6 +4,14 @@
 
 # History
 
+## Version 2.1.6
+
+### Plugins
+
+- DenoiseSharpen: Use a more intuitive "Sharpen Size" parameter instead of "Sharpen Radius", and do not sharpen the noise. Add "Denoise Amount" parameter, which can be set to 0 to sharpen only.
+- (beta feature) HueCorrect: Apply hue-dependent color adjustments using lookup curves.
+- (beta feature) HueKeyer: Compute a key depending on hue value.
+
 ## Version 2.1.5
 
 - Introduce the notion of "Format", which is basically the area of the image to be displayed (similar to the display window in OpenEXR). Each clip has a format attached, so a project can contain images of different sizes.
