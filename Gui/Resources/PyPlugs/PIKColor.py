@@ -24,6 +24,9 @@ def getLabel():
 def getVersion():
     return 1
 
+def getIconPath():
+    return "PIKColor.png"
+
 def getGrouping():
     return "Keyer"
 
