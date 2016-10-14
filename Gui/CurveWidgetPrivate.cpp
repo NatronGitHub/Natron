@@ -164,6 +164,10 @@ CurveWidgetPrivate::createMenu()
         _rightClickMenu->addAction( predefMenu->menuAction() );
     }
 
+    Menu* optionsMenu = new Menu(_rightClickMenu);
+    optionsMenu->setTitle( tr("Options") );
+    _rightClickMenu->addAction( optionsMenu->menuAction() );
+
 
     QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to ASCII file"), fileMenu);
     QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _widget, SLOT(exportCurveToAscii()) );
@@ -275,7 +279,7 @@ CurveWidgetPrivate::createMenu()
     QAction* updateOnPenUp = new QAction(tr("Update on mouse release only"), _rightClickMenu);
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked( appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly() );
-    _rightClickMenu->addAction(updateOnPenUp);
+    optionsMenu->addAction(updateOnPenUp);
     QObject::connect( updateOnPenUp, SIGNAL(triggered()), _widget, SLOT(onUpdateOnPenUpActionTriggered()) );
 } // createMenu
 
