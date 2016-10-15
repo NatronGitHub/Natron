@@ -3429,7 +3429,7 @@ KnobHelper::slaveToInternal(int dimension,
                           _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)), Qt::UniqueConnection );
     }
 
-    bool hasChanged = cloneAndCheckIfChanged(other.get(), dimension);
+    bool hasChanged = cloneAndCheckIfChanged(other.get(), dimension, otherDimension);
 
     //Do not disable buttons when they are slaved
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
@@ -3739,12 +3739,13 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
 
 
         std::set<int> dimensionsToEvaluate;
-        bool mustClone = false;
         for (std::size_t i = 0; i < it->second.size(); ++i) {
             if ( it->second[i].isListening && ( (it->second[i].targetDim == dimension) || (it->second[i].targetDim == -1) || (dimension == -1) ) ) {
                 dimensionsToEvaluate.insert(i);
                 if (!it->second[i].isExpr) {
-                    mustClone = true;
+                    ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+                    ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+                    slaveKnob->clone(this, i, it->second[i].targetDim);
                 }
             }
         }
@@ -3760,11 +3761,6 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
             dimChanged = *dimensionsToEvaluate.begin();
         }
 
-        if (mustClone) {
-            ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
-            ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-            slaveKnob->clone(this, dimChanged);
-        }
 
         slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);
 
