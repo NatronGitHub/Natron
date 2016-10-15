@@ -10124,7 +10124,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
 } // Node::refreshAllInputRelatedData
 
 bool
-Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
+Node::refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes)
 {
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -10134,10 +10134,12 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
         }
     }
 
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (domarking) {
+        std::set<Node*>::iterator found = markedNodes.find(this);
 
-    if ( found != markedNodes.end() ) {
-        return false;
+        if ( found != markedNodes.end() ) {
+            return false;
+        }
     }
 
     ///Check if inputs must be refreshed first
@@ -10148,12 +10150,13 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
         NodePtr input = getInput(i);
         inputsCopy[i] = input;
         if ( input && input->isInputRelatedDataDirty() ) {
-            input->refreshInputRelatedDataInternal(markedNodes);
+            input->refreshInputRelatedDataInternal(true, markedNodes);
         }
     }
 
-
-    markedNodes.push_back(this);
+    if (domarking) {
+        markedNodes.insert(this);
+    }
 
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
 
@@ -10243,12 +10246,19 @@ Node::markInputRelatedDataDirtyRecursive()
 }
 
 void
-Node::refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes)
+Node::refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes)
 {
     if ( getApp()->isCreatingNodeTree() ) {
         return;
     }
-    refreshInputRelatedDataInternal(markedNodes);
+    std::set<Node*>::iterator found = markedNodes.find(this);
+
+    if ( found != markedNodes.end() ) {
+        return;
+    }
+
+    markedNodes.insert(this);
+    refreshInputRelatedDataInternal(false, markedNodes);
 
     ///Now notify outputs we have changed
     NodesList outputs;
@@ -10261,7 +10271,7 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes)
 void
 Node::refreshInputRelatedDataRecursive()
 {
-    std::list<Node*> markedNodes;
+    std::set<Node*> markedNodes;
 
     refreshInputRelatedDataRecursiveInternal(markedNodes);
 }

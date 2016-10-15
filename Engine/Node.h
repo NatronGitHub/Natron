@@ -1330,7 +1330,7 @@ private:
 
     void refreshCreatedViews(KnobI* knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1346,7 +1346,7 @@ private:
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
 
-    bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
+    bool refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
