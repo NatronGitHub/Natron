@@ -177,7 +177,7 @@ dockClickHandler(id self,SEL _cmd,...)
 void
 GuiApplicationManager::onClickOnDock()
 {
-    qDebug() << "Dock icon clicked!";
+    //qDebug() << "Dock icon clicked!";
     // do something...
     Q_EMIT dockClicked();
 }
