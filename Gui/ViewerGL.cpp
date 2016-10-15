@@ -1749,11 +1749,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
-    if ( (e)->buttons() == Qt::LeftButton   && (!e->modifiers() &  Qt::MetaModifier) ) {
+    if ( (e->buttons() == Qt::LeftButton) && !(e->modifiers() &  Qt::MetaModifier) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
-    } else if ( e->buttons() == Qt::RightButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
+    } else if ( (e->buttons() == Qt::RightButton) || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeRMB;
-    } else if ( e->buttons() == Qt::MiddleButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
+    } else if ( (e->buttons() == Qt::MiddleButton)  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeMMB;
     }
 
