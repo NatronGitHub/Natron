@@ -135,12 +135,14 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
         try {
             value = new EntryType(it->key, it->params, this);
             if (it->size != getTileSizeBytes()) {
+                delete value;
                 continue;
             }
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
             value->restoreMetaDataFromFile(it->size, it->filePath, it->dataOffsetInFile);
         } catch (const std::exception & e) {
             qDebug() << e.what();
+            delete value;
             continue;
         }
         const std::string& filePath = value->getFilePath();
