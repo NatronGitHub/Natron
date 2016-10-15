@@ -990,7 +990,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     mutable QMutex _curvesMutex;
     std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
-
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -1011,6 +1010,7 @@ public:
                    int dimension,
                    bool declaredByPlugin );
 
+    void setPeriodic(bool periodic);
     void setCurveColor(int dimension, double r, double g, double b);
 
     void getCurveColor(int dimension, double* r, double* g, double* b);

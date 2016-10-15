@@ -162,6 +162,14 @@ public:
 
     Curve(const Curve & other);
 
+    /**
+     * @brief Set the curve to be periodic, i.e: the first keyframe is considered to be equal to the last keyframe.
+     * Note that this will clear all existing keyframes when called.
+     **/
+    void setPeriodic(bool periodic);
+
+    bool isCurvePeriodic() const;
+
     ~Curve();
 
     void operator=(const Curve & other);
@@ -253,10 +261,22 @@ public:
      **/
     KeyFrame setKeyFrameValueAndTime(double time, double value, int index, int* newIndex = NULL);
 
+private:
+
+    KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex, bool recurse);
+
+public:
+
     /**
      * @brief Same as setKeyFrameValueAndTime but with a delta
      **/
     bool moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey = NULL);
+
+private:
+
+    bool moveKeyFrameValueAndTimeInternal(const double time, const double dt, const double dv, KeyFrame* newKey, bool recurse);
+
+public:
 
     /**
      * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
@@ -264,11 +284,24 @@ public:
      **/
     KeyFrame setKeyFrameLeftDerivative(double value, int index, int* newIndex = NULL);
 
+private:
+
+    KeyFrame setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex, bool recurse);
+
+public:
+
     /**
      * @brief Set the right derivative  of the keyframe positioned at index index and returns the new keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameRightDerivative(double value, int index, int* newIndex = NULL);
+
+private:
+
+    KeyFrame setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex, bool recurse);
+
+public:
+
 
     /**
      * @brief Set the right and left derivatives  of the keyframe positioned at index index and returns the new  keyframe.
@@ -276,11 +309,23 @@ public:
      **/
     KeyFrame setKeyFrameDerivatives(double left, double right, int index, int* newIndex = NULL);
 
+private:
+
+    KeyFrame setKeyFrameDerivativesInternal(double left, double right, int index, int* newIndex, bool recurse);
+
+public:
+
     /**
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index, int* newIndex = NULL);
+
+private:
+
+    KeyFrame setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int* newIndex, bool recurse);
+
+public:
 
     void setCurveInterpolation(KeyframeTypeEnum interp);
 

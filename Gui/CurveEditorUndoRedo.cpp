@@ -298,7 +298,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 
                         if (isParametric) {
                             StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(), it->second[i].getTime(), it->second[i].getValue() );
-                            assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
                             Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
@@ -321,7 +320,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         if (knob) {
                             StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),
                                                                       it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
-                            assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
                             isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension(), i == 0 );
@@ -650,7 +648,8 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     , _updateOnFirstRedo(updateOnFirstRedo)
     , _firstRedoCalled(false)
 {
-    KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
+    boost::shared_ptr<Curve> internalCurve = key->curve->getInternalCurve();
+    KeyFrameSet keys = internalCurve->getKeyFrames_mt_safe();
     KeyFrameSet::const_iterator cur = keys.find(key->key);
 
     assert( cur != keys.end() );
@@ -676,7 +675,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     bool interpIsCatmullRomOrCubicOrFree = (interp == eKeyframeTypeCatmullRom ||
                                             interp == eKeyframeTypeCubic ||
                                             interp == eKeyframeTypeFree);
-    _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
+    _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree  || internalCurve->isCurvePeriodic() : interpIsNotBroken;
 
     bool isLeft;
     if (deriv == eSelectedTangentLeft) {

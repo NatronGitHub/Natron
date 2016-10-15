@@ -299,7 +299,7 @@ CurveGui::drawCurve(int curveIndex,
             hasDrawnExpr = true;
         }
     }
-
+    bool isPeriodic = false;
     if (isBezier) {
         std::set<double> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
@@ -309,6 +309,7 @@ CurveGui::drawCurve(int curveIndex,
         }
     } else {
         keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+        isPeriodic = getInternalCurve()->isCurvePeriodic();
     }
     if ( !keyframes.empty() ) {
         try {
@@ -326,6 +327,9 @@ CurveGui::drawCurve(int curveIndex,
             std::list<double>::const_iterator lastUpperItCoords = keysWidgetCoords.end();
             KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
 
+            if (isPeriodic) {
+                x1 = xminCurveWidgetCoord;
+            }
             while ( x1 < (widgetWidth - 1) ) {
                 double x, y;
                 if (!isX1AKey) {
@@ -334,6 +338,9 @@ CurveGui::drawCurve(int curveIndex,
                 } else {
                     x = x1Key.getTime();
                     y = x1Key.getValue();
+                }
+                if (isPeriodic && x1 >= xmaxCurveWidgetCoord) {
+                    break;
                 }
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
