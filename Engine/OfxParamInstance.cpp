@@ -639,18 +639,11 @@ OfxIntegerInstance::OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance
     boost::shared_ptr<KnobInt> k = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, 1);
 
     _knob = k;
+    setRange();
+    setDisplayRange();
 
-    int min = properties.getIntProperty(kOfxParamPropMin);
-    int max = properties.getIntProperty(kOfxParamPropMax);
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    int displayMin = properties.getIntProperty(kOfxParamPropDisplayMin);
-    int displayMax = properties.getIntProperty(kOfxParamPropDisplayMax);
-    k->setDisplayMinimum(displayMin);
-    k->setDisplayMaximum(displayMax);
-
-    k->setMinimum(min);
     k->setIncrement(1); // kOfxParamPropIncrement only exists for Double
-    k->setMaximum(max);
     k->blockValueChanges();
     k->setDefaultValue(def, 0);
     k->unblockValueChanges();
@@ -845,6 +838,8 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
     boost::shared_ptr<KnobDouble> dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(descriptor.getName(), this, 1);
 
     _knob = dblKnob;
+    setRange();
+    setDisplayRange();
 
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
@@ -855,16 +850,10 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
         dblKnob->setValueIsNormalized(0, eValueIsNormalizedY);
     }
 
-    double min = properties.getDoubleProperty(kOfxParamPropMin);
-    double max = properties.getDoubleProperty(kOfxParamPropMax);
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     double def = properties.getDoubleProperty(kOfxParamPropDefault);
     int decimals = properties.getIntProperty(kOfxParamPropDigits);
 
-
-    dblKnob->setMinimum(min);
-    dblKnob->setMaximum(max);
-    setDisplayRange();
     if (incr > 0) {
         dblKnob->setIncrement(incr);
     }
@@ -1540,40 +1529,29 @@ OfxRGBAInstance::OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& nod
     , OFX::Host::Param::RGBAInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    boost::shared_ptr<KnobColor> color = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 4);
+    boost::shared_ptr<KnobColor> knob = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 4);
 
-    _knob = color;
+    _knob = knob;
+    setRange();
+    setDisplayRange();
 
-    double defR = properties.getDoubleProperty(kOfxParamPropDefault, 0);
-    double defG = properties.getDoubleProperty(kOfxParamPropDefault, 1);
-    double defB = properties.getDoubleProperty(kOfxParamPropDefault, 2);
-    double defA = properties.getDoubleProperty(kOfxParamPropDefault, 3);
-    color->blockValueChanges();
-    color->setDefaultValue(defR, 0);
-    color->setDefaultValue(defG, 1);
-    color->setDefaultValue(defB, 2);
-    color->setDefaultValue(defA, 3);
-    color->unblockValueChanges();
     const int dims = 4;
-    std::vector<double> minimum(dims);
-    std::vector<double> maximum(dims);
-    std::vector<double> displayMins(dims);
-    std::vector<double> displayMaxs(dims);
+    std::vector<double> def(dims);
+
+    properties.getDoublePropertyN(kOfxParamPropDefault, &def[0], dims);
+    knob->blockValueChanges();
+    for (int i = 0; i < dims; ++i) {
+        knob->setDefaultValue(def[i], i);
+    }
+    knob->unblockValueChanges();
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
     for (int i = 0; i < dims; ++i) {
-        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin, i);
-        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin, i);
-        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax, i);
-        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax, i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
-        color->setDimensionName(i, dimensionName);
+        knob->setDimensionName(i, dimensionName);
     }
-
-    color->setMinimumsAndMaximums(minimum, maximum);
-    color->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 OfxStatus
@@ -1721,7 +1699,9 @@ void
 OfxRGBAInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2), _properties.getDoubleProperty(kOfxParamPropDefault, 3));
+    double def[4];
+    _properties.getDoublePropertyN(kOfxParamPropDefault, def, 4);
+    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1], def[2], def[3]);
 }
 
 void
@@ -1729,6 +1709,28 @@ OfxRGBAInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+}
+
+void
+OfxRGBAInstance::setDisplayRange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    std::vector<double> displayMins(4);
+    std::vector<double> displayMaxs(4);
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+}
+
+void
+OfxRGBAInstance::setRange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    std::vector<double> mins(4);
+    std::vector<double> maxs(4);
+    _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -1804,38 +1806,28 @@ OfxRGBInstance::OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
     , OFX::Host::Param::RGBInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    boost::shared_ptr<KnobColor> color  = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 3);
+    boost::shared_ptr<KnobColor> knob  = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 3);
 
-    _knob = color;
+    _knob = knob;
+    setRange();
+    setDisplayRange();
 
-    double defR = properties.getDoubleProperty(kOfxParamPropDefault, 0);
-    double defG = properties.getDoubleProperty(kOfxParamPropDefault, 1);
-    double defB = properties.getDoubleProperty(kOfxParamPropDefault, 2);
-    color->blockValueChanges();
-    color->setDefaultValue(defR, 0);
-    color->setDefaultValue(defG, 1);
-    color->setDefaultValue(defB, 2);
-    color->unblockValueChanges();
     const int dims = 3;
-    std::vector<double> minimum(dims);
-    std::vector<double> maximum(dims);
-    std::vector<double> displayMins(dims);
-    std::vector<double> displayMaxs(dims);
+    std::vector<double> def(dims);
+    properties.getDoublePropertyN(kOfxParamPropDefault, &def[0], dims);
+    knob->blockValueChanges();
+    for (int i = 0; i < dims; ++i) {
+        knob->setDefaultValue(def[i], i);
+    }
+    knob->unblockValueChanges();
 
     // kOfxParamPropIncrement and kOfxParamPropDigits only have one dimension,
     // @see Descriptor::addNumericParamProps() in ofxhParam.cpp
     // @see gDoubleParamProps in ofxsPropertyValidation.cpp
     for (int i = 0; i < dims; ++i) {
-        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin, i);
-        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin, i);
-        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax, i);
-        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax, i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
-        color->setDimensionName(i, dimensionName);
+        knob->setDimensionName(i, dimensionName);
     }
-
-    color->setMinimumsAndMaximums(minimum, maximum);
-    color->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 OfxStatus
@@ -1934,7 +1926,9 @@ void
 OfxRGBInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1), _properties.getDoubleProperty(kOfxParamPropDefault, 2));
+    double def[3];
+    _properties.getDoublePropertyN(kOfxParamPropDefault, def, 3);
+    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1], def[2]);
 }
 
 // callback which should set enabled state as appropriate
@@ -1981,6 +1975,28 @@ OfxRGBInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+}
+
+void
+OfxRGBInstance::setDisplayRange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    std::vector<double> displayMins(3);
+    std::vector<double> displayMaxs(3);
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+}
+
+void
+OfxRGBInstance::setRange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    std::vector<double> mins(3);
+    std::vector<double> maxs(3);
+    _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -2082,6 +2098,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
         dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
     }
     _knob = dblKnob;
+    setRange();
+    setDisplayRange();
 
     const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
@@ -2099,11 +2117,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     if (isRectangleType > 0) {
         dblKnob->setAsRectangle();
     }
-    std::vector<double> minimum(ofxDims);
-    std::vector<double> maximum(ofxDims);
     std::vector<double> increment(ofxDims);
-    std::vector<double> displayMins(ofxDims);
-    std::vector<double> displayMaxs(ofxDims);
     std::vector<int> decimals(ofxDims);
     std::vector<double> def(ofxDims);
 
@@ -2113,8 +2127,6 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     int dig = properties.getIntProperty(kOfxParamPropDigits);
     for (int i = 0; i < ofxDims; ++i) {
-        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin, i);
-        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax, i);
         increment[i] = incr;
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault, i);
@@ -2124,12 +2136,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstan
 
         dblKnob->setIncrement(incr, _startIndex + i);
         dblKnob->setDecimals(decimals[i], _startIndex + i);
-        dblKnob->setMinimum(minimum[i], _startIndex + i);
-        dblKnob->setMaximum(maximum[i], _startIndex + i);
-        dblKnob->setDisplayMinimum(displayMins[i], _startIndex + i);
-        dblKnob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
     }
-    setDisplayRange();
 
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -2246,7 +2253,9 @@ void
 OfxDouble2DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), _properties.getDoubleProperty(kOfxParamPropDefault, 1));
+    double def[2];
+    _properties.getDoublePropertyN(kOfxParamPropDefault, def, 2);
+    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1]);
 }
 
 // callback which should set enabled state as appropriate
@@ -2301,32 +2310,20 @@ OfxDouble2DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, 0);
-    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, 1);
-    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, 0);
-    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, 1);
-    for (int i = 0; i < 2; ++i) {
-        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
-        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
-    }
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
 OfxDouble2DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    std::vector<double> displayMins(2);
-    std::vector<double> displayMaxs(2);
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin, 0);
-    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin, 1);
-    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax, 0);
-    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax, 1);
-    for (int i = 0; i < 2; ++i) {
-        knob->setMinimum(displayMins[i], i + _startIndex);
-        knob->setMaximum(displayMaxs[i], i + _startIndex);
-    }
+    std::vector<double> mins(2);
+    std::vector<double> maxs(2);
+    _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 KnobPtr
@@ -2430,33 +2427,22 @@ OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInst
         iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(paramName, this, knobDims);
     }
     _knob = iKnob;
+    setRange();
+    setDisplayRange();
 
     if (isRectangleType) {
         iKnob->setAsRectangle();
     }
 
-    std::vector<int> minimum(ofxDims);
-    std::vector<int> maximum(ofxDims);
     std::vector<int> increment(ofxDims);
-    std::vector<int> displayMins(ofxDims);
-    std::vector<int> displayMaxs(ofxDims);
     boost::scoped_array<int> def(new int[ofxDims]);
 
+    properties.getIntPropertyN(kOfxParamPropDefault, &def[0], ofxDims);
     for (int i = 0; i < ofxDims; ++i) {
-        minimum[i] = properties.getIntProperty(kOfxParamPropMin, i);
-        displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin, i);
-        displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax, i);
-        maximum[i] = properties.getIntProperty(kOfxParamPropMax, i);
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
-        def[i] = properties.getIntProperty(kOfxParamPropDefault, i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
         iKnob->setDimensionName(i + _startIndex, dimensionName);
-
         iKnob->setIncrement(increment[i], _startIndex + i);
-        iKnob->setMinimum(minimum[i], _startIndex + i);
-        iKnob->setMaximum(maximum[i], _startIndex + i);
-        iKnob->setDisplayMinimum(displayMins[i], _startIndex + i);
-        iKnob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
     }
 
     iKnob->blockValueChanges();
@@ -2558,15 +2544,9 @@ OfxInteger2DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<int> displayMins(2);
     std::vector<int> displayMaxs(2);
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
-    displayMins[0] = getProperties().getIntProperty(kOfxParamPropDisplayMin, 0);
-    displayMins[1] = getProperties().getIntProperty(kOfxParamPropDisplayMin, 1);
-    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 0);
-    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 1);
-    for (int i = 0; i < 2; ++i) {
-        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
-        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
-    }
+    getProperties().getIntPropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    getProperties().getIntPropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -2574,17 +2554,11 @@ OfxInteger2DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
 
-    std::vector<int> displayMins(2);
-    std::vector<int> displayMaxs(2);
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
-    displayMins[0] = getProperties().getIntProperty(kOfxParamPropMin, 0);
-    displayMins[1] = getProperties().getIntProperty(kOfxParamPropMin, 1);
-    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax, 0);
-    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax, 1);
-    for (int i = 0; i < 2; ++i) {
-        knob->setMinimum(displayMins[i], i + _startIndex);
-        knob->setMaximum(displayMaxs[i], i + _startIndex);
-    }
+    std::vector<int> mins(2);
+    std::vector<int> maxs(2);
+    _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getIntPropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
@@ -2598,7 +2572,9 @@ void
 OfxInteger2DInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    _knob.lock()->setDefaultValuesWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), _properties.getIntProperty(kOfxParamPropDefault, 1));
+    int def[2];
+    _properties.getIntPropertyN(kOfxParamPropDefault, def, 2);
+    _knob.lock()->setDefaultValuesWithoutApplying(def[0], def[1]);
 }
 
 void
@@ -2696,11 +2672,9 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
         knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
     }
     _knob = knob;
+    setRange();
+    setDisplayRange();
 
-    std::vector<double> minimum(ofxDims);
-    std::vector<double> maximum(ofxDims);
-    std::vector<double> displayMins(ofxDims);
-    std::vector<double> displayMaxs(ofxDims);
     std::vector<int> decimals(ofxDims);
     std::vector<double> def(ofxDims);
 
@@ -2710,20 +2684,12 @@ OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstan
     double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
     int dig = properties.getIntProperty(kOfxParamPropDigits);
     for (int i = 0; i < ofxDims; ++i) {
-        minimum[i] = properties.getDoubleProperty(kOfxParamPropMin, i);
-        displayMins[i] = properties.getDoubleProperty(kOfxParamPropDisplayMin, i);
-        displayMaxs[i] = properties.getDoubleProperty(kOfxParamPropDisplayMax, i);
-        maximum[i] = properties.getDoubleProperty(kOfxParamPropMax, i);
         decimals[i] = dig;
         def[i] = properties.getDoubleProperty(kOfxParamPropDefault, i);
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
         knob->setDimensionName(_startIndex + i, dimensionName);
         knob->setIncrement(incr, _startIndex + i);
         knob->setDecimals(decimals[i], _startIndex + i);
-        knob->setMinimum(minimum[i], _startIndex + i);
-        knob->setMaximum(maximum[i], _startIndex + i);
-        knob->setDisplayMinimum(displayMins[i], _startIndex + i);
-        knob->setDisplayMaximum(displayMaxs[i], _startIndex + i);
     }
 
     knob->blockValueChanges();
@@ -2877,36 +2843,20 @@ OfxDouble3DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, 0);
-    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, 1);
-    displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, 2);
-    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, 0);
-    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, 1);
-    displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, 2);
-    for (int i = 0; i < 3; ++i) {
-        knob->setDisplayMinimum(displayMins[i], i + _startIndex);
-        knob->setDisplayMaximum(displayMaxs[i], i + _startIndex);
-    }
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
 OfxDouble3DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    std::vector<double> displayMins(3);
-    std::vector<double> displayMaxs(3);
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    displayMins[0] = getProperties().getDoubleProperty(kOfxParamPropMin, 0);
-    displayMins[1] = getProperties().getDoubleProperty(kOfxParamPropMin, 1);
-    displayMins[2] = getProperties().getDoubleProperty(kOfxParamPropMin, 2);
-    displayMaxs[0] = getProperties().getDoubleProperty(kOfxParamPropMax, 0);
-    displayMaxs[1] = getProperties().getDoubleProperty(kOfxParamPropMax, 1);
-    displayMaxs[2] = getProperties().getDoubleProperty(kOfxParamPropMax, 2);
-    for (int i = 0; i < 3; ++i) {
-        knob->setMinimum(displayMins[i], i + _startIndex);
-        knob->setMaximum(displayMaxs[i], i + _startIndex);
-    }
+    std::vector<double> mins(3);
+    std::vector<double> maxs(3);
+    _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
@@ -2993,19 +2943,13 @@ OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInst
     boost::shared_ptr<KnobInt> knob = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, dims);
 
     _knob = knob;
+    setRange();
+    setDisplayRange();
 
-    std::vector<int> minimum(dims);
-    std::vector<int> maximum(dims);
     std::vector<int> increment(dims);
-    std::vector<int> displayMins(dims);
-    std::vector<int> displayMaxs(dims);
-    boost::scoped_array<int> def(new int[dims]);
+    std::vector<int> def(dims);
 
     for (int i = 0; i < dims; ++i) {
-        minimum[i] = properties.getIntProperty(kOfxParamPropMin, i);
-        displayMins[i] = properties.getIntProperty(kOfxParamPropDisplayMin, i);
-        displayMaxs[i] = properties.getIntProperty(kOfxParamPropDisplayMax, i);
-        maximum[i] = properties.getIntProperty(kOfxParamPropMax, i);
         int incr = properties.getIntProperty(kOfxParamPropIncrement, i);
         increment[i] = incr != 0 ?  incr : 1;
         def[i] = properties.getIntProperty(kOfxParamPropDefault, i);
@@ -3014,9 +2958,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInst
         knob->setDimensionName(i, dimensionName);
     }
 
-    knob->setMinimumsAndMaximums(minimum, maximum);
     knob->setIncrement(increment);
-    knob->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
     knob->blockValueChanges();
     knob->setDefaultValue(def[0], 0);
     knob->setDefaultValue(def[1], 1);
@@ -3137,13 +3079,8 @@ OfxInteger3DInstance::setDisplayRange()
     DYNAMIC_PROPERTY_CHECK();
     std::vector<int> displayMins(3);
     std::vector<int> displayMaxs(3);
-
-    displayMins[0] = getProperties().getIntProperty(kOfxParamPropDisplayMin, 0);
-    displayMins[1] = getProperties().getIntProperty(kOfxParamPropDisplayMin, 1);
-    displayMins[2] = getProperties().getIntProperty(kOfxParamPropDisplayMin, 2);
-    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 0);
-    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 1);
-    displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropDisplayMax, 2);
+    getProperties().getIntPropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    getProperties().getIntPropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
     _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
@@ -3151,16 +3088,11 @@ void
 OfxInteger3DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    std::vector<int> displayMins(3);
-    std::vector<int> displayMaxs(3);
-
-    displayMins[0] = getProperties().getIntProperty(kOfxParamPropMin, 0);
-    displayMins[1] = getProperties().getIntProperty(kOfxParamPropMin, 1);
-    displayMins[2] = getProperties().getIntProperty(kOfxParamPropMin, 2);
-    displayMaxs[0] = getProperties().getIntProperty(kOfxParamPropMax, 0);
-    displayMaxs[1] = getProperties().getIntProperty(kOfxParamPropMax, 1);
-    displayMaxs[2] = getProperties().getIntProperty(kOfxParamPropMax, 2);
-    _knob.lock()->setMinimumsAndMaximums(displayMins, displayMaxs);
+    std::vector<int> mins(3);
+    std::vector<int> maxs(3);
+    _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getIntPropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
 
 void
@@ -4161,6 +4093,8 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
     boost::shared_ptr<KnobParametric> knob = checkIfKnobExistsWithNameOrCreate<KnobParametric>(descriptor.getName(), this, parametricDimension);
 
     _knob = knob;
+    setRange();
+    setDisplayRange();
 
     setLabel(); //set label on all curves
 
@@ -4176,7 +4110,10 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
     if(range[1] > range[0]) {
         knob->setParametricRange(range[0], range[1]);
     }
-    setDisplayRange();
+    for (int i = 0; i < parametricDimension; ++i) {
+        const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
+        _knob.lock()->setDimensionName(i, curveName);
+    }
 }
 
 OfxPluginEntryPoint*
@@ -4255,10 +4192,6 @@ OfxParametricInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel( getParamLabel(this) );
-    for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
-        const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
-        _knob.lock()->setDimensionName(i, curveName);
-    }
 }
 
 void
@@ -4272,15 +4205,12 @@ OfxParametricInstance::setDisplayRange()
     if (!knob) {
         return;
     }
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin, i);
-        double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax, i);
-        if (displayMax > displayMin) {
-            knob->setDisplayMinimum(displayMin, i);
-            knob->setDisplayMaximum(displayMax, i);
-        }
-    }
+    int dims = knob->getDimension();
+    std::vector<double> displayMins(dims);
+    std::vector<double> displayMaxs(dims);
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
+    _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
+    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
 }
 
 void
@@ -4294,16 +4224,14 @@ OfxParametricInstance::setRange()
     if (!knob) {
         return;
     }
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        double rmin = getProperties().getDoubleProperty(kOfxParamPropMin, i);
-        double rmax = getProperties().getDoubleProperty(kOfxParamPropMax, i);
-        if (rmax > rmin) {
-            knob->setMinimum(rmin, i);
-            knob->setMaximum(rmax, i);
-        }
-    }
+    int dims = knob->getDimension();
+    std::vector<double> mins(dims);
+    std::vector<double> maxs(dims);
+    _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
+    _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
+    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
 }
+
 
 OfxStatus
 OfxParametricInstance::getValue(int curveIndex,
