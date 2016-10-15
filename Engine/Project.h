@@ -379,7 +379,7 @@ Q_SIGNALS:
 private:
 
     /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format & f);
+    int tryAddProjectFormat(const Format & f, bool* existed);
 
     void setProjectDefaultFormat(const Format & f);
 

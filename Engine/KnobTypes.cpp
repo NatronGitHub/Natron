@@ -690,7 +690,7 @@ KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
                 }
             }
         }
-        if (found != -1) {
+        if (found != -1 && getValue() != found) {
             blockValueChanges();
             setValue(found);
             unblockValueChanges();

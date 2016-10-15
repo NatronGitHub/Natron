@@ -277,7 +277,6 @@ public:
         QMutexLocker k(&renderAgeMutex);
 
         assert(age <= renderAge[texIndex]);
-        assert(age != displayAge[texIndex]);
         if (age <= displayAge[texIndex]) {
             return false;
         }
