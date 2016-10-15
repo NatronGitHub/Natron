@@ -6,6 +6,8 @@
 
 ## Version 2.1.6
 
+- Fix a bug where Natron would freeze or be extremely slow when using big node graphs
+
 ### Plugins
 
 - DenoiseSharpen: Use a more intuitive "Sharpen Size" parameter instead of "Sharpen Radius", and do not sharpen the noise. Add "Denoise Amount" parameter, which can be set to 0 to sharpen only.

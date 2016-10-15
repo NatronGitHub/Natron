@@ -345,6 +345,7 @@ public:
         , isRefreshingInputRelatedData(false)
         , streamWarnings()
         , requiresGLFinishBeforeRender(false)
+        , hostChannelSelectorEnabled(false)
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -570,6 +571,8 @@ public:
     // Some plug-ins (mainly Hitfilm Ignite detected for now) use their own OpenGL context that is sharing resources with our OpenGL contexT.
     // as a result if we don't call glFinish() before calling the render action, the plug-in context might use textures that were not finished yet.
     bool requiresGLFinishBeforeRender;
+
+    bool hostChannelSelectorEnabled;
 };
 
 class RefreshingInputData_RAII
@@ -3884,10 +3887,10 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     }
 
     bool pluginDefaultPref[4];
-    bool useRGBACheckbox = _imp->effect->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
+    _imp->hostChannelSelectorEnabled = _imp->effect->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
 
 
-    if (useRGBACheckbox) {
+    if (_imp->hostChannelSelectorEnabled) {
         if (foundAll) {
             std::cerr << getScriptName_mt_safe() << ": WARNING: property " << kNatronOfxImageEffectPropChannelSelector << " is different of " << kOfxImageComponentNone << " but uses its own checkboxes" << std::endl;
         } else {
@@ -9173,8 +9176,17 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,
 }
 
 bool
+Node::isPluginUsingHostChannelSelectors() const
+{
+    return _imp->hostChannelSelectorEnabled;
+}
+
+bool
 Node::getProcessChannel(int channelIndex) const
 {
+    if (!isPluginUsingHostChannelSelectors()) {
+        return true;
+    }
     assert(channelIndex >= 0 && channelIndex < 4);
     boost::shared_ptr<KnobBool> k = _imp->enabledChan[channelIndex].lock();
     if (k) {
@@ -9220,7 +9232,7 @@ Node::getSelectedLayer(int inputNb,
     } else {
         *isAll = false;
     }
-    if ( _imp->enabledChan[0].lock() ) {
+    if ( _imp->hostChannelSelectorEnabled && _imp->enabledChan[0].lock() ) {
         (*processChannels)[0] = _imp->enabledChan[0].lock()->getValue();
         (*processChannels)[1] = _imp->enabledChan[1].lock()->getValue();
         (*processChannels)[2] = _imp->enabledChan[2].lock()->getValue();

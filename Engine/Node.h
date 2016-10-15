@@ -1249,6 +1249,8 @@ public:
     //Returns true if changed
     bool refreshChannelSelectors();
 
+    bool isPluginUsingHostChannelSelectors() const;
+
     bool getProcessChannel(int channelIndex) const;
 
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
