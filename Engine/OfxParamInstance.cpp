@@ -4091,16 +4091,20 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
     boost::shared_ptr<KnobParametric> knob = checkIfKnobExistsWithNameOrCreate<KnobParametric>(descriptor.getName(), this, parametricDimension);
-
     _knob = knob;
     setRange();
     setDisplayRange();
+
+
+    bool isPeriodic = (bool)properties.getIntProperty(kOfxParamPropParametricIsPeriodic);
+    knob->setPeriodic(isPeriodic);
 
     setLabel(); //set label on all curves
 
     std::vector<double> color(3 * parametricDimension);
     properties.getDoublePropertyN(kOfxParamPropParametricUIColour, &color[0], 3 * parametricDimension);
 
+    
     for (int i = 0; i < parametricDimension; ++i) {
         knob->setCurveColor(i, color[i * 3], color[i * 3 + 1], color[i * 3 + 2]);
     }

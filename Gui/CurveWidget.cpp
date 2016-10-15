@@ -188,15 +188,69 @@ CurveWidget::removeCurve(CurveGui *curve)
 }
 
 void
-CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
+CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, bool useDisplayRange)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if ( curves.empty() ) {
+    // First try to center curves given their display range
+    Curve::YRange displayRange(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double, double> xRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    bool rangeSet = false;
+
+    std::vector<boost::shared_ptr<CurveGui> > curvesToFrame;
+    if (curves.empty()) {
+        curvesToFrame.insert(curvesToFrame.end(), _imp->_curves.begin(), _imp->_curves.end());
+    }
+
+    if (curvesToFrame.empty()) {
         return;
     }
 
+    if (useDisplayRange) {
+        for (std::vector<boost::shared_ptr<CurveGui> > ::const_iterator it = curvesToFrame.begin(); it != curvesToFrame.end(); ++it) {
+            boost::shared_ptr<Curve> curve = (*it)->getInternalCurve();
+            if (!curve) {
+                continue;
+            }
+            Curve::YRange thisCurveRange = curve->getCurveDisplayYRange();
+            std::pair<double, double> thisXRange = curve->getXRange();
+
+
+            if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
+                thisCurveRange.min == INT_MIN ||
+                thisCurveRange.max == std::numeric_limits<double>::infinity() ||
+                thisCurveRange.max == INT_MAX ||
+                thisXRange.first == -std::numeric_limits<double>::infinity() ||
+                thisXRange.first == INT_MIN ||
+                thisXRange.second == std::numeric_limits<double>::infinity() ||
+                thisXRange.second == INT_MAX) {
+                continue;
+            }
+
+
+            if (!rangeSet) {
+                displayRange = thisCurveRange;
+                xRange = thisXRange;
+                rangeSet = true;
+            } else {
+                displayRange.min = std::min(displayRange.min, thisCurveRange.min);
+                displayRange.max = std::min(displayRange.max, thisCurveRange.max);
+                xRange.first = std::min(xRange.first, thisXRange.first);
+                xRange.second = std::min(xRange.second, thisXRange.second);
+            }
+        } // for all curves
+
+        if (rangeSet) {
+            double paddingX = (xRange.second - xRange.first) / 20.;
+            double paddingY = (displayRange.max - displayRange.min) / 20.;
+            centerOn(xRange.first - paddingX, xRange.second + paddingX, displayRange.min - paddingY, displayRange.max + paddingY);
+            return;
+        }
+    } // useDisplayRange
+    
+    // If no range, center them using the bounding box of keyframes
+    
     bool doCenter = false;
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
@@ -323,7 +377,7 @@ CurveWidget::centerOn(double xmin,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
-        _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
+        _imp->zoomCtx.fill(xmin, xmax, ymin, ymax);
     }
     _imp->zoomOrPannedSinceLastFit = false;
 
@@ -492,14 +546,7 @@ CurveWidget::resizeGL(int width,
     }
 
     if (!_imp->zoomOrPannedSinceLastFit) {
-        ///find out what are the selected curves and center on them
-        std::vector<boost::shared_ptr<CurveGui> > curves;
-        getVisibleCurves(&curves);
-        if ( curves.empty() ) {
-            centerOn(-10, 500, -10, 10);
-        } else {
-            centerOn(curves);
-        }
+        centerOn(std::vector<boost::shared_ptr<CurveGui> >(), true);
     }
 }
 
@@ -1893,15 +1940,7 @@ CurveWidget::reverseSelectedCurve()
 void
 CurveWidget::frameAll()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-#pragma message WARN("TODO: if the widget has an XRange and a DisplayRange (e.g. parametricparam), simply reset the zoom to the default one")
-    if ( _imp->_curves.empty() ) {
-        centerOn(-10, 500, -10, 10);
-    } else {
-        std::vector<boost::shared_ptr<CurveGui> > curves(_imp->_curves.begin(), _imp->_curves.end());
-        centerOn(curves);
-    }
+    centerOn(std::vector<boost::shared_ptr<CurveGui> >(), false);
 }
 
 void
@@ -1916,7 +1955,7 @@ CurveWidget::frameSelectedCurve()
         frameAll();
         //Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
     } else {
-        centerOn(selection);
+        centerOn(selection, false);
     }
 }
 

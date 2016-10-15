@@ -1107,6 +1107,41 @@ Curve::getIntegrateFromTo(double t1,
     return opposite ? -sum : sum;
 } // getIntegrateFromTo
 
+Curve::YRange
+Curve::getCurveDisplayYRange() const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    if ( !mustClamp() ) {
+        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+    }
+    if (!_imp->owner) {
+        return YRange(_imp->yMin, _imp->yMax);
+    }
+
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
+    if (isDouble) {
+        double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
+        if (min <= -DBL_MAX) {
+            min = -std::numeric_limits<double>::infinity();
+        }
+        double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
+        if (max >= DBL_MAX) {
+            max = std::numeric_limits<double>::infinity();
+        }
+
+        return YRange(min, max);
+    } else if (isInt) {
+        double min = isInt->getDisplayMinimum(_imp->dimensionInOwner);
+        double max = isInt->getDisplayMaximum(_imp->dimensionInOwner);
+
+        return YRange(min, max);
+    } else {
+        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+    }
+}
+
 Curve::YRange Curve::getCurveYRange() const
 {
     QMutexLocker l(&_imp->_lock);
@@ -1114,32 +1149,32 @@ Curve::YRange Curve::getCurveYRange() const
     if ( !mustClamp() ) {
         return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
     }
-    if (_imp->owner) {
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
-        if (isDouble) {
-            double min = isDouble->getMinimum(_imp->dimensionInOwner);
-            if (min <= -DBL_MAX) {
-                min = -std::numeric_limits<double>::infinity();
-            }
-            double max = isDouble->getMaximum(_imp->dimensionInOwner);
-            if (max >= DBL_MAX) {
-                max = std::numeric_limits<double>::infinity();
-            }
-
-            return YRange(min, max);
-        } else if (isInt) {
-            double min = isInt->getMinimum(_imp->dimensionInOwner);
-            double max = isInt->getMaximum(_imp->dimensionInOwner);
-
-            return YRange(min, max);
-        } else {
-            return YRange( (double)INT_MIN, (double)INT_MAX );
-        }
+    if (!_imp->owner) {
+        return YRange(_imp->yMin, _imp->yMax);
     }
-    assert( hasYRange() );
 
-    return YRange(_imp->yMin, _imp->yMax);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
+    if (isDouble) {
+        double min = isDouble->getMinimum(_imp->dimensionInOwner);
+        if (min <= -DBL_MAX) {
+            min = -std::numeric_limits<double>::infinity();
+        }
+        double max = isDouble->getMaximum(_imp->dimensionInOwner);
+        if (max >= DBL_MAX) {
+            max = std::numeric_limits<double>::infinity();
+        }
+
+        return YRange(min, max);
+    } else if (isInt) {
+        double min = isInt->getMinimum(_imp->dimensionInOwner);
+        double max = isInt->getMaximum(_imp->dimensionInOwner);
+
+        return YRange(min, max);
+    } else {
+        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+    }
+
 }
 
 double
@@ -1813,21 +1848,13 @@ Curve::setYRange(double yMin,
 
     _imp->yMin = yMin;
     _imp->yMax = yMax;
-    _imp->hasYRange = true;
-}
-
-bool
-Curve::hasYRange() const
-{
-    // PRIVATE - should not lock
-    return _imp->hasYRange;
 }
 
 bool
 Curve::mustClamp() const
 {
     // PRIVATE - should not lock
-    return _imp->owner && hasYRange();
+    return _imp->owner || _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity();
 }
 
 void

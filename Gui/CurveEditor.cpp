@@ -672,7 +672,7 @@ NodeCurveEditorElement::checkVisibleState(bool autoSelectOnShow)
                 curves.push_back(_curve);
                 cw->showCurvesAndHideOthers(curves);
                 if (wasEmpty) {
-                    cw->centerOn(curves);
+                    cw->centerOn(curves, false);
                 }
             }
         }
@@ -789,7 +789,7 @@ CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> > & curves)
             }
         }
     }
-    _imp->curveWidget->centerOn(curvesGuis);
+    _imp->curveWidget->centerOn(curvesGuis, true);
     _imp->curveWidget->showCurvesAndHideOthers(curvesGuis);
 }
 

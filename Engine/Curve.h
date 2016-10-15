@@ -331,6 +331,8 @@ public:
 
     YRange getCurveYRange() const WARN_UNUSED_RETURN;
 
+    YRange getCurveDisplayYRange() const WARN_UNUSED_RETURN;
+
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
 
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
@@ -378,8 +380,6 @@ private:
     KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReasonEnum reason, KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReasonEnum reason, KeyFrameSet::iterator key);
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
-
-    bool hasYRange() const;
 
     bool mustClamp() const;
 

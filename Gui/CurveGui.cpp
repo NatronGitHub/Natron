@@ -86,8 +86,12 @@ CurveGui::nextPointForSegment(const double x1,
     assert( !keys.empty() );
 
 
+    // Don't clamp drawing to min/max
+    const bool noYRange = false;/*( curveYRange.min == INT_MIN || curveYRange.min == -std::numeric_limits<double>::infinity()) &&
+    ( curveYRange.max == INT_MAX || curveYRange.max == std::numeric_limits<double>::infinity());*/
+
     if (x1 < xminCurveWidgetCoord) {
-        if ( ( curveYRange.min == INT_MIN || curveYRange.min == -std::numeric_limits<double>::infinity()) && ( curveYRange.max == INT_MAX || curveYRange.max == std::numeric_limits<double>::infinity()) ) {
+        if (noYRange) {
             *x2 = xminCurveWidgetCoord;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -118,7 +122,7 @@ CurveGui::nextPointForSegment(const double x1,
             }
         }
     } else if (x1 >= xmaxCurveWidgetCoord) {
-        if ( (curveYRange.min <= kOfxFlagInfiniteMin) && (curveYRange.max >= kOfxFlagInfiniteMax) ) {
+        if (noYRange) {
             *x2 = _curveWidget->width() - 1;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -368,7 +372,10 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
-            if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
+            if (curveYRange.min != INT_MIN &&
+                curveYRange.min != -std::numeric_limits<double>::infinity() &&
+                curveYRange.max != INT_MAX &&
+                curveYRange.max != std::numeric_limits<double>::infinity() ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);

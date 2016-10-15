@@ -87,7 +87,7 @@ public:
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves);
+    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, bool useDisplayRange);
 
     void showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves);
 
