@@ -619,9 +619,6 @@ TrackerNodeInteract::getKeysToRenderForMarker(double currentTime,
             keysToRender.insert(*lower);
             ++lower;
         }
-        if (i == MAX_TRACK_KEYS_TO_DISPLAY) {
-            break;
-        }
         if ( prev != allKeys.end() ) {
             keysToRender.insert(*prev);
             if ( prev != allKeys.begin() ) {
