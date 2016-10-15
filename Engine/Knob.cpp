@@ -4374,6 +4374,8 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     } else if (isParametric) {
         boost::shared_ptr<KnobParametric> newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
         output = newKnob;
+        newKnob->setMinimumsAndMaximums( isParametric->getMinimums(), isParametric->getMaximums() );
+        newKnob->setDisplayMinimumsAndMaximums( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
     }
     if (!output) {
         return KnobPtr();
