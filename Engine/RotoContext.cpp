@@ -3828,7 +3828,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             featherMesh->push_back(lastInnerVert);
             ++bSegmentIt;
         }
-        {
+        if ( fSegmentIt != fIt->end() ) {
             lastOutterVert.x = fSegmentIt->x;
             lastOutterVert.y = fSegmentIt->y;
 
