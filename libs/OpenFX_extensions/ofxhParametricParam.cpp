@@ -24,6 +24,7 @@
 #include <cassert>
 #include <sstream>
 #include <cmath>
+#include <cfloat>
 #include <iostream>
 #include "ofxhParametricParam.h"
 
@@ -86,6 +87,21 @@ struct ControlPoint_MuchLessThan {
 
 }
 
+static
+std::string
+unsignedToString(unsigned i)
+{
+    if (i == 0) {
+        return "0";
+    }
+    std::string nb;
+    for (unsigned j = i; j != 0; j /= 10) {
+        nb = (char)( '0' + (j % 10) ) + nb;
+    }
+
+    return nb;
+}
+
 namespace OFX {
 
 namespace Host {
@@ -107,18 +123,75 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(int curveIndex,con
 {
     const Property::Set &descProps = descriptor.getProperties();
     
-    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
-    if(curveIndex >= curveCount){
+    int dim = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if(curveIndex >= dim){
         return kOfxStatFailed;
     }
 
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    if (descProps.fetchProperty(name.str())) {
+    // if any of the default properties is not defined, set a reasonable default
+    int n;
+
+    n = _properties.getDimension(kOfxParamPropMin);
+    if (n != dim) {
+        std::vector<double> v(dim, -DBL_MAX);
+        if (n) {
+            _properties.getDoublePropertyN(kOfxParamPropMin, &v[0], n);
+        }
+        _properties.setDoublePropertyN(kOfxParamPropMin, &v[0], dim);
+    }
+
+    n = _properties.getDimension(kOfxParamPropMax);
+    if (n != dim) {
+        std::vector<double> v(dim, DBL_MAX);
+        if (n) {
+            _properties.getDoublePropertyN(kOfxParamPropMax, &v[0], n);
+        }
+        _properties.setDoublePropertyN(kOfxParamPropMax, &v[0], dim);
+    }
+
+    n = _properties.getDimension(kOfxParamPropDisplayMin);
+    if (n != dim) {
+        std::vector<double> v(dim, -DBL_MAX);
+        if (n) {
+            _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &v[0], n);
+        }
+        _properties.setDoublePropertyN(kOfxParamPropDisplayMin, &v[0], dim);
+    }
+
+    n = _properties.getDimension(kOfxParamPropDisplayMax);
+    if (n != dim) {
+        std::vector<double> v(dim, DBL_MAX);
+        if (n) {
+            _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &v[0], n);
+        }
+        _properties.setDoublePropertyN(kOfxParamPropDisplayMax, &v[0], dim);
+    }
+
+    n = _properties.getDimension(kOfxParamPropDimensionLabel);
+    if (n != dim) {
+        for (int i = n; i < dim; ++i) {
+            _properties.setStringProperty(kOfxParamPropDimensionLabel, "dim" + unsignedToString(i), i);
+        }
+    }
+    n = _properties.getDimension(kOfxParamPropParametricUIColour);
+    if (n != dim * 3) {
+        // UIColor is alternatively red, green, blue for each dimension
+        std::vector<double> v(dim * 3, 0);
+        for (int i = 0; i < dim * 3; i += 4) {
+            v[i] = 1.;
+        }
+        if (n) {
+            _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &v[0], n);
+        }
+        _properties.setDoublePropertyN(kOfxParamPropDisplayMax, &v[0], dim * 3);
+    }
+
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
+    if (descProps.fetchProperty(name)) {
         // there is a curve for dimension curveIndex
-        int cpsCount = descProps.getDimension(name.str()) / 2;
+        int cpsCount = descProps.getDimension(name) / 2;
         ControlPointV cps(cpsCount);
-        descProps.getDoublePropertyN(name.str(), &cps[0].key, cpsCount*2);
+        descProps.getDoublePropertyN(name, &cps[0].key, cpsCount*2);
         for (int i = 0; i < cpsCount; ++i) {
             OfxStatus stat = addControlPoint(curveIndex, 0., cps[i].key, cps[i].value, false);
             if (stat == kOfxStatFailed) {
@@ -129,9 +202,10 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(int curveIndex,con
     return kOfxStatOK;
 }
     
-OfxStatus ParametricInstance::defaultInitializeAllCurves(const Param::Descriptor& descriptor){
-    int curveCount = descriptor.getProperties().getIntProperty(kOfxParamPropParametricDimension);
-    for(int i = 0; i < curveCount; ++i){
+OfxStatus ParametricInstance::defaultInitializeAllCurves(const Param::Descriptor& descriptor)
+{
+    int dim = descriptor.getProperties().getIntProperty(kOfxParamPropParametricDimension);
+    for(int i = 0; i < dim; ++i){
         OfxStatus stat = defaultInitializeFromDescriptor(i, descriptor);
         if(stat == kOfxStatFailed){
             return stat;
@@ -385,11 +459,9 @@ static  OfxStatus parametricParamGetNControlPoints(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     // getDimension returns 0 if the property does not exist
-    *returnValue = descProps.getDimension(name.str()) / 2;
+    *returnValue = descProps.getDimension(name) / 2;
     OfxStatus stat = kOfxStatOK;
 
 #   ifdef OFX_DEBUG_PARAMETERS
@@ -466,11 +538,9 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     // getDimension returns 0 if the property does not exist
-    int cpsCount = descProps.getDimension(name.str()) / 2;
+    int cpsCount = descProps.getDimension(name) / 2;
     if (nthCtl < 0 || nthCtl >= cpsCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
@@ -478,8 +548,8 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
         return kOfxStatErrBadIndex;
     }
 
-    *key = descProps.getDoubleProperty(namestr, 2*nthCtl);
-    *value = descProps.getDoubleProperty(namestr, 2*nthCtl+1);
+    *key = descProps.getDoubleProperty(name, 2*nthCtl);
+    *value = descProps.getDoubleProperty(name, 2*nthCtl+1);
 
     OfxStatus stat = kOfxStatOK;
 
@@ -594,11 +664,9 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     // getDimension returns 0 if the property does not exist
-    int cpsCount = descProps.getDimension(name.str()) / 2;
+    int cpsCount = descProps.getDimension(name) / 2;
     if (nthCtl < 0 || nthCtl >= cpsCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
@@ -606,8 +674,8 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
         return kOfxStatErrBadIndex;
     }
 
-    descProps.setDoubleProperty(namestr, key, 2*nthCtl);
-    descProps.setDoubleProperty(namestr, value, 2*nthCtl+1);
+    descProps.setDoubleProperty(name, key, 2*nthCtl);
+    descProps.setDoubleProperty(name, value, 2*nthCtl+1);
 
     OfxStatus stat = kOfxStatOK;
 
@@ -728,16 +796,14 @@ static OfxStatus parametricParamAddControlPointV2(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     BezierCP cp = { key, value };
 
-    if (!descProps.fetchProperty(namestr)) {
+    if (!descProps.fetchProperty(name)) {
         // the property does not exist, create it
-        const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
+        const Property::PropSpec parametricControlPoints = {name.c_str(), Property::eDouble, 0, false, ""};
         descProps.createProperty(parametricControlPoints);
-        descProps.setDoublePropertyN(namestr, &cp.key, 2);
+        descProps.setDoublePropertyN(name, &cp.key, 2);
     } else {
         //the property already exists
         int cpsCount = descProps.getDimension(name.str()) / 2;
@@ -746,7 +812,7 @@ static OfxStatus parametricParamAddControlPointV2(OfxParamHandle param,
 
         //get the existing cps
         ControlPointV cps(cpsCount);
-        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+        descProps.getDoublePropertyN(name, &cps[0].key, cps.size()*2);
 
         // Note: an optimal implementation could work on a std::set (which is an ordered container),
         // but we propose this suboptimal implementation based on std::vector, given the fact that
@@ -772,7 +838,7 @@ static OfxStatus parametricParamAddControlPointV2(OfxParamHandle param,
             cps.insert(it, cp);
         }
         //set back the property
-        descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+        descProps.setDoublePropertyN(name, &cps[0].key, cps.size()*2);
     }
 
     stat = kOfxStatOK;
@@ -863,25 +929,23 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     BezierCP cp = { key, value };
 
-    if (!descProps.fetchProperty(namestr)) {
+    if (!descProps.fetchProperty(name)) {
         // the property does not exist, create it
-        const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
+        const Property::PropSpec parametricControlPoints = {name.c_str(), Property::eDouble, 0, false, ""};
         descProps.createProperty(parametricControlPoints);
-        descProps.setDoublePropertyN(namestr, &cp.key, 2);
+        descProps.setDoublePropertyN(name, &cp.key, 2);
     } else {
         //the property already exists
-        int cpsCount = descProps.getDimension(name.str()) / 2;
+        int cpsCount = descProps.getDimension(name) / 2;
         //if the property exists it must be > 0 !
         assert(cpsCount > 0);
 
         //get the existing cps
         ControlPointV cps(cpsCount);
-        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+        descProps.getDoublePropertyN(name, &cps[0].key, cps.size()*2);
 
         // Note: an optimal implementation could work on a std::set (which is an ordered container),
         // but we propose this suboptimal implementation based on std::vector, given the fact that
@@ -907,7 +971,7 @@ static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
             cps.insert(it, cp);
         }
         //set back the property
-        descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+        descProps.setDoublePropertyN(name, &cps[0].key, cps.size()*2);
     }
 
     stat = kOfxStatOK;
@@ -973,11 +1037,9 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
     }
 
     ///check whether the property already exists in the property set
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     // getDimension returns 0 if the property does not exist
-    int cpsCount = descProps.getDimension(name.str()) / 2;
+    int cpsCount = descProps.getDimension(name) / 2;
     if (nthCtl < 0 || nthCtl >= cpsCount ) {
 #       ifdef OFX_DEBUG_PARAMETERS
         std::cout << ' ' << StatStr(kOfxStatErrBadIndex) << std::endl;
@@ -987,13 +1049,13 @@ static OfxStatus parametricParamDeleteControlPoint(OfxParamHandle param,
 
     //get the existing cps
     ControlPointV cps(cpsCount);
-    descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+    descProps.getDoublePropertyN(name, &cps[0].key, cps.size()*2);
 
     // delete the control point
     cps.erase(cps.begin()+nthCtl);
 
     //set back the property
-    descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+    descProps.setDoublePropertyN(name, &cps[0].key, cps.size()*2);
 
     OfxStatus stat = kOfxStatOK;
 
@@ -1056,11 +1118,9 @@ static OfxStatus parametricParamDeleteAllControlPoints(OfxParamHandle param,
         return kOfxStatErrBadIndex;
     }
 
-    std::stringstream name;
-    name << kOfxParamPropControlPoints << '_' << curveIndex;
-    std::string namestr = name.str();
+    std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);
     // set the property dimension to 0
-    descProps.setDoublePropertyN(namestr, NULL, 0);
+    descProps.setDoublePropertyN(name, NULL, 0);
 
     OfxStatus stat = kOfxStatOK;
 
