@@ -5572,7 +5572,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // set some stuff up
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
-    metadata.setIsFrameVarying( node->hasAnimatedKnob() );
+    metadata.setIsFrameVarying( getHasAnimation() );
     metadata.setIsContinuous(false);
 
     // now find the best depth that the plugin supports

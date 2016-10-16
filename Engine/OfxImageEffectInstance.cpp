@@ -579,7 +579,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             if (isBtn) {
                 isBtn->setCheckable(true);
                 int def = descriptor.getProperties().getIntProperty(kOfxParamPropDefault);
-                isBtn->setValue((bool)def, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                isBtn->setValue((bool)def);
 
                 bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
                 isBtn->setInViewerContextCanHaveShortcut(haveShortcut);
@@ -641,7 +641,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setIsPersistent(persistent);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecret(secretByDefault);
-    knob->setAllDimensionsEnabled(enabledByDefault);
+    knob->setEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );

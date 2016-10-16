@@ -299,7 +299,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
         if ( appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
             _publicInterface->fixRelativeFilePaths(NATRON_PROJECT_ENV_VAR_NAME, pathCpy, false);
         }
-        envVars->setValue(newEnv, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        envVars->setValue(newEnv);
     }
 }
 
@@ -499,7 +499,7 @@ ProjectPrivate::runOnProjectLoadCallback()
 void
 ProjectPrivate::setProjectFilename(const std::string& filename)
 {
-    projectName->setValue(filename, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    projectName->setValue(filename);
 }
 
 std::string
@@ -511,7 +511,7 @@ ProjectPrivate::getProjectFilename() const
 void
 ProjectPrivate::setProjectPath(const std::string& path)
 {
-    projectPath->setValue(path, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    projectPath->setValue(path);
 }
 
 std::string

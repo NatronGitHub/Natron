@@ -27,6 +27,12 @@
 
 #include "Global/Macros.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 /**
  * @brief Simple wrap for the Knob class that is the API we want to expose to the Python
  * Engine module.
@@ -40,12 +46,30 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/ViewIdx.h"
+
+/**
+ * @brief Specify that an action (a setter) must be applied on all split views in the parameter
+ **/
+#define kPyParamViewSetSpecAll "All"
+
+/**
+ * @brief Specify that an action (a setter) must be applied on the main view (all unsplit views) only
+ **/
+#define kPyParamViewIdxMain "Main"
+
+/**
+ * @brief Specify that an action (a setter) must be applied on all dimensions of a parameter
+ **/
+#define kPyParamDimSpecAll -1
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Param
 {
+    Q_DECLARE_TR_FUNCTIONS(Param)
+    
 protected:
     KnobIWPtr _knob;
 
@@ -201,11 +225,19 @@ public:
      * The parameters must be compatible types. E.g: you cannot copy
      * a StringParam to an IntParam but you can convert a Doubleparam to an IntParam.
      **/
-    bool copy(Param* other, int dimension = -1);
+    bool copy(Param* other,
+              int thisDimension = kPyParamDimSpecAll,
+              int otherDimension = kPyParamDimSpecAll,
+              const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+              const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    bool slaveTo(Param* other, int thisDimension, int otherDimension);
+    bool slaveTo(Param* other,
+                 int thisDimension,
+                 int otherDimension,
+                 const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                 const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    void unslave(int dimension);
+    void unslave(int dimension = kPyParamDimSpecAll, const QString& thisView = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
@@ -222,7 +254,7 @@ public:
      * if there's an expression this will not return the value of the expression but the value of the animation curve
      * if there is any.
      **/
-    double curve(double time, int dimension = 0) const;
+    double curve(double time, int dimension = 0, const QString& thisView = QLatin1String(kPyParamViewIdxMain)) const;
 
     bool setAsAlias(Param* other);
 
@@ -233,7 +265,11 @@ protected:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    void _addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    void _addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
+
+    bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
+    bool getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const;
+    
 };
 
 
@@ -250,59 +286,63 @@ public:
      * @brief Returns whether the given dimension has animation or not. A dimension is considered to have an animation when it has
      * at least 1 keyframe.
      **/
-    bool getIsAnimated(int dimension = 0) const;
+    bool getIsAnimated(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the number of keyframes for the given dimension.
      **/
-    int getNumKeys(int dimension = 0) const;
+    int getNumKeys(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the index of the keyframe at the given time for the given dimension.
      * Returns -1 if no keyframe could be found at the given time.
      **/
-    int getKeyIndex(double time, int dimension = 0) const;
+    int getKeyIndex(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set in 'time' the time of the keyframe at the given index for the given dimension.
      * This function returns true if a keyframe was found at the given index, false otherwise.
      **/
-    bool getKeyTime(int index, int dimension, double* time) const;
+    bool getKeyTime(int index, int dimension, double* time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    void deleteValueAtTime(double time, int dimension = 0);
+    void deleteValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Removes all animation for the given dimension.
      **/
-    void removeAnimation(int dimension = 0);
+    void removeAnimation(int dimension = kPyParamDimSpecAll, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Compute the derivative at time as a double
      **/
-    double getDerivativeAtTime(double time, int dimension = 0) const;
+    double getDerivativeAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Compute the integral of dimension from time1 to time2 as a double
      **/
-    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const;
+    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Get the current global time in the parameter context. Most generally this is the time on the timeline,
      * but when multiple frames are being rendered at different times, this is the time of the frame being rendered
      * by the caller thread.
      **/
-    int getCurrentTime() const;
+    double getCurrentTime() const;
 
     /**
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
-    bool setExpression(const QString& expr, bool hasRetVariable, int dimension = 0);
-    QString getExpression(int dimension, bool* hasRetVariable) const;
+    bool setExpression(const QString& expr, bool hasRetVariable, int dimension = kPyParamDimSpecAll, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    QString getExpression(int dimension, bool* hasRetVariable, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = 0);
+    bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+
+    void splitView(const QString& viewName);
+
+    void unSplitView(const QString& viewName);
 };
 
 /**
@@ -349,38 +389,38 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    int get() const;
-    int get(double frame) const;
+    int get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    int get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(int x);
-    void set(int x, double frame);
+    void set(int x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue(int dimension = 0) const;
+    int getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value, int dimension = 0);
+    void setValue(int value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(double time, int dimension = 0) const;
+    int getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value, double time, int dimension = 0);
+    void setValueAtTime(int value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -395,7 +435,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -446,7 +486,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    int addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class Int2DParam
@@ -459,10 +499,10 @@ public:
 
     virtual ~Int2DParam() {}
 
-    Int2DTuple get() const;
-    Int2DTuple get(double frame) const;
-    void set(int x, int y);
-    void set(int x, int y, double frame);
+    Int2DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Int2DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(int x, int y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, int y, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 class Int3DParam
@@ -475,10 +515,10 @@ public:
 
     virtual ~Int3DParam() {}
 
-    Int3DTuple get() const;
-    Int3DTuple get(double frame) const;
-    void set(int x, int y, int z);
-    void set(int x, int y, int z, double frame);
+    Int3DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Int3DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(int x, int y, int z, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, int y, int z, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 
@@ -497,38 +537,38 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    double get() const;
-    double get(double frame) const;
+    double get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    double get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(double x);
-    void set(double x, double frame);
+    void set(double x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    double getValue(int dimension = 0) const;
+    double getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(double value, int dimension = 0);
+    void setValue(double value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(double time, int dimension = 0) const;
+    double getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value, double time, int dimension = 0);
+    void setValueAtTime(double value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -543,7 +583,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -594,7 +634,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    double addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class Double2DParam
@@ -607,10 +647,10 @@ public:
 
     virtual ~Double2DParam() {}
 
-    Double2DTuple get() const;
-    Double2DTuple get(double frame) const;
-    void set(double x, double y);
-    void set(double x, double y, double frame);
+    Double2DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Double2DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(double x, double y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double y, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     void setUsePointInteract(bool use);
 };
@@ -625,10 +665,10 @@ public:
 
     virtual ~Double3DParam() {}
 
-    Double3DTuple get() const;
-    Double3DTuple get(double frame) const;
-    void set(double x, double y, double z);
-    void set(double x, double y, double z, double frame);
+    Double3DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Double3DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(double x, double y, double z, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double y, double z, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 
@@ -647,39 +687,39 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    ColorTuple get() const;
-    ColorTuple get(double frame) const;
+    ColorTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    ColorTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(double r, double g, double b, double a);
-    void set(double r, double g, double b, double a, double frame);
+    void set(double r, double g, double b, double a, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double r, double g, double b, double a, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    double getValue(int dimension = 0) const;
+    double getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(double value, int dimension = 0);
+    void setValue(double value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(double time, int dimension = 0) const;
+    double getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value, double time, int dimension = 0);
+    void setValueAtTime(double value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -694,7 +734,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -745,7 +785,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    double addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class ChoiceParam
@@ -763,44 +803,44 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    int get() const;
-    int get(double frame) const;
+    int get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    int get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(int x);
-    void set(int x, double frame);
+    void set(int x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /*
      * @brief Set the value from label if it exists.
      * The label will be compared without case sensitivity to existing entries. If it's not found, nothing is done.
      */
-    void set(const QString& label);
+    void set(const QString& label, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue() const;
+    int getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value);
+    void setValue(int value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(double time) const;
+    int getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value, double time);
+    void setValueAtTime(int value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -820,7 +860,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Add a new option to the drop-down menu
@@ -838,6 +878,11 @@ public:
     QString getOption(int index) const;
 
     /**
+     * @brief Returns the current option
+     **/
+    QString getActiveOption(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+
+    /**
      * @brief Returns the count of options
      **/
     int getNumOptions() const;
@@ -852,7 +897,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    int addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class BooleanParam
@@ -870,38 +915,38 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    bool get() const;
-    bool get(double frame) const;
+    bool get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    bool get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(bool x);
-    void set(bool x, double frame);
+    void set(bool x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(bool x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    bool getValue() const;
+    bool getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(bool value);
+    void setValue(bool value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    bool getValueAtTime(double time) const;
+    bool getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(bool value, double time);
+    void setValueAtTime(bool value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -916,14 +961,14 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    bool addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    bool addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 /////////////StringParam
@@ -943,38 +988,38 @@ public:
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    QString get() const;
-    QString get(double frame) const;
+    QString get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    QString get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(const QString& x);
-    void set(const QString& x, double frame);
+    void set(const QString& x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(const QString& x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    QString getValue() const;
+    QString getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(const QString& value);
+    void setValue(const QString& value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    QString getValueAtTime(double time) const;
+    QString getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(const QString& value, double time);
+    void setValueAtTime(const QString& value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -989,14 +1034,14 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    QString addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    QString addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class StringParam

@@ -2144,8 +2144,8 @@ public:
     /**
      * @brief Same as setDefaultValue except that it does not restore the knob to its defaults
      **/
-    void setDefaultValueWithoutApplying(const T& v, DimSpec dimension);
-    void setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx dimensionStartOffset);
+    void setDefaultValueWithoutApplying(const T& v, DimSpec dimension = DimSpec(0));
+    void setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx dimensionStartOffset = DimIdx(0));
 
 
     //////////////////////////////////////////////////////////////////////

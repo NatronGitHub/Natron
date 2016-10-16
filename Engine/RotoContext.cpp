@@ -959,7 +959,7 @@ RotoContext::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjec
     _imp->isCurrentlyLoading = true;
 
     for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        it->lock()->setAllDimensionsEnabled(false);
+        it->lock()->setEnabled(false);
     }
 
     assert(_imp->layers.size() == 1);
@@ -1181,9 +1181,9 @@ RotoContext::selectInternal(const RotoItemPtr & item)
 
             if (k == strengthKnob) {
                 if (nbStrokeWithoutStrength) {
-                    k->setAllDimensionsEnabled(false);
+                    k->setEnabled(false);
                 } else {
-                    k->setAllDimensionsEnabled(true);
+                    k->setEnabled(true);
                 }
             } else {
                 bool mustDisable = false;
@@ -1214,7 +1214,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                     }
                     mustDisable |= isBezierKnob;
                 }
-                k->setAllDimensionsEnabled(!mustDisable);
+                k->setEnabled(!mustDisable);
             }
             if ( (nbUnlockedBeziers >= 2) || (nbUnlockedStrokes >= 2) ) {
                 k->setDirty(true);
@@ -1331,7 +1331,7 @@ RotoContext::deselectInternal(RotoItemPtr b)
             if (!k) {
                 continue;
             }
-            k->setAllDimensionsEnabled(false);
+            k->setEnabled(false);
             if (!bezierDirty || !strokeDirty) {
                 k->setDirty(false);
             }
@@ -1406,7 +1406,7 @@ RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
         for (int i = 0; i < (*it)->getNDimensions(); ++i) {
             (*it)->resetToDefaultValue(i);
         }
-        (*it)->setAllDimensionsEnabled(wasEnabled);
+        (*it)->setEnabled(wasEnabled);
     }
 }
 
@@ -1874,7 +1874,7 @@ RotoContext::onItemLockedChanged(const RotoItemPtr& item,
             continue;
         }
         knob->setDirty(dirty);
-        knob->setAllDimensionsEnabled(enabled);
+        knob->setEnabled(enabled);
     }
     _imp->lastLockedItem = item;
     Q_EMIT itemLockedChanged( (int)reason );

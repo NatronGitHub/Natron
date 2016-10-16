@@ -417,7 +417,7 @@ OutputEffectInstance::reportStats(int time,
     if (fileKnob) {
         KnobFilePtr strKnob = toKnobFile(fileKnob);
         if  (strKnob) {
-            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
+            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( DimIdx(0), ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
             qfileName.append( QString::fromUtf8("-stats.txt") );
             filename = qfileName.toStdString();

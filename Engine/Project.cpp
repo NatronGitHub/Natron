@@ -340,7 +340,7 @@ Project::loadProjectInternal(const QString & pathIn,
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
 
-    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
@@ -545,9 +545,9 @@ Project::saveProjectInternal(const QString & path,
 
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
-            _imp->saveDate->setValue( timeStr.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
-            _imp->lastAuthorName->setValue( generateGUIUserName(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
-            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() , ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            _imp->saveDate->setValue( timeStr.toStdString());
+            _imp->lastAuthorName->setValue( generateGUIUserName());
+            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
         }
 
         try {
@@ -760,7 +760,7 @@ Project::initializeKnobs()
         const Format& f = appFormats[i];
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
         if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
-            _imp->formatKnob->setDefaultValue(i, 0);
+            _imp->formatKnob->setDefaultValue(i);
         }
         entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(f);
@@ -785,14 +785,16 @@ Project::initializeKnobs()
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
+    _imp->previewMode->setDefaultValue(autoPreviewEnabled);
 
 
     _imp->frameRange = AppManager::createKnob<KnobInt>(shared_from_this(), tr("Frame Range"), 2);
-    _imp->frameRange->setDefaultValue(1, 0);
-    _imp->frameRange->setDefaultValue(250, 1);
-    _imp->frameRange->setDimensionName(0, "first");
-    _imp->frameRange->setDimensionName(1, "last");
+    std::vector<int> defFrameRange(2);
+    defFrameRange[0] = 1;
+    defFrameRange[1] = 250;
+    _imp->frameRange->setDefaultValues(defFrameRange, DimIdx(0));
+    _imp->frameRange->setDimensionName(DimIdx(0), "first");
+    _imp->frameRange->setDimensionName(DimIdx(1), "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
     _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
@@ -818,8 +820,7 @@ Project::initializeKnobs()
                                         "special frame rates.") );
     _imp->frameRate->setAnimationEnabled(false);
     _imp->frameRate->setDefaultValue(24);
-    _imp->frameRate->setDisplayMinimum(0.);
-    _imp->frameRate->setDisplayMaximum(50.);
+    _imp->frameRate->setDisplayRange(0., 50.);
     page->addKnob(_imp->frameRate);
 
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("GPU Rendering") );
@@ -839,7 +840,7 @@ Project::initializeKnobs()
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
     if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
+        _imp->gpuSupport->setEnabled(false);
     }
     page->addKnob(_imp->gpuSupport);
 
@@ -931,7 +932,7 @@ Project::initializeKnobs()
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistent(false);
 //    _imp->projectName->setAsLabel();
-    _imp->projectName->setEnabled(0, false);
+    _imp->projectName->setEnabled(false);
     _imp->projectName->setAnimationEnabled(false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
@@ -940,7 +941,7 @@ Project::initializeKnobs()
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistent(false);
     _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setEnabled(0, false);
+    _imp->projectPath->setEnabled(false);
     // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
 
@@ -948,7 +949,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
-    _imp->natronVersion->setEnabled(0, false);
+    _imp->natronVersion->setEnabled(false);
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
 
@@ -959,7 +960,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip( tr("The user name and host name of the original author of the project.") );
     //_imp->originalAuthorName->setAsLabel();
-    _imp->originalAuthorName->setEnabled(0, false);
+    _imp->originalAuthorName->setEnabled(false);
     _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
@@ -970,7 +971,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
-    _imp->lastAuthorName->setEnabled(0, false);
+    _imp->lastAuthorName->setEnabled(false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
@@ -981,7 +982,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip( tr("The creation date of the project.") );
     //_imp->projectCreationDate->setAsLabel();
-    _imp->projectCreationDate->setEnabled(0, false);
+    _imp->projectCreationDate->setEnabled(false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
@@ -991,7 +992,7 @@ Project::initializeKnobs()
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
-    _imp->saveDate->setEnabled(0, false);
+    _imp->saveDate->setEnabled(false);
     _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
@@ -1042,7 +1043,7 @@ Project::initializeKnobs()
                                                "- app: points to the current application instance.") );
     _imp->onProjectCloseCB->setAnimationEnabled(false);
     std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
-    _imp->onProjectCloseCB->setValue(onProjectClose, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->onProjectCloseCB->setValue(onProjectClose);
     pythonPage->addKnob(_imp->onProjectCloseCB);
 
     _imp->onNodeCreated = AppManager::createKnob<KnobString>( shared_from_this(), tr("After Node Created") );
@@ -1175,7 +1176,7 @@ Project::setProjectDefaultFormat(const Format & f)
     //assert( !_imp->formatMutex.tryLock() );
     int index = tryAddProjectFormat(f, true);
 
-    _imp->formatKnob->setValue(index, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
 }
@@ -1351,7 +1352,7 @@ Project::setupProjectForStereo()
     views.push_back("Left");
     views.push_back("Right");
     std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(views);
-    _imp->viewsList->setValue(encoded, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->viewsList->setValue(encoded);
 }
 
 #if 0 // dead code
@@ -1405,7 +1406,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
         pairs.push_back(view);
     }
     std::string encoded = _imp->viewsList->encodeToKnobTableFormatSingleCol(pairs);
-    _imp->viewsList->setValue(encoded, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->viewsList->setValue(encoded);
 }
 
 QString
@@ -1451,7 +1452,7 @@ Project::isAutoPreviewEnabled() const
 void
 Project::toggleAutoPreview()
 {
-    _imp->previewMode->setValue( !_imp->previewMode->getValue(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+    _imp->previewMode->setValue( !_imp->previewMode->getValue());
 }
 
 TimeLinePtr Project::getTimeLine() const
@@ -1483,8 +1484,8 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
     appPTR->clearErrorLog_mt_safe();
 
 
-    _imp->projectName->setValue( name.toStdString() , ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-    _imp->projectPath->setValue( path.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+    _imp->projectName->setValue( name.toStdString());
+    _imp->projectPath->setValue( path.toStdString());
 
     getApp()->setProjectBeingLoadedInfo(obj._projectLoadedInfo);
 
@@ -1508,7 +1509,7 @@ bool
 Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
-                            ViewSpec /*view*/,
+                            ViewSetSpec /*view*/,
                             bool /*originatedFromMainThread*/)
 {
     bool ret = true;
@@ -1559,8 +1560,8 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
     }  else if ( knob == _imp->frameRate ) {
         forceComputeInputDependentDataOnAllTrees();
     } else if ( knob == _imp->frameRange ) {
-        int first = _imp->frameRange->getValue(0);
-        int last = _imp->frameRange->getValue(1);
+        int first = _imp->frameRange->getValue(DimIdx(0));
+        int last = _imp->frameRange->getValue(DimIdx(1));
         Q_EMIT frameRangeChanged(first, last);
     } else if ( knob == _imp->gpuSupport ) {
 
@@ -1592,9 +1593,9 @@ Project::refreshOpenGLRenderingFlagOnNodes()
 {
     bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
     if (!activated) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
+        _imp->gpuSupport->setEnabled(false);
     } else {
-        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        _imp->gpuSupport->setEnabled(true);
         int index =  _imp->gpuSupport->getValue();
         activated = index == 0 || (index == 2 && !getApp()->isBackground());
     }
@@ -1912,9 +1913,7 @@ Project::doResetEnd(bool aboutToQuit)
 
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
-            for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
-                knobs[i]->resetToDefaultValue(j);
-            }
+            knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
 
 
@@ -2433,7 +2432,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,
             if ( appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
                 fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path, block);
             }
-            _imp->envVars->setValue(newEnv, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            _imp->envVars->setValue(newEnv);
         }
         endChanges(block);
     } catch (std::logic_error) {
@@ -2501,8 +2500,8 @@ void
 Project::getFrameRange(double* first,
                        double* last) const
 {
-    *first = _imp->frameRange->getValue(0);
-    *last = _imp->frameRange->getValue(1);
+    *first = _imp->frameRange->getValue();
+    *last = _imp->frameRange->getValue(DimIdx(1));
 }
 
 void
@@ -2512,13 +2511,13 @@ Project::unionFrameRangeWith(int first,
     int curFirst, curLast;
     bool mustSet = !_imp->frameRange->hasModifications() && first != last;
 
-    curFirst = _imp->frameRange->getValue(0);
-    curLast = _imp->frameRange->getValue(1);
+    curFirst = _imp->frameRange->getValue(DimIdx(0));
+    curLast = _imp->frameRange->getValue(DimIdx(1));
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->frameRange->setValue(curFirst);
+    _imp->frameRange->setValue(curLast, ViewIdx(0), DimIdx(1));
     endChanges();
 }
 
@@ -2530,8 +2529,8 @@ Project::recomputeFrameRangeFromReaders()
     recomputeFrameRangeForAllReaders(&first, &last);
 
     beginChanges();
-    _imp->frameRange->setValue(first, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-    _imp->frameRange->setValue(last, ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
+    _imp->frameRange->setValue(first, ViewSetSpec::all(), DimIdx(0));
+    _imp->frameRange->setValue(last, ViewSetSpec::all(), DimIdx(1));
     endChanges();
 }
 

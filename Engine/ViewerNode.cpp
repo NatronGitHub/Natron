@@ -784,7 +784,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     }
 
     ViewerCompositingOperatorEnum operation = (ViewerCompositingOperatorEnum)blendingModeChoiceKnob.lock()->getValue();
-    bInputKnob->setAllDimensionsEnabled(operation != eViewerCompositingOperatorNone);
+    bInputKnob->setEnabled(operation != eViewerCompositingOperatorNone);
 
     // If we found the old choice and the old choice it not "-", we set the index
     int foundCurAChoiceIndex = -1;
@@ -1052,7 +1052,7 @@ ViewerNodePrivate::onInternalViewerCreated()
     QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), _publicInterface, SLOT(onEngineStarted(bool)) );
 
     // Refresh visibility & enabledness
-    fpsKnob.lock()->setAllDimensionsEnabled(enableFpsKnob.lock()->getValue());
+    fpsKnob.lock()->setEnabled(enableFpsKnob.lock()->getValue());
 
     // Refresh playback mode
     PlaybackModeEnum mode = (PlaybackModeEnum)playbackModeKnob.lock()->getValue();
@@ -2614,7 +2614,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->blendingModeChoiceKnob.lock()) {
         ViewerCompositingOperatorEnum op = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
-        _imp->bInputNodeChoiceKnob.lock()->setAllDimensionsEnabled(op != eViewerCompositingOperatorNone);
+        _imp->bInputNodeChoiceKnob.lock()->setEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
         std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText();
         if (zoomChoice == "Fit") {
@@ -2666,10 +2666,10 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
         bool enable = _imp->enableAutoContrastButtonKnob.lock()->getValue();
-        _imp->enableGammaButtonKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->gammaSliderKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->enableGainButtonKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->gainSliderKnob.lock()->setAllDimensionsEnabled(!enable);
+        _imp->enableGammaButtonKnob.lock()->setEnabled(!enable);
+        _imp->gammaSliderKnob.lock()->setEnabled(!enable);
+        _imp->enableGainButtonKnob.lock()->setEnabled(!enable);
+        _imp->gainSliderKnob.lock()->setEnabled(!enable);
         
     } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
@@ -2967,7 +2967,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
         knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
     } else if (k == _imp->enableFpsKnob.lock()) {
-        _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+        _imp->fpsKnob.lock()->setEnabled(_imp->enableFpsKnob.lock()->getValue());
         refreshFps();
     } else if (k == _imp->fpsKnob.lock()) {
         refreshFps();

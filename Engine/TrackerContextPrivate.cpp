@@ -344,7 +344,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     enableTrackKnob->setAnimationEnabled(true);
     enableTrackKnob->setDefaultValue(true);
     enableTrackKnob->setEvaluateOnChange(false);
-    enableTrackKnob->setAllDimensionsEnabled(false);
+    enableTrackKnob->setEnabled(false);
     enableTrackKnob->setAddNewLine(false);
     settingsPage->addKnob(enableTrackKnob);
     activateTrack = enableTrackKnob;
@@ -371,7 +371,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         motionModelKnob->populateChoices(choices, helps);
         motionModelKnob->setIcons(icons);
     }
-    motionModelKnob->setAllDimensionsEnabled(false);
+    motionModelKnob->setEnabled(false);
     motionModelKnob->setAnimationEnabled(false);
     motionModelKnob->setEvaluateOnChange(false);
     perTrackKnobs.push_back(motionModelKnob);
@@ -520,7 +520,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingErrorKnob->setHintToolTip( tr(kTrackerParamFittingErrorHint) );
     fittingErrorKnob->setEvaluateOnChange(false);
     fittingErrorKnob->setAddNewLine(false);
-    fittingErrorKnob->setAllDimensionsEnabled(false);
+    fittingErrorKnob->setEnabled(false);
     transformPage->addKnob(fittingErrorKnob);
     fittingError = fittingErrorKnob;
 
@@ -698,7 +698,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     KnobButtonPtr exportButtonKnob = AppManager::createKnob<KnobButton>(effect, tr(kTrackerParamExportButtonLabel), 1);
     exportButtonKnob->setName(kTrackerParamExportButton);
     exportButtonKnob->setHintToolTip( tr(kTrackerParamExportButtonHint) );
-    exportButtonKnob->setAllDimensionsEnabled(false);
+    exportButtonKnob->setEnabled(false);
     transformPage->addKnob(exportButtonKnob);
     exportButton = exportButtonKnob;
 }
@@ -1455,8 +1455,8 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     shutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     customShutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
 
-    exportLink.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
-    exportButton.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
+    exportLink.lock()->setEnabled(motionType != eTrackerMotionTypeNone);
+    exportButton.lock()->setEnabled(motionType != eTrackerMotionTypeNone);
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     bool usePM = usePatternMatching.lock()->getValue();
@@ -2610,14 +2610,14 @@ TrackerContextPrivate::onTransformSolverWatcherProgress(int progress)
 void
 TrackerContextPrivate::setSolverParamsEnabled(bool enabled)
 {
-    motionType.lock()->setAllDimensionsEnabled(enabled);
-    setCurrentFrameButton.lock()->setAllDimensionsEnabled(enabled);
-    robustModel.lock()->setAllDimensionsEnabled(enabled);
-    referenceFrame.lock()->setAllDimensionsEnabled(enabled);
-    transformType.lock()->setAllDimensionsEnabled(enabled);
-    jitterPeriod.lock()->setAllDimensionsEnabled(enabled);
-    smoothTransform.lock()->setAllDimensionsEnabled(enabled);
-    smoothCornerPin.lock()->setAllDimensionsEnabled(enabled);
+    motionType.lock()->setEnabled(enabled);
+    setCurrentFrameButton.lock()->setEnabled(enabled);
+    robustModel.lock()->setEnabled(enabled);
+    referenceFrame.lock()->setEnabled(enabled);
+    transformType.lock()->setEnabled(enabled);
+    jitterPeriod.lock()->setEnabled(enabled);
+    smoothTransform.lock()->setEnabled(enabled);
+    smoothCornerPin.lock()->setEnabled(enabled);
 }
 
 void

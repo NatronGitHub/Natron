@@ -588,7 +588,7 @@ Settings::initializeKnobsProjectSetup()
     _enableMappingFromDriveLettersToUNCShareNames->setHintToolTip( tr("This is only relevant for Windows: If checked, %1 will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _enableMappingFromDriveLettersToUNCShareNames->setName("useDriveLetters");
 #ifndef __NATRON_WIN32__
-    _enableMappingFromDriveLettersToUNCShareNames->setAllDimensionsEnabled(false);
+    _enableMappingFromDriveLettersToUNCShareNames->setEnabled(false);
 #endif
     _projectsPage->addKnob(_enableMappingFromDriveLettersToUNCShareNames);
 }
@@ -722,9 +722,9 @@ Settings::initializeKnobsColorManagement()
     _customOcioConfigFile->setName("ocioCustomConfigFile");
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
-        _customOcioConfigFile->setAllDimensionsEnabled(true);
+        _customOcioConfigFile->setEnabled(true);
     } else {
-        _customOcioConfigFile->setAllDimensionsEnabled(false);
+        _customOcioConfigFile->setEnabled(false);
     }
 
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
@@ -2263,9 +2263,9 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob ) {
         if (_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
-            _customOcioConfigFile->setAllDimensionsEnabled(true);
+            _customOcioConfigFile->setEnabled(true);
         } else {
-            _customOcioConfigFile->setAllDimensionsEnabled(false);
+            _customOcioConfigFile->setEnabled(false);
         }
         tryLoadOpenColorIOConfig();
     } else if ( k == _useThreadPool ) {

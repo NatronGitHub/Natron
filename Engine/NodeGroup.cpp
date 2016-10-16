@@ -877,7 +877,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
                 if ( !filepath.empty() ) {
                     if ( project->fixFilePath(projectPathName, newProjectPath, filepath) ) {
-                        isString->setValue(filepath, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                        isString->setValue(filepath);
                     }
                 }
             }
@@ -920,7 +920,7 @@ NodeCollection::fixPathName(const std::string& oldName,
                      ( filepath[oldName.size() + 1] == ']') &&
                      ( filepath.substr( 1, oldName.size() ) == oldName) ) {
                     filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                    isString->setValue(filepath);
                 }
             }
 

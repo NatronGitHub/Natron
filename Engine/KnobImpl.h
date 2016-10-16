@@ -934,7 +934,7 @@ Knob<T>::copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other,
     T otherValue = (T)other->getRawValue(otherDimension, otherView);
 
     QMutexLocker k(&_valueMutex);
-    typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view);
+    typename PerViewValueMap::iterator foundView = _values[dimension].find(view);
     if (foundView == _values[dimension].end()) {
         // View does not exist in this knob, create it
         ret = true;

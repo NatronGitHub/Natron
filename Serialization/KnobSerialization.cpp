@@ -129,6 +129,10 @@ KnobSerialization::encode(YAML::Emitter& em) const
                             em << YAML::Key << "D";
                             em << YAML::Value << val._slaveMasterLink.masterDimensionName;
                         }
+                        if (!val._slaveMasterLink.masterViewName.empty()) {
+                            em << YAML::Key << "V";
+                            em << YAML::Value << val._slaveMasterLink.masterViewName;
+                        }
                         em << YAML::EndMap;
                     } else if (!val._expression.empty()) {
                         // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
@@ -524,7 +528,9 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
                 if (dimNode["D"]) {
                     dimVec[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
                 }
-
+                if (dimNode["V"]) {
+                    dimVec[i]._slaveMasterLink.masterViewName = dimNode["V"].as<std::string>();
+                }
             }
 
         } // isMap

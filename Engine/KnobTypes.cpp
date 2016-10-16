@@ -96,7 +96,7 @@ KnobInt::isSliderDisabled() const
 
 void
 KnobInt::setIncrement(int incr,
-                      int index)
+                      DimIdx index)
 {
     if (incr <= 0) {
         qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
@@ -274,7 +274,7 @@ KnobDouble::getDecimals() const
 
 void
 KnobDouble::setIncrement(double incr,
-                         int index)
+                         DimIdx index)
 {
     if (incr <= 0.) {
         qDebug() << "Attempting to set the increment of a double param to a value lesser or equal to 0.";
@@ -291,7 +291,7 @@ KnobDouble::setIncrement(double incr,
 
 void
 KnobDouble::setDecimals(int decis,
-                        int index)
+                        DimIdx index)
 {
     if ( index >= (int)_decimals.size() ) {
         throw std::runtime_error("KnobDouble::setDecimals , dimension out of range");

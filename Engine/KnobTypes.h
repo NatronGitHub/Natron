@@ -159,7 +159,7 @@ public:
         return true;
     }
 
-    void setIncrement(int incr, int index = 0);
+    void setIncrement(int incr, DimIdx index = DimIdx(0));
 
     void setIncrement(const std::vector<int> &incr);
 
@@ -312,9 +312,9 @@ public:
     const std::vector<double> &getIncrements() const;
     const std::vector<int> &getDecimals() const;
 
-    void setIncrement(double incr, int index = 0);
+    void setIncrement(double incr, DimIdx index = DimIdx(0));
 
-    void setDecimals(int decis, int index = 0);
+    void setDecimals(int decis, DimIdx index = DimIdx(0));
 
     void setIncrement(const std::vector<double> &incr);
 

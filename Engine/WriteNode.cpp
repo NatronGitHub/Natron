@@ -1082,7 +1082,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
         KnobButtonPtr button = _imp->renderButtonKnob.lock();
-        button->setAllDimensionsEnabled(!readFile);
+        button->setEnabled(!readFile);
         if (readFile) {
             KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
             assert(fileKnob);

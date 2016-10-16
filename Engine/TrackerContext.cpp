@@ -776,7 +776,7 @@ TrackerContext::endSelection(TrackSelectionReason reason)
             if (!k) {
                 continue;
             }
-            k->setAllDimensionsEnabled(!selectionEmpty);
+            k->setEnabled(!selectionEmpty);
             k->setDirty(selectionIsDirty);
         }
     } //  QMutexLocker k(&_imp->trackerContextMutex);

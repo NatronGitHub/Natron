@@ -1063,25 +1063,25 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                     std::vector<bool> v = args.getPropertyN<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isBool->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
+                        isBool->setValue(v[d]);
                     }
                 } else if (isInt) {
                     std::vector<int> v = args.getPropertyN<int>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isInt->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
+                        isInt->setValue(v[d]);
                     }
                 } else if (isDbl) {
                     std::vector<double> v = args.getPropertyN<double>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isDbl->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
+                        isDbl->setValue(v[d]);
                     }
                 } else if (isStr) {
                     std::vector<std::string> v = args.getPropertyN<std::string>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isStr->setValue(v[d], ViewSpec::all(), d, eValueChangedReasonNatronInternalEdited, 0);
+                        isStr->setValue(v[d]);
                     }
                 }
                 break;
@@ -1187,82 +1187,124 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
         {
             if (isKnobSerialization->_masterIsAlias) {
                 if (!isKnobSerialization->_values.empty()) {
-                    const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
-                    const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
-                    const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
-                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName);
+                    const SERIALIZATION_NAMESPACE::ValueSerialization value = isKnobSerialization->_values.begin()->second[0];
+                    const std::string& aliasKnobName = value._slaveMasterLink.masterKnobName;
+                    const std::string& aliasNodeName = value._slaveMasterLink.masterNodeName;
+                    const std::string& masterTableItemName  = value._slaveMasterLink.masterTableItemName;
+                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTableItemName);
                     if (alias) {
                         knob->setKnobAsAliasOfThis(alias, true);
                     }
                 }
             } else {
-                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
-                    if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {
-                        continue;
+                const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
+                for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
+                     it != isKnobSerialization->_values.end(); ++it) {
+
+                    // Find a matching view name
+                    ViewIdx view_i(0);
+                    {
+                        int i = 0;
+                        for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
+                            if (boost::iequals(*it2, it->first)) {
+                                view_i = ViewIdx(i);
+                                break;
+                            }
+                        }
                     }
 
-                    std::string masterKnobName, masterNodeName, masterTrackName;
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName.empty()) {
-                         // Node name empty, assume this is the same node
-                        masterNodeName = getScriptName_mt_safe();
-                    }
-
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
-                        // Knob name empty, assume this is the same knob unless it has a single dimension
-                        if (knob->getNDimensions() == 1) {
+                    for (std::size_t i = 0; i < it->second.size(); ++i) {
+                        if (!it->second[i]._slaveMasterLink.hasLink) {
                             continue;
                         }
-                        masterKnobName = knob->getName();
-                    }
 
-                    masterTrackName = isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName;
-                    KnobIPtr master = findMasterKnob(knob,
-                                                     allNodes,
-                                                     masterKnobName,
-                                                     masterNodeName,
-                                                     masterTrackName);
-                    if (master) {
-                        // Find dimension in master by name
-                        int dimIndex = -1;
-                        if (master->getNDimensions() == 1) {
-                            dimIndex = 0;
-                        } else {
-                            for (int d = 0; d < master->getNDimensions(); ++d) {
-                                if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
-                                    dimIndex = d;
-                                    break;
+                        std::string masterKnobName, masterNodeName, masterTableItemName;
+                        if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
+                            // Node name empty, assume this is the same node
+                            masterNodeName = getScriptName_mt_safe();
+                        }
+
+                        if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
+                            // Knob name empty, assume this is the same knob unless it has a single dimension
+                            if (knob->getNDimensions() == 1) {
+                                continue;
+                            }
+                            masterKnobName = knob->getName();
+                        }
+
+                        masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
+                        KnobIPtr master = findMasterKnob(knob,
+                                                         allNodes,
+                                                         masterKnobName,
+                                                         masterNodeName,
+                                                         masterTableItemName);
+                        if (master) {
+                            // Find dimension in master by name
+                            int otherDimIndex = -1;
+                            if (master->getNDimensions() == 1) {
+                                otherDimIndex = 0;
+                            } else {
+                                for (int d = 0; d < master->getNDimensions(); ++d) {
+                                    if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[i]._slaveMasterLink.masterDimensionName) ) {
+                                        otherDimIndex = d;
+                                        break;
+                                    }
+                                }
+                                if (otherDimIndex == -1) {
+                                    // Before Natron 2.2 we serialized the dimension index. Try converting to an int
+                                    otherDimIndex = QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
                                 }
                             }
-                            if (dimIndex == -1) {
-                                // Before Natron 2.2 we serialized the dimension index. Try converting to an int
-                                dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                            ViewIdx otherView(0);
+                            {
+                                int i = 0;
+                                for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
+                                    if (boost::iequals(*it2, it->second[i]._slaveMasterLink.masterViewName)) {
+                                        otherView = ViewIdx(i);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
+                                knob->slaveTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
+                            } else {
+                                throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                             }
                         }
-                        if (dimIndex >=0 && dimIndex < master->getNDimensions()) {
-                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
-                        } else {
-                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
-                        }
-                    }
 
-                }
-
-            }
+                    } // for each dimensions
+                } // for each view
+            } // isAlias
         }
 
         // Restore expressions
         {
-
-            try {
-                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
-                    if ( !isKnobSerialization->_values[i]._expression.empty() ) {
-                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, isKnobSerialization->_values[i]._expression, isKnobSerialization->_values[i]._expresionHasReturnVariable);
+            const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
+            for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
+                 it != isKnobSerialization->_values.end(); ++it) {
+                // Find a matching view name
+                ViewIdx view_i(0);
+                {
+                    int i = 0;
+                    for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
+                        if (boost::iequals(*it2, it->first)) {
+                            view_i = ViewIdx(i);
+                            break;
+                        }
                     }
                 }
-            } catch (const std::exception& e) {
-                QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
-            }
+                for (std::size_t i = 0; i < it->second.size(); ++i) {
+                    try {
+                        if ( !it->second[i]._expression.empty() ) {
+                            knob->restoreExpression(DimIdx(it->second[i]._dimension), view_i,  it->second[i]._expression, it->second[i]._expresionHasReturnVariable);
+                        }
+                    } catch (const std::exception& e) {
+                        QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
+                        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
+                    }
+                } // for all dimensions
+            } // for all views
         }
     }
 }
@@ -1346,7 +1388,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!found && _imp->isLoadingPreset) {
                 _imp->presetKnobs.push_back(group);
             }
-            grp->setValue(groupSerialization->_isOpened, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            grp->setValue(groupSerialization->_isOpened);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(grp, page, **it, recursionLevel + 1);
             }
@@ -1908,18 +1950,18 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
                 KnobBoolBasePtr isBool = toKnobBoolBase(*it);
                 KnobStringBasePtr isString = toKnobStringBase(*it);
                 KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
+                if ((*it)->hasAnimation()) {
+                    continue;
+                }
                 for (int d = 0; d < (*it)->getNDimensions(); ++d) {
-                    if ((*it)->isAnimated(d)) {
-                        continue;
-                    }
                     if (isInt) {
-                        isInt->setDefaultValue(isInt->getValue(d), d);
+                        isInt->setDefaultValue(isInt->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isBool) {
-                        isBool->setDefaultValue(isBool->getValue(d), d);
+                        isBool->setDefaultValue(isBool->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isString) {
-                        isString->setDefaultValue(isString->getValue(d), d);
+                        isString->setDefaultValue(isString->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isDouble) {
-                        isDouble->setDefaultValue(isDouble->getValue(d), d);
+                        isDouble->setDefaultValue(isDouble->getValue(DimIdx(d)), DimIdx(d));
                     }
                 }
             }
@@ -2139,9 +2181,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 continue;
             }
             (*it)->blockValueChanges();
-            for (int d = 0; d < (*it)->getNDimensions(); ++d) {
-                (*it)->resetToDefaultValue(d);
-            }
+            (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
             (*it)->unblockValueChanges();
         }
     }
@@ -2182,6 +2222,9 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
                     continue;
                 }
+                if ((*it)->hasAnimation()) {
+                    continue;
+                }
 
                 if ((*it)->getIsPersistent()) {
                     KnobIntBasePtr isInt = toKnobIntBase(*it);
@@ -2189,17 +2232,14 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                     KnobStringBasePtr isString = toKnobStringBase(*it);
                     KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
                     for (int d = 0; d < (*it)->getNDimensions(); ++d) {
-                        if ((*it)->isAnimated(d)) {
-                            continue;
-                        }
                         if (isInt) {
-                            isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                            isInt->setDefaultValue(isInt->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isBool) {
-                            isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                            isBool->setDefaultValue(isBool->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isString) {
-                            isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                            isString->setDefaultValue(isString->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isDouble) {
-                            isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                            isDouble->setDefaultValue(isDouble->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         }
                     }
                 }
@@ -2936,17 +2976,7 @@ insertDependenciesRecursive(Node* node,
         KnobI::ListenerDimsMap dimDeps;
         knobs[i]->getListeners(dimDeps);
         for (KnobI::ListenerDimsMap::iterator it = dimDeps.begin(); it != dimDeps.end(); ++it) {
-            KnobI::ListenerDimsMap::iterator found = dependencies->find(it->first);
-            if ( found != dependencies->end() ) {
-                assert( found->second.size() == it->second.size() );
-                for (std::size_t j = 0; j < found->second.size(); ++j) {
-                    if (it->second[j].isExpr) {
-                        found->second[j].isListening |= it->second[j].isListening;
-                    }
-                }
-            } else {
-                dependencies->insert(*it);
-            }
+            dependencies->insert(*it);
         }
     }
 
@@ -3073,9 +3103,9 @@ Node::setNameInternal(const std::string& name,
                 if (!listener) {
                     continue;
                 }
-                for (std::size_t d = 0; d < it->second.size(); ++d) {
-                    if (it->second[d].isListening && it->second[d].isExpr) {
-                        listener->replaceNodeNameInExpression(d, oldName, newName);
+                for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    if (it2->isExpr) {
+                        listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
                     }
                 }
             }
@@ -3572,7 +3602,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginIDLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginID);
         if (pyPlug) {
-            param->setValue(pyPlug->getPluginID(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getPluginID());
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip(tr(kNatronNodeKnobPyPlugPluginIDHint));
@@ -3583,7 +3613,7 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginLabelLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginLabel);
         if (pyPlug) {
-            param->setValue(pyPlug->getPluginLabel(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getPluginLabel());
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginLabelHint));
@@ -3594,9 +3624,9 @@ Node::createPyPlugPage()
         KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginGroupingLabel), 1, false);
         param->setName(kNatronNodeKnobPyPlugPluginGrouping);
         if (pyPlug) {
-            param->setValue(pyPlug->getGroupingString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getGroupingString());
         } else {
-            param->setValue("PyPlugs", ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue("PyPlugs");
         }
         param->setEvaluateOnChange(false);
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginGroupingHint));
@@ -3609,7 +3639,7 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
         param->setAddNewLine(false);
@@ -3621,7 +3651,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
         page->addKnob(param);
@@ -3631,11 +3661,11 @@ Node::createPyPlugPage()
         KnobIntPtr param = AppManager::createKnob<KnobInt>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginVersionLabel), 2, false);
         param->setName(kNatronNodeKnobPyPlugPluginVersion);
         param->setEvaluateOnChange(false);
-        param->setDimensionName(0, "Major");
-        param->setDimensionName(1, "Minor");
+        param->setDimensionName(DimIdx(0), "Major");
+        param->setDimensionName(DimIdx(1), "Minor");
         if (pyPlug) {
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0));
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
@@ -3647,8 +3677,8 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSpec::all(), 1, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0));
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
@@ -3659,7 +3689,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginCallbacksPythonScript);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
         page->addKnob(param);
@@ -3670,7 +3700,7 @@ Node::createPyPlugPage()
         param->setName(kNatronNodeKnobPyPlugPluginIconFile);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);
@@ -3748,8 +3778,7 @@ Node::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
     mixKnob->setDeclaredByPlugin(false);
     mixKnob->setName(kHostMixingKnobName);
     mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
-    mixKnob->setMinimum(0.);
-    mixKnob->setMaximum(1.);
+    mixKnob->setRange(0., 1.);
     mixKnob->setDefaultValue(1.);
     if (mainPage) {
         mainPage->addKnob(mixKnob);
@@ -3776,7 +3805,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         MaskSelector sel;
         KnobBoolPtr enabled = AppManager::createKnob<KnobBool>(_imp->effect, inputLabels[i], 1, false);
 
-        enabled->setDefaultValue(false, 0);
+        enabled->setDefaultValue(false);
         enabled->setAddNewLine(false);
         if (hasMaskChannelSelector[i].second) {
             std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
@@ -3808,15 +3837,9 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             std::string option = rgbaCompname + '.' + rgbaChannels[c];
             choices.push_back(option);
         }
-        /*const ImageComponents& rgba = ImageComponents::getRGBAComponents();
-           const std::vector<std::string>& channels = rgba.getComponentsNames();
-           const std::string& layerName = rgba.getComponentsGlobalName();
-           for (std::size_t c = 0; c < channels.size(); ++c) {
-           choices.push_back(layerName + "." + channels[c]);
-           }*/
 
         channel->populateChoices(choices);
-        channel->setDefaultValue(choices.size() - 1, 0);
+        channel->setDefaultValue(choices.size() - 1);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
                                     "Setting this to None is the same as disconnecting the input.") );
@@ -4241,10 +4264,10 @@ Node::handleFormatKnob(const KnobIPtr& knob)
     std::vector<int> values(2);
     values[0] = f.width();
     values[1] = f.height();
-    size->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    size->setValueAcrossDimensions(values);
     size->unblockValueChanges();
     par->blockValueChanges();
-    par->setValue( f.getPixelAspectRatio(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+    par->setValue( f.getPixelAspectRatio() );
     par->unblockValueChanges();
 
     _imp->effect->endChanges();
@@ -4275,7 +4298,7 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
         handleFormatKnob(choice);
     } else {
         if ( curIndex < (int)entries.size() ) {
-            choice->setValue(curIndex, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            choice->setValue(curIndex);
         }
     }
 
@@ -4419,7 +4442,7 @@ Node::makeDocumentation(bool genHTML) const
 
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
-                        int index = isChoice->getDefaultValue(i);
+                        int index = isChoice->getDefaultValue(DimIdx(i));
                         std::vector<std::string> entries = isChoice->getEntries();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
@@ -4436,19 +4459,19 @@ Node::makeDocumentation(bool genHTML) const
                             }
                         }
                     } else if (isInt) {
-                        valueStr = QString::number( isInt->getDefaultValue(i) );
+                        valueStr = QString::number( isInt->getDefaultValue(DimIdx(i)) );
                     } else if (isDbl) {
-                        valueStr = QString::number( isDbl->getDefaultValue(i) );
+                        valueStr = QString::number( isDbl->getDefaultValue(DimIdx(i)) );
                     } else if (isBool) {
-                        valueStr = isBool->getDefaultValue(i) ? tr("On") : tr("Off");
+                        valueStr = isBool->getDefaultValue(DimIdx(i)) ? tr("On") : tr("Off");
                     } else if (isString) {
-                        valueStr = QString::fromUtf8( isString->getDefaultValue(i).c_str() );
+                        valueStr = QString::fromUtf8( isString->getDefaultValue(DimIdx(i)).c_str() );
                     } else if (isColor) {
-                        valueStr = QString::number( isColor->getDefaultValue(i) );
+                        valueStr = QString::number( isColor->getDefaultValue(DimIdx(i)) );
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), valueStr) );
+                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(DimIdx(i)).c_str() ), valueStr) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -4610,7 +4633,7 @@ Node::setForceCachingEnabled(bool value)
     if (!b) {
         return;
     }
-    b->setValue(value, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    b->setValue(value);
 }
 
 void
@@ -5979,21 +6002,29 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 }
 
                 isEffect->beginChanges();
+                std::list<ViewIdx> views = listener->getViewsList();
                 for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
-                    std::pair<int, KnobIPtr > master = listener->getMaster(dim);
-                    if (master.second == knobs[i]) {
-                        listener->unSlave(dim, true);
+                    for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+                        MasterKnobLink linkData;
+                        if (listener->getMaster(DimIdx(dim), *it2, &linkData)) {
+                            KnobIPtr masterKnob = linkData.masterKnob.lock();
+                            if (masterKnob == knobs[i]) {
+                                listener->unSlave(DimIdx(dim), *it2, true);
+                            }
+                        }
+
+                        std::string hasExpr = listener->getExpression(DimIdx(dim), *it2);
+                        if ( !hasExpr.empty() ) {
+                            std::stringstream ss;
+                            ss << tr("Missing node ").toStdString();
+                            ss << getFullyQualifiedName();
+                            ss << ' ';
+                            ss << tr("in expression.").toStdString();
+                            listener->setExpressionInvalid( DimIdx(dim), *it2, false, ss.str() );
+                        }
+
                     }
 
-                    std::string hasExpr = listener->getExpression(dim);
-                    if ( !hasExpr.empty() ) {
-                        std::stringstream ss;
-                        ss << tr("Missing node ").toStdString();
-                        ss << getFullyQualifiedName();
-                        ss << ' ';
-                        ss << tr("in expression.").toStdString();
-                        listener->setExpressionInvalid( dim, false, ss.str() );
-                    }
                 }
                 isEffect->endChanges(true);
             }
@@ -6947,7 +6978,7 @@ Node::togglePreview()
     if (!b) {
         return;
     }
-    b->setValue( !b->getValue(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+    b->setValue( !b->getValue() );
 }
 
 bool
@@ -7844,7 +7875,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
                     pattern = pattern.substr(foundSlash + 1);
                 }
 
-                isString->setValue(pattern, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+                isString->setValue(pattern);
             }
         }
 
@@ -7933,7 +7964,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::vector<int> frameRange(2);
                 frameRange[0] = INT_MIN;
                 frameRange[1] = INT_MAX;
-                originalFrameRange->setValueAcrossDimensions(frameRange, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValueAcrossDimensions(frameRange);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -7949,7 +7980,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::vector<int> frameRange(2);
                 frameRange[0] = leftBound;
                 frameRange[1] = rightBound;
-                originalFrameRange->setValueAcrossDimensions(frameRange, 0, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValueAcrossDimensions(frameRange);
             }
         }
     }
@@ -8464,7 +8495,7 @@ Node::setHideInputsKnobValue(bool hidden)
     if (!k) {
         return;
     }
-    k->setValue(hidden, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    k->setValue(hidden);
 }
 
 void
@@ -8665,7 +8696,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                 break;
         }
         ssinfo << "</font>";
-        _imp->nodeInfos.lock()->setValue( ssinfo.str(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+        _imp->nodeInfos.lock()->setValue( ssinfo.str() );
     } else if ( what == _imp->openglRenderingEnabledKnob.lock() ) {
         bool enabled = true;
         int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
@@ -8689,7 +8720,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         // Trigger a knob changed action on the group
         KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
         if (k) {
-            k->setValue(!k->getValue(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            k->setValue(!k->getValue());
         }
     } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {
@@ -8697,9 +8728,9 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         } catch (const std::exception& e) {
             Dialogs::errorDialog(tr("Export").toStdString(), e.what());
         }
-        _imp->pyPlugExportDialog.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        _imp->pyPlugExportDialog.lock()->setValue(false);
     } else if (what == _imp->pyPlugExportDialogCancelButton.lock()) {
-        _imp->pyPlugExportDialog.lock()->setValue(false, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        _imp->pyPlugExportDialog.lock()->setValue(false);
     } else {
         ret = false;
     }
@@ -8800,7 +8831,7 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
     KnobChoicePtr k = _imp->openglRenderingEnabledKnob.lock();
     if (enabled) {
         if (k) {
-            k->setAllDimensionsEnabled(true);
+            k->setEnabled(true);
             int thisKnobIndex = k->getValue();
             if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
                 enabled = false;
@@ -8808,7 +8839,7 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
         }
     } else {
         if (k) {
-            k->setAllDimensionsEnabled(true);
+            k->setEnabled(true);
         }
     }
     _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
@@ -9086,8 +9117,8 @@ Node::isLifetimeActivated(int *firstFrame,
         return false;
     }
     KnobIntPtr lifetimeKnob = _imp->lifeTimeKnob.lock();
-    *firstFrame = lifetimeKnob->getValue(0);
-    *lastFrame = lifetimeKnob->getValue(1);
+    *firstFrame = lifetimeKnob->getValue(DimIdx(0));
+    *lastFrame = lifetimeKnob->getValue(DimIdx(1));
 
     return true;
 }
@@ -9121,66 +9152,13 @@ Node::setNodeDisabled(bool disabled)
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
 
     if (b) {
-        b->setValue(disabled, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        b->setValue(disabled);
 
         // Clear the actions cache because if this function is called from another thread, the hash will not be incremented
         _imp->effect->clearActionsCache();
     }
 }
 
-
-bool
-Node::hasAnimatedKnob() const
-{
-    const KnobsVec & knobs = getKnobs();
-    bool hasAnimation = false;
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->canAnimate() ) {
-            for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
-                if ( knobs[i]->isAnimated(j) ) {
-                    hasAnimation = true;
-                    break;
-                }
-            }
-        }
-        if (hasAnimation) {
-            break;
-        }
-    }
-
-    return hasAnimation;
-}
-
-void
-Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
-{
-    assert(keyframes);
-    const KnobsVec & knobs = getKnobs();
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistent() ) {
-            continue;
-        }
-        if ( !knobs[i]->canAnimate() ) {
-            continue;
-        }
-        int dim = knobs[i]->getNDimensions();
-        KnobFilePtr isFile = toKnobFile(knobs[i]);
-        if (isFile) {
-            ///skip file knobs
-            continue;
-        }
-        for (int j = 0; j < dim; ++j) {
-            if ( knobs[i]->canAnimate() && knobs[i]->isAnimated( j, ViewIdx(0) ) ) {
-                KeyFrameSet kfs = knobs[i]->getCurve(ViewIdx(0), j)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    keyframes->push_back( it->getTime() );
-                }
-            }
-        }
-    }
-}
 
 ImageBitDepthEnum
 Node::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
@@ -9308,7 +9286,7 @@ Node::updateEffectSubLabelKnob(const QString & name)
     }
     KnobStringPtr strKnob = _imp->ofxSubLabelKnob.lock();
     if (strKnob) {
-        strKnob->setValue( name.toStdString(), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0 );
+        strKnob->setValue( name.toStdString() );
     }
 }
 
@@ -9742,7 +9720,7 @@ Node::refreshMaskEnabledNess(int inputNb)
         bool newValue = inp ? true : false;
         changed = curValue != newValue;
         if (changed) {
-            enabled->setValue(newValue, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            enabled->setValue(newValue);
         }
         enabled->unblockValueChanges();
     }
@@ -11279,7 +11257,7 @@ Node::getHostMixingValue(double time,
 {
     KnobDoublePtr mix = _imp->mixWithSource.lock();
 
-    return mix ? mix->getValueAtTime(time, 0, view) : 1.;
+    return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
 }
 
 NATRON_NAMESPACE_EXIT;

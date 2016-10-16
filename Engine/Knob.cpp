@@ -2625,7 +2625,11 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
 
 
 static void
-initializeValueSerializationStorage(const KnobIPtr& knob, const DimIdx dimension, const ViewIdx view, ValueSerialization* serialization)
+initializeValueSerializationStorage(const KnobIPtr& knob,
+                                    const std::vector<std::string>& viewNames,
+                                    const DimIdx dimension,
+                                    const ViewIdx view,
+                                    ValueSerialization* serialization)
 {
     serialization->_expression = knob->getExpression(dimension, view);
     serialization->_expresionHasReturnVariable = knob->isExpressionUsingRetVariable(view, dimension);
@@ -2695,6 +2699,9 @@ initializeValueSerializationStorage(const KnobIPtr& knob, const DimIdx dimension
                     }
                 }
                 serialization->_slaveMasterLink.masterKnobName = masterKnob->getName();
+                if (linkData.masterView != ViewIdx(0) &&  linkData.masterView < (int)viewNames.size()) {
+                    serialization->_slaveMasterLink.masterViewName = viewNames[linkData.masterView];
+                }
             }
         }
     } // !gotValue
@@ -2978,7 +2985,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             for (int i = 0; i < serialization->_dimension; ++i) {
                 dimValues[i]._serialization = serialization;
                 dimValues[i]._dimension = i;
-                initializeValueSerializationStorage(thisShared, DimIdx(i), *it, &dimValues[i]);
+                initializeValueSerializationStorage(thisShared, viewNames, DimIdx(i), *it, &dimValues[i]);
 
                 // Force default value serialization in those cases
                 if (serialization->_isUserKnob || isFullRecoverySave) {

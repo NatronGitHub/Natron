@@ -1168,15 +1168,6 @@ public:
 
     bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
 
-    /**
-     * @brief Fills keyframes with all different keyframes time that all parameters of this
-     * node have. Some keyframes might appear several times.
-     **/
-    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
-
-    bool hasAnimatedKnob() const;
-
-
     void setNodeIsRendering(NodesWList& nodes);
     void unsetNodeIsRendering();
 

@@ -545,7 +545,7 @@ SERIALIZATION_NAMESPACE::MasterSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
     if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
-        ar & ::boost::serialization::make_nvp("MasterTrackName", masterTrackName);
+        ar & ::boost::serialization::make_nvp("MasterTrackName", masterTableItemName);
     }
 }
 

@@ -79,6 +79,9 @@ SERIALIZATION_NAMESPACE_ENTER;
  **/
 struct MasterSerialization
 {
+    // The name of the view the knob is slaved to
+    std::string masterViewName;
+
     // The dimension the knob is slaved to in the master knob
     std::string masterDimensionName;
 

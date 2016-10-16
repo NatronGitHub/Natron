@@ -76,7 +76,7 @@ Knob<T>::getValueFromExpression(double time,
             return false;
         } else {
             if (!exprWasValid) {
-                setExpressionInvalid(dimension, true, error);
+                setExpressionInvalid(dimension, view_i, true, error);
             }
         }
     }
@@ -645,7 +645,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
             return T();
         }
 
-        return founView->second * (time2 - time1);
+        return foundView->second * (time2 - time1);
     }
 } // getIntegrateFromTimeToTime
 
