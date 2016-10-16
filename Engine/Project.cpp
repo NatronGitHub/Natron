@@ -1344,6 +1344,32 @@ Project::getProjectViewNames() const
     return tls;
 }
 
+std::string
+Project::getViewName(ViewIdx view) const
+{
+    const std::vector<std::string>& viewNames = getProjectViewNames();
+    if (view < 0 || view >= (int)viewNames.size()) {
+        return std::string();
+    }
+    return viewNames[view];
+}
+
+bool
+Project::getViewIndex(const std::string& viewName, ViewIdx* view) const
+{
+    const std::vector<std::string>& viewNames = getProjectViewNames();
+    {
+        int i = 0;
+        for (std::vector<std::string>::const_iterator it2 = viewNames.begin(); it2 != viewNames.end(); ++it2, ++i) {
+            if (boost::iequals(*it2, viewName)) {
+                *view = ViewIdx(i);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void
 Project::setupProjectForStereo()
 {
@@ -2789,7 +2815,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         knobs[i]->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
 
-            // Specialize case for the project paths knob: do not serialize the project path itself and
+            // do not serialize the project path itself and
             // the OCIO path as they are useless
             if (knobs[i] == _imp->envVars) {
                 std::list<std::vector<std::string> > projectPathsTable, newTable;
@@ -2801,10 +2827,11 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                     }
                     newTable.push_back(*it);
                 }
-                newKnobSer->_values[0]._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
-                newKnobSer->_values[0]._serializeValue = newKnobSer->_values[0]._value.isString.empty();
-                if (!newKnobSer->_values[0]._serializeValue) {
-                    newKnobSer->_values[0]._mustSerialize = false;
+                SERIALIZATION_NAMESPACE::ValueSerialization& value = newKnobSer->_values.begin()->second[0];
+                value._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
+                value._serializeValue = value._value.isString.empty();
+                if (!value._serializeValue) {
+                    value._mustSerialize = false;
                     newKnobSer->_mustSerialize = false;
                 }
             }

@@ -1536,7 +1536,7 @@ public:
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL;
     virtual void unSlave(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
 
 protected:

@@ -328,6 +328,10 @@ public:
     App* newProject();
     std::list<QString> getViewNames() const;
 
+    int getViewIndex(const QString& viewName) const;
+
+    QString getViewName(int viewIndex) const;
+
     void addProjectLayer(const ImageLayer& layer);
 
 protected:

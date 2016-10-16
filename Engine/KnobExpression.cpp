@@ -105,8 +105,10 @@ extractParameters(std::size_t startParenthesis,
 /**
  * @brief Given the string str, tries to find the given function name "token" string starting from inputPos.
  * @param fromDim The dimension in the knob on which the function is called
+ * @param fromViewName The name of the view in the knob on which the function is called
  * @param dimensionParamPos Indicate the index (0-based) of the "dimension" argument in the function given by token
- * E.g: In the function get(frame, dimension), the dimension parameter index is 1.
+ * @param viewParamPos Indicate the index (0-based) of the "view" argument in the function given by token
+ * E.g: In the function get(frame, dimension, view), the dimension parameter index is 1.
  * @param returnsTuple If true, indicates that the function given in "token" is expected to return a tuple
  * @param output[out] The script to execute to register this parameter as a dependency of the other parameter in the expression
  * @return true on success, false otherwise
@@ -114,7 +116,9 @@ extractParameters(std::size_t startParenthesis,
  **/
 static bool
 parseTokenFrom(int fromDim,
+               const std::string& fromViewName,
                int dimensionParamPos,
+               int viewParamPos,
                bool returnsTuple,
                const std::string& str,
                const std::string& token,
@@ -199,6 +203,10 @@ parseTokenFrom(int fromDim,
         throw std::invalid_argument("Invalid expr");
     }
 
+    if ( (viewParamPos < 0) || ( (int)params.size() <= viewParamPos ) ) {
+        throw std::invalid_argument("Invalid expr");
+    }
+
     std::string toInsert;
     {
         std::stringstream ss;
@@ -207,7 +215,9 @@ parseTokenFrom(int fromDim,
          the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
          at the "fromDim" dimension of thisParam
          */
-        ss << ".addAsDependencyOf(" << fromDim << ",thisParam," <<  params[dimensionParamPos] << ")\n";
+        ss << ".addAsDependencyOf(thisParam, " << fromDim << "," <<
+        params[dimensionParamPos] << ", \"" << fromViewName << "\", \"" <<
+        params[viewParamPos] << "\")\n";
         toInsert = ss.str();
     }
 
@@ -259,7 +269,9 @@ extractAllOcurrences(const std::string& str,
                      const std::string& token,
                      bool returnsTuple,
                      int dimensionParamPos,
+                     int viewParamPos,
                      int fromDim,
+                     const std::string& fromViewName,
                      std::string *outputScript)
 {
     std::size_t tokenStart = 0;
@@ -267,7 +279,7 @@ extractAllOcurrences(const std::string& str,
 
     do {
         try {
-            couldFindToken = parseTokenFrom(fromDim, dimensionParamPos, returnsTuple, str, token, tokenStart == 0 ? 0 : tokenStart + 1, &tokenStart, outputScript);
+            couldFindToken = parseTokenFrom(fromDim, fromViewName, dimensionParamPos, viewParamPos, returnsTuple, str, token, tokenStart == 0 ? 0 : tokenStart + 1, &tokenStart, outputScript);
         } catch (...) {
             return false;
         }
@@ -383,6 +395,11 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     // - get
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
 
+    std::string viewName = holder.lock()->getApp()->getProject()->getViewName(view);
+    assert(!viewName.empty());
+    if (viewName.empty()) {
+        viewName = "Main";
+    }
     std::string expressionCopy;
 
     {
@@ -396,23 +413,23 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
 
     // Extract parameters that call the following functions
     std::string listenersRegistrationScript;
-    if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, dimension, &listenersRegistrationScript) ) {
+    if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, 1, dimension, viewName, &listenersRegistrationScript) ) {
         return;
     }
 
-    if ( !extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1,  dimension, &listenersRegistrationScript) ) {
+    if ( !extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
         return;
     }
 
-    if ( !extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1,  dimension, &listenersRegistrationScript) ) {
+    if ( !extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
         return;
     }
 
-    if ( !extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, dimension, &listenersRegistrationScript) ) {
+    if ( !extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, 3, dimension, viewName, &listenersRegistrationScript) ) {
         return;
     }
 
-    if ( !extractAllOcurrences(expressionCopy, "get", true, -1, dimension, &listenersRegistrationScript) ) {
+    if ( !extractAllOcurrences(expressionCopy, "get", true, -1, 0, dimension, viewName, &listenersRegistrationScript) ) {
         return;
     }
 

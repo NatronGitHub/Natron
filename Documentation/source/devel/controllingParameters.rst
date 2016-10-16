@@ -51,10 +51,8 @@ all existing parameters:
 	
 	* :doc:`StringParam<PythonReference/NatronEngine/DoubleParam>` to store a 1-dimensional string
 	
-	* :doc:`FileParam<PythonReference/NatronEngine/FileParam>` to specify an input-file
-	
-	* :doc:`OutputFileParam<PythonReference/NatronEngine/OutputFileParam>` to specify an output-file param
-	
+	* :doc:`FileParam<PythonReference/NatronEngine/FileParam>` to specify an input or output file
+		
 	* :doc:`PathParam<PythonReference/NatronEngine/PathParam>` to specify a path to a single or multiple directories
 	
 	* :doc:`ParametricParam<PythonReference/NatronEngine/ParametricParam>` to store N-dimensional parametric curves
@@ -103,11 +101,15 @@ If you want to remove all the animation on the parameter at a given *dimension*,
 	To set a value on **x** you would use *dimension = 0*, to set a value on **y** you would use *dimension = 1*.
 
 
+More information on parameter animation, multi-view and expressions can be found
+in the documentation of the :ref:`AnimatedParam<AnimatedParam>` class.
+
 Controlling other properties of parameters:
 -------------------------------------------
 
 See the documentation for the :doc:`Param<PythonReference/NatronEngine/Param>` class for a detailed
 explanation of other properties and how they affect the parameter.
+
 
 Creating new parameters:
 ------------------------

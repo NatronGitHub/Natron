@@ -232,8 +232,8 @@ public:
               const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
     bool slaveTo(Param* other,
-                 int thisDimension,
-                 int otherDimension,
+                 int thisDimension = kPyParamDimSpecAll,
+                 int otherDimension = kPyParamDimSpecAll,
                  const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
                  const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
@@ -435,7 +435,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -583,7 +583,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -734,7 +734,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she

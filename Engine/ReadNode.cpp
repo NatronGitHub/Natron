@@ -559,7 +559,8 @@ getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationLis
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
-            filePattern = (*it)->_values[0]._value.isString;
+            SERIALIZATION_NAMESPACE::ValueSerialization& value = (*it)->_values.begin()->second[0];
+            filePattern = value._value.isString;
             break;
         }
     }
@@ -684,7 +685,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
 
         if (pluginIDKnob) {
-            pluginIDKnob->setValue(readerPluginID, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+            pluginIDKnob->setValue(readerPluginID);
         }
         placeReadNodeKnobsInPage();
 
@@ -779,7 +780,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     pluginChoice->populateChoices(entries, help);
     pluginChoice->blockValueChanges();
-    pluginChoice->resetToDefaultValue(0);
+    pluginChoice->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
@@ -789,7 +790,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
     pluginIDKnob->blockValueChanges();
-    pluginIDKnob->setValue(pluginID, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+    pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
 
     refreshFileInfoVisibility(pluginID);
@@ -1064,7 +1065,7 @@ ReadNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializatio
 bool
 ReadNode::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum reason,
-                      ViewSpec view,
+                      ViewSetSpec view,
                       double time,
                       bool originatedFromMainThread)
 {
@@ -1113,7 +1114,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
             entry.clear();
         }
 
-        pluginIDKnob->setValue(entry, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, 0);
+        pluginIDKnob->setValue(entry);
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);

@@ -131,7 +131,7 @@ static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode
     if (glRenderKnob) {
         KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOrCreateOpenGLEnabledKnob();
         assert(rotoPaintGLRenderKnob);
-        glRenderKnob->slaveTo(0, rotoPaintGLRenderKnob, 0);
+        ignore_result(glRenderKnob->slaveTo(rotoPaintGLRenderKnob));
     }
 }
 
@@ -205,51 +205,40 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (type == eRotoStrokeTypeBlur) {
             // Link effect knob to size
             KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            for (int i = 0; i < knob->getNDimensions(); ++i) {
-                knob->slaveTo(i, _imp->effectStrength.lock(), 0);
-            }
+            knob->slaveTo(_imp->effectStrength.lock());
+
         } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
             // Link transform knobs
             KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            for (int i = 0; i < translateKnob->getNDimensions(); ++i) {
-                translateKnob->slaveTo(i, _imp->cloneTranslate.lock(), i);
-            }
+            translateKnob->slaveTo(_imp->cloneTranslate.lock());
+
             KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            for (int i = 0; i < rotateKnob->getNDimensions(); ++i) {
-                rotateKnob->slaveTo(i, _imp->cloneRotate.lock(), i);
-            }
+            rotateKnob->slaveTo(_imp->cloneRotate.lock());
+
             KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            for (int i = 0; i < scaleKnob->getNDimensions(); ++i) {
-                scaleKnob->slaveTo(i, _imp->cloneScale.lock(), i);
-            }
+            scaleKnob->slaveTo(_imp->cloneScale.lock());
+
             KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            for (int i = 0; i < uniformKnob->getNDimensions(); ++i) {
-                uniformKnob->slaveTo(i, _imp->cloneScaleUniform.lock(), i);
-            }
+            uniformKnob->slaveTo(_imp->cloneScaleUniform.lock());
+
             KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            for (int i = 0; i < skewxKnob->getNDimensions(); ++i) {
-                skewxKnob->slaveTo(i, _imp->cloneSkewX.lock(), i);
-            }
+            skewxKnob->slaveTo(_imp->cloneSkewX.lock());
+
             KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            for (int i = 0; i < skewyKnob->getNDimensions(); ++i) {
-                skewyKnob->slaveTo(i, _imp->cloneSkewY.lock(), i);
-            }
+            skewyKnob->slaveTo(_imp->cloneSkewY.lock());
+
             KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            for (int i = 0; i < skewOrderKnob->getNDimensions(); ++i) {
-                skewOrderKnob->slaveTo(i, _imp->cloneSkewOrder.lock(), i);
-            }
+            skewOrderKnob->slaveTo(_imp->cloneSkewOrder.lock());
+
             KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            for (int i = 0; i < centerKnob->getNDimensions(); ++i) {
-                centerKnob->slaveTo(i, _imp->cloneCenter.lock(), i);
-            }
+            centerKnob->slaveTo(_imp->cloneCenter.lock());
+
             KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            for (int i = 0; i < filterKnob->getNDimensions(); ++i) {
-                filterKnob->slaveTo(i, _imp->cloneFilter.lock(), i);
-            }
+            filterKnob->slaveTo(_imp->cloneFilter.lock());
+
             KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            for (int i = 0; i < boKnob->getNDimensions(); ++i) {
-                boKnob->slaveTo(i, _imp->cloneBlackOutside.lock(), i);
-            }
+            boKnob->slaveTo(_imp->cloneBlackOutside.lock());
+
 
         }
 
@@ -279,7 +268,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
                 // Link time offset knob
                 KnobIPtr offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-                offsetKnob->slaveTo(0, _imp->timeOffset.lock(), 0);
+                offsetKnob->slaveTo(_imp->timeOffset.lock());
             }
             {
                 fixedNamePrefix = baseFixedName;
@@ -295,7 +284,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 }
                 // Link time offset knob
                 KnobIPtr offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-                offsetKnob->slaveTo(0, _imp->timeOffset.lock(), 0);
+                offsetKnob->slaveTo(_imp->timeOffset.lock());
             }
         }
     }
@@ -324,23 +313,25 @@ RotoDrawableItem::createNodes(bool connectNodes)
         mergeRGBA[2] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsB));
         mergeRGBA[3] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsA));
         for (int i = 0; i < 4; ++i) {
-            mergeRGBA[i]->slaveTo(0, rotoPaintRGBA[i], 0);
+            ignore_result(mergeRGBA[i]->slaveTo(rotoPaintRGBA[i]));
         }
+
+
 
         // Link the compositing operator to this knob
         KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        mergeOperatorKnob->slaveTo(0, _imp->compOperator.lock(), 0);
+        mergeOperatorKnob->slaveTo(_imp->compOperator.lock());
 
 #ifdef NATRON_ROTO_INVERTIBLE
         // Link mask invert knob
         KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
-        mergeMaskInvertKnob->slaveTo(0, _imp->invertKnob.lock(), 0);
+        mergeMaskInvertKnob->slaveTo(_imp->invertKnob.lock());
 #endif
 
         // Link mix
         KnobIPtr rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
         KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
-        mergeMix->slaveTo(0, rotoPaintMix, 0);
+        mergeMix->slaveTo(rotoPaintMix);
     }
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
@@ -394,9 +385,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
         op = eMergeCopy;
     }
     if (mergeOp) {
-        mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+        mergeOp->setValueFromLabel(Merge::getOperatorString(op));
     }
-    compOp->setDefaultValueFromLabel(Merge::getOperatorString(op), 0);
+    compOp->setDefaultValueFromLabel(Merge::getOperatorString(op));
 
     // Make sure it is not serialized
     compOp->setCurrentDefaultValueAsInitialValue();
@@ -578,7 +569,7 @@ bool
 RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
                         ValueChangedReasonEnum reason,
                         double /*time*/,
-                        ViewSpec /*view*/,
+                        ViewSetSpec /*view*/,
                         bool /*originatedFromMainThread*/)
 {
     // Any knob except transform center should break the multi-stroke into a new stroke
@@ -905,7 +896,7 @@ RotoDrawableItem::clone(const RotoItem* other)
     KnobsVec::const_iterator it = knobs.begin();
     KnobsVec::const_iterator otherIt = otherKnobs.begin();
     for (; it != knobs.end(); ++it, ++otherIt) {
-        (*it)->clone(*otherIt);
+        (*it)->copyKnob(*otherIt);
     }
     RotoItem::clone(other);
 }

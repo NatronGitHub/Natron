@@ -501,6 +501,7 @@ Param::getViewerUILabel() const
 
 template <typename VIEWSPECTYPE>
 static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, const QString& viewName, VIEWSPECTYPE* view) {
+
     if (allowAll && viewName == QLatin1String(kPyParamViewSetSpecAll)) {
         *view = VIEWSPECTYPE(ViewSetSpec::all());
         return true;
@@ -522,14 +523,31 @@ static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, c
     }
     const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
     int i = 0;
+    bool foundView = false;
+    ViewIdx foundViewIdx;
     std::string stdViewName = viewName.toStdString();
     for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
         if (boost::iequals(*it2, stdViewName)) {
-            *view = VIEWSPECTYPE(i);
+
+            foundViewIdx = ViewIdx(i);
+            foundView = true;
+            break;
+        }
+    }
+
+    if (!foundView) {
+        return false;
+    }
+
+    // Now check that the view exist in the knob
+    std::list<ViewIdx> splitViews = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = splitViews.begin(); it != splitViews.end(); ++it) {
+        if (*it == foundViewIdx) {
+            *view = VIEWSPECTYPE(foundViewIdx);
             return true;
         }
     }
-    return false;
+    return foundView;
 }
 
 bool

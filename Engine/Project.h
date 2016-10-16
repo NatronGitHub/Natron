@@ -170,6 +170,10 @@ public:
 
     const std::vector<std::string>& getProjectViewNames() const;
 
+    std::string getViewName(ViewIdx view) const;
+
+    bool getViewIndex(const std::string& viewName, ViewIdx* view) const;
+
     int getProjectViewsCount() const;
 
     bool isGPURenderingEnabledInProject() const;

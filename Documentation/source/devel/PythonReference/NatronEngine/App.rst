@@ -24,6 +24,8 @@ Functions
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 *    def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
+*    def :meth:`getViewIndex<NatronEngine.App.getViewIndex>` (viewName)
+*    def :meth:`getViewName<NatronEngine.App.getViewName>` (viewIndex)
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`redrawViewer<NatronEngine.App.redrawViewer>` (viewerNode)
@@ -409,6 +411,24 @@ an explanation of *script-name* vs. *label*.
 
 Returns a sequence with the name of all the views in the project as setup by the user
 in the "Views" tab of the Project Settings.
+
+
+.. method:: NatronEngine.App.getViewIndex (viewName)
+
+	:param viewName: :class:`str<PySide.QtCore.QString>`
+	:rtype: :class:`int<PySide.QtCore.int>`
+
+Return the index in the project settings of the given view.
+Returns -1 if a corresponding view could not be found.
+
+.. method:: NatronEngine.App.getViewName (viewIndex)
+
+	:param viewIndex: :class:`int<PySide.QtCore.int>`
+	:rtype: :class:`str<PySide.QtCore.QString>`
+
+Return the name of the view in the project settings corresponding to the view
+at the given *viewIndex*.
+Returns an empty view name if a corresponding view could not be found.
 
 .. method:: NatronEngine.App.render(effect,firstFrame,lastFrame[,frameStep])
 

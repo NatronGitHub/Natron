@@ -17,25 +17,25 @@ See :ref:`detailed<double.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.DoubleParam.get>` ()
-*    def :meth:`get<NatronEngine.DoubleParam.get>` (frame)
+*    def :meth:`get<NatronEngine.DoubleParam.get>` ([view="Main"])
+*    def :meth:`get<NatronEngine.DoubleParam.get>` (frame[, view="Main"])
 *    def :meth:`getDefaultValue<NatronEngine.DoubleParam.getDefaultValue>` ([dimension=0])
 *    def :meth:`getDisplayMaximum<NatronEngine.DoubleParam.getDisplayMaximum>` (dimension)
 *    def :meth:`getDisplayMinimum<NatronEngine.DoubleParam.getDisplayMinimum>` (dimension)
 *    def :meth:`getMaximum<NatronEngine.DoubleParam.getMaximum>` ([dimension=0])
 *    def :meth:`getMinimum<NatronEngine.DoubleParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0])
-*    def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0])
-*    def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x)
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame)
+*    def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0, view="Main"])
+*    def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0, view="Main"])
+*    def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=-1, view="All"])
+*    def :meth:`set<NatronEngine.DoubleParam.set>` (x[,view="All"])
+*    def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame[, view="All"])
 *    def :meth:`setDefaultValue<NatronEngine.DoubleParam.setDefaultValue>` (value[, dimension=0])
 *    def :meth:`setDisplayMaximum<NatronEngine.DoubleParam.setDisplayMaximum>` (maximum[, dimension=0])
 *    def :meth:`setDisplayMinimum<NatronEngine.DoubleParam.setDisplayMinimum>` (minimum[, dimension=0])
 *    def :meth:`setMaximum<NatronEngine.DoubleParam.setMaximum>` (maximum[, dimension=0])
 *    def :meth:`setMinimum<NatronEngine.DoubleParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0])
-*    def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0])
+*    def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0, view="All"])
+*    def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0, view="All"])
 
 
 .. _double.details:
@@ -66,10 +66,11 @@ Member functions description
 
 
 
-.. method:: NatronEngine.DoubleParam.get(frame)
+.. method:: NatronEngine.DoubleParam.get(frame[, view="Main"])
 
 
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
 Returns the value of this parameter at the given *frame*. If the animation curve has an 
@@ -79,12 +80,13 @@ value will be interpolated using the *interpolation* chosen by the user for the 
 
 
 
-.. method:: NatronEngine.DoubleParam.get()
+.. method:: NatronEngine.DoubleParam.get([view="Main"])
 
-
+	:param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
+    
 
-Returns the value of this parameter at the given current timeline's time.
+Returns the value of this parameter at the given current timeline's time and for the given *view*.
 
 
 
@@ -151,10 +153,11 @@ Returns the minimum for this parameter at the given *dimension*.
 The minimum value cannot be exceeded and any lower value will be clamped to this value.
 
 
-.. method:: NatronEngine.DoubleParam.getValue([dimension=0])
+.. method:: NatronEngine.DoubleParam.getValue([dimension=0, view="Main"])
 
 
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
 
@@ -162,11 +165,12 @@ Returns the value of this parameter at the given *dimension* at the current time
 
 
 
-.. method:: NatronEngine.DoubleParam.getValueAtTime(time[, dimension=0])
+.. method:: NatronEngine.DoubleParam.getValueAtTime(time[, dimension=0, view="Main"])
 
 
     :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
 
@@ -178,35 +182,38 @@ value will be interpolated using the *interpolation* chosen by the user for the 
 
 
 
-.. method:: NatronEngine.DoubleParam.restoreDefaultValue([dimension=0])
+.. method:: NatronEngine.DoubleParam.restoreDefaultValue([dimension=-1,view="All"])
 
 
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 
-Returns the value of this parameter at the given *dimension* at the given *time*.
+Returns the value of this parameter at the given *dimension* and *view* at the given *time*.
 
 
 
 
-.. method:: NatronEngine.DoubleParam.set(x, frame)
+.. method:: NatronEngine.DoubleParam.set(x, frame [, view="All"])
 
 
     :param x: :class:`float<PySide.QtCore.double>`
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 
-Set a new keyframe on the parameter with the value *x* at the given *frame*.
+Set a new keyframe on the parameter with the value *x* at the given *frame* and *view*.
 
 
 
 
-.. method:: NatronEngine.DoubleParam.set(x)
+.. method:: NatronEngine.DoubleParam.set(x [, view="All"])
 
 
     :param x: :class:`float<PySide.QtCore.double>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Set the value of this parameter to be *x*. 
+Set the value of this parameter to be *x* on the given *view*. 
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 
@@ -273,25 +280,27 @@ Set the minimum of the parameter to be *minimum* for the given *dimension*.
 See :func:`getMinimum<Natron.DoubleParam.getMinimum>`
 
 
-.. method:: NatronEngine.DoubleParam.setValue(value[, dimension=0])
+.. method:: NatronEngine.DoubleParam.setValue(value[, dimension=0, view="All"])
 
 
     :param value: :class:`float<PySide.QtCore.double>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Same as :func:`set(value,dimension)<NatronEngine.DoubleParam.set>`
+Same as :func:`set(value,dimension, view)<NatronEngine.DoubleParam.set>`
 
 
 
 
-.. method:: NatronEngine.DoubleParam.setValueAtTime(value, time[, dimension=0])
+.. method:: NatronEngine.DoubleParam.setValueAtTime(value, time[, dimension=0, view="All"])
 
 
     :param value: :class:`float<PySide.QtCore.double>`
     :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Same as :func:`set(value,time,dimension)<NatronEngine.DoubleParam.set>`
+Same as :func:`set(value,time,dimension, view)<NatronEngine.DoubleParam.set>`
 
 
 

@@ -524,6 +524,25 @@ App::getViewNames() const
     return ret;
 }
 
+int
+App::getViewIndex(const QString& viewName) const
+{
+    ViewIdx view_i;
+    if (!getInternalApp()->getProject()->getViewIndex(viewName.toStdString(), &view_i)) {
+        return false;
+    }
+    return view_i;
+}
+
+QString
+App::getViewName(int viewIndex) const
+{
+    if (viewIndex < 0) {
+        return QString();
+    }
+    return QString::fromUtf8(getInternalApp()->getProject()->getViewName(ViewIdx(viewIndex)).c_str());
+}
+
 void
 App::addProjectLayer(const ImageLayer& layer)
 {
