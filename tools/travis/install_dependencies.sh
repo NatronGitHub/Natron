@@ -185,7 +185,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
-    brew tap homebrew/boneyard # pyside was moved to boneyard
+    #brew tap homebrew/boneyard # pyside was moved to boneyard
     brew tap FreeCAD/freecad  # FreeCAD has a bottled pyside, see https://github.com/FreeCAD/homebrew-freecad
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
     # brew upgrade --cleanup
