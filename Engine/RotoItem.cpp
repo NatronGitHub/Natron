@@ -63,22 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/RotoItemSerialization.h"
 
-#define kMergeOFXParamOperation "operation"
-#define kBlurCImgParamSize "size"
-#define kTimeOffsetParamOffset "timeOffset"
-#define kFrameHoldParamFirstFrame "firstFrame"
 
-#define kTransformParamTranslate "translate"
-#define kTransformParamRotate "rotate"
-#define kTransformParamScale "scale"
-#define kTransformParamUniform "uniform"
-#define kTransformParamSkewX "skewX"
-#define kTransformParamSkewY "skewY"
-#define kTransformParamSkewOrder "skewOrder"
-#define kTransformParamCenter "center"
-#define kTransformParamFilter "filter"
-#define kTransformParamResetCenter "resetCenter"
-#define kTransformParamBlackOutside "black_outside"
 
 #define kParamGloballyEnabled "enabled"
 #define kParamGloballyEnabledLabel "Enabled"
@@ -109,10 +94,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static RotoMetaTypesRegistration registration;
 
-RotoItem::RotoItem(const RotoContextPtr& context,
+RotoItem::RotoItem(const KnobItemsTablePtr& model,
                    const std::string & name,
                    RotoLayerPtr parent)
-    : KnobHolder(context->getNode()->getApp())
+    : KnobTableItem(context->getNode()->getApp())
     , SERIALIZATION_NAMESPACE::SerializableObjectBase()
     , itemMutex()
     , _imp( new RotoItemPrivate(context, name, parent) )

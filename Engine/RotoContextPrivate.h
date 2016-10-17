@@ -297,7 +297,7 @@ public:
     KnobChoiceWPtr lifeTime;
     KnobBoolWPtr activated; //< should the curve be visible/rendered ? (animable)
     KnobIntWPtr lifeTimeFrame;
-    KnobBoolWPtr inverted; //< invert the rendering
+    KnobBoolWPtr invertKnob; //< invert the rendering
     KnobColorWPtr color;
     KnobChoiceWPtr compOperator;
     KnobDoubleWPtr translate;

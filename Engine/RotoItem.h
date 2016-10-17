@@ -84,12 +84,14 @@ public:
 
     // This class is virtual pure so no need to privatize the constructor
 
-    RotoItem( const RotoContextPtr& context,
+    RotoItem(const KnobItemsTablePtr& model,
              const std::string & name,
              RotoLayerPtr parent = RotoLayerPtr() );
 
 
     virtual ~RotoItem();
+
+    virtual bool isItemContainer() const OVERRIDE { return false; }
 
     virtual void clone(const RotoItem*  other);
 

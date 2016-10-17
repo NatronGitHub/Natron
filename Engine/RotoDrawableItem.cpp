@@ -1041,14 +1041,12 @@ bool
 RotoDrawableItem::getInverted(double time) const
 {
     ///MT-safe thanks to Knob
-#ifdef NATRON_ROTO_INVERTIBLE
+    KnobBoolPtr knob = _imp->invertKnob.lock();
+    if (!knob) {
+        return false;
+    }
+    return knob->getValueAtTime(time);
 
-    return _imp->inverted->getValueAtTime(time);
-#else
-    Q_UNUSED(time);
-
-    return false;
-#endif
 }
 
 void
@@ -1142,13 +1140,7 @@ KnobDoublePtr RotoDrawableItem::getOpacityKnob() const
 
 KnobBoolPtr RotoDrawableItem::getInvertedKnob() const
 {
-#ifdef NATRON_ROTO_INVERTIBLE
-
-    return _imp->inverted.lock();
-#else
-
-    return KnobBoolPtr();
-#endif
+    return _imp->invertKnob.lock();
 }
 
 KnobChoicePtr RotoDrawableItem::getOperatorKnob() const
@@ -1472,7 +1464,12 @@ RotoDrawableItem::appendToHash(double time, ViewIdx view, Hash64* hash)
     hash->append(isGloballyActivated());
 }
 
-
+void
+RotoDrawableItem::onItemRemovedFromParent()
+{
+    // Disconnect this item nodes from the other nodes in the rotopaint tree
+    disconnectNodes();
+}
 
 void
 RotoDrawableItem::initializeKnobs()
@@ -1496,7 +1493,7 @@ RotoDrawableItem::initializeKnobs()
     // Item types that output a mask may not have an invert parameter
     if (type != eRotoStrokeTypeSolid &&
         type != eRotoStrokeTypeSmear) {
-        _imp->inverted = createDuplicateOfTableKnob<KnobBool>(kRotoInvertedParam);
+        _imp->invertKnob = createDuplicateOfTableKnob<KnobBool>(kRotoInvertedParam);
     }
 
     // Color is only useful for solids

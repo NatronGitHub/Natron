@@ -258,6 +258,8 @@ protected:
 
 private:
 
+    virtual void onItemRemovedFromParent() OVERRIDE FINAL;
+
 
     RotoDrawableItemPtr findPreviousInHierarchy();
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;

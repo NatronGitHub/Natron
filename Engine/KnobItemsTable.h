@@ -98,7 +98,7 @@ public:
 
     void insertChild(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
-    void removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    bool removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
     void clearChildren(TableChangeReasonEnum reason);
 
@@ -221,6 +221,11 @@ protected:
      * For a tracker, that could be the keyframes edited by the user.
      **/
     virtual void onItemMasterKeyFrameAdded(double time);
+
+    /**
+     * @brief Callback called when the item is removed from its parent item or from the table if this is a top-level item
+     **/
+    virtual void onItemRemovedFromParent() {}
 
 Q_SIGNALS:
 
@@ -440,6 +445,7 @@ Q_SIGNALS:
     void selectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
     void topLevelItemRemoved(KnobTableItemPtr, TableChangeReasonEnum);
     void topLevelItemInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
+
 
 
 private:

@@ -390,10 +390,11 @@ void
 KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
     KnobTableItemPtr parent = item->getParent();
+    bool removed = false;
+
     if (parent) {
-        parent->removeChild(item, reason);
+        removed = parent->removeChild(item, reason);
     } else {
-        bool removed = false;
         if (!getPythonPrefix().empty()) {
             removeItemAsPythonField(item);
         }
@@ -410,6 +411,9 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
         if (removed) {
             Q_EMIT topLevelItemRemoved(item, reason);
         }
+    }
+    if (removed) {
+        item->onItemRemovedFromParent();
     }
 }
 
@@ -562,11 +566,11 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeR
     Q_EMIT childInserted(insertedIndex, item, reason);
 }
 
-void
+bool
 KnobTableItem::removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
     if (!isItemContainer()) {
-        return;
+        return false;
     }
     bool removed = false;
     KnobItemsTablePtr model = getModel();
@@ -585,7 +589,9 @@ KnobTableItem::removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum r
     }
     if (removed) {
         Q_EMIT childRemoved(item, reason);
+        return true;
     }
+    return false;
 }
 
 KnobTableItemPtr
