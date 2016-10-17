@@ -135,7 +135,7 @@ public:
         return false;
     }
 
-    bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
+    bool equalsAtTime(double time, ViewIdx view, const BezierCP & other) const;
 
     bool operator==(const BezierCP& other) const;
 
@@ -144,25 +144,25 @@ public:
         return !(*this == other);
     }
 
-    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool getPositionAtTime(double time, ViewIdx view, double* x, double* y) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool getLeftBezierPointAtTime(double time, ViewIdx view, double* x, double* y) const;
 
-    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y) const;
+    bool getRightBezierPointAtTime(double time, ViewIdx view, double *x, double *y) const;
 
-    bool hasKeyFrameAtTime(bool useGuiCurves, double time) const;
+    bool hasKeyFrameAtTime(double time) const;
 
-    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const;
+    void getKeyframeTimes(std::set<double>* times) const;
 
-    void getKeyFrames(bool useGuiCurves, std::list<std::pair<double, KeyframeTypeEnum> >* keys) const;
+    void getKeyFrames(std::list<std::pair<double, KeyframeTypeEnum> >* keys) const;
 
-    int getKeyFrameIndex(bool useGuiCurves, double time) const;
+    int getKeyFrameIndex(double time) const;
 
-    void setKeyFrameInterpolation(bool useGuiCurves, KeyframeTypeEnum interp, int index);
+    void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
-    double getKeyframeTime(bool useGuiCurves, int index) const;
+    double getKeyframeTime(int index) const;
 
-    int getKeyframesCount(bool useGuiCurves) const;
+    int getKeyframesCount() const;
 
     int getControlPointsCount() const;
 
@@ -180,7 +180,7 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(bool useGuiCurves, double time, ViewIdx view, double x, double y, double acceptance) const;
+    int isNearbyTangent(double time, ViewIdx view, double x, double y, double acceptance) const;
 
     SequenceTime getOffsetTime() const;
 

@@ -154,6 +154,8 @@ public:
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 private:
+    
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
     RectD computeBoundingBox(double time) const;
 

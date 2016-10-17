@@ -233,7 +233,6 @@ public:
 
     virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE;
 
-    virtual void dequeueGuiActions(bool /*force*/) {}
 
 Q_SIGNALS:
 

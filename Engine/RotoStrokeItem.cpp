@@ -116,6 +116,46 @@ RotoStrokeItem::getBrushType() const
     return _imp->type;
 }
 
+std::string
+RotoStrokeItem::getBaseItemName() const
+{
+    std::string itemName;
+    
+    switch (_imp->type) {
+        case eRotoStrokeTypeSolid:
+            itemName = kRotoPaintBrushBaseName;
+            break;
+        case eRotoStrokeTypeEraser:
+            itemName = kRotoPaintEraserBaseName;
+            break;
+        case eRotoStrokeTypeClone:
+            itemName = kRotoPaintCloneBaseName;
+            break;
+        case eRotoStrokeTypeReveal:
+            itemName = kRotoPaintRevealBaseName;
+            break;
+        case eRotoStrokeTypeBlur:
+            itemName = kRotoPaintBlurBaseName;
+            break;
+        case eRotoStrokeTypeSharpen:
+            itemName = kRotoPaintSharpenBaseName;
+            break;
+        case eRotoStrokeTypeSmear:
+            itemName = kRotoPaintSmearBaseName;
+            break;
+        case eRotoStrokeTypeDodge:
+            itemName = kRotoPaintDodgeBaseName;
+            break;
+        case eRotoStrokeTypeBurn:
+            itemName = kRotoPaintBurnBaseName;
+            break;
+        default:
+            break;
+    }
+    return itemName;
+
+}
+
 static void
 evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,

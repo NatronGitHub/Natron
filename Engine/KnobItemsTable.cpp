@@ -417,6 +417,29 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
     }
 }
 
+std::string
+KnobItemsTable::generateUniqueName(const std::string& baseName) const
+{
+    int no = 1;
+    bool foundItem;
+    std::string name;
+    
+    do {
+        std::stringstream ss;
+        ss << baseName;
+        ss << no;
+        name = ss.str();
+        if ( getItemByScriptName(name) ) {
+            foundItem = true;
+        } else {
+            foundItem = false;
+        }
+        ++no;
+    } while (foundItem);
+    
+    return name;
+
+}
 
 KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
 : NamedKnobHolder(model->getOriginalHolder()->getApp())
@@ -1125,7 +1148,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
     QMutexLocker k(&_imp->selectionLock);
     --_imp->selectionRecursion;
 
-}
+} // endSelection
 
 
 void

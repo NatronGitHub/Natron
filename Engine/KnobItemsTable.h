@@ -73,8 +73,15 @@ public:
 
     KnobItemsTablePtr getModel() const;
 
+    /**
+     * @brief Returns the script-name of the item as it appears to Python
+     **/
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
-
+    
+    /**
+     * @brief Set the script-name of the item as it appears to Python. This function
+     * returns false if the name is invalid
+     **/
     bool setScriptName(const std::string& name);
 
     /**
@@ -83,8 +90,14 @@ public:
      **/
     std::string getFullyQualifiedName() const;
 
+    /**
+     * @brief Returns the label of the item as visible in the GUI
+     **/
     std::string getLabel() const;
 
+    /**
+     * @brief Set the label of the item as visible in the GUI
+     **/
     void setLabel(const std::string& label, TableChangeReasonEnum reason);
 
     /**
@@ -92,20 +105,47 @@ public:
      **/
     virtual bool isItemContainer() const = 0;
     
+    /**
+     * @brief Add a child to the item after any other children
+     **/
     void addChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason) {
         insertChild(-1, item, reason);
     }
 
+    /**
+     * @brief Inserts the given item as a child at the given index. This function cannot succeed if
+     * isItemContainer() returns false. This will remove the item from its previous parent/model 
+     * before inserting it as a child. This will emit the childInserted signal.
+     **/
     void insertChild(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
+    /**
+     * @brief Removes given child if it exists.
+     * @return True upon success, false otherwise.
+     * Upon success, the childRemoved signal is emitted.
+     **/
     bool removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
+    /**
+     * @brief Removes all children. Same as calling removeChild on each children individually.
+     **/
     void clearChildren(TableChangeReasonEnum reason);
 
+    /**
+     * @brief Returns a vector of all children of the item.
+     **/
     std::vector<KnobTableItemPtr> getChildren() const;
 
+    /**
+     * @brief If this item is child of another item, this is its parent.
+     **/
     KnobTableItemPtr getParent() const;
 
+    /**
+     * @brief If this item has a parent, returns the index of this item in the parent's children list.
+     * If this item is a top-level item, returns the index of this item in the model top level items list.
+     * This function returns -1 if the item is not in a model.
+     **/
     int getIndexInParent() const;
 
     /**
@@ -120,8 +160,15 @@ public:
      **/
     void setColumn(int col, const std::string& columnName, int dimension);
 
+    /**
+     * @brief Return a knob that was previously set by setColumn at the given column col.
+     * @param dimensionIndex[out] Set the dimension of the knob the given column should represent.
+     **/
     KnobIPtr getColumnKnob(int col, int *dimensionIndex) const;
 
+    /**
+     * @brief Return the column name that was previously set by setColumn
+     **/
     std::string getColumnName(int col) const;
     
     /**
@@ -145,7 +192,7 @@ public:
     int getItemRow() const;
 
     /**
-     * @brief Serialization support
+     * @brief Serialization support. May be overlayded to serialize more data structures.
      **/
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
@@ -216,12 +263,13 @@ protected:
      **/
     virtual void initializeKnobs() OVERRIDE = 0;
 
+    
     /**
-     * @brief To be called whenever a keyframe controlling the whole item is added. For example, for a bezier curve the whole shape animation can be represented by keyframes.
-     * For a tracker, that could be the keyframes edited by the user.
+     * @brief Returns what should be the default base-name for the item, e.g "Bezier" or "Brush" etc...
+     * The model will then derive from this name to assign a unique script-name to the item.
      **/
-    virtual void onItemMasterKeyFrameAdded(double time);
-
+    virtual std::string getBaseItemName() const = 0;
+    
     /**
      * @brief Callback called when the item is removed from its parent item or from the table if this is a top-level item
      **/
@@ -446,7 +494,9 @@ Q_SIGNALS:
     void topLevelItemRemoved(KnobTableItemPtr, TableChangeReasonEnum);
     void topLevelItemInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
 
-
+protected:
+    
+    std::string generateUniqueName(const std::string& name) const;
 
 private:
 

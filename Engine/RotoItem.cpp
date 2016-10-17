@@ -94,13 +94,29 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static RotoMetaTypesRegistration registration;
 
-RotoItem::RotoItem(const KnobItemsTablePtr& model,
-                   const std::string & name,
-                   RotoLayerPtr parent)
-    : KnobTableItem(context->getNode()->getApp())
-    , SERIALIZATION_NAMESPACE::SerializableObjectBase()
-    , itemMutex()
-    , _imp( new RotoItemPrivate(context, name, parent) )
+struct RotoItemPrivate
+{
+    
+    
+    // This controls whether the item (and all its children if it is a layer)
+    // should be visible/rendered or not at any time.
+    // This is different from the "activated" knob for RotoDrawableItem's which in that
+    // case allows to define a life-time
+    KnobBoolWPtr activatedKnob;
+    
+    // A locked item should not be modifiable by the GUI
+    KnobBoolWPtr lockedKnob;
+    
+    RotoItemPrivate()
+    : activatedKnob()
+    , lockedKnob()
+    {
+    }
+};
+
+RotoItem::RotoItem(const KnobItemsTablePtr& model)
+    : KnobTableItem(model)
+    , _imp( new RotoItemPrivate() )
 {
 }
 

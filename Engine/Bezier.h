@@ -82,7 +82,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     Bezier(const RotoContextPtr& context,
-           const std::string & name,
+           const std::string & baseName,
            const RotoLayerPtr& parent,
            bool isOpenBezier);
 
@@ -358,8 +358,7 @@ public:
      **/
     int getKeyframesCount() const;
 
-    static void deCastelJau(bool useGuiCurves,
-                            const std::list<BezierCPPtr >& cps, double time, unsigned int mipMapLevel,
+    static void deCastelJau(const std::list<BezierCPPtr >& cps, double time, unsigned int mipMapLevel,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
@@ -375,8 +374,7 @@ public:
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
-    void evaluateAtTime_DeCasteljau(bool useGuiCurves,
-                                    double time,
+    void evaluateAtTime_DeCasteljau(double time,
                                     unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
@@ -386,8 +384,7 @@ public:
                                     std::vector<std::vector<ParametricPoint> >* points,
                                     RectD* bbox) const;
 
-    void evaluateAtTime_DeCasteljau(bool useGuiCurves,
-                                    double time,
+    void evaluateAtTime_DeCasteljau(double time,
                                     unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
@@ -399,8 +396,7 @@ public:
 
 private:
 
-    void evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
-                                    double time,
+    void evaluateAtTime_DeCasteljau_internal(double time,
                                     unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
@@ -416,8 +412,7 @@ public:
     /**
      * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
      **/
-    void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
-                                                 double time,
+    void evaluateAtTime_DeCasteljau_autoNbPoints(double time,
                                                  unsigned int mipMapLevel,
                                                  std::vector<std::vector<ParametricPoint> >* points,
                                                  RectD* bbox) const;
@@ -426,8 +421,7 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
-                                                 double time,
+    void evaluateFeatherPointsAtTime_DeCasteljau(bouble time,
                                                  unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
@@ -438,8 +432,7 @@ public:
                                                  std::vector<std::vector<ParametricPoint>  >* points,
                                                  RectD* bbox) const;
 
-    void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
-                                                 double time,
+    void evaluateFeatherPointsAtTime_DeCasteljau(double time,
                                                  unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
@@ -452,8 +445,7 @@ public:
 
 private:
 
-    void evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiCurves,
-                                                          double time,
+    void evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
                                                           unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                           int nbPointsPerSegment,
@@ -472,8 +464,7 @@ public:
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
     virtual RectD getBoundingBox(double time) const OVERRIDE;
-    static void bezierSegmentListBboxUpdate(bool useGuiCurves,
-                                            const std::list<BezierCPPtr > & points,
+    static void bezierSegmentListBboxUpdate(const std::list<BezierCPPtr > & points,
                                             bool finished,
                                             bool isOpenBezier,
                                             double time,
@@ -550,8 +541,8 @@ public:
      * mode == 2: Add only the fp within the rect and their repsective control points counter parts
      **/
     std::list< std::pair<BezierCPPtr, BezierCPPtr > >controlPointsWithinRect(double l, double r, double b, double t, double acceptance, int mode) const;
-    static void leftDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
-    static void rightDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
+    static void leftDerivativeAtPoint(double time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
+    static void rightDerivativeAtPoint(double time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
 
     /**
      * @brief Computes the location of the feather extent relative to the current feather point position and
@@ -564,8 +555,7 @@ public:
      *
      * Note that the delta will be applied to fp.
      **/
-    static Point expandToFeatherDistance(bool useGuiCurve,
-                                         const Point & cp,         //< the point
+    static Point expandToFeatherDistance(const Point & cp,         //< the point
                                          Point* fp,         //< the feather point
                                          double featherDistance,         //< feather distance
                                          //const std::list<Point> & featherPolygon, //< the polygon of the bezier
@@ -582,26 +572,24 @@ public:
     };
 
 
-    bool isFeatherPolygonClockwiseOriented(bool useGuiCurve, double time) const;
+    bool isFeatherPolygonClockwiseOriented(double time) const;
 
     /**
      * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
      * so make sure setAutoOrientationComputation(true) has been called before.
      **/
-    void refreshPolygonOrientation(bool useGuiCurve, double time);
-    void refreshPolygonOrientation(bool useGuiCurve);
+    void refreshPolygonOrientation(double time);
+    void refreshPolygonOrientation();
 
     void setAutoOrientationComputation(bool autoCompute);
-
-    virtual void dequeueGuiActions(bool force) OVERRIDE FINAL;
 
 private:
 
     virtual void onTransformSet(double time) OVERRIDE FINAL;
 
-    bool isFeatherPolygonClockwiseOrientedInternal(bool useGuiCurve, double time) const;
+    bool isFeatherPolygonClockwiseOrientedInternal(double time) const;
 
-    void computePolygonOrientation(bool useGuiCurves, double time, bool isStatic) const;
+    void computePolygonOrientation(double time, bool isStatic) const;
 
     void evaluateCurveModified();
 
@@ -659,6 +647,8 @@ Q_SIGNALS:
     void controlPointRemoved();
 
 private:
+    
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
     boost::scoped_ptr<BezierPrivate> _imp;
 };
