@@ -201,6 +201,8 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, 
     std::vector<boost::shared_ptr<CurveGui> > curvesToFrame;
     if (curves.empty()) {
         curvesToFrame.insert(curvesToFrame.end(), _imp->_curves.begin(), _imp->_curves.end());
+    } else {
+        curvesToFrame = curves;
     }
 
     if (curvesToFrame.empty()) {

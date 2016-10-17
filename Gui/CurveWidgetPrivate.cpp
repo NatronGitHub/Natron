@@ -692,6 +692,13 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
             if ( !set.empty() ) {
                 ++next;
             }
+            bool isPeriodic = false;
+            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            if (internalCurve) {
+                isPeriodic = internalCurve->isCurvePeriodic();
+                parametricRange = internalCurve->getXRange();
+            }
             for (; it2 != set.end(); ++it2) {
                 QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
                 if ( (std::abs( pt.y() - keyFramewidgetPos.y() ) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
@@ -701,11 +708,21 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
                     if ( prev != set.end() ) {
                         prevK = *prev;
                         hasPrev = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                        prevK = *last;
+                        prevK.setTime(prevK.getTime() - (parametricRange.second - parametricRange.first));
+                        hasPrev = true;
                     }
                     KeyFrame nextK;
                     bool hasNext = false;
                     if ( next != set.end() ) {
                         nextK = *next;
+                        hasNext = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_iterator start = set.begin();
+                        nextK = *start;
+                        nextK.setTime(nextK.getTime() + (parametricRange.second - parametricRange.first));
                         hasNext = true;
                     }
                     *hasPrevKey = hasPrev;

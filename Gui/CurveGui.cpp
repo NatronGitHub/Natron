@@ -89,6 +89,8 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // the keyframe on the side
     if (!isPeriodic && x < keys.begin()->getTime()) {
         *x2WidgetCoords = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(), 0).x();
+        *x1Key = *keys.begin();
+        *isx1Key = true;
         return;
     } else if (!isPeriodic && x >= keys.rbegin()->getTime()) {
         *x2WidgetCoords = _curveWidget->width() - 1;
@@ -176,6 +178,11 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
         vnextDerivLeft = upperIt->getLeftDerivative();
     }
     double normalizeTimeRange = tnext - tprev;
+    if (normalizeTimeRange == 0) {
+        // Only 1 keyframe, draw a horizontal line
+        *x2WidgetCoords = _curveWidget->width() - 1;
+        return;
+    }
     assert(normalizeTimeRange > 0.);
 
     double t = ( xClamped - tprev ) / normalizeTimeRange;
@@ -654,7 +661,7 @@ KnobCurveGui::evaluate(bool useExpr,
     } else {
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
         if (isParametric) {
-            return isParametric->getParametricCurve(_dimension)->getValueAt(x);
+            return isParametric->getParametricCurve(_dimension)->getValueAt(x, false);
         } else {
             assert(_internalCurve);
 
