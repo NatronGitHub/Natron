@@ -532,8 +532,12 @@ AppManager::loadFromArgs(const CLArgs& cl)
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
-    bool ret = loadInternal(cl);
-    
+    bool ret = false;
+    try {
+        ret = loadInternal(cl);
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+    }
     return ret;
 } // loadFromArgs
 

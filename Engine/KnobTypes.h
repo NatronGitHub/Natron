@@ -1343,8 +1343,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     std::vector<RGBAColourD> _curvesColor;
 
 private: // derives from KnobI
-    // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
+
+
 
     KnobParametric(const KnobHolderPtr& holder,
                    const std::string &label,
@@ -1376,6 +1377,7 @@ public:
         return false;
     }
 
+    void setPeriodic(bool periodic);
     void setCurveColor(int dimension, double r, double g, double b);
 
     void getCurveColor(int dimension, double* r, double* g, double* b);

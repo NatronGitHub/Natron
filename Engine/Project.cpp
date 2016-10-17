@@ -1121,7 +1121,7 @@ Project::currentFrame() const
 }
 
 int
-Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat)
+Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool* existed)
 {
     //assert( !_imp->formatMutex.tryLock() );
     if ( ( f.left() >= f.right() ) || ( f.bottom() >= f.top() ) ) {
@@ -1130,10 +1130,12 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat)
 
     std::list<Format>::iterator foundFormat = std::find(_imp->builtinFormats.begin(), _imp->builtinFormats.end(), f);
     if ( foundFormat != _imp->builtinFormats.end() ) {
+        *existed = true;
         return std::distance(_imp->builtinFormats.begin(), foundFormat);
     } else {
         foundFormat = std::find(_imp->additionalFormats.begin(), _imp->additionalFormats.end(), f);
         if ( foundFormat != _imp->additionalFormats.end() ) {
+            *existed = true;
             return std::distance(_imp->additionalFormats.begin(), foundFormat) + _imp->builtinFormats.size();
         }
     }
@@ -1173,7 +1175,8 @@ void
 Project::setProjectDefaultFormat(const Format & f)
 {
     //assert( !_imp->formatMutex.tryLock() );
-    int index = tryAddProjectFormat(f, true);
+    bool existed;
+    int index = tryAddProjectFormat(f, true, &existed);
 
     _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
@@ -2044,8 +2047,11 @@ Project::setOrAddProjectFormat(const Format & frmt,
             }
         } else if (!skipAdd) {
             dispW = frmt;
-            tryAddProjectFormat(dispW, true);
-            mustRefreshNodeFormats = true;
+            bool existed;
+            tryAddProjectFormat(dispW, true, &existed);
+            if (!existed) {
+                mustRefreshNodeFormats = true;
+            }
         }
     }
     if (mustRefreshNodeFormats) {
@@ -2699,7 +2705,9 @@ Project::addDefaultFormat(const std::string& formatSpec)
 
     if ( ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), &f) ) {
         QMutexLocker k(&_imp->formatMutex);
-        tryAddProjectFormat(f, false);
+
+        bool existed;
+        tryAddProjectFormat(f, false, &existed);
 
         return true;
     } else {

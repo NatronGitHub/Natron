@@ -382,6 +382,8 @@ public:
     // Used to determine which knobs are presets, so that if the user switch preset we remove them
     bool isLoadingPreset;
     std::list<KnobIWPtr> presetKnobs;
+
+    bool hostChannelSelectorEnabled;
 };
 
 class RefreshingInputData_RAII

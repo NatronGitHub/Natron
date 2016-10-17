@@ -159,7 +159,8 @@ ExprUtils::hash(const std::vector<double>& args)
 double
 ExprUtils::noise(double x)
 {
-    double ret;
+    double ret = 0.;
+    // coverity[callee_ptr_arith]
     Noise<1, 1>(&x, &ret);
     return ret;
 }
@@ -167,7 +168,8 @@ ExprUtils::noise(double x)
 double
 ExprUtils::noise(const Double2DTuple& p)
 {
-    double ret;
+    double ret = 0.;
+    // coverity[callee_ptr_arith]
     Noise<2, 1>((const double*)&p.x, &ret);
     return ret;
 }
@@ -175,7 +177,8 @@ ExprUtils::noise(const Double2DTuple& p)
 double
 ExprUtils::noise(const Double3DTuple& p)
 {
-    double ret;
+    double ret = 0.;
+    // coverity[callee_ptr_arith]
     Noise<3, 1>((const double*)&p.x, &ret);
     return ret;
 }
@@ -183,7 +186,8 @@ ExprUtils::noise(const Double3DTuple& p)
 double
 ExprUtils::noise(const ColorTuple& p)
 {
-    double ret;
+    double ret = 0.;
+    // coverity[callee_ptr_arith]
     Noise<4, 1>((const double*)&p.r, &ret);
     return ret;
 }
@@ -192,7 +196,8 @@ ExprUtils::noise(const ColorTuple& p)
 double
 ExprUtils::snoise(const Double3DTuple& p)
 {
-    double result;
+    double result = 0.;
+    // coverity[callee_ptr_arith]
     Noise<3, 1>((const double*)&p.x, &result);
     return result;
 
@@ -201,7 +206,7 @@ ExprUtils::snoise(const Double3DTuple& p)
 Double3DTuple
 ExprUtils::vnoise(const Double3DTuple& p)
 {
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     Noise<3, 3>((const double*)&p.x, (double*)&result.x);
     return result;
 
@@ -210,7 +215,7 @@ ExprUtils::vnoise(const Double3DTuple& p)
 Double3DTuple
 ExprUtils::cnoise(const Double3DTuple& p)
 {
-    Double3DTuple ret;
+    Double3DTuple ret = {0., 0., 0.};
     Noise<3, 3>((const double*)&p.x, (double*)&ret.x);
     ret.x = p.x * 0.5 + 0.5;
     ret.y = p.y * 0.5 + 0.5;
@@ -221,7 +226,8 @@ ExprUtils::cnoise(const Double3DTuple& p)
 double
 ExprUtils::snoise4(const ColorTuple& p)
 {
-    double result;
+    double result = 0.;
+    // coverity[callee_ptr_arith]
     Noise<4, 1>((const double*)&p.r, &result);
     return result;
 }
@@ -229,7 +235,7 @@ ExprUtils::snoise4(const ColorTuple& p)
 Double3DTuple
 ExprUtils::vnoise4(const ColorTuple& p)
 {
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     Noise<4, 3>((const double*)&p.r, (double*)&result.x);
     return result;
 }
@@ -237,7 +243,7 @@ ExprUtils::vnoise4(const ColorTuple& p)
 Double3DTuple
 ExprUtils::cnoise4(const ColorTuple& p)
 {
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     Noise<4, 3>((const double*)&p.r, (double*)&result.x);
     result.x = result.x * 0.5 + 0.5;
     result.y = result.y * 0.5 + 0.5;
@@ -249,7 +255,8 @@ double
 ExprUtils::turbulence(const Double3DTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    double result = 0;
+    double result = 0.;
+    // coverity[callee_ptr_arith]
     FBM<3, 1, true>((const double*)&p.x, &result, octaves, lacunarity, gain);
     return .5 * result + .5;
 }
@@ -258,7 +265,7 @@ Double3DTuple
 ExprUtils::vturbulence(const Double3DTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<3, 3, true>((const double*)&p.x, (double*)&result.x, octaves, lacunarity, gain);
     return result;
 
@@ -268,7 +275,7 @@ Double3DTuple
 ExprUtils::cturbulence(const Double3DTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<3, 3, true>((const double*)&p.x, (double*)&result.x, octaves, lacunarity, gain);
     result.x = result.x * 0.5 + 0.5;
     result.y = result.y * 0.5 + 0.5;
@@ -281,6 +288,7 @@ ExprUtils::fbm(const Double3DTuple& p, int octaves, double lacunarity, double ga
 {
     octaves = std::min(std::max(octaves, 1), 8);
     double result = 0.0;
+    // coverity[callee_ptr_arith]
     FBM<3, 1, false>((const double*)&p.x, &result, octaves, lacunarity, gain);
     return .5 * result + .5;
 
@@ -290,7 +298,7 @@ Double3DTuple
 ExprUtils::vfbm(const Double3DTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<3, 3, false>((const double*)&p.x, (double*)&result.x, octaves, lacunarity, gain);
     return result;
 }
@@ -300,6 +308,7 @@ ExprUtils::fbm4(const ColorTuple& p, int octaves, double lacunarity, double gain
 {
     octaves = std::min(std::max(octaves, 1), 8);
     double result = 0.0;
+    // coverity[callee_ptr_arith]
     FBM<4, 1, false>((const double*)&p.r, &result, octaves, lacunarity, gain);
     return .5 * result + .5;
 }
@@ -308,7 +317,7 @@ Double3DTuple
 ExprUtils::vfbm4(const ColorTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<4, 3, false>((const double*)&p.r, (double*)&result.x, octaves, lacunarity, gain);
     return result;
 }
@@ -317,7 +326,7 @@ Double3DTuple
 ExprUtils::cfbm(const Double3DTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<3, 3, false>((const double*)&p.x, (double*)&result.x, octaves, lacunarity, gain);
     result.x = result.x * 0.5 + 0.5;
     result.y = result.y * 0.5 + 0.5;
@@ -330,7 +339,7 @@ Double3DTuple
 ExprUtils::cfbm4(const ColorTuple& p, int octaves, double lacunarity, double gain)
 {
     octaves = std::min(std::max(octaves, 1), 8);
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     FBM<4, 3, false>((const double*)&p.r, (double*)&result.x, octaves, lacunarity, gain);
     result.x = result.x * 0.5 + 0.5;
     result.y = result.y * 0.5 + 0.5;
@@ -342,7 +351,8 @@ ExprUtils::cfbm4(const ColorTuple& p, int octaves, double lacunarity, double gai
 double
 ExprUtils::cellnoise(const Double3DTuple& p)
 {
-    double result;
+    double result = 0.;
+    // coverity[callee_ptr_arith]
     CellNoise<3, 1>((const double*)&p.x, &result);
     return result;
 }
@@ -350,7 +360,7 @@ ExprUtils::cellnoise(const Double3DTuple& p)
 Double3DTuple
 ExprUtils::ccellnoise(const Double3DTuple& p)
 {
-    Double3DTuple result;
+    Double3DTuple result = {0., 0., 0.};
     CellNoise<3, 1>((const double*)&p.x, (double*)&result.x);
     return result;
 }
@@ -358,10 +368,11 @@ ExprUtils::ccellnoise(const Double3DTuple& p)
 double
 ExprUtils::pnoise(const Double3DTuple& p, const Double3DTuple& period)
 {
-    double result;
+    double result = 0.;
     int pargs[3] = {std::max(1,(int)period.x),
         std::max(1,(int)period.y),
         std::max(1,(int)period.z)};
+    // coverity[callee_ptr_arith]
     PNoise<3, 1>((const double*)&p.x, pargs, &result);
     return result;
 

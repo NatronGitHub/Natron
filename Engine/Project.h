@@ -398,7 +398,7 @@ private:
 
 
     /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat);
+    int tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool* existed);
 
     void setProjectDefaultFormat(const Format & f);
 

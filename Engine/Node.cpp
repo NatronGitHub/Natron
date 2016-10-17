@@ -3927,10 +3927,10 @@ Node::findOrCreateChannelEnabled()
     }
 
     bool pluginDefaultPref[4];
-    bool useRGBACheckbox = _imp->effect->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
+    _imp->hostChannelSelectorEnabled = _imp->effect->isHostChannelSelectorSupported(&pluginDefaultPref[0], &pluginDefaultPref[1], &pluginDefaultPref[2], &pluginDefaultPref[3]);
 
 
-    if (useRGBACheckbox) {
+    if (_imp->hostChannelSelectorEnabled) {
         if (foundAll) {
             std::cerr << getScriptName_mt_safe() << ": WARNING: property " << kNatronOfxImageEffectPropChannelSelector << " is different of " << kOfxImageComponentNone << " but uses its own checkboxes" << std::endl;
         } else {
@@ -8962,8 +8962,17 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
 
 
 bool
+Node::isPluginUsingHostChannelSelectors() const
+{
+    return _imp->hostChannelSelectorEnabled;
+}
+
+bool
 Node::getProcessChannel(int channelIndex) const
 {
+    if (!isPluginUsingHostChannelSelectors()) {
+        return true;
+    }
     assert(channelIndex >= 0 && channelIndex < 4);
     KnobBoolPtr k = _imp->enabledChan[channelIndex].lock();
     if (k) {
@@ -9024,7 +9033,7 @@ Node::getSelectedLayer(int inputNb,
     }
 
     if (processChannels) {
-        if ( _imp->enabledChan[0].lock() ) {
+        if (_imp->hostChannelSelectorEnabled &&  _imp->enabledChan[0].lock() ) {
             (*processChannels)[0] = _imp->enabledChan[0].lock()->getValue();
             (*processChannels)[1] = _imp->enabledChan[1].lock()->getValue();
             (*processChannels)[2] = _imp->enabledChan[2].lock()->getValue();
@@ -9860,7 +9869,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
 } // Node::refreshAllInputRelatedData
 
 bool
-Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
+Node::refreshInputRelatedDataInternal(bool domarking, std::set<NodePtr>& markedNodes)
 {
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -9870,10 +9879,12 @@ Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
         }
     }
 
-    std::list<NodePtr>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), shared_from_this());
+    if (domarking) {
+        std::set<NodePtr>::iterator found = markedNodes.find(shared_from_this());
 
-    if ( found != markedNodes.end() ) {
-        return false;
+        if ( found != markedNodes.end() ) {
+            return false;
+        }
     }
 
     ///Check if inputs must be refreshed first
@@ -9884,12 +9895,13 @@ Node::refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes)
         NodePtr input = getInput(i);
         inputsCopy[i] = input;
         if ( input && input->isInputRelatedDataDirty() ) {
-            input->refreshInputRelatedDataInternal(markedNodes);
+            input->refreshInputRelatedDataInternal(true, markedNodes);
         }
     }
 
-
-    markedNodes.push_back(shared_from_this());
+    if (domarking) {
+        markedNodes.insert(shared_from_this());
+    }
 
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
 
@@ -9970,12 +9982,19 @@ Node::markInputRelatedDataDirtyRecursive()
 }
 
 void
-Node::refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes)
+Node::refreshInputRelatedDataRecursiveInternal(std::set<NodePtr>& markedNodes)
 {
     if ( getApp()->isCreatingNodeTree() ) {
         return;
     }
-    refreshInputRelatedDataInternal(markedNodes);
+    std::set<NodePtr>::iterator found = markedNodes.find(shared_from_this());
+
+    if ( found != markedNodes.end() ) {
+        return;
+    }
+
+    markedNodes.insert(shared_from_this());
+    refreshInputRelatedDataInternal(false, markedNodes);
 
     ///Now notify outputs we have changed
     NodesList outputs;
@@ -9988,7 +10007,8 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes)
 void
 Node::refreshInputRelatedDataRecursive()
 {
-    std::list<NodePtr> markedNodes;
+
+    std::set<NodePtr> markedNodes;
 
     refreshInputRelatedDataRecursiveInternal(markedNodes);
 }

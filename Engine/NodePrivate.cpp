@@ -147,6 +147,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , restoringDefaults(false)
 , isLoadingPreset(false)
 , presetKnobs()
+, hostChannelSelectorEnabled(false)
 {
     nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
     nodeSize[0] = nodeSize[1] = -1;

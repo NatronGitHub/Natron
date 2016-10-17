@@ -438,6 +438,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
+    virtual void setDisplayRange() OVERRIDE FINAL;
+    virtual void setRange() OVERRIDE FINAL;
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
@@ -480,6 +482,8 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
+    virtual void setDisplayRange() OVERRIDE FINAL;
+    virtual void setRange() OVERRIDE FINAL;
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;

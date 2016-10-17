@@ -1408,11 +1408,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
-    if ( (e)->buttons() == Qt::LeftButton   && (!e->modifiers() &  Qt::MetaModifier) ) {
+    if ( (e->buttons() == Qt::LeftButton) && !(e->modifiers() &  Qt::MetaModifier) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
-    } else if ( e->buttons() == Qt::RightButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
+    } else if ( (e->buttons() == Qt::RightButton) || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeRMB;
-    } else if ( e->buttons() == Qt::MiddleButton  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
+    } else if ( (e->buttons() == Qt::MiddleButton)  || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::AltModifier)) ) {
         _imp->pointerTypeOnPress = ePenTypeMMB;
     }
 
@@ -2911,20 +2911,20 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                  if (_imp->pickerState == ePickerStateInactive) {
                      //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
                      updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
-                // }
-            } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
-                if ( !_imp->infoViewer[texIndex]->colorVisible() ) {
-                    _imp->infoViewer[texIndex]->showColorInfo();
-                }
-                // Show the picker on parametric params without updating the color value
-                if (texIndex == 0) {
-                    setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
-                }
-            } else {
-                ///unkwn state
-                assert(false);
-            }
-        }
+                     // }
+                 } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
+                     if ( !_imp->infoViewer[texIndex]->colorVisible() ) {
+                         _imp->infoViewer[texIndex]->showColorInfo();
+                     }
+                 } else {
+                     ///unkwn state
+                     assert(false);
+                 }
+                 // Show the picker on parametric params without updating the color value
+                 if (texIndex == 0) {
+                     setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
+                 }
+             }
     } else {
         if ( _imp->infoViewer[texIndex]->colorVisible() && _imp->pickerState == ePickerStateInactive) {
             _imp->infoViewer[texIndex]->hideColorInfo();

@@ -69,15 +69,13 @@ CurveGui::~CurveGui()
 }
 
 void
-CurveGui::nextPointForSegment(const double x1,
+CurveGui::nextPointForSegment(const double x, // < in curve coordinates
                               const KeyFrameSet & keys,
-                              const std::list<double>& keysWidgetCoords,
-                              const Curve::YRange& curveYRange,
-                              const double xminCurveWidgetCoord,
-                              const double xmaxCurveWidgetCoord,
+                              const bool isPeriodic,
+                              const double parametricXMin,
+                              const double parametricXMax,
                               KeyFrameSet::const_iterator* lastUpperIt,
-                              std::list<double>::const_iterator* lastUpperItCoords,
-                              double* x2,
+                              double* x2WidgetCoords,
                               KeyFrame* x1Key,
                               bool* isx1Key)
 {
@@ -85,129 +83,148 @@ CurveGui::nextPointForSegment(const double x1,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( !keys.empty() );
 
+    *isx1Key = false;
 
-    if (x1 < xminCurveWidgetCoord) {
-        if ( ( curveYRange.min == INT_MIN || curveYRange.min == -std::numeric_limits<double>::infinity()) && ( curveYRange.max == INT_MAX || curveYRange.max == std::numeric_limits<double>::infinity()) ) {
-            *x2 = xminCurveWidgetCoord;
-        } else {
-            ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
-            ///the min axis, the max axis or nothing.
-            if (keys.size() == 1) {
-                ///if only 1 keyframe, the curve is horizontal
-                *x2 = xminCurveWidgetCoord;
-            } else {
-                ///find out the equation of the straight line going from the first keyframe and intersecting
-                ///the min axis, so we can get the coordinates of the point intersecting the min axis.
-                KeyFrameSet::const_iterator firstKf = keys.begin();
+    // If non periodic and out of curve range, draw straight lines from widget border to
+    // the keyframe on the side
+    if (!isPeriodic && x < keys.begin()->getTime()) {
+        *x2WidgetCoords = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(), 0).x();
+        *x1Key = *keys.begin();
+        *isx1Key = true;
+        return;
+    } else if (!isPeriodic && x >= keys.rbegin()->getTime()) {
+        *x2WidgetCoords = _curveWidget->width() - 1;
+        return;
+    }
 
-                if (firstKf->getLeftDerivative() == 0) {
-                    *x2 = xminCurveWidgetCoord;
-                } else {
-                    double b = firstKf->getValue() - firstKf->getLeftDerivative() * firstKf->getTime();
-                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.min - b) / firstKf->getLeftDerivative(), 0 ).x();
-                    if ( (x1 >= *x2) || (*x2 > xminCurveWidgetCoord) ) {
-                        ///do the same wit hthe max axis
-                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.max - b) / firstKf->getLeftDerivative(), 0 ).x();
 
-                        if ( (x1 >= *x2) || (*x2 > xminCurveWidgetCoord) ) {
-                            /// ok the curve doesn't intersect the min/max axis
-                            *x2 = xminCurveWidgetCoord;
-                        }
-                    }
-                }
-            }
+
+    // We're between 2 keyframes or the curve is periodic, get the upper and lower keyframes widget coordinates
+
+    // Points to the first keyframe with a greater time (in widget coords) than x1
+    KeyFrameSet::const_iterator upperIt = keys.end();;
+
+    // If periodic, bring back x in the period range (in widget coordinates)
+    double xClamped = x;
+    double period = parametricXMax - parametricXMin;
+    if (x < parametricXMin || x > parametricXMax) {
+        xClamped = std::fmod(x - parametricXMin, period) + parametricXMin;
+        if (xClamped < parametricXMin) {
+            xClamped += period;
         }
-    } else if (x1 >= xmaxCurveWidgetCoord) {
-        if ( (curveYRange.min <= kOfxFlagInfiniteMin) && (curveYRange.max >= kOfxFlagInfiniteMax) ) {
-            *x2 = _curveWidget->width() - 1;
-        } else {
-            ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
-            ///the min axis, the max axis or nothing.
-            if (keys.size() == 1) {
-                ///if only 1 keyframe, the curve is horizontal
-                *x2 = _curveWidget->width() - 1;
-            } else {
-                ///find out the equation of the straight line going from the last keyframe and intersecting
-                ///the min axis, so we can get the coordinates of the point intersecting the min axis.
-                KeyFrameSet::const_reverse_iterator lastKf = keys.rbegin();
+        assert(xClamped >= parametricXMin && xClamped <= parametricXMax);
+    }
+    {
 
-                if (lastKf->getRightDerivative() == 0) {
-                    *x2 = _curveWidget->width() - 1;
-                } else {
-                    double b = lastKf->getValue() - lastKf->getRightDerivative() * lastKf->getTime();
-                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.min - b) / lastKf->getRightDerivative(), 0 ).x();
-                    if ( (x1 >= *x2) || (*x2 < xmaxCurveWidgetCoord) ) {
-                        ///do the same wit hthe min axis
-                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.max - b) / lastKf->getRightDerivative(), 0 ).x();
-
-                        if ( (x1 >= *x2) || (*x2 < xmaxCurveWidgetCoord) ) {
-                            /// ok the curve doesn't intersect the min/max axis
-                            *x2 = _curveWidget->width() - 1;
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        //we're between 2 keyframes,get the upper and lower
-        assert( keys.size() == keysWidgetCoords.size() );
-        KeyFrameSet::const_iterator upper = keys.end();
         KeyFrameSet::const_iterator itKeys = keys.begin();
-        double upperWidgetCoord = x1;
-        std::list<double>::const_iterator it;
-        if ( *lastUpperItCoords != keysWidgetCoords.end() ) {
-            assert( *lastUpperIt != keys.end() );
+
+        if ( *lastUpperIt != keys.end() ) {
+            // If we already have called this function before, start from the previously
+            // computed iterator to avoid n square complexity
             itKeys = *lastUpperIt;
-            it = *lastUpperItCoords;
         } else {
+            // Otherwise start from the begining
             itKeys = keys.begin();
-            it = keysWidgetCoords.begin();
         }
-        for (; it != keysWidgetCoords.end(); ++it, ++itKeys) {
-            if (*it > x1) {
-                upperWidgetCoord = *it;
-                upper = itKeys;
-                *lastUpperItCoords = it;
-                *lastUpperIt = upper;
+
+        for (; itKeys != keys.end(); ++itKeys) {
+            if (itKeys->getTime() > xClamped) {
+                upperIt = itKeys;
+                *lastUpperIt = upperIt;
                 break;
             }
         }
-        assert( upper != keys.end() && upper != keys.begin() );
-        if ( ( upper == keys.end() ) || ( upper == keys.begin() ) ) {
-            *lastUpperItCoords = keysWidgetCoords.end();
-            *lastUpperIt = keys.end();
-            *isx1Key = false;
-
-            return;
-        }
-        KeyFrameSet::const_iterator lower = upper;
-        --lower;
-
-        double t = ( x1 - lower->getTime() ) / ( upper->getTime() - lower->getTime() );
-        double P3 = upper->getValue();
-        double P0 = lower->getValue();
-        // Hermite coefficients P0' and P3' are for t normalized in [0,1]
-        double P3pl = upper->getLeftDerivative() / ( upper->getTime() - lower->getTime() ); // normalize for t \in [0,1]
-        double P0pr = lower->getRightDerivative() / ( upper->getTime() - lower->getTime() ); // normalize for t \in [0,1]
-        double secondDer = 6. * (1. - t) * (P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
-                           6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
-        double secondDerWidgetCoord = std::abs( _curveWidget->toWidgetCoordinates(0, secondDer).y()
-                                                / ( upper->getTime() - lower->getTime() ) );
-        // compute delta_x so that the y difference between the derivative and the curve is at most
-        // 1 pixel (use the second order Taylor expansion of the function)
-        double delta_x = std::max(2. / std::max(std::sqrt(secondDerWidgetCoord), 0.1), 1.);
-
-        if (upperWidgetCoord < x1 + delta_x) {
-            *x2 = upperWidgetCoord;
-            *x1Key = *upper;
-            *isx1Key = true;
-
-            return;
-        } else {
-            *x2 = x1 + delta_x;
-        }
     }
-    *isx1Key = false;
+
+    double tprev, vprev, vprevDerivRight, tnext, vnext, vnextDerivLeft;
+    if (upperIt == keys.begin()) {
+        // We are in a periodic curve: we are in-between the parametric xMin and the first keyframe
+        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
+        // from the widget border to the first/last keyframe
+        assert(isPeriodic);
+        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
+        tprev = last->getTime() - period;
+        //xClamped -= period;
+        vprev = last->getValue();
+        vprevDerivRight = last->getRightDerivative();
+        tnext = upperIt->getTime();
+        vnext = upperIt->getValue();
+        vnextDerivLeft = upperIt->getLeftDerivative();
+
+    } else if (upperIt == keys.end()) {
+        // We are in a periodic curve: we are in-between the last keyframe and the parametric xMax
+        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
+        // from the widget border to the first/last keyframe
+        assert(isPeriodic);
+        KeyFrameSet::const_iterator start = keys.begin();
+        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
+        tprev = last->getTime();
+        vprev = last->getValue();
+        vprevDerivRight = last->getRightDerivative();
+        tnext = start->getTime() + period;
+        //xClamped += period;
+        vnext = start->getValue();
+        vnextDerivLeft = start->getLeftDerivative();
+
+    } else {
+        // in-between 2 keyframes
+        KeyFrameSet::const_iterator prev = upperIt;
+        --prev;
+        tprev = prev->getTime();
+        vprev = prev->getValue();
+        vprevDerivRight = prev->getRightDerivative();
+        tnext = upperIt->getTime();
+        vnext = upperIt->getValue();
+        vnextDerivLeft = upperIt->getLeftDerivative();
+    }
+    double normalizeTimeRange = tnext - tprev;
+    if (normalizeTimeRange == 0) {
+        // Only 1 keyframe, draw a horizontal line
+        *x2WidgetCoords = _curveWidget->width() - 1;
+        return;
+    }
+    assert(normalizeTimeRange > 0.);
+
+    double t = ( xClamped - tprev ) / normalizeTimeRange;
+    double P3 = vnext;
+    double P0 = vprev;
+    // Hermite coefficients P0' and P3' are for t normalized in [0,1]
+    double P3pl = vnextDerivLeft / normalizeTimeRange; // normalize for t \in [0,1]
+    double P0pr = vprevDerivRight / normalizeTimeRange; // normalize for t \in [0,1]
+    double secondDer = 6. * (1. - t) * (P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
+    6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
+
+    double secondDerWidgetCoord = _curveWidget->toWidgetCoordinates(0, secondDer).y();
+    double normalizedSecondDerWidgetCoord = std::abs(secondDerWidgetCoord / normalizeTimeRange);
+
+    // compute delta_x so that the y difference between the derivative and the curve is at most
+    // 1 pixel (use the second order Taylor expansion of the function)
+    double delta_x = std::max(2. / std::max(std::sqrt(normalizedSecondDerWidgetCoord), 0.1), 1.);
+
+    // The x widget coordinate of the next keyframe
+    double tNextWidgetCoords = _curveWidget->toWidgetCoordinates(tnext, 0).x();
+
+    // The widget coordinate of the x passed in parameter but clamped to the curve period
+    double xClampedWidgetCoords = _curveWidget->toWidgetCoordinates(xClamped, 0).x();
+
+    // The real x passed in parameter in widget coordinates
+    double xWidgetCoords = _curveWidget->toWidgetCoordinates(x, 0).x();
+
+    double x2ClampedWidgetCoords = xClampedWidgetCoords + delta_x;
+
+    double deltaXtoNext = (tNextWidgetCoords - xClampedWidgetCoords);
+    // If nearby next key, clamp to it
+    if (x2ClampedWidgetCoords > tNextWidgetCoords && deltaXtoNext > 1e-6) {
+        // x2 is the position of the next keyframe with the period removed
+        *x2WidgetCoords = xWidgetCoords + deltaXtoNext;
+        x1Key->setValue(vnext);
+        x1Key->setTime(x + (tnext - xClamped));
+        *isx1Key = true;
+    } else {
+        // just add the delta to the x widget coord
+        *x2WidgetCoords = xWidgetCoords + delta_x;
+    }
+
 } // nextPointForSegment
 
 Curve::YRange
@@ -300,6 +317,8 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
 
+    bool isPeriodic = false;
+    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
     if (isBezierGui) {
         std::set<double> keys;
         isBezierGui->getBezier()->getKeyframeTimes(&keys);
@@ -309,21 +328,13 @@ CurveGui::drawCurve(int curveIndex,
         }
     } else {
         keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+        isPeriodic = getInternalCurve()->isCurvePeriodic();
+        parametricRange = getInternalCurve()->getXRange();
     }
     if ( !keyframes.empty() ) {
         try {
-            double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.begin()->getTime(), 0).x();
-            double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.rbegin()->getTime(), 0).x();
-            std::list<double> keysWidgetCoords;
-            for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-                double widgetCoord = _curveWidget->toWidgetCoordinates(it->getTime(), 0).x();
-                keysWidgetCoords.push_back(widgetCoord);
-            }
-
-            Curve::YRange curveYRange = getCurveYRange();
             bool isX1AKey = false;
             KeyFrame x1Key;
-            std::list<double>::const_iterator lastUpperItCoords = keysWidgetCoords.end();
             KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
 
             while ( x1 < (widgetWidth - 1) ) {
@@ -335,9 +346,10 @@ CurveGui::drawCurve(int curveIndex,
                     x = x1Key.getTime();
                     y = x1Key.getValue();
                 }
+
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
-                nextPointForSegment(x1, keyframes, keysWidgetCoords, curveYRange, xminCurveWidgetCoord, xmaxCurveWidgetCoord, &lastUpperIt, &lastUpperItCoords, &x2, &x1Key, &isX1AKey);
+                nextPointForSegment(x, keyframes, isPeriodic, parametricRange.first, parametricRange.second,  &lastUpperIt, &x2, &x1Key, &isX1AKey);
                 x1 = x2;
             }
             //also add the last point
@@ -361,7 +373,10 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezierGui && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
-            if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
+            if (curveYRange.min != INT_MIN &&
+                curveYRange.min != -std::numeric_limits<double>::infinity() &&
+                curveYRange.max != INT_MAX &&
+                curveYRange.max != std::numeric_limits<double>::infinity() ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 GL_GPU::glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
@@ -648,7 +663,7 @@ KnobCurveGui::evaluate(bool useExpr,
     } else {
         KnobParametricPtr isParametric = toKnobParametric(knob);
         if (isParametric) {
-            return isParametric->getParametricCurve(_dimension)->getValueAt(x);
+            return isParametric->getParametricCurve(_dimension)->getValueAt(x, false);
         } else {
             assert(_internalCurve);
 
