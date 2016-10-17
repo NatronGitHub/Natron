@@ -4096,7 +4096,7 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
     setDisplayRange();
 
 
-    bool isPeriodic = (bool)properties.getIntProperty(kOfxParamPropParametricIsPeriodic);
+    bool isPeriodic = (bool)properties.getIntProperty(kNatronOfxParamPropParametricIsPeriodic);
     knob->setPeriodic(isPeriodic);
 
     setLabel(); //set label on all curves
