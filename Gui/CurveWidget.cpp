@@ -188,15 +188,71 @@ CurveWidget::removeCurve(CurveGui *curve)
 }
 
 void
-CurveWidget::centerOn(const std::vector<CurveGuiPtr > & curves)
+CurveWidget::centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayRange)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if ( curves.empty() ) {
+    // First try to center curves given their display range
+    Curve::YRange displayRange(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double, double> xRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    bool rangeSet = false;
+
+    std::vector<boost::shared_ptr<CurveGui> > curvesToFrame;
+    if (curves.empty()) {
+        curvesToFrame.insert(curvesToFrame.end(), _imp->_curves.begin(), _imp->_curves.end());
+    } else {
+        curvesToFrame = curves;
+    }
+
+    if (curvesToFrame.empty()) {
         return;
     }
 
+    if (useDisplayRange) {
+        for (std::vector<boost::shared_ptr<CurveGui> > ::const_iterator it = curvesToFrame.begin(); it != curvesToFrame.end(); ++it) {
+            boost::shared_ptr<Curve> curve = (*it)->getInternalCurve();
+            if (!curve) {
+                continue;
+            }
+            Curve::YRange thisCurveRange = curve->getCurveDisplayYRange();
+            std::pair<double, double> thisXRange = curve->getXRange();
+
+
+            if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
+                thisCurveRange.min == INT_MIN ||
+                thisCurveRange.max == std::numeric_limits<double>::infinity() ||
+                thisCurveRange.max == INT_MAX ||
+                thisXRange.first == -std::numeric_limits<double>::infinity() ||
+                thisXRange.first == INT_MIN ||
+                thisXRange.second == std::numeric_limits<double>::infinity() ||
+                thisXRange.second == INT_MAX) {
+                continue;
+            }
+
+
+            if (!rangeSet) {
+                displayRange = thisCurveRange;
+                xRange = thisXRange;
+                rangeSet = true;
+            } else {
+                displayRange.min = std::min(displayRange.min, thisCurveRange.min);
+                displayRange.max = std::min(displayRange.max, thisCurveRange.max);
+                xRange.first = std::min(xRange.first, thisXRange.first);
+                xRange.second = std::min(xRange.second, thisXRange.second);
+            }
+        } // for all curves
+
+        if (rangeSet) {
+            double paddingX = (xRange.second - xRange.first) / 20.;
+            double paddingY = (displayRange.max - displayRange.min) / 20.;
+            centerOn(xRange.first - paddingX, xRange.second + paddingX, displayRange.min - paddingY, displayRange.max + paddingY);
+            return;
+        }
+    } // useDisplayRange
+    
+    // If no range, center them using the bounding box of keyframes
+    
     bool doCenter = false;
     RectD ret;
     for (U32 i = 0; i < curves.size(); ++i) {
@@ -270,6 +326,16 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
     if ( foundCurve == _imp->_selectedKeyFrames.end() ) {
         return;
     }
+
+    boost::shared_ptr<Curve> internalCurve = foundCurve->first->getInternalCurve();
+    bool isPeriodic = false;
+    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    if (internalCurve) {
+        isPeriodic = internalCurve->isCurvePeriodic();
+        parametricRange = internalCurve->getXRange();
+    }
+
+
     KeyFrameSet set = foundCurve->first->getKeyFrames();
     std::list<KeyPtr> newSelection;
     for (std::list<KeyPtr>::iterator it2 = foundCurve->second.begin(); it2 != foundCurve->second.end(); ++it2) {
@@ -278,15 +344,25 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
             (*it2)->key = *found;
             KeyFrameSet::const_iterator next = found;
             ++next;
-            (*it2)->hasNext = next != set.end();
-            if ( (*it2)->hasNext ) {
+            if ( next != set.end() ) {
                 (*it2)->nextKey = *next;
+                (*it2)->hasNext = true;
+            } else if (isPeriodic) {
+                KeyFrameSet::const_iterator start = set.begin();
+                (*it2)->nextKey = *start;
+                (*it2)->nextKey.setTime((*it2)->nextKey.getTime() + (parametricRange.second - parametricRange.first));
+                (*it2)->hasNext = true;
             }
-            (*it2)->hasPrevious = found != set.begin();
-            if ( (*it2)->hasPrevious ) {
+            if ( found != set.begin()) {
                 KeyFrameSet::const_iterator prev = found;
                 --prev;
                 (*it2)->prevKey = *prev;
+                (*it2)->hasPrevious = true;
+            } else if (isPeriodic) {
+                KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                (*it2)->prevKey = *last;
+                (*it2)->prevKey.setTime((*it2)->prevKey.getTime() - (parametricRange.second - parametricRange.first));
+                (*it2)->hasPrevious = true;
             }
 
             newSelection.push_back(*it2);
@@ -324,7 +400,7 @@ CurveWidget::centerOn(double xmin,
 
     if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
         QMutexLocker k(&_imp->zoomCtxMutex);
-        _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
+        _imp->zoomCtx.fill(xmin, xmax, ymin, ymax);
     }
     _imp->zoomOrPannedSinceLastFit = false;
 
@@ -517,14 +593,7 @@ CurveWidget::resizeGL(int width,
     }
 
     if (!_imp->zoomOrPannedSinceLastFit) {
-        ///find out what are the selected curves and center on them
-        std::vector<CurveGuiPtr > curves;
-        getVisibleCurves(&curves);
-        if ( curves.empty() ) {
-            centerOn(-10, 500, -10, 10);
-        } else {
-            centerOn(curves);
-        }
+        centerOn(std::vector<CurveGuiPtr>(), true);
     }
 }
 
@@ -571,11 +640,13 @@ CurveWidget::paintGL()
     }
 
     {
-        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        //GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        //GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         GL_GPU::glLoadIdentity();
         GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
-        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        //GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
+        GL_GPU::glMatrixMode(GL_MODELVIEW);
         GL_GPU::glLoadIdentity();
         glCheckError(GL_GPU);
 
@@ -585,11 +656,16 @@ CurveWidget::paintGL()
 
         OfxParamOverlayInteractPtr customInteract = getCustomInteract();
         if (customInteract) {
-            GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-            
+            // Don't protect GL_COLOR_BUFFER_BIT, because it seems to hit an OpenGL bug on
+            // some macOS configurations (10.10-10.12), where garbage is displayed in the viewport.
+            // see https://github.com/MrKepzie/Natron/issues/1460
+            //GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+            GLProtectAttrib<GL_GPU> a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
+            glCheckErrorIgnoreOSXBug();
         }
 
         _imp->drawScale();
@@ -1552,6 +1628,8 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         horizontalInterpForSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak, modifiers, key) ) {
         breakDerivativesForSelectedKeyFrames();
+    } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenterAll, modifiers, key) ) {
+        frameAll();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter, modifiers, key) ) {
         frameSelectedCurve();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, modifiers, key) ) {
@@ -1805,6 +1883,14 @@ CurveWidget::selectAllKeyFrames()
     _imp->_selectedKeyFrames.clear();
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
+
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            bool isPeriodic = false;
+            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            if (internalCurve) {
+                isPeriodic = internalCurve->isCurvePeriodic();
+                parametricRange = internalCurve->getXRange();
+            }
             KeyFrameSet set = (*it)->getKeyFrames();
             std::list<KeyPtr>& selectedKeysForcurve = _imp->_selectedKeyFrames[*it];
             KeyFrameSet::const_iterator it2 = set.begin();
@@ -1817,11 +1903,21 @@ CurveWidget::selectAllKeyFrames()
                 if ( prev != set.end() ) {
                     prevKey = *prev;
                     hasPrev = true;
+                } else if (isPeriodic) {
+                    KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                    prevKey = *last;
+                    prevKey.setTime(prevKey.getTime() - (parametricRange.second - parametricRange.first));
+                    hasPrev = true;
                 }
                 KeyFrame nextKey;
                 bool hasNext = false;
                 if ( next != set.end() ) {
                     nextKey = *next;
+                    hasNext = true;
+                } else if (isPeriodic) {
+                    KeyFrameSet::const_iterator start = set.begin();
+                    nextKey = *start;
+                    nextKey.setTime(nextKey.getTime() + (parametricRange.second - parametricRange.first));
                     hasNext = true;
                 }
                 KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
@@ -1953,6 +2049,12 @@ CurveWidget::reverseSelectedCurve()
 }
 
 void
+CurveWidget::frameAll()
+{
+    centerOn(std::vector<boost::shared_ptr<CurveGui> >(), false);
+}
+
+void
 CurveWidget::frameSelectedCurve()
 {
     // always running in the main thread
@@ -1960,9 +2062,11 @@ CurveWidget::frameSelectedCurve()
 
     std::vector<CurveGuiPtr > selection;
     _imp->_selectionModel->getSelectedCurves(&selection);
-    centerOn(selection);
     if ( selection.empty() ) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
+        frameAll();
+        //Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
+    } else {
+        centerOn(selection, false);
     }
 }
 
@@ -2344,18 +2448,36 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
     KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, keySet.end(), xCurve);
     assert( foundKey != keySet.end() );
 
+    boost::shared_ptr<Curve> internalCurve = curve->getInternalCurve();
+    bool isPeriodic = false;
+    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    if (internalCurve) {
+        isPeriodic = internalCurve->isCurvePeriodic();
+        parametricRange = internalCurve->getXRange();
+    }
+
+
     KeyFrame prevKey, nextKey;
     bool hasPrev = foundKey != keySet.begin();
     if (hasPrev) {
         KeyFrameSet::const_iterator prevIt = foundKey;
         --prevIt;
         prevKey = *prevIt;
+    } else if (isPeriodic) {
+        KeyFrameSet::const_reverse_iterator last = keySet.rbegin();
+        prevKey = *last;
+        prevKey.setTime(prevKey.getTime() - (parametricRange.second - parametricRange.first));
+        hasPrev = true;
     }
     KeyFrameSet::const_iterator next = foundKey;
     ++next;
     bool hasNext = next != keySet.end();
     if (hasNext) {
         nextKey = *next;
+    } else if (isPeriodic) {
+        KeyFrameSet::const_iterator start = keySet.begin();
+        nextKey = *start;
+        nextKey.setTime(nextKey.getTime() + (parametricRange.second - parametricRange.first));
     }
 
     KeyPtr selected( new SelectedKey(curve, *foundKey, hasPrev, prevKey, hasNext, nextKey) );

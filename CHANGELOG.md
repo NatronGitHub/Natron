@@ -4,6 +4,17 @@
 
 # History
 
+## Version 2.1.6
+
+- Fix a bug where Natron would freeze or be extremely slow when using big node graphs
+
+### Plugins
+
+- DenoiseSharpen: Use a more intuitive "Sharpen Size" parameter instead of "Sharpen Radius", and do not sharpen the noise. Add "Denoise Amount" parameter, which can be set to 0 to sharpen only.
+- ErodeBlur: fix the "Crop To Format" parameter (which did not work)
+- (beta feature) HueCorrect: Apply hue-dependent color adjustments using lookup curves.
+- (beta feature) HueKeyer: Compute a key depending on hue value.
+
 ## Version 2.1.5
 
 - Introduce the notion of "Format", which is basically the area of the image to be displayed (similar to the display window in OpenEXR). Each clip has a format attached, so a project can contain images of different sizes.
@@ -30,7 +41,7 @@
 - (beta feature) PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
 - (beta feature) PIKColor: Generate a clean plate from each frame for keying with PIK.
 - (beta feature) Sharpen & Soften: new plugins.
-- (beta featur) EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
+- (beta feature) EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
 
 ## Version 2.1.4
 

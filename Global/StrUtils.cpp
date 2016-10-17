@@ -115,23 +115,23 @@ namespace StrUtils {
     
     /*Converts a std::string to wide string*/
     std::wstring
-            utf8_to_utf16(const std::string & s)
+            utf8_to_utf16(const std::string & str)
     {
 #ifdef __NATRON_WIN32__
         std::wstring native;
 
 
-        native.resize(MultiByteToWideChar (CP_UTF8, 0, s.c_str(), -1, NULL, 0) - 1);
-        MultiByteToWideChar ( CP_UTF8, 0, s.c_str(), s.size(), &native[0], (int)native.size() );
+        native.resize(MultiByteToWideChar (CP_UTF8, 0, str.data(), str.length(), NULL, 0) - 1);
+        MultiByteToWideChar ( CP_UTF8, 0, str.data(), str.length(), &native[0], (int)native.size() );
 
         return native;
 
 #else
         std::wstring dest;
-        size_t max = s.size() * 4;
+        size_t max = str.size() * 4;
         mbtowc (NULL, NULL, max);  /* reset mbtowc */
 
-        const char* cstr = s.c_str();
+        const char* cstr = str.c_str();
 
         while (max > 0) {
             wchar_t w;

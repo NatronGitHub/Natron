@@ -87,7 +87,7 @@ public:
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<CurveGuiPtr > & curves);
+    void centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayRange);
 
     void showCurvesAndHideOthers(const std::vector<CurveGuiPtr > & curves);
 
@@ -201,6 +201,8 @@ public Q_SLOTS:
     void horizontalInterpForSelectedKeyFrames();
 
     void breakDerivativesForSelectedKeyFrames();
+
+    void frameAll();
 
     void frameSelectedCurve();
 

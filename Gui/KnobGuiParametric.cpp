@@ -173,7 +173,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
         }
     }
 
-    _curveWidget->centerOn(visibleCurves);
+    _curveWidget->centerOn(visibleCurves, true);
     QObject::connect( _tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
@@ -262,7 +262,7 @@ KnobGuiParametric::onItemsSelectionChanged()
     ///find in the _curves map if an item's map the current
 
     _curveWidget->showCurvesAndHideOthers(curves);
-    _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+    _curveWidget->centerOn(curves, true); //remove this if you don't want the editor to switch to a curve on a selection change
 }
 
 void

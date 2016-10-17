@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153625 2016-10-06 11:21:31Z ryandesign@macports.org $
+# $Id: Portfile 153884 2016-10-14 21:43:14Z ryandesign@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
@@ -10,6 +10,9 @@ subport             libgcc {}
 
 epoch               2
 version             6.2.0
+if {${name} eq ${subport}} {
+    revision        1
+}
 platforms           darwin
 categories          lang
 maintainers         mww openmaintainer
@@ -17,7 +20,7 @@ maintainers         mww openmaintainer
 license             {GPL-3+ Permissive}
 description         The GNU compiler collection
 long_description    The GNU compiler collection, including front ends for \
-                    C, C++, Objective-C, Objective-C++, Fortran and Java.
+                    C, C++, Objective-C, Objective-C++, and Fortran.
 
 homepage            http://gcc.gnu.org/
 master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/ \
@@ -52,7 +55,7 @@ platform darwin {
 
 configure.dir       ${workpath}/build
 configure.cmd       ${worksrcpath}/configure
-configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
+configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran \
                     --libdir=${prefix}/lib/${name} \
                     --includedir=${prefix}/include/${name} \
                     --infodir=${prefix}/share/info \
@@ -132,9 +135,6 @@ if {${subport} eq "libgcc"} {
 
     configure.args-delete --libdir=${prefix}/lib/${name}
     configure.args-append --libdir=${prefix}/lib/libgcc
-
-    configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran,java
-    configure.args-append --enable-languages=c,c++,objc,obj-c++,lto,fortran
 
     # TODO: Possibly disable bootstrap with appropriate configure flags.
     #       the problem is that libstdc++'s configure script tests for tls support
@@ -224,7 +224,6 @@ post-destroot {
             }
         }
     }
-    move ${destroot}${prefix}/lib/${name}/pkgconfig/libgcj-${major}.pc ${destroot}${prefix}/lib/pkgconfig/
 }
 
 select.group        gcc

@@ -1943,6 +1943,17 @@ KnobParametric::populate()
 }
 
 const std::string KnobParametric::_typeNameStr(kKnobParametricTypeName);
+
+void
+KnobParametric::setPeriodic(bool periodic)
+{
+    for (std::size_t i = 0; i < _curves.size(); ++i) {
+        _curves[i]->setPeriodic(periodic);
+        _defaultCurves[i]->setPeriodic(periodic);
+    }
+}
+
+
 const std::string &
 KnobParametric::typeNameStatic()
 {
@@ -2284,8 +2295,11 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
     if ( dimension >= (int)_curves.size() ) {
         return eStatusFailed;
     }
-
-    _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
+    try {
+        _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
+    } catch (...) {
+        return eStatusFailed;
+    }
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
 

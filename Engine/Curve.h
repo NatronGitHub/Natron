@@ -168,6 +168,14 @@ public:
 
     Curve(const Curve & other);
 
+    /**
+     * @brief Set the curve to be periodic, i.e: the first keyframe is considered to be equal to the last keyframe.
+     * Note that this will clear all existing keyframes when called.
+     **/
+    void setPeriodic(bool periodic);
+
+    bool isCurvePeriodic() const;
+
     ~Curve();
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serialization) OVERRIDE FINAL;
@@ -272,7 +280,6 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameValueAndTime(double time, double value, int index, int* newIndex = NULL);
-
 
     class KeyFrameWarp
     {
@@ -437,6 +444,7 @@ public:
 
     };
 
+
     /**
      * @brief Moves multiple keyframes in the set. 
      * @param times The keyframes time to move. It is expected that the times are sorted by increasing order otherwise this function will fail.
@@ -454,11 +462,23 @@ public:
                                         std::list<double>* keysAdded = 0,
                                         std::list<double>* keysRemoved = 0);
 
+private:
+
+    KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex);
+
+public:
+
     /**
      * @brief Set the left derivative  of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameLeftDerivative(double value, int index, int* newIndex = NULL);
+
+private:
+
+    KeyFrame setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex);
+
+public:
 
     /**
      * @brief Set the right derivative  of the keyframe positioned at index index and returns the new keyframe.
@@ -466,11 +486,24 @@ public:
      **/
     KeyFrame setKeyFrameRightDerivative(double value, int index, int* newIndex = NULL);
 
+private:
+
+    KeyFrame setKeyFrameRightDerivativeInternal(double value, int index, int* nextIndex);
+
+public:
+
+
     /**
      * @brief Set the right and left derivatives  of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameDerivatives(double left, double right, int index, int* newIndex = NULL);
+
+private:
+
+    KeyFrame setKeyFrameDerivativesInternal(double left, double right, int index, int* newIndex);
+
+public:
 
     /**
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
@@ -479,9 +512,17 @@ public:
     KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index, int* newIndex = NULL);
     bool setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret = 0);
 
+private:
+
+    KeyFrame setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int* newIndex);
+
+public:
+
     void setCurveInterpolation(KeyframeTypeEnum interp);
 
     YRange getCurveYRange() const WARN_UNUSED_RETURN;
+
+    YRange getCurveDisplayYRange() const WARN_UNUSED_RETURN;
 
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
 
@@ -536,8 +577,6 @@ private:
     KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReasonEnum reason, KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReasonEnum reason, KeyFrameSet::iterator key);
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
-
-    bool hasYRange() const;
 
     bool mustClamp() const;
 

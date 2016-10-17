@@ -230,6 +230,7 @@ SetKeysCommand::redo()
                 }
                 obj->setMultipleIntValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
 
+
             }   break;
         } // end switch
 
@@ -410,7 +411,7 @@ MoveTangentCommand::MoveTangentCommand(SelectedTangentEnum deriv,
     bool interpIsCatmullRomOrCubicOrFree = (interp == eKeyframeTypeCatmullRom ||
                                             interp == eKeyframeTypeCubic ||
                                             interp == eKeyframeTypeFree);
-    _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
+    _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree  || internalCurve->isCurvePeriodic() : interpIsNotBroken;
 
     bool isLeft;
     if (deriv == eSelectedTangentLeft) {

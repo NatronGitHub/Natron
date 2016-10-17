@@ -1384,6 +1384,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from KnobI
 
+
     KnobParametric(const KnobHolderPtr& holder,
                    const std::string &label,
                    int dimension,
@@ -1415,6 +1416,8 @@ public:
     }
 
     void setCurveColor(DimIdx dimension, double r, double g, double b);
+
+    void setPeriodic(bool periodic);
 
     void getCurveColor(DimIdx dimension, double* r, double* g, double* b);
 

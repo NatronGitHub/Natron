@@ -1362,6 +1362,8 @@ public:
 
     void refreshLayersSelectorsVisibility();
 
+    bool isPluginUsingHostChannelSelectors() const;
+
     bool getProcessChannel(int channelIndex) const;
 
     KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
@@ -1454,7 +1456,7 @@ private:
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::list<NodePtr>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::set<NodePtr>& markedNodes);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1468,7 +1470,7 @@ private:
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
 
-    bool refreshInputRelatedDataInternal(std::list<NodePtr>& markedNodes);
+    bool refreshInputRelatedDataInternal(bool domarking, std::set<NodePtr>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 

@@ -164,6 +164,10 @@ CurveWidgetPrivate::createMenu()
         _rightClickMenu->addAction( predefMenu->menuAction() );
     }
 
+    Menu* optionsMenu = new Menu(_rightClickMenu);
+    optionsMenu->setTitle( tr("Options") );
+    _rightClickMenu->addAction( optionsMenu->menuAction() );
+
 
     QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to ASCII file"), fileMenu);
     QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _widget, SLOT(exportCurveToAscii()) );
@@ -245,6 +249,12 @@ CurveWidgetPrivate::createMenu()
     QObject::connect( breakDerivatives, SIGNAL(triggered()), _widget, SLOT(breakDerivativesForSelectedKeyFrames()) );
     interpMenu->addAction(breakDerivatives);
 
+    QAction* frameAll = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenterAll,
+                                               kShortcutDescActionCurveEditorCenterAll, interpMenu);
+    frameAll->setShortcut( QKeySequence(Qt::Key_A) );
+    QObject::connect( frameAll, SIGNAL(triggered()), _widget, SLOT(frameAll()) );
+    viewMenu->addAction(frameAll);
+
     QAction* frameCurve = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter,
                                                  kShortcutDescActionCurveEditorCenter, interpMenu);
     frameCurve->setShortcut( QKeySequence(Qt::Key_F) );
@@ -269,7 +279,7 @@ CurveWidgetPrivate::createMenu()
     QAction* updateOnPenUp = new QAction(tr("Update on mouse release only"), _rightClickMenu);
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked( appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly() );
-    _rightClickMenu->addAction(updateOnPenUp);
+    optionsMenu->addAction(updateOnPenUp);
     QObject::connect( updateOnPenUp, SIGNAL(triggered()), _widget, SLOT(onUpdateOnPenUpActionTriggered()) );
 } // createMenu
 
@@ -683,6 +693,13 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
             if ( !set.empty() ) {
                 ++next;
             }
+            bool isPeriodic = false;
+            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            if (internalCurve) {
+                isPeriodic = internalCurve->isCurvePeriodic();
+                parametricRange = internalCurve->getXRange();
+            }
             for (; it2 != set.end(); ++it2) {
                 QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
                 if ( (std::abs( pt.y() - keyFramewidgetPos.y() ) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
@@ -692,11 +709,21 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
                     if ( prev != set.end() ) {
                         prevK = *prev;
                         hasPrev = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                        prevK = *last;
+                        prevK.setTime(prevK.getTime() - (parametricRange.second - parametricRange.first));
+                        hasPrev = true;
                     }
                     KeyFrame nextK;
                     bool hasNext = false;
                     if ( next != set.end() ) {
                         nextK = *next;
+                        hasNext = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_iterator start = set.begin();
+                        nextK = *start;
+                        nextK.setTime(nextK.getTime() + (parametricRange.second - parametricRange.first));
                         hasNext = true;
                     }
                     *hasPrevKey = hasPrev;
@@ -1046,6 +1073,14 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             if ( set.empty() ) {
                 continue;
             }
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            bool isPeriodic = false;
+            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            if (internalCurve) {
+                isPeriodic = internalCurve->isCurvePeriodic();
+                parametricRange = internalCurve->getXRange();
+            }
+
             KeyFrameSet::const_iterator it2 = set.begin();
             KeyFrameSet::const_iterator prev = set.end();
             KeyFrameSet::const_iterator next = it2;
@@ -1059,11 +1094,21 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
                     if ( prev != set.end() ) {
                         prevKey = *prev;
                         hasPrev = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                        prevKey = *last;
+                        prevKey.setTime(prevKey.getTime() - (parametricRange.second - parametricRange.first));
+                        hasPrev = true;
                     }
                     KeyFrame nextKey;
                     bool hasNext = false;
                     if ( next != set.end() ) {
                         nextKey = *next;
+                        hasNext = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_iterator start = set.begin();
+                        nextKey = *start;
+                        nextKey.setTime(nextKey.getTime() + (parametricRange.second - parametricRange.first));
                         hasNext = true;
                     }
                     KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );

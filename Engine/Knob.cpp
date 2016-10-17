@@ -1563,6 +1563,7 @@ KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, Di
 
     // Disable the slaved knob to the user
     // Do not disable buttons when they are slaved
+
     KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
     if (!isBtn) {
         setEnabled(false, thisDimension);
@@ -1994,6 +1995,7 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
             ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
             slaveKnob->clone(shared_from_this(), dimChanged);
         }*/
+
 
 
         // Call recursively
@@ -2441,6 +2443,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     } else if (isParametric) {
         KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), isUserKnob);
         output = newKnob;
+        newKnob->setMinimumsAndMaximums( isParametric->getMinimums(), isParametric->getMaximums() );
+        newKnob->setDisplayMinimumsAndMaximums( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
     }
     if (!output) {
         return KnobIPtr();

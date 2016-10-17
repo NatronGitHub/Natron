@@ -107,11 +107,20 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install --build-from-source qt --with-mysql
     brew install expat cairo
+    brew install --build-from-source qt --with-mysql
+
+Qt will not build on macOS Sierra, and the last command fails, but a sierra-compatible brew is available (to be used only in Sierra, since this builds Qt from sources and takes a while)
+
+    brew tap cartr/qt4
+    brew install --build-from-source cartr/qt4/qt --with-mysql
+
+Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
+
+    brew tap homebrew/boneyard
     brew install pyside sphinx-doc
 
-The last command above should tell you do do that if the `homebrew.pth` file does not exist:
+The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
     mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages
     echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth

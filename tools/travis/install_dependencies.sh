@@ -62,7 +62,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6
+    if [ `lsb_release -cs` = "trusty" ]; then
+	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.1.4
+    else
+	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
+    fi
 
     # Note: Python 3 packages are python3-dev and python3-pyside
     PKGS="$PKGS libqt4-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
@@ -95,7 +99,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo "*** apt-get install $PKGS"
 
     sudo apt-get update -qq
-    sudo apt-get install $PKGS
+    # -f, --fix-broken
+    # -m, --ignore-missing, --fix-missing
+    sudo apt-get install -fm $PKGS
 
 
     
@@ -118,7 +124,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && make install; cd ../..; OCIO_HOME=$HOME/ocio; fi
     fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.6.13.tar.gz -O /tmp/OpenImageIO-1.6.13.tar.gz; tar zxf /tmp/OpenImageIO-1.6.13.tar.gz; cd oiio-Release-1.6.13; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=1 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
+    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.6.17.tar.gz -O /tmp/OpenImageIO-1.6.17.tar.gz; tar zxf /tmp/OpenImageIO-1.6.17.tar.gz; cd oiio-Release-1.6.17; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=1 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
     # - SeExpr
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
     # config.pri
@@ -174,11 +180,13 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # XQ_INSTALL_PID=$!
 
     echo "* Brew update"
-    brew update
+    #brew update
     brew upgrade xctool || true
     echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
+    #brew tap homebrew/boneyard # pyside was moved to boneyard
+    #brew tap FreeCAD/freecad  # FreeCAD has a bottled pyside, see https://github.com/FreeCAD/homebrew-freecad
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
     # brew upgrade --cleanup
     echo "* Brew doctor"

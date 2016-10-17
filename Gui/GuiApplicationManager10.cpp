@@ -176,7 +176,7 @@ dockClickHandler(id self,SEL _cmd,...)
 void
 GuiApplicationManager::onClickOnDock()
 {
-    qDebug() << "Dock icon clicked!";
+    //qDebug() << "Dock icon clicked!";
     // do something...
     Q_EMIT dockClicked();
 }
@@ -867,6 +867,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorHorizontal, kShortcutDescActionCurveEditorHorizontal, Qt::NoModifier, Qt::Key_H);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak, kShortcutDescActionCurveEditorBreak, Qt::NoModifier, Qt::Key_X);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, kShortcutDescActionCurveEditorSelectAll, Qt::ControlModifier, Qt::Key_A);
+    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenterAll, kShortcutDescActionCurveEditorCenterAll
+                    , Qt::NoModifier, Qt::Key_A);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter, kShortcutDescActionCurveEditorCenter
                     , Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, kShortcutDescActionCurveEditorCopy, Qt::ControlModifier, Qt::Key_C);

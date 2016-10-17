@@ -457,11 +457,23 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
     assert(fvRequest);
 
+
+    bool finalRoIEmpty = fvRequest->finalData.finalRoi.isNull();
+    if (!finalRoIEmpty && fvRequest->finalData.finalRoi.contains(canonicalRenderWindow)) {
+        // Do not recurse if the roi did not add anything new to render
+        return eStatusOK;
+    }
+    if (finalRoIEmpty) {
+        fvRequest->finalData.finalRoi = canonicalRenderWindow;
+    } else {
+        fvRequest->finalData.finalRoi.merge(canonicalRenderWindow);
+    }
+
     if (fvRequest->globalData.identityInputNb == -2) {
         assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
         // be safe in release mode otherwise we hit an infinite recursion
         if ( (fvRequest->globalData.inputIdentityTime != time) || (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
-            fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
+            //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             ViewIdx inputView = (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
@@ -482,7 +494,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     } else if (fvRequest->globalData.identityInputNb != -1) {
         EffectInstancePtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
-            fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
+            //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             NodePtr inputIdentityNode = inputEffectIdentity->getNode();
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
@@ -533,8 +545,11 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
        for (RoIMap::iterator it = fvPerRequestData.inputsRoi.begin(); it!=fvPerRequestData.inputsRoi.end(); ++it) {
         qDebug() << it->first->getNode()->getFullyQualifiedName().c_str()<<"x1="<<it->second.x1<<"y1="<<it->second.y1<<"x2="<<it->second.x2<<"y2"<<it->second.y2;
        }*/
-    ///Append the request
-    fvRequest->requests.push_back( std::make_pair(canonicalRenderWindow, fvPerRequestData) );
+
+
+
+    // Append the request
+    //fvRequest->requests.push_back( std::make_pair(canonicalRenderWindow, fvPerRequestData) );
 
 
 
@@ -587,7 +602,7 @@ EffectInstance::computeRequestPass(double time,
     }
 
     //For all frame/view pair and for each node, compute the final roi as being the bounding box of all successive requests
-    for (FrameRequestMap::iterator it = request.begin(); it != request.end(); ++it) {
+    /*for (FrameRequestMap::iterator it = request.begin(); it != request.end(); ++it) {
         for (NodeFrameViewRequestData::iterator it2 = it->second->frames.begin(); it2 != it->second->frames.end(); ++it2) {
             const std::list<std::pair<RectD, FrameViewPerRequestData> >& rois = it2->second.requests;
             bool finalRoISet = false;
@@ -604,7 +619,7 @@ EffectInstance::computeRequestPass(double time,
                 }
             }
         }
-    }
+    }*/
 
     return eStatusOK;
 }

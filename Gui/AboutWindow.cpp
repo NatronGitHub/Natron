@@ -313,8 +313,10 @@ AboutWindow::AboutWindow(QWidget* parent)
         const unsigned major = BOOST_OS/10000000;
         const unsigned minor = (BOOST_OS-10000000*major)/100000;
         const unsigned patch = BOOST_OS % 100000;
+        // coverity[unsigned_compare]
         if (BOOST_OS != BOOST_VERSION_NUMBER_NOT_AVAILABLE && major > 0) {
             osVer += QString::fromUtf8(" %1").arg(major);
+            // coverity[unsigned_compare]
             if (minor > 0 || patch > 0) {
                 osVer += QString::fromUtf8(".%1").arg(minor);
                 if (patch > 0) {

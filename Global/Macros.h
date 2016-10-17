@@ -124,7 +124,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION 0
 
 
-
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
