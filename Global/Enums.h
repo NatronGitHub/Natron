@@ -556,6 +556,7 @@ enum RotoStrokeType
     eRotoStrokeTypeSmear,
     eRotoStrokeTypeDodge,
     eRotoStrokeTypeBurn,
+    eRotoStrokeTypeComp
 };
 
 enum RenderSafetyEnum

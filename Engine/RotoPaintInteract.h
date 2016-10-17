@@ -436,6 +436,8 @@ struct RotoPaintPrivate
     NodeWPtr premultNode;
     NodeWPtr premultFixerNode;
 
+    boost::shared_ptr<RotoPaintKnobItemsTable> knobsTable;
+
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);
 };

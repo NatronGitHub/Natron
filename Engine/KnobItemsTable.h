@@ -170,7 +170,22 @@ public:
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
 
+protected:
+
+    /**
+     * @brief Utility function to create a duplicate of a knob that was first registered on the KnobItemsTable
+     * with addPerItemKnobMaster.
+     **/
+    template <typename KNOB_TYPE>
+    boost::shared_ptr<KNOB_TYPE> createDuplicateOfTableKnob(const std::string& scriptName)
+    {
+        return boost::dynamic_pointer_cast<KNOB_TYPE>(createDuplicateOfTableKnobInternal(scriptName));
+    }
+
 private:
+
+    KnobIPtr createDuplicateOfTableKnobInternal(const std::string& scriptName);
+
 
     template <typename T>
     void convertTimeValuePairListToTimeList(const std::list<TimeValuePair<T> >& inList,
@@ -428,6 +443,8 @@ Q_SIGNALS:
 
 
 private:
+
+    KnobIPtr createMasterKnobDuplicateOnItem(const KnobTableItemPtr& item, const std::string& paramName);
 
     void endSelection(TableChangeReasonEnum reason);
 

@@ -297,9 +297,7 @@ public:
     KnobChoiceWPtr lifeTime;
     KnobBoolWPtr activated; //< should the curve be visible/rendered ? (animable)
     KnobIntWPtr lifeTimeFrame;
-#ifdef NATRON_ROTO_INVERTIBLE
     KnobBoolWPtr inverted; //< invert the rendering
-#endif
     KnobColorWPtr color;
     KnobChoiceWPtr compOperator;
     KnobDoubleWPtr translate;
@@ -331,12 +329,11 @@ public:
     KnobIntWPtr timeOffset;
     KnobChoiceWPtr timeOffsetMode;
 
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     KnobDoublePtr motionBlur;
     KnobDoublePtr shutter;
     KnobChoicePtr shutterType;
     KnobDoublePtr customOffset;
-#endif
+
 
     RotoDrawableItemPrivate()
     : effectNode()

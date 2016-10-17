@@ -574,6 +574,23 @@ KnobHelper::isListenersNotificationBlocked() const
     return _imp->listenersNotificationBlocked > 0;
 }
 
+void
+KnobHelper::blockGuiRefreshing()
+{
+
+}
+
+void
+KnobHelper::unblockGuiRefreshing()
+{
+
+}
+
+bool
+KnobHelper::isGuiRefreshingBlocked() const
+{
+
+}
 
 void
 KnobHelper::setAutoKeyingEnabled(bool enabled)
@@ -700,7 +717,9 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     // If the knob has no holder, still refresh its state
     if (!holder) {
         computeHasModifications();
-        _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        if (!isGuiRefreshingBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        }
         if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(view, originalReason, dimension);
         }
@@ -1916,7 +1935,6 @@ KnobHelper::getKeyFrameIndex(ViewGetSpec view,
     return curve->keyFrameIndex(time);
 }
 
-
 void
 KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
                                              ValueChangedReasonEnum reason,
@@ -1941,35 +1959,35 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
             continue;
         }
 
-        std::set<DimIdx> dimensionsToEvaluate;
-        std::set<ViewIdx> viewsToEvaluate;
+        // List of dimension and views listening to the given view/dimension in argument
+        DimensionViewPairSet dimViewPairToEvaluate;
         for (ListenerLinkList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((dimension.isAll() || it2->targetDim == dimension) && (view.isAll() || (view.isViewIdx() && it2->targetView == view) || (view.isCurrent() && it2->targetView == getCurrentView()))) {
-                dimensionsToEvaluate.insert(it2->targetDim);
-                viewsToEvaluate.insert(it2->targetView);
+                DimensionViewPair p;
+                p.view = it2->targetView;
+                p.dimension = it2->targetDim;
+                dimViewPairToEvaluate.insert(p);
             }
         }
 
 
-        if ( dimensionsToEvaluate.empty() ) {
+        if ( dimViewPairToEvaluate.empty() ) {
             continue;
         }
 
         // If multiple dimensions are listening to this knob at the given view/dimension, then assume all dimensions have changed in evaluateValueChange
-        DimSpec dimChanged;
-        if (dimensionsToEvaluate.size() > 1) {
-            dimChanged = DimSpec::all();
-        } else {
-            dimChanged = *dimensionsToEvaluate.begin();
+        if (dimViewPairToEvaluate.size() > 1) {
+            slaveKnob->beginChanges();
         }
 
-        // Do the same for views
-        ViewSetSpec viewsChanged;
-        if (viewsToEvaluate.size() > 1) {
-            viewsChanged = ViewSetSpec::all();
-        } else {
-            viewsChanged = *viewsToEvaluate.begin();
+        for (DimensionViewPairSet::iterator it = dimViewPairToEvaluate.begin(); it != dimViewPairToEvaluate.end(); ++it) {
+            slaveKnob->evaluateValueChangeInternal(it->dimension, time, it->view, eValueChangedReasonSlaveRefresh, reason);
         }
+
+        if (dimViewPairToEvaluate.size() > 1) {
+            slaveKnob->endChanges();
+        }
+
 
         /*if (mustClone) {
             ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
@@ -1977,12 +1995,11 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
             slaveKnob->clone(shared_from_this(), dimChanged);
         }*/
 
-        slaveKnob->evaluateValueChangeInternal(dimChanged, time, viewsChanged, eValueChangedReasonSlaveRefresh, reason);
 
-        //call recursively
-        if ( !slaveKnob->isListenersNotificationBlocked() ) {
+        // Call recursively
+        /*if ( !slaveKnob->isListenersNotificationBlocked() ) {
             slaveKnob->refreshListenersAfterValueChange(viewsChanged, reason, dimChanged);
-        }
+        }*/
     } // for all listeners
 } // KnobHelper::refreshListenersAfterValueChange
 
@@ -4398,10 +4415,10 @@ KnobHolder::endChanges(bool discardRendering)
 
         if (!guiFrozen) {
             boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
-            if (handler) {
-#pragma message WARN("Don't update GUI if value changes are blocked")
+            if (!it->knob->isGuiRefreshingBlocked()) {
                 handler->s_mustRefreshKnobGui(it->view, dimension, it->reason);
             }
+
             it->knob->refreshAnimationLevel(it->view, dimension);
         }
 

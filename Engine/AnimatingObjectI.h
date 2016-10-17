@@ -114,6 +114,22 @@ typedef std::vector<std::pair<DimensionViewPair, std::list<IntTimeValuePair> > >
 typedef std::vector<std::pair<DimensionViewPair, std::list<BoolTimeValuePair> > > PerCurveBoolValuesList;
 typedef std::vector<std::pair<DimensionViewPair, std::list<StringTimeValuePair> > > PerCurveStringValuesList;
 
+
+struct DimensionViewPairCompare
+{
+    bool operator() (const DimensionViewPair& lhs, const DimensionViewPair& rhs) const
+    {
+        if (lhs.view < rhs.view) {
+            return true;
+        } else if (lhs.view > rhs.view) {
+            return false;
+        } else {
+            return lhs.dimension < rhs.dimension;
+        }
+    }
+};
+typedef std::set<DimensionViewPair, DimensionViewPairCompare> DimensionViewPairSet;
+
 class AnimatingObjectI
 {
 public:

@@ -876,7 +876,9 @@ Knob<T>::onTimeChanged(bool isPlayback,
 
     if (shouldRefresh) {
         refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
-        _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
+        if (!isGuiRefreshingBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
+        }
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
         KnobHolderPtr holder = getHolder();

@@ -53,173 +53,6 @@
 #include "Global/GLIncludes.h"
 #include "Global/GlobalDefines.h"
 
-
-#define kRotoOverlayColor "overlayColor"
-#define kRotoOverlayColorLabel "Overlay Color"
-#define kRotoOverlayColorHint "The color of the overlay in the Viewer"
-
-#define kRotoOpacityParam "opacity"
-#define kRotoOpacityParamLabel "Opacity"
-#define kRotoOpacityHint \
-"Controls the opacity of the selected shape(s)."
-
-#define kRotoFeatherParam "feather"
-#define kRotoFeatherParamLabel "Feather"
-#define kRotoFeatherHint \
-"Controls the distance of feather (in pixels) to add around the selected shape(s)"
-
-#define kRotoFeatherFallOffParam "featherFallOff"
-#define kRotoFeatherFallOffParamLabel "Feather fall-off"
-#define kRotoFeatherFallOffHint \
-"Controls the rate at which the feather is applied on the selected shape(s)."
-
-#define kRotoFeatherFallOffType "fallOffType"
-#define kRotoFeatherFallOffTypeLabel ""
-#define kRotoFeatherFallOffTypeHint "Select the type of interpolation used to create the fall-off ramp between the inner shape and the outter feather edge"
-
-#define kRotoFeatherFallOffTypeLinear "Linear"
-#define kRotoFeatherFallOffTypeLinearHint "Linear ramp"
-
-#define kRotoFeatherFallOffTypePLinear "PLinear"
-#define kRotoFeatherFallOffTypePLinearHint "Perceptually linear ramp in Rec.709"
-
-#define kRotoFeatherFallOffTypeEaseIn "Ease-in"
-#define kRotoFeatherFallOffTypeEaseInHint "Catmull-Rom spline, smooth start, linear end (a.k.a. smooth0)"
-
-#define kRotoFeatherFallOffTypeEaseOut "Ease-out"
-#define kRotoFeatherFallOffTypeEaseOutHint "Catmull-Rom spline, linear start, smooth end (a.k.a. smooth1)"
-
-#define kRotoFeatherFallOffTypeSmooth "Smooth"
-#define kRotoFeatherFallOffTypeSmoothHint "Traditional smoothstep ramp"
-
-#define kRotoActivatedParam "activated"
-#define kRotoActivatedParamLabel "Activated"
-#define kRotoActivatedHint \
-"Controls whether the selected shape(s) should be rendered or not." \
-"Note that you can animate this parameter so you can activate/deactive the shape " \
-"throughout the time."
-
-#define kRotoLockedHint \
-"Control whether the layer/curve is editable or locked."
-
-#define kRotoInvertedParam "inverted"
-#define kRotoInvertedParamLabel "Inverted"
-
-#define kRotoInvertedHint \
-"Controls whether the selected shape(s) should be inverted. When inverted everything " \
-"outside the shape will be set to 1 and everything inside the shape will be set to 0."
-
-#define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
-
-#define kRotoColorParam "color"
-#define kRotoColorParamLabel "Color"
-#define kRotoColorHint \
-"The color of the shape. This parameter is used when the output components are set to RGBA."
-
-#define kRotoCompOperatorParam "operator"
-#define kRotoCompOperatorParamLabel "Operator"
-#define kRotoCompOperatorHint \
-"The compositing operator controls how this shape is merged with the shapes that have already been rendered.\n" \
-"The roto mask is initialised as black and transparent, then each shape is drawn in the selected order, with the selected color and operator.\n" \
-"Finally, the mask is composed with the source image, if connected, using the 'over' operator.\n" \
-"See http://cairographics.org/operators/ for a full description of available operators."
-
-#define kRotoBrushSourceColor "sourceType"
-#define kRotoBrushSourceColorLabel "Source"
-#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-"- foreground: the painted result at this point in the hierarchy\n" \
-"- background: the original image unpainted connected to bg\n" \
-"- backgroundN: the original image unpainted connected to bgN\n"
-
-#define kRotoBrushSizeParam "brushSize"
-#define kRotoBrushSizeParamLabel "Brush Size"
-#define kRotoBrushSizeParamHint "This is the diameter of the brush in pixels. Shift + drag on the viewer to modify this value"
-
-#define kRotoBrushSpacingParam "brushSpacing"
-#define kRotoBrushSpacingParamLabel "Brush Spacing"
-#define kRotoBrushSpacingParamHint "Spacing between stamps of the paint brush"
-
-#define kRotoBrushHardnessParam "brushHardness"
-#define kRotoBrushHardnessParamLabel "Brush Hardness"
-#define kRotoBrushHardnessParamHint "Fall off of the brush effect from the center to the edge"
-
-#define kRotoBrushEffectParam "brushEffect"
-#define kRotoBrushEffectParamLabel "Brush effect"
-#define kRotoBrushEffectParamHint "The strength of the effect"
-
-#define kRotoBrushVisiblePortionParam "strokeVisiblePortion"
-#define kRotoBrushVisiblePortionParamLabel "Visible portion"
-#define kRotoBrushVisiblePortionParamHint "Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end."
-
-#define kRotoBrushPressureLabelParam "pressureAlters"
-#define kRotoBrushPressureLabelParamLabel "Pressure alters"
-#define kRotoBrushPressureLabelParamHint ""
-
-#define kRotoBrushPressureOpacityParam "pressureOpacity"
-#define kRotoBrushPressureOpacityParamLabel "Opacity"
-#define kRotoBrushPressureOpacityParamHint "Alters the opacity of the paint brush proportionate to changes in pen pressure"
-
-#define kRotoBrushPressureSizeParam "pressureSize"
-#define kRotoBrushPressureSizeParamLabel "Size"
-#define kRotoBrushPressureSizeParamHint "Alters the size of the paint brush proportionate to changes in pen pressure"
-
-#define kRotoBrushPressureHardnessParam "pressureHardness"
-#define kRotoBrushPressureHardnessParamLabel "Hardness"
-#define kRotoBrushPressureHardnessParamHint "Alters the hardness of the paint brush proportionate to changes in pen pressure"
-
-#define kRotoBrushBuildupParam "buildUp"
-#define kRotoBrushBuildupParamLabel "Build-up"
-#define kRotoBrushBuildupParamHint "When checked, the paint stroke builds up when painted over itself"
-
-#define kRotoBrushTimeOffsetParam "timeOffset"
-#define kRotoBrushTimeOffsetParamLabel "Clone time offset"
-#define kRotoBrushTimeOffsetParamHint "When the Clone tool is used, this determines depending on the time offset mode the source frame to " \
-"clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
-
-#define kRotoBrushTimeOffsetModeParam "timeOffsetMode"
-#define kRotoBrushTimeOffsetModeParamLabel "Mode"
-#define kRotoBrushTimeOffsetModeParamHint "Time offset mode: when in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
-
-#define kRotoBrushTranslateParam "cloneTranslate"
-#define kRotoBrushTranslateParamLabel "Translate"
-#define kRotoBrushTranslateParamHint ""
-
-#define kRotoBrushRotateParam "cloneRotate"
-#define kRotoBrushRotateParamLabel "Rotate"
-#define kRotoBrushRotateParamHint ""
-
-#define kRotoBrushScaleParam "cloneScale"
-#define kRotoBrushScaleParamLabel "Scale"
-#define kRotoBrushScaleParamHint ""
-
-#define kRotoBrushScaleUniformParam "cloneUniform"
-#define kRotoBrushScaleUniformParamLabel "Uniform"
-#define kRotoBrushScaleUniformParamHint ""
-
-#define kRotoBrushSkewXParam "cloneSkewx"
-#define kRotoBrushSkewXParamLabel "Skew X"
-#define kRotoBrushSkewXParamHint ""
-
-#define kRotoBrushSkewYParam "cloneSkewy"
-#define kRotoBrushSkewYParamLabel "Skew Y"
-#define kRotoBrushSkewYParamHint ""
-
-#define kRotoBrushSkewOrderParam "cloneSkewOrder"
-#define kRotoBrushSkewOrderParamLabel "Skew Order"
-#define kRotoBrushSkewOrderParamHint ""
-
-#define kRotoBrushCenterParam "cloneCenter"
-#define kRotoBrushCenterParamLabel "Center"
-#define kRotoBrushCenterParamHint ""
-
-#define kRotoBrushFilterParam "cloneFilter"
-#define kRotoBrushFilterParamLabel "Filter"
-#define kRotoBrushFilterParamHint "Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+)."
-
-#define kRotoBrushBlackOutsideParam "blackOutside"
-#define kRotoBrushBlackOutsideParamLabel "Black Outside"
-#define kRotoBrushBlackOutsideParamHint "Fill the area outside the source image with black"
-
 #define kFilterImpulse "Impulse"
 #define kFilterImpulseHint "(nearest neighbor / box) Use original values"
 #define kFilterBilinear "Bilinear"
@@ -238,122 +71,6 @@
 #define kFilterParzenHint "(cubic B-spline) Greatest smoothing of all filters (+)"
 #define kFilterNotch "Notch"
 #define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)"
-
-
-#define kRotoDrawableItemTranslateParam "translate"
-#define kRotoDrawableItemTranslateParamLabel "Translate"
-#define kRotoDrawableItemTranslateParamHint ""
-
-#define kRotoDrawableItemRotateParam "rotate"
-#define kRotoDrawableItemRotateParamLabel "Rotate"
-#define kRotoDrawableItemRotateParamHint ""
-
-#define kRotoDrawableItemScaleParam "scale"
-#define kRotoDrawableItemScaleParamLabel "Scale"
-#define kRotoDrawableItemScaleParamHint ""
-
-#define kRotoDrawableItemScaleUniformParam "uniform"
-#define kRotoDrawableItemScaleUniformParamLabel "Uniform"
-#define kRotoDrawableItemScaleUniformParamHint ""
-
-#define kRotoDrawableItemSkewXParam "skewx"
-#define kRotoDrawableItemSkewXParamLabel "Skew X"
-#define kRotoDrawableItemSkewXParamHint ""
-
-#define kRotoDrawableItemSkewYParam "skewy"
-#define kRotoDrawableItemSkewYParamLabel "Skew Y"
-#define kRotoDrawableItemSkewYParamHint ""
-
-#define kRotoDrawableItemSkewOrderParam "skewOrder"
-#define kRotoDrawableItemSkewOrderParamLabel "Skew Order"
-#define kRotoDrawableItemSkewOrderParamHint ""
-
-#define kRotoDrawableItemCenterParam "center"
-#define kRotoDrawableItemCenterParamLabel "Center"
-#define kRotoDrawableItemCenterParamHint ""
-
-#define kRotoDrawableItemExtraMatrixParam "extraMatrix"
-#define kRotoDrawableItemExtraMatrixParamLabel "Extra Matrix"
-#define kRotoDrawableItemExtraMatrixParamHint "This matrix gets concatenated to the transform resulting from the parameter above."
-
-#define kRotoDrawableItemLifeTimeParam "lifeTime"
-#define kRotoDrawableItemLifeTimeParamLabel "Life Time"
-#define kRotoDrawableItemLifeTimeParamHint "Controls the life-time of the shape/stroke"
-
-#define kRotoDrawableItemLifeTimeAll "All"
-#define kRotoDrawableItemLifeTimeAllHelp "All frames"
-
-#define kRotoDrawableItemLifeTimeSingle "Single"
-#define kRotoDrawableItemLifeTimeSingleHelp "Only for the specified frame"
-
-#define kRotoDrawableItemLifeTimeFromStart "From start"
-#define kRotoDrawableItemLifeTimeFromStartHelp "From the start of the sequence up to the specified frame"
-
-#define kRotoDrawableItemLifeTimeToEnd "To end"
-#define kRotoDrawableItemLifeTimeToEndHelp "From the specified frame to the end of the sequence"
-
-#define kRotoDrawableItemLifeTimeCustom "Custom"
-#define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes"
-
-#define kRotoDrawableItemLifeTimeFrameParam "lifeTimeFrame"
-#define kRotoDrawableItemLifeTimeFrameParamLabel "Frame"
-#define kRotoDrawableItemLifeTimeFrameParamHint "Use this to specify the frame when in mode Single/From start/To end"
-
-#define kRotoResetCloneTransformParam "resetCloneTransform"
-#define kRotoResetCloneTransformParamLabel "Reset Transform"
-#define kRotoResetCloneTransformParamHint "Reset the clone transform to an identity"
-
-#define kRotoResetTransformParam "resetTransform"
-#define kRotoResetTransformParamLabel "Reset Transform"
-#define kRotoResetTransformParamHint "Reset the transform to an identity"
-
-#define kRotoResetCloneCenterParam "resetCloneCenter"
-#define kRotoResetCloneCenterParamLabel "Reset Center"
-#define kRotoResetCloneCenterParamHint "Reset the clone transform center"
-
-#define kRotoResetCenterParam "resetTransformCenter"
-#define kRotoResetCenterParamLabel "Reset Center"
-#define kRotoResetCenterParamHint "Reset the transform center"
-
-#define kRotoTransformInteractive "RotoTransformInteractive"
-#define kRotoTransformInteractiveLabel "Interactive"
-#define kRotoTransformInteractiveHint "When check, modifying the transform will directly render the shape in the viewer. When unchecked, modifications are applied when releasing the mouse button."
-
-#define kRotoMotionBlurModeParam "motionBlurMode"
-#define kRotoMotionBlurModeParamLabel "Mode"
-#define kRotoMotionBlurModeParamHint "Per-shape motion blurs applies motion blur independently to each shape and then blends them together." \
-" This may produce artifacts when shapes blur over the same portion of the image, but might be more efficient than global motion-blur." \
-" Global motion-blur takes into account the interaction between shapes and will not create artifacts at the expense of being slightly " \
-"more expensive than the per-shape motion blur. Note that when using the global motion-blur, all shapes will have the same motion-blur " \
-"settings applied to them."
-
-#define kRotoPerShapeMotionBlurParam "motionBlur"
-#define kRotoGlobalMotionBlurParam "globalMotionBlur"
-#define kRotoMotionBlurParamLabel "Motion Blur"
-#define kRotoMotionBlurParamHint "The number of Motion-Blur samples used for blurring. Increase for better quality but slower rendering."
-
-#define kRotoPerShapeShutterParam "motionBlurShutter"
-#define kRotoGlobalShutterParam "globalMotionBlurShutter"
-#define kRotoShutterParamLabel "Shutter"
-#define kRotoShutterParamHint "The number of frames during which the shutter should be opened when motion blurring."
-
-#define kRotoPerShapeShutterOffsetTypeParam "motionBlurShutterOffset"
-#define kRotoGlobalShutterOffsetTypeParam "gobalMotionBlurShutterOffset"
-#define kRotoShutterOffsetTypeParamLabel "Shutter Offset"
-#define kRotoShutterOffsetTypeParamHint "This controls how the shutter operates in respect to the current frame value."
-
-#define kRotoShutterOffsetCenteredHint "Centers the shutter around the current frame, that is the shutter will be opened from f - shutter/2 to " \
-"f + shutter/2"
-#define kRotoShutterOffsetStartHint "The shutter will open at the current frame and stay open until f + shutter"
-#define kRotoShutterOffsetEndHint "The shutter will open at f - shutter until the current frame"
-#define kRotoShutterOffsetCustomHint "The shutter will open at the time indicated by the shutter offset parameter"
-
-#define kRotoPerShapeShutterCustomOffsetParam "motionBlurCustomShutterOffset"
-#define kRotoGlobalShutterCustomOffsetParam "globalMotionBlurCustomShutterOffset"
-#define kRotoShutterCustomOffsetParamLabel "Custom Offset"
-#define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
-"which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
-
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -540,11 +257,10 @@ RotoPaint::initGeneralPageKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoOpacityParamLabel), 1);
         param->setHintToolTip( tr(kRotoOpacityHint) );
         param->setName(kRotoOpacityParam);
-        param->setMinimum(0.);
-        param->setMaximum(1.);
-        param->setDisplayMinimum(0.);
-        param->setDisplayMaximum(1.);
+        param->setRange(0., 1.);
+        param->setDisplayRange(0., 1.);
         param->setDefaultValue(ROTO_DEFAULT_OPACITY, DimSpec(0));
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
 
@@ -555,6 +271,7 @@ RotoPaint::initGeneralPageKnobs()
         std::vector<double> def(3);
         def[0] = def[1] = def[2] = 1.;
         param->setDefaultValues(def, DimIdx(0));
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
 
@@ -577,6 +294,7 @@ RotoPaint::initGeneralPageKnobs()
             param->populateChoices(choices, helps);
         }
         param->setDefaultValue(isPaintNode ? 0 : 3, DimSpec(0));
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
 
     }
@@ -588,6 +306,7 @@ RotoPaint::initGeneralPageKnobs()
         param->setSecret(!isPaintNode);
         param->setAddNewLine(false);
         param->setAnimationEnabled(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
 
@@ -598,6 +317,7 @@ RotoPaint::initGeneralPageKnobs()
         param->setAddNewLine(true);
         param->setSecret(isPaintNode);
         param->setDefaultValue(true);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
 
@@ -606,6 +326,7 @@ RotoPaint::initGeneralPageKnobs()
         param->setHintToolTip( tr(kRotoInvertedHint) );
         param->setName(kRotoInvertedParam);
         param->setDefaultValue(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
     
@@ -622,10 +343,10 @@ RotoPaint::initShapePageKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoFeatherParamLabel), 1);
         param->setHintToolTip( tr(kRotoFeatherHint) );
         param->setName(kRotoFeatherParam);
-        param->setMinimum(0);
-        param->setDisplayMinimum(0);
-        param->setDisplayMaximum(500);
+        param->setRange(0, std::numeric_limits<double>::infinity());
+        param->setDisplayRange(0, 500);
         param->setDefaultValue(ROTO_DEFAULT_FEATHER);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         shapePage->addKnob(param);
     }
 
@@ -633,11 +354,10 @@ RotoPaint::initShapePageKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoFeatherFallOffParamLabel), 1);
         param->setHintToolTip( tr(kRotoFeatherFallOffHint) );
         param->setName(kRotoFeatherFallOffParam);
-        param->setMinimum(0.001);
-        param->setMaximum(5.);
-        param->setDisplayMinimum(0.2);
-        param->setDisplayMaximum(5.);
+        param->setRange(0.001, 5.);
+        param->setDisplayRange(0.2, 5.);
         param->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         param->setAddNewLine(false);
         shapePage->addKnob(param);
     }
@@ -662,6 +382,7 @@ RotoPaint::initShapePageKnobs()
             param->populateChoices(entries, helps);
         }
         shapePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
 
@@ -680,8 +401,8 @@ RotoPaint::initStrokePageKnobs()
         param->setName(kRotoBrushSizeParam);
         param->setHintToolTip( tr(kRotoBrushSizeParamHint) );
         param->setDefaultValue(25);
-        param->setMinimum(1.);
-        param->setMaximum(1000);
+        param->setRange(1., 1000);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -690,8 +411,8 @@ RotoPaint::initStrokePageKnobs()
         param->setName(kRotoBrushSpacingParam);
         param->setHintToolTip( tr(kRotoBrushSpacingParamHint) );
         param->setDefaultValue(0.1);
-        param->setMinimum(0.);
-        param->setMaximum(1.);
+        param->setRange(0., 1.);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -700,8 +421,8 @@ RotoPaint::initStrokePageKnobs()
         param->setName(kRotoBrushHardnessParam);
         param->setHintToolTip( tr(kRotoBrushHardnessParamHint) );
         param->setDefaultValue(0.2);
-        param->setMinimum(0.);
-        param->setMaximum(1.);
+        param->setRange(0., 1.);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -710,8 +431,8 @@ RotoPaint::initStrokePageKnobs()
         param->setName(kRotoBrushEffectParam);
         param->setHintToolTip( tr(kRotoBrushEffectParamHint) );
         param->setDefaultValue(15);
-        param->setMinimum(0.);
-        param->setMaximum(100.);
+        param->setRange(0., 100.);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -719,6 +440,7 @@ RotoPaint::initStrokePageKnobs()
         KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>( effect, tr(kRotoBrushPressureLabelParamLabel) );
         param->setName(kRotoBrushPressureLabelParam);
         param->setHintToolTip( tr(kRotoBrushPressureLabelParamHint) );
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -729,6 +451,7 @@ RotoPaint::initStrokePageKnobs()
         param->setAnimationEnabled(false);
         param->setDefaultValue(true);
         param->setAddNewLine(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -739,6 +462,7 @@ RotoPaint::initStrokePageKnobs()
         param->setAnimationEnabled(false);
         param->setDefaultValue(false);
         param->setAddNewLine(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -749,6 +473,7 @@ RotoPaint::initStrokePageKnobs()
         param->setAnimationEnabled(false);
         param->setDefaultValue(false);
         param->setAddNewLine(true);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -759,6 +484,7 @@ RotoPaint::initStrokePageKnobs()
         param->setAnimationEnabled(false);
         param->setDefaultValue(false);
         param->setAddNewLine(true);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         strokePage->addKnob(param);
     }
 
@@ -777,6 +503,7 @@ RotoPaint::initStrokePageKnobs()
         strokePage->addKnob(param);
         param->setDimensionName(DimIdx(0), tr("start").toStdString());
         param->setDimensionName(DimIdx(1), tr("end").toStdString());
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
     
 } // initStrokePageKnobs
@@ -798,16 +525,17 @@ RotoPaint::initTransformPageKnobs()
         param->setIncrement(10);
         translateKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemRotateParamLabel), 1);
         param->setName(kRotoDrawableItemRotateParam);
         param->setHintToolTip( tr(kRotoDrawableItemRotateParamHint) );
-        param->setDisplayMinimum(-180);
-        param->setDisplayMaximum(180);
+        param->setDisplayRange(-180, 180);
         rotateKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -816,13 +544,12 @@ RotoPaint::initTransformPageKnobs()
         param->setHintToolTip( tr(kRotoDrawableItemScaleParamHint) );
         param->setDefaultValue(1, DimSpec(0));
         param->setDefaultValue(1, DimSpec(1));
-        param->setDisplayMinimum(0.1, DimSpec(0));
-        param->setDisplayMinimum(0.1, DimSpec(1));
-        param->setDisplayMaximum(10, DimSpec(0));
-        param->setDisplayMaximum(10, DimSpec(1));
+        param->setDisplayRange(0.1, 10., DimSpec(0));
+        param->setDisplayRange(0.1, 10., DimSpec(1));
         param->setAddNewLine(false);
         scaleKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -833,25 +560,26 @@ RotoPaint::initTransformPageKnobs()
         param->setAnimationEnabled(false);
         scaleUniformKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemSkewXParamLabel), 1);
         param->setName(kRotoDrawableItemSkewXParam);
         param->setHintToolTip( tr(kRotoDrawableItemSkewXParamHint) );
-        param->setDisplayMinimum(-1, DimSpec(0));
-        param->setDisplayMaximum(1, DimSpec(0));
+        param->setDisplayRange(-1, 1);
         skewXKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoDrawableItemSkewYParamLabel), 1);
         param->setName(kRotoDrawableItemSkewYParam);
         param->setHintToolTip( tr(kRotoDrawableItemSkewYParamHint) );
-        param->setDisplayMinimum(-1);
-        param->setDisplayMaximum(1);
+        param->setDisplayRange(-1, 1);
         skewYKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -868,6 +596,7 @@ RotoPaint::initTransformPageKnobs()
         param->setAnimationEnabled(false);
         skewOrderKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -880,6 +609,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDefaultValue(0.5, DimSpec(1));
         centerKnob = param;
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -887,6 +617,7 @@ RotoPaint::initTransformPageKnobs()
         param->setName(kRotoResetCenterParam);
         param->setHintToolTip( tr(kRotoResetCenterParamHint) );
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -906,6 +637,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDefaultValue(1, DimSpec(4));
         param->setDefaultValue(1, DimSpec(8));
         transformPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -963,16 +695,17 @@ RotoPaint::initClonePageKnobs()
         param->setIncrement(10);
         cloneTranslateKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushRotateParamLabel), 1);
         param->setName(kRotoBrushRotateParam);
         param->setHintToolTip( tr(kRotoBrushRotateParamHint) );
-        param->setDisplayMinimum(-180);
-        param->setDisplayMaximum(180);
+        param->setDisplayRange(-180, 180);
         cloneRotateKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -981,13 +714,12 @@ RotoPaint::initClonePageKnobs()
         param->setHintToolTip( tr(kRotoBrushScaleParamHint) );
         param->setDefaultValue(1, DimSpec(0));
         param->setDefaultValue(1, DimSpec(1));
-        param->setDisplayMinimum(0.1, DimSpec(0));
-        param->setDisplayMinimum(0.1, DimSpec(1));
-        param->setDisplayMaximum(10, DimSpec(0));
-        param->setDisplayMaximum(10, DimSpec(1));
+        param->setDisplayRange(0.1, 10., DimSpec(0));
+        param->setDisplayRange(0.1, 10., DimSpec(1));
         param->setAddNewLine(false);
         cloneScaleKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -998,26 +730,27 @@ RotoPaint::initClonePageKnobs()
         param->setAnimationEnabled(false);
         cloneScaleUniformKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushSkewXParamLabel), 1);
         param->setName(kRotoBrushSkewXParam);
         param->setHintToolTip( tr(kRotoBrushSkewXParamHint) );
-        param->setDisplayMinimum(-1, DimSpec(0));
-        param->setDisplayMaximum(1, DimSpec(0));
+        param->setDisplayRange(-1, 1, DimSpec(0));
         cloneSkewXKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoBrushSkewYParamLabel), 1);
         param->setName(kRotoBrushSkewYParam);
         param->setHintToolTip( tr(kRotoBrushSkewYParamHint) );
-        param->setDisplayMinimum(-1);
-        param->setDisplayMaximum(1);
+        param->setDisplayRange(-1, 1);
         cloneSkewYKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1034,6 +767,7 @@ RotoPaint::initClonePageKnobs()
         param->setAnimationEnabled(false);
         cloneSkewOrderKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1046,6 +780,7 @@ RotoPaint::initClonePageKnobs()
         param->setDefaultValue(0.5, DimSpec(1));
         cloneCenterKnob = param;
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1103,6 +838,7 @@ RotoPaint::initClonePageKnobs()
         param->setDefaultValue(2);
         param->setAddNewLine(false);
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1111,16 +847,17 @@ RotoPaint::initClonePageKnobs()
         param->setHintToolTip( tr(kRotoBrushBlackOutsideParamHint) );
         param->setDefaultValue(true);
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
         KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoBrushTimeOffsetParamLabel), 1);
         param->setName(kRotoBrushTimeOffsetParam);
         param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint) );
-        param->setDisplayMinimum(-100);
-        param->setDisplayMaximum(100);
+        param->setDisplayRange(-100, 100);
         param->setAddNewLine(false);
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1134,6 +871,7 @@ RotoPaint::initClonePageKnobs()
             param->populateChoices(modes);
         }
         clonePage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
     
 } // initClonePageKnobs
@@ -1157,6 +895,7 @@ RotoPaint::initMotionBlurPageKnobs()
             param->populateChoices(entries);
         }
         mbPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1164,11 +903,10 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setName(kRotoPerShapeMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         param->setDefaultValue(0);
-        param->setMinimum(0);
-        param->setDisplayMinimum(0);
-        param->setDisplayMaximum(4);
-        param->setMaximum(4);
+        param->setRange(0, 4);
+        param->setDisplayRange(0, 4);
         mbPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1176,11 +914,10 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setName(kRotoPerShapeShutterParam);
         param->setHintToolTip( tr(kRotoShutterParamHint) );
         param->setDefaultValue(0.5);
-        param->setMinimum(0);
-        param->setDisplayMinimum(0);
-        param->setDisplayMaximum(2);
-        param->setMaximum(2);
+        param->setRange(0, 2);
+        param->setDisplayRange(0, 2);
         mbPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1202,6 +939,7 @@ RotoPaint::initMotionBlurPageKnobs()
         }
         param->setAddNewLine(false);
         mbPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1210,6 +948,7 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         param->setDefaultValue(0);
         mbPage->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
     {
@@ -1217,10 +956,8 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setName(kRotoGlobalMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         param->setDefaultValue(0);
-        param->setMinimum(0);
-        param->setDisplayMinimum(0);
-        param->setDisplayMaximum(4);
-        param->setMaximum(4);
+        param->setRange(0, 4);
+        param->setDisplayRange(0, 4);
         param->setSecret(true);
         mbPage->addKnob(param);
     }
@@ -1230,10 +967,8 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setName(kRotoGlobalShutterParam);
         param->setHintToolTip( tr(kRotoShutterParamHint) );
         param->setDefaultValue(0.5);
-        param->setMinimum(0);
-        param->setDisplayMinimum(0);
-        param->setDisplayMaximum(2);
-        param->setMaximum(2);
+        param->setRange(0, 2);
+        param->setDisplayRange(0, 2);
         param->setSecret(true);
         mbPage->addKnob(param);
     }
@@ -1262,7 +997,7 @@ RotoPaint::initMotionBlurPageKnobs()
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoShutterCustomOffsetParamLabel), 1);
-        param->setName(kRotoPerShapeShutterCustomOffsetParam);
+        param->setName(kRotoGlobalShutterCustomOffsetParam);
         param->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         param->setDefaultValue(0);
         param->setSecret(true);
@@ -1596,8 +1331,7 @@ RotoPaint::initializeKnobs()
     opacityKnob->setEvaluateOnChange(false);
     opacityKnob->setSecret(true);
     opacityKnob->setDefaultValue(1.);
-    opacityKnob->setMinimum(0.);
-    opacityKnob->setMaximum(1.);
+    opacityKnob->setRange(0., 1.);
     opacityKnob->disableSlider();
     generalPage->addKnob(opacityKnob);
     _imp->ui->opacitySpinbox = opacityKnob;
@@ -1622,8 +1356,7 @@ RotoPaint::initializeKnobs()
     sizeKnob->setEvaluateOnChange(false);
     sizeKnob->setSecret(true);
     sizeKnob->setDefaultValue(25.);
-    sizeKnob->setMinimum(0.);
-    sizeKnob->setMaximum(1000.);
+    sizeKnob->setRange(0., 1000.);
     sizeKnob->disableSlider();
     generalPage->addKnob(sizeKnob);
     _imp->ui->sizeSpinbox = sizeKnob;
@@ -1648,8 +1381,7 @@ RotoPaint::initializeKnobs()
     hardnessKnob->setEvaluateOnChange(false);
     hardnessKnob->setSecret(true);
     hardnessKnob->setDefaultValue(.2);
-    hardnessKnob->setMinimum(0.);
-    hardnessKnob->setMaximum(1.);
+    hardnessKnob->setRange(0., 1.);
     hardnessKnob->disableSlider();
     generalPage->addKnob(hardnessKnob);
     _imp->ui->hardnessSpinbox = hardnessKnob;
@@ -1688,8 +1420,7 @@ RotoPaint::initializeKnobs()
     effectStrength->setEvaluateOnChange(false);
     effectStrength->setSecret(true);
     effectStrength->setDefaultValue(15);
-    effectStrength->setMinimum(0.);
-    effectStrength->setMaximum(100.);
+    effectStrength->setRange(0., 100.);
     effectStrength->disableSlider();
     generalPage->addKnob(effectStrength);
     _imp->ui->effectSpinBox = effectStrength;

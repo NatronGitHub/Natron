@@ -46,8 +46,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/Knob.h"
-
+#include "Engine/KnobItemsTable.h"
 #include "Serialization/SerializationBase.h"
 
 
@@ -70,8 +69,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
-    : public KnobHolder
-    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    : public KnobTableItem
 {
 public:
 

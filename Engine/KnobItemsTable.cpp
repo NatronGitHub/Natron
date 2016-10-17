@@ -153,8 +153,6 @@ struct KnobItemsTablePrivate
         
     }
 
-    void linkItemKnobsToGuiKnobs(const KnobTableItemPtr& markers, bool multipleItemsSelected, bool slave);
-
 };
 
 struct ColumnDesc
@@ -1013,50 +1011,12 @@ KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
 }
 
 void
-KnobItemsTablePrivate::linkItemKnobsToGuiKnobs(const KnobTableItemPtr& item, bool multipleItemsSelected, bool slave)
-{
-    if (perItemMasterKnobs.empty()) {
-        return;
-    }
-    const KnobsVec& itemKnobs = item->getKnobs();
-    for (KnobsVec::const_iterator it = itemKnobs.begin(); it != itemKnobs.end(); ++it) {
-        // Find the knob in the TrackerContext knobs
-        KnobIPtr found;
-        for (std::list<KnobIWPtr >::const_iterator it2 = perItemMasterKnobs.begin(); it2 != perItemMasterKnobs.end(); ++it2) {
-            KnobIPtr k = it2->lock();
-            if ( k->getName() == (*it)->getName() ) {
-                found = k;
-                break;
-            }
-        }
-
-        if (!found) {
-            continue;
-        }
-
-        //Clone current state only for the last marker
-        found->blockListenersNotification();
-        found->copyKnob(*it);
-        found->unblockListenersNotification();
-
-        //Slave internal knobs
-
-        if (slave) {
-            (*it)->slaveTo(found);
-        } else {
-            (*it)->unSlave(DimSpec::all(), ViewSetSpec::all(), !multipleItemsSelected);
-        }
-
-    }
-
-}
-
-void
 KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 {
 
     std::list<KnobTableItemPtr> itemsAdded, itemsRemoved;
     {
+        // Avoid recursions
         QMutexLocker k(&_imp->selectionLock);
         if (_imp->selectionRecursion > 0) {
             _imp->itemsRemovedFromSelection.clear();
@@ -1099,30 +1059,59 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
 
 
-        // Slave newly selected knobs
-        bool selectionIsDirty = _imp->selectedItems.size() > 1;
-        bool selectionEmpty = _imp->selectedItems.empty();
+        for (std::list<KnobIWPtr>::iterator it = _imp->perItemMasterKnobs.begin(); it != _imp->perItemMasterKnobs.end(); ++it) {
+            KnobIPtr masterKnob = it->lock();
+            if (!masterKnob) {
+                continue;
+            }
+            int nItemsWithKnob = 0;
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+                KnobTableItemPtr item = it2->lock();
+                if (!item) {
+                    continue;
+                }
+                KnobIPtr itemKnob = item->getKnobByName(masterKnob->getName());
+                if (itemKnob) {
+                    ++nItemsWithKnob;
+                }
+            }
+
+            masterKnob->setEnabled(nItemsWithKnob > 0);
+            masterKnob->setDirty(nItemsWithKnob > 1);
+
+            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
+                KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
+                if (!itemKnob) {
+                    continue;
+                }
+                // Ensure the master knob reflects the state of the last item that was added to the selection.
+                // We ensure the state change does not affect already slaved knobs otherwise all items would
+                // get the value of the item we are copying.
+                masterKnob->blockListenersNotification();
+                masterKnob->copyKnob(itemKnob);
+                masterKnob->unblockListenersNotification();
 
 
-        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
-            _imp->linkItemKnobsToGuiKnobs(*it, selectionIsDirty, true);
-        }
-        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
-            _imp->linkItemKnobsToGuiKnobs(*it, selectionIsDirty, false);
-        }
+                // Slave item knob to master knob
+                itemKnob->slaveTo(masterKnob);
+
+            }
+            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
+                KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
+                if (!itemKnob) {
+                    continue;
+                }
+
+                // Unslave from master knob, copy state only if a single item is selected
+                itemKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), nItemsWithKnob <= 1 /*copyState*/);
+            }
+
+        } // for all master knobs
+
 
         _imp->itemsRemovedFromSelection.clear();
         _imp->newItemsInSelection.clear();
 
-
-        for (std::list<KnobIWPtr>::iterator it = _imp->perItemMasterKnobs.begin(); it != _imp->perItemMasterKnobs.end(); ++it) {
-            KnobIPtr k = it->lock();
-            if (!k) {
-                continue;
-            }
-            k->setEnabled(!selectionEmpty);
-            k->setDirty(selectionIsDirty);
-        }
     } //  QMutexLocker k(&_imp->selectionLock);
 
     Q_EMIT selectionChanged(itemsAdded, itemsRemoved, reason);
@@ -1217,6 +1206,39 @@ KnobItemsTable::declareItemAsPythonField(const KnobTableItemPtr& item)
 
 }
 
+KnobIPtr
+KnobTableItem::createDuplicateOfTableKnobInternal(const std::string& scriptName)
+{
+    KnobTableItemPtr thisItem = boost::dynamic_pointer_cast<KnobTableItem>(shared_from_this());
+    return getModel()->createMasterKnobDuplicateOnItem(thisItem, scriptName);
+}
+
+KnobIPtr
+KnobItemsTable::createMasterKnobDuplicateOnItem(const KnobTableItemPtr& item, const std::string& paramName)
+{
+    KnobIPtr masterKnob;
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->perItemMasterKnobs.begin(); it!=_imp->perItemMasterKnobs.end(); ++it) {
+        KnobIPtr knob = it->lock();
+        if (!knob) {
+            continue;
+        }
+        if (knob->getName() == paramName) {
+            masterKnob = knob;
+            break;
+        }
+    }
+    if (!masterKnob) {
+        assert(false);
+        return KnobIPtr();
+    }
+    KnobIPtr ret = masterKnob->createDuplicateOnHolder(item, KnobPagePtr(), KnobGroupPtr(), -1, true, paramName, masterKnob->getLabel(), masterKnob->getHintToolTip(), false /*refreshParamsGui*/, false /*isUserKnob*/);
+    if (ret) {
+        // Set back persistence to true on the item knob
+        ret->setIsPersistent(true);
+        ret->setEnabled(true);
+    }
+    return ret;
+}
 
 //////// Animation implementation
 AnimatingObjectI::KeyframeDataTypeEnum

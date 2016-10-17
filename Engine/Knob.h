@@ -638,10 +638,15 @@ public:
     virtual void unblockValueChanges() = 0;
     virtual bool isValueChangesBlocked() const = 0;
 
-    // Prevent knob listening to this knob to be refreshed while under the block/unblock bracked
+    // Prevent knob listening to this knob to be refreshed while under the block/unblock bracket
     virtual void blockListenersNotification() = 0;
     virtual void unblockListenersNotification() = 0;
     virtual bool isListenersNotificationBlocked() const = 0;
+
+    // Prevent knob gui refreshing while under the block/unblock bracket
+    virtual void blockGuiRefreshing() = 0;
+    virtual void unblockGuiRefreshing() = 0;
+    virtual bool isGuiRefreshingBlocked() const = 0;
 
     // Prevent autokeying
     virtual void setAutoKeyingEnabled(bool enabled) = 0;
@@ -1428,6 +1433,9 @@ public:
     virtual void blockListenersNotification() OVERRIDE FINAL;
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void blockGuiRefreshing() OVERRIDE FINAL;
+    virtual void unblockGuiRefreshing() OVERRIDE FINAL;
+    virtual bool isGuiRefreshingBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAutoKeyingEnabled(bool enabled) OVERRIDE FINAL;
     virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool evaluateValueChange(DimSpec dimension, double time, ViewSetSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
@@ -2689,7 +2697,7 @@ public:
 
 
     /**
-     * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() and instanceChanged()
+     * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() (i.e: render) function
      * if needed when endChanges() is called
      **/
     void beginChanges();
@@ -2711,7 +2719,6 @@ public:
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
     void endKnobsValuesChanged_public(ValueChangedReasonEnum reason);
-
 
     /**
      * @brief The virtual portion of notifyProjectEvaluationRequested(). This is called by the project

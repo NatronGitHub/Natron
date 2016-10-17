@@ -263,7 +263,7 @@ struct KnobHelperPrivate
     // For each dimension tells whether the knob is considered to have modification or not
     mutable PerDimensionModificationMap hasModifications;
 
-    // Protects valueChangedBlocked & listenersNotificationBlocked
+    // Protects valueChangedBlocked & listenersNotificationBlocked & guiRefreshBlocked
     mutable QMutex valueChangedBlockedMutex;
 
     // Recursive counter to prevent calls to knobChanged callback
@@ -271,6 +271,10 @@ struct KnobHelperPrivate
 
     // Recursive counter to prevent calls to knobChanged callback for listeners knob (i.e: knobs that refer to this one)
     int listenersNotificationBlocked;
+
+    // Recursive counter to prevent calls to the mustRefreshGui signal to avoid refreshing the Gui during massive
+    // changes to the knob
+    int guiRefreshBlocked;
 
     // Recursive counter to prevent autokeying in setValue
     int autoKeyingDisabled;
@@ -337,6 +341,7 @@ struct KnobHelperPrivate
     , valueChangedBlockedMutex()
     , valueChangedBlocked(0)
     , listenersNotificationBlocked(0)
+    , guiRefreshBlocked(0)
     , autoKeyingDisabled(0)
     , isClipPreferenceSlave(false)
     {
