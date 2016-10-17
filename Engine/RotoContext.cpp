@@ -3889,34 +3889,37 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 
             // Pick the point with the minimum t
             if (inner_t <= outter_t) {
-                lastInnerVert.x = bSegmentIt->x;
-                lastInnerVert.y = bSegmentIt->y;
-                lastInnerVert.isInner = true;
-                featherMesh->push_back(lastInnerVert);
-                ++bSegmentIt;
-
-            } else {
-                lastOutterVert.x = fSegmentIt->x;
-                lastOutterVert.y = fSegmentIt->y;
-
-                if (absFeatherDist) {
-                    double diffx = fnext->x - fprev->x;
-                    double diffy = fnext->y - fprev->y;
-                    double norm = std::sqrt( diffx * diffx + diffy * diffy );
-                    double dx = (norm != 0) ? -( diffy / norm ) : 0;
-                    double dy = (norm != 0) ? ( diffx / norm ) : 1;
-
-                    if (!clockWise) {
-                        lastOutterVert.x -= dx * absFeatherDist;
-                        lastOutterVert.y -= dy * absFeatherDist;
-                    } else {
-                        lastOutterVert.x += dx * absFeatherDist;
-                        lastOutterVert.y += dy * absFeatherDist;
-                    }
+                if ( bSegmentIt != it->end() ) {
+                    lastInnerVert.x = bSegmentIt->x;
+                    lastInnerVert.y = bSegmentIt->y;
+                    lastInnerVert.isInner = true;
+                    featherMesh->push_back(lastInnerVert);
+                    ++bSegmentIt;
                 }
-                lastOutterVert.isInner = false;
-                featherMesh->push_back(lastOutterVert);
-                ++fSegmentIt;
+            } else {
+                if ( fSegmentIt != fIt->end() ) {
+                    lastOutterVert.x = fSegmentIt->x;
+                    lastOutterVert.y = fSegmentIt->y;
+
+                    if (absFeatherDist) {
+                        double diffx = fnext->x - fprev->x;
+                        double diffy = fnext->y - fprev->y;
+                        double norm = std::sqrt( diffx * diffx + diffy * diffy );
+                        double dx = (norm != 0) ? -( diffy / norm ) : 0;
+                        double dy = (norm != 0) ? ( diffx / norm ) : 1;
+
+                        if (!clockWise) {
+                            lastOutterVert.x -= dx * absFeatherDist;
+                            lastOutterVert.y -= dy * absFeatherDist;
+                        } else {
+                            lastOutterVert.x += dx * absFeatherDist;
+                            lastOutterVert.y += dy * absFeatherDist;
+                        }
+                    }
+                    lastOutterVert.isInner = false;
+                    featherMesh->push_back(lastOutterVert);
+                    ++fSegmentIt;
+                }
 
 
                 if ( fprev != fIt->end() ) {
