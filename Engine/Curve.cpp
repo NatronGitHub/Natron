@@ -480,15 +480,9 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
     KeyFrame nextKey;
     bool mustRefreshNext = false;
 
-
     KeyFrameSet::iterator next = it;
     if ( next != _imp->keyFrames.end() ) {
         ++next;
-    }
-
-
-    if (_imp->isPeriodic && (it == _imp->keyFrames.begin() || (next == _imp->keyFrames.end()))) {
-        throw std::runtime_error("Cannot remove first and last keyframe of a periodic curve");
     }
 
     // If the curve is periodic, it has a keyframe before if it is no
@@ -793,19 +787,18 @@ interParams(const KeyFrameSet &keyFrames,
     Q_UNUSED(t);
     assert(keyFrames.size() > 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
-    double minTime = keyFrames.begin()->getTime();
-    double maxTime = keyFrames.rbegin()->getTime();
     if (isPeriodic) {
         // if the curve is periodic, bring back t in the curve keyframes range
 
-        assert(minTime < maxTime);
-        if (*t < minTime || *t > maxTime) {
+        assert(_imp->xMin < _imp->xMax);
+        if (*t < _imp->xMin || *t > maxTime) {
             // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
-            *t = std::fmod(*t - minTime, maxTime - minTime ) + minTime;
-            if (*t < minTime) {
-                *t += (maxTime - minTime);
+            double period = _imp->xMax - _imp->xMin;
+            *t = std::fmod(*t - _imp->xMin, period ) + _imp->xMin;
+            if (*t < _imp->xMin) {
+                *t += (period);
             }
-            assert(*t >= minTime && *t <= maxTime);
+            assert(*t >= _imp->xMin && *t <= _imp->xMax);
         }
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
