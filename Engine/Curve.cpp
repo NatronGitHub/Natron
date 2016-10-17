@@ -1210,7 +1210,7 @@ Curve::clampValueToCurveYRange(double v) const
     if (v > minmax.max) {
         return minmax.max;
     } else if (v < minmax.min) {
-        return minmax.max;
+        return minmax.min;
     }
 
     return v;
