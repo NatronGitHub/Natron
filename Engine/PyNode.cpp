@@ -512,7 +512,8 @@ Effect::getColor(double* r,
                  double *g,
                  double* b) const
 {
-    getInternalNode()->getColor(r, g, b);
+    bool hasColor = getInternalNode()->getColor(r, g, b);
+    Q_UNUSED(hasColor);
 }
 
 void

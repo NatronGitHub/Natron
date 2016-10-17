@@ -2652,7 +2652,8 @@ exportGroupInternal(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
 
         double r, g, b;
-        (*it)->getColor(&r, &g, &b);
+        bool hasColor = (*it)->getColor(&r, &g, &b);
+        Q_UNUSED(hasColor);
         // a precision of 3 digits is enough for the node coloe
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
 
