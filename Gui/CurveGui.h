@@ -135,14 +135,12 @@ public:
 
 private:
 
-    void nextPointForSegment(const double x1,
+    void nextPointForSegment(const double x,
                              const KeyFrameSet & keyframes,
-                             const std::list<double>& keysWidgetCoords,
-                             const Curve::YRange& curveYRange,
-                             const double xminCurveWidgetCoord,
-                             const double xmaxCurveWidgetCoord,
+                             const bool isPeriodic,
+                             const double parametricXMin,
+                             const double parametricXMax,
                              KeyFrameSet::const_iterator* lastUpperIt,
-                             std::list<double>::const_iterator* lastUpperItCoords,
                              double* x2,
                              KeyFrame* key,
                              bool* isKey );

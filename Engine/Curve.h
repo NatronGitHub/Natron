@@ -263,7 +263,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex, bool recurse);
+    KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex);
 
 public:
 
@@ -274,7 +274,7 @@ public:
 
 private:
 
-    bool moveKeyFrameValueAndTimeInternal(const double time, const double dt, const double dv, KeyFrame* newKey, bool recurse);
+    bool moveKeyFrameValueAndTimeInternal(const double time, const double dt, const double dv, KeyFrame* newKey);
 
 public:
 
@@ -286,7 +286,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex, bool recurse);
+    KeyFrame setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex);
 
 public:
 
@@ -298,7 +298,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex, bool recurse);
+    KeyFrame setKeyFrameRightDerivativeInternal(double value, int index, int* nextIndex);
 
 public:
 
@@ -311,7 +311,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameDerivativesInternal(double left, double right, int index, int* newIndex, bool recurse);
+    KeyFrame setKeyFrameDerivativesInternal(double left, double right, int index, int* newIndex);
 
 public:
 
@@ -323,7 +323,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int* newIndex, bool recurse);
+    KeyFrame setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int* newIndex);
 
 public:
 

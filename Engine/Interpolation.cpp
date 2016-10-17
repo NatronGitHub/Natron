@@ -435,7 +435,8 @@ Interpolation::interpolate(double tcur,
     double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]
 
     // if the following is true, this makes the special case for eKeyframeTypeConstant at tnext useless, and we can always use a cubic - the strict "currentTime < tnext" is the key
-    assert( ( (interp == eKeyframeTypeNone) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == eKeyframeTypeNone) ) );
+    // commented-out: the following assert is not true for periodic curves and passing the flag to interpolate would only be required in NDEBUG
+    //assert( ( (interp == eKeyframeTypeNone) || (tcur <= currentTime) ) && ( (currentTime < tnext) || (interpNext == eKeyframeTypeNone) ) );
     // after the last / before the first keyframe, derivatives are wrt currentTime (i.e. non-normalized)
     if (interp == eKeyframeTypeNone) {
         // virtual previous frame at t-1
