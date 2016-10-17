@@ -1072,6 +1072,14 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             if ( set.empty() ) {
                 continue;
             }
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            bool isPeriodic = false;
+            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            if (internalCurve) {
+                isPeriodic = internalCurve->isCurvePeriodic();
+                parametricRange = internalCurve->getXRange();
+            }
+
             KeyFrameSet::const_iterator it2 = set.begin();
             KeyFrameSet::const_iterator prev = set.end();
             KeyFrameSet::const_iterator next = it2;
@@ -1085,11 +1093,21 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
                     if ( prev != set.end() ) {
                         prevKey = *prev;
                         hasPrev = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_reverse_iterator last = set.rbegin();
+                        prevKey = *last;
+                        prevKey.setTime(prevKey.getTime() - (parametricRange.second - parametricRange.first));
+                        hasPrev = true;
                     }
                     KeyFrame nextKey;
                     bool hasNext = false;
                     if ( next != set.end() ) {
                         nextKey = *next;
+                        hasNext = true;
+                    } else if (isPeriodic) {
+                        KeyFrameSet::const_iterator start = set.begin();
+                        nextKey = *start;
+                        nextKey.setTime(nextKey.getTime() + (parametricRange.second - parametricRange.first));
                         hasNext = true;
                     }
                     KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
