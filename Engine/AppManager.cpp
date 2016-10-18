@@ -2993,20 +2993,23 @@ AppManager::initPython()
     // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
 
 #ifdef __NATRON_WIN32__
-    static const char* pythonHome = "."; // must use static storage
+    static std::string pythonHome = binPath.toStdString(); // must use static storage
 #elif defined(__NATRON_LINUX__)
-    static const char* pythonHome = "../lib"; // must use static storage
+    static std::string pythonHome = binPath.toStdString() + "/../lib"; // must use static storage
 #elif defined(__NATRON_OSX__)
-    static const char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
+    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
 #endif
 
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
+#endif
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    static const std::wstring pythonHomeStr = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-    Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeStr.c_str() ) );
+    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
+    Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
 #else
     // Python 2
-    Py_SetPythonHome( const_cast<char*>(pythonHome) );
+    Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
 #endif
 
     /////////////////////////////////////////
@@ -3014,6 +3017,9 @@ AppManager::initPython()
     /////////////////////////////////////////
     //
     // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf("Py_Initialize()\n");
+#endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
