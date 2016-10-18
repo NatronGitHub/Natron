@@ -40,6 +40,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -395,10 +396,20 @@ NATRON_NAMESPACE_ENTER;
 
 class RotoPaintKnobItemsTable : public KnobItemsTable
 {
+    RotoPaintWPtr _rotoPaint;
+    
 public:
 
-    RotoPaintKnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount)
-    : KnobItemsTable(originalHolder, type, colsCount)
+    RotoPaintPtr getRotoPaint() const
+    {
+        return _rotoPaint.lock();
+    }
+
+    RotoPaintKnobItemsTable(const RotoPaintPtr& rotoNode,
+                            KnobItemsTableTypeEnum type,
+                            int colsCount)
+    : KnobItemsTable(rotoNode, type, colsCount)
+    , _rotoPaint(rotoNode)
     {
 
     }
@@ -414,6 +425,15 @@ public:
     }
 
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+
+    /**
+     * @brief Returns a list of all the curves in the order in which they should be rendered.
+     * Non-active curves will not be inserted into the list.
+     * MT-safe
+     **/
+    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(bool onlyActivated = true) const;
+
+
 };
 
 
@@ -438,8 +458,103 @@ struct RotoPaintPrivate
 
     boost::shared_ptr<RotoPaintKnobItemsTable> knobsTable;
 
+    // Merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
+    mutable QMutex globalMergeNodesMutex;
+    NodesList globalMergeNodes;
+
+    // Recursive counter to prevent refreshing of the node tree
+    int treeRefreshBlocked;
+
+    KnobBoolWPtr activatedKnob;
+    KnobChoiceWPtr lifeTimeKnob;
+    KnobIntWPtr lifeTimeFrameKnob;
+
+    KnobButtonWPtr resetCenterKnob;
+    KnobButtonWPtr resetCloneCenterKnob;
+    KnobButtonWPtr resetCloneTransformKnob;
+    KnobButtonWPtr resetTransformKnob;
+
+    KnobChoiceWPtr motionBlurTypeKnob;
+    KnobDoubleWPtr motionBlurKnob, globalMotionBlurKnob;
+    KnobDoubleWPtr shutterKnob, globalShutterKnob;
+    KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
+    KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
+
+    /*KnobDoubleWPtr opacityKnob;
+    KnobDoubleWPtr featherKnob;
+    KnobDoubleWPtr featherFallOffKnob;
+    KnobChoiceWPtr fallOffTypeKnob;
+    KnobBoolWPtr invertedKnob;
+    KnobColorWPtr colorKnob;
+    KnobDoubleWPtr brushSizeKnob;
+    KnobDoubleWPtr brushSpacingKnob;
+    KnobDoubleWPtr brushHardnessKnob;
+    KnobDoubleWPtr brushEffectKnob;
+    KnobSeparatorWPtr pressureLabelKnob;
+    KnobBoolWPtr pressureOpacityKnob;
+    KnobBoolWPtr pressureSizeKnob;
+    KnobBoolWPtr pressureHardnessKnob;
+    KnobBoolWPtr buildUpKnob;
+    KnobDoubleWPtr brushVisiblePortionKnob;
+    KnobDoubleWPtr cloneTranslateKnob;
+    KnobDoubleWPtr cloneRotateKnob;
+    KnobDoubleWPtr cloneScaleKnob;
+    KnobBoolWPtr cloneUniformKnob;
+    KnobDoubleWPtr cloneSkewXKnob;
+    KnobDoubleWPtr cloneSkewYKnob;
+    KnobChoiceWPtr cloneSkewOrderKnob;
+    KnobDoubleWPtr cloneCenterKnob;
+    KnobChoiceWPtr cloneFilterKnob;
+    KnobBoolWPtr cloneBlackOutsideKnob;
+    KnobDoubleWPtr translateKnob;
+    KnobDoubleWPtr rotateKnob;
+    KnobDoubleWPtr scaleKnob;
+    KnobBoolWPtr scaleUniformKnob;
+    KnobBoolWPtr transformInteractiveKnob;
+    KnobDoubleWPtr skewXKnob;
+    KnobDoubleWPtr skewYKnob;
+    KnobChoiceWPtr skewOrderKnob;
+    KnobDoubleWPtr centerKnob;
+    KnobDoubleWPtr extraMatrixKnob;
+    KnobChoiceWPtr sourceTypeKnob;
+    KnobIntWPtr timeOffsetKnob;
+    KnobChoiceWPtr timeOffsetModeKnob;
+*/
+
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);
+
+    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
+
+    bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
+                                               int* blendingMode) const;
+
+    void getGlobalMotionBlurSettings(const double time,
+                                     double* startTime,
+                                     double* endTime,
+                                     double* timeStep) const;
+
+
+    void resetTransformCenter();
+
+    void resetCloneTransformCenter();
+
+    void resetTransformsCenter(bool doClone, bool doTransform);
+
+    void resetTransform();
+
+    void resetCloneTransform();
+
+    void resetTransformInternal(const KnobDoublePtr& translate,
+                                const KnobDoublePtr& scale,
+                                const KnobDoublePtr& center,
+                                const KnobDoublePtr& rotate,
+                                const KnobDoublePtr& skewX,
+                                const KnobDoublePtr& skewY,
+                                const KnobBoolPtr& scaleUniform,
+                                const KnobChoicePtr& skewOrder,
+                                const KnobDoublePtr& extraMatrix);
+    
 };
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -745,6 +860,13 @@ public:
     bool isNearbyBBoxMidRight(const QPointF & p, double tolerance, const std::pair<double, double> & pixelScale) const;
     bool isNearbyBBoxMidBtm(const QPointF & p, double tolerance, const std::pair<double, double> & pixelScale) const;
     bool isNearbyBBoxMidLeft(const QPointF & p, double tolerance, const std::pair<double, double> & pixelScale) const;
+
+
+    /**
+    * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
+    * which would be used to find the exact bezier point lying on the curve.
+    **/
+    BezierPtr isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
 
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos, double tolerance) const;
 

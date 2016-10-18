@@ -170,11 +170,6 @@ public:
      **/
     const std::list< RotoLayerPtr > & getLayers() const;
 
-    /**
-     * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
-     * which would be used to find the exact bezier point lying on the curve.
-     **/
-    BezierPtr isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
 
 
     /**
@@ -182,13 +177,6 @@ public:
      * are not masked)
      **/
     bool isRotoPaintTreeConcatenatable() const;
-
-    static bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items, int* blendingMode);
-
-    void getGlobalMotionBlurSettings(const double time,
-                                     double* startTime,
-                                     double* endTime,
-                                     double* timeStep) const;
 
     bool isDoingNeatRender() const;
 
@@ -231,20 +219,6 @@ public:
 
     void clearSelection(RotoItem::SelectionReasonEnum reason);
 
-    ///only callable on main-thread
-    void setKeyframeOnSelectedCurves();
-
-    ///only callable on main-thread
-    void removeKeyframeOnSelectedCurves();
-
-    void removeAnimationOnSelectedCurves();
-
-    ///only callable on main-thread
-    void goToPreviousKeyframe();
-
-    ///only callable on main-thread
-    void goToNextKeyframe();
-
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
@@ -256,12 +230,7 @@ public:
      **/
     const std::list< RotoItemPtr > & getSelectedItems() const;
 
-    /**
-     * @brief Returns a list of all the curves in the order in which they should be rendered.
-     * Non-active curves will not be inserted into the list.
-     * MT-safe
-     **/
-    std::list< RotoDrawableItemPtr > getCurvesByRenderOrder(bool onlyActivated = true) const;
+
 
     int getNCurves() const;
 
@@ -277,27 +246,6 @@ public:
 
     KnobColorPtr getColorKnob() const;
 
-    void resetTransformCenter();
-
-    void resetCloneTransformCenter();
-
-    void resetTransformsCenter(bool doClone, bool doTransform);
-
-    void resetTransform();
-
-    void resetCloneTransform();
-
-private:
-
-    void resetTransformInternal(const KnobDoublePtr& translate,
-                                const KnobDoublePtr& scale,
-                                const KnobDoublePtr& center,
-                                const KnobDoublePtr& rotate,
-                                const KnobDoublePtr& skewX,
-                                const KnobDoublePtr& skewY,
-                                const KnobBoolPtr& scaleUniform,
-                                const KnobChoicePtr& skewOrder,
-                                const KnobDoublePtr& extraMatrix);
 
 public:
 
@@ -339,9 +287,6 @@ public:
 
     void onRotoPaintInputChanged(const NodePtr& node);
 
-    void getRotoPaintTreeNodes(NodesList* nodes) const;
-
-    void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.
@@ -400,7 +345,7 @@ public Q_SLOTS:
 private:
 
 
-    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
+    
 
     void selectInternal(const RotoItemPtr& b);
     void deselectInternal(RotoItemPtr b);

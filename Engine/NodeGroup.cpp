@@ -749,8 +749,6 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
                 assert(ok);
                 ok = connectNodes(it->second, created, it->first);
                 Q_UNUSED(ok);
-                //assert(ok); Might not be ok if the disconnectNodes() action above was queued
-
             }
         }
         ///finally we connect the created node to the selected node

@@ -76,7 +76,82 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER;
 
 
-////////////////////////////////////RotoDrawableItem////////////////////////////////////
+struct RotoDrawableItemPrivate
+{
+    Q_DECLARE_TR_FUNCTIONS(RotoDrawableItem)
+
+public:
+    /*
+     * The effect node corresponds to the following given the selected tool:
+     * Stroke= RotoOFX
+     * Blur = BlurCImg
+     * Clone = TransformOFX
+     * Sharpen = SharpenCImg
+     * Smear = hand made tool
+     * Reveal = Merge(over) with A being color type and B the tree upstream
+     * Dodge/Burn = Merge(color-dodge/color-burn) with A being the tree upstream and B the color type
+     *
+     * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
+     * onto the previous tree upstream of the effectNode.
+     */
+    NodePtr effectNode, maskNode;
+    NodePtr mergeNode;
+    NodePtr timeOffsetNode, frameHoldNode;
+    KnobColorWPtr overlayColor; //< the color the shape overlay should be drawn with, defaults to smooth red
+    KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
+
+    KnobChoiceWPtr lifeTime;
+    KnobBoolWPtr activated; //< should the curve be visible/rendered ? (animable)
+    KnobIntWPtr lifeTimeFrame;
+    KnobBoolWPtr invertKnob; //< invert the rendering
+    KnobColorWPtr color;
+    KnobChoiceWPtr compOperator;
+    KnobDoubleWPtr translate;
+    KnobDoubleWPtr rotate;
+    KnobDoubleWPtr scale;
+    KnobBoolWPtr scaleUniform;
+    KnobDoubleWPtr skewX;
+    KnobDoubleWPtr skewY;
+    KnobChoiceWPtr skewOrder;
+    KnobDoubleWPtr center;
+    KnobDoubleWPtr extraMatrix;
+    KnobDoubleWPtr brushSize;
+    KnobDoubleWPtr brushSpacing;
+    KnobDoubleWPtr brushHardness;
+    KnobDoubleWPtr effectStrength;
+    KnobBoolWPtr pressureOpacity, pressureSize, pressureHardness, buildUp;
+    KnobDoubleWPtr visiblePortion; // [0,1] by default
+    KnobDoubleWPtr cloneTranslate;
+    KnobDoubleWPtr cloneRotate;
+    KnobDoubleWPtr cloneScale;
+    KnobBoolWPtr cloneScaleUniform;
+    KnobDoubleWPtr cloneSkewX;
+    KnobDoubleWPtr cloneSkewY;
+    KnobChoiceWPtr cloneSkewOrder;
+    KnobDoubleWPtr cloneCenter;
+    KnobChoiceWPtr cloneFilter;
+    KnobBoolWPtr cloneBlackOutside;
+    KnobChoiceWPtr sourceColor;
+    KnobIntWPtr timeOffset;
+    KnobChoiceWPtr timeOffsetMode;
+
+    KnobDoublePtr motionBlur;
+    KnobDoublePtr shutter;
+    KnobChoicePtr shutterType;
+    KnobDoublePtr customOffset;
+
+
+    RotoDrawableItemPrivate()
+    : effectNode()
+    , maskNode()
+    , mergeNode()
+    , timeOffsetNode()
+    , frameHoldNode()
+    {
+
+    }
+
+};
 
 RotoDrawableItem::RotoDrawableItem(const RotoContextPtr& context,
                                    const std::string & name,
@@ -605,43 +680,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     return true;
 } // RotoDrawableItem::onKnobValueChanged
 
-void
-RotoDrawableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view)
-{
-
-    if (knob) {
-        knob->invalidateHashCache();
-    }
-    
-    invalidateHashCache();
-    Q_UNUSED(reason);
-    Q_UNUSED(dimension);
-    Q_UNUSED(time);
-    Q_UNUSED(view);
-    /*// Call invalidate hash on the mask and effect, this will recurse below on all nodes in the group which is enough to invalidate the hash;
-    if (_imp->maskNode) {
-        _imp->maskNode->getEffectInstance()->onSignificantEvaluateAboutToBeCalled(KnobIPtr(), reason, dimension, time, view);
-    }
-    if (_imp->effectNode) {
-        _imp->effectNode->getEffectInstance()->onSignificantEvaluateAboutToBeCalled(KnobIPtr(), reason, dimension, time, view);
-    }*/
-}
-
-void
-RotoDrawableItem::evaluate(bool isSignificant, bool refreshMetadatas)
-{
-    if (!_imp->mergeNode) {
-        return;
-    }
-    // Call evaluate on the merge node
-    // If the tree is "concatenated", the merge node will not be used hence call it on the RotoPaint node itself
-    if (_imp->mergeNode->getOutputs().empty()) {
-        getContext()->getNode()->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
-    } else {
-        _imp->mergeNode->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
-    }
-}
-
 
 
 NodePtr
@@ -693,6 +731,21 @@ RotoDrawableItem::clearPaintBuffers()
     }
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->setPaintBuffer(ImagePtr());
+    }
+
+    KnobItemsTablePtr model = getModel();
+    NodePtr node;
+    if (model) {
+        node = model->getNode();
+    }
+    if (node) {
+        std::list<ViewerInstancePtr> viewers;
+        node->hasViewersConnected(&viewers);
+        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
+             it != viewers.end();
+             ++it) {
+            (*it)->clearLastRenderedImage();
+        }
     }
 }
 
@@ -882,26 +935,6 @@ RotoDrawableItem::resetNodesThreadSafety()
     getContext()->getNode()->revertToPluginThreadSafety();
 }
 
-void
-RotoDrawableItem::clone(const RotoItem* other)
-{
-    const RotoDrawableItem* otherDrawable = dynamic_cast<const RotoDrawableItem*>(other);
-
-    if (!otherDrawable) {
-        return;
-    }
-    const KnobsVec& otherKnobs = otherDrawable->getKnobs();
-    const KnobsVec& knobs = getKnobs();
-    if (knobs.size() != otherKnobs.size()) {
-        return;
-    }
-    KnobsVec::const_iterator it = knobs.begin();
-    KnobsVec::const_iterator otherIt = otherKnobs.begin();
-    for (; it != knobs.end(); ++it, ++otherIt) {
-        (*it)->copyKnob(*otherIt);
-    }
-    RotoItem::clone(other);
-}
 
 static void
 serializeRotoKnob(const KnobIPtr & knob,
@@ -1500,15 +1533,6 @@ RotoDrawableItem::initializeKnobs()
     if (type == eRotoStrokeTypeSolid) {
         _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
     }
-
-
-    // Shape
-    if (isBezier) {
-        _imp->feather = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherParam);
-        _imp->featherFallOff = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherFallOffParam);
-        _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
-    }
-
 
     // The comp item doesn't have a vector data mask hence cannot have a transform on it
     if (type != eRotoStrokeTypeComp) {

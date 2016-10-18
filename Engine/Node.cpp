@@ -2546,14 +2546,6 @@ Node::quitAnyProcessing_non_blocking()
     if (trackerContext) {
         trackerContext->quitTrackerThread_non_blocking();
     }
-
-    if ( isRotoPaintingNode() ) {
-        NodesList rotopaintNodes;
-        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing_non_blocking();
-        }
-    }
 }
 
 void
@@ -2587,14 +2579,6 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
-    }
-
-    if ( isRotoPaintingNode() ) {
-        NodesList rotopaintNodes;
-        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing_blocking(allowThreadsToRestart);
-        }
     }
 }
 
@@ -9891,15 +9875,6 @@ Node::markAllInputRelatedDataDirty()
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
         _imp->mustComputeInputRelatedData = true;
-    }
-    if ( isRotoPaintingNode() ) {
-        RotoContextPtr roto = getRotoContext();
-        assert(roto);
-        NodesList rotoNodes;
-        roto->getRotoPaintTreeNodes(&rotoNodes);
-        for (NodesList::iterator it = rotoNodes.begin(); it != rotoNodes.end(); ++it) {
-            (*it)->markAllInputRelatedDataDirty();
-        }
     }
 }
 

@@ -798,48 +798,6 @@ BezierCP::operator==(const BezierCP& other) const
 }
 
 void
-BezierCP::cloneInternalCurvesToGuiCurves()
-{
-    _imp->guiCurveX->clone(*_imp->curveX);
-    _imp->guiCurveY->clone(*_imp->curveY);
-
-
-    _imp->guiCurveLeftBezierX->clone(*_imp->curveLeftBezierX);
-    _imp->guiCurveLeftBezierY->clone(*_imp->curveLeftBezierY);
-    _imp->guiCurveRightBezierX->clone(*_imp->curveRightBezierX);
-    _imp->guiCurveRightBezierY->clone(*_imp->curveRightBezierY);
-
-    QMutexLocker k(&_imp->staticPositionMutex);
-    _imp->guiX = _imp->x;
-    _imp->guiY = _imp->y;
-    _imp->guiLeftX = _imp->leftX;
-    _imp->guiLeftY = _imp->leftY;
-    _imp->guiRightX = _imp->rightX;
-    _imp->guiRightY = _imp->rightY;
-}
-
-void
-BezierCP::cloneGuiCurvesToInternalCurves()
-{
-    _imp->curveX->clone(*_imp->guiCurveX);
-    _imp->curveY->clone(*_imp->guiCurveY);
-
-
-    _imp->curveLeftBezierX->clone(*_imp->guiCurveLeftBezierX);
-    _imp->curveLeftBezierY->clone(*_imp->guiCurveLeftBezierY);
-    _imp->curveRightBezierX->clone(*_imp->guiCurveRightBezierX);
-    _imp->curveRightBezierY->clone(*_imp->guiCurveRightBezierY);
-
-    QMutexLocker k(&_imp->staticPositionMutex);
-    _imp->x = _imp->guiX;
-    _imp->y = _imp->guiY;
-    _imp->leftX = _imp->guiLeftX;
-    _imp->leftY = _imp->guiLeftY;
-    _imp->rightX = _imp->guiRightX;
-    _imp->rightY = _imp->guiRightY;
-}
-
-void
 BezierCP::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {
     SERIALIZATION_NAMESPACE::BezierCPSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::BezierCPSerialization*>(obj);

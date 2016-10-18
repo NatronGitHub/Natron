@@ -403,6 +403,12 @@ public:
 
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    void refreshRotoPaintTree();
+
+    bool isRotoPaintTreeConcatenatable() const;
+    
+    void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
+
 public Q_SLOTS:
 
 

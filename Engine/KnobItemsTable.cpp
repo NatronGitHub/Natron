@@ -34,6 +34,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/TimeLine.h"
 #include "Serialization/KnobTableItemSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -460,6 +461,68 @@ KnobTableItem::getModel() const
 }
 
 void
+KnobTableItem::copyItem(const KnobTableItemPtr& other)
+{
+    const std::vector<KnobIPtr>& otherKnobs = other->getKnobs();
+    const std::vector<KnobIPtr>& thisKnobs = getKnobs();
+    if (thisKnobs.size() != otherKnobs.size()) {
+        return;
+    }
+    KnobsVec::const_iterator it = thisKnobs.begin();
+    KnobsVec::const_iterator otherIt = otherKnobs.begin();
+    for (; it != knobs.end(); ++it, ++otherIt) {
+        (*it)->copyKnob(*otherIt);
+    }
+
+}
+
+void
+KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view)
+{
+
+    KnobItemsTablePtr model = getModel();
+    if (model) {
+        NodePtr node = model->getNode();
+        if ( !node || !node->isNodeCreated() ) {
+            return;
+        }
+        node->getEffectInstance()->abortAnyEvaluation();
+    }
+    
+    
+    if (knob) {
+        // This will also invalidate this hash cache
+        knob->invalidateHashCache();
+    } else {
+        invalidateHashCache();
+    }
+
+    bool isMT = QThread::currentThread() == qApp->thread();
+    if ( isMT && ( !knob || knob->getEvaluateOnChange() ) ) {
+        getApp()->triggerAutoSave();
+    }
+
+    Q_UNUSED(reason);
+    Q_UNUSED(dimension);
+    Q_UNUSED(time);
+    Q_UNUSED(view);
+}
+
+void
+KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+    node->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
+}
+
+void
 KnobTableItem::setLabel(const std::string& label, TableChangeReasonEnum reason)
 {
     {
@@ -748,6 +811,80 @@ KnobTableItem::getItemRow() const
     return rowI;
 }
 
+int
+KnobTableItem::getHierarchyLevel() const
+{
+    int level = 0;
+    KnobTableItemPtr parent = getParent();
+    while (parent) {
+        ++level;
+        parent = parent->getParent();
+    }
+    return level;
+}
+
+static KnobTableItemPtr
+getNextNonContainerItemInternal(const std::vector<KnobTableItemPtr>& siblings, const KnobTableItemConstPtr& item)
+{
+
+    if ( !item || siblings.empty() ) {
+        return KnobTableItemPtr();
+    }
+    std::vector<KnobTableItemPtr>::const_iterator found = siblings.end();
+    for (std::vector<KnobTableItemPtr>::const_iterator it = siblings.begin(); it != siblings.end(); ++it) {
+        if (*it == item) {
+            found = it;
+            break;
+        }
+    }
+
+    // The item must be in the siblings vector
+    assert( found != siblings.end() );
+
+    if ( found != siblings.end() ) {
+        // If there's a next items in the siblings, return it
+        ++found;
+        if ( found != siblings.end() ) {
+            return *found;
+        }
+    }
+
+    // Item was still not found, find in great parent layer
+    KnobTableItemPtr parentItem;
+    KnobTableItemPtr greatParentItem;
+    {
+        parentItem = item->getParent();
+        if (!parentItem) {
+            return KnobTableItemPtr();
+        }
+        greatParentItem = parentItem->getParent();
+        if (!greatParentItem) {
+            return KnobTableItemPtr();
+        }
+    }
+    std::vector<KnobTableItemPtr> greatParentItems = greatParentItem->getChildren();
+
+    return getNextNonContainerItemInternal(greatParentItems, parentItem);
+}
+
+KnobTableItemPtr
+KnobTableItem::getNextNonContainerItem() const
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return KnobTableItemPtr();
+    }
+    std::vector<KnobTableItemPtr> siblings;
+    KnobTableItemPtr parentItem = getParent();
+    if (!parentItem) {
+        siblings = model->getTopLevelItems();
+    } else {
+        siblings = parentItem->getChildren();
+    }
+    KnobTableItemConstPtr thisShared = toKnobTableItem(shared_from_this());
+    return getNextNonContainerItemInternal(siblings, thisShared);
+}
+
 void
 KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
@@ -1025,6 +1162,42 @@ KnobItemsTable::selectAll(TableChangeReasonEnum reason)
     }
     endEditSelection(reason);
 }
+
+KnobTableItemPtr
+KnobItemsTable::findDeepestSelectedItemContainer() const
+{
+    int minLevel = -1;
+    KnobTableItemPtr minContainer;
+
+    std::list<KnobTableItemWPtr> selection;
+    {
+        QMutexLocker k(&_imp->selectionLock);
+        selection = _imp->selectedItems;
+    }
+
+    for (std::list<KnobTableItemWPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+        KnobTableItemPtr item = it->lock();
+        if (!item) {
+            continue;
+        }
+        int lvl = item->getHierarchyLevel();
+        if (lvl > minLevel) {
+            if (item->isItemContainer()) {
+                minContainer = item;
+            } else {
+                minContainer = item->getParent();
+            }
+            minLevel = lvl;
+        }
+    }
+    return minContainer;
+}
+
+std::list<KnobTableItemPtr>
+KnobItemsTable::getNonContainerItemsFromBottomToTop() const
+{
+
+} // getNonContainerItemsFromBottomToTop
 
 void
 KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
@@ -1552,6 +1725,186 @@ KnobTableItem::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDouble
         setMultipleKeyFrames(keyTimes, ViewSetSpec::all(), 0);
     }
 
+}
+
+static void addKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
+{
+    if (item->getCanAnimateUserKeyframes()) {
+        item->setKeyFrame(time, view, 0);
+    }
+    if (item->isItemContainer()) {
+        std::vector<KnobTableItemPtr> children = item->getChildren();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            addKeyFrameRecursively(children[i], time, view);
+        }
+    }
+}
+
+void
+KnobItemsTable::setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
+{
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        addKeyFrameRecursively(*it, time, view);
+    }
+}
+
+static void removeKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
+{
+    if (item->getCanAnimateUserKeyframes()) {
+        item->deleteValueAtTime(time, view, DimSpec::all());
+    }
+    if (item->isItemContainer()) {
+        std::vector<KnobTableItemPtr> children = item->getChildren();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            removeKeyFrameRecursively(children[i], time, view);
+        }
+    }
+}
+
+void
+KnobItemsTable::removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
+{
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        removeKeyFrameRecursively(*it, time, view);
+    }
+}
+
+static void removeAnimationRecursively(const KnobTableItemPtr& item, ViewSetSpec view)
+{
+    if (item->getCanAnimateUserKeyframes()) {
+        item->removeAnimation(view, DimSpec::all());
+    }
+    if (item->isItemContainer()) {
+        std::vector<KnobTableItemPtr> children = item->getChildren();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            removeAnimationRecursively(children[i], view);
+        }
+    }
+}
+
+void
+KnobItemsTable::removeAnimationOnSelectedItems(ViewSetSpec view)
+{
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        removeAnimationRecursively(*it,  view);
+    }
+}
+
+double
+KnobTableItem::getMasterKeyframesCount() const
+{
+    return _imp->animation->getKeyFramesCount();
+}
+
+static void
+findOutNearestKeyframeRecursively(const KnobTableItemPtr& item,
+                                  bool previous,
+                                  double time,
+                                  double* nearest)
+{
+
+    if (item->isItemContainer()) {
+        std::vector<KnobTableItemPtr> children = item->getChildren();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            findOutNearestKeyframeRecursively(children[i], previous, time, nearest);
+        }
+    } else if (item->getCanAnimateUserKeyframes()) {
+        if (previous) {
+            int t = item->getPreviousMasterKeyframeTime(time);
+            if ( (t != -std::numeric_limits<double>::infinity()) && (t > *nearest) ) {
+                *nearest = t;
+            }
+        } else if (layer) {
+            int t = item->getNextMasterKeyframeTime(time);
+            if ( (t != std::numeric_limits<double>::infinity()) && (t < *nearest) ) {
+                *nearest = t;
+            }
+        }
+
+    }
+
+}
+
+double
+KnobTableItem::getPreviousMasterKeyframeTime(double time) const
+{
+    KeyFrame k;
+    if (!_imp->animation->getPreviousKeyframeTime(time, &k)) {
+        return -std::numeric_limits<double>::infinity();
+    }
+}
+
+double
+KnobTableItem::getNextMasterKeyframeTime(double time) const
+{
+    KeyFrame k;
+    if (!_imp->animation->getNextKeyframeTime(time, &k)) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+}
+
+void
+KnobItemsTable::goToPreviousMasterKeyframe()
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    double time = node->getApp()->getTimeLine()->currentFrame();
+    double minTime = -std::numeric_limits<double>::infinity();
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        findOutNearestKeyframeRecursively(*it, true, time, &minTime);
+    }
+    if (minTime != -std::numeric_limits<double>::infinity()) {
+        node->getApp()->setLastViewerUsingTimeline( NodePtr() );
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+    }
+}
+
+void
+KnobItemsTable::goToNextMasterKeyframe()
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    double time = node->getApp()->getTimeLine()->currentFrame();
+    double minTime = std::numeric_limits<double>::infinity();
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        findOutNearestKeyframeRecursively(*it, false, time, &minTime);
+    }
+    if (minTime != std::numeric_limits<double>::infinity()) {
+        node->getApp()->setLastViewerUsingTimeline( NodePtr() );
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+    }
+}
+
+static bool hasAnimationRecursive(const std::vector<KnobTableItemPtr>& items)
+{
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        if (items[i]->isItemContainer()) {
+            bool subRet = hasAnimationRecursive(items[i]);
+            if (subRet) {
+                return true;
+            }
+        } else if (items[i]->getMasterKeyframesCount() > 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+KnobItemsTable::hasAnimation() const
+{
+    std::vector<KnobTableItemPtr> items = getTopLevelItems();
+    return hasAnimationRecursive(items);
 }
 
 

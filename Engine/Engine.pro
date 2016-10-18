@@ -184,7 +184,7 @@ SOURCES += \
     RotoItem.cpp \
     RotoLayer.cpp \
     RotoPaint.cpp \
-    RotoPaintInteract.cpp \
+    RotoPaintPrivate.cpp \
     RotoShapeRenderNode.cpp \
     RotoShapeRenderNodePrivate.cpp \
     RotoShapeRenderCairo.cpp \
@@ -408,7 +408,7 @@ HEADERS += \
     RotoLayer.h \
     RotoItem.h \
     RotoPaint.h \
-    RotoPaintInteract.h \
+    RotoPaintPrivate.h \
     RotoPoint.h \
     RotoShapeRenderNode.h \
     RotoShapeRenderNodePrivate.h \

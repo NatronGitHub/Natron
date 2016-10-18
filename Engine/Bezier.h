@@ -91,6 +91,10 @@ public:
 
     virtual ~Bezier();
 
+    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
+
+    virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL { return true; }
+    
     static
     double bezierEval(double p0,
                       double p1,
@@ -127,9 +131,6 @@ public:
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
      **/
     virtual bool useFeatherPoints() const { return true; }
-
-
-    virtual void clone(const RotoItem* other) OVERRIDE;
 
 
     void clearAllPoints();
@@ -332,31 +333,6 @@ private:
 public:
 
 
-    /**
-     * @brief Set a new keyframe at the given time. If a keyframe already exists this function does nothing.
-     **/
-    void setKeyframe(double time);
-
-    /**
-     * @brief Removes a keyframe at the given time if any.
-     **/
-    void removeKeyframe(double time);
-
-    /**
-     * @brief Removes all animation
-     **/
-    void removeAnimation();
-
-    /**
-     * @brief Moves a keyframe
-     **/
-    void moveKeyframe(double oldTime, double newTime);
-
-
-    /**
-     * @brief Returns the number of keyframes for this spline.
-     **/
-    int getKeyframesCount() const;
 
     static void deCastelJau(const std::list<BezierCPPtr >& cps, double time, unsigned int mipMapLevel,
                             bool finished,
@@ -421,7 +397,7 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(bouble time,
+    void evaluateFeatherPointsAtTime_DeCasteljau(double time,
                                                  unsigned int mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
@@ -647,6 +623,8 @@ Q_SIGNALS:
     void controlPointRemoved();
 
 private:
+
+    virtual void initializeKnobs() OVERRIDE;
     
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

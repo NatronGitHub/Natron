@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Format.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/RenderStats.h"
 #include "Engine/Transform.h"
 #include "Engine/CoonsRegularization.h"
@@ -92,6 +93,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct BezierPrivate
 {
+    mutable QMutex itemMutex; //< protects points & featherPoits
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
     
@@ -104,7 +106,12 @@ struct BezierPrivate
     bool isOpenBezier; // when true the bezier will be rendered even if not closed
     
     std::string baseName;
-    
+
+    KnobDoubleWPtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
+    KnobDoubleWPtr featherFallOff; //< the rate of fall-off for the feather, between 0 and 1,  0.5 meaning the
+    //alpha value is half the original value when at half distance from the feather distance
+    KnobChoiceWPtr fallOffRampType;
+
     BezierPrivate(const std::string& baseName, bool isOpenBezier)
     : points()
     , featherPoints()
@@ -152,14 +159,6 @@ Bezier::Bezier(const RotoContextPtr& ctx,
 {
 }
 
-Bezier::Bezier(const Bezier & other,
-               const RotoLayerPtr& parent)
-: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
-, _imp( new BezierPrivate(other._imp->baseName, other._imp->isOpenBezier) )
-{
-    clone(&other);
-    setParentLayer(parent);
-}
 
 bool
 Bezier::isOpenBezier() const
@@ -1163,7 +1162,7 @@ void
 Bezier::clearAllPoints()
 {
     removeAnimation();
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->itemMutex);
     _imp->points.clear();
     _imp->featherPoints.clear();
     _imp->isClockwiseOriented.clear();
@@ -1171,13 +1170,12 @@ Bezier::clearAllPoints()
 }
 
 void
-Bezier::clone(const RotoItem* other)
+Bezier::copyItem(const KnobTableItemPtr& other)
 {
     BezierPtr this_shared = toBezier( shared_from_this() );
-
     assert(this_shared);
 
-    const Bezier* otherBezier = dynamic_cast<const Bezier*>(other);
+    BezierPtr otherBezier = toBezier(other);
     if (!otherBezier) {
         return;
     }
@@ -1185,7 +1183,7 @@ Bezier::clone(const RotoItem* other)
     Q_EMIT aboutToClone();
     {
         bool useFeather = otherBezier->useFeatherPoints();
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         assert(otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() || !useFeather);
 
         _imp->featherPoints.clear();
@@ -1207,7 +1205,7 @@ Bezier::clone(const RotoItem* other)
         _imp->finished = otherBezier->_imp->finished && !_imp->isOpenBezier;
     }
     evaluateCurveModified();
-    RotoDrawableItem::clone(other);
+    RotoDrawableItem::copyItem(other);
     Q_EMIT cloned();
 }
 
@@ -1232,7 +1230,7 @@ Bezier::addControlPoint(double x,
     assert(this_shared);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         assert(!_imp->finished);
         if ( _imp->points.empty() ) {
             keyframeTime = time;
@@ -1299,7 +1297,7 @@ Bezier::addControlPointAfterIndex(int index,
         fp.reset( new FeatherPoint(this_shared) );
     }
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
 
         if ( ( index >= (int)_imp->points.size() ) || (index < -1) ) {
             throw std::invalid_argument("Spline control point index out of range.");
@@ -1484,7 +1482,7 @@ Bezier::addControlPointAfterIndex(int index,
 int
 Bezier::getControlPointsCount() const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     return (int)_imp->points.size();
 }
@@ -1503,7 +1501,7 @@ Bezier::isPointOnCurve(double x,
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
 
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     ///special case: if the curve has only 1 control point, just check if the point
     ///is nearby that sole control point
@@ -1582,7 +1580,7 @@ Bezier::setCurveFinished(bool finished)
     assert( QThread::currentThread() == qApp->thread() );
 
     if (!_imp->isOpenBezier) {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         _imp->finished = finished;
     }
 
@@ -1594,7 +1592,7 @@ Bezier::setCurveFinished(bool finished)
 bool
 Bezier::isCurveFinished() const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     return _imp->finished;
 }
@@ -1607,7 +1605,7 @@ Bezier::removeControlPointByIndex(int index)
 
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         BezierCPs::iterator it;
         try {
             it = _imp->atIndex(index);
@@ -1649,7 +1647,7 @@ Bezier::movePointByIndexInternal(int index,
     invTrans = Transform::matInverse(trans);
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         Transform::Point3D p, left, right;
         p.z = left.z = right.z = 1;
 
@@ -1825,7 +1823,7 @@ Bezier::setPointByIndexInternal(int index,
     double dx, dy;
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         Transform::Point3D p(0., 0., 1.);
         Transform::Point3D left(0., 0., 1.);
         Transform::Point3D right(0., 0., 1.);
@@ -1906,7 +1904,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
 
     bool keySet = false;
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         BezierCP* cp = 0;
         BezierCP* fp = 0;
         bool moveControlPoint = !onlyFeather;
@@ -2145,7 +2143,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
 
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
 
         if ( index >= (int)_imp->points.size() ) {
@@ -2270,7 +2268,7 @@ Bezier::transformPoint(const BezierCPPtr & point,
     bool keySet = false;
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         Transform::Point3D cp, leftCp, rightCp;
         point->getPositionAtTime(time, ViewIdx(0), &cp.x, &cp.y);
         point->getLeftBezierPointAtTime(time, ViewIdx(0), &leftCp.x, &leftCp.y);
@@ -2314,7 +2312,7 @@ Bezier::removeFeatherAtIndex(int index)
     assert( useFeatherPoints() );
 
 
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( index >= (int)_imp->points.size() ) {
         throw std::invalid_argument("Bezier::removeFeatherAtIndex: Index out of range.");
@@ -2346,7 +2344,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
 
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         if ( index >= (int)_imp->points.size() ) {
             throw std::invalid_argument("Bezier::smoothOrCuspPointAtIndex: Index out of range.");
         }
@@ -2407,7 +2405,7 @@ Bezier::setKeyframe(double time)
     assert( QThread::currentThread() == qApp->thread() );
 
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         if ( _imp->hasKeyframeAtTime(time) ) {
             return;
         }
@@ -2454,7 +2452,7 @@ Bezier::removeKeyframe(double time)
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
 
         if ( !_imp->hasKeyframeAtTime(time) ) {
             return;
@@ -2490,7 +2488,7 @@ Bezier::removeAnimation()
 
     double time = getContext()->getTimelineCurrentTime();
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
 
         assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints() );
 
@@ -2549,7 +2547,7 @@ Bezier::moveKeyframe(double oldTime,
     }
 
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->itemMutex);
         bool foundOld;
         bool oldValue;
         std::map<double, bool>::iterator foundOldIt = _imp->isClockwiseOriented.find(oldTime);
@@ -2571,7 +2569,7 @@ Bezier::moveKeyframe(double oldTime,
 int
 Bezier::getKeyframesCount() const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( _imp->points.empty() ) {
         return 0;
@@ -2691,7 +2689,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(double time,
     Transform::Matrix3x3 transform;
 
     getTransformAtTime(time, &transform);
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
     deCastelJau(_imp->points, time, mipMapLevel, _imp->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
@@ -2752,7 +2750,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     assert( useFeatherPoints() );
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
 
     if ( _imp->points.empty() ) {
@@ -2904,7 +2902,7 @@ Bezier::getBoundingBox(double time) const
         Transform::Matrix3x3 transform;
         getTransformAtTime(t, &transform);
 
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         bezierSegmentListBboxUpdate(_imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &pointsBbox);
 
 
@@ -2959,7 +2957,7 @@ Bezier::getControlPoints_internal()
 std::list< BezierCPPtr >
 Bezier::getControlPoints_mt_safe() const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     return _imp->points;
 }
@@ -2976,7 +2974,7 @@ Bezier::getFeatherPoints() const
 std::list< BezierCPPtr >
 Bezier::getFeatherPoints_mt_safe() const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     return _imp->featherPoints;
 }
@@ -2993,7 +2991,7 @@ Bezier::isNearbyControlPoint(double x,
     double time = getContext()->getTimelineCurrentTime();
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
     BezierCPPtr cp, fp;
 
     switch (pref) {
@@ -3062,7 +3060,7 @@ Bezier::getControlPointIndex(const BezierCP* cp) const
 {
     ///only called on the main-thread
     assert(cp);
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
     int i = 0;
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++i) {
         if (it->get() == cp) {
@@ -3077,7 +3075,7 @@ int
 Bezier::getFeatherPointIndex(const BezierCPPtr & fp) const
 {
     ///only called on the main-thread
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
     int i = 0;
 
     for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++i) {
@@ -3092,7 +3090,7 @@ Bezier::getFeatherPointIndex(const BezierCPPtr & fp) const
 BezierCPPtr
 Bezier::getControlPointAtIndex(int index) const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( (index < 0) || ( index >= (int)_imp->points.size() ) ) {
         return BezierCPPtr();
@@ -3107,7 +3105,7 @@ Bezier::getControlPointAtIndex(int index) const
 BezierCPPtr
 Bezier::getFeatherPointAtIndex(int index) const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( (index < 0) || ( index >= (int)_imp->featherPoints.size() ) ) {
         return BezierCPPtr();
@@ -3131,7 +3129,7 @@ Bezier::controlPointsWithinRect(double l,
 
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    QMutexLocker locker(&itemMutex);
+    QMutexLocker locker(&_imp->itemMutex);
     double time = getContext()->getTimelineCurrentTime();
     int i = 0;
     if ( (mode == 0) || (mode == 1) ) {
@@ -3318,7 +3316,7 @@ Bezier::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
         return;
     }
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
 
         s->_closed = _imp->finished;
         s->_isOpenBezier = _imp->isOpenBezier;
@@ -3357,7 +3355,7 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     assert(this_shared);
     {
-        QMutexLocker l(&itemMutex);
+        QMutexLocker l(&_imp->itemMutex);
         _imp->isOpenBezier = s->_isOpenBezier;
         _imp->finished = s->_closed && !_imp->isOpenBezier;
 
@@ -3387,7 +3385,7 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 void
 Bezier::getKeyframeTimes(std::set<double> *times) const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     _imp->getKeyframeTimes(times);
 }
@@ -3395,7 +3393,7 @@ Bezier::getKeyframeTimes(std::set<double> *times) const
 void
 Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<double, KeyframeTypeEnum> > *keys) const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( _imp->points.empty() ) {
         return;
@@ -3407,7 +3405,7 @@ int
 Bezier::getPreviousKeyframeTime(double time) const
 {
     std::set<double> times;
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     _imp->getKeyframeTimes(&times);
     for (std::set<double>::reverse_iterator it = times.rbegin(); it != times.rend(); ++it) {
@@ -3423,7 +3421,7 @@ int
 Bezier::getNextKeyframeTime(double time) const
 {
     std::set<double> times;
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     _imp->getKeyframeTimes(&times);
     for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
@@ -3438,7 +3436,7 @@ Bezier::getNextKeyframeTime(double time) const
 int
 Bezier::getKeyFrameIndex(double time) const
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
 
     if ( _imp->points.empty() ) {
         return -1;
@@ -3451,7 +3449,7 @@ void
 Bezier::setKeyFrameInterpolation(KeyframeTypeEnum interp,
                                  int index)
 {
-    QMutexLocker l(&itemMutex);
+    QMutexLocker l(&_imp->itemMutex);
     bool useFeather = useFeatherPoints();
     BezierCPs::iterator fp = _imp->featherPoints.begin();
 
@@ -3528,7 +3526,7 @@ Bezier::isFeatherPolygonClockwiseOrientedInternal(double time) const
 bool
 Bezier::isFeatherPolygonClockwiseOriented(double time) const
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->itemMutex);
 
     return isFeatherPolygonClockwiseOrientedInternal(time);
 }
@@ -3544,7 +3542,7 @@ void
 Bezier::refreshPolygonOrientation(double time)
 {
    
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->itemMutex);
     if (!_imp->autoRecomputeOrientation) {
         return;
     }
@@ -3555,7 +3553,7 @@ void
 Bezier::refreshPolygonOrientation()
 {
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->itemMutex);
         if (!_imp->autoRecomputeOrientation) {
             return;
         }
@@ -3564,7 +3562,7 @@ Bezier::refreshPolygonOrientation()
 
     getKeyframeTimes(&kfs);
 
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->itemMutex);
     if ( kfs.empty() ) {
         computePolygonOrientation(0, true);
     } else {
@@ -3762,6 +3760,17 @@ Bezier::getBaseItemName() const
 {
     return _imp->baseName;
 }
+
+void
+Bezier::initializeKnobs()
+{
+    RotoDrawableItem::initializeKnobs();
+
+    _imp->feather = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherParam);
+    _imp->featherFallOff = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherFallOffParam);
+    _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
+
+} // initializeKnobs
 
 NATRON_NAMESPACE_EXIT;
 

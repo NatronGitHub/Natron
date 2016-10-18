@@ -90,7 +90,47 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER;
 
-////////////////////////////////////Stroke//////////////////////////////////
+struct RotoStrokeItemPrivate
+{
+    RotoStrokeType type;
+    bool finished;
+    struct StrokeCurves
+    {
+        CurvePtr xCurve, yCurve, pressureCurve;
+    };
+
+    /**
+     * @brief A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
+     **/
+    std::vector<StrokeCurves> strokes;
+    double curveT0; // timestamp of the first point in curve
+    double lastTimestamp;
+    RectD bbox;
+    RectD wholeStrokeBboxWhilePainting;
+    mutable QMutex strokeDotPatternsMutex;
+    std::vector<cairo_pattern_t*> strokeDotPatterns;
+
+    OSGLContextWPtr drawingGlCpuContext,drawingGlGpuContext;
+
+    RotoStrokeItemPrivate(RotoStrokeType type)
+    : type(type)
+    , finished(false)
+    , strokes()
+    , curveT0(0)
+    , lastTimestamp(0)
+    , bbox()
+    , wholeStrokeBboxWhilePainting()
+    , strokeDotPatternsMutex()
+    , strokeDotPatterns()
+    , drawingGlCpuContext()
+    , drawingGlGpuContext()
+    {
+        bbox.x1 = std::numeric_limits<double>::infinity();
+        bbox.x2 = -std::numeric_limits<double>::infinity();
+        bbox.y1 = std::numeric_limits<double>::infinity();
+        bbox.y2 = -std::numeric_limits<double>::infinity();
+    }
+};
 
 RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
                                const RotoContextPtr& context,

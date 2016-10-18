@@ -3142,14 +3142,13 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, Value
     }
 
 
-    if (isMT) {
-        node->refreshIdentityState();
-        if (knob) {
-            knob->invalidateHashCache();
-        } else {
-            invalidateHashCache();
-        }
+    node->refreshIdentityState();
+    if (knob) {
+        knob->invalidateHashCache();
+    } else {
+        invalidateHashCache();
     }
+
 }
 
 void
@@ -5300,22 +5299,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
         for (NodesList::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
-    } else {
-        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
-        if (attachedStroke) {
-            ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
-            RotoContextPtr context = attachedStroke->getContext();
-            assert(context);
-            if (context) {
-                NodePtr rotonode = context->getNode();
-                if (rotonode) {
-                    rotonode->hasOutputNodesConnected(&outputNodes);
-                }
-            }
-        } else {
-            node->hasOutputNodesConnected(&outputNodes);
-        }
-    }
+    } 
     for (std::list<OutputEffectInstancePtr>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished

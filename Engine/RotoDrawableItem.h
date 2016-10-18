@@ -101,31 +101,54 @@ public:
 
     virtual ~RotoDrawableItem();
 
+    /**
+     * @brief Returns the default overlay color
+     **/
     static void getDefaultOverlayColor(double *r, double *g, double *b);
 
+    /**
+     * @brief Create internal nodes used by the item. Does nothing if nodes are already created
+     * @param connectNodes If true, this will also call refreshNodesConnections()
+     **/
     void createNodes(bool connectNodes = true);
 
+    /**
+     * @brief Set the render thread safety to instance safe. This is called when user start drawing.
+     **/
     void setNodesThreadSafetyForRotopainting();
 
+    /**
+     * @brief If setNodesThreadSafetyForRotopainting() was called, this will restore the thread safety of the internal 
+     * nodes to their default thread safety for rendering.
+     **/
+    void resetNodesThreadSafety();
+
+    /**
+     * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
+     * to calling this function.
+     **/
     void refreshNodesConnections(bool isTreeConcatenated);
 
+    /**
+     * @brief Deactivates all nodes used by this item
+     **/
+    void deactivateNodes();
+
+    /**
+     * @brief Activates all nodes used by this item
+     **/
+    void activateNodes();
+
+    /**
+     * @brief Deactivate all nodes used by this item
+     **/
+    void disconnectNodes();
+
+    /**
+     * @brief Clear the image pointers used by internal nodes of the item used to store previous computations
+     * while rotopainting. This will force a render of the full image
+     **/
     void clearPaintBuffers();
-
-    virtual void clone(const RotoItem*  other) OVERRIDE;
-
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
-
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
@@ -211,27 +234,21 @@ public:
 
     void setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat);
 
+    /**
+     * @brief Return pointer to internal node
+     **/
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
     NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
 
-    void resetNodesThreadSafety();
-    void deactivateNodes();
-    void activateNodes();
-    void disconnectNodes();
 
     void resetTransformCenter();
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
     virtual void initializeKnobs() OVERRIDE;
-
-
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
-
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE;
 
 
 Q_SIGNALS:

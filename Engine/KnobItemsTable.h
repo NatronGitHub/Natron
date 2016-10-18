@@ -74,6 +74,12 @@ public:
     KnobItemsTablePtr getModel() const;
 
     /**
+     * @brief Copy all the items data except its script-name, label and parent.
+     * Can be reimplemented to copy more data from subclasses.
+     **/
+    virtual void copyItem(const KnobTableItemPtr& other);
+
+    /**
      * @brief Returns the script-name of the item as it appears to Python
      **/
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
@@ -192,6 +198,17 @@ public:
     int getItemRow() const;
 
     /**
+     * @brief Returns the item hierarchy level. For a top-level item this would return 0, for a child of a top-level item 1, etc...
+     **/
+    int getHierarchyLevel() const;
+
+    /**
+     * @brief Returns the first item after this item row that is not a container.
+     * If this item is not in a model, this returns NULL.
+     **/
+    KnobTableItemPtr getNextNonContainerItem() const;
+
+    /**
      * @brief Serialization support. May be overlayded to serialize more data structures.
      **/
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
@@ -216,6 +233,26 @@ public:
     virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
+
+    /**
+     * @brief Reimplement to activate user keyframing
+     **/
+    virtual bool getCanAnimateUserKeyframes() const { return false; }
+
+    /**
+     * @brief Returns the next user keyframe time after time, or double infinity otherwise
+     **/
+    double getNextMasterKeyframeTime(double time) const;
+
+    /**
+     * @brief Returns the previous user keyframe time before time, or minus double infinity otherwise
+     **/
+    double getPreviousMasterKeyframeTime(double time) const;
+
+    /**
+     * @brief Returns the number of user keyframes on the item
+     **/
+    double getMasterKeyframesCount() const;
 
 protected:
 
@@ -275,6 +312,19 @@ protected:
      **/
     virtual void onItemRemovedFromParent() {}
 
+
+    /**
+     * @brief Reimplemented from KnobHolder.
+     **/
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
+
+    /**
+     * @brief Reimplemented from KnobHolder.
+     * This implementation forwards the evaluation request to the node holding the model.
+     **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
+
 Q_SIGNALS:
 
     void labelChanged(QString, TableChangeReasonEnum);
@@ -292,6 +342,12 @@ inline
 KnobTableItemPtr toKnobTableItem(const KnobHolderPtr& holder)
 {
     return boost::dynamic_pointer_cast<KnobTableItem>(holder);
+}
+
+inline
+KnobTableItemConstPtr toKnobTableItem(const KnobHolderConstPtr& holder)
+{
+    return boost::dynamic_pointer_cast<const KnobTableItem>(holder);
 }
 
 /**
@@ -459,6 +515,12 @@ public:
     void selectAll(TableChangeReasonEnum reason);
 
     /**
+     * @brief If this model is a tree, returns the item container that is the deepest in the current item selection
+     **/
+    KnobTableItemPtr findDeepestSelectedItemContainer() const;
+
+
+    /**
      * @brief Add a master knob that is visible on the main user interface of the node (outside of the table) onto which
      * a corresponding item's knob with the same script-name in the table should slave to. For example in the Roto node settings panel
      * all items are slaved to knobs in the panels such as opacity, color etc...
@@ -487,6 +549,35 @@ public:
      **/
     void declareItemAsPythonField(const KnobTableItemPtr& item);
 
+    /**
+     * @brief Set a master keyframe on the selected items
+     **/
+    void setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view);
+
+    /**
+     * @brief Remove a master keyframe on the selected items
+     **/
+    void removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec view);
+
+    /**
+     * @brief Clear user keyframes animation on selection
+     **/
+    void removeAnimationOnSelectedItems(ViewSetSpec view);
+
+    /**
+     * @brief Seeks the nearest previous master keyframe amongst selected items
+     **/
+    void goToPreviousMasterKeyframe();
+
+    /**
+     * @brief Seeks the nearest next master keyframe amongst selected items
+     **/
+    void goToNextMasterKeyframe();
+
+    /**
+     * @brief Returns true if at least one item is animated
+     **/
+    bool hasAnimation() const;
 
 Q_SIGNALS:
 

@@ -981,20 +981,6 @@ ParallelRenderArgsSetter::computeRequestPass(unsigned int mipMapLevel, const Rec
                 (*it)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
             }
         }
-
-        NodesList rotoPaintNodes;
-        RotoContextPtr roto = (*it)->getRotoContext();
-        if (roto) {
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-        }
-
-        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            FrameRequestMap::const_iterator foundRequest = requestData.find(*it2);
-            if ( foundRequest != requestData.end() ) {
-                (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
-            }
-        }
-
     }
     return stat;
 }

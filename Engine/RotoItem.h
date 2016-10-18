@@ -91,20 +91,6 @@ public:
 
     virtual bool isItemContainer() const OVERRIDE { return false; }
 
-    ///only callable on the main-thread
-    bool setScriptName(const std::string & name);
-
-    std::string getScriptName() const;
-    std::string getFullyQualifiedName() const;
-    std::string getLabel() const;
-
-    void setLabel(const std::string& label);
-
-    ///only callable on the main-thread
-    void setParentLayer(RotoLayerPtr layer);
-
-    ///MT-safe
-    RotoLayerPtr getParentLayer() const;
 
     ///only callable from the main-thread
     void setGloballyActivated(bool a, bool setChildren);
@@ -119,62 +105,10 @@ public:
 
     bool isLockedRecursive() const;
 
-    /**
-     * @brief Returns at which hierarchy level the item is.
-     * The base layer is 0.
-     * All items into that base layer are on level 1.
-     * etc...
-     **/
-    int getHierarchyLevel() const;
-
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
-
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
-
-    /**
-     * @brief Returns the name of the node holding this item
-     **/
-    std::string getRotoNodeName() const;
-    RotoContextPtr getContext() const;
-    RotoItemPtr getPreviousItemInLayer() const;
-
     
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
-
-
-    ///This mutex protects every-member this class and the derived class might have.
-    ///That is for the RotoItem class:
-    ///  - name
-    ///  - globallyActivated
-    ///  - locked
-    ///  - parentLayer
-    ///
-    ///For the RotoDrawableItem:
-    ///  - overlayColor
-    ///
-    ///For the RotoLayer class:
-    ///  - items
-    ///
-    ///For the Bezier class:
-    ///  - points
-    ///  - featherPoints
-    ///  - finished
-    ///  - pointsAtDistance
-    ///  - featherPointsAtDistance
-    ///  - featherPointsAtDistanceVal
-    mutable QMutex itemMutex;
 
 private:
 

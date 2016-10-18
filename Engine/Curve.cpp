@@ -1605,36 +1605,6 @@ Curve::setKeyFrameDerivativesInternal(double left, double right, int index, int*
     return ret;
 }
 
-<<<<<<< HEAD
-bool
-Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret)
-{
-    {
-        QMutexLocker l(&_imp->_lock);
-        KeyFrameSet::iterator it = find(time, _imp->keyFrames.end());
-        if ( it == _imp->keyFrames.end() ) {
-            return false;
-        }
-
-        ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
-              ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
-            return false;
-        }
-
-
-        if ( interp != it->getInterpolation() ) {
-            it = setKeyframeInterpolation_internal(it, interp);
-        }
-        if (ret) {
-            *ret = *it;
-        }
-    }
-    
-    return true;
-}
-=======
->>>>>>> master
 
 KeyFrame
 Curve::setKeyFrameDerivatives(double left,
