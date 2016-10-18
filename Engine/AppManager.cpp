@@ -2901,29 +2901,45 @@ AppManager::initPython()
     // PYTHONPATH and Py_SetPath
     /////////////////////////////////////////
     //
+    // note: to check the python path of a python install, execute:
+    // python -c 'import sys,pprint; pprint.pprint( sys.path )'
+    //
+    // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
+    //
+    //  python -O -m compileall .
+    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email  \
+           encodings hotshot idlelib importlib json logging multiprocessing \
+           pydoc_data sqlite3 unittest wsgiref xml
+    //
     QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
     QStringList toPrepend;
 #ifdef __NATRON_WIN32__
-    QString pyPath; // empty
+    QStringList pyPath; // empty
     QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
 #elif defined(__NATRON_OSX__)
-    QString pyPath = binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING);
+    QStringList pyPath;
+    pyPath.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip") );
+    pyPath.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING) );
     QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
 #elif defined(__NATRON_LINUX__)
-    QString pyPath = binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING);
+    QStringList pyPath;
+    pyPath.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip") );
+    pyPath.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING) );
     QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
 #endif
 
     if ( !pyPath.isEmpty() ) {
-        if ( QDir(pyPath).exists() ) {
-            toPrepend.append( pyPath );
-        } else {
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-            printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
-#endif
+        Q_FOREACH(const QString& p, pyPath) {
+            if ( QDir(p).exists() ) {
+                toPrepend.append(p);
+            } else {
+#             if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+                printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", p.toStdString().c_str() );
+#             endif
+            }
         }
     }
     if ( QDir(pluginPath).exists() ) {
