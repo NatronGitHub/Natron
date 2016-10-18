@@ -3014,11 +3014,11 @@ AppManager::initPython()
     // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
 
 #ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString(); // must use static storage
+    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
 #elif defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath.toStdString() + "/../lib"; // must use static storage
+    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
 #elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
+    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
 #endif
 
     if ( QDir( QString::fromUtf8( pythonHome.c_str() ) ).exists() ) {
@@ -3035,7 +3035,7 @@ AppManager::initPython()
 #endif
     } else {
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "PYTHONHOME not set, directory \"%s\" does not exist.\n", pythonHome.c_str() );
+        printf( "dir \"%s\" does not exist, not setting PYTHONHOME\n", pythonHome.c_str() );
 #endif
     }
 
