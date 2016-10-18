@@ -486,7 +486,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
     }
 
     // If the curve is periodic, it has a keyframe before if it is no
-    if ( it != _imp->keyFrames.begin() || (_imp->isPeriodic && _imp->keyFrames.size() > 1)) {
+    if ( it != _imp->keyFrames.begin() || (_imp->isPeriodic && _imp->keyFrames.size() > 2)) {
         bool prevKeySet = false;
         if (it != _imp->keyFrames.begin()) {
             KeyFrameSet::iterator prev = it;
@@ -511,7 +511,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
                            prevKey.getInterpolation() != eKeyframeTypeNone);
     }
 
-    if ( next != _imp->keyFrames.end() || (_imp->isPeriodic && _imp->keyFrames.size() > 1)) {
+    if ( next != _imp->keyFrames.end() || (_imp->isPeriodic && _imp->keyFrames.size() > 2)) {
         bool nextKeySet = false;
         if (next != _imp->keyFrames.end()) {
             nextKey = *next;
