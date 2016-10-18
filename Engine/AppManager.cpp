@@ -2897,6 +2897,10 @@ AppManager::initPython()
     qputenv("PYTHONNOUSERSITE", "1");
     ++Py_NoUserSiteDirectory;
 
+    /////////////////////////////////////////
+    // PYTHONPATH and Py_SetPath
+    /////////////////////////////////////////
+    //
     QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
@@ -2930,17 +2934,29 @@ AppManager::initPython()
         toPrepend.push_back( QChar::fromLatin1(':') );
     }
 #endif
-
-
     pythonPath.prepend(toPrepend);
     // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
 #if 0//def __NATRON_WIN32__
     _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
 #else
-     qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
+    std::string pythonPathString = pythonPath.toStdString();
+    qputenv( "PYTHONPATH", pythonPathString.c_str() );
+    //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
+#endif
+#if PY_MAJOR_VERSION >= 3
+    std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
+    Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+#endif
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
 #endif
 
-
+    /////////////////////////////////////////
+    // Py_SetProgramName
+    /////////////////////////////////////////
+    //
+    // Must be done before Py_Initialize (see doc of Py_Initialize)
+    //
 #if PY_MAJOR_VERSION >= 3
     // Python 3
     Py_SetProgramName(_imp->commandLineArgsWide[0]);
@@ -2950,7 +2966,7 @@ AppManager::initPython()
 #endif
 
 
-    ///Must be called prior to Py_Initialize
+    ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
 
     //See https://developer.blender.org/T31507
@@ -2968,24 +2984,48 @@ AppManager::initPython()
 
     //Py_NoSiteFlag = 1;
 
-    Py_Initialize();
-    // pythonHome must be const, so that the c_str() pointer is never invalidated
+    /////////////////////////////////////////
+    // Py_SetPythonHome
+    /////////////////////////////////////////
+    //
+    // Must be done before Py_Initialize (see doc of Py_Initialize)
+    //
+    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
 
 #ifdef __NATRON_WIN32__
-    const char* pythonHome = ".";
+    static char* pythonHome = "."; // must use static storage
 #elif defined(__NATRON_LINUX__)
-    const char* pythonHome = "../lib";
+    static char* pythonHome = "../lib"; // must use static storage
 #elif defined(__NATRON_OSX__)
-    const char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib";
+    static char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
 #endif
 
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    Py_SetPythonHome( const_cast<wchar_t*>( StrUtils::utf8_to_utf16(pythonHome).c_str() ) );
+    static std::wstring pythonHomeStr = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
+    Py_SetPythonHome( pythonHomeStr.c_str() );
+#else
+    // Python 2
+    Py_SetPythonHome( pythonHome );
+#endif
+
+    /////////////////////////////////////////
+    // Py_Initialize
+    /////////////////////////////////////////
+    //
+    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
+    Py_Initialize();
+    // pythonHome must be const, so that the c_str() pointer is never invalidated
+
+    /////////////////////////////////////////
+    // PySys_SetArgv
+    /////////////////////////////////////////
+    //
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
     PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
 #else
     // Python 2
-    Py_SetPythonHome( const_cast<char*>(pythonHome) );
     PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
 #endif
 
@@ -3007,6 +3047,25 @@ AppManager::initPython()
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     /// print info about python lib
     {
+        printf( "PATH is %s\n", Py_GETENV("PATH") );
+        printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
+        printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
+        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
+        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
+        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
+        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
+        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
+        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
+        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
+        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
+        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
+        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
+        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
+        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
+        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
+        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
+        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
         printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
