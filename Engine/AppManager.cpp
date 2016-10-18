@@ -2905,51 +2905,69 @@ AppManager::initPython()
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-    bool pathEmpty = pythonPath.isEmpty();
-    QString toPrepend;
+    QStringList toPrepend;
 #ifdef __NATRON_WIN32__
-    toPrepend.append( binPath + QString::fromUtf8("\\..\\Plugins") );
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(';') );
-    }
+    QString pyPath; // empty
+    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
 #elif defined(__NATRON_OSX__)
-    toPrepend.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING) );
-    toPrepend.append( QChar::fromLatin1(':') );
-    toPrepend.append( binPath + QString::fromUtf8("/../Plugins") );
-#ifdef DEBUG
+    QString pyPath = binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING);
+    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
+#elif defined(__NATRON_LINUX__)
+    QString pyPath = binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING);
+    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
+#endif
+
+    if ( !pyPath.isEmpty() ) {
+        if ( QDir(pyPath).exists() ) {
+            toPrepend.append( pyPath );
+        } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+            printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
+#endif
+        }
+    }
+    if ( QDir(pluginPath).exists() ) {
+        toPrepend.append( pluginPath );
+    } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
+#endif
+    }
+
+#if defined(__NATRON_OSX__) && defined DEBUG
     // in debug mode, also prepend the local PySide directory
     // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8(":/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
+    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
     // macport's pyside directory
-    toPrepend.append( QString::fromUtf8(":/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
+    toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
 #endif
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(':') );
-    }
-#elif defined(__NATRON_LINUX__)
-    toPrepend.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING) );
-    toPrepend.append( QChar::fromLatin1(':') );
-    toPrepend.append( binPath + QString::fromUtf8("/../Plugins") );
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(':') );
-    }
+
+    if ( toPrepend.isEmpty() ) {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf("PYTHONPATH not modified\n");
 #endif
-    pythonPath.prepend(toPrepend);
-    // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#if 0//def __NATRON_WIN32__
-    _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+    } else {
+#ifdef __NATRON_WIN32__
+        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(';') ) );
 #else
-    std::string pythonPathString = pythonPath.toStdString();
-    qputenv( "PYTHONPATH", pythonPathString.c_str() );
-    //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
+        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(':') ) );
+#endif
+        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+#if 0//def __NATRON_WIN32__
+        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+#else
+        std::string pythonPathString = pythonPath.toStdString();
+        qputenv( "PYTHONPATH", pythonPathString.c_str() );
+        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
 #endif
 #if PY_MAJOR_VERSION >= 3
-    std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
-    Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
+        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
 #endif
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
+        printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
 #endif
+    }
 
     /////////////////////////////////////////
     // Py_SetProgramName
@@ -3003,6 +3021,7 @@ AppManager::initPython()
     static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
 #endif
 
+    if ( QDir( QString::fromUtf8( pythonHome.c_str() ) ).exists() ) {
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
 #endif
@@ -3014,6 +3033,11 @@ AppManager::initPython()
     // Python 2
     Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
 #endif
+    } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "PYTHONHOME not set, directory \"%s\" does not exist.\n", pythonHome.c_str() );
+#endif
+    }
 
     /////////////////////////////////////////
     // Py_Initialize
