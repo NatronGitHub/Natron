@@ -155,7 +155,7 @@ typedef OfxRangeD RangeD;
 #define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION, PY_MINOR_VERSION)
 
 #define PY_VERSION_STRINGIZE_NO_DOT_(major, minor) \
-    # major "." # minor
+    # major # minor
 
 #define PY_VERSION_STRINGIZE_NO_DOT(major, minor) \
     PY_VERSION_STRINGIZE_NO_DOT_(major, minor)
