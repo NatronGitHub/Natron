@@ -506,7 +506,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
             // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
             qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
-#ifdef __NATRON_WIN32__
+#if 0 //def __NATRON_WIN32__
             _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
 #else
              qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
@@ -3142,50 +3142,87 @@ AppManager::initPython()
     qputenv("PYTHONNOUSERSITE", "1");
     ++Py_NoUserSiteDirectory;
 
+    /////////////////////////////////////////
+    // PYTHONPATH and Py_SetPath
+    /////////////////////////////////////////
+    //
     QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-    bool pathEmpty = pythonPath.isEmpty();
-    QString toPrepend;
+    QStringList toPrepend;
 #ifdef __NATRON_WIN32__
-    toPrepend.append( binPath + QString::fromUtf8("\\..\\Plugins") );
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(';') );
-    }
+    QString pyPath; // empty
+    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
 #elif defined(__NATRON_OSX__)
-    toPrepend.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING) );
-    toPrepend.append( QChar::fromLatin1(':') );
-    toPrepend.append( binPath + QString::fromUtf8("/../Plugins") );
-#ifdef DEBUG
+    QString pyPath = binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING);
+    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
+#elif defined(__NATRON_LINUX__)
+    QString pyPath = binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING);
+    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
+#endif
+
+    if ( !pyPath.isEmpty() ) {
+        if ( QDir(pyPath).exists() ) {
+            toPrepend.append( pyPath );
+        } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+            printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
+#endif
+        }
+    }
+    if ( QDir(pluginPath).exists() ) {
+        toPrepend.append( pluginPath );
+    } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
+#endif
+    }
+
+#if defined(__NATRON_OSX__) && defined DEBUG
     // in debug mode, also prepend the local PySide directory
     // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8(":/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
+    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
     // macport's pyside directory
-    toPrepend.append( QString::fromUtf8(":/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-#endif
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(':') );
-    }
-#elif defined(__NATRON_LINUX__)
-    toPrepend.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING) );
-    toPrepend.append( QChar::fromLatin1(':') );
-    toPrepend.append( binPath + QString::fromUtf8("/../Plugins") );
-    if (!pathEmpty) {
-        toPrepend.push_back( QChar::fromLatin1(':') );
-    }
+    toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
 #endif
 
-
-    pythonPath.prepend(toPrepend);
-    // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+    if ( toPrepend.isEmpty() ) {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf("PYTHONPATH not modified\n");
+#endif
+    } else {
 #ifdef __NATRON_WIN32__
-    _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(';') ) );
 #else
-     qputenv( "PYTHONPATH", pythonPath.toStdString().c_str() );
+        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(':') ) );
 #endif
+        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+#if 0//def __NATRON_WIN32__
+        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
+#else
+        std::string pythonPathString = pythonPath.toStdString();
+        qputenv( "PYTHONPATH", pythonPathString.c_str() );
+        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
+#endif
+#if PY_MAJOR_VERSION >= 3
+        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
+        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+#endif
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
+#endif
+    }
 
-
+    /////////////////////////////////////////
+    // Py_SetProgramName
+    /////////////////////////////////////////
+    //
+    // Must be done before Py_Initialize (see doc of Py_Initialize)
+    //
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
+#endif
 #if PY_MAJOR_VERSION >= 3
     // Python 3
     Py_SetProgramName(_imp->commandLineArgsWide[0]);
@@ -3195,7 +3232,7 @@ AppManager::initPython()
 #endif
 
 
-    ///Must be called prior to Py_Initialize
+    ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
 
     //See https://developer.blender.org/T31507
@@ -3213,24 +3250,60 @@ AppManager::initPython()
 
     //Py_NoSiteFlag = 1;
 
+    /////////////////////////////////////////
+    // Py_SetPythonHome
+    /////////////////////////////////////////
+    //
+    // Must be done before Py_Initialize (see doc of Py_Initialize)
+    //
+    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
+
+#ifdef __NATRON_WIN32__
+    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
+#elif defined(__NATRON_LINUX__)
+    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
+#elif defined(__NATRON_OSX__)
+    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
+#endif
+
+    if ( QDir( QString::fromUtf8( pythonHome.c_str() ) ).exists() ) {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
+#endif
+#if PY_MAJOR_VERSION >= 3
+    // Python 3
+    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
+    Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
+#else
+    // Python 2
+    Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
+#endif
+    } else {
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "dir \"%s\" does not exist, not setting PYTHONHOME\n", pythonHome.c_str() );
+#endif
+    }
+
+    /////////////////////////////////////////
+    // Py_Initialize
+    /////////////////////////////////////////
+    //
+    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf("Py_Initialize()\n");
+#endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
-#ifdef __NATRON_WIN32__
-    const char* pythonHome = ".";
-#elif defined(__NATRON_LINUX__)
-    const char* pythonHome = "../lib";
-#elif defined(__NATRON_OSX__)
-    const char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib";
-#endif
-
+    /////////////////////////////////////////
+    // PySys_SetArgv
+    /////////////////////////////////////////
+    //
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    Py_SetPythonHome( const_cast<wchar_t*>( StrUtils::utf8_to_utf16(pythonHome).c_str() ) );
     PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
 #else
     // Python 2
-    Py_SetPythonHome( const_cast<char*>(pythonHome) );
     PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
 #endif
 
@@ -3252,6 +3325,25 @@ AppManager::initPython()
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     /// print info about python lib
     {
+        printf( "PATH is %s\n", Py_GETENV("PATH") );
+        printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
+        printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
+        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
+        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
+        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
+        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
+        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
+        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
+        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
+        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
+        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
+        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
+        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
+        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
+        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
+        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
+        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
         printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
