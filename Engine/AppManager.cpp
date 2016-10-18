@@ -2976,9 +2976,7 @@ AppManager::initPython()
     // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
     //
     //  python -O -m compileall .
-    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email  \
-           encodings hotshot idlelib importlib json logging multiprocessing \
-           pydoc_data sqlite3 unittest wsgiref xml
+    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml
     //
     QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
     //Add the Python distribution of Natron to the Python path
