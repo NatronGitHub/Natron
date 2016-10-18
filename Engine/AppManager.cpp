@@ -2993,20 +2993,20 @@ AppManager::initPython()
     // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
 
 #ifdef __NATRON_WIN32__
-    static char* pythonHome = "."; // must use static storage
+    static const char* pythonHome = "."; // must use static storage
 #elif defined(__NATRON_LINUX__)
-    static char* pythonHome = "../lib"; // must use static storage
+    static const char* pythonHome = "../lib"; // must use static storage
 #elif defined(__NATRON_OSX__)
-    static char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
+    static const char* pythonHome = "../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"; // must use static storage
 #endif
 
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    static std::wstring pythonHomeStr = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-    Py_SetPythonHome( pythonHomeStr.c_str() );
+    static const std::wstring pythonHomeStr = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
+    Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeStr.c_str() ) );
 #else
     // Python 2
-    Py_SetPythonHome( pythonHome );
+    Py_SetPythonHome( const_cast<char*>(pythonHome) );
 #endif
 
     /////////////////////////////////////////
