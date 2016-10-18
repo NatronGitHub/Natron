@@ -2897,6 +2897,75 @@ AppManager::initPython()
     qputenv("PYTHONNOUSERSITE", "1");
     ++Py_NoUserSiteDirectory;
 
+    //
+    // set up paths, clear those that don't exist or are not valid
+    //
+    QString binPath = QCoreApplication::applicationDirPath();
+    binPath = QDir::toNativeSeparators(binPath);
+#ifdef __NATRON_WIN32__
+    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
+    QString pyPathZip = QString::fromUtf8( (pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
+    QString pyPath = QString::fromUtf8( (pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING).c_str() );
+    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
+#else
+#  if defined(__NATRON_LINUX__)
+    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
+#  elif defined(__NATRON_OSX__)
+    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
+#  else
+#    error "unsupported platform"
+#  endif
+    QString pyPathZip = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
+    QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
+    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
+#endif
+    if ( !QDir(pyPathZip).exists() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathZip.toStdString().c_str() );
+#     endif
+        pyPathZip.clear();
+    }
+    if ( !QDir(pyPath).exists() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
+#     endif
+        pyPath.clear();
+    }
+    if ( !QDir(pluginPath).exists() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
+#     endif
+        pluginPath.clear();
+    }
+    // PYTHONHOME is really useful if there's a python inside it
+    if ( pyPathZip.isEmpty() && pyPath.isEmpty() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "dir \"%s\" does not exist or does not contain lib/python*, not setting PYTHONHOME\n", pythonHome.c_str() );
+#     endif
+        pythonHome.clear();
+    }
+    /////////////////////////////////////////
+    // Py_SetPythonHome
+    /////////////////////////////////////////
+    //
+    // Must be done before Py_Initialize (see doc of Py_Initialize)
+    //
+    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
+
+    if ( !pythonHome.empty() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
+#     endif
+#     if PY_MAJOR_VERSION >= 3
+        // Python 3
+        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
+        Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
+#     else
+        // Python 2
+        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
+#     endif
+    }
+
     /////////////////////////////////////////
     // PYTHONPATH and Py_SetPath
     /////////////////////////////////////////
@@ -2913,41 +2982,16 @@ AppManager::initPython()
     //
     QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
     //Add the Python distribution of Natron to the Python path
-    QString binPath = QCoreApplication::applicationDirPath();
-    binPath = QDir::toNativeSeparators(binPath);
-    QStringList toPrepend;
-#ifdef __NATRON_WIN32__
-    QStringList pyPath; // empty
-    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
-#elif defined(__NATRON_OSX__)
-    QStringList pyPath;
-    pyPath.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip") );
-    pyPath.append( binPath + QString::fromUtf8("/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING) );
-    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
-#elif defined(__NATRON_LINUX__)
-    QStringList pyPath;
-    pyPath.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip") );
-    pyPath.append( binPath + QString::fromUtf8("/../lib/python" NATRON_PY_VERSION_STRING) );
-    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
-#endif
 
-    if ( !pyPath.isEmpty() ) {
-        Q_FOREACH(const QString& p, pyPath) {
-            if ( QDir(p).exists() ) {
-                toPrepend.append(p);
-            } else {
-#             if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-                printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", p.toStdString().c_str() );
-#             endif
-            }
-        }
+    QStringList toPrepend;
+    if ( !pyPathZip.isEmpty() ) {
+        toPrepend.append(pyPathZip);
     }
-    if ( QDir(pluginPath).exists() ) {
-        toPrepend.append( pluginPath );
-    } else {
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "dir \"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
-#endif
+    if ( !pyPath.isEmpty() ) {
+        toPrepend.append(pyPath);
+    }
+    if ( !pluginPath.isEmpty() ) {
+        toPrepend.append(pluginPath);
     }
 
 #if defined(__NATRON_OSX__) && defined DEBUG
@@ -2959,30 +3003,30 @@ AppManager::initPython()
 #endif
 
     if ( toPrepend.isEmpty() ) {
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf("PYTHONPATH not modified\n");
-#endif
+#     endif
     } else {
-#ifdef __NATRON_WIN32__
+#     ifdef __NATRON_WIN32__
         pythonPath.prepend( toPrepend.join( QChar::fromLatin1(';') ) );
-#else
+#     else
         pythonPath.prepend( toPrepend.join( QChar::fromLatin1(':') ) );
-#endif
+      #endif
         // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#if 0//def __NATRON_WIN32__
+#     if 0//def __NATRON_WIN32__
         _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
-#else
+#     else
         std::string pythonPathString = pythonPath.toStdString();
         qputenv( "PYTHONPATH", pythonPathString.c_str() );
         //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#endif
-#if PY_MAJOR_VERSION >= 3
+#     endif
+#     if PY_MAJOR_VERSION >= 3
         std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
         Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#endif
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+#     endif
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
-#endif
+#     endif
     }
 
     /////////////////////////////////////////
@@ -3021,39 +3065,6 @@ AppManager::initPython()
 
     //Py_NoSiteFlag = 1;
 
-    /////////////////////////////////////////
-    // Py_SetPythonHome
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
-
-#ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
-#elif defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
-#elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
-#endif
-
-    if ( QDir( QString::fromUtf8( pythonHome.c_str() ) ).exists() ) {
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
-#endif
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-    Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#else
-    // Python 2
-    Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#endif
-    } else {
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "dir \"%s\" does not exist, not setting PYTHONHOME\n", pythonHome.c_str() );
-#endif
-    }
 
     /////////////////////////////////////////
     // Py_Initialize
@@ -3114,7 +3125,6 @@ AppManager::initPython()
         printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
         printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
         printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
         printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
