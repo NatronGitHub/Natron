@@ -767,21 +767,21 @@ interParams(const KeyFrameSet &keyFrames,
             double *vnextDerivLeft,
             KeyframeTypeEnum *interpNext)
 {
-    Q_UNUSED(t);
+
     assert(keyFrames.size() > 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
     double period = xMax - xMin;
     if (isPeriodic) {
         // if the curve is periodic, bring back t in the curve keyframes range
-
+        double minKeyFrameX = keyFrames.begin()->getTime() + xMin;
         assert(xMin < xMax);
-        if (*t < xMin || *t > xMax) {
+        if (*t < minKeyFrameX || *t > minKeyFrameX + period) {
             // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
-            *t = std::fmod(*t - xMin, period ) + xMin;
-            if (*t < xMin) {
+            *t = std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX;
+            if (*t < minKeyFrameX) {
                 *t += period;
             }
-            assert(*t >= xMin && *t <= xMax);
+            assert(*t >= minKeyFrameX && *t <= minKeyFrameX + period);
         }
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
@@ -789,13 +789,12 @@ interParams(const KeyFrameSet &keyFrames,
         // We are in the case where all keys have a greater time
         // If periodic, we are in between xMin and the first keyframe
         if (isPeriodic) {
-            *tnext = itup->getTime() + period;
-            *t += period;
+            *tnext = itup->getTime();
             *vnext = itup->getValue();
             *vnextDerivLeft = itup->getLeftDerivative();
             *interpNext = itup->getInterpolation();
             KeyFrameSet::const_reverse_iterator last =  keyFrames.rbegin();
-            *tcur = last->getTime();
+            *tcur = last->getTime() - period;
             *vcur = last->getValue();
             *vcurDerivRight = last->getRightDerivative();
             *interp = last->getInterpolation();
@@ -815,17 +814,16 @@ interParams(const KeyFrameSet &keyFrames,
         // We are in the case where no key has a greater time
         // If periodic, we are in-between the last keyframe and xMax
         if (isPeriodic) {
-            KeyFrameSet::const_iterator first = keyFrames.begin();
-            KeyFrameSet::const_reverse_iterator last = keyFrames.rbegin();
-            *tcur = last->getTime() - period;
-            *t -= period;
-            *vcur = last->getValue();
-            *vcurDerivRight = last->getRightDerivative();
-            *interp = last->getInterpolation();
-            *tnext = first->getTime();
-            *vnext = first->getValue();
-            *vnextDerivLeft = first->getLeftDerivative();
-            *interpNext = first->getInterpolation();
+            KeyFrameSet::const_iterator next = keyFrames.begin();
+            KeyFrameSet::const_reverse_iterator prev = keyFrames.rbegin();
+            *tcur = prev->getTime();
+            *vcur = prev->getValue();
+            *vcurDerivRight = prev->getRightDerivative();
+            *interp = prev->getInterpolation();
+            *tnext = next->getTime() + period;
+            *vnext = next->getValue();
+            *vnextDerivLeft = next->getLeftDerivative();
+            *interpNext = next->getInterpolation();
         } else {
 
             KeyFrameSet::const_reverse_iterator itlast = keyFrames.rbegin();
@@ -844,7 +842,7 @@ interParams(const KeyFrameSet &keyFrames,
         // get the last keyframe with time <= t
         KeyFrameSet::const_iterator itcur = itup;
         --itcur;
-        assert(itcur->getTime() <=*t);
+        assert(itcur->getTime() <= *t);
         *tcur = itcur->getTime();
         *vcur = itcur->getValue();
         *vcurDerivRight = itcur->getRightDerivative();
