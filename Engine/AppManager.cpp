@@ -2957,6 +2957,9 @@ AppManager::initPython()
     //
     // Must be done before Py_Initialize (see doc of Py_Initialize)
     //
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
+#endif
 #if PY_MAJOR_VERSION >= 3
     // Python 3
     Py_SetProgramName(_imp->commandLineArgsWide[0]);
