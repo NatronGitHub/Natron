@@ -437,7 +437,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
             // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
             qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
-#ifdef __NATRON_WIN32__
+#if 0 //def __NATRON_WIN32__
             _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
 #else
              qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
