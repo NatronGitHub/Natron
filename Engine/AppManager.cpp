@@ -2919,7 +2919,7 @@ AppManager::initPython()
     QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
     QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
 #endif
-    if ( !QDir( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
+    if ( !QFile( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathZip.toStdString().c_str() );
 #     endif
