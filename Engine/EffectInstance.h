@@ -65,6 +65,8 @@
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_COLORLOOKUP  "net.sf.openfx.ColorLookupPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
+#define PLUGINID_OFX_SHARPENCIMG  "net.sf.cimg.CImgSharpen"
+#define PLUGINID_OFX_SOFTENCIMG   "net.sf.cimg.CImgSoften"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
 #define PLUGINID_OFX_CONSTANT     "net.sf.openfx.ConstantPlugin"
 #define PLUGINID_OFX_TIMEOFFSET   "net.sf.openfx.timeOffset"

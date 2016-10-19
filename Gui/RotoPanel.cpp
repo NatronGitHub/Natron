@@ -55,7 +55,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/RotoContextPrivate.h" // for getCompositingOperators
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"

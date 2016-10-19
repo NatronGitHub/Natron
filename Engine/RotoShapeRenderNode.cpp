@@ -34,7 +34,6 @@
 #include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoShapeRenderCairo.h"

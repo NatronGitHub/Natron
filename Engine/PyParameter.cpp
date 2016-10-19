@@ -814,6 +814,10 @@ AnimatedParam::splitView(const QString& viewName)
         PythonSetInvalidViewName(viewName);
         return;
     }
+    if (!knob->isAnimationEnabled()) {
+        PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for a parameter that cannot animate").toStdString().c_str());
+        return;
+    }
     knob->splitView(ViewIdx(thisViewSpec.value()));
 }
 
@@ -828,6 +832,10 @@ AnimatedParam::unSplitView(const QString& viewName)
     ViewGetSpec thisViewSpec;
     if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (!knob->isAnimationEnabled()) {
+        PyErr_SetString(PyExc_ValueError, tr("unSplitView: Cannot unsplit view for a parameter that cannot animate").toStdString().c_str());
         return;
     }
     knob->unSplitView(ViewIdx(thisViewSpec.value()));

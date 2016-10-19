@@ -74,7 +74,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
@@ -3906,7 +3905,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     bool ret = false;
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
-    if ( ( rotoItem && !rotoItem->isActivated(time) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
+    if ( ( rotoItem && !rotoItem->isActivated(time, view) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
         *inputTime = time;
@@ -5706,8 +5705,8 @@ bool
 EffectInstance::isFrameVaryingOrAnimated() const
 {
     NodePtr node = getNode();
-    RotoContextPtr roto = node->getRotoContext();
-    return isFrameVarying() || getHasAnimation() || (roto && roto->isAnimated());
+    KnobItemsTablePtr table = getItemsTable();
+    return isFrameVarying() || getHasAnimation() || (table && table->hasAnimation());
 }
 
 bool

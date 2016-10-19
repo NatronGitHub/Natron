@@ -41,7 +41,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
 #include "Engine/Image.h"
-#include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 

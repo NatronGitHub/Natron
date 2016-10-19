@@ -64,7 +64,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"

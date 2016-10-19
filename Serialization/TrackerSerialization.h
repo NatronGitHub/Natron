@@ -20,66 +20,37 @@
 #define TRACKERSERIALIZATION_H
 
 #include "Serialization/KnobSerialization.h"
-#include "Serialization/SerializationFwd.h"
+#include "Serialization/KnobTableItemSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
 class TrackSerialization
-: public SerializationObjectBase
+: public KnobTableItemSerialization
 {
 
 public:
 
 
-    bool _enabled;
     bool _isPM;
-    std::string _label, _scriptName;
-    std::list<KnobSerializationPtr> _knobs;
     std::list<int> _userKeys;
 
     TrackSerialization()
-        : SerializationObjectBase()
-        , _enabled(true)
+        : KnobTableItemSerialization()
         , _isPM(false)
-        , _label()
-        , _scriptName()
-        , _knobs()
         , _userKeys()
     {
+        _emitMap = false;
     }
 
     virtual void encode(YAML::Emitter& em) const OVERRIDE;
 
     virtual void decode(const YAML::Node& node) OVERRIDE;
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-
 
 };
 
 
-class TrackerContextSerialization
-: public SerializationObjectBase
-{
-public:
 
-    TrackerContextSerialization()
-        : SerializationObjectBase()
-        , _tracks()
-    {
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-
-
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
-
-    virtual void decode(const YAML::Node& node) OVERRIDE;
-
-    std::list<TrackSerialization> _tracks;
-};
 
 SERIALIZATION_NAMESPACE_EXIT;
 

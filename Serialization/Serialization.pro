@@ -69,10 +69,6 @@ HEADERS += \
     ProjectSerialization.h \
     RectDSerialization.h \
     RectISerialization.h \
-    RotoContextSerialization.h \
-    RotoDrawableItemSerialization.h \
-    RotoItemSerialization.h \
-    RotoLayerSerialization.h \
     RotoStrokeItemSerialization.h \
     SerializationBase.h \
     SerializationFwd.h \
@@ -100,10 +96,6 @@ SOURCES += \
     ProjectSerialization.cpp \
     RectDSerialization.cpp \
     RectISerialization.cpp \
-    RotoContextSerialization.cpp \
-    RotoDrawableItemSerialization.cpp \
-    RotoItemSerialization.cpp \
-    RotoLayerSerialization.cpp \
     RotoStrokeItemSerialization.cpp \
     TextureRectSerialization.cpp \
     TrackerSerialization.cpp \

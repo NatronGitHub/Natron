@@ -42,7 +42,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/MemoryInfo.h"
-#include "Engine/RotoContextPrivate.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
@@ -226,20 +225,18 @@ RotoItem::isDeactivatedRecursive() const
 }
 
 void
-RotoItem::setLocked_recursive(bool locked,
-                              RotoItem::SelectionReasonEnum reason)
+RotoItem::setLocked_recursive(bool locked)
 {
     {
 
         _imp->lockedKnob.lock()->setValue(locked);
-        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             std::vector<KnobTableItemPtr> children = layer->getChildren();
             for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
                 KnobHolderPtr item = *it;
                 RotoItemPtr rotoItem = toRotoItem(item);
-                rotoItem->setLocked_recursive(locked, reason);
+                rotoItem->setLocked_recursive(locked);
             }
         }
     }
@@ -247,16 +244,14 @@ RotoItem::setLocked_recursive(bool locked,
 
 void
 RotoItem::setLocked(bool l,
-                    bool lockChildren,
-                    RotoItem::SelectionReasonEnum reason)
+                    bool lockChildren)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
     if (!lockChildren) {
         _imp->lockedKnob.lock()->setValue(l);
-        getContext()->onItemLockedChanged(toRotoItem(shared_from_this()), reason);
     } else {
-        setLocked_recursive(l, reason);
+        setLocked_recursive(l);
     }
 }
 
@@ -297,7 +292,44 @@ RotoItem::isLockedRecursive() const
     }
 }
 
+bool
+RotoItem::onKnobValueChanged(const KnobIPtr& knob,
+                                     ValueChangedReasonEnum reason,
+                                     double /*time*/,
+                                     ViewSetSpec /*view*/,
+                                     bool /*originatedFromMainThread*/)
+{
+    if (knob == _imp->lockedKnob.lock()) {
+        KnobItemsTablePtr model = getModel();
+        if (!model) {
+            return false;
+        }
+        int nbBeziersUnLockedBezier = 0;
 
+        {
+            QMutexLocker l(&_imp->rotoContextMutex);
+
+            for (std::list<RotoItemPtr >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+                BezierPtr isBezier = toBezier(*it);
+                if ( isBezier && !isBezier->isLockedRecursive() ) {
+                    ++nbBeziersUnLockedBezier;
+                }
+            }
+        }
+        bool dirty = nbBeziersUnLockedBezier > 1;
+        bool enabled = nbBeziersUnLockedBezier > 0;
+
+        for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+            KnobIPtr knob = it->lock();
+            if (!knob) {
+                continue;
+            }
+            knob->setDirty(dirty);
+            knob->setEnabled(enabled);
+        }
+
+    }
+}
 
 
 NATRON_NAMESPACE_EXIT;

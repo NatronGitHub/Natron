@@ -167,6 +167,7 @@ struct ColumnDesc
     int dimensionIndex;
 };
 
+typedef std::map<ViewIdx, CurvePtr> PerViewAnimationCurveMap;
 
 struct KnobTableItemPrivate
 {
@@ -190,7 +191,7 @@ struct KnobTableItemPrivate
     mutable QMutex lock;
 
     // List of keyframe times set by the user
-    CurvePtr animation;
+    PerViewAnimationCurveMap animationCurves;
 
     KnobTableItemPrivate(const KnobItemsTablePtr& model)
     : parent()
@@ -200,10 +201,12 @@ struct KnobTableItemPrivate
     , scriptName()
     , label()
     , lock()
-    , animation(new Curve)
+    , animationCurves()
     {
-        
+        animationCurves[ViewIdx(0)].reset(new Curve());
     }
+
+    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 };
 
 KnobItemsTable::KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount)
@@ -346,46 +349,47 @@ KnobItemsTable::getSelectionMode() const
 }
 
 void
-KnobItemsTable::addTopLevelItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTable::addItem(const KnobTableItemPtr& item, const KnobTableItemPtr& parent, TableChangeReasonEnum reason)
 {
-    insertTopLevelItem(-1, item, reason);
+    insertItem(-1, item, parent, reason);
 }
 
 void
-KnobItemsTable::insertTopLevelItem(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTableItemPtr& parent, TableChangeReasonEnum reason)
 {
-    
-    removeItem(item, reason);
-    
-    int insertIndex;
+    // The item must have been constructed with this model in parameter
+    assert(item->getModel().get() == this);
 
-    {
-        QMutexLocker k(&_imp->topLevelItemsLock);
-        if (index < 0 || index >= (int)_imp->topLevelItems.size()) {
-            _imp->topLevelItems.push_back(item);
-            insertIndex = _imp->topLevelItems.size() - 1;
-        } else {
-            std::vector<KnobTableItemPtr>::iterator it = _imp->topLevelItems.begin();
-            std::advance(it, index);
-            _imp->topLevelItems.insert(it, item);
-            insertIndex = index;
+    removeItem(item, reason);
+    if (parent) {
+        parent->insertChild(index, item);
+    } else {
+        int insertIndex;
+
+        {
+            QMutexLocker k(&_imp->topLevelItemsLock);
+            if (index < 0 || index >= (int)_imp->topLevelItems.size()) {
+                _imp->topLevelItems.push_back(item);
+                insertIndex = _imp->topLevelItems.size() - 1;
+            } else {
+                std::vector<KnobTableItemPtr>::iterator it = _imp->topLevelItems.begin();
+                std::advance(it, index);
+                _imp->topLevelItems.insert(it, item);
+                insertIndex = index;
+            }
         }
     }
-
+    
     if (!getPythonPrefix().empty()) {
         declareItemAsPythonField(item);
     }
 
-    Q_EMIT topLevelItemInserted(index, item, reason);
+    item->onItemInsertedInModel_recursive();
+
+    Q_EMIT itemInserted(index, item, reason);
     
 }
 
-std::vector<KnobTableItemPtr>
-KnobItemsTable::getTopLevelItems() const
-{
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    return _imp->topLevelItems;
-}
 
 void
 KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
@@ -394,11 +398,8 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
     bool removed = false;
 
     if (parent) {
-        removed = parent->removeChild(item, reason);
+        removed = parent->removeChild(item);
     } else {
-        if (!getPythonPrefix().empty()) {
-            removeItemAsPythonField(item);
-        }
         {
             QMutexLocker k(&_imp->topLevelItemsLock);
             for (std::vector<KnobTableItemPtr>::iterator it = _imp->topLevelItems.begin(); it != _imp->topLevelItems.end(); ++it) {
@@ -410,13 +411,44 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
             }
         }
         if (removed) {
-            Q_EMIT topLevelItemRemoved(item, reason);
+            Q_EMIT itemRemoved(item, reason);
         }
     }
     if (removed) {
-        item->onItemRemovedFromParent();
+        if (!getPythonPrefix().empty()) {
+            removeItemAsPythonField(item);
+        }
+        item->onItemRemovedFromModel_recursive();
     }
 }
+
+void
+KnobItemsTable::resetModel(TableChangeReasonEnum reason)
+{
+    std::vector<KnobTableItemPtr> topLevelItems;
+    {
+        QMutexLocker k(&_imp->topLevelItemsLock);
+        topLevelItems = _imp->topLevelItems;
+        _imp->topLevelItems.clear();
+    }
+    for (std::size_t i = 0; i < topLevelItems.size(); ++i) {
+        if (!getPythonPrefix().empty()) {
+            removeItemAsPythonField(topLevelItems[i]);
+        }
+
+        Q_EMIT itemRemoved(topLevelItems[i], reason);
+        topLevelItems[i]->onItemRemovedFromModel_recursive();
+    }
+    onModelReset();
+}
+
+std::vector<KnobTableItemPtr>
+KnobItemsTable::getTopLevelItems() const
+{
+    QMutexLocker k(&_imp->topLevelItemsLock);
+    return _imp->topLevelItems;
+}
+
 
 std::string
 KnobItemsTable::generateUniqueName(const std::string& baseName) const
@@ -470,10 +502,30 @@ KnobTableItem::copyItem(const KnobTableItemPtr& other)
     }
     KnobsVec::const_iterator it = thisKnobs.begin();
     KnobsVec::const_iterator otherIt = otherKnobs.begin();
-    for (; it != knobs.end(); ++it, ++otherIt) {
+    for (; it != thisKnobs.end(); ++it, ++otherIt) {
         (*it)->copyKnob(*otherIt);
     }
 
+}
+
+void
+KnobTableItem::onItemRemovedFromModel_recursive()
+{
+    onItemRemovedFromModel();
+    std::vector<KnobTableItemPtr> children = getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        children[i]->onItemRemovedFromModel_recursive();
+    }
+}
+
+void
+KnobTableItem::onItemInsertedInModel_recursive()
+{
+    onItemInsertedInModel();
+    std::vector<KnobTableItemPtr> children = getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        children[i]->onItemInsertedInModel_recursive();
+    }
 }
 
 void
@@ -506,6 +558,7 @@ KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueC
     Q_UNUSED(dimension);
     Q_UNUSED(time);
     Q_UNUSED(view);
+
 }
 
 void
@@ -614,14 +667,12 @@ KnobTableItem::getFullyQualifiedName() const
 }
 
 void
-KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobTableItem::insertChild(int index, const KnobTableItemPtr& item)
 {
     if (!isItemContainer()) {
         return;
     }
     assert(_imp->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
-
-    item->getModel()->removeItem(item, reason);
 
     int insertedIndex;
 
@@ -638,22 +689,15 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item, TableChangeR
         }
     }
 
-    KnobItemsTablePtr model = getModel();
-    if (!model->getPythonPrefix().empty()) {
-        model->declareItemAsPythonField(item);
-    }
-
     {
         QMutexLocker k(&item->_imp->lock);
         item->_imp->parent = toKnobTableItem(shared_from_this());
     }
 
-
-    Q_EMIT childInserted(insertedIndex, item, reason);
 }
 
 bool
-KnobTableItem::removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobTableItem::removeChild(const KnobTableItemPtr& item)
 {
     if (!isItemContainer()) {
         return false;
@@ -673,11 +717,7 @@ KnobTableItem::removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum r
             }
         }
     }
-    if (removed) {
-        Q_EMIT childRemoved(item, reason);
-        return true;
-    }
-    return false;
+    return removed;
 }
 
 KnobTableItemPtr
@@ -885,6 +925,14 @@ KnobTableItem::getNextNonContainerItem() const
     return getNextNonContainerItemInternal(siblings, thisShared);
 }
 
+SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr
+KnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
+{
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+    item->toSerialization(s.get());
+    return s;
+}
+
 void
 KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
 {
@@ -935,14 +983,6 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
     }
 }
 
-void
-KnobTableItem::clearChildren(TableChangeReasonEnum reason)
-{
-    std::vector<KnobTableItemPtr> children = getChildren();
-    for (std::vector<KnobTableItemPtr>::iterator it = children.begin(); it!=children.end(); ++it) {
-        Q_EMIT childRemoved(*it, reason);
-    }
-}
 
 void
 KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
@@ -967,16 +1007,17 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
         foundKnob->fromSerialization(**it);
     }
 
-    clearChildren(eTableChangeReasonInternal);
+    assert(_imp->children.empty());
 
     KnobItemsTablePtr model = _imp->model.lock();
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->children.begin(); it!=serialization->children.end(); ++it) {
         KnobTableItemPtr child = model->createItemFromSerialization(*it);
         if (child) {
-            _imp->children.push_back(child);
+            addChild(child);
         }
     }
 }
+
 
 static KnobTableItemPtr
 getItemByScriptNameInternal(const std::string& scriptName, const std::vector<KnobTableItemPtr>& items)
@@ -1192,12 +1233,6 @@ KnobItemsTable::findDeepestSelectedItemContainer() const
     }
     return minContainer;
 }
-
-std::list<KnobTableItemPtr>
-KnobItemsTable::getNonContainerItemsFromBottomToTop() const
-{
-
-} // getNonContainerItemsFromBottomToTop
 
 void
 KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
@@ -1449,15 +1484,79 @@ KnobTableItem::getKeyFrameDataType() const
     return eKeyframeDataTypeNone;
 }
 
-CurvePtr
-KnobTableItem::getAnimationCurve(ViewGetSpec /*idx*/, DimIdx /*dimension*/) const
+
+void
+KnobTableItem::splitView(ViewIdx view)
 {
-    return _imp->animation;
+    {
+        QMutexLocker k(&_imp->lock);
+        CurvePtr& foundCurve = _imp->animationCurves[view];
+        if (!foundCurve) {
+            foundCurve.reset(new Curve);
+        }
+    }
+
+} // splitView
+
+void
+KnobTableItem::unSplitView(ViewIdx view)
+{
+    {
+        QMutexLocker k(&_imp->lock);
+        PerViewAnimationCurveMap::iterator foundView = _imp->animationCurves.find(view);
+        if (foundView != _imp->animationCurves.end()) {
+            _imp->animationCurves.erase(foundView);
+        }
+    }
+} // unSplitView
+
+std::list<ViewIdx>
+KnobTableItem::getViewsList() const
+{
+    std::list<ViewIdx> ret;
+    QMutexLocker k(&_imp->lock);
+    for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it != _imp->animationCurves.end(); ++it) {
+        ret.push_back(it->first);
+    }
+    return ret;
+}
+
+ViewIdx
+KnobTableItem::getViewIdxFromGetSpec(ViewGetSpec view) const
+{
+    return _imp->getViewIdxFromGetSpec(view);
+}
+
+ViewIdx
+KnobTableItemPrivate::getViewIdxFromGetSpec(ViewGetSpec view) const
+{
+    ViewIdx view_i(view);
+
+    if (view.isCurrent()) {
+        KnobItemsTablePtr m = model.lock();
+        if (!m) {
+            view_i = ViewIdx(0);
+        } else {
+            view_i = m->getNode()->getEffectInstance()->getCurrentView();
+        }
+    }
+    return view_i;
+}
+
+CurvePtr
+KnobTableItem::getAnimationCurve(ViewGetSpec idx, DimIdx /*dimension*/) const
+{
+    ViewIdx view_i = _imp->getViewIdxFromGetSpec(idx);
+    PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
+    if (foundView != _imp->animationCurves.end()) {
+        return foundView->second;
+    }
+    return CurvePtr();
 }
 
 ValueChangedReturnCodeEnum
 KnobTableItem::setKeyFrameInternal(double time,
-                                  ViewSetSpec /*view*/,
+                                  ViewSetSpec view,
                                   KeyFrame* newKey)
 {
     // Private - should not lock
@@ -1470,26 +1569,26 @@ KnobTableItem::setKeyFrameInternal(double time,
         newKey->setValue(0);
     }
 
-    KeyFrame existingKey;
-    ValueChangedReturnCodeEnum ret;
-    bool hasExistingKey = _imp->animation->getKeyFrameWithTime(time, &existingKey);
-    if (hasExistingKey) {
-        if (newKey) {
-            *newKey = existingKey;
+    KeyFrame k(time, 0.);
+    k.setInterpolation(eKeyframeTypeLinear);
+    if (newKey) {
+        *newKey = k;
+    }
+
+    ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
+    if (view.isAll()) {
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
+            ret = it->second->setOrAddKeyframe(k);
         }
-        ret = eValueChangedReturnCodeNothingChanged;
     } else {
-        KeyFrame k(time, 0);
-        k.setInterpolation(eKeyframeTypeLinear);
-        if (newKey) {
-            *newKey = k;
+        ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+        PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.find(view_i);
+        if (it != _imp->animationCurves.end()) {
+            ret = it->second->setOrAddKeyframe(k);
         }
-        bool newKeyFrame = _imp->animation->addKeyFrame(k);
-        if (newKeyFrame) {
-            ret = eValueChangedReturnCodeKeyframeAdded;
-        } else {
-            ret = eValueChangedReturnCodeNothingChanged;
-        }
+    }
+    if (ret == eValueChangedReturnCodeKeyframeAdded) {
+        onKeyFrameSet(time, view);
     }
     return ret;
 }
@@ -1541,35 +1640,63 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec v
 }
 
 void
-KnobTableItem::deleteAnimationConditional(double time, ViewSetSpec /*view*/, bool before)
+KnobTableItem::deleteAnimationConditional(double time, ViewSetSpec view, bool before)
 {
-    std::list<double> keysRemoved;
-    {
-        QMutexLocker k(&_imp->lock);
-        if (before) {
-            _imp->animation->removeKeyFramesBeforeTime(time, &keysRemoved);
-        } else {
-            _imp->animation->removeKeyFramesAfterTime(time, &keysRemoved);
-        }
 
+    if (view.isAll()) {
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
+            std::list<double> keysRemoved;
+            if (before) {
+                it->second->removeKeyFramesBeforeTime(time, &keysRemoved);
+            } else {
+                it->second->removeKeyFramesAfterTime(time, &keysRemoved);
+            }
+            if (!keysRemoved.empty()) {
+                for (std::list<double>::const_iterator it2 = keysRemoved.begin(); it2!=keysRemoved.end(); ++it2) {
+                    onKeyFrameRemoved(*it2, it->first);
+                }
+                std::list<double> keysAdded;
+                Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, it->first);
+            }
+        }
+    } else {
+        ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+        PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.find(view_i);
+        if (it != _imp->animationCurves.end()) {
+            std::list<double> keysRemoved;
+            if (before) {
+                it->second->removeKeyFramesBeforeTime(time, &keysRemoved);
+            } else {
+                it->second->removeKeyFramesAfterTime(time, &keysRemoved);
+            }
+            if (!keysRemoved.empty()) {
+                for (std::list<double>::const_iterator it2 = keysRemoved.begin(); it2!=keysRemoved.end(); ++it2) {
+                    onKeyFrameRemoved(*it2, it->first);
+                }
+                std::list<double> keysAdded;
+                Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, it->first);
+            }
+        }
     }
-    if (!keysRemoved.empty()) {
-        std::list<double> keysAdded;
-        Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
-    }
-}
+
+} // deleteAnimationConditional
 
 bool
-KnobTableItem::cloneCurve(ViewIdx /*view*/, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
+KnobTableItem::cloneCurve(ViewIdx view, DimIdx /*dimension*/, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
 {
     std::list<double> keysAdded, keysRemoved;
     bool hasChanged;
     {
         QMutexLocker k(&_imp->lock);
-        KeyFrameSet oldKeys = _imp->animation->getKeyFrames_mt_safe();
-        hasChanged = _imp->animation->cloneAndCheckIfChanged(curve, offset, range);
+        CurvePtr thisCurve = getAnimationCurve(view, DimIdx(0));
+        if (!thisCurve) {
+            return false;
+        }
+
+        KeyFrameSet oldKeys = thisCurve->getKeyFrames_mt_safe();
+        hasChanged = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
         if (hasChanged) {
-            KeyFrameSet newKeys = _imp->animation->getKeyFrames_mt_safe();
+            KeyFrameSet newKeys = thisCurve->getKeyFrames_mt_safe();
 
 
             for (KeyFrameSet::iterator it = newKeys.begin(); it != newKeys.end(); ++it) {
@@ -1592,65 +1719,140 @@ KnobTableItem::cloneCurve(ViewIdx /*view*/, DimIdx /*dimension*/, const Curve& c
     }
 
     if (!keysAdded.empty() || !keysRemoved.empty()) {
+        for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
+            onKeyFrameSet(*it, view);
+        }
+        for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
+            onKeyFrameRemoved(*it, view);
+        }
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
     return hasChanged;
-}
+} // cloneCurve
 
 void
-KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec /*view*/, DimSpec /*dimension*/)
+KnobTableItem::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve)
 {
-    
     std::list<double> keysRemoved, keysAdded;
+
     {
         QMutexLocker k(&_imp->lock);
         try {
             for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-                _imp->animation->removeKeyFrameWithTime(*it);
+                curve->removeKeyFrameWithTime(*it);
                 keysRemoved.push_back(*it);
             }
         } catch (const std::exception & /*e*/) {
         }
     }
     if (!keysRemoved.empty()) {
+        for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
+            onKeyFrameRemoved(*it, view);
+        }
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
 }
 
-bool
-KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec /*view*/,  DimSpec /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+void
+KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec /*dimension*/)
 {
+    if (view.isAll()) {
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
+            deleteValuesAtTimeInternal(times, it->first, it->second);
+        }
+    } else {
+        ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+        PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
+        if (foundView != _imp->animationCurves.end()) {
+            deleteValuesAtTimeInternal(times, view_i, foundView->second);
+        }
+    }
+}
+
+bool
+KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+{
+
     std::list<double> keysAdded, keysRemoved;
     {
         QMutexLocker k(&_imp->lock);
         std::vector<KeyFrame> newKeys;
-        if ( !_imp->animation->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes, &keysAdded, &keysAdded) ) {
+        if ( !curve->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes, &keysAdded, &keysAdded) ) {
             return false;
         }
 
     }
     if (!keysAdded.empty() || !keysRemoved.empty()) {
+        for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
+            onKeyFrameSet(*it, view);
+        }
+        for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
+            onKeyFrameRemoved(*it, view);
+        }
+
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
     return true;
 }
 
+
+bool
+KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+{
+    bool ok = false;
+    if (view.isAll()) {
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
+            ok |= warpValuesAtTimeInternal(times, it->first, it->second, warp, allowKeysOverlap, keyframes);
+        }
+    } else {
+        ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+        PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
+        if (foundView != _imp->animationCurves.end()) {
+            ok |= warpValuesAtTimeInternal(times, view_i, foundView->second, warp, allowKeysOverlap, keyframes);
+        }
+    }
+    return ok;
+}
+
 void
-KnobTableItem::removeAnimation(ViewSetSpec /*view*/, DimSpec /*dimensions*/)
+KnobTableItem::removeAnimationInternal(ViewIdx view, const CurvePtr& curve)
 {
     std::list<double> keysAdded, keysRemoved;
     {
         QMutexLocker k(&_imp->lock);
 
-        KeyFrameSet keys = _imp->animation->getKeyFrames_mt_safe();
+        KeyFrameSet keys = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
             keysRemoved.push_back(it->getTime());
         }
-        _imp->animation->clearKeyFrames();
+        curve->clearKeyFrames();
     }
     if (!keysRemoved.empty()) {
+        for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
+            onKeyFrameRemoved(*it, view);
+        }
+
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
+}
+
+
+void
+KnobTableItem::removeAnimation(ViewSetSpec view, DimSpec /*dimensions*/)
+{
+
+    if (view.isAll()) {
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
+            removeAnimationInternal(it->first, it->second);
+        }
+    } else {
+        ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+        PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
+        if (foundView != _imp->animationCurves.end()) {
+            removeAnimationInternal(view_i, foundView->second);
+        }
+    }
+
 }
 
 void
@@ -1727,15 +1929,16 @@ KnobTableItem::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDouble
 
 }
 
-static void addKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
+void
+KnobTableItem::setKeyFrameRecursively(double time, ViewSetSpec view)
 {
-    if (item->getCanAnimateUserKeyframes()) {
-        item->setKeyFrame(time, view, 0);
+    if (getCanAnimateUserKeyframes()) {
+        setKeyFrame(time, view, 0);
     }
-    if (item->isItemContainer()) {
-        std::vector<KnobTableItemPtr> children = item->getChildren();
+    if (isItemContainer()) {
+        std::vector<KnobTableItemPtr> children = getChildren();
         for (std::size_t i = 0; i < children.size(); ++i) {
-            addKeyFrameRecursively(children[i], time, view);
+            children[i]->setKeyFrameRecursively(time, view);
         }
     }
 }
@@ -1745,7 +1948,7 @@ KnobItemsTable::setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
 {
     std::list<KnobTableItemPtr> items = getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        addKeyFrameRecursively(*it, time, view);
+        (*it)->setKeyFrameRecursively(time, view);
     }
 }
 
@@ -1793,32 +1996,71 @@ KnobItemsTable::removeAnimationOnSelectedItems(ViewSetSpec view)
     }
 }
 
-double
-KnobTableItem::getMasterKeyframesCount() const
+int
+KnobTableItem::getMasterKeyframesCount(ViewGetSpec view) const
 {
-    return _imp->animation->getKeyFramesCount();
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return 0;
+    }
+    return curve->getKeyFramesCount();
+}
+
+bool
+KnobTableItem::getMasterKeyframe(int index, ViewGetSpec view, KeyFrame* k) const
+{
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return false;
+    }
+    return curve->getKeyFrameWithIndex(index, k);
+}
+
+void
+KnobTableItem::getMasterKeyFrameTimes(ViewGetSpec view, std::set<double>* times) const
+{
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve || !times) {
+        return;
+    }
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        times->insert(it->getTime());
+    }
+}
+
+bool
+KnobTableItem::hasMasterKeyframeAtTime(double time, ViewGetSpec view) const
+{
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return false;
+    }
+    KeyFrame k;
+    return curve->getKeyFrameWithTime(time, &k);
 }
 
 static void
 findOutNearestKeyframeRecursively(const KnobTableItemPtr& item,
                                   bool previous,
                                   double time,
+                                  ViewGetSpec view,
                                   double* nearest)
 {
 
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();
         for (std::size_t i = 0; i < children.size(); ++i) {
-            findOutNearestKeyframeRecursively(children[i], previous, time, nearest);
+            findOutNearestKeyframeRecursively(children[i], previous, time, view, nearest);
         }
     } else if (item->getCanAnimateUserKeyframes()) {
         if (previous) {
-            int t = item->getPreviousMasterKeyframeTime(time);
+            int t = item->getPreviousMasterKeyframeTime(time, view);
             if ( (t != -std::numeric_limits<double>::infinity()) && (t > *nearest) ) {
                 *nearest = t;
             }
-        } else if (layer) {
-            int t = item->getNextMasterKeyframeTime(time);
+        } else {
+            int t = item->getNextMasterKeyframeTime(time, view);
             if ( (t != std::numeric_limits<double>::infinity()) && (t < *nearest) ) {
                 *nearest = t;
             }
@@ -1829,26 +2071,35 @@ findOutNearestKeyframeRecursively(const KnobTableItemPtr& item,
 }
 
 double
-KnobTableItem::getPreviousMasterKeyframeTime(double time) const
+KnobTableItem::getPreviousMasterKeyframeTime(double time, ViewGetSpec view) const
 {
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return 0;
+    }
     KeyFrame k;
-    if (!_imp->animation->getPreviousKeyframeTime(time, &k)) {
+    if (!curve->getPreviousKeyframeTime(time, &k)) {
         return -std::numeric_limits<double>::infinity();
     }
+    return k.getTime();
 }
 
 double
-KnobTableItem::getNextMasterKeyframeTime(double time) const
+KnobTableItem::getNextMasterKeyframeTime(double time, ViewGetSpec view) const
 {
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return 0;
+    }
     KeyFrame k;
-    if (!_imp->animation->getNextKeyframeTime(time, &k)) {
+    if (!curve->getNextKeyframeTime(time, &k)) {
         return std::numeric_limits<double>::infinity();
     }
-
+    return k.getTime();
 }
 
 void
-KnobItemsTable::goToPreviousMasterKeyframe()
+KnobItemsTable::goToPreviousMasterKeyframe(ViewGetSpec view)
 {
     NodePtr node = getNode();
     if (!node) {
@@ -1858,7 +2109,7 @@ KnobItemsTable::goToPreviousMasterKeyframe()
     double minTime = -std::numeric_limits<double>::infinity();
     std::list<KnobTableItemPtr> items = getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        findOutNearestKeyframeRecursively(*it, true, time, &minTime);
+        findOutNearestKeyframeRecursively(*it, true, time, view, &minTime);
     }
     if (minTime != -std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
@@ -1867,7 +2118,7 @@ KnobItemsTable::goToPreviousMasterKeyframe()
 }
 
 void
-KnobItemsTable::goToNextMasterKeyframe()
+KnobItemsTable::goToNextMasterKeyframe(ViewGetSpec view)
 {
     NodePtr node = getNode();
     if (!node) {
@@ -1877,7 +2128,7 @@ KnobItemsTable::goToNextMasterKeyframe()
     double minTime = std::numeric_limits<double>::infinity();
     std::list<KnobTableItemPtr> items = getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        findOutNearestKeyframeRecursively(*it, false, time, &minTime);
+        findOutNearestKeyframeRecursively(*it, false, time, view, &minTime);
     }
     if (minTime != std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
@@ -1889,12 +2140,17 @@ static bool hasAnimationRecursive(const std::vector<KnobTableItemPtr>& items)
 {
     for (std::size_t i = 0; i < items.size(); ++i) {
         if (items[i]->isItemContainer()) {
-            bool subRet = hasAnimationRecursive(items[i]);
+            bool subRet = hasAnimationRecursive(items[i]->getChildren());
             if (subRet) {
                 return true;
             }
-        } else if (items[i]->getMasterKeyframesCount() > 1) {
-            return true;
+        } else {
+            std::list<ViewIdx> views;
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                if (items[i]->getMasterKeyframesCount(*it) > 1) {
+                    return true;
+                }
+            }
         }
     }
     return false;
@@ -1907,6 +2163,45 @@ KnobItemsTable::hasAnimation() const
     return hasAnimationRecursive(items);
 }
 
+void
+KnobItemsTable::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+    SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobItemsTableSerialization*>(serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
+    for (std::vector<KnobTableItemPtr>::const_iterator it = topLevelItems.begin(); it != topLevelItems.end(); ++it) {
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s = createSerializationFromItem(*it);
+        if (s) {
+            serialization->items.push_back(s);
+        }
+    }
+    
+
+}
+
+void
+KnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+
+    const SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobItemsTableSerialization*>(&serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    assert(_imp->topLevelItems.empty());
+
+    for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->items.begin(); it != serialization->items.end(); ++it) {
+        KnobTableItemPtr item = createItemFromSerialization(*it);
+        if (item) {
+            addItem(item, KnobTableItemPtr(), eTableChangeReasonInternal);
+        }
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

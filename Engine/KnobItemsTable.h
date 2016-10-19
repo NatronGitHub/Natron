@@ -67,6 +67,12 @@ class KnobTableItem
 
 public:
 
+    /**
+     * @brief Creates a new table item.
+     * @param model The model into which the item should be inserted. 
+     * Note that this function does not insert the item in the model, make 
+     * sure to call KnobItemsTable::insertItem afterwards
+     **/
     KnobTableItem(const KnobItemsTablePtr& model);
 
     virtual ~KnobTableItem();
@@ -110,12 +116,17 @@ public:
      * @brief If true, the item may receive children, otherwise it cannot have children.
      **/
     virtual bool isItemContainer() const = 0;
-    
+
+private:
+
+    // The following methods are made private because all entry points for managing items in/out
+    // of the model should be handled on the model itself.
+
     /**
      * @brief Add a child to the item after any other children
      **/
-    void addChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason) {
-        insertChild(-1, item, reason);
+    void addChild(const KnobTableItemPtr& item) {
+        insertChild(-1, item);
     }
 
     /**
@@ -123,19 +134,16 @@ public:
      * isItemContainer() returns false. This will remove the item from its previous parent/model 
      * before inserting it as a child. This will emit the childInserted signal.
      **/
-    void insertChild(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void insertChild(int index, const KnobTableItemPtr& item);
 
     /**
      * @brief Removes given child if it exists.
      * @return True upon success, false otherwise.
      * Upon success, the childRemoved signal is emitted.
      **/
-    bool removeChild(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    bool removeChild(const KnobTableItemPtr& item);
 
-    /**
-     * @brief Removes all children. Same as calling removeChild on each children individually.
-     **/
-    void clearChildren(TableChangeReasonEnum reason);
+public:
 
     /**
      * @brief Returns a vector of all children of the item.
@@ -214,7 +222,21 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
-#pragma message WARN("KnobTableItem does not support multi-view for user keyframes")
+    /**
+     * @brief Split the given view off the main view
+     **/
+    virtual void splitView(ViewIdx view);
+
+    /**
+     * @brief un-split the given view if it has been split before
+     **/
+    virtual void unSplitView(ViewIdx view);
+
+    /**
+     * @brief Returns a list of all different view split in the item
+     **/
+    std::list<ViewIdx> getViewsList() const;
+
     //////////// Overriden from AnimatingObjectI
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
     virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
@@ -242,17 +264,33 @@ public:
     /**
      * @brief Returns the next user keyframe time after time, or double infinity otherwise
      **/
-    double getNextMasterKeyframeTime(double time) const;
+    double getNextMasterKeyframeTime(double time, ViewGetSpec view) const;
 
     /**
      * @brief Returns the previous user keyframe time before time, or minus double infinity otherwise
      **/
-    double getPreviousMasterKeyframeTime(double time) const;
+    double getPreviousMasterKeyframeTime(double time, ViewGetSpec view) const;
 
     /**
      * @brief Returns the number of user keyframes on the item
      **/
-    double getMasterKeyframesCount() const;
+    int getMasterKeyframesCount(ViewGetSpec view) const;
+
+    /**
+     * @brief Returns the keyframe corresponding to the given index
+     * @return True if found, false otherwise
+     **/
+    bool getMasterKeyframe(int index, ViewGetSpec view, KeyFrame* k) const;
+
+    /**
+     * @brief Convenience function that calls getCurve()->getKeyFrames
+     **/
+    void getMasterKeyFrameTimes(ViewGetSpec view, std::set<double>* times) const;
+
+    /**
+     * @brief Convenience function that checks if a keyframe exists at the given time/view
+     **/
+    bool hasMasterKeyframeAtTime(double time, ViewGetSpec view) const;
 
 protected:
 
@@ -280,6 +318,12 @@ private:
         }
     }
 
+    void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve);
+    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0);
+    void removeAnimationInternal(ViewIdx view, const CurvePtr& curve);
+
+protected:
+
     ValueChangedReturnCodeEnum setKeyFrame(double time,
                                            ViewSetSpec view,
                                            KeyFrame* newKey);
@@ -292,8 +336,11 @@ private:
 
     void setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec view,  std::vector<KeyFrame>* newKeys = 0);
 
+    void setKeyFrameRecursively(double time, ViewSetSpec view);
 
 protected:
+
+    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 
     /**
      * @brief Implement to initialize the knobs of the item and add them to the table by calling setColumn
@@ -308,10 +355,41 @@ protected:
     virtual std::string getBaseItemName() const = 0;
     
     /**
-     * @brief Callback called when the item is removed from its parent item or from the table if this is a top-level item
+     * @brief Callback called when the item is removed from the model
      **/
-    virtual void onItemRemovedFromParent() {}
+    virtual void onItemRemovedFromModel() {}
 
+    /**
+     * @brief Same as onItemRemovedFromModel, but also call it recursively on its children
+     **/
+    void onItemRemovedFromModel_recursive();
+
+    /**
+     * @brief Callback called when the item is inserted in the model
+     **/
+    virtual void onItemInsertedInModel() {}
+
+    /**
+     * @brief Same as onItemInsertedInModel, but also call it recursively on its children
+     **/
+    void onItemInsertedInModel_recursive();
+
+    /**
+     * @brief Callback called when a new keyframe is set on the animation curve of the user keyframes at the given time/view
+     **/
+    virtual void onKeyFrameSet(double time, ViewSetSpec view)
+    {
+        Q_UNUSED(time);
+        Q_UNUSED(view);
+    }
+
+    /**
+     * @brief Callback called when a new keyframe is removed on the animation curve of the user keyframes at the given time/view
+     **/
+    virtual void onKeyFrameRemoved(double time, ViewSetSpec view) {
+        Q_UNUSED(time);
+        Q_UNUSED(view);
+    }
 
     /**
      * @brief Reimplemented from KnobHolder.
@@ -328,8 +406,6 @@ protected:
 Q_SIGNALS:
 
     void labelChanged(QString, TableChangeReasonEnum);
-    void childRemoved(KnobTableItemPtr, TableChangeReasonEnum);
-    void childInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
     void curveAnimationChanged(std::list<double> added, std::list<double> removed, ViewIdx view);
 
 private:
@@ -357,7 +433,10 @@ KnobTableItemConstPtr toKnobTableItem(const KnobHolderConstPtr& holder)
  * For example, in the Tracker node all tracks are top-level items of the model.
  **/
 struct KnobItemsTablePrivate;
-class KnobItemsTable : public QObject, public boost::enable_shared_from_this<KnobItemsTable>
+class KnobItemsTable
+: public QObject
+, public boost::enable_shared_from_this<KnobItemsTable>
+, public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -466,11 +545,21 @@ public:
     TableSelectionModeEnum getSelectionMode() const;
 
     /**
-     * @brief Add/Insert a top-level item with no parent.
+     * @brief Conveniently call insertItem with index = -1
      **/
-    void addTopLevelItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
-    void insertTopLevelItem(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void addItem(const KnobTableItemPtr& item, const KnobTableItemPtr& parent, TableChangeReasonEnum reason);
 
+    /**
+     * @brief Inserts an item in the model. 
+     * @param parent If non null, the item will be added as a child of it, otherwise it will be considered a top-level item.
+     * @param index The index where to insert the item in the parent children list, or in the top-level items list if there
+     * is no parent.
+     **/
+    void insertItem(int index, const KnobTableItemPtr& item, const KnobTableItemPtr& parent, TableChangeReasonEnum reason);
+
+    /**
+     * @brief Returns a vector with all top level items in the model in order.
+     **/
     std::vector<KnobTableItemPtr> getTopLevelItems() const;
 
     /**
@@ -480,11 +569,9 @@ public:
     void removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
     /**
-     * @brief  Create an item from a serialization.
-     * The item will not yet be part of the model and must be added either as a top level item with addTopLevelItem
-     * or to another item with addChild
+     * @brief Removes all top-level items (and their children). This will completely reset the model.
      **/
-    virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) = 0;
+    void resetModel(TableChangeReasonEnum reason);
 
     /**
      * @brief Attempts to find an existing item in the model by its script-name.
@@ -567,27 +654,50 @@ public:
     /**
      * @brief Seeks the nearest previous master keyframe amongst selected items
      **/
-    void goToPreviousMasterKeyframe();
+    void goToPreviousMasterKeyframe(ViewGetSpec view);
 
     /**
      * @brief Seeks the nearest next master keyframe amongst selected items
      **/
-    void goToNextMasterKeyframe();
+    void goToNextMasterKeyframe(ViewGetSpec view);
 
     /**
      * @brief Returns true if at least one item is animated
      **/
     bool hasAnimation() const;
 
+    /**
+     * @brief  Implement to create an item from a serialization object.
+     * The item will not yet be part of the model and must be added either as a top level item with addTopLevelItem
+     * or to another item with addChild
+     **/
+    virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) = 0;
+
+    /**
+     * @brief Create a serialization object from the item. May be overriden to return a derived class of KnobTableItemSerialization
+     **/
+    virtual SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr createSerializationFromItem(const KnobTableItemPtr& item);
+
+    /**
+     * @brief Serialization support
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
+
 Q_SIGNALS:
 
     void selectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
-    void topLevelItemRemoved(KnobTableItemPtr, TableChangeReasonEnum);
-    void topLevelItemInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
+    void itemRemoved(KnobTableItemPtr, TableChangeReasonEnum);
+    void itemInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
 
 protected:
     
     std::string generateUniqueName(const std::string& name) const;
+
+    /**
+     * @brief Callback called once the model has been reset, that is: once all items have been removed.
+     **/
+    virtual void onModelReset() {}
 
 private:
 

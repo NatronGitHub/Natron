@@ -179,7 +179,6 @@ SOURCES += \
     RectI.cpp \
     RenderStats.cpp \
     RotoBezierTriangulation.cpp \
-    RotoContext.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
     RotoLayer.cpp \
@@ -402,8 +401,6 @@ HEADERS += \
     RectI.h \
     RenderStats.h \
     RotoBezierTriangulation.h \
-    RotoContext.h \
-    RotoContextPrivate.h \
     RotoDrawableItem.h \
     RotoLayer.h \
     RotoItem.h \

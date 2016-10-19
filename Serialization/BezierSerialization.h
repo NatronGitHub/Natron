@@ -19,24 +19,25 @@
 #ifndef Engine_BezierSerialization_h
 #define Engine_BezierSerialization_h
 
-#include "Serialization/RotoDrawableItemSerialization.h"
+#include <map>
+#include <list>
+#include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/BezierCPSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
 class BezierSerialization
-    : public RotoDrawableItemSerialization
+    : public KnobTableItemSerialization
 {
 
 public:
 
     BezierSerialization()
-        : RotoDrawableItemSerialization()
-        , _controlPoints()
-        , _closed(false)
+        : KnobTableItemSerialization()
         , _isOpenBezier(false)
     {
+        _emitMap = false;
     }
 
     virtual ~BezierSerialization()
@@ -48,10 +49,6 @@ public:
     virtual void decode(const YAML::Node& node) OVERRIDE;
     
 
-    template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
-
     struct ControlPoint
     {
         BezierCPSerialization innerPoint;
@@ -59,10 +56,16 @@ public:
         // Serialize feather only if different
         boost::shared_ptr<BezierCPSerialization> featherPoint;
     };
-    std::list< ControlPoint > _controlPoints;
 
+    struct Shape
+    {
+        std::list<ControlPoint> controlPoints;
+        bool closed;
+    };
 
-    bool _closed;
+    typedef std::map<std::string, Shape> PerViewShapeMap;
+
+    PerViewShapeMap _shapes;
     bool _isOpenBezier;
 };
 

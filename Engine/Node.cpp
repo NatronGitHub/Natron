@@ -94,7 +94,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/StubNode.h"
 #include "Engine/Settings.h"

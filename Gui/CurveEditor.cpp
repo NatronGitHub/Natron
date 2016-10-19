@@ -50,7 +50,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Curve.h"
 #include "Engine/Node.h"
 #include "Engine/KnobFile.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/EffectInstance.h"

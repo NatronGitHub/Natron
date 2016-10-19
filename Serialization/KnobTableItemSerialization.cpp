@@ -11,7 +11,9 @@ SERIALIZATION_NAMESPACE_ENTER;
 void
 KnobTableItemSerialization::encode(YAML::Emitter& em) const
 {
-    em << YAML::BeginMap;
+    if (_emitMap) {
+        em << YAML::BeginMap;
+    }
     em << YAML::Key << "ScriptName" << YAML::Value << scriptName;
     if (label != scriptName) {
         em << YAML::Key << "Label" << YAML::Value << label;
@@ -31,7 +33,10 @@ KnobTableItemSerialization::encode(YAML::Emitter& em) const
         }
         em << YAML::EndSeq;
     }
-    em << YAML::EndMap;
+    
+    if (_emitMap) {
+        em << YAML::EndMap;
+    }
 }
 
 void

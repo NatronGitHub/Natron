@@ -396,23 +396,14 @@ NATRON_NAMESPACE_ENTER;
 
 class RotoPaintKnobItemsTable : public KnobItemsTable
 {
-    RotoPaintWPtr _rotoPaint;
-    
+
 public:
 
-    RotoPaintPtr getRotoPaint() const
-    {
-        return _rotoPaint.lock();
-    }
+    RotoPaintPrivate* _imp;
 
-    RotoPaintKnobItemsTable(const RotoPaintPtr& rotoNode,
+    RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
                             KnobItemsTableTypeEnum type,
-                            int colsCount)
-    : KnobItemsTable(rotoNode, type, colsCount)
-    , _rotoPaint(rotoNode)
-    {
-
-    }
+                            int colsCount);
 
     virtual ~RotoPaintKnobItemsTable()
     {
@@ -425,6 +416,10 @@ public:
     }
 
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
+    virtual void onModelReset() OVERRIDE FINAL;
 
     /**
      * @brief Returns a list of all the curves in the order in which they should be rendered.
@@ -554,7 +549,36 @@ struct RotoPaintPrivate
                                 const KnobBoolPtr& scaleUniform,
                                 const KnobChoicePtr& skewOrder,
                                 const KnobDoublePtr& extraMatrix);
-    
+
+    void createBaseLayer();
+
+    RotoLayerPtr getOrCreateBaseLayer();
+
+    /**
+     * @brief Create a new layer to the currently selected layer.
+     **/
+    RotoLayerPtr addLayer();
+
+
+    RotoLayerPtr addLayerInternal(bool declarePython);
+
+    /**
+     * @brief Add an existing layer to the layers
+     **/
+    void addLayer(const RotoLayerPtr & layer);
+
+
+    /**
+     * @brief Make a new bezier curve and append it into the currently selected layer.
+     * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
+     **/
+    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
+    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
+    BezierPtr makeSquare(double x, double y, double initialSize, double time);
+    RotoStrokeItemPtr makeStroke(RotoStrokeType type,
+                                 const std::string& baseName,
+                                 bool clearSel);
+
 };
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -783,8 +807,6 @@ public:
     }
 
     bool isFeatherVisible() const;
-
-    RotoContextPtr getContext();
 
     RotoToolEnum getSelectedTool() const
     {

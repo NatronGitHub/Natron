@@ -55,7 +55,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
-#include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"

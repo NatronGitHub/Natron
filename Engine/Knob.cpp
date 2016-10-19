@@ -4815,7 +4815,14 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
     }
     RECURSIVE_ACTION();
 
-    return onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+    bool ret = onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+    if (ret) {
+        if (QThread::currentThread() == qApp->thread() && originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
+            if (isOverlaySlaveParam(k)) {
+                k->redraw();
+            }
+        }
+    }
 }
 
 void

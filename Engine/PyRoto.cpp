@@ -33,7 +33,6 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/PyNode.h"
 #include "Engine/Node.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 

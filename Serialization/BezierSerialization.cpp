@@ -30,56 +30,98 @@ void
 BezierSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-    RotoDrawableItemSerialization::encode(em);
-    if (!_controlPoints.empty()) {
+
+    KnobTableItemSerialization::encode(em);
+    if (_isOpenBezier) {
+        em << YAML::Key << "OpenBezier" << YAML::Value << true;
+    }
+
+    if (!_shapes.empty()) {
         em << YAML::Key << "Shape" << YAML::Value;
-        em << YAML::BeginSeq;
-        for (std::list< ControlPoint >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
+
+        if (_shapes.size() > 1) {
+            // Multi-view
             em << YAML::BeginMap;
-            em << YAML::Key << "Inner" << YAML::Value;
-            it->innerPoint.encode(em);
-            if (it->featherPoint) {
-                em << YAML::Key << "Feather" << YAML::Value;
-                it->featherPoint->encode(em);
+        }
+        for (PerViewShapeMap::const_iterator it = _shapes.begin(); it != _shapes.end(); ++it) {
+            if (_shapes.size() > 1) {
+                em << YAML::Key << it->first << YAML::Value;
             }
+            em << YAML::BeginMap;
+            if (!_isOpenBezier) {
+                em << YAML::Key << "Finished" << YAML::Value << _closed;
+            }
+            em << YAML::Key << "ControlPoints" << YAML::Value;
+            em << YAML::BeginSeq;
+            for (std::list< ControlPoint >::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                em << YAML::BeginMap;
+                em << YAML::Key << "Inner" << YAML::Value;
+                it2->innerPoint.encode(em);
+                if (it2->featherPoint) {
+                    em << YAML::Key << "Feather" << YAML::Value;
+                    it2->featherPoint->encode(em);
+                }
+                em << YAML::EndMap;
+            }
+            em << YAML::EndSeq;
+            em << YAML::EndMap;
+
+        }
+        if (_shapes.size() > 1) {
             em << YAML::EndMap;
         }
-        em << YAML::EndSeq;
+
     }
-    em << YAML::Key << "CanClose" << YAML::Value << !_isOpenBezier;
-    if (!_isOpenBezier) {
-        em << YAML::Key << "Closed" << YAML::Value << _closed;
-    }
+
     em << YAML::EndMap;
+}
+
+static void decodeShape(const YAML::Node& shapeNode, BezierSerialization::Shape* shape)
+{
+    if (shapeNode["Finished"]) {
+        shape->closed = true;
+    } else {
+        shape->closed = false;
+    }
+    if (shapeNode["ControlPoints"]) {
+        YAML::Node cpListNode = shapeNode["ControlPoints"];
+        for (std::size_t i = 0; i < cpListNode.size(); ++i) {
+            BezierSerialization::ControlPoint cp;
+            YAML::Node cpNode = cpListNode[i];
+            if (cpNode["Inner"]) {
+                cp.innerPoint.decode(cpNode["Inner"]);
+            }
+            if (cpNode["Feather"]) {
+                cp.featherPoint.reset(new BezierCPSerialization);
+                cp.featherPoint->decode(cpNode["Feather"]);
+            }
+        }
+    }
 }
 
 void
 BezierSerialization::decode(const YAML::Node& node)
 {
-    RotoDrawableItemSerialization::decode(node);
-    if (node["Shape"]) {
-        YAML::Node shapeNode = node["Shape"];
-        for (std::size_t i = 0; i < shapeNode.size(); ++i) {
-            ControlPoint c;
-            YAML::Node pointNode = shapeNode[i];
-            if (pointNode["Inner"]) {
-                c.innerPoint.decode(pointNode["Inner"]);
-            }
-            if (pointNode["Feather"]) {
-                c.featherPoint.reset(new BezierCPSerialization);
-                c.featherPoint->decode(pointNode["Feather"]);
-            }
-            _controlPoints.push_back(c);
-        }
-    }
-    if (node["Closed"]) {
-        _closed = node["Closed"].as<bool>();
-    }
-
-    if (node["CanClose"]) {
-        _isOpenBezier = !node["CanClose"].as<bool>();
+    KnobTableItemSerialization::decode(node);
+    if (node["OpenBezier"]) {
+        _isOpenBezier = true;
     } else {
         _isOpenBezier = false;
+    }
+    if (node["Shape"]) {
+        YAML::Node shapeNode = node["Shape"];
+        if (!shapeNode["ControlPoints"]) {
+            // Multi-view
+            for (YAML::const_iterator it = shapeNode.begin(); it != shapeNode.end(); ++it) {
+                std::string view = it->first.as<std::string>();
+                Shape& shape = _shapes[view];
+                decodeShape(it->second, &shape);
+            }
+        } else {
+            Shape& shape = _shapes["Main"];
+            decodeShape(shapeNode, &shape);
+        }
+
     }
 }
 

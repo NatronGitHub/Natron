@@ -73,15 +73,6 @@ class RotoItem
 {
 public:
 
-    enum SelectionReasonEnum
-    {
-        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
-        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
-        eSelectionReasonOther ///when the project loader restores the selection
-    };
-
-public:
-
     // This class is virtual pure so no need to privatize the constructor
 
     RotoItem(const KnobItemsTablePtr& model);
@@ -100,7 +91,7 @@ public:
 
     bool isDeactivatedRecursive() const;
 
-    void setLocked(bool l, bool lockChildren, RotoItem::SelectionReasonEnum reason);
+    void setLocked(bool l, bool lockChildren);
     bool getLocked() const;
 
     bool isLockedRecursive() const;
@@ -108,12 +99,21 @@ public:
     
 protected:
 
+    virtual std::string getBaseItemName() const OVERRIDE = 0;
+
     virtual void initializeKnobs() OVERRIDE;
+
+
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSetSpec view,
+                                    bool originatedFromMainThread) OVERRIDE;
 
 private:
 
     void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked, RotoItem::SelectionReasonEnum reason);
+    void setLocked_recursive(bool locked);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };

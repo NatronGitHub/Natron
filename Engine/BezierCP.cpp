@@ -56,7 +56,7 @@ BezierCP::BezierCP()
 BezierCP::BezierCP(const BezierCP & other)
     : _imp( new BezierCPPrivate( other._imp->holder.lock() ) )
 {
-    clone(other);
+    copyControlPoint(other);
 }
 
 BezierCP::BezierCP(const BezierPtr& curve)
@@ -68,9 +68,19 @@ BezierCP::~BezierCP()
 {
 }
 
+void
+BezierCP::getKeyframeTimes(std::set<double>* keys) const
+{
+    KeyFrameSet set;
+    set = _imp->curveX->getKeyFrames_mt_safe();
+
+    for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
+        keys->insert( it->getTime() );
+    }
+}
+
 bool
 BezierCP::getPositionAtTime(double time,
-                            ViewIdx /*view*/,
                             double* x,
                             double* y) const
 {
@@ -153,7 +163,6 @@ BezierCP::setRightBezierStaticPosition(double x,
 
 bool
 BezierCP::getLeftBezierPointAtTime(double time,
-                                   ViewIdx /*view*/,
                                    double* x,
                                    double* y) const
 {
@@ -190,7 +199,6 @@ BezierCP::getLeftBezierPointAtTime(double time,
 
 bool
 BezierCP::getRightBezierPointAtTime(double time,
-                                    ViewIdx /*view*/,
                                     double *x,
                                     double *y) const
 {
@@ -262,31 +270,6 @@ BezierCP::setRightBezierPointAtTime(double time,
 }
 
 void
-BezierCP::removeAnimation(double currentTime)
-{
-    {
-        QMutexLocker k(&_imp->staticPositionMutex);
-        try {
-            _imp->x = _imp->curveX->getValueAt(currentTime);
-            _imp->y = _imp->curveY->getValueAt(currentTime);
-            _imp->leftX = _imp->curveLeftBezierX->getValueAt(currentTime);
-            _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
-            _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
-            _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
-        } catch (const std::exception & e) {
-            //
-        }
-    }
-    _imp->curveX->clearKeyFrames();
-    _imp->curveY->clearKeyFrames();
-    _imp->curveLeftBezierX->clearKeyFrames();
-    _imp->curveLeftBezierY->clearKeyFrames();
-    _imp->curveRightBezierX->clearKeyFrames();
-    _imp->curveRightBezierY->clearKeyFrames();
-
-}
-
-void
 BezierCP::removeKeyframe(double time)
 {
     ///only called on the main-thread
@@ -314,43 +297,6 @@ BezierCP::removeKeyframe(double time)
     }
 }
 
-bool
-BezierCP::hasKeyFrameAtTime(double time) const
-{
-    KeyFrame k;
-    return _imp->curveX->getKeyFrameWithTime(time, &k);
-
-}
-
-void
-BezierCP::getKeyframeTimes(std::set<double>* times) const
-{
-    KeyFrameSet set;
-    set = _imp->curveX->getKeyFrames_mt_safe();
-
-    for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
-        times->insert( it->getTime() );
-    }
-}
-
-void
-BezierCP::getKeyFrames(std::list<std::pair<double, KeyframeTypeEnum> >* keys) const
-{
-    KeyFrameSet set;
-
-    set = _imp->curveX->getKeyFrames_mt_safe();
-
-    for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
-        keys->push_back( std::make_pair( it->getTime(), it->getInterpolation() ) );
-    }
-}
-
-int
-BezierCP::getKeyFrameIndex(double time) const
-{
-    return _imp->curveX->keyFrameIndex(time);
-}
-
 void
 BezierCP::setKeyFrameInterpolation(KeyframeTypeEnum interp,
                                    int index)
@@ -363,34 +309,15 @@ BezierCP::setKeyFrameInterpolation(KeyframeTypeEnum interp,
     _imp->curveRightBezierY->setKeyFrameInterpolation(interp, index);
 }
 
-double
-BezierCP::getKeyframeTime(int index) const
-{
-    KeyFrame k;
-    bool ok;
-
-    ok = _imp->curveX->getKeyFrameWithIndex(index, &k);
-    if (ok) {
-        return k.getTime();
-    } else {
-        return INT_MAX;
-    }
-}
 
 int
-BezierCP::getKeyframesCount() const
-{
-    return _imp->curveX->getKeyFramesCount();
-}
-
-int
-BezierCP::getControlPointsCount() const
+BezierCP::getControlPointsCount(ViewGetSpec view) const
 {
     BezierPtr b = _imp->holder.lock();
 
     assert(b);
 
-    return b->getControlPointsCount();
+    return b->getControlPointsCount(view);
 }
 
 BezierPtr
@@ -405,7 +332,7 @@ BezierCP::getBezier() const
 
 int
 BezierCP::isNearbyTangent(double time,
-                          ViewIdx view,
+                          ViewGetSpec view,
                           double x,
                           double y,
                           double acceptance) const
@@ -415,11 +342,11 @@ BezierCP::isNearbyTangent(double time,
     p.z = left.z = right.z = 1;
 
     Transform::Matrix3x3 transform;
-    getBezier()->getTransformAtTime(time, &transform);
+    getBezier()->getTransformAtTime(time, view, &transform);
 
-    getPositionAtTime(time, view, &p.x, &p.y);
-    getLeftBezierPointAtTime(time, view, &left.x, &left.y);
-    getRightBezierPointAtTime(time, view, &right.x, &right.y);
+    getPositionAtTime(time, &p.x, &p.y);
+    getLeftBezierPointAtTime(time, &left.x, &left.y);
+    getRightBezierPointAtTime(time, &right.x, &right.y);
 
     p = Transform::matApply(transform, p);
     left = Transform::matApply(transform, left);
@@ -470,6 +397,7 @@ cuspTangent(double x,
 
 static void
 smoothTangent(double time,
+              ViewGetSpec view,
               bool left,
               const BezierCP* p,
               const Transform::Matrix3x3& transform,
@@ -481,8 +409,8 @@ smoothTangent(double time,
 {
     if ( (x == *tx) && (y == *ty) ) {
         const std::list < BezierCPPtr > & cps = ( p->isFeatherPoint() ?
-                                                                  p->getBezier()->getFeatherPoints() :
-                                                                  p->getBezier()->getControlPoints() );
+                                                                  p->getBezier()->getFeatherPoints(view) :
+                                                                  p->getBezier()->getControlPoints(view) );
 
         if (cps.size() == 1) {
             return;
@@ -582,7 +510,6 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 BezierCP::cuspPoint(double time,
-                    ViewIdx view,
                     bool autoKeying,
                     bool rippleEdit,
                     const std::pair<double, double>& pixelScale)
@@ -591,9 +518,9 @@ BezierCP::cuspPoint(double time,
     assert( QThread::currentThread() == qApp->thread() );
 
     double x, y, leftX, leftY, rightX, rightY;
-    getPositionAtTime(time, view, &x, &y);
-    getLeftBezierPointAtTime(time, view, &leftX, &leftY);
-    bool isOnKeyframe = getRightBezierPointAtTime(time, view, &rightX, &rightY);
+    getPositionAtTime(time, &x, &y);
+    getLeftBezierPointAtTime(time, &leftX, &leftY);
+    bool isOnKeyframe = getRightBezierPointAtTime(time,  &rightX, &rightY);
     double newLeftX = leftX, newLeftY = leftY, newRightX = rightX, newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY, pixelScale);
     cuspTangent(x, y, &newRightX, &newRightY, pixelScale);
@@ -622,7 +549,7 @@ BezierCP::cuspPoint(double time,
 
 bool
 BezierCP::smoothPoint(double time,
-                      ViewIdx view,
+                      ViewGetSpec view,
                       bool autoKeying,
                       bool rippleEdit,
                       const std::pair<double, double>& pixelScale)
@@ -631,22 +558,22 @@ BezierCP::smoothPoint(double time,
     assert( QThread::currentThread() == qApp->thread() );
 
     Transform::Matrix3x3 transform;
-    getBezier()->getTransformAtTime(time, &transform);
+    getBezier()->getTransformAtTime(time, view, &transform);
 
     Transform::Point3D pos, left, right;
     pos.z = left.z = right.z = 1.;
 
-    getPositionAtTime(time, view, &pos.x, &pos.y);
+    getPositionAtTime(time,  &pos.x, &pos.y);
 
-    getLeftBezierPointAtTime(time, view, &left.x, &left.y);
-    bool isOnKeyframe = getRightBezierPointAtTime(time, view, &right.x, &right.y);
+    getLeftBezierPointAtTime(time,  &left.x, &left.y);
+    bool isOnKeyframe = getRightBezierPointAtTime(time,  &right.x, &right.y);
 
     pos = Transform::matApply(transform, pos);
     left = Transform::matApply(transform, left);
     right = Transform::matApply(transform, right);
 
-    smoothTangent(time, true, this, transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
-    smoothTangent(time, false, this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
+    smoothTangent(time, view, true, this, transform, pos.x, pos.y, &left.x, &left.y, pixelScale);
+    smoothTangent(time, view, false, this, transform, pos.x, pos.y, &right.x, &right.y, pixelScale);
 
     bool keyframeSet = false;
 
@@ -709,7 +636,7 @@ BezierCP::getRightYCurve() const
 }
 
 void
-BezierCP::clone(const BezierCP & other)
+BezierCP::copyControlPoint(const BezierCP & other)
 {
     _imp->curveX->clone(*other._imp->curveX);
     _imp->curveY->clone(*other._imp->curveY);
@@ -732,19 +659,18 @@ BezierCP::clone(const BezierCP & other)
 
 bool
 BezierCP::equalsAtTime(double time,
-                       ViewIdx view,
                        const BezierCP & other) const
 {
     double x, y, leftX, leftY, rightX, rightY;
 
-    getPositionAtTime(time, view, &x, &y);
-    getLeftBezierPointAtTime(time, view, &leftX, &leftY);
-    getRightBezierPointAtTime(time, view, &rightX, &rightY);
+    getPositionAtTime(time,  &x, &y);
+    getLeftBezierPointAtTime(time,  &leftX, &leftY);
+    getRightBezierPointAtTime(time,  &rightX, &rightY);
 
     double ox, oy, oLeftX, oLeftY, oRightX, oRightY;
-    other.getPositionAtTime(time, view, &ox, &oy);
-    other.getLeftBezierPointAtTime(time, view, &oLeftX, &oLeftY);
-    other.getRightBezierPointAtTime(time, view, &oRightX, &oRightY);
+    other.getPositionAtTime(time,  &ox, &oy);
+    other.getLeftBezierPointAtTime(time,  &oLeftX, &oLeftY);
+    other.getRightBezierPointAtTime(time,  &oRightX, &oRightY);
 
     if ( (x == ox) && (y == oy) && (leftX == oLeftX) && (leftY == oLeftY) && (rightX == oRightX) && (rightY == oRightY) ) {
         return true;

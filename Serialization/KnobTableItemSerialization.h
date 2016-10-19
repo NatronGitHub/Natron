@@ -20,6 +20,7 @@
 #ifndef NATRON_SERIALIZATION_KNOBTABLEITEMSERIALIZATION_H
 #define NATRON_SERIALIZATION_KNOBTABLEITEMSERIALIZATION_H
 
+#include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
@@ -29,6 +30,12 @@ SERIALIZATION_NAMESPACE_ENTER;
 class KnobTableItemSerialization
 : public SerializationObjectBase
 {
+
+protected:
+
+    // Used to prevent the encode function to wrap the encoding in a map if a derived
+    // class already used a map
+    bool _emitMap;
 public:
 
     std::string scriptName;
@@ -39,7 +46,8 @@ public:
     std::list<KnobTableItemSerializationPtr> children;
 
     KnobTableItemSerialization()
-    : scriptName()
+    : _emitMap(true)
+    , scriptName()
     , label()
     , knobs()
     , children()

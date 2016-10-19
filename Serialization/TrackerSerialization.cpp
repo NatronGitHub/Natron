@@ -30,25 +30,10 @@ TrackSerialization::encode(YAML::Emitter& em) const
     em << YAML::BeginMap;
 
     std::list<std::string> props;
-    if (!_enabled) {
-        props.push_back("Disabled");
-    }
     if (_isPM) {
         props.push_back("PM");
     }
 
-    em << YAML::Key << "ScriptName" << YAML::Value << _scriptName;
-    if (_label != _scriptName) {
-        em << YAML::Key << "Label" << YAML::Value << _label;
-    }
-    if (!_knobs.empty()) {
-        em << YAML::Key << "Params" << YAML::Value;
-        em << YAML::BeginSeq;
-        for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
-            (*it)->encode(em);
-        }
-        em << YAML::EndSeq;
-    }
     if (!_userKeys.empty()) {
         em << YAML::Key << "UserKeyframes" << YAML::Value << YAML::Flow << YAML::BeginSeq;
         for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
@@ -81,18 +66,10 @@ TrackSerialization::decode(const YAML::Node& node)
         YAML::Node propsNode = node["Properties"];
         for (std::size_t i = 0; i < propsNode.size(); ++i) {
             std::string key = propsNode[i].as<std::string>();
-            if (key == "Disabled") {
-                _enabled = false;
-            } else if (key == "PM") {
+            if (key == "PM") {
                 _isPM = true;
             }
         }
-    }
-    _scriptName = node["ScriptName"].as<std::string>();
-    if (node["Label"]) {
-        _label = node["Label"].as<std::string>();
-    } else {
-        _label = _scriptName;
     }
 
     if (node["UserKeyframes"]) {
@@ -102,38 +79,9 @@ TrackSerialization::decode(const YAML::Node& node)
         }
     }
 
-    if (node["Params"]) {
-        YAML::Node params = node["Params"];
-        for (std::size_t i = 0; i < params.size(); ++i) {
-            KnobSerializationPtr k(new KnobSerialization);
-            k->decode(params[i]);
-            _knobs.push_back(k);
-        }
-    }
+
 }
 
-void
-TrackerContextSerialization::encode(YAML::Emitter& em) const
-{
-    if (_tracks.empty()) {
-        return;
-    }
-    em << YAML::BeginSeq;
-    for (std::list<TrackSerialization>::const_iterator it = _tracks.begin(); it!=_tracks.end(); ++it) {
-        it->encode(em);
-    }
-    em << YAML::EndSeq;
-}
-
-void
-TrackerContextSerialization::decode(const YAML::Node& node)
-{
-    for (std::size_t i = 0; i < node.size(); ++i) {
-        TrackSerialization t;
-        t.decode(node[i]);
-        _tracks.push_back(t);
-    }
-}
 
 SERIALIZATION_NAMESPACE_EXIT
 

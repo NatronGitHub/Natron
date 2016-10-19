@@ -66,14 +66,13 @@ class RotoLayer
 {
 public:
 
-    RotoLayer(const RotoContextPtr& context,
-              const std::string & name,
-              const RotoLayerPtr& parent);
+    RotoLayer(const KnobItemsTablePtr& model);
 
     virtual ~RotoLayer();
 
-    virtual bool isItemContainer() const OVERRIDE { return true; }
+    virtual bool isItemContainer() const OVERRIDE FINAL;
 
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
 };
 
 inline RotoLayerPtr

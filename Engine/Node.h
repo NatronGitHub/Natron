@@ -434,10 +434,6 @@ public:
 
     OneViewNodePtr isEffectOneViewNode() const;
 
-    /**
-     * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
-     **/
-    RotoContextPtr getRotoContext() const;
 
     TrackerContextPtr getTrackerContext() const;
 

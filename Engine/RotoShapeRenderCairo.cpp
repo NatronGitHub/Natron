@@ -33,8 +33,6 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/RotoContext.h"
-#include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNode.h"

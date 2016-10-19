@@ -94,9 +94,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    RotoDrawableItem(const RotoContextPtr& context,
-                     const std::string & name,
-                     const RotoLayerPtr& parent);
+    RotoDrawableItem(const KnobItemsTablePtr& model);
 
 
     virtual ~RotoDrawableItem();
@@ -154,85 +152,37 @@ public:
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
-    bool isActivated(double time) const;
-    void setActivated(bool a, double time);
-
-    /**
-     * @brief The opacity of the curve
-     **/
-    double getOpacity(double time) const;
-    void setOpacity(double o, double time);
-
-    /**
-     * @brief The distance of the feather is the distance from the control point to the feather point plus
-     * the feather distance returned by this function.
-     **/
-    double getFeatherDistance(double time) const;
-    void setFeatherDistance(double d, double time);
-    int getNumKeyframesFeatherDistance() const;
-
-    /**
-     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
-     **/
-    double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double f, double time);
-
-    /**
-     * @brief The color that the GUI should use to draw the overlay of the shape
-     **/
-    void getOverlayColor(double* color) const;
-    void setOverlayColor(const double* color);
-    bool getInverted(double time) const;
-    void getColor(double time, double* color) const;
-    void setColor(double time, double r, double g, double b);
-
-    int getCompositingOperator() const;
-
-    void setCompositingOperator(int op);
+    bool isActivated(double time, ViewGetSpec view) const;
 
     std::string getCompositingOperatorToolTip() const;
 
     KnobBoolPtr getActivatedKnob() const;
-    KnobDoublePtr getFeatherKnob() const;
-    KnobDoublePtr getFeatherFallOffKnob() const;
+
     KnobDoublePtr getOpacityKnob() const;
     KnobBoolPtr getInvertedKnob() const;
     KnobChoicePtr getOperatorKnob() const;
     KnobColorPtr getColorKnob() const;
     KnobDoublePtr getCenterKnob() const;
     KnobIntPtr getLifeTimeFrameKnob() const;
-    KnobDoublePtr getBrushSizeKnob() const;
-    KnobDoublePtr getBrushHardnessKnob() const;
-    KnobDoublePtr getBrushSpacingKnob() const;
-    KnobDoublePtr getBrushEffectKnob() const;
-    KnobDoublePtr getBrushVisiblePortionKnob() const;
-    KnobBoolPtr getPressureOpacityKnob() const;
-    KnobBoolPtr getPressureSizeKnob() const;
-    KnobBoolPtr getPressureHardnessKnob() const;
-    KnobBoolPtr getBuildupKnob() const;
+
     KnobIntPtr getTimeOffsetKnob() const;
     KnobChoicePtr getTimeOffsetModeKnob() const;
     KnobChoicePtr getBrushSourceTypeKnob() const;
-    KnobDoublePtr getBrushCloneTranslateKnob() const;
-    KnobDoublePtr getMotionBlurAmountKnob() const;
-    KnobDoublePtr getShutterOffsetKnob() const;
-    KnobDoublePtr getShutterKnob() const;
-    KnobChoicePtr getShutterTypeKnob() const;
-    KnobChoicePtr getFallOffRampTypeKnob() const;
+
+    KnobDoublePtr getBrushSizeKnob() const;
+    KnobDoublePtr getBrushHardnessKnob() const;
+    KnobDoublePtr getBrushSpacingKnob() const;
+    KnobDoublePtr getBrushVisiblePortionKnob() const;
+
 
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    virtual RectD getBoundingBox(double time) const = 0;
+    virtual RectD getBoundingBox(double time, ViewGetSpec view) const = 0;
 
-    void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
-
-    /**
-     * @brief Set the transform at the given time
-     **/
-    void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
-
-    void setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat);
+    void getTransformAtTime(double time, ViewGetSpec view, Transform::Matrix3x3* matrix) const;
+    
+    void setExtraMatrix(bool setKeyframe, double time, ViewSetSpec view, const Transform::Matrix3x3& mat);
 
     /**
      * @brief Return pointer to internal node
@@ -245,8 +195,6 @@ public:
 
 
     void resetTransformCenter();
-
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
 
     virtual void initializeKnobs() OVERRIDE;
 
@@ -270,14 +218,12 @@ protected:
                                     ViewSetSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
 
-    virtual void onTransformSet(double /*time*/) {}
+    virtual void onTransformSet(double /*time*/, ViewSetSpec /*view*/) {}
 
 private:
 
-    virtual void onItemRemovedFromParent() OVERRIDE FINAL;
+    virtual void onItemRemovedFromModel() OVERRIDE FINAL;
 
-
-    RotoDrawableItemPtr findPreviousInHierarchy();
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 

@@ -52,7 +52,6 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"

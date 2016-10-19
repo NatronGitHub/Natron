@@ -28,16 +28,26 @@
 NATRON_NAMESPACE_ENTER;
 
 
-RotoLayer::RotoLayer(const RotoContextPtr& context,
-                     const std::string & n,
-                     const RotoLayerPtr& parent)
-    : RotoItem(context, n, parent)
+RotoLayer::RotoLayer(const KnobItemsTablePtr& model)
+    : RotoItem(model)
 {
 }
 
 
 RotoLayer::~RotoLayer()
 {
+}
+
+bool
+RotoLayer::isItemContainer() const
+{
+    return true;
+}
+
+std::string
+RotoLayer::getBaseItemName() const
+{
+    return tr("Layer").toStdString();
 }
 
 NATRON_NAMESPACE_EXIT;

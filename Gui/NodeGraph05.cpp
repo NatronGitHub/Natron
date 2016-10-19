@@ -37,7 +37,6 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/RotoDrawableItem.h"
-#include "Engine/RotoContext.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"

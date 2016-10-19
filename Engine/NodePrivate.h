@@ -286,7 +286,6 @@ public:
     std::map<int, ChannelSelector> channelsSelectors;
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
-    RotoContextPtr rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     TrackerContextPtr trackContext;
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;

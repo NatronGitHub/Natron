@@ -33,7 +33,6 @@
 #include "Engine/MergingEnum.h"
 #include "Engine/Node.h"
 #include "Engine/RotoPoint.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoUndoCommand.h"
 #include "Engine/RotoLayer.h"
@@ -43,6 +42,15 @@
 #include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
+
+RotoPaintKnobItemsTable::RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
+                        KnobItemsTableTypeEnum type,
+                        int colsCount)
+: KnobItemsTable(imp->publicInterface->shared_from_this(), type, colsCount)
+, _imp(imp)
+{
+
+}
 
 RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
                                    bool isPaintByDefault)

@@ -40,7 +40,6 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"

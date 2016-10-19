@@ -36,7 +36,6 @@
 #include "Engine/Bezier.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/RotoContext.h" // Bezier
 #include "Engine/ViewIdx.h"
 
 #include "Gui/CurveWidget.h"

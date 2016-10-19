@@ -71,9 +71,7 @@ class RotoStrokeItem
 public:
 
     RotoStrokeItem(RotoStrokeType type,
-                   const RotoContextPtr& context,
-                   const std::string & name,
-                   const RotoLayerPtr& parent);
+                   const KnobItemsTablePtr& model);
 
     virtual ~RotoStrokeItem();
 
@@ -106,6 +104,7 @@ public:
     void getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const;
 
     bool getMostRecentStrokeChangesSinceAge(double time,
+                                            ViewGetSpec view,
                                             int lastAge,
                                             int lastMultiStrokeIndex,
                                             std::list<std::pair<Point, double> >* points,
@@ -122,7 +121,7 @@ public:
     virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE;
 
 
-    virtual void clone(const RotoItem* other) OVERRIDE FINAL;
+    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -140,26 +139,47 @@ public:
 
     static RotoStrokeType strokeTypeFromSerializationString(const std::string& s);
     
-    virtual RectD getBoundingBox(double time) const OVERRIDE FINAL;
+    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
 
 
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, double time,
+                        ViewGetSpec view,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0) const;
 
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;
 
+
+    KnobDoublePtr getBrushEffectKnob() const;
+    KnobBoolPtr getPressureOpacityKnob() const;
+    KnobBoolPtr getPressureSizeKnob() const;
+    KnobBoolPtr getPressureHardnessKnob() const;
+    KnobBoolPtr getBuildupKnob() const;
+
+    KnobDoublePtr getBrushCloneTranslateKnob() const;
+    KnobDoublePtr getBrushCloneRotateKnob() const;
+    KnobDoublePtr getBrushCloneScaleKnob() const;
+    KnobBoolPtr getBrushCloneScaleUniformKnob() const;
+    KnobDoublePtr getBrushCloneSkewXKnob() const;
+    KnobDoublePtr getBrushCloneSkewYKnob() const;
+    KnobChoicePtr getBrushCloneSkewOrderKnob() const;
+    KnobDoublePtr getBrushCloneCenterKnob() const;
+    KnobChoicePtr getBrushCloneFilterKnob() const;
+    KnobBoolPtr getBrushCloneBlackOutsideKnob() const;
+
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 private:
-    
+
+    virtual void initializeKnobs() OVERRIDE;
+
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
-    RectD computeBoundingBox(double time) const;
+    RectD computeBoundingBox(double time, ViewGetSpec view) const;
 
-    RectD computeBoundingBoxInternal(double time) const;
+    RectD computeBoundingBoxInternal(double time, ViewGetSpec view) const;
 
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };

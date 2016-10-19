@@ -46,7 +46,6 @@
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/Project.h"
