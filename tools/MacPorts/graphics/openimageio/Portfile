@@ -117,7 +117,8 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal gcc49 description {Natron version} {
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal description {Natron version} {
+    configure.compiler macports-gcc-4.9
 }
 
 variant opencolorio description {Add OpenColorIO support.} {
