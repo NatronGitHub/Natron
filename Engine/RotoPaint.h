@@ -411,10 +411,7 @@ public:
 
 public Q_SLOTS:
 
-
-    void onCurveLockedChanged(int);
-
-    void onSelectionChanged(int reason);
+    void onModelSelectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
 
     void onBreakMultiStrokeTriggered();
 

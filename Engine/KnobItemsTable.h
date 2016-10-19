@@ -255,6 +255,11 @@ public:
     virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
+    
+    
+    ValueChangedReturnCodeEnum setKeyFrame(double time,
+                                           ViewSetSpec view,
+                                           KeyFrame* newKey);
 
     /**
      * @brief Reimplement to activate user keyframing
@@ -324,9 +329,6 @@ private:
 
 protected:
 
-    ValueChangedReturnCodeEnum setKeyFrame(double time,
-                                           ViewSetSpec view,
-                                           KeyFrame* newKey);
 
     ValueChangedReturnCodeEnum setKeyFrameInternal(double time,
                                                    ViewSetSpec view,

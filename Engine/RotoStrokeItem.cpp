@@ -407,7 +407,7 @@ RotoStrokeItem::setStrokeFinished()
 #endif
     }
 
-    resetTransformCenter(ViewSetSpec::all());
+    resetTransformCenter();
 
     NodePtr effectNode = getEffectNode();
     NodePtr maskNode = getMaskNode();

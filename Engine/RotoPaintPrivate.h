@@ -394,193 +394,6 @@ NATRON_NAMESPACE_ENTER;
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
 
-class RotoPaintKnobItemsTable : public KnobItemsTable
-{
-
-public:
-
-    RotoPaintPrivate* _imp;
-
-    RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
-                            KnobItemsTableTypeEnum type,
-                            int colsCount);
-
-    virtual ~RotoPaintKnobItemsTable()
-    {
-
-    }
-
-    virtual std::string getTableIdentifier() const OVERRIDE FINAL
-    {
-        return "RotoPaint_Table";
-    }
-
-    virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
-
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
-
-    virtual void onModelReset() OVERRIDE FINAL;
-
-    /**
-     * @brief Returns a list of all the curves in the order in which they should be rendered.
-     * Non-active curves will not be inserted into the list.
-     * MT-safe
-     **/
-    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(bool onlyActivated = true) const;
-
-
-};
-
-
-class RotoPaintInteract;
-struct RotoPaintPrivate
-{
-    RotoPaint* publicInterface; // can not be a smart ptr
-    bool isPaintByDefault;
-    KnobBoolWPtr premultKnob;
-    KnobBoolWPtr enabledKnobs[4];
-
-    mutable QMutex doingNeatRenderMutex;
-    bool doingNeatRender;
-    bool mustDoNeatRender;
-
-    RotoPaintInteractPtr ui;
-
-    // The group internal input nodes
-    std::vector<NodeWPtr> inputNodes;
-    NodeWPtr premultNode;
-    NodeWPtr premultFixerNode;
-
-    boost::shared_ptr<RotoPaintKnobItemsTable> knobsTable;
-
-    // Merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
-    mutable QMutex globalMergeNodesMutex;
-    NodesList globalMergeNodes;
-
-    // Recursive counter to prevent refreshing of the node tree
-    int treeRefreshBlocked;
-
-    KnobBoolWPtr activatedKnob;
-    KnobChoiceWPtr lifeTimeKnob;
-    KnobIntWPtr lifeTimeFrameKnob;
-
-    KnobButtonWPtr resetCenterKnob;
-    KnobButtonWPtr resetCloneCenterKnob;
-    KnobButtonWPtr resetCloneTransformKnob;
-    KnobButtonWPtr resetTransformKnob;
-
-    KnobChoiceWPtr motionBlurTypeKnob;
-    KnobDoubleWPtr motionBlurKnob, globalMotionBlurKnob;
-    KnobDoubleWPtr shutterKnob, globalShutterKnob;
-    KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
-    KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
-
-    /*KnobDoubleWPtr opacityKnob;
-    KnobDoubleWPtr featherKnob;
-    KnobDoubleWPtr featherFallOffKnob;
-    KnobChoiceWPtr fallOffTypeKnob;
-    KnobBoolWPtr invertedKnob;
-    KnobColorWPtr colorKnob;
-    KnobDoubleWPtr brushSizeKnob;
-    KnobDoubleWPtr brushSpacingKnob;
-    KnobDoubleWPtr brushHardnessKnob;
-    KnobDoubleWPtr brushEffectKnob;
-    KnobSeparatorWPtr pressureLabelKnob;
-    KnobBoolWPtr pressureOpacityKnob;
-    KnobBoolWPtr pressureSizeKnob;
-    KnobBoolWPtr pressureHardnessKnob;
-    KnobBoolWPtr buildUpKnob;
-    KnobDoubleWPtr brushVisiblePortionKnob;
-    KnobDoubleWPtr cloneTranslateKnob;
-    KnobDoubleWPtr cloneRotateKnob;
-    KnobDoubleWPtr cloneScaleKnob;
-    KnobBoolWPtr cloneUniformKnob;
-    KnobDoubleWPtr cloneSkewXKnob;
-    KnobDoubleWPtr cloneSkewYKnob;
-    KnobChoiceWPtr cloneSkewOrderKnob;
-    KnobDoubleWPtr cloneCenterKnob;
-    KnobChoiceWPtr cloneFilterKnob;
-    KnobBoolWPtr cloneBlackOutsideKnob;
-    KnobDoubleWPtr translateKnob;
-    KnobDoubleWPtr rotateKnob;
-    KnobDoubleWPtr scaleKnob;
-    KnobBoolWPtr scaleUniformKnob;
-    KnobBoolWPtr transformInteractiveKnob;
-    KnobDoubleWPtr skewXKnob;
-    KnobDoubleWPtr skewYKnob;
-    KnobChoiceWPtr skewOrderKnob;
-    KnobDoubleWPtr centerKnob;
-    KnobDoubleWPtr extraMatrixKnob;
-    KnobChoiceWPtr sourceTypeKnob;
-    KnobIntWPtr timeOffsetKnob;
-    KnobChoiceWPtr timeOffsetModeKnob;
-*/
-
-    RotoPaintPrivate(RotoPaint* publicInterface,
-                     bool isPaintByDefault);
-
-    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
-
-    bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
-                                               int* blendingMode) const;
-
-    void getGlobalMotionBlurSettings(const double time,
-                                     double* startTime,
-                                     double* endTime,
-                                     double* timeStep) const;
-
-
-    void resetTransformCenter();
-
-    void resetCloneTransformCenter();
-
-    void resetTransformsCenter(bool doClone, bool doTransform);
-
-    void resetTransform();
-
-    void resetCloneTransform();
-
-    void resetTransformInternal(const KnobDoublePtr& translate,
-                                const KnobDoublePtr& scale,
-                                const KnobDoublePtr& center,
-                                const KnobDoublePtr& rotate,
-                                const KnobDoublePtr& skewX,
-                                const KnobDoublePtr& skewY,
-                                const KnobBoolPtr& scaleUniform,
-                                const KnobChoicePtr& skewOrder,
-                                const KnobDoublePtr& extraMatrix);
-
-    void createBaseLayer();
-
-    RotoLayerPtr getOrCreateBaseLayer();
-
-    /**
-     * @brief Create a new layer to the currently selected layer.
-     **/
-    RotoLayerPtr addLayer();
-
-
-    RotoLayerPtr addLayerInternal(bool declarePython);
-
-    /**
-     * @brief Add an existing layer to the layers
-     **/
-    void addLayer(const RotoLayerPtr & layer);
-
-
-    /**
-     * @brief Make a new bezier curve and append it into the currently selected layer.
-     * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
-     **/
-    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
-    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
-    BezierPtr makeSquare(double x, double y, double initialSize, double time);
-    RotoStrokeItemPtr makeStroke(RotoStrokeType type,
-                                 const std::string& baseName,
-                                 bool clearSel);
-
-};
-
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
 typedef std::pair<BezierCPPtr, BezierCPPtr > SelectedCP;
@@ -649,40 +462,234 @@ enum RotoToolEnum
     eRotoToolSelectPoints,
     eRotoToolSelectCurves,
     eRotoToolSelectFeatherPoints,
-
+    
     eRotoToolAddPoints,
     eRotoToolRemovePoints,
     eRotoToolRemoveFeatherPoints,
     eRotoToolOpenCloseCurve,
     eRotoToolSmoothPoints,
     eRotoToolCuspPoints,
-
+    
     eRotoToolDrawBezier,
     eRotoToolDrawBSpline,
     eRotoToolDrawEllipse,
     eRotoToolDrawRectangle,
-
+    
     eRotoToolSolidBrush,
     eRotoToolOpenBezier,
     eRotoToolEraserBrush,
-
+    
     eRotoToolClone,
     eRotoToolReveal,
-
+    
     eRotoToolBlur,
     eRotoToolSharpen,
     eRotoToolSmear,
-
+    
     eRotoToolDodge,
     eRotoToolBurn
 };
+
+
+class RotoPaintKnobItemsTable : public KnobItemsTable
+{
+
+public:
+
+    RotoPaintPrivate* _imp;
+
+    RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
+                            KnobItemsTableTypeEnum type,
+                            int colsCount);
+
+    virtual ~RotoPaintKnobItemsTable()
+    {
+
+    }
+
+    virtual std::string getTableIdentifier() const OVERRIDE FINAL
+    {
+        return "RotoPaint_Table";
+    }
+
+    virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
+    virtual void onModelReset() OVERRIDE FINAL;
+
+    /**
+     * @brief Returns a list of all the curves in the order in which they should be rendered.
+     * Non-active curves will not be inserted into the list.
+     * MT-safe
+     **/
+    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated = true) const;
+
+    SelectedItems getSelectedDrawableItems() const;
+
+};
+
+
+class RotoPaintInteract;
+struct RotoPaintPrivate
+{
+    RotoPaint* publicInterface; // can not be a smart ptr
+    bool isPaintByDefault;
+    KnobBoolWPtr premultKnob;
+    KnobBoolWPtr enabledKnobs[4];
+
+    mutable QMutex doingNeatRenderMutex;
+    bool doingNeatRender;
+    bool mustDoNeatRender;
+
+    RotoPaintInteractPtr ui;
+
+    // The group internal input nodes
+    std::vector<NodeWPtr> inputNodes;
+    NodeWPtr premultNode;
+    NodeWPtr premultFixerNode;
+
+    boost::shared_ptr<RotoPaintKnobItemsTable> knobsTable;
+
+    // Merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
+    mutable QMutex globalMergeNodesMutex;
+    NodesList globalMergeNodes;
+
+    // Recursive counter to prevent refreshing of the node tree
+    int treeRefreshBlocked;
+
+    KnobBoolWPtr activatedKnob;
+    KnobChoiceWPtr lifeTimeKnob;
+    KnobIntWPtr lifeTimeFrameKnob;
+
+    KnobButtonWPtr resetCenterKnob;
+    KnobButtonWPtr resetCloneCenterKnob;
+    KnobButtonWPtr resetCloneTransformKnob;
+    KnobButtonWPtr resetTransformKnob;
+
+    KnobChoiceWPtr motionBlurTypeKnob;
+    KnobDoubleWPtr motionBlurKnob, globalMotionBlurKnob;
+    KnobDoubleWPtr shutterKnob, globalShutterKnob;
+    KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
+    KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
+
+    KnobDoubleWPtr cloneTranslateKnob;
+    KnobDoubleWPtr cloneRotateKnob;
+    KnobDoubleWPtr cloneScaleKnob;
+    KnobBoolWPtr cloneUniformKnob;
+    KnobDoubleWPtr cloneSkewXKnob;
+    KnobDoubleWPtr cloneSkewYKnob;
+    KnobChoiceWPtr cloneSkewOrderKnob;
+    KnobDoubleWPtr cloneCenterKnob;
+    
+    KnobDoubleWPtr translateKnob;
+    KnobDoubleWPtr rotateKnob;
+    KnobDoubleWPtr scaleKnob;
+    KnobBoolWPtr scaleUniformKnob;
+    KnobDoubleWPtr skewXKnob;
+    KnobDoubleWPtr skewYKnob;
+    KnobChoiceWPtr skewOrderKnob;
+    KnobDoubleWPtr extraMatrixKnob;
+    KnobDoubleWPtr centerKnob;
+
+    /*KnobDoubleWPtr opacityKnob;
+    KnobDoubleWPtr featherKnob;
+    KnobDoubleWPtr featherFallOffKnob;
+    KnobChoiceWPtr fallOffTypeKnob;
+    KnobBoolWPtr invertedKnob;
+    KnobColorWPtr colorKnob;
+    KnobDoubleWPtr brushSizeKnob;
+    KnobDoubleWPtr brushSpacingKnob;
+    KnobDoubleWPtr brushHardnessKnob;
+    KnobDoubleWPtr brushEffectKnob;
+    KnobSeparatorWPtr pressureLabelKnob;
+    KnobBoolWPtr pressureOpacityKnob;
+    KnobBoolWPtr pressureSizeKnob;
+    KnobBoolWPtr pressureHardnessKnob;
+    KnobBoolWPtr buildUpKnob;
+    KnobDoubleWPtr brushVisiblePortionKnob;
+    
+    KnobChoiceWPtr cloneFilterKnob;
+    KnobBoolWPtr cloneBlackOutsideKnob;
+    KnobBoolWPtr transformInteractiveKnob;
+    
+    KnobChoiceWPtr sourceTypeKnob;
+    KnobIntWPtr timeOffsetKnob;
+    KnobChoiceWPtr timeOffsetModeKnob;
+*/
+
+    RotoPaintPrivate(RotoPaint* publicInterface,
+                     bool isPaintByDefault);
+
+    NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
+
+    bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
+                                               int* blendingMode) const;
+
+    void getGlobalMotionBlurSettings(const double time,
+                                     double* startTime,
+                                     double* endTime,
+                                     double* timeStep) const;
+
+
+    void resetTransformCenter();
+
+    void resetCloneTransformCenter();
+
+    void resetTransformsCenter(bool doClone, bool doTransform);
+
+    void resetTransform();
+
+    void resetCloneTransform();
+
+    void resetTransformInternal(const KnobDoublePtr& translate,
+                                const KnobDoublePtr& scale,
+                                const KnobDoublePtr& center,
+                                const KnobDoublePtr& rotate,
+                                const KnobDoublePtr& skewX,
+                                const KnobDoublePtr& skewY,
+                                const KnobBoolPtr& scaleUniform,
+                                const KnobChoicePtr& skewOrder,
+                                const KnobDoublePtr& extraMatrix);
+
+    void createBaseLayer();
+
+    RotoLayerPtr getOrCreateBaseLayer();
+
+    /**
+     * @brief Create a new layer to the currently selected layer.
+     **/
+    RotoLayerPtr addLayer();
+
+
+    RotoLayerPtr addLayerInternal(bool declarePython);
+
+    /**
+     * @brief Add an existing layer to the layers
+     **/
+    void addLayer(const RotoLayerPtr & layer);
+
+
+    /**
+     * @brief Make a new bezier curve and append it into the currently selected layer.
+     * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
+     **/
+    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
+    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
+    BezierPtr makeSquare(double x, double y, double initialSize, double time);
+    RotoStrokeItemPtr makeStroke(RotoStrokeType type,
+                                 const std::string& baseName,
+                                 bool clearSel);
+    
+
+};
+
 
 class RotoPaintInteract
     : public boost::enable_shared_from_this<RotoPaintInteract>
 {
 public:
     RotoPaintPrivate* p;
-    SelectedItems selectedItems;
     SelectedCPs selectedCps;
     QRectF selectedCpsBbox;
     bool showCpsBbox;
@@ -831,8 +838,6 @@ public:
     void clearBeziersSelection();
 
     bool hasSelection() const;
-
-    void onCurveLockedChangedRecursive(const RotoItemPtr & item, bool* ret);
 
     bool removeItemFromSelection(const RotoDrawableItemPtr& b);
 

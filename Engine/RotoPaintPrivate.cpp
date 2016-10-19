@@ -1885,42 +1885,6 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
 }
 
 void
-RotoPaintInteract::onCurveLockedChangedRecursive(const RotoItemPtr & item,
-                                                 bool* ret)
-{
-    BezierPtr b = toBezier(item);
-    RotoLayerPtr layer = toRotoLayer(item);
-
-    if (b) {
-        if ( item->isLockedRecursive() ) {
-            for (SelectedItems::iterator fb = selectedItems.begin(); fb != selectedItems.end(); ++fb) {
-                if ( fb->get() == b.get() ) {
-                    ///if the curve was selected, wipe the selection CP bbox
-                    clearCPSSelection();
-                    selectedItems.erase(fb);
-                    *ret = true;
-                    break;
-                }
-            }
-        } else {
-            ///Explanation: This change has been made in result to a user click on the settings panel.
-            ///We have to reselect the bezier overlay hence put a reason different of eSelectionReasonOverlayInteract
-            SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), b);
-            if ( found == selectedItems.end() ) {
-                selectedItems.push_back(b);
-                p->publicInterface->getNode()->getRotoContext()->select(b, RotoItem::eSelectionReasonSettingsPanel);
-                *ret  = true;
-            }
-        }
-    } else if (layer) {
-        const std::list<RotoItemPtr > & items = layer->getItems();
-        for (std::list<RotoItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-            onCurveLockedChangedRecursive(*it, ret);
-        }
-    }
-}
-
-void
 RotoPaintInteract::removeCurve(const RotoDrawableItemPtr& curve)
 {
     if (curve == builtBezier) {

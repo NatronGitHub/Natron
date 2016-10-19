@@ -527,6 +527,7 @@ RotoPaint::initTransformPageKnobs()
         param->setIncrement(10);
         translateKnob = param;
         transformPage->addKnob(param);
+        _imp->translateKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -537,6 +538,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDisplayRange(-180, 180);
         rotateKnob = param;
         transformPage->addKnob(param);
+        _imp->rotateKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -551,6 +553,7 @@ RotoPaint::initTransformPageKnobs()
         param->setAddNewLine(false);
         scaleKnob = param;
         transformPage->addKnob(param);
+        _imp->scaleKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -562,6 +565,7 @@ RotoPaint::initTransformPageKnobs()
         param->setAnimationEnabled(false);
         scaleUniformKnob = param;
         transformPage->addKnob(param);
+        _imp->scaleUniformKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -572,6 +576,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDisplayRange(-1, 1);
         skewXKnob = param;
         transformPage->addKnob(param);
+        _imp->skewXKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
     {
@@ -581,6 +586,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDisplayRange(-1, 1);
         skewYKnob = param;
         transformPage->addKnob(param);
+        _imp->skewYKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -598,6 +604,7 @@ RotoPaint::initTransformPageKnobs()
         param->setAnimationEnabled(false);
         skewOrderKnob = param;
         transformPage->addKnob(param);
+        _imp->skewOrderKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -611,6 +618,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDefaultValue(0.5, DimSpec(1));
         centerKnob = param;
         transformPage->addKnob(param);
+        _imp->centerKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -640,6 +648,7 @@ RotoPaint::initTransformPageKnobs()
         param->setDefaultValue(1, DimSpec(4));
         param->setDefaultValue(1, DimSpec(8));
         transformPage->addKnob(param);
+        _imp->extraMatrixKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -699,6 +708,7 @@ RotoPaint::initClonePageKnobs()
         param->setIncrement(10);
         cloneTranslateKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneTranslateKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -709,6 +719,7 @@ RotoPaint::initClonePageKnobs()
         param->setDisplayRange(-180, 180);
         cloneRotateKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneRotateKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -723,6 +734,7 @@ RotoPaint::initClonePageKnobs()
         param->setAddNewLine(false);
         cloneScaleKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneScaleKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -734,6 +746,7 @@ RotoPaint::initClonePageKnobs()
         param->setAnimationEnabled(false);
         cloneScaleUniformKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneUniformKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -744,6 +757,7 @@ RotoPaint::initClonePageKnobs()
         param->setDisplayRange(-1, 1, DimSpec(0));
         cloneSkewXKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneSkewXKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -754,6 +768,7 @@ RotoPaint::initClonePageKnobs()
         param->setDisplayRange(-1, 1);
         cloneSkewYKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneSkewYKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -771,6 +786,7 @@ RotoPaint::initClonePageKnobs()
         param->setAnimationEnabled(false);
         cloneSkewOrderKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneSkewOrderKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -784,6 +800,7 @@ RotoPaint::initClonePageKnobs()
         param->setDefaultValue(0.5, DimSpec(1));
         cloneCenterKnob = param;
         clonePage->addKnob(param);
+        _imp->cloneCenterKnob = param;
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
 
@@ -1124,7 +1141,7 @@ RotoPaint::setupInitialSubGraphState()
 
     // Initialize default connections
     outputNode->connectInput(_imp->inputNodes[0].lock(), 0);
-}
+} // setupInitialSubGraphState
 
 void
 RotoPaint::initializeKnobs()
@@ -1133,6 +1150,9 @@ RotoPaint::initializeKnobs()
     int colsCount = 6;
     _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree, colsCount));
 
+    QObject::connect( _imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)) );
+
+    
     //This page is created in the RotoContext, before initializeKnobs() is called.
     KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, "generalPage", tr("General"));
 
@@ -1184,8 +1204,6 @@ RotoPaint::initializeKnobs()
     _imp->premultKnob = premultKnob;
     generalPage->addKnob(premultKnob);
 
-    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)) );
-    QObject::connect( context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onCurveLockedChanged(int)) );
 
 
     /// Initializing the viewer interface
@@ -2077,10 +2095,10 @@ RotoPaint::onKnobsLoaded()
 
 bool
 RotoPaint::knobChanged(const KnobIPtr& k,
-                       ValueChangedReasonEnum reason,
+                       ValueChangedReasonEnum /*reason*/,
                        ViewSetSpec view,
                        double time,
-                       bool originatedFromMainThread)
+                       bool /*originatedFromMainThread*/)
 {
     if (!k) {
         return false;
@@ -2108,29 +2126,43 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->onBreakMultiStrokeTriggered();
         _imp->ui->cloneOffset.first = _imp->ui->cloneOffset.second = 0;
     } else if ( k == _imp->ui->addKeyframeButton.lock() ) {
-        for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
+        std::list<KnobTableItemPtr> selection = _imp->knobsTable->getSelectedItems();
+        for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
             BezierPtr isBezier = toBezier(*it);
             if (!isBezier) {
                 continue;
             }
-            isBezier->setKeyframe(time);
+            isBezier->setKeyFrame(time, view, 0);
             isBezier->invalidateCacheHashAndEvaluate(true, false);
         }
 
     } else if ( k == _imp->ui->removeKeyframeButton.lock() ) {
-        for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
+        SelectedItems selection = _imp->knobsTable->getSelectedDrawableItems();
+        for (SelectedItems::const_iterator it = selection.begin(); it != selection.end(); ++it) {
             BezierPtr isBezier = toBezier(*it);
             if (!isBezier) {
                 continue;
             }
-            isBezier->removeKeyframe(time);
+            isBezier->deleteValueAtTime(time, view, DimSpec(0));
         }
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if ( !_imp->ui->selectedCps.empty() ) {
             pushUndoCommand( new RemovePointUndoCommand(_imp->ui, _imp->ui->selectedCps) );
-        } else if ( !_imp->ui->selectedItems.empty() ) {
-            pushUndoCommand( new RemoveCurveUndoCommand(_imp->ui, _imp->ui->selectedItems) );
+        } else {
+            std::list<KnobTableItemPtr> selection = _imp->knobsTable->getSelectedItems();
+            if (selection.empty()) {
+                return false;
+            } else {
+                SelectedItems drawables;
+                for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+                    RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
+                    if (drawable) {
+                        drawables.push_back(drawable);
+                    }
+                }
+                pushUndoCommand( new RemoveCurveUndoCommand(_imp->ui, drawables) );
+            }
         }
     } else if ( k == _imp->ui->smoothItemMenuAction.lock() ) {
         if ( !_imp->ui->smoothSelectedCurve() ) {
@@ -2163,22 +2195,19 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->ui->selectAllMenuAction.lock() ) {
         _imp->ui->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
-        if ( _imp->ui->selectedItems.empty() ) {
-            std::list<RotoDrawableItemPtr > bez = _imp->knobsTable->getRotoItemsByRenderOrder();
-            for (std::list<RotoDrawableItemPtr >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
-                ctx->select(*it, RotoItem::eSelectionReasonOverlayInteract);
-                _imp->ui->selectedItems.push_back(*it);
-            }
+        SelectedItems selection = _imp->knobsTable->getSelectedDrawableItems();
+        if ( selection.empty() ) {
+            _imp->knobsTable->selectAll(eTableChangeReasonInternal);
         } else {
             ///select all the control points of all selected beziers
             _imp->ui->selectedCps.clear();
-            for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
+            for (SelectedItems::iterator it = selection.begin(); it != selection.end(); ++it) {
                 BezierPtr isBezier = toBezier(*it);
                 if (!isBezier) {
                     continue;
                 }
-                const std::list<BezierCPPtr > & cps = isBezier->getControlPoints();
-                const std::list<BezierCPPtr > & fps = isBezier->getFeatherPoints();
+                std::list<BezierCPPtr > cps = isBezier->getControlPoints(getCurrentView());
+                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(getCurrentView());
                 assert( cps.size() == fps.size() );
 
                 std::list<BezierCPPtr >::const_iterator cpIT = cps.begin();
@@ -2189,7 +2218,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             _imp->ui->computeSelectedCpsBBOX();
         }
     } else if ( k == _imp->ui->openCloseMenuAction.lock() ) {
-        if ( ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) && _imp->ui->builtBezier && !_imp->ui->builtBezier->isCurveFinished() ) {
+        if ( ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) && _imp->ui->builtBezier && !_imp->ui->builtBezier->isCurveFinished(ViewIdx(0)) ) {
             pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, _imp->ui->builtBezier) );
 
             _imp->ui->builtBezier.reset();
@@ -2207,14 +2236,14 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             frame->setValue(time);
         }
     } else if ( k == _imp->resetCenterKnob.lock() ) {
-        resetTransformCenter();
+        _imp->resetTransformCenter();
     } else if ( k == _imp->resetCloneCenterKnob.lock() ) {
-        resetCloneTransformCenter();
+        _imp->resetCloneTransformCenter();
     } else if ( k == _imp->resetTransformKnob.lock() ) {
-        resetTransform();
+        _imp->resetTransform();
     } else if ( k == _imp->resetCloneTransformKnob.lock() ) {
-        resetCloneTransform();
-    } else if ( k == _imp->motionBlurTypeKnob.lock().get() ) {
+        _imp->resetCloneTransform();
+    } else if ( k == _imp->motionBlurTypeKnob.lock() ) {
         int mbType_i = _imp->motionBlurTypeKnob.lock()->getValue();
         bool isPerShapeMB = mbType_i == 0;
         _imp->motionBlurKnob.lock()->setSecret(!isPerShapeMB);
@@ -2228,10 +2257,6 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
     } else {
         ret = false;
-    }
-
-    if (!ret) {
-        ret |= ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
 
     return ret;
@@ -2296,7 +2321,7 @@ RotoPaint::onInputChanged(int inputNb)
 static void
 getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
                                   const RotoLayerPtr& layer,
-                                  double time,
+                                  double time, ViewIdx view,
                                   bool onlyActives)
 {
     std::vector<KnobTableItemPtr> children = layer->getChildren();
@@ -2307,20 +2332,19 @@ getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
         RotoDrawableItemPtr isChildDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
 
         if (isChildDrawable) {
-            if ( !onlyActives || isChildDrawable->isActivated(time) ) {
+            if ( !onlyActives || isChildDrawable->isActivated(time, view) ) {
                 curves->push_front(isChildDrawable);
             }
         } else if ( isChildLayer && isChildLayer->isGloballyActivated() ) {
-            getRotoItemsByRenderOrderInternal(curves, isChildLayer, time, onlyActives);
+            getRotoItemsByRenderOrderInternal(curves, isChildLayer, time, view, onlyActives);
         }
     }
 }
 
 std::list< RotoDrawableItemPtr >
-RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(bool onlyActivated) const
+RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated) const
 {
     std::list< RotoDrawableItemPtr > ret;
-    double time = _imp->publicInterface->getCurrentTime();
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
 
     // Roto should have only a single top level layer
@@ -2330,9 +2354,23 @@ RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(bool onlyActivated) const
     }
     RotoLayerPtr layer = toRotoLayer(topLevelItems.front());
 
-    getRotoItemsByRenderOrderInternal(&ret, layer, time, onlyActivated);
+    getRotoItemsByRenderOrderInternal(&ret, layer, time, view, onlyActivated);
 
     return ret;
+}
+
+SelectedItems
+RotoPaintKnobItemsTable::getSelectedDrawableItems() const
+{
+    SelectedItems drawables;
+    std::list<KnobTableItemPtr> selection = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+        RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
+        if (drawable) {
+            drawables.push_back(drawable);
+        }
+    }
+    return drawables;
 }
 
 void
@@ -2347,25 +2385,7 @@ RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::Serial
 void
 RotoPaintKnobItemsTable::onModelReset()
 {
-    createBaseLayer();
-}
-
-void
-RotoPaint::onCurveLockedChanged(int reason)
-{
-    RotoItemPtr item = getNode()->getRotoContext()->getLastItemLocked();
-
-    if ( item && ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) ) {
-        assert(item);
-        bool changed = false;
-        if (item) {
-            _imp->ui->onCurveLockedChangedRecursive(item, &changed);
-        }
-
-        if (changed) {
-            redrawOverlayInteract();
-        }
-    }
+    _imp->createBaseLayer();
 }
 
 
@@ -2373,24 +2393,45 @@ void
 RotoPaintPrivate::resetTransformsCenter(bool doClone,
                                    bool doTransform)
 {
-    double time = getNode()->getApp()->getTimeLine()->currentFrame();
+    double time = publicInterface->getApp()->getTimeLine()->currentFrame();
+    ViewIdx view(0);
     RectD bbox;
-
-    getItemsRegionOfDefinition(getSelectedItems(), time, ViewIdx(0), &bbox);
+    {
+        bool bboxSet = false;
+        SelectedItems selection = knobsTable->getSelectedDrawableItems();
+        if (selection.empty()) {
+            selection = knobsTable->getRotoItemsByRenderOrder(time, view);
+        }
+        for (SelectedItems::const_iterator it = selection.begin(); it!=selection.end(); ++it) {
+            RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
+            if (!drawable) {
+                continue;
+            }
+            RectD thisShapeBox = drawable->getBoundingBox(time, view);
+            if (!bboxSet) {
+                bbox = thisShapeBox;
+            } else {
+                bbox.merge(thisShapeBox);
+            }
+        }
+    }
+    std::vector<double> values(2);
+    values[0] = (bbox.x1 + bbox.x2) / 2.;
+    values[1] = (bbox.y1 + bbox.y2) / 2.;
+    
+    //getItemsRegionOfDefinition(knobsTable->getSelectedItems(), time, ViewIdx(0), &bbox);
     if (doTransform) {
-        KnobDoublePtr centerKnob = _imp->centerKnob.lock();
-        centerKnob->beginChanges();
-        centerKnob->removeAnimation(ViewSpec::all(), 0);
-        centerKnob->removeAnimation(ViewSpec::all(), 1);
-        centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
-        centerKnob->endChanges();
+        KnobDoublePtr center = centerKnob.lock();
+        center->beginChanges();
+        center->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+        center->setValueAcrossDimensions(values);
+        center->endChanges();
     }
     if (doClone) {
-        KnobDoublePtr centerKnob = _imp->cloneCenterKnob.lock();
+        KnobDoublePtr centerKnob = cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        centerKnob->removeAnimation(ViewSpec::all(), 0);
-        centerKnob->removeAnimation(ViewSpec::all(), 1);
-        centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
+        centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+        centerKnob->setValueAcrossDimensions(values);
         centerKnob->endChanges();
     }
 }
@@ -2431,9 +2472,9 @@ RotoPaintPrivate::resetTransformInternal(const KnobDoublePtr& translate,
     if (extraMatrix) {
         knobs.push_back(extraMatrix);
     }
-    bool wasEnabled = translate->isEnabled(0);
+    bool wasEnabled = translate->isEnabled(DimIdx(0));
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        (*it)->resetToDefaultValue(DimSpec::all());
+        (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         (*it)->setEnabled(wasEnabled);
     }
 }
@@ -2441,15 +2482,15 @@ RotoPaintPrivate::resetTransformInternal(const KnobDoublePtr& translate,
 void
 RotoPaintPrivate::resetTransform()
 {
-    KnobDoublePtr translate = _imp->translateKnob.lock();
-    KnobDoublePtr center = _imp->centerKnob.lock();
-    KnobDoublePtr scale = _imp->scaleKnob.lock();
-    KnobDoublePtr rotate = _imp->rotateKnob.lock();
-    KnobBoolPtr uniform = _imp->scaleUniformKnob.lock();
-    KnobDoublePtr skewX = _imp->skewXKnob.lock();
-    KnobDoublePtr skewY = _imp->skewYKnob.lock();
-    KnobChoicePtr skewOrder = _imp->skewOrderKnob.lock();
-    KnobDoublePtr extraMatrix = _imp->extraMatrixKnob.lock();
+    KnobDoublePtr translate = translateKnob.lock();
+    KnobDoublePtr center = centerKnob.lock();
+    KnobDoublePtr scale = scaleKnob.lock();
+    KnobDoublePtr rotate = rotateKnob.lock();
+    KnobBoolPtr uniform = scaleUniformKnob.lock();
+    KnobDoublePtr skewX = skewXKnob.lock();
+    KnobDoublePtr skewY = skewYKnob.lock();
+    KnobChoicePtr skewOrder = skewOrderKnob.lock();
+    KnobDoublePtr extraMatrix = extraMatrixKnob.lock();
 
     resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, extraMatrix);
 }
@@ -2457,14 +2498,14 @@ RotoPaintPrivate::resetTransform()
 void
 RotoPaintPrivate::resetCloneTransform()
 {
-    KnobDoublePtr translate = _imp->cloneTranslateKnob.lock();
-    KnobDoublePtr center = _imp->cloneCenterKnob.lock();
-    KnobDoublePtr scale = _imp->cloneScaleKnob.lock();
-    KnobDoublePtr rotate = _imp->cloneRotateKnob.lock();
-    KnobBoolPtr uniform = _imp->cloneUniformKnob.lock();
-    KnobDoublePtr skewX = _imp->cloneSkewXKnob.lock();
-    KnobDoublePtr skewY = _imp->cloneSkewYKnob.lock();
-    KnobChoicePtr skewOrder = _imp->cloneSkewOrderKnob.lock();
+    KnobDoublePtr translate = cloneTranslateKnob.lock();
+    KnobDoublePtr center = cloneCenterKnob.lock();
+    KnobDoublePtr scale = cloneScaleKnob.lock();
+    KnobDoublePtr rotate = cloneRotateKnob.lock();
+    KnobBoolPtr uniform = cloneUniformKnob.lock();
+    KnobDoublePtr skewX = cloneSkewXKnob.lock();
+    KnobDoublePtr skewY = cloneSkewYKnob.lock();
+    KnobChoicePtr skewOrder = cloneSkewOrderKnob.lock();
 
     resetTransformInternal( translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, KnobDoublePtr() );
 }
@@ -2482,12 +2523,9 @@ RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
 }
 
 void
-RotoPaint::onSelectionChanged(int reason)
+RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelection*/, std::list<KnobTableItemPtr> /*removedFromSelection*/, TableChangeReasonEnum /*reason*/)
 {
-    if ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) {
-        _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
-        redrawOverlayInteract();
-    }
+    redrawOverlayInteract();
 }
 
 
@@ -2558,7 +2596,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
     int comp_i = -1;
 
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        int op = (*it)->getCompositingOperator();
+        int op = (*it)->getOperatorKnob()->getValue();
         if (!operatorSet) {
             operatorSet = true;
             comp_i = op;
@@ -2589,7 +2627,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 bool
 RotoPaint::isRotoPaintTreeConcatenatable() const
 {
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder();
+    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), getCurrentView(), false);
     int bop;
     return _imp->isRotoPaintTreeConcatenatableInternal(items, &bop);
 }
@@ -2724,17 +2762,18 @@ RotoPaint::refreshRotoPaintTree()
     if (_imp->treeRefreshBlocked) {
         return;
     }
-
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder();
+    double time = getCurrentTime();
+    ViewIdx view = getCurrentView();
+    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
 
     // Check if the tree can be concatenated into a single merge node
     int blendingOperator;
-    bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
+    bool canConcatenate = _imp->isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
     int globalMergeIndex = -1;
     NodesList mergeNodes;
     {
-        QMutexLocker k(&_imp->rotoContextMutex);
+        QMutexLocker k(&_imp->globalMergeNodesMutex);
         mergeNodes = _imp->globalMergeNodes;
     }
 
@@ -2745,7 +2784,7 @@ RotoPaint::refreshRotoPaintTree()
             (*it)->disconnectInput(i);
         }
     }
-    globalMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+    globalMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
     assert(rotoPaintEffect);
@@ -2779,7 +2818,7 @@ RotoPaint::refreshRotoPaintTree()
             globalMerge->connectInput(effectNode, globalMergeIndex);
 
             // Refresh for next node
-            NodePtr nextMerge = getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+            NodePtr nextMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
             if (nextMerge != globalMerge) {
                 assert( !nextMerge->getInput(0) );
                 nextMerge->connectInput(globalMerge, 0);
