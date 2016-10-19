@@ -1,5 +1,5 @@
---- Portfile.orig	2016-09-27 18:54:09.000000000 +0200
-+++ Portfile	2016-09-27 18:55:24.000000000 +0200
+--- Portfile.orig	2016-10-19 11:25:41.000000000 +0200
++++ Portfile	2016-10-19 11:25:52.000000000 +0200
 @@ -12,7 +12,7 @@
  
  name                qt4-mac
@@ -18,9 +18,9 @@
  
  # find a way to specify the OS MINOR version.  For OSX 10.X, this
  # value will be X.  The type is this variable is integer, so we can
-@@ -267,6 +267,13 @@
- patchfiles-append   \
-     patch-src_gui_dialogs_qfiledialog_mac.mm.diff
+@@ -276,6 +276,13 @@
+     }
+ }
  
 +# fix default thread stack size
 +patchfiles-append patch-qthread-stacksize.diff
