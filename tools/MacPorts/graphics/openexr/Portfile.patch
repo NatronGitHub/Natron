@@ -1,6 +1,25 @@
---- Portfile.orig	2016-05-26 13:00:15.000000000 +0200
-+++ Portfile	2016-05-26 13:00:15.000000000 +0200
-@@ -61,9 +61,7 @@
+--- Portfile.orig	2016-09-23 15:36:10.000000000 +0200
++++ Portfile	2016-10-19 15:04:15.000000000 +0200
+@@ -28,6 +28,18 @@
+     depends_build-append port:pkgconfig
+ }
+ 
++variant gcc49 description {Compile with GCC/G++ 4.9} {
++    configure.compiler macports-gcc-4.9
++    if {[variant_isset universal]} {
++        # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
++        if {[file tail ${configure.cmd}] != "cmake"} {
++            configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
++        } else {
++            configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
++        }
++    }
++}
++
+ if {${subport} eq ${name}} {
+     revision 1
+ 
+@@ -61,9 +73,7 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
      # see https://github.com/openexr/openexr/issues/128 for upstream report
@@ -10,7 +29,7 @@
  }
  
  subport ilmbase {
-@@ -72,6 +70,11 @@
+@@ -72,6 +82,11 @@
          rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
          sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
  

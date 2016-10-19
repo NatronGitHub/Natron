@@ -118,14 +118,7 @@ configure.args              --enable-shared \
                             --without-x \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
 
-variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-    # configure with GCC 4.9 for proper OpenMP support
-    configure.compiler macports-gcc-4.9
-    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-    #configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-    configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
-    configure.args-append --enable-openmp
-
+variant natron conflicts x11 requires pango rsvg q32 hdri gcc49 universal description {Natron version} {
     patchfiles-append pango-align-hack.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
@@ -162,6 +155,20 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
         if {${version} != "6.9.6-2"} {
             ui_msg "Natron variant requires ImageMagick version 6.9.6-2 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
+        }
+    }
+}
+
+variant gcc49 description {Compile with GCC/G++ 4.9} {
+    # configure with GCC 4.9 for proper OpenMP support
+    configure.compiler macports-gcc-4.9
+    configure.args-append --enable-openmp
+    if {[variant_isset universal]} {
+        # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+        if {[file tail ${configure.cmd}] != "cmake"} {
+            configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
+        } else {
+            configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
         }
     }
 }
