@@ -711,8 +711,8 @@ enum TableChangeReasonEnum
     // The action was initiated by an internal call of the API of KnobItemsTable
     eTableChangeReasonInternal,
 
-    // The action was initiated by an external call of the API of KnobItemsTable
-    eTableChangeReasonExternal,
+    // The action was initiated by an external call from the Viewer interface (overlay interacts)
+    eTableChangeReasonViewer,
 
     // The action was initiated by calling the API of the table Gui
     eTableChangeReasonPanel

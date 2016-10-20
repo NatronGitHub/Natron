@@ -80,7 +80,6 @@ static MetaTypesRegistration registration;
 struct TrackMarkerPrivate
 {
     TrackMarker* _publicInterface; // can not be a smart ptr
-    boost::weak_ptr<TrackerContext> context;
 
     // Defines the rectangle of the search window, this is in coordinates relative to the marker center point
     KnobDoubleWPtr searchWindowBtmLeft, searchWindowTopRight;
@@ -94,17 +93,14 @@ struct TrackMarkerPrivate
     KnobChoiceWPtr motionModel;
     mutable QMutex trackMutex;
     std::set<int> userKeyframes;
-    std::string trackScriptName, trackLabel;
     KnobBoolWPtr enabled;
 
     // Only used by the TrackScheduler thread
     int trackingStartedCount;
     std::list<double> keyframesAddedWhileTracking;
 
-    TrackMarkerPrivate(TrackMarker* publicInterface,
-                       const TrackerContextPtr& context)
+    TrackMarkerPrivate(TrackMarker* publicInterface)
         : _publicInterface(publicInterface)
-        , context(context)
         , searchWindowBtmLeft()
         , searchWindowTopRight()
         , patternTopLeft()
@@ -120,8 +116,6 @@ struct TrackMarkerPrivate
         , motionModel()
         , trackMutex()
         , userKeyframes()
-        , trackScriptName()
-        , trackLabel()
         , enabled()
         , trackingStartedCount(0)
         , keyframesAddedWhileTracking()
@@ -129,9 +123,9 @@ struct TrackMarkerPrivate
     }
 };
 
-TrackMarker::TrackMarker(const TrackerContextPtr& context)
-    : NamedKnobHolder( context->getNode()->getApp() )
-    , _imp( new TrackMarkerPrivate(this, context) )
+TrackMarker::TrackMarker(const KnobItemsTablePtr& model)
+    : KnobTableItem(model)
+    , _imp( new TrackMarkerPrivate(this) )
 {
 }
 
@@ -139,13 +133,24 @@ TrackMarker::~TrackMarker()
 {
 }
 
+std::string
+TrackMarker::getBaseItemName() const
+{
+    return tr("Track").toStdString();
+}
+
 void
 TrackMarker::initializeKnobs()
 {
-    TrackerContextPtr context = _imp->context.lock();
-    KnobIntPtr defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
-    KnobIntPtr defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
-    KnobChoicePtr defMotionModelKnob = context->getDefaultMotionModelKnob();
+    KnobItemsTablePtr model = getModel();
+    EffectInstancePtr effect;
+    if (model) {
+        effect = model->getNode()->getEffectInstance();
+    }
+    KnobIntPtr defPatternSizeKnob, defSearchSizeKnob, defMotionModelKnob;
+    defPatternSizeKnob = effect->getDefaultMarkerPatternWinSizeKnob();
+    defSearchSizeKnob = effect->getDefaultMarkerSearchWinSizeKnob();
+    defMotionModelKnob = effect->getDefaultMotionModelKnob();
 
     double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
     double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
@@ -326,20 +331,6 @@ TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjec
     }
     QMutexLocker k(&_imp->trackMutex);
 
-    _imp->trackLabel = s->_label;
-    _imp->trackScriptName = s->_scriptName;
-    const KnobsVec& knobs = getKnobs();
-
-    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
-        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ( (*it2)->getName() == (*it)->getName() ) {
-                (*it2)->blockValueChanges();
-                (*it2)->fromSerialization(**it);
-                (*it2)->unblockValueChanges();
-                break;
-            }
-        }
-    }
     for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
         _imp->userKeyframes.insert(*it);
     }
@@ -1316,7 +1307,6 @@ TrackMarkerPM::initializeKnobs()
 {
     TrackMarker::initializeKnobs();
     NodePtr thisNode = getContext()->getNode();
-    QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
     NodePtr node;
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() ));

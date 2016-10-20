@@ -434,9 +434,6 @@ public:
 
     OneViewNodePtr isEffectOneViewNode() const;
 
-
-    TrackerContextPtr getTrackerContext() const;
-
     /**
      * @brief Forwarded to the live effect instance
      **/

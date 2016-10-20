@@ -94,7 +94,7 @@ public:
      * @brief Set the script-name of the item as it appears to Python. This function
      * returns false if the name is invalid
      **/
-    bool setScriptName(const std::string& name);
+    void setScriptName(const std::string& name);
 
     /**
      * @brief Same as getScriptName_mt_safe, except that if the item has a parent, it will recursively preprend the parent name
@@ -149,6 +149,11 @@ public:
      * @brief Returns a vector of all children of the item.
      **/
     std::vector<KnobTableItemPtr> getChildren() const;
+
+    /**
+    * @brief Returns child at given index
+    **/
+    KnobTableItemPtr getChild(int index) const;
 
     /**
      * @brief If this item is child of another item, this is its parent.
@@ -412,6 +417,10 @@ Q_SIGNALS:
 
 private:
 
+    // Ensures the item has a unique script-name, a label and that its
+    // knobs are initialized
+    void ensureItemInitialized();
+
     friend class KnobItemsTable;
     boost::scoped_ptr<KnobTableItemPrivate> _imp;
 };
@@ -563,6 +572,11 @@ public:
      * @brief Returns a vector with all top level items in the model in order.
      **/
     std::vector<KnobTableItemPtr> getTopLevelItems() const;
+
+    /**
+     * @brief Returns the top level item at given index
+     **/
+    KnobTableItemPtr getTopLevelItem(int index) const;
 
     /**
      * @brief Remove the item from the model. The model will no longer hold a strong

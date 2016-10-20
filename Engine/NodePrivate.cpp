@@ -91,8 +91,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , enabledChan()
 , channelsSelectors()
 , maskSelectors()
-, rotoContext()
-, trackContext()
 , imagesBeingRenderedMutex()
 , imageBeingRenderedCond()
 , imagesBeingRendered()

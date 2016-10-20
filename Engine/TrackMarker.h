@@ -112,12 +112,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const TrackerContextPtr& context);
+    TrackMarker(const KnobItemsTablePtr& context);
 
 public:
-    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const KnobItemsTablePtr& model) WARN_UNUSED_RETURN
     {
-        return TrackMarkerPtr( new TrackMarker(context) );
+        return TrackMarkerPtr( new TrackMarker(model) );
     }
 
     TrackMarkerPtr shared_from_this() {
@@ -131,13 +131,15 @@ public:
         return false;
     }
 
+    virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL {
+        return true;
+    }
+
     void clone(const TrackMarker& other);
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
-
-    TrackerContextPtr getContext() const;
 
 
     void setLabel(const std::string& label);
@@ -217,6 +219,8 @@ protected:
 
     virtual void initializeKnobs() OVERRIDE;
 
+    virtual std::string getBaseItemName() const OVERRIDE;
+
 public Q_SLOTS:
 
     /*void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
@@ -276,10 +280,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const TrackerContextPtr& context);
+    TrackMarkerPM(const KnobItemsTablePtr& context);
 
 public:
-    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const KnobItemsTablePtr& context) WARN_UNUSED_RETURN
     {
         return TrackMarkerPtr( new TrackMarkerPM(context) );
     }

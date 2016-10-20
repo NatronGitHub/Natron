@@ -100,7 +100,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/TrackMarker.h"
-#include "Engine/TrackerContext.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -6776,17 +6775,6 @@ Node::isEffectOneViewNode() const
     return toOneViewNode(_imp->effect);
 }
 
-RotoContextPtr
-Node::getRotoContext() const
-{
-    return _imp->rotoContext;
-}
-
-TrackerContextPtr
-Node::getTrackerContext() const
-{
-    return _imp->trackContext;
-}
 
 const KnobsVec &
 Node::getKnobs() const

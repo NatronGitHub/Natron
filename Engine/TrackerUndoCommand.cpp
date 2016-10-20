@@ -24,20 +24,19 @@
 
 #include "TrackerUndoCommand.h"
 
-#include "Engine/TrackerContext.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 #include "Engine/AppInstance.h"
+#include "Engine/TrackMarker.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
-                                 const TrackerContextPtr& context)
+AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker)
     : UndoCommand()
     , _isFirstRedo(true)
-    , _context(context)
 {
-    int index = context->getMarkerIndex(marker);
+    int index = marker->getIndexInParent();
     _markers[index] = marker;
     setText( tr("Add Track(s)").toStdString() );
 }
@@ -45,56 +44,50 @@ AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
 void
 AddTrackCommand::undo()
 {
-    TrackerContextPtr context = _context.lock();
 
-    if (!context) {
-        return;
-    }
-
-    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
+    assert(!_markers.empty());
+    KnobItemsTablePtr model = _markers.begin()->second->getModel();
+    model->beginEditSelection();
     for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        context->removeMarker(it->second);
+        model->removeItem(it->second, eTableChangeReasonInternal);
     }
-    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->getNode()->getApp()->triggerAutoSave();
+    model->endEditSelection(eTableChangeReasonInternal);
+    model->getNode()->getApp()->triggerAutoSave();
 }
 
 void
 AddTrackCommand::redo()
 {
-    TrackerContextPtr context = _context.lock();
 
-    if (!context) {
-        return;
-    }
-    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->clearSelection(TrackerContext::eTrackSelectionInternal);
+    KnobItemsTablePtr model = _markers.begin()->second->getModel();
+
+    model->beginEditSelection();
+    model->clearSelection(eTableChangeReasonInternal);
 
     if (!_isFirstRedo) {
         for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-            context->insertMarker(it->second, it->first);
+            model->insertItem(it->first, it->second, KnobTableItemPtr(), eTableChangeReasonInternal);
         }
     }
     for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        context->addTrackToSelection(it->second, TrackerContext::eTrackSelectionInternal);
+        model->addToSelection(it->second, eTableChangeReasonInternal);
     }
 
-    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->getNode()->getApp()->triggerAutoSave();
+    model->endEditSelection(eTableChangeReasonInternal);
+    model->getNode()->getApp()->triggerAutoSave();
     _isFirstRedo = false;
 }
 
-RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
-                                         const TrackerContextPtr& context)
+RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers)
     : UndoCommand()
     , _markers()
-    , _context(context)
 {
     assert( !markers.empty() );
     for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         TrackToRemove t;
         t.track = *it;
-        t.prevTrack = context->getPrevMarker(t.track, false);
+        KnobItemsTablePtr model = (*it)->getModel();
+        t.prevTrack = toTrackMarker(model->getTopLevelItem((*it)->getIndexInParent() - 1));
         _markers.push_back(t);
     }
     setText( tr("Remove Track(s)").toStdString() );
@@ -103,50 +96,57 @@ RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &marke
 void
 RemoveTracksCommand::undo()
 {
-    TrackerContextPtr context = _context.lock();
-
-    if (!context) {
-        return;
-    }
-    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->clearSelection(TrackerContext::eTrackSelectionInternal);
+    KnobItemsTablePtr model = _markers.begin()->track->getModel();
+    model->beginEditSelection();
+    model->clearSelection(eTableChangeReasonInternal);
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         int prevIndex = -1;
         TrackMarkerPtr prevMarker = it->prevTrack.lock();
         if (prevMarker) {
-            prevIndex = context->getMarkerIndex(prevMarker);
+            prevIndex = prevMarker->getIndexInParent();
         }
         if (prevIndex != -1) {
-            context->insertMarker(it->track, prevIndex);
+            model->insertItem(prevIndex, it->track, KnobTableItemPtr(), eTableChangeReasonInternal);
         } else {
-            context->appendMarker(it->track);
+            model->addItem(it->track, KnobTableItemPtr(), eTableChangeReasonInternal);
         }
-        context->addTrackToSelection(it->track, TrackerContext::eTrackSelectionInternal);
+        model->addToSelection(it->track, eTableChangeReasonInternal);
     }
-    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->getNode()->getApp()->triggerAutoSave();
+    model->endEditSelection(eTableChangeReasonInternal);
+    model->getNode()->getApp()->triggerAutoSave();
 }
 
 void
 RemoveTracksCommand::redo()
 {
-    TrackerContextPtr context = _context.lock();
+    KnobItemsTablePtr model = _markers.begin()->track->getModel();
 
-    if (!context) {
-        return;
+    TrackMarkerPtr nextMarker;
+    {
+        TrackMarkerPtr marker = _markers.back().track;
+        assert(marker);
+        int index = marker->getIndexInParent();
+        std::vector<KnobTableItemPtr> topLevel = model->getTopLevelItems();
+        if (!topLevel.empty()) {
+            if (index + 1 < (int)topLevel.size()) {
+                nextMarker = topLevel[index + 1];
+            } else {
+                if (topLevel[0] != marker) {
+                    nextMarker = topLevel[0];
+                }
+            }
+        }
     }
 
-    TrackMarkerPtr nextMarker = context->getNextMarker(_markers.back().track, true);
-
-    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
+    model->beginEditSelection();
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
-        context->removeMarker(it->track);
+        model->removeItem(it->track, eTableChangeReasonInternal);
     }
     if (nextMarker) {
-        context->addTrackToSelection(nextMarker, TrackerContext::eTrackSelectionInternal);
+        model->addToSelection(nextMarker, eTableChangeReasonInternal);
     }
-    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->getNode()->getApp()->triggerAutoSave();
+    model->endEditSelection(eTableChangeReasonInternal);
+    model->getNode()->getApp()->triggerAutoSave();
 }
 
 NATRON_NAMESPACE_EXIT;

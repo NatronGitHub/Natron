@@ -437,6 +437,11 @@ ViewIdx
 KnobHelper::getViewIdxFromGetSpec(ViewGetSpec view) const
 {
     if (!view.isCurrent()) {
+        QMutexLocker k(&_imp->splitViewMutex);
+        std::list<ViewIdx>::const_iterator foundView = std::find(_imp->splitViews.begin(), _imp->splitViews.end(), ViewIdx(view.value()));
+        if (foundView == _imp->splitViews.end()) {
+            return ViewIdx(0);
+        }
         return ViewIdx(view);
     } else {
         int nSplitViews;
@@ -577,19 +582,22 @@ KnobHelper::isListenersNotificationBlocked() const
 void
 KnobHelper::blockGuiRefreshing()
 {
-
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    ++_imp->guiRefreshBlocked;
 }
 
 void
 KnobHelper::unblockGuiRefreshing()
 {
-
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    --_imp->guiRefreshBlocked;
 }
 
 bool
 KnobHelper::isGuiRefreshingBlocked() const
 {
-
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    return _imp->guiRefreshBlocked;
 }
 
 void
@@ -2443,8 +2451,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     } else if (isParametric) {
         KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), isUserKnob);
         output = newKnob;
-        newKnob->setMinimumsAndMaximums( isParametric->getMinimums(), isParametric->getMaximums() );
-        newKnob->setDisplayMinimumsAndMaximums( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
+        newKnob->setRangeAcrossDimensions( isParametric->getMinimums(), isParametric->getMaximums() );
+        newKnob->setDisplayRangeAcrossDimensions( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
     }
     if (!output) {
         return KnobIPtr();
@@ -2693,7 +2701,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             if (masterKnob != knob) {
                 NamedKnobHolderPtr holder = boost::dynamic_pointer_cast<NamedKnobHolder>( masterKnob->getHolder() );
                 assert(holder);
-                KnobTableItemPtr isTableItem = toKnobTableItem(holder);
+                KnobTableItemPtr isTableItem = toKnobTableItem(masterKnob->getHolder());
                 if (isTableItem) {
                     if (isTableItem) {
                         serialization->_slaveMasterLink.masterTableItemName = isTableItem->getScriptName_mt_safe();
@@ -4640,6 +4648,9 @@ KnobHolder::getApp() const
 void
 KnobHolder::initializeKnobsPublic()
 {
+    if (_imp->knobsInitialized) {
+        return;
+    }
     {
         InitializeKnobsFlag_RAII __isInitializingKnobsFlag__( shared_from_this() );
         initializeKnobs();
@@ -4823,6 +4834,7 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
             }
         }
     }
+    return ret;
 }
 
 void

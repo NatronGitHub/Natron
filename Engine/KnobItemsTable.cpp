@@ -357,10 +357,16 @@ KnobItemsTable::addItem(const KnobTableItemPtr& item, const KnobTableItemPtr& pa
 void
 KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTableItemPtr& parent, TableChangeReasonEnum reason)
 {
+    if (!item) {
+        return;
+    }
     // The item must have been constructed with this model in parameter
     assert(item->getModel().get() == this);
 
     removeItem(item, reason);
+
+    item->ensureItemInitialized();
+
     if (parent) {
         parent->insertChild(index, item);
     } else {
@@ -449,6 +455,15 @@ KnobItemsTable::getTopLevelItems() const
     return _imp->topLevelItems;
 }
 
+KnobTableItemPtr
+KnobItemsTable::getTopLevelItem(int index) const
+{
+    QMutexLocker k(&_imp->topLevelItemsLock);
+    if (index < 0 || index >= (int)_imp->topLevelItems.size()) {
+        return KnobTableItemPtr();
+    }
+    return _imp->topLevelItems[index];
+}
 
 std::string
 KnobItemsTable::generateUniqueName(const std::string& baseName) const
@@ -593,13 +608,24 @@ KnobTableItem::getLabel() const
 }
 
 
-bool
+void
 KnobTableItem::setScriptName(const std::string& name)
 {
 
-    if ( name.empty() ) {
-        return false;
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
     }
+    std::string nameToSet = name;
+    if ( nameToSet.empty() ) {
+        std::string baseName = getBaseItemName();
+        if (baseName.empty()) {
+            baseName = "Item";
+        }
+        nameToSet = model->generateUniqueName(baseName);
+    }
+
+    // Ensure the name is not empty so far
 
     std::string currentName;
     {
@@ -608,17 +634,47 @@ KnobTableItem::setScriptName(const std::string& name)
     }
 
     // Make sure the script-name is Python compliant
-    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
+    nameToSet = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(nameToSet);
 
-    if ( cpy.empty() || cpy == currentName) {
-        return false;
+    // The name can be empty if the user passed a string with only non python non compliant characters
+    if (nameToSet.empty()) {
+        std::string baseName = getBaseItemName();
+        if (baseName.empty()) {
+            baseName = "Item";
+        }
+        nameToSet = model->generateUniqueName(baseName);
     }
 
-    KnobItemsTablePtr model = getModel();
-    KnobTableItemPtr existingItem = model->getItemByScriptName(name);
-    if ( existingItem && (existingItem.get() != this) ) {
-        return false;
+    // Nothing changed
+    if ( nameToSet == currentName) {
+        return;
     }
+
+    // Check that it is unique in the model
+    {
+        int no = 1;
+        bool foundItem;
+        std::string tmpName;
+
+        do {
+            std::stringstream ss;
+            ss << nameToSet;
+            if (no > 1) {
+                ss << no;
+            }
+            tmpName = ss.str();
+            KnobTableItemPtr existingItem = model->getItemByScriptName(tmpName);
+
+            if ( existingItem && existingItem.get() != this ) {
+                foundItem = true;
+            } else {
+                foundItem = false;
+            }
+            ++no;
+        } while (foundItem);
+        nameToSet = tmpName;
+    }
+
 
     KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
     if (!currentName.empty()) {
@@ -627,12 +683,11 @@ KnobTableItem::setScriptName(const std::string& name)
 
     {
         QMutexLocker l(&_imp->lock);
-        _imp->scriptName = cpy;
+        _imp->scriptName = nameToSet;
     }
 
     model->declareItemAsPythonField(thisShared);
     
-    return true;
 }
 
 std::string
@@ -669,9 +724,10 @@ KnobTableItem::getFullyQualifiedName() const
 void
 KnobTableItem::insertChild(int index, const KnobTableItemPtr& item)
 {
-    if (!isItemContainer()) {
+    if (!item || !isItemContainer()) {
         return;
     }
+
     assert(_imp->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
 
     int insertedIndex;
@@ -720,6 +776,29 @@ KnobTableItem::removeChild(const KnobTableItemPtr& item)
     return removed;
 }
 
+void
+KnobTableItem::ensureItemInitialized()
+{
+    KnobItemsTablePtr model = getModel();
+    assert(model);
+    if (!model) {
+        return;
+    }
+    std::string curName = getScriptName_mt_safe();
+    if (curName.empty()) {
+        // No script-name: generate one
+        curName = model->generateUniqueName(getBaseItemName());
+    }
+    setScriptName(curName);
+    if (getLabel().empty()) {
+        setLabel(curName, eTableChangeReasonInternal);
+    }
+
+    initializeKnobsPublic();
+
+
+}
+
 KnobTableItemPtr
 KnobTableItem::getParent() const
 {
@@ -760,6 +839,16 @@ KnobTableItem::getChildren() const
 {
     QMutexLocker k(&_imp->lock);
     return _imp->children;
+}
+
+KnobTableItemPtr
+KnobTableItem::getChild(int index) const
+{
+    QMutexLocker k(&_imp->lock);
+    if (index < 0 || index >= (int)_imp->children.size()) {
+        return KnobTableItemPtr();
+    }
+    return _imp->children[index];
 }
 
 void
@@ -1010,10 +1099,11 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
     assert(_imp->children.empty());
 
     KnobItemsTablePtr model = _imp->model.lock();
+    KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->children.begin(); it!=serialization->children.end(); ++it) {
         KnobTableItemPtr child = model->createItemFromSerialization(*it);
         if (child) {
-            addChild(child);
+            model->addItem(child, thisShared, eTableChangeReasonInternal);
         }
     }
 }
@@ -1384,6 +1474,9 @@ KnobItemsTable::removeItemAsPythonField(const KnobTableItemPtr& item)
     if (!node) {
         return;
     }
+    if (_imp->pythonPrefix.empty()) {
+        return;
+    }
     std::string appID = node->getApp()->getAppIDString();
     std::string nodeName = node->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
@@ -1407,6 +1500,9 @@ KnobItemsTable::declareItemAsPythonField(const KnobTableItemPtr& item)
 {
     NodePtr node = getNode();
     if (!node) {
+        return;
+    }
+    if (_imp->pythonPrefix.empty()) {
         return;
     }
     std::string appID = node->getApp()->getAppIDString();

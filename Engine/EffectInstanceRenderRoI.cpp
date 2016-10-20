@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Log.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
@@ -75,6 +76,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
@@ -1549,6 +1551,20 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
     if (glContextLocker) {
         glContextLocker->attach();
     }
+
+
+    RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
+    RotoPaintPtr rotoPaint;
+    if (rotoItem) {
+        KnobItemsTablePtr model = rotoItem->getModel();
+        if (model) {
+            NodePtr modelNode = model->getNode();
+            if (modelNode) {
+                rotoPaint = toRotoPaint(modelNode->getEffectInstance());
+            }
+        }
+    }
+
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
          it != planesToRender->planes.end(); ++it) {
         const ImageComponents *components = 0;
@@ -1570,7 +1586,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             continue;
         }
 
-        RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
+
         if (!it->second.fullscaleImage) {
             ///The image is not cached
             _publicInterface->allocateImagePlane(*key,
@@ -1597,8 +1613,11 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
 
             // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
             // to prepare the potential next paint brush stroke made by the user
-            if (rotoItem && (frameArgs->isDuringPaintStrokeCreation || rotoItem->getContext()->isDoingNeatRender())) {
-                _publicInterface->getNode()->setPaintBuffer(it->second.downscaleImage);
+            if (rotoItem) {
+
+                if (frameArgs->isDuringPaintStrokeCreation || (rotoPaint && rotoPaint->isDoingNeatRender())) {
+                    _publicInterface->getNode()->setPaintBuffer(it->second.downscaleImage);
+                }
             }
         } else {
             /*
@@ -1647,12 +1666,14 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                     // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
                     // to prepare the potential next paint brush stroke made by the user
                     it->second.downscaleImage = it->second.fullscaleImage;
-                    if (rotoItem && (frameArgs->isDuringPaintStrokeCreation || rotoItem->getContext()->isDoingNeatRender())) {
-                        _publicInterface->getNode()->setPaintBuffer(it->second.fullscaleImage);
+                    if (rotoItem) {
+
+                        if (frameArgs->isDuringPaintStrokeCreation || (rotoPaint && rotoPaint->isDoingNeatRender())) {
+                            _publicInterface->getNode()->setPaintBuffer(it->second.fullscaleImage);
+                        }
                     }
                 }
             }
-
 
             /*
              * Note that the image has been resized and the bitmap explicitly set to 1 in the newly allocated portions (for rotopaint purpose).

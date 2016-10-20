@@ -204,12 +204,15 @@ SOURCES += \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
-    TrackerContext.cpp \
-    TrackerContextPrivate.cpp \
+    TrackArgs.cpp \
+    TrackerHelper.cpp \
+    TrackerHelperPrivate.cpp \
     TrackerFrameAccessor.cpp \
     TrackMarker.cpp \
     TrackerNode.cpp \
-    TrackerNodeInteract.cpp \
+    TrackerNodePrivate.cpp \
+    TrackerNodeTransformExport.cpp \
+    TrackScheduler.cpp \
     TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
@@ -269,6 +272,7 @@ SOURCES += \
     NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/stringnodecreationproperty_wrapper.cpp \
     NatronEngine/exprutils_wrapper.cpp
+
 
 
 
@@ -430,11 +434,14 @@ HEADERS += \
     TimeLine.h \
     TImelineKeys.h \
     Timer.h \
-    TrackerContext.h \
-    TrackerContextPrivate.h \
+    TrackArgs.h \
+    TrackerHelper.h \
+    TrackerHelperPrivate.h \
     TrackerFrameAccessor.h \
     TrackerNode.h \
-    TrackerNodeInteract.h \
+    TrackerNodePrivate.h \
+    TrackerParamsProvider.h \
+    TrackScheduler.h \
     TrackerUndoCommand.h \
     TrackMarker.h \
     TLSHolder.h \

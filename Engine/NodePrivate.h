@@ -286,7 +286,6 @@ public:
     std::map<int, ChannelSelector> channelsSelectors;
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
-    TrackerContextPtr trackContext;
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
     std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
