@@ -79,15 +79,10 @@ FrameEntry::copy(const FrameEntry& other)
     dstRowSize *= dstPixelSize;
 
     // Fill with black and transparent because src might be smaller
-    bool filledZero = false;
-    if ( !srcBounds.contains(dstBounds) ) {
+    if ( !srcPixels ||
+         !srcBounds.contains(dstBounds) ||
+         other.getKey().getBitDepth() != _key.getBitDepth() ) {
         std::memset( dstPixels, 0, dstRowSize * dstBounds.height() );
-        filledZero = true;
-    }
-    if ( other.getKey().getBitDepth() != _key.getBitDepth() ) {
-        if (!filledZero) {
-            std::memset( dstPixels, 0, dstRowSize * dstBounds.height() );
-        }
 
         return;
     }
