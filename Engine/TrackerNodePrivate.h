@@ -158,17 +158,7 @@
 #define kTrackerUIParamMagWindowSizeLabel "Mag. Window Size"
 #define kTrackerUIParamMagWindowSizeHint "The size of the selected track magnification winow in pixels"
 
-#define kTrackerUIParamDefaultMarkerPatternWinSize "defPatternWinSize"
-#define kTrackerUIParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
-#define kTrackerUIParamDefaultMarkerPatternWinSizeHint "The size in pixels of the pattern that created markers will have by default"
 
-#define kTrackerUIParamDefaultMarkerSearchWinSize "defSearchWinSize"
-#define kTrackerUIParamDefaultMarkerSearchWinSizeLabel "Default Search Area Size"
-#define kTrackerUIParamDefaultMarkerSearchWinSizeHint "The size in pixels of the search window that created markers will have by default"
-
-#define kTrackerUIParamDefaultMotionModel "defMotionModel"
-#define kTrackerUIParamDefaultMotionModelLabel "Default Motion Model"
-#define kTrackerUIParamDefaultMotionModelHint "The motion model that new tracks have by default"
 
 
 // Right click menu

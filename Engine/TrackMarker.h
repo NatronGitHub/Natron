@@ -135,7 +135,7 @@ public:
         return true;
     }
 
-    void clone(const TrackMarker& other);
+    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
@@ -161,14 +161,6 @@ public:
 
     int getReferenceFrame(int time, int frameStep) const;
 
-    bool isUserKeyframe(int time) const;
-
-    int getPreviousKeyframe(int time) const;
-
-    int getNextKeyframe( int time) const;
-
-    void getUserKeyframes(std::set<int>* keyframes) const;
-
     void getCenterKeyframes(std::set<double>* keyframes) const;
 
     bool isEnabled(double time) const;
@@ -187,24 +179,23 @@ public:
 
     void resetTrack();
 
-    void setKeyFrameOnCenterAndPatternAtTime(int time);
+    void setKeyFrameOnCenterAndPatternAtTime(double time);
 
-    void setUserKeyframe(int time);
+    void setUserKeyframe(double time);
 
-    void removeUserKeyframe(int time);
+    void removeUserKeyframe(double time);
 
     /*
        Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
-    void clearAnimationBeforeTime(int time);
-    void clearAnimationAfterTime(int time);
+    void clearAnimationBeforeTime(double time);
+    void clearAnimationAfterTime(double time);
 
-    void removeAllUserKeyframes();
 
-    std::pair<ImagePtr, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(double time, const RectI& roi) const;
 
-    RectI getMarkerImageRoI(int time) const;
+    RectI getMarkerImageRoI(double time) const;
 
     virtual void onKnobSlaved(const KnobIPtr& slave,
                               const KnobIPtr& master,
