@@ -3006,10 +3006,16 @@ AppManager::initPython()
 #     endif
     } else {
 #     ifdef __NATRON_WIN32__
-        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(';') ) );
+        QChar pathSep = QChar::fromLatin1(';');
 #     else
-        pythonPath.prepend( toPrepend.join( QChar::fromLatin1(':') ) );
-      #endif
+        QChar pathSep = QChar::fromLatin1(':');
+#     endif
+        QString toPrependStr = toPrepend.join(pathSep);
+        if (pythonPath.isEmpty()) {
+            pythonPath = toPrependStr;
+        } else {
+            pythonPath = toPrependStr + pathSep + pythonPath;
+        }
         // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
 #     if 0//def __NATRON_WIN32__
         _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
