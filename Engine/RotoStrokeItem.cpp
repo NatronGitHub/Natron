@@ -564,6 +564,66 @@ RotoStrokeItem::appendPoint(bool newStroke,
 } // RotoStrokeItem::appendPoint
 
 void
+RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->strokes.clear();
+
+    for (std::list<std::list<RotoPoint> >::const_iterator it = strokes.begin(); it != strokes.end(); ++it) {
+
+        RotoStrokeItemPrivate::StrokeCurves s;
+        s.xCurve.reset(new Curve);
+        s.yCurve.reset(new Curve);
+        s.pressureCurve.reset(new Curve);
+
+        for (std::list<RotoPoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+
+            int nk = s.xCurve->getKeyFramesCount();
+            bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
+            int ki; // index of the new keyframe (normally nk, but just in case)
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue(it2->pos().x);
+                addKeyFrameOk = s.xCurve->addKeyFrame(k);
+                ki = ( addKeyFrameOk ? nk : (nk - 1) );
+            }
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue(it2->pos().y);
+                bool aok = s.yCurve->addKeyFrame(k);
+                assert(aok == addKeyFrameOk);
+                if (aok != addKeyFrameOk) {
+                    throw std::logic_error("RotoStrokeItem::setStrokes");
+                }
+            }
+
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue( it2->pressure());
+                bool aok = s.pressureCurve->addKeyFrame(k);
+                assert(aok == addKeyFrameOk);
+                if (aok != addKeyFrameOk) {
+                    throw std::logic_error("RotoStrokeItem::setStrokes");
+                }
+            }
+            // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
+            // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
+            KeyframeTypeEnum interpolation = _imp->type == eRotoStrokeTypeSmear ? eKeyframeTypeFree : eKeyframeTypeCatmullRom;
+            s.xCurve->setKeyFrameInterpolation(interpolation, ki);
+            s.yCurve->setKeyFrameInterpolation(interpolation, ki);
+            s.pressureCurve->setKeyFrameInterpolation(interpolation, ki);
+        }
+
+        _imp->strokes.push_back(s);
+
+    }
+    setStrokeFinished();
+} // setStrokes
+
+void
 RotoStrokeItem::addStroke(const CurvePtr& xCurve,
                           const CurvePtr& yCurve,
                           const CurvePtr& pCurve)
@@ -1065,13 +1125,17 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
                                double time,
                                ViewGetSpec view,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
-                               RectD* bbox) const
+                               RectD* bbox,
+                               bool ignoreTransform) const
 {
     double brushSize = getBrushSizeKnob()->getValueAtTime(time) / 2.;
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     Transform::Matrix3x3 transform;
-
-    getTransformAtTime(time, view, &transform);
+    if (ignoreTransform) {
+        transform.setIdentity();
+    } else {
+        getTransformAtTime(time, view, &transform);
+    }
 
     bool bboxSet = false;
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {

@@ -291,6 +291,8 @@ private:
 
     void transformPointInternal(const BezierCPPtr & point, double time, ViewIdx view, Transform::Matrix3x3* matrix);
 
+public:
+    
     /**
      * @brief Provided for convenience. It set the left bezier point of the control point at the given index to
      * the position given by (x,y) at the given time.

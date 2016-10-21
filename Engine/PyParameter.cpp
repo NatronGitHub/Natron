@@ -41,10 +41,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 
-#define PythonSetNullError() (PyErr_SetString(PyExc_RuntimeError, tr("Value is Null").toStdString().c_str()))
-#define PythonSetInvalidDimensionError(index) (PyErr_SetString(PyExc_IndexError, tr("%1: Dimension out of range").arg(QString::number(index)).toStdString().c_str()))
-#define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, tr("Cannot do this on a non-user parameter").toStdString().c_str()))
-#define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, tr("%1: Invalid view").arg(view).toStdString().c_str()))
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -547,7 +543,8 @@ static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, c
             return true;
         }
     }
-    return foundView;
+    *view = VIEWSPECTYPE(0);
+    return true;
 }
 
 bool
@@ -839,6 +836,34 @@ AnimatedParam::unSplitView(const QString& viewName)
         return;
     }
     knob->unSplitView(ViewIdx(thisViewSpec.value()));
+}
+
+QStringList
+AnimatedParam::getViewsList() const
+{
+    QStringList ret;
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return ret;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return ret;
+    }
+    const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (*it < 0 && *it >= (int)projectViews.size()) {
+            continue;
+        }
+        ret.push_back(QString::fromUtf8(projectViews[*it].c_str()));
+    }
+    return ret;
 }
 
 bool

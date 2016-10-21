@@ -2912,7 +2912,6 @@ RotoPaintPrivate::getGlobalMotionBlurSettings(const double time,
 #endif
 }
 
-}
 
 void
 RotoPaint::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
@@ -2937,7 +2936,7 @@ RotoPaintPrivate::createBaseLayer()
 }
 
 RotoLayerPtr
-RotoPaintPrivate::getOrCreateBaseLayer()
+RotoPaint::getOrCreateBaseLayer()
 {
     QMutexLocker k(&_imp->rotoContextMutex);
 
@@ -2952,7 +2951,7 @@ RotoPaintPrivate::getOrCreateBaseLayer()
 }
 
 RotoLayerPtr
-RotoPaintPrivate::addLayerInternal(bool declarePython)
+RotoPaint::addLayerInternal(bool declarePython)
 {
     RotoContextPtr this_shared = shared_from_this();
 
@@ -3008,13 +3007,13 @@ RotoPaintPrivate::addLayerInternal(bool declarePython)
 } // RotoPaintPrivate::addLayerInternal
 
 RotoLayerPtr
-RotoPaintPrivate::addLayer()
+RotoPaint::addLayer()
 {
     return addLayerInternal(true);
 } // addLayer
 
 void
-RotoPaintPrivate::addLayer(const RotoLayerPtr & layer)
+RotoPaint::addLayer(const RotoLayerPtr & layer)
 {
     std::list<RotoLayerPtr >::iterator it = std::find(_imp->layers.begin(), _imp->layers.end(), layer);
 
@@ -3026,7 +3025,7 @@ RotoPaintPrivate::addLayer(const RotoLayerPtr & layer)
 
 
 BezierPtr
-RotoPaintPrivate::makeBezier(double x,
+RotoPaint::makeBezier(double x,
                         double y,
                         const std::string & baseName,
                         double time,
@@ -3082,7 +3081,7 @@ RotoPaintPrivate::makeBezier(double x,
 } // makeBezier
 
 RotoStrokeItemPtr
-RotoPaintPrivate::makeStroke(RotoStrokeType type,
+RotoPaint::makeStroke(RotoStrokeType type,
                         const std::string& baseName,
                         bool clearSel)
 {
@@ -3133,7 +3132,7 @@ RotoPaintPrivate::makeStroke(RotoStrokeType type,
 }
 
 BezierPtr
-RotoPaintPrivate::makeEllipse(double x,
+RotoPaint::makeEllipse(double x,
                          double y,
                          double diameter,
                          bool fromCenter,
@@ -3179,7 +3178,7 @@ RotoPaintPrivate::makeEllipse(double x,
 }
 
 BezierPtr
-RotoPaintPrivate::makeSquare(double x,
+RotoPaint::makeSquare(double x,
                         double y,
                         double initialSize,
                         double time)

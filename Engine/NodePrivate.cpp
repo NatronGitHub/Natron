@@ -26,6 +26,7 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/Project.h"
 #include "Engine/Timer.h"
@@ -858,5 +859,101 @@ NodePrivate::runChangedParamCallback(const std::string& cb, const KnobIPtr& k, b
     }
 
 } // runChangedParamCallback
+
+void
+NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
+{
+    std::vector<std::string> args;
+    std::string error;
+
+    std::string callbackFunction;
+    if (!figureOutCallbackName(cb, &callbackFunction)) {
+        return;
+    }
+
+    try {
+        NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
+    } catch (const std::exception& e) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
+
+        return;
+    }
+
+    if ( !error.empty() ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    std::string signatureError;
+    signatureError.append( tr("The after items selection changed callback supports the following signature(s):").toStdString() );
+    signatureError.append("\n- callback(thisNode,app, deselected, selected, reason)");
+    if (args.size() != 5) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    if ( ( (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "deselected") || (args[3] != "selected") || (args[4] != "reason") ) ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+
+        return;
+    }
+
+    std::string appID = _publicInterface->getApp()->getAppIDString();
+
+    std::string thisNodeVar = appID + ".";
+    thisNodeVar.append( _publicInterface->getFullyQualifiedName() );
+
+    // Check thisNode exists
+    bool alreadyDefined = false;
+    PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(thisNodeVar, NATRON_PYTHON_NAMESPACE::getMainModule(), &alreadyDefined);
+    if (!nodeObj || !alreadyDefined) {
+        return;
+    }
+
+    std::stringstream ss;
+    ss << "deselectedItemsSequenceArg = []\n";
+    ss << "selectedItemsSequenceArg = []\n";
+    for (std::list<KnobTableItemPtr>::const_iterator it = deselected.begin(); it != deselected.end(); ++it) {
+        ss << "itemDeselected = " << thisNodeVar << ".getItemsTable().getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
+        ss << "if itemDeselected is not None:\n";
+        ss << "    deselectedItemsSequenceArg.append(itemDeselected)\n";
+    }
+    for (std::list<KnobTableItemPtr>::const_iterator it = selected.begin(); it != selected.end(); ++it) {
+        ss << "itemSelected = " << thisNodeVar << ".getItemsTable().getItemByFullyQualifiedScriptName(\"" << (*it)->getFullyQualifiedName() << "\")\n";
+        ss << "if itemSelected is not None:\n";
+        ss << "    selectedItemsSequenceArg.append(itemSelected)\n";
+    }
+    ss << callbackFunction << "(" << thisNodeVar << "," << appID << ", deselectedItemsSequenceArg, selectedItemsSequenceArg, NatronEngine.Natron.TableChangeReasonEnum.";
+    switch (reason) {
+        case eTableChangeReasonInternal:
+            ss << "eTableChangeReasonInternal";
+            break;
+        case eTableChangeReasonPanel:
+            ss << "eTableChangeReasonPanel";
+            break;
+        case eTableChangeReasonViewer:
+            ss << "eTableChangeReasonViewer";
+            break;
+    }
+    ss << ")\n";
+    ss << "del deselectedItemsSequenceArg\n";
+    ss << "del selectedItemsSequenceArg\n";
+    ss << "del itemSelected\n";
+    ss << "del itemDeselected\n";
+
+    std::string script = ss.str();
+    std::string err;
+    std::string output;
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
+    } else {
+        if ( !output.empty() ) {
+            _publicInterface->getApp()->appendToScriptEditor(output);
+        }
+    }
+
+} // runAfterItemsSelectionChangedCallback
 
 NATRON_NAMESPACE_EXIT

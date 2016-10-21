@@ -167,6 +167,7 @@ SOURCES += \
     PropertiesHolder.cpp \
     PyPanelI.cpp \
     PyAppInstance.cpp \
+    PyItemsTable.cpp \
     PyNodeGroup.cpp \
     PyNode.cpp \
     PyExprUtils.cpp \
@@ -392,6 +393,7 @@ HEADERS += \
     PropertiesHolder.h \
     PyAppInstance.h \
     PyGlobalFunctions.h \
+    PyItemsTable.h \
     PyNodeGroup.h \
     PyNode.h \
     PyExprUtils.h \

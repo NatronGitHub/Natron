@@ -53,6 +53,11 @@ public:
     virtual NodePtr getTrackerNode() const = 0;
 
     /**
+     * @brief Returns a pointer to the tracker object used
+     **/
+    virtual TrackerHelperPtr getTracker() const = 0;
+
+    /**
      * @brief Returns true if the viewer should center on markers when during tracking
      **/
     virtual bool getCenterOnTrack() const = 0;

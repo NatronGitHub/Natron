@@ -10,12 +10,7 @@ as an attribute of the roto node::
 
 	app.Roto1.roto
 	
-All the objects hierarchy in the :ref:`Roto<Roto>` object is broken up in 2 classes:
-
-	* :ref:`BezierCurve<BezierCurve>`: This class represents a single bezier, may it be an ellipse, rectangle or bezier.
-	* :ref:`Layer<Layer>` : This is a container for BezierCurves and Layers
-	
-:ref:`Beziers<BezierCurve>` and :ref:`layers<Layer>` can be accessed via their script-name directly::
+:ref:`Beziers<BezierCurve>` and :ref:`layers<ItemBase>` can be accessed via their script-name directly::
 
 	app.Roto1.roto.Layer1.Bezier1
 	
@@ -58,29 +53,4 @@ To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functi
 Once created, the bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
 
-A bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse). 
-At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
-function.
-Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
-to close the shape by connecting the last control point with the first.
-
-Once finished, you can refine the bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
-You can then move and remove control points of the bezier.
-
-You can also slave a control point to a track using the :func:`slavePointToTrack(index,trackTime,trackCenter)<NatronEngine.BezierCurve.slavePointToTrac>` function.
-
-A bezier curve has several properties that the API allows you to modify:
-
-	* opacity
-	* color
-	* feather distance
-	* feather fall-off
-	* enable state
-	* overlay color
-	* compositing operator
-	
-Most of them are available via a :ref:`parameter<Param>`, e.g::
-	
-	colorParam = bezier.getColorParam()
-	bezierColor = colorParam.get(time)
 	

@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoPoint.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -85,6 +86,11 @@ public:
      * @returns True if the number of points is > 1
      **/
     bool appendPoint(bool newStroke, const RotoPoint& p);
+
+    /**
+     * @brief Clears all strokes and set them to the given points
+     **/
+    void setStrokes(const std::list<std::list<RotoPoint> >& strokes);
 
     void addStroke(const CurvePtr& xCurve,
                    const CurvePtr& yCurve,
@@ -146,7 +152,8 @@ public:
     void evaluateStroke(unsigned int mipMapLevel, double time,
                         ViewGetSpec view,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
-                        RectD* bbox = 0) const;
+                        RectD* bbox = 0,
+                        bool ignoreTransform = false) const;
 
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;

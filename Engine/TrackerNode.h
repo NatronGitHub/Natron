@@ -123,6 +123,8 @@ public:
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
+    TrackerHelperPtr getTracker() const;
+
 public Q_SLOTS:
 
 

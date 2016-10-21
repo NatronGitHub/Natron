@@ -512,6 +512,11 @@ public:
         return "RotoPaint_Table";
     }
 
+    virtual std::string getTablePythonPrefix() const OVERRIDE FINAL
+    {
+        return "roto";
+    }
+
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
@@ -654,32 +659,7 @@ struct RotoPaintPrivate
 
     void createBaseLayer();
 
-    RotoLayerPtr getOrCreateBaseLayer();
 
-    /**
-     * @brief Create a new layer to the currently selected layer.
-     **/
-    RotoLayerPtr addLayer();
-
-
-    RotoLayerPtr addLayerInternal(bool declarePython);
-
-    /**
-     * @brief Add an existing layer to the layers
-     **/
-    void addLayer(const RotoLayerPtr & layer);
-
-
-    /**
-     * @brief Make a new bezier curve and append it into the currently selected layer.
-     * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
-     **/
-    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
-    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
-    BezierPtr makeSquare(double x, double y, double initialSize, double time);
-    RotoStrokeItemPtr makeStroke(RotoStrokeType type,
-                                 const std::string& baseName,
-                                 bool clearSel);
     
 
 };

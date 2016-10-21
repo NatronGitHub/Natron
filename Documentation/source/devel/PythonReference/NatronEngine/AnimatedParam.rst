@@ -31,6 +31,7 @@ Functions
 *    def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=-1,view="All"])
 *	 def :meth:`splitView<NatronEngine.AnimatedParam.splitView>` (view)
 *	 def :meth:`unSplitView<NatronEngine.AnimatedParam.unSplitView>` (view)
+*	 def :meth:`getViewsList<NatronEngine.AnimatedParam.getViewsList>` ()
 
 .. _details:
 
@@ -50,32 +51,8 @@ Moreover parameters can have Python expressions set on them to control their val
 precedence over any animation that the parameter may have, meaning that the value of the parameter would be computed
 using the expression provided. 
 
-.. _multiViewParams:
-
-Multi-view parameters
----------------------
-
-In a project setup to have multiple views (such as a stereo project), parameters may have
-different values and animation per view. Typically you may not want to apply the same 
-strength of an effect on the left view and on the right view.
-
-By default a parameter is not multi-view and all its views have the same value and animation
-curve.
-
-You can split-off specific views by calling  :func:`splitView(view)<NatronEngine.AnimatedParam.splitView>`
-in which case the given view will be split from the other views and can be assigned different values.
-
-By default the main view controlling all views that are not split yet is called *Main*. 
-Any function that return a value will by default return the value for the *Main* view.
-Any function that change the state of the parameter will by default be applied on all views
-, even those that are split-off should receive the change. This is done with the keyword *All*. 
-
-Function that return values may not take the special *All* keyword and will error if 
-an invalid parameter is supplied.
-
-To unsplit a given view and re-group it under the *Main* view you can call the
-:func:`unSplitView(view)<NatronEngine.AnimatedParam.unSplitView>` function.
-
+Most of the functions to modify the value of the parameter take in parameter a *view* parameter.
+See :ref:`this<multiViewParams>` section for more informations.
 
 Example::
 
@@ -295,3 +272,10 @@ If the given *view* was previously split off by a call to :func:`splitView(view)
 then the view-specific values and animation will be removed and all subsequent access
 to these values will return the value of the *Main* view. 
 See :ref:`the section on multi-view<multiViewParams>` for more infos.
+
+.. method:: NatronEngine.AnimatedParam.getViewsList ()
+
+
+Returns a list of all views that have a different value in the parameter. All views
+of the project that do not appear in this list are considered to be the same as
+the first view returned by this function.

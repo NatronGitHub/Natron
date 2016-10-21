@@ -40,6 +40,7 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/Knob.h" // KnobI
 #include "Engine/PyNodeGroup.h" // Group
+#include "Engine/PyItemsTable.h"
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
@@ -103,6 +104,9 @@ public:
 
 class UserParamHolder
 {
+
+    Q_DECLARE_TR_FUNCTIONS(UserParamHolder)
+
     KnobHolderWPtr _holder;
 
 public:
@@ -223,6 +227,9 @@ public:
 class Effect
     : public Group, public UserParamHolder
 {
+
+    Q_DECLARE_TR_FUNCTIONS(Effect)
+    
     NodeWPtr _node;
 
 public:
@@ -316,12 +323,16 @@ public:
     Param* getParam(const QString& name) const;
 
     /**
-     * @brief When called, all parameter changes will not call the callback onParamChanged and will not attempt to trigger a new render.
-     * A call to allowEvaluation() should be made to restore the state of the Effect
+     * @brief When called, all parameter changes will not  attempt to trigger a new render.
+     * A call to endChanges() should be made to restore the state of the Effect
      **/
     void beginChanges();
 
     void endChanges();
+
+    void beginParametersUndoCommand(const QString& name);
+
+    void endParametersUndoCommand();
 
     /**
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
@@ -361,16 +372,14 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief Get the roto context for this node if it has any. At the time of writing only the Roto node has a roto context.
+     * @brief Get the items table for this node if it has any.
      **/
-    Roto* getRotoContext() const;
+    ItemsTable* getItemsTable() const;
 
-    /**
-     * @brief Get the tracker context for this node if it has any. Currently only Tracker has one.
-     **/
-    Tracker* getTrackerContext() const;
 
     RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;
+
+    RectD getRegionOfDefinition(double time, const QString& view) const;
 
     static Param* createParamWrapperForKnob(const KnobIPtr& knob);
 

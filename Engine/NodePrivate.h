@@ -162,6 +162,8 @@ public:
 
     void runInputChangedCallback(int index, const std::string& script);
 
+    void runAfterItemsSelectionChangedCallback(const std::string& script, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
+
     void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
 
     void onLayerChanged(bool isOutput);
@@ -268,6 +270,7 @@ public:
     KnobStringWPtr inputChangedCallback;
     KnobStringWPtr nodeCreatedCallback;
     KnobStringWPtr nodeRemovalCallback;
+    KnobStringWPtr tableSelectionChangedCallback;
     KnobPageWPtr infoPage;
     KnobStringWPtr nodeInfos;
     KnobButtonWPtr refreshInfoButton;

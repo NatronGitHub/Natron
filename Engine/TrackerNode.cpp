@@ -1837,6 +1837,18 @@ TrackerNodePrivate::getTrackerNode() const
     return publicInterface->getNode();
 }
 
+TrackerHelperPtr
+TrackerNodePrivate::getTracker() const
+{
+    return tracker;
+}
+
+TrackerHelperPtr
+TrackerNode::getTracker() const
+{
+    return _imp->tracker;
+}
+
 bool
 TrackerNodePrivate::getCenterOnTrack() const
 {

@@ -4,12 +4,14 @@
 Roto
 ****
 
+*Inherits* :ref:`ItemsTable<ItemsTable>`
+
 
 Synopsis
 --------
 
-This class encapsulates all things related to the roto node. 
-See detailed :ref:`description<roto.details>` below.
+A derived class of :ref:`ItemsTable<ItemsTable>` that allows creating RotoPaint specific
+items.
 
 Functions
 ^^^^^^^^^
@@ -18,8 +20,7 @@ Functions
 *    def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
 *    def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
 *    def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
-*    def :meth:`getBaseLayer<NatronEngine.Roto.getBaseLayer>` ()
-*    def :meth:`getItemByName<NatronEngine.Roto.getItemByName>` (name)
+*    def :meth:`createStroke<NatronEngine.Roto.createStroke>` (type)
 
 
 .. _roto.details:
@@ -27,20 +28,10 @@ Functions
 Detailed Description
 --------------------
 
-The Roto class is uses for now in Natron exclusively by the roto node, but its functionalities
-could be re-used for other nodes as well.
-Its purpose is to manage all layers and shapes.
-You can create new shapes with the :func:`createBezier(x,y,time)<NatronEngine.Roto.createBezier>`,
-:func:`createEllipse(x,y,diameter,fromCenter,time)<NatronEngine.Roto.createEllipse>` and
-:func:`createRectangle(x,y,size,time)<NatronEngine.Roto.createRectangle>` functions.
+This class just overloads the :ref:`ItemsTable<ItemsTable>` class to add methods to create
+items.
+For more informations read the description of the  :ref:`ItemsTable<ItemsTable>` class.
 
-To create a new :doc:`Layer` you can use the :func:`createLayer()<NatronEngine.Roto.createLayer>` function.
-
-As for other :ref:`auto-declared<autoVar>` variables, all shapes in the Roto objects can be
-accessed by their script-name, e.g::
-
-	Roto1.roto.Layer1.Bezier1
-	
 
 
 Member functions description
@@ -131,7 +122,11 @@ Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the d
 	app1.Roto1.roto.Layer1.Bezier1 = app1.Roto1.roto.getItemByName("Bezier1")
 	
 
+.. method:: NatronEngine.Roto.createStroke(type)
 
+	:param type: :class:`RotoStrokeType<NatronEngine.Natron.RotoStrokeType>`
+	:rtype: :class:`StrokeItem<NatronEngine.StrokeItem>`
+	
 
-
+Creates a new empty stroke item of the given type.
 

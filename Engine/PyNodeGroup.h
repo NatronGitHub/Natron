@@ -40,6 +40,8 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
+    Q_DECLARE_TR_FUNCTIONS(Group)
+
     NodeCollectionWPtr _collection;
 
 public:

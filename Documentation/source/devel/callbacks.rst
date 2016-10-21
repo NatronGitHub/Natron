@@ -551,3 +551,34 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 	:align: center
 
 This function can be used to communicate with external programs for example.
+
+
+
+.. _afterItemsSelectionChanged:
+
+The After items selection changed:
+---------------------------------
+
+For nodes that have an items table, such as RotoPaint or Tracker, 
+this function is called when the item selection changed.
+
+	callback(thisNode,app, deselected, selected, reason)
+
+- **thisNode**: the node holding the items table
+- **app**: points to the current application instance
+- **deselected**: a sequence of items that were removed from the selection
+- **selected**: a sequence of items that were added to the selection
+- **reason**: a value of type NatronEngine.Natron.TableChangeReasonEnum
+
+The variable *reason* will be set to a value of type **NatronEngine.Natron.TableChangeReasonEnum** 
+depending on where the selection was made from.
+If reason is *NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonViewer* 
+then the selection was made from the viewer.
+If reason is NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonPanel
+then the selection was made from the settings panel.
+Otherwise the selection was not changed by the user directly and results from an internal
+A.P.I call.
+
+
+You can set the callback from the settings panel in the **Node** tab.
+

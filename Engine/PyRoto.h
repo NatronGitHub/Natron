@@ -35,69 +35,12 @@
 #endif
 
 #include "Engine/MergingEnum.h"
-#include "Engine/PyParameter.h"
+#include "Engine/PyItemsTable.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-class Layer; // defined below
-
-class ItemBase
-{
-public:
-
-    ItemBase(const RotoItemPtr& item);
-
-    virtual ~ItemBase();
-
-    RotoItemPtr getInternalItem() const
-    {
-        return _item;
-    }
-
-    void setLabel(const QString & name);
-    QString getLabel() const;
-
-    bool setScriptName(const QString& name);
-    QString getScriptName() const;
-
-    void setLocked(bool locked);
-    bool getLocked() const;
-    bool getLockedRecursive() const;
-
-    void setVisible(bool activated);
-    bool getVisible() const;
-
-    Layer* getParentLayer() const;
-    Param* getParam(const QString& name) const;
-
-private:
-
-    RotoItemPtr _item;
-};
-
-class Layer
-    : public ItemBase
-{
-public:
-
-    Layer(const RotoItemPtr& item);
-
-    virtual ~Layer();
-
-    void addItem(ItemBase* item);
-
-    void insertItem(int pos, ItemBase* item);
-
-    void removeItem(ItemBase* item);
-
-    std::list<ItemBase*> getChildren() const;
-
-private:
-
-    RotoLayerPtr _layer;
-};
 
 class BezierCurve
     : public ItemBase
@@ -105,90 +48,97 @@ class BezierCurve
 public:
 
 
-    BezierCurve(const RotoItemPtr& item);
+    BezierCurve(const BezierPtr& item, const ItemsTable* table);
 
     virtual ~BezierCurve();
 
+    bool isActivated(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void setCurveFinished(bool finished);
-    bool isCurveFinished() const;
+    void setCurveFinished(bool finished, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    bool isCurveFinished(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void addControlPoint(double x, double y);
+    void addControlPoint(double x, double y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void addControlPointOnSegment(int index, double t);
+    void addControlPointOnSegment(int index, double t, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void removeControlPointByIndex(int index);
+    void removeControlPointByIndex(int index, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void movePointByIndex(int index, double time, double dx, double dy);
+    void movePointByIndex(int index, double time, double dx, double dy, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void moveFeatherByIndex(int index, double time, double dx, double dy);
+    void moveFeatherByIndex(int index, double time, double dx, double dy, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void moveLeftBezierPoint(int index, double time, double dx, double dy);
+    void moveLeftBezierPoint(int index, double time, double dx, double dy, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void moveRightBezierPoint(int index, double time, double dx, double dy);
+    void moveRightBezierPoint(int index, double time, double dx, double dy, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void setPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry);
+    void setPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void setFeatherPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry);
+    void setFeatherPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    int getNumControlPoints() const;
+    int getNumControlPoints(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void getKeyframes(std::list<double>* keys) const;
+    void getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;
+    void getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;
+    RectD getBoundingBox(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    void setActivated(double time, bool activated);
-    bool getIsActivated(double time);
+    void splitView(const QString& viewName);
 
-    void setOpacity(double opacity, double time);
-    double getOpacity(double time) const;
+    void unSplitView(const QString& viewName);
 
-    ColorTuple getOverlayColor() const;
-    void setOverlayColor(double r, double g, double b);
-
-    double getFeatherDistance(double time) const;
-    void setFeatherDistance(double dist, double time);
-
-    double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double falloff, double time);
-
-    ColorTuple getColor(double time);
-    void setColor(double time, double r, double g, double b);
-
-    void setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum op);
-    NATRON_NAMESPACE::MergingFunctionEnum getCompositingOperator() const;
-    BooleanParam* getActivatedParam() const;
-    DoubleParam* getOpacityParam() const;
-    DoubleParam* getFeatherDistanceParam() const;
-    DoubleParam* getFeatherFallOffParam() const;
-    ColorParam* getColorParam() const;
-    ChoiceParam* getCompositingOperatorParam() const;
-
+    QStringList getViewsList() const;
+    
 private:
 
-    BezierPtr _bezier;
+    BezierWPtr _bezier;
 };
 
-class Roto
+struct StrokePoint
+{
+    double x, y, pressure, timestamp;
+};
+
+class StrokeItem
+: public ItemBase
+{
+    RotoStrokeItemWPtr _stroke;
+    
+public:
+
+    StrokeItem(const RotoStrokeItemPtr& item, const ItemsTable* table);
+
+    virtual ~StrokeItem();
+
+    RectD getBoundingBox(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+
+    NATRON_NAMESPACE::RotoStrokeType getBrushType() const;
+
+    std::list<std::list<StrokePoint> > getPoints() const;
+
+    void setPoints(const std::list<std::list<StrokePoint> >& strokes);
+
+};
+
+class Roto : public ItemsTable
 {
 public:
 
-    Roto(const RotoContextPtr& ctx);
+    Roto(const KnobItemsTablePtr& model);
 
-    ~Roto();
+    virtual ~Roto();
 
-    Layer* getBaseLayer() const;
-    ItemBase* getItemByName(const QString& name) const;
-    Layer* createLayer();
+    ItemBase* createLayer();
+    ItemBase* createStroke(NATRON_NAMESPACE::RotoStrokeType type);
+
     BezierCurve* createBezier(double x, double y, double time);
     BezierCurve* createEllipse(double x, double y, double diameter, bool fromCenter, double time);
     BezierCurve* createRectangle(double x, double y, double size, double time);
 
 private:
 
-    RotoContextPtr _ctx;
+    virtual ItemBase* createPyItemWrapper(const KnobTableItemPtr& item) const OVERRIDE FINAL;
+
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

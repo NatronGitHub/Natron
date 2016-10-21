@@ -728,6 +728,7 @@ public:
 
     //////////////////// Overriden from TrackerParamsProvider
     virtual NodePtr getTrackerNode() const OVERRIDE FINAL;
+    virtual TrackerHelperPtr getTracker() const OVERRIDE FINAL;
     virtual bool getCenterOnTrack() const OVERRIDE FINAL;
     virtual bool getUpdateViewer() const OVERRIDE FINAL;
     virtual void getTrackChannels(bool* doRed, bool* doGreen, bool* doBlue) const OVERRIDE FINAL;
@@ -759,6 +760,11 @@ public:
     virtual std::string getTableIdentifier() const OVERRIDE FINAL
     {
         return "TrackerNode_Table";
+    }
+
+    virtual std::string getTablePythonPrefix() const OVERRIDE FINAL
+    {
+        return "tracker";
     }
 
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;

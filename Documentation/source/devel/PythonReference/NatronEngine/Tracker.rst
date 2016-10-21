@@ -4,6 +4,8 @@
 Tracker
 *******
 
+*Inherits*: :ref:`ItemsTable<ItemsTable>`
+
 Synopsis
 --------
 
@@ -14,9 +16,6 @@ Functions
 ^^^^^^^^^
 
 *    def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
-*    def :meth:`getTrackByName<NatronEngine.Tracker.getTrackByName>` (scriptName)
-*    def :meth:`getAllTracks<NatronEngine.Tracker.getAllTracks>` ()
-*    def :meth:`getSelectedTracks<NatronEngine.Tracker.getSelectedTracks>` ()
 *    def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
 *    def :meth:`stopTracking<NatronEngine.Tracker.stopTracking>` ()
 
@@ -37,27 +36,6 @@ Member functions description
 	:rtype: :class:`Track<NatronEngine.Track>`
 	
 	Creates a new track in the tracker with default values
-
-
-.. method:: NatronEngine.Tracker.getTrackByName(scriptName)
-
-	:rtype: :class:`Track<NatronEngine.Track>`
-	
-	Returns a track matching the given *scriptName* if any
-
-
-
-.. method:: NatronEngine.Tracker.getAllTracks()
-
-	:rtype: :class:`sequence`
-	
-	Returns all the tracks in this Tracker.
-
-.. method:: NatronEngine.Tracker.getSelectedTracks()
-
-	:rtype: :class:`sequence`
-	
-	Returns the user selected tracks
 	
 .. method:: NatronEngine.Tracker.startTracking (tracks, start, end, forward)
 	

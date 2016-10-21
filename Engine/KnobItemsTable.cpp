@@ -154,6 +154,8 @@ struct KnobItemsTablePrivate
         
     }
 
+    static KnobTableItemPtr getItemByScriptNameInternal(const std::string& name, const std::string& recurseName,  const std::vector<KnobTableItemPtr>& items);
+
 };
 
 struct ColumnDesc
@@ -185,7 +187,7 @@ struct KnobTableItemPrivate
     KnobItemsTableWPtr model;
 
     // Name and label
-    std::string scriptName, label;
+    std::string scriptName, label, iconFilePath;
 
     // Locks all members
     mutable QMutex lock;
@@ -200,6 +202,7 @@ struct KnobTableItemPrivate
     , model(model)
     , scriptName()
     , label()
+    , iconFilePath()
     , lock()
     , animationCurves()
     {
@@ -466,7 +469,7 @@ KnobItemsTable::getTopLevelItem(int index) const
 }
 
 std::string
-KnobItemsTable::generateUniqueName(const std::string& baseName) const
+KnobItemsTable::generateUniqueName(const KnobTableItemPtr& item, const std::string& baseName) const
 {
     int no = 1;
     bool foundItem;
@@ -477,10 +480,16 @@ KnobItemsTable::generateUniqueName(const std::string& baseName) const
         ss << baseName;
         ss << no;
         name = ss.str();
-        if ( getItemByScriptName(name) ) {
-            foundItem = true;
+
+        foundItem = false;
+        KnobTableItemPtr parent = item->getParent();
+        if (parent) {
+            foundItem = (bool)parent->getChildItemByScriptName(name);
         } else {
-            foundItem = false;
+            KnobItemsTablePtr model = item->getModel();
+            if (model) {
+                foundItem = (bool)model->getTopLevelItemByScriptName(name);
+            }
         }
         ++no;
     } while (foundItem);
@@ -593,11 +602,41 @@ KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
 void
 KnobTableItem::setLabel(const std::string& label, TableChangeReasonEnum reason)
 {
+    bool changed;
     {
         QMutexLocker k(&_imp->lock);
-        _imp->label = label;
+        changed = _imp->label != label;
+        if (changed) {
+            _imp->label = label;
+        }
     }
-    Q_EMIT labelChanged(QString::fromUtf8(label.c_str()), reason);
+    if (changed) {
+        Q_EMIT labelChanged(QString::fromUtf8(label.c_str()), reason);
+    }
+}
+
+void
+KnobTableItem::setIconLabelFilePath(const std::string& iconFilePath, TableChangeReasonEnum reason)
+{
+    bool changed;
+    {
+        QMutexLocker k(&_imp->lock);
+        changed = _imp->iconFilePath != iconFilePath;
+        if (changed) {
+            _imp->iconFilePath = iconFilePath;
+        }
+    }
+    if (changed) {
+        Q_EMIT labelIconChanged(reason);
+    }
+}
+
+
+std::string
+KnobTableItem::getIconLabelFilePath() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->iconFilePath;
 }
 
 std::string
@@ -616,13 +655,15 @@ KnobTableItem::setScriptName(const std::string& name)
     if (!model) {
         return;
     }
+
+    KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
     std::string nameToSet = name;
     if ( nameToSet.empty() ) {
         std::string baseName = getBaseItemName();
         if (baseName.empty()) {
             baseName = "Item";
         }
-        nameToSet = model->generateUniqueName(baseName);
+        nameToSet = model->generateUniqueName(thisShared, baseName);
     }
 
     // Ensure the name is not empty so far
@@ -642,7 +683,7 @@ KnobTableItem::setScriptName(const std::string& name)
         if (baseName.empty()) {
             baseName = "Item";
         }
-        nameToSet = model->generateUniqueName(baseName);
+        nameToSet = model->generateUniqueName(thisShared, baseName);
     }
 
     // Nothing changed
@@ -663,7 +704,13 @@ KnobTableItem::setScriptName(const std::string& name)
                 ss << no;
             }
             tmpName = ss.str();
-            KnobTableItemPtr existingItem = model->getItemByScriptName(tmpName);
+            KnobTableItemPtr existingItem;
+            KnobTableItemPtr parent = getParent();
+            if (parent) {
+                existingItem = parent->getChildItemByScriptName(tmpName);
+            } else {
+                existingItem = model->getTopLevelItemByScriptName(tmpName);
+            }
 
             if ( existingItem && existingItem.get() != this ) {
                 foundItem = true;
@@ -676,7 +723,6 @@ KnobTableItem::setScriptName(const std::string& name)
     }
 
 
-    KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
     if (!currentName.empty()) {
         model->removeItemAsPythonField(thisShared);
     }
@@ -786,8 +832,9 @@ KnobTableItem::ensureItemInitialized()
     }
     std::string curName = getScriptName_mt_safe();
     if (curName.empty()) {
+        KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
         // No script-name: generate one
-        curName = model->generateUniqueName(getBaseItemName());
+        curName = model->generateUniqueName(thisShared, getBaseItemName());
     }
     setScriptName(curName);
     if (getLabel().empty()) {
@@ -1108,20 +1155,37 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
     }
 }
 
-
-static KnobTableItemPtr
-getItemByScriptNameInternal(const std::string& scriptName, const std::vector<KnobTableItemPtr>& items)
+static void
+getItemNameAndRemainder_LeftToRight(const std::string& fullySpecifiedName,
+                                    std::string& name,
+                                    std::string& remainder)
 {
-    for (std::vector<KnobTableItemPtr>::const_iterator it = items.begin(); it!=items.end(); ++it) {
-        if ((*it)->getScriptName_mt_safe() == scriptName) {
-            return *it;
+    std::size_t foundDot = fullySpecifiedName.find_first_of('.');
+
+    if (foundDot != std::string::npos) {
+        name = fullySpecifiedName.substr(0, foundDot);
+        if ( foundDot + 1 < fullySpecifiedName.size() ) {
+            remainder = fullySpecifiedName.substr(foundDot + 1, std::string::npos);
         }
-        // Recurse
-        std::vector<KnobTableItemPtr> children = (*it)->getChildren();
-        if (!children.empty()) {
-            KnobTableItemPtr childrenRet = getItemByScriptNameInternal(scriptName, children);
-            if (childrenRet) {
-                return childrenRet;
+    } else {
+        name = fullySpecifiedName;
+    }
+}
+
+KnobTableItemPtr
+KnobItemsTablePrivate::getItemByScriptNameInternal(const std::string& name, const std::string& recurseName, const std::vector<KnobTableItemPtr>& items) 
+{
+    for (std::vector<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        if ( (*it)->getScriptName_mt_safe() == name ) {
+            if ( !recurseName.empty() ) {
+                if ((*it)->isItemContainer()) {
+                    std::string toFind;
+                    std::string subrecurseName;
+                    getItemNameAndRemainder_LeftToRight(recurseName, toFind, subrecurseName);
+                    return getItemByScriptNameInternal(toFind, subrecurseName, (*it)->getChildren());
+                }
+            } else {
+                return *it;
             }
         }
     }
@@ -1129,10 +1193,28 @@ getItemByScriptNameInternal(const std::string& scriptName, const std::vector<Kno
 }
 
 KnobTableItemPtr
-KnobItemsTable::getItemByScriptName(const std::string& scriptName) const
+KnobItemsTable::getItemByFullyQualifiedScriptName(const std::string& fullyQualifiedScriptNa) const
+{
+    std::string toFind;
+    std::string recurseName;
+    getItemNameAndRemainder_LeftToRight(fullyQualifiedScriptNa, toFind, recurseName);
+
+    std::vector<KnobTableItemPtr> topLevel = getTopLevelItems();
+    return KnobItemsTablePrivate::getItemByScriptNameInternal(toFind, recurseName, topLevel);
+}
+
+KnobTableItemPtr
+KnobItemsTable::getTopLevelItemByScriptName(const std::string& scriptName) const
 {
     std::vector<KnobTableItemPtr> topLevel = getTopLevelItems();
-    return getItemByScriptNameInternal(scriptName, topLevel);
+    return KnobItemsTablePrivate::getItemByScriptNameInternal(scriptName, std::string(), topLevel);
+}
+
+KnobTableItemPtr
+KnobTableItem::getChildItemByScriptName(const std::string& scriptName) const
+{
+    std::vector<KnobTableItemPtr> children = getChildren();
+    return KnobItemsTablePrivate::getItemByScriptNameInternal(scriptName, std::string(), children);
 }
 
 bool
@@ -1443,6 +1525,12 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
     Q_EMIT selectionChanged(itemsAdded, itemsRemoved, reason);
 
+    // Run the Python callback if it is set
+    NodePtr node = getNode();
+    if (node) {
+        node->runAfterTableItemsSelectionChangedCallback(itemsRemoved, itemsAdded, reason);
+    }
+
     QMutexLocker k(&_imp->selectionLock);
     --_imp->selectionRecursion;
 
@@ -1450,11 +1538,11 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
 
 void
-KnobItemsTable::declareItemsToPython(const std::string& pythonPrefix)
+KnobItemsTable::declareItemsToPython()
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    _imp->pythonPrefix = pythonPrefix;
+    _imp->pythonPrefix = getTablePythonPrefix();
     std::vector<KnobTableItemPtr> items = getTopLevelItems();
     for (std::vector< KnobTableItemPtr >::iterator it = items.begin(); it != items.end(); ++it) {
         declareItemAsPythonField(*it);

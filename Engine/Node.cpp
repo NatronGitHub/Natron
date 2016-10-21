@@ -172,32 +172,6 @@ Node::isPersistent() const
     return _imp->isPersistent;
 }
 
-void
-Node::createRotoContextConditionnally()
-{
-    assert(!_imp->rotoContext);
-    assert(_imp->effect);
-    ///Initialize the roto context if any
-    if ( isRotoPaintingNode() ) {
-        _imp->effect->beginChanges();
-        _imp->rotoContext = RotoContext::create( shared_from_this() );
-        _imp->effect->endChanges(true);
-        _imp->rotoContext->createBaseLayer();
-        declareRotoPythonField();
-    }
-}
-
-void
-Node::createTrackerContextConditionnally()
-{
-    assert(!_imp->trackContext);
-    assert(_imp->effect);
-    ///Initialize the tracker context if any
-    if ( _imp->effect->isBuiltinTrackerNode() ) {
-        _imp->trackContext = TrackerContext::create( shared_from_this() );
-        declareTrackerPythonField();
-    }
-}
 
 PluginPtr
 Node::getPlugin() const
@@ -458,12 +432,6 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Set plug-in accepted bitdepths and set default metadata
     refreshAcceptedBitDepths();
-
-    // Create RotoContext if needed
-    createRotoContextConditionnally();
-
-    // Create TrackerContext if needed
-    createTrackerContextConditionnally();
 
     // Load inputs
     initializeInputs();
@@ -3477,6 +3445,28 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
         _imp->nodeRemovalCallback = onNodeDeleted;
         settingsPage->addKnob(onNodeDeleted);
     }
+    if (_imp->effect->getItemsTable()) {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr("After Items Selection Changed"), 1, false);
+        param->setName("afterItemsSelectionChanged");
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time the "
+                                  "selection in the table changes. "
+                                  "The variable \"reason\" will be set to a value of type NatronEngine.Natron.TableChangeReasonEnum "
+                                  "depending on where the selection was made from. If reason is "
+                                  "NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonViewer then the selection was made "
+                                  "from the viewer. If reason is NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonPanel "
+                                  "then the selection was made from the settings panel. Otherwise the selection was not changed "
+                                  "by the user directly and results from an internal A.P.I call.\n"
+                                  "The signature of the callback is: callback(thisNode, app, deselected, selected, reason) where:\n"
+                                  "- thisNode: the node holding the items table\n"
+                                  "- app: points to the current application instance\n"
+                                  "- deselected: a sequence of items that were removed from the selection\n"
+                                  "- selected: a sequence of items that were added to the selection\n"
+                                  "- reason: a value of type NatronEngine.Natron.TableChangeReasonEnum") );
+        param->setAnimationEnabled(false);
+        _imp->tableSelectionChangedCallback = param;
+        settingsPage->addKnob(param);
+
+    }
 } // Node::createNodePage
 
 void
@@ -4188,6 +4178,11 @@ Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
     }
 
     declarePythonKnobs();
+
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (table) {
+        table->declareItemsToPython();
+    }
     
     _imp->effect->endChanges();
 
@@ -10544,6 +10539,16 @@ Node::getBeforeNodeRemovalCallback() const
     KnobStringPtr s = _imp->nodeRemovalCallback.lock();
 
     return s ? s->getValue() : std::string();
+}
+
+void
+Node::runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
+{
+    KnobStringPtr s = _imp->tableSelectionChangedCallback.lock();
+    if (!s) {
+        return;
+    }
+    _imp->runAfterItemsSelectionChangedCallback(s->getValue(), deselected, selected, reason);
 }
 
 void

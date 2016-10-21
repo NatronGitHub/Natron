@@ -113,6 +113,16 @@ public:
     void setLabel(const std::string& label, TableChangeReasonEnum reason);
 
     /**
+     * @brief Set the icon visible in the GUI next to the text label of the item
+     **/
+    void setIconLabelFilePath(const std::string& iconFilePath, TableChangeReasonEnum reason);
+
+    /**
+     * @brief Get the icon visible in the GUI next to the text label of the item
+     **/
+    std::string getIconLabelFilePath() const;
+
+    /**
      * @brief If true, the item may receive children, otherwise it cannot have children.
      **/
     virtual bool isItemContainer() const = 0;
@@ -154,6 +164,11 @@ public:
     * @brief Returns child at given index
     **/
     KnobTableItemPtr getChild(int index) const;
+
+    /**
+     * @brief Attempts to find an existing item in the children items with a matching script-name
+     **/
+    KnobTableItemPtr getChildItemByScriptName(const std::string& scriptName) const;
 
     /**
      * @brief If this item is child of another item, this is its parent.
@@ -412,6 +427,7 @@ protected:
 
 Q_SIGNALS:
 
+    void labelIconChanged(TableChangeReasonEnum);
     void labelChanged(QString, TableChangeReasonEnum);
     void curveAnimationChanged(std::list<double> added, std::list<double> removed, ViewIdx view);
 
@@ -590,9 +606,14 @@ public:
     void resetModel(TableChangeReasonEnum reason);
 
     /**
-     * @brief Attempts to find an existing item in the model by its script-name.
+     * @brief Attempts to find an existing item in the model by its fully qualified script-name (relative to the table), e.g: "Layer1.Bezier1"
      **/
-    KnobTableItemPtr getItemByScriptName(const std::string& scriptName) const;
+    KnobTableItemPtr getItemByFullyQualifiedScriptName(const std::string& fullyQualifiedScriptName) const;
+
+    /**
+     * @brief Attempts to find an existing item in the top level items with a matching script-name
+     **/
+    KnobTableItemPtr getTopLevelItemByScriptName(const std::string& scriptName) const;
 
     /**
      * @brief Returns true if the given item is selected
@@ -634,7 +655,7 @@ public:
      * @brief Call declareItemAsPythonField on all items in the model that are attributes of the given python prefix.
      * The pythonPrefix will be an attribute of the node object itself.
      **/
-    void declareItemsToPython(const std::string& pythonPrefix);
+    void declareItemsToPython();
 
     /**
      * @brief Returns the python prefix under which each item is that has previously been set by declareItemsToPython.
@@ -707,8 +728,15 @@ Q_SIGNALS:
     void itemInserted(int index, KnobTableItemPtr, TableChangeReasonEnum);
 
 protected:
+
+    /**
+     * @brief Must return the prefix under which all Python items of the table are into.
+     * E.G if the table prefix is "tracker", an item could be accessible to python as such:
+     * MyNode.tracker.track1
+     **/
+    virtual std::string getTablePythonPrefix() const = 0;
     
-    std::string generateUniqueName(const std::string& name) const;
+    std::string generateUniqueName(const KnobTableItemPtr& item, const std::string& name) const;
 
     /**
      * @brief Callback called once the model has been reset, that is: once all items have been removed.

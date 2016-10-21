@@ -291,11 +291,6 @@ public:
     void setValuesFromSerialization(const CreateNodeArgs& args);
 
 
-    ///If the node can have a roto context, create it
-    void createRotoContextConditionnally();
-
-    void createTrackerContextConditionnally();
-
     ///function called by EffectInstance to create a knob
     template <class K>
     boost::shared_ptr<K> createKnob(const std::string &description,
@@ -1238,6 +1233,8 @@ public:
     std::string getAfterFrameRenderCallback() const;
     std::string getAfterNodeCreatedCallback() const;
     std::string getBeforeNodeRemovalCallback() const;
+    
+    void runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
     void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
