@@ -8584,7 +8584,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
         refreshCreatedViews(what);
-    } else if ( what == _imp->refreshInfoButton.lock() || _imp->infoPage.lock()) {
+    } else if ( what == _imp->refreshInfoButton.lock() || what == _imp->infoPage.lock()) {
         std::stringstream ssinfo;
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
