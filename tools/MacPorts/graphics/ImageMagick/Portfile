@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153522 2016-10-03 23:50:39Z ryandesign@macports.org $
+# $Id: Portfile 154009 2016-10-18 01:58:39Z ryandesign@macports.org $
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -10,7 +10,7 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.6-0
+version                     6.9.6-2
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -42,8 +42,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  3d5c39424ab4191797fb645e53f13ada22ca21fc \
-                            sha256  7905cd179e1d0fabdf58fca77a682ed68443999bfd6e0941f93bf9c08218e5e4
+checksums                   rmd160  ac9ad0377f35105134bf0ea7b616ed46e5b4f7e8 \
+                            sha256  39244823fe736626fb4ea22c4b6cb4cae30c6a27a38a02ecd774f0ce3c4d308d
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -118,14 +118,7 @@ configure.args              --enable-shared \
                             --without-x \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
 
-variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
-    # configure with GCC 4.9 for proper OpenMP support
-    configure.compiler macports-gcc-4.9
-    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-    #configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-    configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
-    configure.args-append --enable-openmp
-
+variant natron conflicts x11 requires pango rsvg q32 hdri gcc49 universal description {Natron version} {
     patchfiles-append pango-align-hack.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
@@ -159,11 +152,29 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --enable-shared --disable-shared
     configure.args-replace  --with-modules --without-modules
     pre-extract {
-        if {${version} != "6.9.6-0"} {
-            ui_msg "Natron variant requires ImageMagick version 6.9.6-0 (this is ${version}), please modify the Portfile."
+        if {${version} != "6.9.6-2"} {
+            ui_msg "Natron variant requires ImageMagick version 6.9.6-2 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
         }
     }
+}
+
+variant gcc49 description {Compile with GCC/G++ 4.9} {
+    # configure with GCC 4.9 for proper OpenMP support
+    configure.compiler macports-gcc-4.9
+    configure.args-append --enable-openmp
+    # The new version of https://github.com/devernay/macportsGCCfixup
+    # installs the driverdriver as gcc-mp-4.9, no need to do the
+    # following hack!
+    #
+    #if {[variant_isset universal]} {
+    #    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+    #    if {[file tail ${configure.cmd}] != "cmake"} {
+    #        configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
+    #    } else {
+    #        configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
+    #    }
+    #}
 }
 
 # OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):

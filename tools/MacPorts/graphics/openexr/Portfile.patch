@@ -1,5 +1,5 @@
---- Portfile.orig	2016-05-26 13:00:15.000000000 +0200
-+++ Portfile	2016-05-26 13:00:15.000000000 +0200
+--- Portfile.orig	2016-09-23 15:36:10.000000000 +0200
++++ Portfile	2016-10-19 16:32:00.000000000 +0200
 @@ -61,9 +61,7 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
