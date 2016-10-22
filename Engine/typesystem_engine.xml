@@ -219,7 +219,7 @@
     <enum-type name="ImageBitDepthEnum"/>
     <enum-type name="ImagePremultiplicationEnum"/>
     <enum-type name="OrientationEnum"/>
-    <enum-type name="RotoStrokeTypeEnum"/>
+    <enum-type name="RotoStrokeType"/>
     <enum-type name="ViewerContextLayoutTypeEnum"/>
     </namespace-type>
     
@@ -1611,7 +1611,7 @@
         </modify-function>
     </object-type>
     <object-type name="BezierCurve">
-        <modify-function signature="getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
+        <modify-function signature="getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const">
             <modify-argument index="3">
                 <remove-argument/>
             </modify-argument>
@@ -1635,7 +1635,7 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 double x,y,rx,ry,lx,ly;
-                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry, %9);
 
                 PyObject* ret = PyTuple_New(6);
                 PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
@@ -1647,7 +1647,7 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
+        <modify-function signature="getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const">
             <modify-argument index="3">
                 <remove-argument/>
             </modify-argument>
@@ -1671,7 +1671,7 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 double x,y,rx,ry,lx,ly;
-                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry,%9);
 
                 PyObject* ret = PyTuple_New(6);
                 PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
@@ -1697,7 +1697,7 @@
         </modify-function>
     </object-type>
     <object-type name="StrokeItem">
-        <modify-function signature="getPoints()">
+        <modify-function signature="getPoints()const">
             <inject-code class="target" position="beginning">
                 std::list&lt;std::list&lt;StrokePoint&gt; &gt; points = %CPPSELF.%FUNCTION_NAME();
                 PyObject* ret = PyList_New((int) points.size());
@@ -1717,6 +1717,7 @@
                 }
                 return ret;
             </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="Roto">
         <modify-function signature="createLayer()">

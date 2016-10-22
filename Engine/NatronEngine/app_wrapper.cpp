@@ -273,7 +273,7 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
     return pyResult;
 
     Sbk_AppFunc_createNode_TypeError:
-        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
+        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createNode", overloads);
         return 0;
 }
@@ -377,7 +377,7 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createReader_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createReader", overloads);
         return 0;
 }
@@ -481,7 +481,7 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createWriter_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createWriter", overloads);
         return 0;
 }
@@ -557,6 +557,96 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
     Sbk_AppFunc_getProjectParam_TypeError:
         const char* overloads[] = {"unicode", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getProjectParam", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_getViewIndex(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getViewIndex(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getViewIndex(QString)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getViewIndex_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewIndex(QString)const
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getViewIndex(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getViewIndex_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getViewIndex", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_getViewName(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getViewName(int)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getViewName(int)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getViewName_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewName(int)const
+            QString cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getViewName(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getViewName_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getViewName", overloads);
         return 0;
 }
 
@@ -1279,6 +1369,8 @@ static PyMethodDef Sbk_App_methods[] = {
     {"createWriter", (PyCFunction)Sbk_AppFunc_createWriter, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
+    {"getViewIndex", (PyCFunction)Sbk_AppFunc_getViewIndex, METH_O},
+    {"getViewName", (PyCFunction)Sbk_AppFunc_getViewName, METH_O},
     {"getViewNames", (PyCFunction)Sbk_AppFunc_getViewNames, METH_NOARGS},
     {"loadProject", (PyCFunction)Sbk_AppFunc_loadProject, METH_O},
     {"newProject", (PyCFunction)Sbk_AppFunc_newProject, METH_NOARGS},

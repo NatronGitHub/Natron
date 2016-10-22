@@ -2704,7 +2704,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
                 KnobTableItemPtr isTableItem = toKnobTableItem(masterKnob->getHolder());
                 if (isTableItem) {
                     if (isTableItem) {
-                        serialization->_slaveMasterLink.masterTableItemName = isTableItem->getScriptName_mt_safe();
+                        serialization->_slaveMasterLink.masterTableItemName = isTableItem->getFullyQualifiedName();
                         if (isTableItem->getModel()->getNode()->getEffectInstance() != holder) {
                             serialization->_slaveMasterLink.masterNodeName = isTableItem->getModel()->getNode()->getScriptName_mt_safe();
                         }

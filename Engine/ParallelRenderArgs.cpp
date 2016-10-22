@@ -791,7 +791,8 @@ static bool
 setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
                           const RotoStrokeItemPtr& activeStroke,
                           const NodePtr& /*treeRoot*/,
-                          double time)
+                          double time,
+                          ViewIdx view)
 {
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(rotoPaintNode->getEffectInstance());
@@ -828,7 +829,7 @@ setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
     //the multi-stroke index in case of a stroke containing multiple strokes from the user
     int strokeIndex;
     bool isStrokeFirstTick;
-    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
+    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, view, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
         rotoPaintNode->getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
 
         for (NodesList::iterator it = rotoPaintTreeNodes.begin(); it != rotoPaintTreeNodes.end(); ++it) {
@@ -901,7 +902,7 @@ ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
 
         if (isPainting) {
             assert(inArgs->activeRotoDrawableItem && inArgs->activeRotoPaintNode);
-            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time);
+            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time, inArgs->view);
         }
 
         // When painting, always use the same context since we paint over the same texture

@@ -458,6 +458,13 @@ KnobItemsTable::getTopLevelItems() const
     return _imp->topLevelItems;
 }
 
+bool
+KnobItemsTable::getNumTopLevelItems() const
+{
+    QMutexLocker k(&_imp->topLevelItemsLock);
+    return (int)_imp->topLevelItems.size();
+}
+
 KnobTableItemPtr
 KnobItemsTable::getTopLevelItem(int index) const
 {
@@ -1543,6 +1550,26 @@ KnobItemsTable::declareItemsToPython()
     assert(QThread::currentThread() == qApp->thread());
 
     _imp->pythonPrefix = getTablePythonPrefix();
+
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    std::string appID = node->getApp()->getAppIDString();
+    std::string nodeName = node->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
+    std::string err;
+    std::string script = nodeFullName + "." + _imp->pythonPrefix + " = " + nodeFullName + ".getItemsTable()\n";
+    if ( !appPTR->isBackground() ) {
+        node->getApp()->printAutoDeclaredVariable(script);
+    }
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
+    assert(ok);
+    if (!ok) {
+        throw std::runtime_error("KnobItemsTable::declareItemsToPython(): interpretPythonScript(" + script + ") failed!");
+    }
+
+
     std::vector<KnobTableItemPtr> items = getTopLevelItems();
     for (std::vector< KnobTableItemPtr >::iterator it = items.begin(); it != items.end(); ++it) {
         declareItemAsPythonField(*it);

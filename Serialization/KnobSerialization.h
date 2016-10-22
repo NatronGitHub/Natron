@@ -88,7 +88,7 @@ struct MasterSerialization
     // the node script-name holding this knob
     std::string masterNodeName;
 
-    // if the master knob is part of a table item this is the table item name
+    // if the master knob is part of a table item this is the table item fully qualified script-name
     std::string masterTableItemName;
 
     // the script-name of the master knob

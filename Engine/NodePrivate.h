@@ -301,11 +301,6 @@ public:
     std::vector<int> inputIsRenderingCounter;
     timeval lastInputNRenderStartedSlotCallTime;
 
-    ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
-    bool nodeIsDequeuing;
-    QMutex nodeIsDequeuingMutex;
-    QWaitCondition nodeIsDequeuingCond;
-
     ///Counter counting how many parallel renders are active on the node
     int nodeIsRendering;
     mutable QMutex nodeIsRenderingMutex;

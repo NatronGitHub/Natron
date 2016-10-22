@@ -100,6 +100,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/TrackerNode.h"
+#include "Engine/TrackerHelper.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -754,6 +756,7 @@ Node::getPaintStrokeRoD_duringPainting() const
 
 void
 Node::getPaintStrokeRoD(double time,
+                        ViewIdx view,
                         RectD* bbox) const
 {
     bool duringPaintStroke = _imp->effect->isDuringPaintStrokeCreationThreadLocal();
@@ -766,7 +769,7 @@ Node::getPaintStrokeRoD(double time,
         if (!item) {
             throw std::logic_error("");
         }
-        *bbox = item->getBoundingBox(time);
+        *bbox = item->getBoundingBox(time, view);
     }
 }
 
@@ -788,6 +791,7 @@ Node::clearLastPaintStrokeRoD()
 
 void
 Node::getLastPaintStrokePoints(double time,
+                               ViewIdx view,
                                unsigned int mipmapLevel,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
                                int* strokeIndex) const
@@ -819,7 +823,7 @@ Node::getLastPaintStrokePoints(double time,
         if (!stroke) {
             throw std::logic_error("");
         }
-        stroke->evaluateStroke(mipmapLevel, time, strokes);
+        stroke->evaluateStroke(mipmapLevel, time, view, strokes);
         *strokeIndex = 0;
     }
 }
@@ -932,51 +936,20 @@ Node::getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const
     *warnings = _imp->streamWarnings;
 }
 
-void
-Node::declareRotoPythonField()
-{
-    if (getScriptName_mt_safe().empty()) {
-        return;
-    }
-    assert(_imp->rotoContext);
-    std::string appID = getApp()->getAppIDString();
-    std::string nodeName = getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string err;
-    std::string script = nodeFullName + ".roto = " + nodeFullName + ".getRotoContext()\n";
-    if ( !appPTR->isBackground() ) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("Node::declareRotoPythonField(): interpretPythonScript(" + script + ") failed!");
-    }
-    _imp->rotoContext->declarePythonFields();
-}
+
 
 void
-Node::declareTrackerPythonField()
+Node::declareTablePythonFields()
 {
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (!table) {
+        return;
+    }
     if (getScriptName_mt_safe().empty()) {
         return;
     }
 
-    assert(_imp->trackContext);
-    std::string appID = getApp()->getAppIDString();
-    std::string nodeName = getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string err;
-    std::string script = nodeFullName + ".tracker = " + nodeFullName + ".getTrackerContext()\n";
-    if ( !appPTR->isBackground() ) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("Node::declareTrackerPythonField(): interpretPythonScript(" + script + ") failed!");
-    }
-    _imp->trackContext->declarePythonFields();
+    table->declareItemsToPython();
 }
 
 NodeCollectionPtr
@@ -1065,7 +1038,7 @@ findMasterKnob(const KnobIPtr & knob,
            const NodesList & allNodes,
            const std::string& masterKnobName,
            const std::string& masterNodeName,
-           const std::string& masterTrackName)
+           const std::string& masterItemName)
 {
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode;
@@ -1094,12 +1067,12 @@ findMasterKnob(const KnobIPtr & knob,
         return KnobIPtr();
     }
 
-    if ( !masterTrackName.empty() ) {
-        TrackerContextPtr context = masterNode->getTrackerContext();
-        if (context) {
-            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
-            if (marker) {
-                return marker->getKnobByName(masterKnobName);
+    if ( !masterItemName.empty() ) {
+        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable();
+        if (table) {
+            KnobTableItemPtr item = table->getItemByFullyQualifiedScriptName(masterItemName);
+            if (item) {
+                return item->getKnobByName(masterKnobName);
             }
         }
     } else {
@@ -1574,18 +1547,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         serialization->_masterNodecriptName = masterNode->getScriptName_mt_safe();
     }
 
-    RotoContextPtr roto = getRotoContext();
-    if ( roto && !roto->isEmpty() ) {
-        serialization->_rotoContext.reset(new SERIALIZATION_NAMESPACE::RotoContextSerialization);
-        roto->toSerialization(serialization->_rotoContext.get());
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (table && table->getNumTopLevelItems() > 0) {
+        serialization->_tableModel.reset(new SERIALIZATION_NAMESPACE::KnobItemsTableSerialization);
+        table->toSerialization(serialization->_tableModel.get());
     }
-
-    TrackerContextPtr tracker = getTrackerContext();
-    if (tracker) {
-        serialization->_trackerContext.reset(new SERIALIZATION_NAMESPACE::TrackerContextSerialization);
-        tracker->toSerialization(serialization->_trackerContext.get());
-    }
-
 
     // For groups, serialize its children if the graph was edited
     NodeGroupPtr isGrp = isEffectNodeGroup();
@@ -1766,15 +1732,11 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     }
 
     // now restore the roto context if the node has a roto context
-    if (serialization._rotoContext && _imp->rotoContext) {
-        _imp->rotoContext->resetToDefault();
-        _imp->rotoContext->fromSerialization(*serialization._rotoContext);
-    }
-
-    // same for tracker context
-    if (serialization._trackerContext && _imp->trackContext) {
-        _imp->trackContext->clearMarkers();
-        _imp->trackContext->fromSerialization(*serialization._trackerContext);
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (serialization._tableModel && table) {
+        table->resetModel(eTableChangeReasonInternal);
+        table->fromSerialization(*serialization._tableModel);
+        table->declareItemsToPython();
     }
 
     {
@@ -2485,9 +2447,10 @@ Node::areAllProcessingThreadsQuit() const
         }
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        if ( !trackerContext->hasTrackerThreadQuit() ) {
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if ( tracker && !tracker->hasTrackerThreadQuit() ) {
             return false;
         }
     }
@@ -2508,24 +2471,18 @@ Node::quitAnyProcessing_non_blocking()
     //Returns when the preview is done computign
     _imp->abortPreview_non_blocking();
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->quitTrackerThread_non_blocking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->quitTrackerThread_non_blocking();
+        }
     }
 }
 
 void
 Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        if (_imp->nodeIsDequeuing) {
-            _imp->nodeIsDequeuing = false;
-
-            //Attempt to wake-up  sleeping threads of the thread pool
-            _imp->nodeIsDequeuingCond.wakeAll();
-        }
-    }
 
 
     //If this effect has a RenderEngine, make sure it is finished
@@ -2542,9 +2499,12 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     //Returns when the preview is done computign
     _imp->abortPreview_blocking(allowThreadsToRestart);
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->quitTrackerThread_blocking(allowThreadsToRestart);
+        }
     }
 }
 
@@ -2557,9 +2517,12 @@ Node::abortAnyProcessing_non_blocking()
         isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->abortTracking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->abortTracking();
+        }
     }
 
     _imp->abortPreview_non_blocking();
@@ -2577,11 +2540,13 @@ Node::abortAnyProcessing_blocking()
         engine->waitForAbortToComplete_enforce_blocking();
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->abortTracking_blocking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->abortTracking_blocking();
+        }
     }
-
     _imp->abortPreview_blocking(false);
 }
 
@@ -7400,7 +7365,7 @@ void
 Node::onKnobSlaved(const KnobIPtr& slave,
                    const KnobIPtr& master,
                    DimIdx dimension,
-                   ViewIdx view,
+                   ViewIdx /*view*/,
                    bool isSlave)
 {
     // If this is a unslave action, remove the clone state
@@ -7416,9 +7381,9 @@ Node::onKnobSlaved(const KnobIPtr& slave,
     EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
-        TrackMarkerPtr isMarker = toTrackMarker( master->getHolder() );
-        if (isMarker) {
-            parentNode = isMarker->getContext()->getNode();
+        KnobTableItemPtr isItem = toKnobTableItem(master->getHolder());
+        if (isItem) {
+            parentNode = isItem->getModel()->getNode();
         }
     } else {
         parentNode = isEffect->getNode();
@@ -9293,13 +9258,6 @@ Node::setNodeIsRenderingInternal(NodesWList& markedNodes)
         }
     }
 
-    ///Wait for the main-thread to be done dequeuing the connect actions queue
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while ( _imp->nodeIsDequeuing && !aborted() ) {
-            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-        }
-    }
 
     ///Increment the node is rendering counter
     {
@@ -9349,25 +9307,15 @@ Node::setNodeIsRendering(NodesWList& nodes)
 void
 Node::unsetNodeIsRendering()
 {
-    bool mustDequeue;
-    {
-        int nodeIsRendering;
-        ///Decrement the node is rendering counter
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        if (_imp->nodeIsRendering > 1) {
-            --_imp->nodeIsRendering;
-        } else {
-            _imp->nodeIsRendering = 0;
-        }
-        nodeIsRendering = _imp->nodeIsRendering;
 
-
-        mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
+    // Decrement the node is rendering counter
+    QMutexLocker k(&_imp->nodeIsRenderingMutex);
+    if (_imp->nodeIsRendering > 1) {
+        --_imp->nodeIsRendering;
+    } else {
+        _imp->nodeIsRendering = 0;
     }
 
-    if (mustDequeue) {
-        Q_EMIT mustDequeueActions();
-    }
 }
 
 bool
@@ -9396,73 +9344,6 @@ Node::isNodeRendering() const
     return _imp->nodeIsRendering > 0;
 }
 
-void
-Node::dequeueActions()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    ///Flag that the node is dequeuing.
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        assert(!_imp->nodeIsDequeuing);
-        _imp->nodeIsDequeuing = true;
-    }
-    bool hasChanged = false;
-    if (_imp->effect) {
-        NodeGroupPtr isGroup = isEffectNodeGroup();
-        if (isGroup) {
-            isGroup->dequeueConnexions();
-        }
-    }
-    RotoDrawableItemPtr strokeItem = getAttachedRotoItem();
-    if (strokeItem) {
-        strokeItem->dequeueGuiActions(false);
-    }
-
-
-    std::set<int> inputChanges;
-    {
-        QMutexLocker k(&_imp->inputsMutex);
-        assert( _imp->guiInputs.size() == _imp->inputs.size() );
-
-        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr inp = _imp->inputs[i].lock();
-            NodePtr guiInp = _imp->guiInputs[i].lock();
-            if (inp != guiInp) {
-                inputChanges.insert(i);
-                _imp->inputs[i] = guiInp;
-            }
-        }
-    }
-    {
-        QMutexLocker k(&_imp->outputsMutex);
-        _imp->outputs = _imp->guiOutputs;
-    }
-
-    if ( !inputChanges.empty() ) {
-        beginInputEdition();
-        hasChanged = true;
-        for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
-            onInputChanged(*it);
-        }
-        endInputEdition(true);
-    }
-    if (hasChanged) {
-        _imp->effect->invalidateHashCache();
-        refreshIdentityState();
-    }
-
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        //Another slots in this thread might have aborted the dequeuing
-        if (_imp->nodeIsDequeuing) {
-            _imp->nodeIsDequeuing = false;
-
-            //There might be multiple threads waiting
-            _imp->nodeIsDequeuingCond.wakeAll();
-        }
-    }
-} // Node::dequeueActions
 
 static void
 addIdentityNodesRecursively(NodeConstPtr caller,
@@ -9663,7 +9544,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
             }
 
             RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-            if ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() ) {
+            if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
@@ -9672,7 +9553,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
             RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
 
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-                   ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() );
+                   ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
         }
     }
 
@@ -10456,12 +10337,7 @@ Node::declareAllPythonAttributes()
     try {
         declareNodeVariableToPython( getFullyQualifiedName() );
         declarePythonKnobs();
-        if (_imp->rotoContext) {
-            declareRotoPythonField();
-        }
-        if (_imp->trackContext) {
-            declareTrackerPythonField();
-        }
+        declareTablePythonFields();
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }

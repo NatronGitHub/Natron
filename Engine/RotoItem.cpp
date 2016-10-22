@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/MemoryInfo.h"
 
 #include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
@@ -53,14 +54,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
-
-#include "Serialization/RotoItemSerialization.h"
 
 
 
@@ -284,7 +284,7 @@ RotoItem::isLockedRecursive() const
     if (thisItemLocked) {
         return true;
     }
-    RotoLayerPtr parent = toRotoLayer(getParent()):
+    RotoLayerPtr parent = toRotoLayer(getParent());
     if (parent) {
         return isLocked_imp(parent);
     } else {
@@ -294,10 +294,10 @@ RotoItem::isLockedRecursive() const
 
 bool
 RotoItem::onKnobValueChanged(const KnobIPtr& knob,
-                                     ValueChangedReasonEnum reason,
-                                     double /*time*/,
-                                     ViewSetSpec /*view*/,
-                                     bool /*originatedFromMainThread*/)
+                             ValueChangedReasonEnum /*reason*/,
+                             double /*time*/,
+                             ViewSetSpec /*view*/,
+                             bool /*originatedFromMainThread*/)
 {
     if (knob == _imp->lockedKnob.lock()) {
         KnobItemsTablePtr model = getModel();
@@ -307,9 +307,8 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
         int nbBeziersUnLockedBezier = 0;
 
         {
-            QMutexLocker l(&_imp->rotoContextMutex);
-
-            for (std::list<RotoItemPtr >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+            std::list<KnobTableItemPtr> selectedItems = getModel()->getSelectedItems();
+            for (std::list<KnobTableItemPtr >::iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
                 BezierPtr isBezier = toBezier(*it);
                 if ( isBezier && !isBezier->isLockedRecursive() ) {
                     ++nbBeziersUnLockedBezier;
@@ -319,16 +318,14 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
         bool dirty = nbBeziersUnLockedBezier > 1;
         bool enabled = nbBeziersUnLockedBezier > 0;
 
-        for (std::list<KnobIWPtr >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            KnobIPtr knob = it->lock();
-            if (!knob) {
-                continue;
-            }
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             knob->setDirty(dirty);
             knob->setEnabled(enabled);
         }
-
+        return true;
     }
+    return false;
 }
 
 

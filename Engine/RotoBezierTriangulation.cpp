@@ -141,7 +141,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 void
-RotoBezierTriangulation::computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double featherDist,
+RotoBezierTriangulation::computeTriangles(const Bezier * bezier, double time, ViewIdx view, unsigned int mipmapLevel, double featherDist,
                                              PolygonData* outArgs)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
@@ -150,7 +150,7 @@ RotoBezierTriangulation::computeTriangles(const Bezier * bezier, double time, un
     assert(outArgs);
     outArgs->error = 0;
 
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time, view);
 
     const double absFeatherDist = std::abs(featherDist);
 
@@ -163,8 +163,8 @@ RotoBezierTriangulation::computeTriangles(const Bezier * bezier, double time, un
     double error = 1;
 #endif
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,error, true, &outArgs->featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&outArgs->bezierPolygon,
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, mipmapLevel,error, true, &outArgs->featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(time, view, mipmapLevel, error,&outArgs->bezierPolygon,
 #ifndef NDEBUG
                                        &outArgs->bezierBbox
 #else

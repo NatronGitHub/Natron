@@ -577,7 +577,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
     bool inputIsMask = _imp->mask;
     RectD rod;
     if ( attachedStroke && inputIsMask ) {
-        effect->getNode()->getPaintStrokeRoD(time, &rod);
+        effect->getNode()->getPaintStrokeRoD(time, view, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;

@@ -1736,7 +1736,7 @@ OfxRGBAInstance::setDisplayRange()
     std::vector<double> displayMaxs(4);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob.lock()->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 void
@@ -1747,7 +1747,7 @@ OfxRGBAInstance::setRange()
     std::vector<double> maxs(4);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    _knob.lock()->setRangeAcrossDimensions(mins, maxs);
 }
 
 KnobIPtr
@@ -2012,7 +2012,7 @@ OfxRGBInstance::setDisplayRange()
     std::vector<double> displayMaxs(3);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob.lock()->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 void
@@ -2023,7 +2023,7 @@ OfxRGBInstance::setRange()
     std::vector<double> maxs(3);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    _knob.lock()->setRangeAcrossDimensions(mins, maxs);
 }
 
 KnobIPtr
@@ -4139,7 +4139,7 @@ OfxParametricInstance::OfxParametricInstance(const OfxEffectInstancePtr& node,
     }
     for (int i = 0; i < parametricDimension; ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel, i);
-        _knob.lock()->setDimensionName(i, curveName);
+        _knob.lock()->setDimensionName(DimIdx(i), curveName);
     }
 }
 
@@ -4240,12 +4240,12 @@ OfxParametricInstance::setDisplayRange()
     if (!knob) {
         return;
     }
-    int dims = knob->getDimension();
+    int dims = knob->getNDimensions();
     std::vector<double> displayMins(dims);
     std::vector<double> displayMaxs(dims);
     _properties.getDoublePropertyN(kOfxParamPropDisplayMin, &displayMins[0], displayMins.size());
     _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &displayMaxs[0], displayMaxs.size());
-    _knob.lock()->setDisplayMinimumsAndMaximums(displayMins, displayMaxs);
+    _knob.lock()->setDisplayRangeAcrossDimensions(displayMins, displayMaxs);
 }
 
 void
@@ -4259,12 +4259,12 @@ OfxParametricInstance::setRange()
     if (!knob) {
         return;
     }
-    int dims = knob->getDimension();
+    int dims = knob->getNDimensions();
     std::vector<double> mins(dims);
     std::vector<double> maxs(dims);
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
-    _knob.lock()->setMinimumsAndMaximums(mins, maxs);
+    _knob.lock()->setRangeAcrossDimensions(mins, maxs);
 }
 
 

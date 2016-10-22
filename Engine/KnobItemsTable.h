@@ -595,6 +595,11 @@ public:
     KnobTableItemPtr getTopLevelItem(int index) const;
 
     /**
+     * @brief Returns the number of top level items
+     **/
+    bool getNumTopLevelItems() const;
+
+    /**
      * @brief Remove the item from the model. The model will no longer hold a strong
      * reference to the item and may be deleted afterwards.
      **/

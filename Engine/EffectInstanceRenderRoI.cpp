@@ -408,7 +408,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
             bool isMask = _publicInterface->isInputMask(i);
             RectD inputRod;
             if (attachedStroke && isMask) {
-                _publicInterface->getNode()->getPaintStrokeRoD(time, &inputRod);
+                _publicInterface->getNode()->getPaintStrokeRoD(time, view, &inputRod);
                 hasMask = true;
             } else {
                 EffectInstancePtr input = _publicInterface->getInput(i);
