@@ -99,10 +99,11 @@ public:
                                      const std::list<std::list<std::pair<Point, double> > >& strokes,
                                      const double distToNextIn,
                                      const Point& lastCenterPointIn,
-                                     const RotoDrawableItem* stroke,
+                                     const RotoStrokeItemPtr& stroke,
                                      bool doBuildup,
                                      double opacity,
                                      double time,
+                                     ViewIdx view,
                                      unsigned int mipmapLevel,
                                      double* distToNextOut,
                                      Point* lastCenterPoint);

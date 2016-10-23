@@ -105,9 +105,7 @@ struct TrackMarkerPrivate;
 class TrackMarker
     : public KnobTableItem
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -180,11 +178,6 @@ public:
     void resetTrack();
 
     void setKeyFrameOnCenterAndPatternAtTime(double time);
-
-    void setUserKeyframe(double time);
-
-    void removeUserKeyframe(double time);
-
     /*
        Controls animation of the center & offset not the pattern
      */
@@ -206,37 +199,14 @@ public:
     void notifyTrackingStarted();
     void notifyTrackingEnded();
 
+    virtual std::string getBaseItemName() const OVERRIDE;
+
+
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
 
-    virtual std::string getBaseItemName() const OVERRIDE;
 
-public Q_SLOTS:
-
-    /*void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
-    void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
-    void onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec view, int dimension, int reason);
-    void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
-    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-    void onCenterAnimationRemoved(ViewSpec view, int dimension);
-
-    void onCenterKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onOffsetKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onErrorKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onWeightKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onMotionModelKnobValueChanged(ViewSpec, int dimension, int reason);
-
-    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);*/
-
-public Q_SLOTS:
-
-    //void onEnabledValueChanged(ViewSpec, int dimension, int reason);
-
-Q_SIGNALS:
-
-    void enabledChanged(int reason);
 
 private:
 

@@ -439,7 +439,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundLayerIndex != -1);
-    layerKnob->setValueFromPlugin(foundLayerIndex, ViewSpec::current(), 0);
+    layerKnob->setValue(foundLayerIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsLayer = (foundCurIt == components.end()) ? ImageComponents::getNoneComponents() : *foundCurIt;
@@ -464,7 +464,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundAlphaIndex != -1);
-    alphaChannelKnob->setValueFromPlugin(foundAlphaIndex, ViewSpec::current(), 0);
+    alphaChannelKnob->setValue(foundAlphaIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsAlphaLayer = (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) ? ImageComponents::getNoneComponents() : *foundCurAlphaIt;

@@ -458,6 +458,31 @@ KnobItemsTable::getTopLevelItems() const
     return _imp->topLevelItems;
 }
 
+static void appendItemRecursive(const KnobTableItemPtr& item, std::vector<KnobTableItemPtr>* allItems)
+{
+    allItems->push_back(item);
+
+    std::vector<KnobTableItemPtr> children = item->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        appendItemRecursive(children[i], allItems);
+    }
+}
+
+std::vector<KnobTableItemPtr>
+KnobItemsTable::getAllItems() const
+{
+    QMutexLocker k(&_imp->topLevelItemsLock);
+    if (_imp->type == KnobItemsTable::eKnobItemsTableTypeTable) {
+        return _imp->topLevelItems;
+    } else {
+        std::vector<KnobTableItemPtr> ret;
+        for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
+            appendItemRecursive(_imp->topLevelItems[i], &ret);
+        }
+        return ret;
+    }
+}
+
 bool
 KnobItemsTable::getNumTopLevelItems() const
 {
@@ -2225,6 +2250,17 @@ KnobTableItem::getMasterKeyframe(int index, ViewGetSpec view, KeyFrame* k) const
         return false;
     }
     return curve->getKeyFrameWithIndex(index, k);
+}
+
+bool
+KnobTableItem::getHasMasterKeyframe(double time, ViewGetSpec view) const
+{
+    CurvePtr curve = getAnimationCurve(view, DimIdx(0));
+    if (!curve) {
+        return -1;
+    }
+    KeyFrame k;
+    return curve->getKeyFrameWithTime(time, &k);
 }
 
 void

@@ -183,7 +183,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     bool autoKeyingOnEnabledParamEnabled = provider->canDisableMarkersAutomatically();
 
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
-    boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(this, enabledChannels, formatHeight) );
+    boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(trackerNode, enabledChannels, formatHeight) );
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
     std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
     mv::TrackRegionOptions mvOptions;
@@ -211,12 +211,12 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Set a keyframe on the marker to initialize its position
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
 
-        std::set<int> userKeys;
-        t->natronMarker->getUserKeyframes(&userKeys);
+        std::set<double> userKeys;
+        t->natronMarker->getMasterKeyFrameTimes(ViewIdx(0), &userKeys);
 
         if ( userKeys.empty() ) {
             // Set a user keyframe on tracking start if the marker does not have any user keys
-            t->natronMarker->setUserKeyframe(start);
+            t->natronMarker->setKeyFrame(start, ViewSetSpec(0), 0);
         }
 
         PreviouslyTrackedFrameSet previousFramesOrdered;
@@ -226,7 +226,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
 
         // Add a libmv marker for all keyframes
-        for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
+        for (std::set<double>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
 
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
@@ -328,7 +328,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
      Launch tracking in the scheduler thread.
      */
-    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
+    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, trackerNode->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
     _imp->scheduler->track(args);
 } // TrackerHelper::trackMarkers
 

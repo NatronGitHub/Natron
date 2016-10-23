@@ -29,7 +29,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackerFrameAccessor.h"
 #include "Engine/TrackMarker.h"
-
+#include "Engine/TrackerHelperPrivate.h"
 #include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER

@@ -162,6 +162,7 @@ public:
     KnobBoolPtr getInvertedKnob() const;
     KnobChoicePtr getOperatorKnob() const;
     KnobColorPtr getColorKnob() const;
+    KnobColorPtr getOverlayColorKnob() const;
     KnobDoublePtr getCenterKnob() const;
     KnobIntPtr getLifeTimeFrameKnob() const;
 

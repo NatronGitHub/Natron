@@ -819,7 +819,7 @@ public:
 
     bool hasSelection() const;
 
-    bool removeItemFromSelection(const RotoDrawableItemPtr& b);
+    void removeItemFromSelection(const RotoDrawableItemPtr& b);
 
     void computeSelectedCpsBBOX();
 
@@ -852,7 +852,7 @@ public:
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(double time, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(double time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -873,7 +873,7 @@ public:
     * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
     * which would be used to find the exact bezier point lying on the curve.
     **/
-    BezierPtr isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
+    BezierPtr isNearbyBezier(double x, double y, double time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
 
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos, double tolerance) const;
 
@@ -910,9 +910,9 @@ public:
 
     BezierPtr getBezierBeingBuild() const;
 
-    bool smoothSelectedCurve();
-    bool cuspSelectedCurve();
-    bool removeFeatherForSelectedCurve();
+    bool smoothSelectedCurve(double time, ViewIdx view);
+    bool cuspSelectedCurve(double time, ViewIdx view);
+    bool removeFeatherForSelectedCurve(ViewIdx view);
     bool lockSelectedCurves();
 
 
@@ -920,7 +920,7 @@ public:
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    bool moveSelectedCpsWithKeyArrows(int x, int y);
+    bool moveSelectedCpsWithKeyArrows(int x, int y, double time, ViewIdx view);
 
     void autoSaveAndRedraw();
 

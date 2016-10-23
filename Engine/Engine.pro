@@ -255,7 +255,9 @@ SOURCES += \
     NatronEngine/beziercurve_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
     NatronEngine/imagelayer_wrapper.cpp \
-    NatronEngine/layer_wrapper.cpp \
+    NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
     NatronEngine/track_wrapper.cpp \
     NatronEngine/tracker_wrapper.cpp \
@@ -521,7 +523,9 @@ HEADERS += \
     NatronEngine/beziercurve_wrapper.h \
     NatronEngine/itembase_wrapper.h \
     NatronEngine/imagelayer_wrapper.h \
-    NatronEngine/layer_wrapper.h \
+    NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/roto_wrapper.h \
     NatronEngine/track_wrapper.h \
     NatronEngine/tracker_wrapper.h \

@@ -417,13 +417,7 @@ public:
     RotoLayerPtr addLayer();
 
 
-    RotoLayerPtr addLayerInternal(bool declarePython);
-
-    /**
-     * @brief Add an existing layer to the layers
-     **/
-    void addLayer(const RotoLayerPtr & layer);
-
+    RotoLayerPtr addLayerInternal();
 
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer.
@@ -433,9 +427,11 @@ public:
     BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
     BezierPtr makeSquare(double x, double y, double initialSize, double time);
     RotoStrokeItemPtr makeStroke(RotoStrokeType type,
-                                 const std::string& baseName,
                                  bool clearSel);
-    
+
+    RotoLayerPtr getLayerForNewItem();
+
+
 public Q_SLOTS:
 
     void onModelSelectionChanged(std::list<KnobTableItemPtr> addedToSelection, std::list<KnobTableItemPtr> removedFromSelection, TableChangeReasonEnum reason);
@@ -452,6 +448,7 @@ protected:
     void initMotionBlurPageKnobs();
 
 private:
+
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
 

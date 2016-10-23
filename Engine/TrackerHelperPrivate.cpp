@@ -169,7 +169,7 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     mvMarker->frame = trackedTime;
     const int referenceTime = marker.getReferenceFrame(trackedTime, frameStep);
     mvMarker->reference_frame = referenceTime;
-    if ( marker.isUserKeyframe(trackedTime) ) {
+    if ( marker.getHasMasterKeyframe(trackedTime, ViewIdx(0)) ) {
         mvMarker->source = mv::Marker::MANUAL;
     } else {
         mvMarker->source = mv::Marker::TRACKED;
@@ -421,7 +421,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 
     if (track->mvMarker.source == mv::Marker::MANUAL) {
         // This is a user keyframe or the first frame, we do not track it
-        assert( trackTime == args.getStart() || track->natronMarker->isUserKeyframe(track->mvMarker.frame) );
+        assert( trackTime == args.getStart() || track->natronMarker->getHasMasterKeyframe(track->mvMarker.frame, ViewIdx(0)) );
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "TrackStep:" << trackTime << "is a keyframe";
 #endif
@@ -492,8 +492,8 @@ euclideanToHomogenous(const Point& p)
     return r;
 }
 
-static Point
-applyHomography(const Point& p,
+Point
+TrackerHelper::applyHomography(const Point& p,
                 const Transform::Matrix3x3& h)
 {
     Transform::Point3D a = euclideanToHomogenous(p);
@@ -804,7 +804,7 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
     }
 } // TrackerContext::extractSortedPointsFromMarkers
 
-TrackerHelper::TransformData
+TransformData
 TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
                                                       double time,
                                                       int jitterPeriod,
@@ -827,7 +827,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
             markers.push_back(allMarkers[i]);
         }
     }
-    TrackerHelper::TransformData data;
+    TransformData data;
     data.rms = 0.;
     data.time = time;
     data.valid = true;
@@ -866,7 +866,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
     return data;
 } // TrackerHelperPrivate::computeTransformParamsFromTracksAtTime
 
-TrackerHelper::CornerPinData
+CornerPinData
 TrackerHelper::computeCornerPinParamsFromTracksAtTime(double refTime,
                                                       double time,
                                                       int jitterPeriod,
@@ -890,7 +890,7 @@ TrackerHelper::computeCornerPinParamsFromTracksAtTime(double refTime,
             markers.push_back(allMarkers[i]);
         }
     }
-    TrackerHelper::CornerPinData data;
+    CornerPinData data;
     data.rms = 0.;
     data.time = time;
     data.valid = true;

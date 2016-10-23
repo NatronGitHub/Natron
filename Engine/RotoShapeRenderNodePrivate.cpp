@@ -64,10 +64,11 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                  const double distToNextIn,
                                                  const Point& lastCenterPointIn,
-                                                 const RotoDrawableItem* stroke,
+                                                 const RotoStrokeItemPtr& stroke,
                                                  bool doBuildup,
                                                  double opacity,
                                                  double time,
+                                                 ViewIdx view,
                                                  unsigned int mipmapLevel,
                                                  double* distToNextOut,
                                                  Point* lastCenterPoint)
@@ -92,8 +93,8 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         KnobDoublePtr brushHardnessKnob = stroke->getBrushHardnessKnob();
         brushHardness = brushHardnessKnob->getValueAtTime(time);
         KnobDoublePtr visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
-        writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
-        writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
+        writeOnStart = visiblePortionKnob->getValueAtTime(time);
+        writeOnEnd = visiblePortionKnob->getValueAtTime(time, DimIdx(1));
         if ( (writeOnEnd - writeOnStart) <= 0. ) {
             return false;
         }
@@ -112,7 +113,12 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
     }
 
     double shapeColor[3];
-    stroke->getColor(time, shapeColor);
+    {
+        KnobColorPtr colorKnob = stroke->getColorKnob();
+        for (int i = 0; i < 3; ++i) {
+            shapeColor[i] = colorKnob->getValueAtTime(time, DimIdx(i), view);
+        }
+    }
 
     double distToNext = distToNextIn;
 

@@ -44,7 +44,7 @@ class TrackerFrameAccessor
 {
 public:
 
-    TrackerFrameAccessor(const TrackerContext* context,
+    TrackerFrameAccessor(const NodePtr& node,
                          bool enabledChannels[3],
                          int formatHeight);
 

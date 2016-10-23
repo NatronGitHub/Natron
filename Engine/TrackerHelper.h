@@ -46,6 +46,56 @@ class AutoTrack;
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @struct Structure returned by the computeCornerPinParamsFromTracksAtTime function
+ **/
+class CornerPinData
+{
+public:
+
+    CornerPinData()
+    : h()
+    , nbEnabledPoints(0)
+    , time(-1.)
+    , valid(false)
+    , rms(-1.)
+    {
+    }
+
+    Transform::Matrix3x3 h;
+    int nbEnabledPoints;
+    double time;
+    bool valid;
+    double rms;
+};
+
+/**
+ * @struct Structure returned by the computeTransformParamsFromTracksAtTime function
+ **/
+class TransformData
+{
+public:
+
+    TransformData()
+    : rotation(0.)
+    , scale(0.)
+    , hasRotationAndScale(false)
+    , time(-1.)
+    , valid(false)
+    , rms(-1.)
+    {
+        translation.x = translation.y = 0.;
+    }
+
+    Point translation;
+    double rotation;
+    double scale;
+    bool hasRotationAndScale;
+    double time;
+    bool valid;
+    double rms;
+};
+
 
 class TrackerHelperPrivate;
 class TrackerHelper
@@ -179,30 +229,6 @@ public:
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2);
 
-    /**
-     * @struct Structure returned by the computeTransformParamsFromTracksAtTime function
-     **/
-    struct TransformData
-    {
-        TransformData()
-        : rotation(0.)
-        , scale(0.)
-        , hasRotationAndScale(false)
-        , time(-1.)
-        , valid(false)
-        , rms(-1.)
-        {
-            translation.x = translation.y = 0.;
-        }
-
-        Point translation;
-        double rotation;
-        double scale;
-        bool hasRotationAndScale;
-        double time;
-        bool valid;
-        double rms;
-    };
 
     /**
      * @brief Given the markers that have been tracked, computes the affine transform mapping from refTime
@@ -216,26 +242,7 @@ public:
                                                                 const TrackerParamsProviderPtr& params,
                                                                 const std::vector<TrackMarkerPtr>& allMarkers);
 
-    /**
-     * @struct Structure returned by the computeCornerPinParamsFromTracksAtTime function
-     **/
-    struct CornerPinData
-    {
-        CornerPinData()
-        : h()
-        , nbEnabledPoints(0)
-        , time(-1.)
-        , valid(false)
-        , rms(-1.)
-        {
-        }
 
-        Transform::Matrix3x3 h;
-        int nbEnabledPoints;
-        double time;
-        bool valid;
-        double rms;
-    };
 
     /**
      * @brief Given the markers that have been tracked, computes the CornerPin mapping from refTime
@@ -248,6 +255,8 @@ public:
                                                                 bool robustModel,
                                                                 const TrackerParamsProviderPtr& params,
                                                                 const std::vector<TrackMarkerPtr>& allMarkers);
+
+    static Point applyHomography(const Point& p, const Transform::Matrix3x3& h);
     
 private Q_SLOTS:
     

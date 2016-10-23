@@ -82,11 +82,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     Bezier(const KnobItemsTablePtr& model,
-           const std::string & baseName,
+           const std::string& baseName,
            bool isOpenBezier);
 
-    Bezier(const Bezier & other,
-           const RotoLayerPtr& parent);
 
     virtual ~Bezier();
 
@@ -181,7 +179,7 @@ public:
      * @returns The index of the starting control point (P0) of the bezier segment on which the given
      * point lies. If the point doesn't belong to any bezier segment of this curve then it will return -1.
      **/
-    int isPointOnCurve(double x, double y, double acceptance, ViewGetSpec view, double *t, bool* feather) const;
+    int isPointOnCurve(double x, double y, double acceptance, double time, ViewGetSpec view, double *t, bool* feather) const;
 
     /**
      * @brief Set whether the curve is finished or not. A finished curve will have an arc between the first
@@ -623,6 +621,9 @@ public:
     KnobDoublePtr getShutterKnob() const;
     KnobChoicePtr getShutterTypeKnob() const;
 
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+
 private:
 
     virtual void onTransformSet(double time, ViewSetSpec view) OVERRIDE FINAL;
@@ -638,6 +639,11 @@ private:
 public:
 
 
+
+    bool isAutoKeyingEnabled() const;
+    bool isFeatherLinkEnabled() const;
+    bool isRippleEditEnabled() const;
+    
     /**
      * @brief Must be implemented by the derived class to save the state into
      * the serialization object.
@@ -658,9 +664,6 @@ public:
 
 private:
 
-    bool isAutoKeyingEnabled() const;
-    bool isFeatherLinkEnabled() const;
-    bool isRippleEditEnabled() const;
 
     virtual void onKeyFrameSet(double time, ViewSetSpec view) OVERRIDE FINAL;
 
@@ -671,8 +674,6 @@ private:
     void onKeyFrameRemovedForView(double time, ViewIdx view);
 
     virtual void initializeKnobs() OVERRIDE;
-    
-    virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
     boost::scoped_ptr<BezierPrivate> _imp;
 };

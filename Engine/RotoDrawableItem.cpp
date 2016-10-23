@@ -954,7 +954,11 @@ KnobColorPtr RotoDrawableItem::getColorKnob() const
     return _imp->color.lock();
 }
 
-
+KnobColorPtr
+RotoDrawableItem::getOverlayColorKnob() const
+{
+    return _imp->overlayColor.lock();
+}
 
 KnobIntPtr
 RotoDrawableItem::getTimeOffsetKnob() const
@@ -1138,8 +1142,27 @@ RotoDrawableItem::initializeKnobs()
     _imp->lifeTime = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);
     _imp->lifeTimeFrame = createDuplicateOfTableKnob<KnobInt>(kRotoDrawableItemLifeTimeFrameParam);
     _imp->activated = createDuplicateOfTableKnob<KnobBool>(kRotoActivatedParam);
-    _imp->overlayColor = createDuplicateOfTableKnob<KnobColor>(kRotoOverlayColor);
-    _imp->compOperator = createDuplicateOfTableKnob<KnobChoice>(kRotoCompOperatorParam);
+    {
+        KnobColorPtr param = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoOverlayColorLabel), 4);
+        param->setHintToolTip( tr(kRotoOverlayColorHint) );
+        param->setName(kRotoOverlayColor);
+        std::vector<double> def(4);
+        getDefaultOverlayColor(&def[0], &def[1], &def[2]);
+        def[3] = 1.;
+        param->setDefaultValues(def, DimIdx(0));
+        _imp->overlayColor = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
+        param->setHintToolTip( tr(kRotoCompOperatorHint) );
+        param->setName(kRotoCompOperatorParam);
+        std::vector<std::string> operators;
+        std::vector<std::string> tooltips;
+        Merge::getOperatorStrings(&operators, &tooltips);
+        param->populateChoices(operators, tooltips);
+        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeCopy) );
+        _imp->compOperator = param;
+    }
 
     // Item types that output a mask may not have an invert parameter
     if (type != eRotoStrokeTypeSolid &&

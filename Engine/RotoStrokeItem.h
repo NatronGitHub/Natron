@@ -178,11 +178,12 @@ public:
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE;
-
-    virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
     RectD computeBoundingBox(double time, ViewGetSpec view) const;
 

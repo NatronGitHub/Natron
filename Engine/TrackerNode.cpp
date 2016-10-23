@@ -49,12 +49,6 @@
 #define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
 
 
-#ifdef DEBUG
-// Uncomment to prevent transform computation from using multiple threads
-//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
-#endif
-
-
 NATRON_NAMESPACE_ENTER;
 
 PluginPtr
@@ -126,7 +120,7 @@ TrackerNode::createPlugin()
 
 TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
-    , _imp( new TrackerNodePrivate(this) )
+    , _imp( TrackerNodePrivate::create(this) )
 {
 }
 

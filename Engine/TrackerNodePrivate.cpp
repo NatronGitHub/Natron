@@ -187,8 +187,8 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
     std::set<int> userKeys;
 
     for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
-        std::set<int> trackUserKeys;
-        (*it)->getUserKeyframes(&trackUserKeys);
+        std::set<double> trackUserKeys;
+        (*it)->getMasterKeyFrameTimes(ViewIdx(0),&trackUserKeys);
         userKeys.insert( trackUserKeys.begin(), trackUserKeys.end() );
     }
     if ( userKeys.empty() ) {
@@ -211,8 +211,8 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
     std::set<int> userKeys;
 
     for (std::list<TrackMarkerPtr>::iterator it = selectedMarkers.begin(); it != selectedMarkers.end(); ++it) {
-        std::set<int> trackUserKeys;
-        (*it)->getUserKeyframes(&trackUserKeys);
+        std::set<double> trackUserKeys;
+        (*it)->getMasterKeyFrameTimes(ViewIdx(0),&trackUserKeys);
         userKeys.insert( trackUserKeys.begin(), trackUserKeys.end() );
     }
     if ( userKeys.empty() ) {
@@ -352,7 +352,7 @@ TrackerNodeInteract::onSetKeyframeButtonClicked()
 
     _p->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        (*it)->setUserKeyframe(time);
+        (*it)->setKeyFrame(time, ViewSetSpec::all(), 0);
     }
 }
 
@@ -364,7 +364,7 @@ TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 
     _p->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        (*it)->removeUserKeyframe(time);
+        (*it)->deleteValueAtTime(time, ViewSetSpec::all(), DimSpec(0));
     }
 }
 
@@ -1319,9 +1319,9 @@ TrackerNodeInteract::onModelSelectionChanged(TableChangeReasonEnum reason)
             refreshSelectedMarkerTexture();
 
 
-            std::set<int> keys;
-            selectionFront->getUserKeyframes(&keys);
-            for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+            std::set<double> keys;
+            selectionFront->getMasterKeyFrameTimes(ViewIdx(0), &keys);
+            for (std::set<double>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 makeMarkerKeyTexture(*it2, selectionFront);
             }
         } else {
@@ -1424,9 +1424,9 @@ TrackerNodeInteract::rebuildMarkerTextures()
 
     _p->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        std::set<int> keys;
-        (*it)->getUserKeyframes(&keys);
-        for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+        std::set<double> keys;
+        (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
+        for (std::set<double>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
             makeMarkerKeyTexture(*it2, *it);
         }
     }
@@ -1480,7 +1480,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
                 patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
             }
             if (createkey) {
-                (*it)->setUserKeyframe(time);
+                (*it)->setKeyFrame(time, ViewSetSpec(0), 0);
             }
             hasMovedMarker = true;
         }
@@ -1792,7 +1792,7 @@ TrackerNodeInteract::transformPattern(double time,
     refreshSelectedMarkerTexture();
 
     if ( createKeyOnMoveButton.lock()->getValue() ) {
-        interactMarker->setUserKeyframe(time);
+        interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
     }
 } // TrackerNodeInteract::transformPattern
 
@@ -2617,7 +2617,7 @@ TrackerNode::onOverlayPenDown(double time,
         }
 
         if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-            marker->setUserKeyframe(time);
+            marker->setKeyFrame(time, ViewSetSpec(0), 0);
         }
         pushUndoCommand( new AddTrackCommand(marker) );
         _imp->ui->refreshSelectedMarkerTexture();
@@ -2927,7 +2927,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 }
                 _imp->ui->refreshSelectedMarkerTexture();
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setUserKeyframe(time);
+                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
                 didSomething = true;
                 break;
@@ -3033,7 +3033,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 }
 
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setUserKeyframe(time);
+                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
                 didSomething = true;
                 break;
@@ -3403,7 +3403,7 @@ TrackerNode::onOverlayPenMotion(double time,
                     patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
                 }
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                    _imp->ui->interactMarker->setUserKeyframe(time);
+                    _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
                 _imp->ui->refreshSelectedMarkerTexture();
                 didSomething = true;

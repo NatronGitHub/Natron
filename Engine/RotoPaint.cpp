@@ -2103,6 +2103,10 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     if (!k) {
         return false;
     }
+    ViewIdx view_i(0);
+    if (view.isViewIdx()) {
+        view_i = ViewIdx(view);
+    }
 
     bool ret = true;
     KnobIPtr kShared = k->shared_from_this();
@@ -2148,7 +2152,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
         if ( !_imp->ui->selectedCps.empty() ) {
-            pushUndoCommand( new RemovePointUndoCommand(_imp->ui, _imp->ui->selectedCps) );
+            pushUndoCommand( new RemovePointUndoCommand(_imp->ui, _imp->ui->selectedCps, view_i) );
         } else {
             std::list<KnobTableItemPtr> selection = _imp->knobsTable->getSelectedItems();
             if (selection.empty()) {
@@ -2165,31 +2169,31 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             }
         }
     } else if ( k == _imp->ui->smoothItemMenuAction.lock() ) {
-        if ( !_imp->ui->smoothSelectedCurve() ) {
+        if ( !_imp->ui->smoothSelectedCurve(time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->cuspItemMenuAction.lock() ) {
-        if ( !_imp->ui->cuspSelectedCurve() ) {
+        if ( !_imp->ui->cuspSelectedCurve(time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->removeItemFeatherMenuAction.lock() ) {
-        if ( !_imp->ui->removeFeatherForSelectedCurve() ) {
+        if ( !_imp->ui->removeFeatherForSelectedCurve(view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->nudgeLeftMenuAction.lock() ) {
-        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(-1, 0) ) {
+        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(-1, 0, time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->nudgeRightMenuAction.lock() ) {
-        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(1, 0) ) {
+        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(1, 0, time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->nudgeBottomMenuAction.lock() ) {
-        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(0, -1) ) {
+        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(0, -1, time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->nudgeTopMenuAction.lock() ) {
-        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(0, 1) ) {
+        if ( !_imp->ui->moveSelectedCpsWithKeyArrows(0, 1, time, view_i) ) {
             return false;
         }
     } else if ( k == _imp->ui->selectAllMenuAction.lock() ) {
@@ -2219,7 +2223,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         }
     } else if ( k == _imp->ui->openCloseMenuAction.lock() ) {
         if ( ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) && _imp->ui->builtBezier && !_imp->ui->builtBezier->isCurveFinished(ViewIdx(0)) ) {
-            pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, _imp->ui->builtBezier) );
+            pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, _imp->ui->builtBezier, view_i) );
 
             _imp->ui->builtBezier.reset();
             _imp->ui->selectedCps.clear();
@@ -2930,96 +2934,65 @@ void
 RotoPaintPrivate::createBaseLayer()
 {
     ////Add the base layer
-    RotoLayerPtr base = addLayerInternal(false);
-
-    deselect(base, RotoItem::eSelectionReasonOther);
+    RotoLayerPtr base = publicInterface->addLayerInternal();
+    knobsTable->removeFromSelection(base, eTableChangeReasonInternal);
 }
 
 RotoLayerPtr
 RotoPaint::getOrCreateBaseLayer()
 {
-    QMutexLocker k(&_imp->rotoContextMutex);
-
-    if ( _imp->layers.empty() ) {
-        k.unlock();
-        addLayer();
-        k.relock();
+    if (_imp->knobsTable->getNumTopLevelItems() == 0) {
+        return addLayer();
+    } else {
+        return toRotoLayer(_imp->knobsTable->getTopLevelItem(0));
     }
-    assert( !_imp->layers.empty() );
-
-    return _imp->layers.front();
 }
 
 RotoLayerPtr
-RotoPaint::addLayerInternal(bool declarePython)
+RotoPaint::addLayerInternal()
 {
-    RotoContextPtr this_shared = shared_from_this();
 
-    assert(this_shared);
+    // If there's a selected layer, add it to it
+    RotoLayerPtr parentLayer;
+    parentLayer = toRotoLayer(_imp->knobsTable->findDeepestSelectedItemContainer());
 
-    ///MT-safe: only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    RotoLayerPtr item;
-    std::string name = generateUniqueName(kRotoLayerBaseName);
-    int indexInLayer = -1;
-    {
-        RotoLayerPtr deepestLayer;
-        RotoLayerPtr parentLayer;
-        {
-            QMutexLocker l(&_imp->rotoContextMutex);
-            deepestLayer = _imp->findDeepestSelectedLayer();
-
-            if (!deepestLayer) {
-                ///find out if there's a base layer, if so add to the base layer,
-                ///otherwise create the base layer
-                for (std::list<RotoLayerPtr >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
-                    int hierarchy = (*it)->getHierarchyLevel();
-                    if (hierarchy == 0) {
-                        parentLayer = *it;
-                        break;
-                    }
-                }
-            } else {
-                parentLayer = deepestLayer;
-            }
-        }
-
-        item.reset( new RotoLayer( this_shared, name, RotoLayerPtr() ) );
-        item->initializeKnobsPublic();
-        if (parentLayer) {
-            parentLayer->addItem(item, declarePython);
-            indexInLayer = parentLayer->getItems().size() - 1;
-        }
-
-        QMutexLocker l(&_imp->rotoContextMutex);
-
-        _imp->layers.push_back(item);
-
-        _imp->lastInsertedItem = item;
+    // Otherwise use the base layer
+    if (!parentLayer) {
+        parentLayer = toRotoLayer(_imp->knobsTable->getTopLevelItem(0));
     }
-    Q_EMIT itemInserted(indexInLayer, RotoItem::eSelectionReasonOther);
 
-
-    clearSelection(RotoItem::eSelectionReasonOther);
-    select(item, RotoItem::eSelectionReasonOther);
+    RotoLayerPtr item(new RotoLayer(_imp->knobsTable));
+    _imp->knobsTable->insertItem(-1, item, parentLayer, eTableChangeReasonInternal);
+    _imp->knobsTable->beginEditSelection();
+    _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
+    _imp->knobsTable->addToSelection(item, eTableChangeReasonInternal);
+    _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
 
     return item;
-} // RotoPaintPrivate::addLayerInternal
+} // ddLayerInternal
 
 RotoLayerPtr
 RotoPaint::addLayer()
 {
-    return addLayerInternal(true);
-} // addLayer
+    return addLayerInternal();
+}
 
-void
-RotoPaint::addLayer(const RotoLayerPtr & layer)
+RotoLayerPtr
+RotoPaint::getLayerForNewItem() 
 {
-    std::list<RotoLayerPtr >::iterator it = std::find(_imp->layers.begin(), _imp->layers.end(), layer);
+    RotoLayerPtr parentLayer;
+    parentLayer = toRotoLayer(_imp->knobsTable->findDeepestSelectedItemContainer());
 
-    if ( it == _imp->layers.end() ) {
-        _imp->layers.push_back(layer);
+    // Otherwise use the base layer
+    if (!parentLayer) {
+        parentLayer = toRotoLayer(_imp->knobsTable->getTopLevelItem(0));
     }
+
+    // Otherwise create the base layer
+    if (!parentLayer) {
+        parentLayer = addLayer();
+    }
+    return parentLayer;
 }
 
 
@@ -3031,101 +3004,37 @@ RotoPaint::makeBezier(double x,
                         double time,
                         bool isOpenBezier)
 {
-    ///MT-safe: only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    RotoLayerPtr parentLayer;
-    RotoContextPtr this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
-    assert(this_shared);
-    std::string name = generateUniqueName(baseName);
 
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
+    RotoLayerPtr parentLayer = getLayerForNewItem();
+    BezierPtr curve( new Bezier(_imp->knobsTable, baseName,  isOpenBezier) );
+    _imp->knobsTable->insertItem(0, curve, parentLayer, eTableChangeReasonInternal);
 
+    _imp->knobsTable->beginEditSelection();
+    _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
+    _imp->knobsTable->addToSelection(curve, eTableChangeReasonInternal);
+    _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
 
-        if (!deepestLayer) {
-            ///if there is no base layer, create one
-            if ( _imp->layers.empty() ) {
-                l.unlock();
-                addLayer();
-                l.relock();
-            }
-            parentLayer = _imp->layers.front();
-        } else {
-            parentLayer = deepestLayer;
-        }
+    if ( curve->isAutoKeyingEnabled() ) {
+        curve->setKeyFrame(time, ViewIdx(0), 0);
     }
-    assert(parentLayer);
-    BezierPtr curve( new Bezier(this_shared, name, RotoLayerPtr(), isOpenBezier) );
-    curve->createNodes();
-
-    int indexInLayer = -1;
-    if (parentLayer) {
-        indexInLayer = 0;
-        parentLayer->insertItem(curve, 0);
-    }
-    _imp->lastInsertedItem = curve;
-
-    Q_EMIT itemInserted(indexInLayer, RotoItem::eSelectionReasonOther);
-
-
-    clearSelection(RotoItem::eSelectionReasonOther);
-    select(curve, RotoItem::eSelectionReasonOther);
-
-    if ( isAutoKeyingEnabled() ) {
-        curve->setKeyframe( getTimelineCurrentTime() );
-    }
-    curve->addControlPoint(x, y, time);
+    curve->addControlPoint(x, y, time, ViewIdx(0));
 
     return curve;
 } // makeBezier
 
 RotoStrokeItemPtr
 RotoPaint::makeStroke(RotoStrokeType type,
-                        const std::string& baseName,
                         bool clearSel)
 {
-    ///MT-safe: only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    RotoLayerPtr parentLayer;
-    RotoContextPtr this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
-    assert(this_shared);
-    std::string name = generateUniqueName(baseName);
-
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-
-        RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
-
-
-        if (!deepestLayer) {
-            ///if there is no base layer, create one
-            if ( _imp->layers.empty() ) {
-                l.unlock();
-                addLayer();
-                l.relock();
-            }
-            parentLayer = _imp->layers.front();
-        } else {
-            parentLayer = deepestLayer;
-        }
-    }
-    assert(parentLayer);
-    RotoStrokeItemPtr curve( new RotoStrokeItem( type, this_shared, name, RotoLayerPtr() ) );
-    int indexInLayer = -1;
-    if (parentLayer) {
-        indexInLayer = 0;
-        parentLayer->insertItem(curve, 0);
-    }
-    curve->createNodes();
-
-    _imp->lastInsertedItem = curve;
-
-    Q_EMIT itemInserted(indexInLayer, RotoItem::eSelectionReasonOther);
+    RotoLayerPtr parentLayer = getLayerForNewItem();
+    RotoStrokeItemPtr curve( new RotoStrokeItem(type, _imp->knobsTable) );
+    _imp->knobsTable->insertItem(0, curve, parentLayer, eTableChangeReasonInternal);
 
     if (clearSel) {
-        clearSelection(RotoItem::eSelectionReasonOther);
-        select(curve, RotoItem::eSelectionReasonOther);
+        _imp->knobsTable->beginEditSelection();
+        _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
+        _imp->knobsTable->addToSelection(curve, eTableChangeReasonInternal);
+        _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
     }
 
     return curve;
@@ -3139,40 +3048,40 @@ RotoPaint::makeEllipse(double x,
                          double time)
 {
     double half = diameter / 2.;
-    BezierPtr curve = makeBezier(x, fromCenter ? y - half : y, kRotoEllipseBaseName, time, false);
+    BezierPtr curve = makeBezier(x, fromCenter ? y - half : y, tr(kRotoEllipseBaseName).toStdString(), time, false);
 
     if (fromCenter) {
-        curve->addControlPoint(x + half, y, time);
-        curve->addControlPoint(x, y + half, time);
-        curve->addControlPoint(x - half, y, time);
+        curve->addControlPoint(x + half, y, time, ViewIdx(0));
+        curve->addControlPoint(x, y + half, time, ViewIdx(0));
+        curve->addControlPoint(x - half, y, time, ViewIdx(0));
     } else {
-        curve->addControlPoint(x + diameter, y - diameter, time);
-        curve->addControlPoint(x, y - diameter, time);
-        curve->addControlPoint(x - diameter, y - diameter, time);
+        curve->addControlPoint(x + diameter, y - diameter, time, ViewIdx(0));
+        curve->addControlPoint(x, y - diameter, time, ViewIdx(0));
+        curve->addControlPoint(x - diameter, y - diameter, time, ViewIdx(0));
     }
 
-    BezierCPPtr top = curve->getControlPointAtIndex(0);
-    BezierCPPtr right = curve->getControlPointAtIndex(1);
-    BezierCPPtr bottom = curve->getControlPointAtIndex(2);
-    BezierCPPtr left = curve->getControlPointAtIndex(3);
+    BezierCPPtr top = curve->getControlPointAtIndex(0, ViewIdx(0));
+    BezierCPPtr right = curve->getControlPointAtIndex(1, ViewIdx(0));
+    BezierCPPtr bottom = curve->getControlPointAtIndex(2, ViewIdx(0));
+    BezierCPPtr left = curve->getControlPointAtIndex(3, ViewIdx(0));
     double topX, topY, rightX, rightY, btmX, btmY, leftX, leftY;
-    top->getPositionAtTime(false, time, ViewIdx(0), &topX, &topY);
-    right->getPositionAtTime(false, time, ViewIdx(0), &rightX, &rightY);
-    bottom->getPositionAtTime(false, time, ViewIdx(0), &btmX, &btmY);
-    left->getPositionAtTime(false, time, ViewIdx(0), &leftX, &leftY);
+    top->getPositionAtTime(time, &topX, &topY);
+    right->getPositionAtTime(time,  &rightX, &rightY);
+    bottom->getPositionAtTime(time,  &btmX, &btmY);
+    left->getPositionAtTime(time,  &leftX, &leftY);
 
-    curve->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
-    curve->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
+    curve->setLeftBezierPoint(0, time, ViewIdx(0), (leftX + topX) / 2., topY);
+    curve->setRightBezierPoint(0, time, ViewIdx(0),(rightX + topX) / 2., topY);
 
-    curve->setLeftBezierPoint(1, time,  rightX, (rightY + topY) / 2.);
-    curve->setRightBezierPoint(1, time, rightX, (rightY + btmY) / 2.);
+    curve->setLeftBezierPoint(1, time, ViewIdx(0), rightX, (rightY + topY) / 2.);
+    curve->setRightBezierPoint(1, time, ViewIdx(0),rightX, (rightY + btmY) / 2.);
 
-    curve->setLeftBezierPoint(2, time,  (rightX + btmX) / 2., btmY);
-    curve->setRightBezierPoint(2, time, (leftX + btmX) / 2., btmY);
+    curve->setLeftBezierPoint(2, time,  ViewIdx(0),(rightX + btmX) / 2., btmY);
+    curve->setRightBezierPoint(2, time, ViewIdx(0),(leftX + btmX) / 2., btmY);
 
-    curve->setLeftBezierPoint(3, time,   leftX, (btmY + leftY) / 2.);
-    curve->setRightBezierPoint(3, time, leftX, (topY + leftY) / 2.);
-    curve->setCurveFinished(true);
+    curve->setLeftBezierPoint(3, time, ViewIdx(0),  leftX, (btmY + leftY) / 2.);
+    curve->setRightBezierPoint(3, time, ViewIdx(0),leftX, (topY + leftY) / 2.);
+    curve->setCurveFinished(true, ViewIdx(0));
 
     return curve;
 }
@@ -3185,10 +3094,10 @@ RotoPaint::makeSquare(double x,
 {
     BezierPtr curve = makeBezier(x, y, kRotoRectangleBaseName, time, false);
 
-    curve->addControlPoint(x + initialSize, y, time);
-    curve->addControlPoint(x + initialSize, y - initialSize, time);
-    curve->addControlPoint(x, y - initialSize, time);
-    curve->setCurveFinished(true);
+    curve->addControlPoint(x + initialSize, y, time, ViewIdx(0));
+    curve->addControlPoint(x + initialSize, y - initialSize, time, ViewIdx(0));
+    curve->addControlPoint(x, y - initialSize, time, ViewIdx(0));
+    curve->setCurveFinished(true, ViewIdx(0));
     
     return curve;
 }

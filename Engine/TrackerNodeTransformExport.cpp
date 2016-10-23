@@ -27,7 +27,41 @@
 #include "TrackerNode.h"
 #include "TrackerNodePrivate.h"
 
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QWaitCondition>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
+#include <QFuture>
+#include <QFutureWatcher>
+#include <QtConcurrentMap>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
+#include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/TrackerHelper.h"
+#include "Engine/TrackMarker.h"
+
+
+#ifdef DEBUG
+// Uncomment to prevent transform computation from using multiple threads
+//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+#endif
+
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -81,7 +115,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
             break;
     }
 
-    NodePtr thisNode = getNode();
+    NodePtr thisNode = publicInterface->getNode();
     AppInstancePtr app = thisNode->getApp();
     CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID.toStdString(), thisNode->getGroup() ));
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -99,7 +133,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
     thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
     createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
 
-    int timeForFromPoints = getTransformReferenceFrame();
+    int timeForFromPoints = referenceFrame.lock()->getValue();
 
 
     switch (transformType) {
@@ -112,15 +146,15 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 cornerPinFromPoints[i] = getCornerPinPoint(createdNode, true, i);
                 assert(cornerPinFromPoints[i]);
                 for (int j = 0; j < cornerPinFromPoints[i]->getNDimensions(); ++j) {
-                    cornerPinFromPoints[i]->setValue(fromPoints[i].lock()->getValueAtTime(timeForFromPoints, j), ViewSpec(0), j);
+                    cornerPinFromPoints[i]->setValue(fromPoints[i].lock()->getValueAtTime(timeForFromPoints, DimIdx(j)), ViewSetSpec::all(), DimIdx(j));
                 }
 
                 cornerPinToPoints[i] = getCornerPinPoint(createdNode, false, i);
                 assert(cornerPinToPoints[i]);
                 if (!linked) {
-                    cornerPinToPoints[i]->clone( toPoints[i].lock() );
+                    cornerPinToPoints[i]->copyKnob( toPoints[i].lock() );
                 } else {
-                    bool ok = cornerPinToPoints[i]->slaveTo(_imp->toPoints[i].lock());
+                    bool ok = cornerPinToPoints[i]->slaveTo(toPoints[i].lock());
                     (void)ok;
                     assert(ok);
                 }
@@ -130,7 +164,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 if (knob) {
                     KnobDoublePtr isType = toKnobDouble(knob);
                     if (isType) {
-                        isType->clone( _imp->cornerPinMatrix.lock() );
+                        isType->copyKnob(cornerPinMatrix.lock() );
                     }
                 }
             }
@@ -142,10 +176,9 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 KnobDoublePtr isDbl = toKnobDouble(translateKnob);
                 if (isDbl) {
                     if (!linked) {
-                        isDbl->clone( _imp->translate.lock() );
+                        isDbl->copyKnob(translate.lock() );
                     } else {
-                        isDbl->slaveTo(0, _imp->translate.lock(), 0);
-                        isDbl->slaveTo(1, _imp->translate.lock(), 1);
+                        isDbl->slaveTo(translate.lock());
                     }
                 }
             }
@@ -155,10 +188,9 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 KnobDoublePtr isDbl = toKnobDouble(scaleKnob);
                 if (isDbl) {
                     if (!linked) {
-                        isDbl->clone( _imp->scale.lock() );
+                        isDbl->copyKnob(scale.lock() );
                     } else {
-                        isDbl->slaveTo(0, _imp->scale.lock(), 0);
-                        isDbl->slaveTo(1, _imp->scale.lock(), 1);
+                        isDbl->slaveTo(scale.lock());
                     }
                 }
             }
@@ -168,9 +200,9 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 KnobDoublePtr isDbl = toKnobDouble(rotateKnob);
                 if (isDbl) {
                     if (!linked) {
-                        isDbl->clone( _imp->rotate.lock() );
+                        isDbl->copyKnob(rotate.lock());
                     } else {
-                        isDbl->slaveTo(0, _imp->rotate.lock(), 0);
+                        isDbl->slaveTo(rotate.lock());
                     }
                 }
             }
@@ -178,7 +210,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
             if (centerKnob) {
                 KnobDoublePtr isDbl = toKnobDouble(centerKnob);
                 if (isDbl) {
-                    isDbl->clone( _imp->center.lock() );
+                    isDbl->copyKnob( center.lock() );
                 }
             }
             break;
@@ -190,9 +222,9 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
         KnobBoolPtr isBool = toKnobBool(cpInvertKnob);
         if (isBool) {
             if (!linked) {
-                isBool->clone( _imp->invertTransform.lock() );
+                isBool->copyKnob(invertTransform.lock());
             } else {
-                isBool->slaveTo(0, _imp->invertTransform.lock(), 0);
+                isBool->slaveTo(invertTransform.lock());
             }
         }
     }
@@ -202,7 +234,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->clone( _imp->motionBlur.lock() );
+                isType->copyKnob(motionBlur.lock());
             }
         }
     }
@@ -211,7 +243,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->clone( _imp->shutter.lock() );
+                isType->copyKnob(shutter.lock());
             }
         }
     }
@@ -220,7 +252,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
         if (knob) {
             KnobChoicePtr isType = toKnobChoice(knob);
             if (isType) {
-                isType->clone( _imp->shutterOffset.lock() );
+                isType->copyKnob(shutterOffset.lock());
             }
         }
     }
@@ -229,7 +261,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = toKnobDouble(knob);
             if (isType) {
-                isType->clone( _imp->customShutterOffset.lock() );
+                isType->copyKnob(customShutterOffset.lock());
             }
         }
     }
@@ -250,22 +282,22 @@ TrackerNodePrivate::solveTransformParamsIfAutomatic()
 void
 TrackerNodePrivate::solveTransformParams()
 {
-    _imp->setTransformOutOfDate(false);
+    setTransformOutOfDate(false);
 
     std::vector<TrackMarkerPtr> markers;
 
-    getAllMarkers(&markers);
+    knobsTable->getAllMarkers(&markers);
     if ( markers.empty() ) {
         return;
     }
 
-    _imp->resetTransformParamsAnimation();
+    resetTransformParamsAnimation();
 
-    KnobChoicePtr motionTypeKnob = _imp->motionType.lock();
+    KnobChoicePtr motionTypeKnob = motionType.lock();
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
-    double refTime = (double)getTransformReferenceFrame();
-    int jitterPeriod = 0;
+    double refTime = (double)referenceFrame.lock()->getValue();
+    int jitterPer = 0;
     bool jitterAdd = false;
     switch (type) {
         case eTrackerMotionTypeNone:
@@ -276,13 +308,13 @@ TrackerNodePrivate::solveTransformParams()
             break;
         case eTrackerMotionTypeAddJitter:
         case eTrackerMotionTypeRemoveJitter: {
-            jitterPeriod = _imp->jitterPeriod.lock()->getValue();
+            jitterPer = jitterPeriod.lock()->getValue();
             jitterAdd = type == eTrackerMotionTypeAddJitter;
             break;
         }
     }
 
-    _imp->setSolverParamsEnabled(false);
+    setSolverParamsEnabled(false);
 
     std::set<double> keyframes;
     {
@@ -294,21 +326,17 @@ TrackerNodePrivate::solveTransformParams()
             }
         }
     }
-    KnobChoicePtr transformTypeKnob = _imp->transformType.lock();
+    KnobChoicePtr transformTypeKnob = transformType.lock();
     assert(transformTypeKnob);
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
-    NodePtr node = getNode();
+    NodePtr node = publicInterface->getNode();
     node->getEffectInstance()->beginChanges();
 
 
-    if (type == eTrackerMotionTypeStabilize) {
-        _imp->invertTransform.lock()->setValue(true);
-    } else {
-        _imp->invertTransform.lock()->setValue(false);
-    }
+    invertTransform.lock()->setValue(type == eTrackerMotionTypeStabilize);
 
-    KnobDoublePtr centerKnob = _imp->center.lock();
+    KnobDoublePtr centerKnob = center.lock();
 
     // Set the center at the reference frame
     Point centerValue = {0, 0};
@@ -319,38 +347,44 @@ TrackerNodePrivate::solveTransformParams()
         }
         KnobDoublePtr markerCenterKnob = markers[i]->getCenterKnob();
 
-        centerValue.x += markerCenterKnob->getValueAtTime(refTime, 0);
-        centerValue.y += markerCenterKnob->getValueAtTime(refTime, 1);
+        centerValue.x += markerCenterKnob->getValueAtTime(refTime);
+        centerValue.y += markerCenterKnob->getValueAtTime(refTime, DimIdx(1));
         ++nSamplesAtRefTime;
     }
     if (nSamplesAtRefTime) {
         centerValue.x /= nSamplesAtRefTime;
         centerValue.y /= nSamplesAtRefTime;
-        centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+        {
+            std::vector<double> values(2);
+            values[0] = centerValue.x;
+            values[1] = centerValue.y;
+            centerKnob->setValueAcrossDimensions(values);
+        }
+
     }
 
-    bool robustModel;
-    robustModel = _imp->robustModel.lock()->getValue();
+    bool robust;
+    robust = robustModel.lock()->getValue();
 
-    KnobDoublePtr maxFittingErrorKnob = _imp->fittingErrorWarnIfAbove.lock();
+    KnobDoublePtr maxFittingErrorKnob = fittingErrorWarnIfAbove.lock();
     const double maxFittingError = maxFittingErrorKnob->getValue();
 
     node->getApp()->progressStart( node, tr("Solving for transform parameters...").toStdString(), std::string() );
 
-    _imp->lastSolveRequest.refTime = refTime;
-    _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
-    _imp->lastSolveRequest.jitterAdd = jitterAdd;
-    _imp->lastSolveRequest.allMarkers = markers;
-    _imp->lastSolveRequest.keyframes = keyframes;
-    _imp->lastSolveRequest.robustModel = robustModel;
-    _imp->lastSolveRequest.maxFittingError = maxFittingError;
+    lastSolveRequest.refTime = refTime;
+    lastSolveRequest.jitterPeriod = jitterPer;
+    lastSolveRequest.jitterAdd = jitterAdd;
+    lastSolveRequest.allMarkers = markers;
+    lastSolveRequest.keyframes = keyframes;
+    lastSolveRequest.robustModel = robust;
+    lastSolveRequest.maxFittingError = maxFittingError;
 
     switch (transformType) {
         case eTrackerTransformNodeTransform:
-            _imp->computeTransformParamsFromTracks();
+            computeTransformParamsFromTracks();
             break;
         case eTrackerTransformNodeCornerPin:
-            _imp->computeCornerParamsFromTracks();
+            computeCornerParamsFromTracks();
             break;
     }
 } // TrackerNodePrivate::solveTransformParams
@@ -417,13 +451,13 @@ bool extractSample(SrcIterator it,
                    DstDataType* sample);
 
 template <>
-bool extractSample(QList<TrackerContextPrivate::CornerPinData>::const_iterator it,
+bool extractSample(QList<CornerPinData>::const_iterator it,
                    const CornerPinPoints* userData,
                    CornerPinPoints* sample)
 {
     assert(userData);
     for (int c = 0; c < 4; ++c) {
-        sample->pts[c] = applyHomography(userData->pts[c], it->h);
+        sample->pts[c] = TrackerHelper::applyHomography(userData->pts[c], it->h);
     }
     return true;
 }
@@ -438,7 +472,7 @@ bool extractSample(KeyFrameSet::const_iterator it,
 }
 
 template <>
-bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+bool extractSample(QList<TransformData>::const_iterator it,
                    const void* /*userData*/,
                    TranslateData* sample)
 {
@@ -447,7 +481,7 @@ bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator i
 }
 
 template <>
-bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+bool extractSample(QList<TransformData>::const_iterator it,
                    const void* /*userData*/,
                    RotateData* sample)
 {
@@ -459,7 +493,7 @@ bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator i
 }
 
 template <>
-bool extractSample(QList<TrackerContextPrivate::TransformData>::const_iterator it,
+bool extractSample(QList<TransformData>::const_iterator it,
                    const void* /*userData*/,
                    ScaleData* sample)
 {
@@ -645,8 +679,8 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     // Get reference corner pin
     CornerPinPoints refFrom;
     for (int c = 0; c < 4; ++c) {
-        refFrom.pts[c].x = fromPointsKnob[c]->getValueAtTime(refTime, 0);
-        refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
+        refFrom.pts[c].x = fromPointsKnob[c]->getValueAtTime(refTime);
+        refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, DimIdx(1));
     }
 
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
@@ -670,7 +704,7 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
         if (smoothJitter <= 1) {
             for (int c = 0; c < 4; ++c) {
                 Point toPoint;
-                toPoint = applyHomography(refFrom.pts[c], dataAtTime.h);
+                toPoint = TrackerHelper::applyHomography(refFrom.pts[c], dataAtTime.h);
                 KeyFrame kx(dataAtTime.time, toPoint.x);
                 KeyFrame ky(dataAtTime.time, toPoint.y);
                 tmpToPointsCurveX[c].addKeyFrame(kx);
@@ -734,17 +768,14 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
 
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
-    fittingErrorKnob->cloneCurve( ViewSpec::all(), 0, tmpFittingErrorCurve);
+    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
     for (int c = 0; c < 4; ++c) {
-        toPointsKnob[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
-        toPointsKnob[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
+        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(0), tmpToPointsCurveX[c], 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+        toPointsKnob[c]->cloneCurve(ViewIdx(0), DimIdx(1), tmpToPointsCurveY[c], 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
     }
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        int nDims = (*it)->getNDimensions();
-        for (int i = 0; i < nDims; ++i) {
-            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-        }
+        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
 
     endSolve();
@@ -753,20 +784,29 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
 void
 TrackerNodePrivate::computeCornerParamsFromTracks()
 {
+    boost::shared_ptr<TrackerParamsProvider> thisShared = shared_from_this();
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.tWatcher.reset();
-    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<TrackerContextPrivate::CornerPinData>() );
+    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), publicInterface, SLOT(onCornerPinSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), publicInterface, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+
+    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerHelper::computeCornerPinParamsFromTracksAtTime,
+                                                                                                         lastSolveRequest.refTime,
+                                                                                                         _1,
+                                                                                                         lastSolveRequest.jitterPeriod,
+                                                                                                         lastSolveRequest.jitterAdd,
+                                                                                                         lastSolveRequest.robustModel,
+                                                                                                         thisShared,
+                                                                                                         lastSolveRequest.allMarkers)) );
 #else
-    NodePtr thisNode = node.lock();
+    NodePtr thisNode = publicInterface->getNode();
     QList<CornerPinData> validResults;
     {
         int nKeys = (int)lastSolveRequest.keyframes.size();
         int keyIndex = 0;
         for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
-            CornerPinData data = computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers);
+            CornerPinData data = tracker->computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, thisShared, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
@@ -792,28 +832,24 @@ TrackerNodePrivate::resetTransformParamsAnimation()
 
 
         for (int i = 0; i < 4; ++i) {
-            toPointsKnob[i]->resetToDefaultValue(0);
-            toPointsKnob[i]->resetToDefaultValue(1);
-            enabledPointsKnob[i]->resetToDefaultValue(0);
+            toPointsKnob[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+            enabledPointsKnob[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
     }
     KnobDoublePtr centerKnob = center.lock();
 
-    centerKnob->resetToDefaultValue(0);
-    centerKnob->resetToDefaultValue(1);
+    centerKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     {
         // Revert animation on the transform
         KnobDoublePtr translationKnob = translate.lock();
         KnobDoublePtr scaleKnob = scale.lock();
         KnobDoublePtr rotationKnob = rotate.lock();
 
-        translationKnob->resetToDefaultValue(0);
-        translationKnob->resetToDefaultValue(1);
+        translationKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
 
-        scaleKnob->resetToDefaultValue(0);
-        scaleKnob->resetToDefaultValue(1);
+        scaleKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
 
-        rotationKnob->resetToDefaultValue(0);
+        rotationKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     }
 }
 
@@ -832,9 +868,9 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
     KnobIntPtr smoothKnob = smoothTransform.lock();
     int smoothTJitter, smoothRJitter, smoothSJitter;
 
-    smoothTJitter = smoothKnob->getValue(0);
-    smoothRJitter = smoothKnob->getValue(1);
-    smoothSJitter = smoothKnob->getValue(2);
+    smoothTJitter = smoothKnob->getValue(DimIdx(0));
+    smoothRJitter = smoothKnob->getValue(DimIdx(1));
+    smoothSJitter = smoothKnob->getValue(DimIdx(2));
 
     KnobDoublePtr translationKnob = translate.lock();
     KnobDoublePtr scaleKnob = scale.lock();
@@ -910,19 +946,16 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
     } // for all samples
 
     fittingWarningKnob->setSecret(!mustShowFittingWarn);
-    fittingErrorKnob->cloneCurve(ViewSpec::all(), 0, tmpFittingErrorCurve);
-    translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
-    translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
-    rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);
-    scaleKnob->cloneCurve(ViewSpec::all(), 0, tmpScaleCurve);
-    scaleKnob->cloneCurve(ViewSpec::all(), 1, tmpScaleCurve);
+    fittingErrorKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpFittingErrorCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    translationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpTXCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    translationKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpTYCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    rotationKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpRotateCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(0), tmpScaleCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
+    scaleKnob->cloneCurve(ViewIdx(0), DimIdx(1), tmpScaleCurve, 0 /*offset*/, 0 /*range*/, 0 /*stringAnim*/);
 
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        int nDims = (*it)->getNDimensions();
-        for (int i = 0; i < nDims; ++i) {
-            (*it)->evaluateValueChange(i, refTime, ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-        }
+        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
     endSolve();
 } // TrackerNodePrivate::computeTransformParamsFromTracksEnd
@@ -930,20 +963,30 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
 void
 TrackerNodePrivate::computeTransformParamsFromTracks()
 {
+    boost::shared_ptr<TrackerParamsProvider> thisShared = shared_from_this();
+
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.cpWatcher.reset();
-    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TrackerContextPrivate::TransformData>() );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), publicInterface, SLOT(onTransformSolverWatcherFinished()) );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), publicInterface, SLOT(onTransformSolverWatcherProgress(int)) );
+
+    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerHelper::computeTransformParamsFromTracksAtTime,
+                                                                                                        lastSolveRequest.refTime,
+                                                                                                        _1,
+                                                                                                        lastSolveRequest.jitterPeriod,
+                                                                                                        lastSolveRequest.jitterAdd,
+                                                                                                        lastSolveRequest.robustModel,
+                                                                                                        thisShared,
+                                                                                                        lastSolveRequest.allMarkers)) );
 #else
-    NodePtr thisNode = node.lock();
+    NodePtr thisNode = publicInterface->getNode();
     QList<TransformData> validResults;
     {
         int nKeys = lastSolveRequest.keyframes.size();
         int keyIndex = 0;
         for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
-            TransformData data = computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers);
+            TransformData data = tracker->computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, thisShared, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
@@ -958,24 +1001,24 @@ TrackerNodePrivate::computeTransformParamsFromTracks()
 void
 TrackerNode::onCornerPinSolverWatcherFinished()
 {
-    assert(lastSolveRequest.cpWatcher);
-    computeCornerParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.maxFittingError, lastSolveRequest.cpWatcher->future().results() );
+    assert(_imp->lastSolveRequest.cpWatcher);
+    _imp->computeCornerParamsFromTracksEnd( _imp->lastSolveRequest.refTime, _imp->lastSolveRequest.maxFittingError, _imp->lastSolveRequest.cpWatcher->future().results() );
 }
 
 void
 TrackerNode::onTransformSolverWatcherFinished()
 {
-    assert(lastSolveRequest.tWatcher);
-    computeTransformParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.maxFittingError, lastSolveRequest.tWatcher->future().results() );
+    assert(_imp->lastSolveRequest.tWatcher);
+    _imp->computeTransformParamsFromTracksEnd( _imp->lastSolveRequest.refTime, _imp->lastSolveRequest.maxFittingError, _imp->lastSolveRequest.tWatcher->future().results() );
 }
 
 void
 TrackerNode::onCornerPinSolverWatcherProgress(int progress)
 {
-    assert(lastSolveRequest.cpWatcher);
-    NodePtr thisNode = node.lock();
-    double min = lastSolveRequest.cpWatcher->progressMinimum();
-    double max = lastSolveRequest.cpWatcher->progressMaximum();
+    assert(_imp->lastSolveRequest.cpWatcher);
+    NodePtr thisNode = getNode();
+    double min = _imp->lastSolveRequest.cpWatcher->progressMinimum();
+    double max = _imp->lastSolveRequest.cpWatcher->progressMaximum();
     double p = (progress - min) / (max - min);
     thisNode->getApp()->progressUpdate(thisNode, p);
 }
@@ -983,10 +1026,10 @@ TrackerNode::onCornerPinSolverWatcherProgress(int progress)
 void
 TrackerNode::onTransformSolverWatcherProgress(int progress)
 {
-    assert(lastSolveRequest.tWatcher);
-    NodePtr thisNode = node.lock();
-    double min = lastSolveRequest.tWatcher->progressMinimum();
-    double max = lastSolveRequest.tWatcher->progressMaximum();
+    assert(_imp->lastSolveRequest.tWatcher);
+    NodePtr thisNode = getNode();
+    double min = _imp->lastSolveRequest.tWatcher->progressMinimum();
+    double max = _imp->lastSolveRequest.tWatcher->progressMaximum();
     double p = (progress - min) / (max - min);
     thisNode->getApp()->progressUpdate(thisNode, p);
 }
@@ -1001,7 +1044,7 @@ TrackerNodePrivate::endSolve()
     lastSolveRequest.keyframes.clear();
     lastSolveRequest.allMarkers.clear();
     setSolverParamsEnabled(true);
-    NodePtr n = node.lock();
+    NodePtr n = publicInterface->getNode();
     n->getApp()->progressEnd(n);
     n->getEffectInstance()->endChanges();
 }

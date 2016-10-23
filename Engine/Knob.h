@@ -1324,7 +1324,7 @@ public:
     /**
      * @brief Restores the default value
      **/
-    virtual void resetToDefaultValue(DimSpec dimension, ViewSetSpec view) = 0;
+    virtual void resetToDefaultValue(DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all()) = 0;
 
     /**
      * @brief Must return true if this Lnob holds a POD (plain old data) type, i.e. int, bool, or double.
@@ -2182,7 +2182,7 @@ public:
     double getIntegrateFromTimeToTimeSimpson(double time1, double time2, ViewGetSpec view, DimIdx dimension);
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
-    virtual void resetToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void resetToDefaultValue(DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all()) OVERRIDE FINAL;
     virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
     virtual void cloneDefaultValues(const KnobIPtr& other) OVERRIDE FINAL;
 

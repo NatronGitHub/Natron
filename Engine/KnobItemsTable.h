@@ -308,6 +308,12 @@ public:
     bool getMasterKeyframe(int index, ViewGetSpec view, KeyFrame* k) const;
 
     /**
+     * @brief If there is a master keyframe at the given time and view returns true
+     * otherwise returns false
+     **/
+    bool getHasMasterKeyframe(double time, ViewGetSpec view) const;
+
+    /**
      * @brief Convenience function that calls getCurve()->getKeyFrames
      **/
     void getMasterKeyFrameTimes(ViewGetSpec view, std::set<double>* times) const;
@@ -316,6 +322,12 @@ public:
      * @brief Convenience function that checks if a keyframe exists at the given time/view
      **/
     bool hasMasterKeyframeAtTime(double time, ViewGetSpec view) const;
+
+    /**
+     * @brief Returns what should be the default base-name for the item, e.g "Bezier" or "Brush" etc...
+     * The model will then derive from this name to assign a unique script-name to the item.
+     **/
+    virtual std::string getBaseItemName() const = 0;
 
 protected:
 
@@ -369,12 +381,6 @@ protected:
      **/
     virtual void initializeKnobs() OVERRIDE = 0;
 
-    
-    /**
-     * @brief Returns what should be the default base-name for the item, e.g "Bezier" or "Brush" etc...
-     * The model will then derive from this name to assign a unique script-name to the item.
-     **/
-    virtual std::string getBaseItemName() const = 0;
     
     /**
      * @brief Callback called when the item is removed from the model
@@ -588,6 +594,11 @@ public:
      * @brief Returns a vector with all top level items in the model in order.
      **/
     std::vector<KnobTableItemPtr> getTopLevelItems() const;
+
+    /**
+     * @brief Returns a vector with all items in the model
+     **/
+    std::vector<KnobTableItemPtr> getAllItems() const;
 
     /**
      * @brief Returns the top level item at given index

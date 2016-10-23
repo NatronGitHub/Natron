@@ -164,13 +164,13 @@ static PyObject* Sbk_StrokeItemFunc_getPoints(PyObject* self)
             std::list<std::list<StrokePoint> > points = cppSelf->getPoints();
             PyObject* ret = PyList_New((int) points.size());
             int i = 0;
-            for (std::list<std::list<StrokePoint> >::iterator it = items.begin(); it!=items.end(); ++it, ++i) {
+            for (std::list<std::list<StrokePoint> >::iterator it = points.begin(); it!=points.end(); ++it, ++i) {
 
 
                 PyObject* subStrokeItemList = PyList_New((int) it->size());
 
                 int idx = 0;
-                for (std::list<std::list<StrokePoint> >::iterator it2 = it->begin(); it2!=it->end(); ++it2,++idx) {
+                for (std::list<StrokePoint>::iterator it2 = it->begin(); it2!=it->end(); ++it2,++idx) {
                     PyObject* item = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_STROKEPOINT_IDX], &*it);
                     // Ownership transferences.
                     PyList_SET_ITEM(subStrokeItemList, idx, item);

@@ -109,10 +109,11 @@ public:
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
                                    const double distToNextIn,
                                    const Point& lastCenterPointIn,
-                                   const RotoDrawableItem* stroke,
+                                   const RotoStrokeItemPtr& stroke,
                                    bool doBuildup,
                                    double opacity,
                                    double time,
+                                   ViewIdx view,
                                    unsigned int mipmapLevel,
                                    double* distToNextOut,
                                    Point* lastCenterPoint);
@@ -120,12 +121,12 @@ public:
     /**
      * @brief Low level: renders the given bezier with motion blur onto the given cairo image
      **/
-    static void renderBezier_cairo(cairo_t* cr, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
+    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, double time, ViewIdx view, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
-    static void renderFeather_old_cairo(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_old_cairo(const BezierPtr& bezier, double time, ViewIdx view, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
 
     /**
     * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
@@ -154,6 +155,7 @@ public:
                                          const double endTime,
                                          const double timeStep,
                                          const double time,
+                                         ViewIdx view,
                                          const ImageBitDepthEnum depth,
                                          const unsigned int mipmapLevel,
                                          const bool isDuringPainting,
@@ -166,8 +168,9 @@ public:
 
 
     static bool renderSmear_cairo(double time,
+                                  ViewIdx view,
                                   unsigned int mipMapLevel,
-                                  const RotoStrokeItem* rotoItem,
+                                  const RotoStrokeItemPtr& rotoItem,
                                   const RectI& roi,
                                   const ImagePtr& dstImage,
                                   const double distToNextIn,

@@ -198,7 +198,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         if (enabledKnob) {
             MasterKnobLink linkData;
             if (enabledKnob->getMaster(DimIdx(0), ViewIdx(0), &linkData)) {
-                contextEnabledKnob = linkData.masterKnob.lock();
+                contextEnabledKnob = toKnobBool(linkData.masterKnob.lock());
                 enabledKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
             }
         }
@@ -352,3 +352,5 @@ TrackScheduler::track(const boost::shared_ptr<TrackArgs>& args)
 
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+#include "moc_TrackScheduler.cpp"

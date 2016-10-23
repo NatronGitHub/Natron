@@ -396,7 +396,7 @@ StringAnimationManager::save(std::map<ViewIdx,std::map<double, std::string> >* k
         std::map<double, std::string>& keys = (*keyframes)[it->first];
 
         for (Keyframes::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            std::pair<std::map<int, std::string>::iterator, bool> success = keys.insert( std::make_pair(it2->time, it2->value) );
+            std::pair<std::map<double, std::string>::iterator, bool> success = keys.insert( std::make_pair(it2->time, it2->value) );
             assert(success.second);
             Q_UNUSED(success);
         }

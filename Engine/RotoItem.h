@@ -96,10 +96,13 @@ public:
 
     bool isLockedRecursive() const;
 
-    
-protected:
+    KnobBoolPtr getLockedKnob() const;
+
+    KnobBoolPtr getActivatedKnob() const;
 
     virtual std::string getBaseItemName() const OVERRIDE = 0;
+
+protected:
 
     virtual void initializeKnobs() OVERRIDE;
 

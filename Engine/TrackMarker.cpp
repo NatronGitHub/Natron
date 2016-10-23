@@ -669,7 +669,8 @@ TrackMarker::notifyTrackingEnded()
 
     // Refresh knobs once finished
     if (!_imp->trackingStartedCount) {
-        TrackMarkerPtr marker = shared_from_this();
+#pragma message WARN("Handle keyframes for trackmarker center knob")
+        /*TrackMarkerPtr marker = shared_from_this();
         getContext()->s_errorKnobValueChanged(marker, 0, eValueChangedReasonNatronInternalEdited);
         for (int i = 0; i < 2; ++i) {
             getContext()->s_centerKnobValueChanged(marker, i, eValueChangedReasonNatronInternalEdited);
@@ -677,7 +678,7 @@ TrackMarker::notifyTrackingEnded()
         if (!_imp->keyframesAddedWhileTracking.empty()) {
             getContext()->s_multipleKeyframesSetOnTrackCenter(marker, _imp->keyframesAddedWhileTracking);
             _imp->keyframesAddedWhileTracking.clear();
-        }
+        }*/
     }
 }
 
@@ -1031,6 +1032,5 @@ TrackMarkerPM::initializeKnobs()
 
 
 NATRON_NAMESPACE_EXIT;
-
 NATRON_NAMESPACE_USING;
 #include "moc_TrackMarker.cpp"

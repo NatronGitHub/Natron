@@ -128,7 +128,7 @@ struct BezierPrivate
 
     bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
     bool isOpenBezier; // when true the bezier will be rendered even if not closed
-    
+
     std::string baseName;
 
     KnobDoubleWPtr feather; //< number of pixels to add to the feather distance (from the feather point), between -100 and 100
@@ -195,7 +195,7 @@ struct BezierPrivate
 
 
 Bezier::Bezier(const KnobItemsTablePtr& model,
-               const std::string & baseName,
+               const std::string& baseName,
                bool isOpenBezier)
 : RotoDrawableItem(model)
 , _imp( new BezierPrivate(baseName, isOpenBezier) )
@@ -1602,6 +1602,7 @@ int
 Bezier::isPointOnCurve(double x,
                        double y,
                        double distance,
+                       double time,
                        ViewGetSpec view,
                        double *t,
                        bool* feather) const
@@ -1610,7 +1611,6 @@ Bezier::isPointOnCurve(double x,
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
 
-    double time = getApp()->getTimeLine()->currentFrame();
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, view_i, &transform);
 

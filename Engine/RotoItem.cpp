@@ -261,6 +261,20 @@ RotoItem::getLocked() const
     return _imp->lockedKnob.lock()->getValue();
 }
 
+KnobBoolPtr
+RotoItem::getLockedKnob() const
+{
+    return _imp->lockedKnob.lock();
+}
+
+KnobBoolPtr
+RotoItem::getActivatedKnob() const
+{
+    return _imp->activatedKnob.lock();
+}
+
+
+
 static
 bool
 isLocked_imp(const RotoLayerPtr& item)

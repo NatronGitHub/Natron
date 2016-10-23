@@ -121,9 +121,9 @@ RemoveTracksCommand::redo()
 {
     KnobItemsTablePtr model = _markers.begin()->track->getModel();
 
-    TrackMarkerPtr nextMarker;
+    KnobTableItemPtr nextMarker;
     {
-        TrackMarkerPtr marker = _markers.back().track;
+        KnobTableItemPtr marker = _markers.back().track;
         assert(marker);
         int index = marker->getIndexInParent();
         std::vector<KnobTableItemPtr> topLevel = model->getTopLevelItems();

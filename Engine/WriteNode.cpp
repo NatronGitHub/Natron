@@ -506,7 +506,7 @@ WriteNodePrivate::checkEncoderCreated(double time,
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewSpec( view.value() ) );
+    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewGetSpec( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
@@ -559,7 +559,10 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         assert(originalFrameRangeKnob);
         KnobIntPtr originalFrameRange = toKnobInt( originalFrameRangeKnob );
         if (originalFrameRange) {
-            originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+            std::vector<int> values(2);
+            values[0] = first;
+            values[1] = last;
+            originalFrameRange->setValueAcrossDimensions(values);
         }
     }
     {
@@ -630,7 +633,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             KnobIPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
             KnobIPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
             if (inputReadColorSpace && outputWriteColorSpace) {
-                inputReadColorSpace->slaveTo(0, outputWriteColorSpace, 0);
+                inputReadColorSpace->slaveTo(outputWriteColorSpace);
             }
         } else {
             output->replaceInput(writeNode, 0);
@@ -836,7 +839,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     pluginChoice->populateChoices(entries, help);
     pluginChoice->blockValueChanges();
-    pluginChoice->resetToDefaultValue(0);
+    pluginChoice->resetToDefaultValue();
     pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
@@ -903,7 +906,7 @@ WriteNode::initializeKnobs()
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
-    frameIncrKnob->setMinimum(1);
+    frameIncrKnob->setRange(1, std::numeric_limits<int>::infinity());
     frameIncrKnob->setDefaultValue(1);
     controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
@@ -1019,7 +1022,7 @@ WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializati
 bool
 WriteNode::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum reason,
-                       ViewSpec view,
+                       ViewSetSpec view,
                        double time,
                        bool originatedFromMainThread)
 {

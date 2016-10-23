@@ -1564,7 +1564,7 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 std::list&lt;double&gt; keys;
-                %CPPSELF.%FUNCTION_NAME(&amp;keys,%1);
+                %CPPSELF.%FUNCTION_NAME(&amp;keys,%2);
                 PyObject* ret = PyList_New((int) keys.size());
                 int idx = 0;
                 for (std::list&lt;double&gt;::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
@@ -1702,13 +1702,13 @@
                 std::list&lt;std::list&lt;StrokePoint&gt; &gt; points = %CPPSELF.%FUNCTION_NAME();
                 PyObject* ret = PyList_New((int) points.size());
                 int i = 0;
-                for (std::list&lt;std::list&lt;StrokePoint&gt; &gt;::iterator it = items.begin(); it!=items.end(); ++it, ++i) {
+                for (std::list&lt;std::list&lt;StrokePoint&gt; &gt;::iterator it = points.begin(); it!=points.end(); ++it, ++i) {
 
 
                     PyObject* subStrokeItemList = PyList_New((int) it->size());
 
                     int idx = 0;
-                    for (std::list&lt;std::list&lt;StrokePoint&gt; &gt;::iterator it2 = it->begin(); it2!=it->end(); ++it2,++idx) {
+                    for (std::list&lt;StrokePoint&gt;::iterator it2 = it->begin(); it2!=it->end(); ++it2,++idx) {
                         PyObject* item = %CONVERTTOPYTHON[StrokePoint](*it);
                         // Ownership transferences.
                         PyList_SET_ITEM(subStrokeItemList, idx, item);
@@ -1734,7 +1734,7 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME();
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>

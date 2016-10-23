@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TRACKERNODEINTERACT_H
-#define TRACKERNODEINTERACT_H
+#ifndef NATRON_ENGINE_TRACKERNODEPRIVATE_H
+#define NATRON_ENGINE_TRACKERNODEPRIVATE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,6 +29,12 @@
 
 #include <map>
 #include <set>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
@@ -560,8 +566,8 @@ struct TrackRequestKey_compareLess
 
 typedef std::map<TrackRequestKey, TrackWatcherPtr, TrackRequestKey_compareLess> TrackKeyframeRequests;
 
-typedef boost::shared_ptr<QFutureWatcher<TrackerHelper::CornerPinData> > CornerPinSolverWatcher;
-typedef boost::shared_ptr<QFutureWatcher<TrackerHelper::TransformData> > TransformSolverWatcher;
+typedef boost::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
+typedef boost::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
 
 struct SolveRequest
 {
@@ -579,7 +585,9 @@ struct SolveRequest
 class TrackerKnobItemsTable;
 class TrackerNode;
 class TrackerNodeInteract;
-class TrackerNodePrivate : public TrackerParamsProvider
+class TrackerNodePrivate
+: public TrackerParamsProvider
+, public boost::enable_shared_from_this<TrackerNodePrivate>
 {
     Q_DECLARE_TR_FUNCTIONS(TrackerNodePrivate)
 
@@ -657,8 +665,16 @@ public:
     SolveRequest lastSolveRequest;
 
 
+private:
 
     TrackerNodePrivate(TrackerNode* publicInterface);
+
+public:
+
+    static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface)
+    {
+        return boost::shared_ptr<TrackerNodePrivate>(new TrackerNodePrivate(publicInterface));
+    }
 
     virtual ~TrackerNodePrivate();
 
@@ -715,13 +731,13 @@ public:
 
     void computeTransformParamsFromTracksEnd(double refTime,
                                              double maxFittingError,
-                                             const QList<TrackerHelper::TransformData>& results);
+                                             const QList<TransformData>& results);
 
     void computeCornerParamsFromTracks();
 
     void computeCornerParamsFromTracksEnd(double refTime,
                                           double maxFittingError,
-                                          const QList<TrackerHelper::CornerPinData>& results);
+                                          const QList<CornerPinData>& results);
 
 
     void endSolve();
@@ -986,4 +1002,4 @@ public Q_SLOTS:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // TRACKERNODEINTERACT_H
+#endif // NATRON_ENGINE_TRACKERNODEPRIVATE_H

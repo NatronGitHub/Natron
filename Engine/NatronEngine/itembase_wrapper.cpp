@@ -424,13 +424,15 @@ static PyObject* Sbk_ItemBaseFunc_getUserKeyframes(PyObject* self, PyObject* arg
                     goto Sbk_ItemBaseFunc_getUserKeyframes_TypeError;
             }
         }
+        ::QString cppArg0 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
             // getUserKeyframes(std::list<double>*,QString)const
             // Begin code injection
 
             std::list<double> keys;
-            cppSelf->getUserKeyframes(&keys,removed_cppArg0);
+            cppSelf->getUserKeyframes(&keys,cppArg0);
             PyObject* ret = PyList_New((int) keys.size());
             int idx = 0;
             for (std::list<double>::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {

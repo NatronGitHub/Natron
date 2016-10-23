@@ -316,12 +316,14 @@ static PyObject* Sbk_RotoFunc_createStroke(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
+        ::NATRON_NAMESPACE::RotoStrokeType cppArg0 = ((::NATRON_NAMESPACE::RotoStrokeType)0);
+        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
             // createStroke(NATRON_NAMESPACE::RotoStrokeType)
             // Begin code injection
 
-            ItemBase * cppResult = cppSelf->createStroke();
+            ItemBase * cppResult = cppSelf->createStroke(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
             // End of code injection
