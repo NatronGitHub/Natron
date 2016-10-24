@@ -195,13 +195,9 @@ public:
     bool isPersistent;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
-    NodesWList outputs, guiOutputs;
-    mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
-
-    ///The  inputs are the ones used while rendering and guiInputs the ones used by the gui whenever
-    ///the node is currently rendering. Once the render is finished, inputs are refreshed automatically to the value of
-    ///guiInputs
-    InputsV inputs, guiInputs;
+    NodesWList outputs;
+    mutable QMutex inputsMutex; //< protects inputs so the serialization thread can access them
+    InputsV inputs;
 
     //to the inputs in a thread-safe manner.
     EffectInstancePtr effect;  //< the effect hosted by this node

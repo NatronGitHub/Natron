@@ -49,11 +49,11 @@ BezierSerialization::encode(YAML::Emitter& em) const
             }
             em << YAML::BeginMap;
             if (!_isOpenBezier) {
-                em << YAML::Key << "Finished" << YAML::Value << _closed;
+                em << YAML::Key << "Finished" << YAML::Value << it->second.closed;
             }
             em << YAML::Key << "ControlPoints" << YAML::Value;
             em << YAML::BeginSeq;
-            for (std::list< ControlPoint >::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            for (std::list< ControlPoint >::const_iterator it2 = it->second.controlPoints.begin(); it2 != it->second.controlPoints.end(); ++it2) {
                 em << YAML::BeginMap;
                 em << YAML::Key << "Inner" << YAML::Value;
                 it2->innerPoint.encode(em);

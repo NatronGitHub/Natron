@@ -2572,15 +2572,6 @@ Node::getOutputs() const
     return _imp->outputs;
 }
 
-const NodesWList &
-Node::getGuiOutputs() const
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->guiOutputs;
-}
-
 void
 Node::getOutputs_mt_safe(NodesWList& outputs) const
 {
@@ -2593,7 +2584,7 @@ void
 Node::getInputNames(std::map<std::string, std::string> & inputNames) const
 {
     // This is called by the serialization thread.
-    // We use the guiInputs because we want to serialize exactly how the tree was to the user
+    // We use the inputs because we want to serialize exactly how the tree was to the user
 
     QMutexLocker l(&_imp->inputsLabelsMutex);
     assert( _imp->inputs.size() == _imp->inputLabels.size() );
@@ -2737,7 +2728,7 @@ Node::getPreferredInputNode() const
         }
         int inputNb = -1;
         std::vector<NodePtr> groupInputs;
-        isGroup->getInputs(&groupInputs, false);
+        isGroup->getInputs(&groupInputs);
         for (std::size_t i = 0; i < groupInputs.size(); ++i) {
             if (groupInputs[i].get() == this) {
                 inputNb = i;
@@ -4683,8 +4674,7 @@ Node::hasViewersConnected(std::list<ViewerInstancePtr >* viewers) const
  * properly visit all nodes in the correct order
  **/
 static NodePtr
-applyNodeRedirectionsUpstream(const NodePtr& node,
-                              bool useGuiInput)
+applyNodeRedirectionsUpstream(const NodePtr& node)
 {
     if (!node) {
         return node;
@@ -4692,13 +4682,13 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
     NodeGroupPtr isGrp = node->isEffectNodeGroup();
     if (isGrp) {
         //The node is a group, instead jump directly to the output node input of the  group
-        return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput(useGuiInput), useGuiInput);
+        return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput());
     }
 
     PrecompNodePtr isPrecomp = node->isEffectPrecompNode();
     if (isPrecomp) {
         //The node is a precomp, instead jump directly to the output node of the precomp
-        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode(), useGuiInput);
+        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode());
     }
 
     GroupInputPtr isInput = node->isEffectGroupInput();
@@ -4708,7 +4698,7 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
         assert(collection);
         isGrp = toNodeGroup(collection);
         if (isGrp) {
-            return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(useGuiInput, node), useGuiInput);
+            return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(node));
         }
     }
 
@@ -4724,7 +4714,6 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
 static void
 applyNodeRedirectionsDownstream(int recurseCounter,
                                 const NodePtr& node,
-                                bool useGuiOutputs,
                                 NodesList& translated)
 {
     NodeGroupPtr isGrp = node->isEffectNodeGroup();
@@ -4732,10 +4721,10 @@ applyNodeRedirectionsDownstream(int recurseCounter,
     if (isGrp) {
         //The node is a group, meaning it should not be taken into account, instead jump directly to the input nodes output of the group
         NodesList inputNodes;
-        isGrp->getInputsOutputs(&inputNodes, useGuiOutputs);
+        isGrp->getInputsOutputs(&inputNodes);
         for (NodesList::iterator it2 = inputNodes.begin(); it2 != inputNodes.end(); ++it2) {
             //Call recursively on them
-            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2, useGuiOutputs, translated);
+            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2, translated);
         }
 
         return;
@@ -4751,19 +4740,17 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         isGrp = toNodeGroup(collection);
         if (isGrp) {
             NodesWList groupOutputs;
-            if (useGuiOutputs) {
-                groupOutputs = isGrp->getNode()->getGuiOutputs();
-            } else {
-                NodePtr grpNode = isGrp->getNode();
-                if (grpNode) {
-                    grpNode->getOutputs_mt_safe(groupOutputs);
-                }
+
+            NodePtr grpNode = isGrp->getNode();
+            if (grpNode) {
+                grpNode->getOutputs_mt_safe(groupOutputs);
             }
+
             for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
                 NodePtr output = it2->lock();
                 if (output) {
-                    applyNodeRedirectionsDownstream(recurseCounter + 1, output, useGuiOutputs, translated);
+                    applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
                 }
             }
         }
@@ -4775,16 +4762,14 @@ applyNodeRedirectionsDownstream(int recurseCounter,
     if ( isInPrecomp && (isInPrecomp->getOutputNode() == node) ) {
         //This node is the output of the precomp, its outputs are the outputs of the precomp node
         NodesWList groupOutputs;
-        if (useGuiOutputs) {
-            groupOutputs = isInPrecomp->getNode()->getGuiOutputs();
-        } else {
-            isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
-        }
+
+        isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
+
         for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
             //Call recursively on them
             NodePtr output = it2->lock();
             if (output) {
-                applyNodeRedirectionsDownstream(recurseCounter + 1, output, useGuiOutputs, translated);
+                applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
             }
         }
 
@@ -4803,7 +4788,7 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
     NodesList redirections;
     NodePtr thisShared = boost::const_pointer_cast<Node>( shared_from_this() );
 
-    applyNodeRedirectionsDownstream(0, thisShared, false, redirections);
+    applyNodeRedirectionsDownstream(0, thisShared, redirections);
     if ( !redirections.empty() ) {
         outputs.insert( outputs.begin(), redirections.begin(), redirections.end() );
     } else {
@@ -4869,16 +4854,13 @@ Node::initializeInputs()
         std::vector<bool> oldInputsVisibility = _imp->inputsVisibility;
         _imp->inputIsRenderingCounter.resize(inputCount);
         _imp->inputs.resize(inputCount);
-        _imp->guiInputs.resize(inputCount);
         _imp->inputsVisibility.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             if ( i < (int)oldInputs.size() ) {
                 _imp->inputs[i] = oldInputs[i];
-                _imp->guiInputs[i] = oldInputs[i];
             } else {
                 _imp->inputs[i].reset();
-                _imp->guiInputs[i].reset();
             }
             if (i < (int) oldInputsVisibility.size()) {
                 _imp->inputsVisibility[i] = oldInputsVisibility[i];
@@ -4910,12 +4892,11 @@ Node::initializeInputs()
 NodePtr
 Node::getInput(int index) const
 {
-    return getInputInternal(false, true, index);
+    return getInputInternal(true, index);
 }
 
 NodePtr
-Node::getInputInternal(bool useGuiInput,
-                       bool useGroupRedirections,
+Node::getInputInternal(bool useGroupRedirections,
                        int index) const
 {
     if (!_imp->inputsInitialized) {
@@ -4926,30 +4907,18 @@ Node::getInputInternal(bool useGuiInput,
         return NodePtr();
     }
 
-    NodePtr ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
+    NodePtr ret =  _imp->inputs[index].lock();
     if (ret && useGroupRedirections) {
-        ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
+        ret = applyNodeRedirectionsUpstream(ret);
     }
 
     return ret;
 }
 
 NodePtr
-Node::getGuiInput(int index) const
-{
-    return getInputInternal(true, true, index);
-}
-
-NodePtr
 Node::getRealInput(int index) const
 {
-    return getInputInternal(false, false, index);
-}
-
-NodePtr
-Node::getRealGuiInput(int index) const
-{
-    return getInputInternal(true, false, index);
+    return getInputInternal(false, index);
 }
 
 int
@@ -4975,15 +4944,6 @@ Node::getInputs() const
     return _imp->inputs;
 }
 
-const std::vector<NodeWPtr > &
-Node::getGuiInputs() const
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->inputsInitialized);
-
-    return _imp->guiInputs;
-}
 
 std::vector<NodeWPtr >
 Node::getInputs_copy() const
@@ -5197,14 +5157,14 @@ Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& 
     markedNodes.push_back(this);
 
     // No need to lock inputs is only written to by the main-thread
-    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
-        if (_imp->guiInputs[i].lock() == input) {
+    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock() == input) {
             return true;
         }
     }
 
-    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
-        NodePtr in = _imp->guiInputs[i].lock();
+    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
+        NodePtr in = _imp->inputs[i].lock();
         if (in) {
             if (in->isNodeUpstreamInternal(input, markedNodes)) {
                 return true;
@@ -5292,16 +5252,16 @@ Node::canConnectInput(const NodePtr& input,
     ///Check for invalid index
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() ) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) ) {
             return eCanConnectInput_indexOutOfRange;
         }
-        if ( _imp->guiInputs[inputNumber].lock() ) {
+        if ( _imp->inputs[inputNumber].lock() ) {
             return eCanConnectInput_inputAlreadyConnected;
         }
     }
 
     NodeGroupPtr isGrp = input->isEffectNodeGroup();
-    if ( isGrp && !isGrp->getOutputNode(true) ) {
+    if ( isGrp && !isGrp->getOutputNode() ) {
         return eCanConnectInput_groupHasNoOutput;
     }
 
@@ -5326,7 +5286,7 @@ Node::canConnectInput(const NodePtr& input,
         double inputFPS = input->getEffectInstance()->getFrameRate();
         QMutexLocker l(&_imp->inputsMutex);
 
-        for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
+        for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
                 if ( !_imp->effect->supportsMultipleClipPARs() ) {
@@ -5366,7 +5326,6 @@ Node::connectInput(const NodePtr & input,
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
 
     {
@@ -5374,19 +5333,13 @@ Node::connectInput(const NodePtr & input,
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
              ( inputNumber >= (int)_imp->inputs.size() ) ||
-             ( !useGuiInputs && _imp->inputs[inputNumber].lock() ) ||
-             ( useGuiInputs && _imp->guiInputs[inputNumber].lock() ) ) {
+             _imp->inputs[inputNumber].lock()) {
             return false;
         }
 
-        ///Set the input
-        if (!useGuiInputs) {
-            _imp->inputs[inputNumber] = input;
-            _imp->guiInputs[inputNumber] = input;
-        } else {
-            _imp->guiInputs[inputNumber] = input;
-        }
-        input->connectOutput( useGuiInputs, shared_from_this() );
+        _imp->inputs[inputNumber] = input;
+
+        input->connectOutput(shared_from_this() );
     }
 
     getApp()->recheckInvalidExpressions();
@@ -5398,12 +5351,11 @@ Node::connectInput(const NodePtr & input,
     Q_EMIT inputChanged(inputNumber);
     bool mustCallEnd = false;
 
-    if (!useGuiInputs) {
-        ///Call the instance changed action with a reason clip changed
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputNumber);
-    }
+    ///Call the instance changed action with a reason clip changed
+    beginInputEdition();
+    mustCallEnd = true;
+    onInputChanged(inputNumber);
+
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
@@ -5424,7 +5376,7 @@ Node::connectInput(const NodePtr & input,
 
 
 bool
-Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
+Node::replaceInputInternal(const NodePtr& input, int inputNumber)
 {
     assert(_imp->inputsInitialized);
     assert(input);
@@ -5456,23 +5408,14 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
         QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
 
-        if (!useGuiInputs) {
-            NodePtr curIn = _imp->inputs[inputNumber].lock();
-            if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
-            }
-            _imp->inputs[inputNumber] = input;
-            _imp->guiInputs[inputNumber] = input;
-        } else {
-            NodePtr curIn = _imp->guiInputs[inputNumber].lock();
-            if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
-            }
-            _imp->guiInputs[inputNumber] = input;
+        NodePtr curIn = _imp->inputs[inputNumber].lock();
+        if (curIn) {
+            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+            curIn->disconnectOutput(this);
         }
-        input->connectOutput( useGuiInputs, shared_from_this() );
+        _imp->inputs[inputNumber] = input;
+
+        input->connectOutput(shared_from_this() );
     }
 
     ///Get notified when the input name has changed
@@ -5481,12 +5424,11 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
     bool mustCallEnd = false;
-    if (!useGuiInputs) {
-        beginInputEdition();
-        mustCallEnd = true;
-        ///Call the instance changed action with a reason clip changed
-        onInputChanged(inputNumber);
-    }
+    beginInputEdition();
+    mustCallEnd = true;
+    ///Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
@@ -5513,9 +5455,8 @@ Node::replaceInput(const NodePtr& input,
 {
 
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
-    return replaceInputInternal(input, inputNumber, useGuiInputs);
+    return replaceInputInternal(input, inputNumber);
 } // Node::replaceInput
 
 void
@@ -5561,7 +5502,6 @@ Node::switchInput0And1()
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
 
     {
@@ -5569,30 +5509,20 @@ Node::switchInput0And1()
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
         NodePtr input0, input1;
 
-        if (!useGuiInputs) {
-            input0 = _imp->inputs[inputAIndex].lock();
-            input1 = _imp->inputs[inputBIndex].lock();
-            _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
-            _imp->inputs[inputBIndex] = input0;
-            _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
-            _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
-        } else {
-            input0 = _imp->guiInputs[inputAIndex].lock();
-            input1 = _imp->guiInputs[inputBIndex].lock();
-            _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
-            _imp->guiInputs[inputBIndex] = input0;
-        }
+        input0 = _imp->inputs[inputAIndex].lock();
+        input1 = _imp->inputs[inputBIndex].lock();
+        _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
+        _imp->inputs[inputBIndex] = input0;
+
 
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
-    bool mustCallEnd = false;
-    if (!useGuiInputs) {
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputAIndex);
-        onInputChanged(inputBIndex);
-    }
+
+    beginInputEdition();
+    onInputChanged(inputAIndex);
+    onInputChanged(inputBIndex);
+
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
         // Notify cache
@@ -5607,9 +5537,7 @@ Node::switchInput0And1()
     }
 
 
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
+    endInputEdition(true);
 } // switchInput0And1
 
 void
@@ -5626,8 +5554,8 @@ Node::onInputLabelChanged(const QString & name)
     int inputNb = -1;
     ///No need to lock, inputs is only written to by the mainthread
 
-    for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-        if (_imp->guiInputs[i].lock().get() == inp) {
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock().get() == inp) {
             inputNb = i;
             break;
         }
@@ -5639,19 +5567,13 @@ Node::onInputLabelChanged(const QString & name)
 }
 
 void
-Node::connectOutput(bool useGuiValues,
-                    const NodePtr& output)
+Node::connectOutput(const NodePtr& output)
 {
     assert(output);
 
     {
         QMutexLocker l(&_imp->outputsMutex);
-        if (!useGuiValues) {
-            _imp->outputs.push_back(output);
-            _imp->guiOutputs.push_back(output);
-        } else {
-            _imp->guiOutputs.push_back(output);
-        }
+        _imp->outputs.push_back(output);
     }
     Q_EMIT outputsChanged();
 }
@@ -5662,7 +5584,6 @@ Node::disconnectInput(int inputNumber)
     assert(_imp->inputsInitialized);
 
     NodePtr inputShared;
-    bool useGuiValues = isNodeRendering();
     bool destroyed;
     {
         QMutexLocker k(&_imp->isBeingDestroyedMutex);
@@ -5676,25 +5597,20 @@ Node::disconnectInput(int inputNumber)
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
              ( inputNumber > (int)_imp->inputs.size() ) ||
-             ( !useGuiValues && !_imp->inputs[inputNumber].lock() ) ||
-             ( useGuiValues && !_imp->guiInputs[inputNumber].lock() ) ) {
+             (!_imp->inputs[inputNumber].lock() )) {
             return -1;
         }
-        inputShared = useGuiValues ? _imp->guiInputs[inputNumber].lock() : _imp->inputs[inputNumber].lock();
+        inputShared = _imp->inputs[inputNumber].lock();
     }
 
 
     QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-    inputShared->disconnectOutput(useGuiValues, this);
+    inputShared->disconnectOutput(this);
 
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if (!useGuiValues) {
-            _imp->inputs[inputNumber].reset();
-            _imp->guiInputs[inputNumber].reset();
-        } else {
-            _imp->guiInputs[inputNumber].reset();
-        }
+        _imp->inputs[inputNumber].reset();
+
     }
 
     {
@@ -5705,12 +5621,10 @@ Node::disconnectInput(int inputNumber)
     }
 
     Q_EMIT inputChanged(inputNumber);
-    bool mustCallEnd = false;
-    if (!useGuiValues) {
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputNumber);
-    }
+
+    beginInputEdition();
+    onInputChanged(inputNumber);
+
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
         // Notify cache
@@ -5722,59 +5636,39 @@ Node::disconnectInput(int inputNumber)
     if ( !inputChangedCB.empty() ) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
+    endInputEdition(true);
 
     return inputNumber;
 } // Node::disconnectInput
 
 int
-Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
+Node::disconnectInputInternal(const NodePtr& input)
 {
     assert(_imp->inputsInitialized);
     int found = -1;
     NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if (!useGuiValues) {
-            for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr curInput = _imp->inputs[i].lock();
-                if (curInput == input) {
-                    inputShared = curInput;
-                    found = (int)i;
-                    break;
-                }
-            }
-        } else {
-            for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-                NodePtr curInput = _imp->guiInputs[i].lock();
-                if (curInput == input) {
-                    inputShared = curInput;
-                    found = (int)i;
-                    break;
-                }
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr curInput = _imp->inputs[i].lock();
+            if (curInput == input) {
+                inputShared = curInput;
+                found = (int)i;
+                break;
             }
         }
+
     }
     if (found != -1) {
         {
             QMutexLocker l(&_imp->inputsMutex);
-            if (!useGuiValues) {
-                _imp->inputs[found].reset();
-                _imp->guiInputs[found].reset();
-            } else {
-                _imp->guiInputs[found].reset();
-            }
+            _imp->inputs[found].reset();
         }
-        input->disconnectOutput(useGuiValues, this);
+        input->disconnectOutput(this);
         Q_EMIT inputChanged(found);
-        bool mustCallEnd = false;
-        if (!useGuiValues) {
-            beginInputEdition();
-            mustCallEnd = true;
-            onInputChanged(found);
-        }
+        beginInputEdition();
+        onInputChanged(found);
+
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
             ///Recompute the hash
@@ -5790,9 +5684,7 @@ Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
             _imp->runInputChangedCallback(found, inputChangedCB);
         }
 
-        if (mustCallEnd) {
-            endInputEdition(true);
-        }
+        endInputEdition(true);
 
         return found;
     }
@@ -5804,32 +5696,21 @@ int
 Node::disconnectInput(const NodePtr& input)
 {
 
-    bool useGuiValues = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
-    return disconnectInputInternal(input, useGuiValues);
+    return disconnectInputInternal(input);
 } // Node::disconnectInput
 
 int
-Node::disconnectOutput(bool useGuiValues,
-                       const Node* output)
+Node::disconnectOutput(const Node* output)
 {
     assert(output);
     int ret = -1;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        if (!useGuiValues) {
-            int ret = 0;
-            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
-                if (it->lock().get() == output) {
-                    _imp->outputs.erase(it);
-                    break;
-                }
-            }
-        }
         int ret = 0;
-        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
+        for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
             if (it->lock().get() == output) {
-                _imp->guiOutputs.erase(it);
+                _imp->outputs.erase(it);
                 break;
             }
         }
@@ -5981,9 +5862,9 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (reconnect) {
         bool hasOnlyOneInputConnected = false;
 
-        ///No need to lock guiInputs is only written to by the mainthread
-        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
+        ///No need to lock inputs is only written to by the mainthread
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
             if (input) {
                 if ( !_imp->effect->isInputOptional(i) ) {
                     if (firstNonOptionalInput == -1) {
@@ -6005,7 +5886,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getRealGuiInput(firstNonOptionalInput);
+                inputToConnectTo = getRealInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }
@@ -6019,10 +5900,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
 
     if (hideGui) {
-        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
             if (input) {
-                input->disconnectOutput(false, this);
+                input->disconnectOutput(this);
             }
         }
     }
@@ -6033,7 +5914,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     NodesWList outputsQueueCopy;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        outputsQueueCopy = _imp->guiOutputs;
+        outputsQueueCopy = _imp->outputs;
     }
 
 
@@ -6060,9 +5941,9 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
-                    output->replaceInputInternal(inputToConnectTo, inputNb, false);
+                    output->replaceInputInternal(inputToConnectTo, inputNb);
                 } else {
-                    ignore_result( output->disconnectInputInternal(shared_from_this(), false) );
+                    ignore_result( output->disconnectInputInternal(shared_from_this()) );
                 }
             }
         }
@@ -6123,14 +6004,14 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
 
 
-    ///No need to lock, guiInputs is only written to by the main-thread
+    ///No need to lock, inputs is only written to by the main-thread
     NodePtr thisShared = shared_from_this();
 
     ///for all inputs, reconnect their output to this node
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
         NodePtr input = _imp->inputs[i].lock();
         if (input) {
-            input->connectOutput(false, thisShared);
+            input->connectOutput(thisShared);
         }
     }
 
@@ -6476,7 +6357,7 @@ Node::makePreviewImage(SequenceTime time,
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
-        NodePtr outputNode = isGroup->getOutputNodeInput(false);
+        NodePtr outputNode = isGroup->getOutputNodeInput();
         if (outputNode) {
             return outputNode->makePreviewImage(time, width, height, buf);
         }
@@ -7075,7 +6956,7 @@ Node::clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
     clearPersistentMessageInternal();
 
     int nInputs = getMaxInputCount();
-    ///No need to lock, guiInputs is only written to by the main-thread
+    ///No need to lock, inputs is only written to by the main-thread
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = getInput(i);
         if (input) {
@@ -7716,7 +7597,7 @@ Node::onInputChanged(int inputNb)
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
         std::vector<NodePtr> groupInputs;
-        isGroup->getInputs(&groupInputs, false);
+        isGroup->getInputs(&groupInputs);
         if ( (inputNb >= 0) && ( inputNb < (int)groupInputs.size() ) && groupInputs[inputNb] ) {
             std::map<NodePtr, int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
@@ -9423,7 +9304,7 @@ addIdentityNodesRecursively(NodeConstPtr caller,
         NodeGroupPtr isGrp = output->isEffectNodeGroup();
         if (isGrp) {
             NodesList inputOutputs;
-            isGrp->getInputsOutputs(&inputOutputs, false);
+            isGrp->getInputsOutputs(&inputOutputs);
             for (NodesList::iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
                 outputsToAdd.push_back(*it2);
             }
@@ -9523,7 +9404,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 return true;
             }
             NodeGroupPtr parentIsGroup = toNodeGroup( getGroup() );
-            if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput(false).get() == this) ) {
+            if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput().get() == this) ) {
                 //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
                 return true;
             }
@@ -9721,7 +9602,7 @@ Node::forceRefreshAllInputRelatedData()
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
         NodesList inputs;
-        isGroup->getInputsOutputs(&inputs, false);
+        isGroup->getInputsOutputs(&inputs);
         for (NodesList::iterator it = inputs.begin(); it != inputs.end(); ++it) {
             if ( (*it) ) {
                 (*it)->refreshInputRelatedDataRecursive();

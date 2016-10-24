@@ -212,7 +212,6 @@ public:
     virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
     virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
     virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual CurvePtr getCurve(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -341,11 +340,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    // Emitted when the any curve associated in the Curve Editor for this knob should be re-drawn
-    void mustRefreshCurveEditor();
-
-    // Emitted when the any keyframe associated in the Dope Shert for this knob should be re-drawn
-    void mustRefreshDopeSheet();
+    void mustRefreshAnimVisibility();
 
     // Emitted when the description label is clicked
     void labelClicked(bool);

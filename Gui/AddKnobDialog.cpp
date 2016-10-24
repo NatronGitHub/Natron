@@ -801,28 +801,28 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
 
         if (isDbl) {
-            double min = isDbl->getMinimum(0);
-            double max = isDbl->getMaximum(0);
-            double dmin = isDbl->getDisplayMinimum(0);
-            double dmax = isDbl->getDisplayMaximum(0);
+            double min = isDbl->getMinimum();
+            double max = isDbl->getMaximum();
+            double dmin = isDbl->getDisplayMinimum();
+            double dmax = isDbl->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
             _imp->dmaxBox->setValue(dmax);
         } else if (isInt) {
-            int min = isInt->getMinimum(0);
-            int max = isInt->getMaximum(0);
-            int dmin = isInt->getDisplayMinimum(0);
-            int dmax = isInt->getDisplayMaximum(0);
+            int min = isInt->getMinimum();
+            int max = isInt->getMaximum();
+            int dmin = isInt->getDisplayMinimum();
+            int dmax = isInt->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
             _imp->dmaxBox->setValue(dmax);
         } else if (isColor) {
-            double min = isColor->getMinimum(0);
-            double max = isColor->getMaximum(0);
-            double dmin = isColor->getDisplayMinimum(0);
-            double dmax = isColor->getDisplayMaximum(0);
+            double min = isColor->getMinimum();
+            double max = isColor->getMaximum();
+            double dmin = isColor->getDisplayMinimum();
+            double dmax = isColor->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
@@ -882,30 +882,30 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobChoicePtr isChoice = toKnobChoice(knob);
 
         if (isChoice) {
-            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
+            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(DimIdx(0)) ).c_str() ) );
         } else if (isDbl) {
-            _imp->default0->setValue( isDbl->getDefaultValue(0) );
+            _imp->default0->setValue( isDbl->getDefaultValue(DimIdx(0)) );
             if (isDbl->getNDimensions() >= 2) {
-                _imp->default1->setValue( isDbl->getDefaultValue(1) );
+                _imp->default1->setValue( isDbl->getDefaultValue(DimIdx(1)) );
             }
             if (isDbl->getNDimensions() >= 3) {
-                _imp->default2->setValue( isDbl->getDefaultValue(2) );
+                _imp->default2->setValue( isDbl->getDefaultValue(DimIdx(2)) );
             }
             if (isDbl->getNDimensions() >= 4) {
-                _imp->default3->setValue( isDbl->getDefaultValue(3) );
+                _imp->default3->setValue( isDbl->getDefaultValue(DimIdx(3)) );
             }
         } else if (isInt) {
-            _imp->default0->setValue( isInt->getDefaultValue(0) );
+            _imp->default0->setValue( isInt->getDefaultValue(DimIdx(0)) );
             if (isInt->getNDimensions() >= 2) {
-                _imp->default1->setValue( isInt->getDefaultValue(1) );
+                _imp->default1->setValue( isInt->getDefaultValue(DimIdx(1)) );
             }
             if (isInt->getNDimensions() >= 3) {
-                _imp->default2->setValue( isInt->getDefaultValue(2) );
+                _imp->default2->setValue( isInt->getDefaultValue(DimIdx(2)) );
             }
         } else if (isBool) {
-            _imp->defaultBool->setChecked( isBool->getDefaultValue(0) );
+            _imp->defaultBool->setChecked( isBool->getDefaultValue(DimIdx(0)) );
         } else if (isStr) {
-            _imp->defaultStr->setText( QString::fromUtf8( isStr->getDefaultValue(0).c_str() ) );
+            _imp->defaultStr->setText( QString::fromUtf8( isStr->getDefaultValue(DimIdx(0)).c_str() ) );
         }
     }
 
@@ -1376,8 +1376,8 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
     if (dim >= 4) {
         defValues.push_back( default3->value() );
     }
-    for (U32 i = 0; i < defValues.size(); ++i) {
-        k->setDefaultValue(defValues[i], i);
+    for (std::size_t i = 0; i < defValues.size(); ++i) {
+        k->setDefaultValue(defValues[i], DimIdx(i));
     }
 }
 
@@ -1763,8 +1763,8 @@ AddKnobDialog::onOkClicked()
         }
         expressions.resize( _imp->knob->getNDimensions() );
         for (std::size_t i = 0; i < expressions.size(); ++i) {
-            std::string expr = _imp->knob->getExpression(i);
-            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
+            std::string expr = _imp->knob->getExpression(DimIdx(i), ViewIdx(0));
+            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
             expressions[i] = std::make_pair(expr, useRetVar);
         }
 
@@ -1780,8 +1780,8 @@ AddKnobDialog::onOkClicked()
             std::vector<std::pair<std::string, bool> > exprs;
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 std::pair<std::string, bool> e;
-                e.first = listener->getExpression(i);
-                e.second = listener->isExpressionUsingRetVariable(i);
+                e.first = listener->getExpression(DimIdx(i), ViewIdx(0));
+                e.second = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
                 exprs.push_back(e);
             }
             listenersExpressions[listener] = exprs;
@@ -1826,14 +1826,14 @@ AddKnobDialog::onOkClicked()
         if ( isLabelKnob && isLabelKnob->isLabel() ) {
             ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
             ///so we have to force a reset to the default value.
-            isLabelKnob->resetToDefaultValue(0);
+            isLabelKnob->resetToDefaultValue();
         }
 
         //Recover expressions
         try {
             for (std::size_t i = 0; i < expressions.size(); ++i) {
                 if ( !expressions[i].first.empty() ) {
-                    _imp->knob->setExpression(i, expressions[i].first, expressions[i].second, false);
+                    _imp->knob->setExpression(DimIdx(i), ViewSetSpec::all(), expressions[i].first, expressions[i].second, false);
                 }
             }
         } catch (...) {
@@ -1956,7 +1956,7 @@ AddKnobDialog::onOkClicked()
                 } else {
                     expr = it->second[i].first;
                 }
-                it->first->setExpression(i, expr, it->second[i].second, false);
+                it->first->setExpression(DimIdx(i), ViewIdx(0), expr, it->second[i].second, false);
             } catch (...) {
             }
         }

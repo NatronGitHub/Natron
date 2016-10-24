@@ -42,6 +42,7 @@
 
 #include "Engine/Utils.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -60,7 +61,8 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/TableModelView.h"
 
-#include "Engine/KnobItemsTable.h"
+#include "Global/StrUtils.h"
+
 
 #include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/SerializationIO.h"
@@ -75,10 +77,12 @@ struct ModelItem {
     struct ColumnData
     {
         KnobIWPtr knob;
+        KnobGuiPtr guiKnob;
         int knobDimension;
         
         ColumnData()
         : knob()
+        , guiKnob()
         , knobDimension(-1)
         {
             
@@ -120,8 +124,6 @@ struct KnobItemsTableGuiPrivate
 
     ModelItemsVec items;
 
-    std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
-    
     // Prevent recursion from selectionChanged signal of QItemSelectionModel
     int selectingModelRecursion;
 
@@ -133,7 +135,6 @@ struct KnobItemsTableGuiPrivate
     , tableView(0)
     , itemEditorFactory()
     , items()
-    , knobsMapping()
     , selectingModelRecursion(0)
     {
     }
@@ -190,17 +191,17 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     if (!isChoice && (!isColor || dim != -1) && !isButton && !isBoolean) {
         return false;
     }
-    
-    // Look for any existing KnobGui and destroy it
-    {
-        std::map<KnobIWPtr, KnobGuiPtr>::iterator found = knobsMapping.find(knob);
-        if (found != knobsMapping.end()) {
-            found->second->removeGui();
-            knobsMapping.erase(found);
-        }
+
+    ModelItemsVec::iterator foundItem = findItem(item);
+    assert(foundItem != items.end());
+    if (foundItem == items.end()) {
+        return false;
     }
-    
-    
+    assert(col >= 0 && col < (int)foundItem->columnItems.size());
+
+    // destroy existing KnobGui
+    foundItem->columnItems[col].guiKnob.reset();
+
     // Create the Knob Gui
     KnobGuiPtr ret( appPTR->createGuiForKnob(knob, _publicInterface) );
     if (!ret) {
@@ -208,13 +209,13 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
         return false;
     }
     ret->initialize();
-    knobsMapping.insert(std::make_pair(knob, ret));
-    
+
     QWidget* rowContainer = new QWidget;
     QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
     std::vector<KnobIPtr> knobsOnSameLine;
     ret->createGUI(rowContainer, 0 /*labelContainer*/, 0 /*label*/, 0 /*warningIndicator*/, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
-    
+
+    foundItem->columnItems[col].guiKnob = ret;
     
     // Set the widget
     {
@@ -334,7 +335,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
 
     // Get the animation level
-    AnimationLevelEnum level = knob->getAnimationLevel(knobDimensionIndex);
+    AnimationLevelEnum level = knob->getAnimationLevel(DimIdx(knobDimensionIndex), ViewIdx(0));
 
 
     // Figure out the background color depending on the animation level
@@ -467,7 +468,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     }
 
     QString iconsPath = QString::fromUtf8(table->getIconsPath().c_str());
-    Global::ensureLastPathSeparator(iconsPath);
+    StrUtils::ensureLastPathSeparator(iconsPath);
 
     std::vector<std::pair<QString, QIcon> > headerDatas(nCols);
     for (int i = 0; i < nCols; ++i) {
@@ -528,6 +529,22 @@ TableView*
 KnobItemsTableGui::getTableView() const
 {
     return _imp->tableView;
+}
+
+std::vector<KnobGuiPtr>
+KnobItemsTableGui::getKnobsForItem(const KnobTableItemPtr& item) const
+{
+    std::vector<KnobGuiPtr> ret;
+    ModelItemsVec::const_iterator foundItem = _imp->findItem(item);
+    if (foundItem == _imp->items.end()) {
+        return ret;
+    }
+    for (std::size_t i = 0; i < foundItem->columnItems.size(); ++i) {
+        if (foundItem->columnItems[i].guiKnob) {
+            ret.push_back(foundItem->columnItems[i].guiKnob);
+        }
+    }
+    return ret;
 }
 
 void
@@ -667,9 +684,11 @@ KnobItemsTableGui::pushUndoCommand(QUndoCommand* cmd)
 
 KnobGuiPtr
 KnobItemsTableGui::getKnobGui(const KnobIPtr& knob) const {
-    for (std::map<KnobIWPtr, KnobGuiPtr>::const_iterator it = _imp->knobsMapping.begin(); it != _imp->knobsMapping.end(); ++it) {
-        if (it->first.lock() == knob) {
-            return it->second;
+    for (ModelItemsVec::const_iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        for (std::size_t i = 0; i < it->columnItems.size(); ++i) {
+            if (it->columnItems[i].knob.lock() == knob) {
+                return it->columnItems[i].guiKnob;
+            }
         }
     }
     return KnobGuiPtr();
@@ -752,11 +771,7 @@ public:
     {
         KnobItemsTablePtr table = _table->internalModel.lock();
         for (std::list<Item>::const_iterator it = _items.begin(); it!=_items.end(); ++it) {
-            if (it->parent) {
-                it->parent->insertChild(it->indexInParent, it->item, eTableChangeReasonInternal);
-            } else {
-                table->insertTopLevelItem(it->indexInParent, it->item, eTableChangeReasonInternal);
-            }
+            table->insertItem(it->indexInParent, it->item, it->parent, eTableChangeReasonInternal);
         }
     }
 
@@ -816,14 +831,12 @@ void
 DragItemsUndoCommand::moveItem(int indexInParent, const KnobTableItemPtr& parent, const KnobTableItemPtr& item, const KnobItemsTablePtr& fromTable, const KnobItemsTablePtr& toTable)
 {
     fromTable->removeItem(item, eTableChangeReasonInternal);
+    toTable->insertItem(indexInParent, item, parent, eTableChangeReasonInternal);
     if (parent) {
-        parent->insertChild(indexInParent, item, eTableChangeReasonInternal);
         ModelItemsVec::iterator foundParent = _table->findItem(parent);
         if (foundParent != _table->items.end()) {
             _table->tableView->setExpanded(_table->tableModel->getItemIndex(foundParent->item), true);
         }
-    } else {
-        toTable->insertTopLevelItem(indexInParent, item, eTableChangeReasonInternal);
     }
 
 
@@ -1089,7 +1102,7 @@ PasteItemUndoCommand::redo()
     } else {
         // We paste multiple items as children of a container
         for (std::list<KnobTableItemPtr>::const_iterator it = _sourceItemsCopies.begin(); it!=_sourceItemsCopies.end(); ++it) {
-            _targetItem->addChild(*it, eTableChangeReasonInternal);
+            _targetItem->getModel()->insertItem(-1, *it, _targetItem, eTableChangeReasonInternal);
         }
     }
 }
@@ -1104,7 +1117,7 @@ PasteItemUndoCommand::undo()
     } else {
         // We paste multiple items as children of a container
         for (std::list<KnobTableItemPtr>::const_iterator it = _sourceItemsCopies.begin(); it!=_sourceItemsCopies.end(); ++it) {
-            _targetItem->removeChild(*it, eTableChangeReasonInternal);
+            _targetItem->getModel()->removeItem(*it, eTableChangeReasonInternal);
         }
     }
 }
@@ -1156,11 +1169,7 @@ DuplicateItemUndoCommand::redo()
         int itemIndex = (*ito)->getIndexInParent();
         itemIndex += 1;
         KnobTableItemPtr parent = (*ito)->getParent();
-        if (parent) {
-            parent->insertChild(itemIndex, *it, eTableChangeReasonInternal);
-        } else {
-            _table->internalModel.lock()->insertTopLevelItem(itemIndex, *it, eTableChangeReasonInternal);
-        }
+        _table->internalModel.lock()->insertItem(itemIndex, *it, parent, eTableChangeReasonInternal);
     }
     
 }
@@ -1545,7 +1554,9 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     
     int nCols = tableModel->columnCount();
     
-    ModelItem mitem;
+
+    items.push_back(ModelItem());
+    ModelItem &mitem = items.back();
     mitem.columnItems.resize(nCols);
     mitem.item = TableItem::create();
     

@@ -885,33 +885,33 @@ Settings::initializeKnobsCurveEditorColors()
 void
 Settings::initializeKnobsDopeSheetColors()
 {
-    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Dope Sheet") );
-    _appearanceTab->addKnob(_dopeSheetEditorColorsTab);
+    _dopesheetColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Dope Sheet") );
+    _appearanceTab->addKnob(_dopesheetColorsTab);
 
-    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet background color"), 3);
-    _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
-    _dopeSheetEditorBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorBackgroundColor);
+    _dopesheetBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet background color"), 3);
+    _dopesheetBackgroundColor->setName("dopesheetBackground");
+    _dopesheetBackgroundColor->setSimplified(true);
+    _dopesheetColorsTab->addKnob(_dopesheetBackgroundColor);
 
-    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
-    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
-    _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
+    _dopesheetRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
+    _dopesheetRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
+    _dopesheetRootSectionBackgroundColor->setSimplified(true);
+    _dopesheetColorsTab->addKnob(_dopesheetRootSectionBackgroundColor);
 
-    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
-    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
-    _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
+    _dopesheetKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
+    _dopesheetKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
+    _dopesheetKnobSectionBackgroundColor->setSimplified(true);
+    _dopesheetColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
 
-    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet scale color"), 3);
-    _dopeSheetEditorScaleColor->setName("dopesheetScale");
-    _dopeSheetEditorScaleColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorScaleColor);
+    _dopesheetScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet scale color"), 3);
+    _dopesheetScaleColor->setName("dopesheetScale");
+    _dopesheetScaleColor->setSimplified(true);
+    _dopesheetColorsTab->addKnob(_dopesheetScaleColor);
 
-    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet grid color"), 3);
-    _dopeSheetEditorGridColor->setName("dopesheetGrid");
-    _dopeSheetEditorGridColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorGridColor);
+    _dopesheetGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet grid color"), 3);
+    _dopesheetGridColor->setName("dopesheetGrid");
+    _dopesheetGridColor->setSimplified(true);
+    _dopesheetColorsTab->addKnob(_dopesheetGridColor);
 }
 
 void
@@ -1678,27 +1678,27 @@ Settings::setDefaultValues()
     _curveEditorScaleColor->setDefaultValue(0.2, DimIdx(2));
 
     // Initialize Dope sheet editor Settings knobs
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, DimIdx(0));
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, DimIdx(1));
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, DimIdx(2));
+    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(0));
+    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(1));
+    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(2));
 
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
 
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
 
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, DimIdx(0));
-    _dopeSheetEditorScaleColor->setDefaultValue(0.718, DimIdx(1));
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, DimIdx(2));
+    _dopesheetScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _dopesheetScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _dopesheetScaleColor->setDefaultValue(0.714, DimIdx(2));
 
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, DimIdx(0));
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, DimIdx(1));
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, DimIdx(2));
+    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(0));
+    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(1));
+    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(2));
 
     _keywordColor->setDefaultValue(0.7, DimIdx(0));
     _keywordColor->setDefaultValue(0.7, DimIdx(1));
@@ -2308,11 +2308,11 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                   ( k == _curveEditorBGColor ) ||
                   ( k == _gridColor ) ||
                   ( k == _curveEditorScaleColor ) ||
-                  ( k == _dopeSheetEditorBackgroundColor ) ||
-                  ( k == _dopeSheetEditorRootSectionBackgroundColor ) ||
-                  ( k == _dopeSheetEditorKnobSectionBackgroundColor ) ||
-                  ( k == _dopeSheetEditorScaleColor ) ||
-                  ( k == _dopeSheetEditorGridColor ) ||
+                  ( k == _dopesheetBackgroundColor ) ||
+                  ( k == _dopesheetRootSectionBackgroundColor ) ||
+                  ( k == _dopesheetKnobSectionBackgroundColor ) ||
+                  ( k == _dopesheetScaleColor ) ||
+                  ( k == _dopesheetGridColor ) ||
                   ( k == _keywordColor ) ||
                   ( k == _operatorColor ) ||
                   ( k == _curLineColor ) ||
@@ -3367,57 +3367,57 @@ Settings::getCurveEditorScaleColor(double* r,
 }
 
 void
-Settings::getDopeSheetEditorBackgroundColor(double *r,
+Settings::getAnimationModuleEditorBackgroundColor(double *r,
                                             double *g,
                                             double *b) const
 {
-    *r = _dopeSheetEditorBackgroundColor->getValue(DimIdx(0));
-    *g = _dopeSheetEditorBackgroundColor->getValue(DimIdx(1));
-    *b = _dopeSheetEditorBackgroundColor->getValue(DimIdx(2));
+    *r = _dopesheetBackgroundColor->getValue(DimIdx(0));
+    *g = _dopesheetBackgroundColor->getValue(DimIdx(1));
+    *b = _dopesheetBackgroundColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorRootRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorRootRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(DimIdx(0));
-    *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(DimIdx(1));
-    *b = _dopeSheetEditorRootSectionBackgroundColor->getValue(DimIdx(2));
-    *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(DimIdx(3));
+    *r = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorKnobRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(DimIdx(0));
-    *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(DimIdx(1));
-    *b = _dopeSheetEditorKnobSectionBackgroundColor->getValue(DimIdx(2));
-    *a = _dopeSheetEditorKnobSectionBackgroundColor->getValue(DimIdx(3));
+    *r = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorScaleColor(double *r,
+Settings::getAnimationModuleEditorScaleColor(double *r,
                                        double *g,
                                        double *b) const
 {
-    *r = _dopeSheetEditorScaleColor->getValue(DimIdx(0));
-    *g = _dopeSheetEditorScaleColor->getValue(DimIdx(1));
-    *b = _dopeSheetEditorScaleColor->getValue(DimIdx(2));
+    *r = _dopesheetScaleColor->getValue(DimIdx(0));
+    *g = _dopesheetScaleColor->getValue(DimIdx(1));
+    *b = _dopesheetScaleColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorGridColor(double *r,
+Settings::getAnimationModuleEditorGridColor(double *r,
                                       double *g,
                                       double *b) const
 {
-    *r = _dopeSheetEditorGridColor->getValue(DimIdx(0));
-    *g = _dopeSheetEditorGridColor->getValue(DimIdx(1));
-    *b = _dopeSheetEditorGridColor->getValue(DimIdx(2));
+    *r = _dopesheetGridColor->getValue(DimIdx(0));
+    *g = _dopesheetGridColor->getValue(DimIdx(1));
+    *b = _dopesheetGridColor->getValue(DimIdx(2));
 }
 
 void
@@ -3540,12 +3540,6 @@ Settings::getPluginIconFrameColor(int *r,
     *r = 50;
     *g = 50;
     *b = 50;
-}
-
-int
-Settings::getDopeSheetEditorNodeSeparationWith() const
-{
-    return 4;
 }
 
 bool

@@ -94,8 +94,8 @@ public:
 
     void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
 
-    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
-    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
+    void addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr& node);
 
     const NodesGuiList & getSelectedNodes() const;
 
@@ -320,7 +320,7 @@ public:
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
-    DopeSheetEditor * getDopeSheetEditor() const;
+    AnimationModuleEditor * getAnimationModuleEditor() const;
     ScriptEditor* getScriptEditor() const;
     ProgressPanel* getProgressPanel() const;
     QVBoxLayout* getPropertiesLayout() const;

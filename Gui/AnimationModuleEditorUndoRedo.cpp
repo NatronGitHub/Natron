@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "DopeSheetEditorUndoRedo.h"
+#include "AnimationModuleEditorUndoRedo.h"
 
 #include <stdexcept>
 
@@ -41,8 +41,8 @@
 #include "Gui/DockablePanel.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
-#include "Gui/DopeSheetEditor.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModule.h"
 #include "Gui/DopeSheetView.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -65,7 +65,7 @@ moveReader(const NodePtr &reader,
 {
     KnobIntBasePtr startingTimeKnob = toKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
     assert(startingTimeKnob);
-    ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -75,7 +75,7 @@ moveTimeOffset(const NodePtr& node,
 {
     KnobIntBasePtr timeOffsetKnob = toKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
     assert(timeOffsetKnob);
-    ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -86,13 +86,13 @@ moveFrameRange(const NodePtr& node,
     KnobIntBasePtr frameRangeKnob = toKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange) );
     assert(frameRangeKnob);
     std::vector<int> values(2);
-    values[0] = frameRangeKnob->getValue(0) + dt;
-    values[1] = frameRangeKnob->getValue(1) + dt;
-    frameRangeKnob->setValueAcrossDimensions(values, 0, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+    values[0] = frameRangeKnob->getValue(DimIdx(0)) + dt;
+    values[1] = frameRangeKnob->getValue(DimIdx(1)) + dt;
+    frameRangeKnob->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
 
 void
-moveGroupNode(DopeSheetEditor* model,
+moveGroupNode(AnimationModuleEditor* model,
               const NodePtr& node,
               double dt)
 {
@@ -129,10 +129,10 @@ moveGroupNode(DopeSheetEditor* model,
             }
 
             for (int dim = 0; dim < knob->getNDimensions(); ++dim) {
-                if ( !knob->isAnimated( dim, ViewIdx(0) ) ) {
+                if ( !knob->isAnimated( DimIdx(dim), ViewIdx(0) ) ) {
                     continue;
                 }
-                KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
+                KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), DimIdx(dim))->getKeyFrames_mt_safe();
 
                 for (KeyFrameSet::iterator kfIt = keyframes.begin(); kfIt != keyframes.end(); ++kfIt) {
                     KeyFrame kf = (*kfIt);
@@ -150,10 +150,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 ////////////////////////// DSMoveKeysCommand //////////////////////////
 
-DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                                                     const std::vector<DSNodePtr >& nodes,
+DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const AnimKeyFramePtrList &keys,
+                                                     const std::vector<NodeAnimPtr >& nodes,
                                                      double dt,
-                                                     DopeSheetEditor *model,
+                                                     AnimationModuleEditor *model,
                                                      QUndoCommand *parent)
     : QUndoCommand(parent),
     _keys(keys),
@@ -163,12 +163,12 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
 {
     setText( tr("Move selected keys") );
     std::set<NodePtr > nodesSet;
-    for (std::vector<DSNodePtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        DopeSheetItemType type = (*it)->getItemType();
-        if ( (type != eDopeSheetItemTypeReader) &&
-             ( type != eDopeSheetItemTypeGroup) &&
-             ( type != eDopeSheetItemTypeTimeOffset) &&
-             ( type != eDopeSheetItemTypeFrameRange) ) {
+    for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        AnimatedItemType type = (*it)->getItemType();
+        if ( (type != eAnimatedItemTypeReader) &&
+             ( type != eAnimatedItemTypeGroup) &&
+             ( type != eAnimatedItemTypeTimeOffset) &&
+             ( type != eAnimatedItemTypeFrameRange) ) {
             //Note that Retime nodes cannot be moved
             continue;
         }
@@ -184,7 +184,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
         }
     }
 
-    for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+    for (AnimKeyFramePtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobHolderPtr holder = (*it)->getContext()->getInternalKnob()->getHolder();
         assert(holder);
         EffectInstancePtr isEffect = toEffectInstance(holder);
@@ -231,9 +231,9 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
 
 
     //////////Handle selected keyframes
-    for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        const DSKeyPtr& selectedKey = (*it);
-        DSKnobPtr knobContext = selectedKey->context.lock();
+    for (AnimKeyFramePtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        const AnimKeyFramePtr& selectedKey = (*it);
+        KnobAnimPtr knobContext = selectedKey->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -245,15 +245,15 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
                               dt, 0, &selectedKey->key);
     }
     ////////////Handle selected nodes
-    for (std::vector<DSNodePtr >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        DopeSheetItemType type = (*it)->getItemType();
-        if (type == eDopeSheetItemTypeReader) {
+    for (std::vector<NodeAnimPtr >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        AnimatedItemType type = (*it)->getItemType();
+        if (type == eAnimatedItemTypeReader) {
             moveReader( (*it)->getInternalNode(), dt );
-        } else if (type == eDopeSheetItemTypeFrameRange) {
+        } else if (type == eAnimatedItemTypeFrameRange) {
             moveFrameRange( (*it)->getInternalNode(), dt );
-        } else if (type == eDopeSheetItemTypeTimeOffset) {
+        } else if (type == eAnimatedItemTypeTimeOffset) {
             moveTimeOffset( (*it)->getInternalNode(), dt );
-        } else if (type == eDopeSheetItemTypeGroup) {
+        } else if (type == eAnimatedItemTypeGroup) {
             moveGroupNode(_model, (*it)->getInternalNode(), dt);
         }
     }
@@ -276,7 +276,7 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
 int
 DSMoveKeysAndNodesCommand::id() const
 {
-    return kDopeSheetEditorMoveKeysCommandCompressionID;
+    return kAnimationModuleEditorMoveKeysCommandCompressionID;
 }
 
 bool
@@ -298,17 +298,17 @@ DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
     }
 
     {
-        DSKeyPtrList::const_iterator itOther = cmd->_keys.begin();
+        AnimKeyFramePtrList::const_iterator itOther = cmd->_keys.begin();
 
-        for (DSKeyPtrList::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itOther) {
+        for (AnimKeyFramePtrList::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itOther) {
             if (*itOther != *it) {
                 return false;
             }
         }
     }
 
-    std::vector<DSNodePtr >::const_iterator itOther = cmd->_nodes.begin();
-    for (std::vector<DSNodePtr >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
+    std::vector<NodeAnimPtr >::const_iterator itOther = cmd->_nodes.begin();
+    for (std::vector<NodeAnimPtr >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
         if (*itOther != *it) {
             return false;
         }
@@ -321,17 +321,17 @@ DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
 
 //////////////////////////DSTransformKeysCommand //////////////////////////
 
-DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
+DSTransformKeysCommand::DSTransformKeysCommand(const AnimKeyFramePtrList &keys,
                                                const Transform::Matrix3x3& transform,
-                                               DopeSheetEditor *model,
+                                               AnimationModuleEditor *model,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
     , _firstRedoCalled(false)
     , _transform(transform)
     , _model(model)
 {
-    for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        DSKnobPtr knobContext = (*it)->context.lock();
+    for (AnimKeyFramePtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        KnobAnimPtr knobContext = (*it)->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -405,7 +405,7 @@ DSTransformKeysCommand::redo()
             it->second.oldCurve.reset( new Curve( *it->first->getInternalKnob()->getCurve( ViewIdx(0), it->first->getDimension() ) ) );
         }
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            for (DSKeyPtrList::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
+            for (AnimKeyFramePtrList::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
                 transformKey(*it2);
             }
         }
@@ -431,9 +431,9 @@ DSTransformKeysCommand::redo()
 }
 
 void
-DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
+DSTransformKeysCommand::transformKey(const AnimKeyFramePtr& key)
 {
-    DSKnobPtr knobContext = key->context.lock();
+    KnobAnimPtr knobContext = key->context.lock();
 
     if (!knobContext) {
         return;
@@ -446,7 +446,7 @@ DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
 int
 DSTransformKeysCommand::id() const
 {
-    return kDopeSheetEditorTransformKeysCommandCompressionID;
+    return kAnimationModuleEditorTransformKeysCommandCompressionID;
 }
 
 bool
@@ -470,8 +470,8 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
                 return false;
             }
 
-            DSKeyPtrList::const_iterator kItOther = itOther->second.keys.begin();
-            for (DSKeyPtrList::const_iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2, ++kItOther) {
+            AnimKeyFramePtrList::const_iterator kItOther = itOther->second.keys.begin();
+            for (AnimKeyFramePtrList::const_iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2, ++kItOther) {
                 if (*it2 != *kItOther) {
                     return false;
                 }
@@ -486,7 +486,7 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 
-DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const DSNodePtr &reader,
+DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const NodeAnimPtr &reader,
                                                  double oldTime,
                                                  double newTime,
                                                  QUndoCommand *parent)
@@ -513,7 +513,7 @@ DSLeftTrimReaderCommand::redo()
 void
 DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    DSNodePtr nodeContext = _readerContext.lock();
+    NodeAnimPtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -542,7 +542,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 int
 DSLeftTrimReaderCommand::id() const
 {
-    return kDopeSheetEditorLeftTrimCommandCompressionID;
+    return kAnimationModuleEditorLeftTrimCommandCompressionID;
 }
 
 bool
@@ -555,8 +555,8 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    DSNodePtr node = _readerContext.lock();
-    DSNodePtr otherNode = cmd->_readerContext.lock();
+    NodeAnimPtr node = _readerContext.lock();
+    NodeAnimPtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -572,10 +572,10 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSRightTrimReaderCommand //////////////////////////
 
-DSRightTrimReaderCommand::DSRightTrimReaderCommand(const DSNodePtr &reader,
+DSRightTrimReaderCommand::DSRightTrimReaderCommand(const NodeAnimPtr &reader,
                                                    double oldTime,
                                                    double newTime,
-                                                   DopeSheetEditor * /*model*/,
+                                                   AnimationModuleEditor * /*model*/,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent),
     _readerContext(reader),
@@ -600,7 +600,7 @@ DSRightTrimReaderCommand::redo()
 void
 DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    DSNodePtr nodeContext = _readerContext.lock();
+    NodeAnimPtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -629,7 +629,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
 int
 DSRightTrimReaderCommand::id() const
 {
-    return kDopeSheetEditorRightTrimCommandCompressionID;
+    return kAnimationModuleEditorRightTrimCommandCompressionID;
 }
 
 bool
@@ -642,8 +642,8 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    DSNodePtr node = _readerContext.lock();
-    DSNodePtr otherNode = cmd->_readerContext.lock();
+    NodeAnimPtr node = _readerContext.lock();
+    NodeAnimPtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -659,12 +659,12 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSSlipReaderCommand //////////////////////////
 
-DSSlipReaderCommand::DSSlipReaderCommand(const DSNodePtr &dsNodeReader,
+DSSlipReaderCommand::DSSlipReaderCommand(const NodeAnimPtr &NodeAnimReader,
                                          double dt,
-                                         DopeSheetEditor *model,
+                                         AnimationModuleEditor *model,
                                          QUndoCommand *parent)
     : QUndoCommand(parent),
-    _readerContext(dsNodeReader),
+    _readerContext(NodeAnimReader),
     _dt(dt),
     _model(model)
 {
@@ -686,7 +686,7 @@ DSSlipReaderCommand::redo()
 int
 DSSlipReaderCommand::id() const
 {
-    return kDopeSheetEditorSlipReaderCommandCompressionID;
+    return kAnimationModuleEditorSlipReaderCommandCompressionID;
 }
 
 bool
@@ -699,8 +699,8 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    DSNodePtr node = _readerContext.lock();
-    DSNodePtr otherNode = cmd->_readerContext.lock();
+    NodeAnimPtr node = _readerContext.lock();
+    NodeAnimPtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -717,7 +717,7 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 void
 DSSlipReaderCommand::slipReader(double dt)
 {
-    DSNodePtr nodeContext = _readerContext.lock();
+    NodeAnimPtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -778,8 +778,8 @@ DSSlipReaderCommand::slipReader(double dt)
 
 ////////////////////////// DSRemoveKeysCommand //////////////////////////
 
-DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                         DopeSheetEditor *model,
+DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<AnimKeyFrame> &keys,
+                                         AnimationModuleEditor *model,
                                          QUndoCommand *parent)
     : QUndoCommand(parent),
     _keys(keys),
@@ -804,9 +804,9 @@ void
 DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
     std::set<KnobGuiPtr> knobsSet;
-    for (std::vector<DopeSheetKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        DopeSheetKey selected = (*it);
-        DSKnobPtr knobContext = selected.context.lock();
+    for (std::vector<AnimKeyFrame>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        AnimKeyFrame selected = (*it);
+        KnobAnimPtr knobContext = selected.context.lock();
         if (!knobContext) {
             continue;
         }
@@ -838,7 +838,7 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 ////////////////////////// DSSetSelectedKeysInterpolationCommand //////////////////////////
 
 DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                                                             DopeSheetEditor *model,
+                                                                             AnimationModuleEditor *model,
                                                                              QUndoCommand *parent)
     : QUndoCommand(parent),
     _changes(changes),
@@ -864,7 +864,7 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 {
     for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
         KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
-        DSKnobPtr knobContext = it->_key->context.lock();
+        KnobAnimPtr knobContext = it->_key->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -882,10 +882,10 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
-DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                       const std::list<DSKnobPtr >& dstKnobs,
+DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<AnimKeyFrame> &keys,
+                                       const std::list<KnobAnimPtr >& dstKnobs,
                                        bool pasteRelativeToRefTime,
-                                       DopeSheetEditor *model,
+                                       AnimationModuleEditor *model,
                                        QUndoCommand *parent)
     : QUndoCommand(parent),
     _refTime(0),
@@ -895,7 +895,7 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
     _model(model)
 {
 
-    for (std::list<DSKnobPtr >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
+    for (std::list<KnobAnimPtr >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
         _dstKnobs.push_back(*it);
     }
 
@@ -955,8 +955,8 @@ DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, Ke
 void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::list<boost::weak_ptr<DSKnob> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
-        DSKnobPtr knobContext = it->lock();
+    for (std::list<boost::weak_ptr<KnobAnim> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
+        KnobAnimPtr knobContext = it->lock();
         if (!knobContext) {
             continue;
         }

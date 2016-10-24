@@ -46,7 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -308,15 +308,15 @@ Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
 }
 
 void
-Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
+Gui::addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_dopeSheetEditor->addNode(node);
+    _imp->_AnimationModuleEditor->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
+Gui::removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_dopeSheetEditor->removeNode( node );
+    _imp->_AnimationModuleEditor->removeNode( node );
 }
 
 void

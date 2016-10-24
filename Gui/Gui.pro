@@ -83,6 +83,12 @@ SOURCES += \
     ActionShortcuts.cpp \
     AddKnobDialog.cpp \
     AnimatedCheckBox.cpp \
+    AnimItemBase.cpp \
+    AnimationModule.cpp \
+    AnimationModuleSelectionModel.cpp \
+    AnimationModuleTreeView.cpp \
+    AnimationModuleEditor.cpp \
+    AnimationModuleEditorUndoRedo.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
@@ -101,11 +107,7 @@ SOURCES += \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
     DocumentationManager.cpp \
-    DopeSheet.cpp \
     DopeSheetView.cpp \
-    DopeSheetEditorUndoRedo.cpp \
-    DopeSheetHierarchyView.cpp \
-    DopeSheetEditor.cpp \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
@@ -130,6 +132,7 @@ SOURCES += \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
+    KnobAnim.cpp \
     KnobItemsTableGui.cpp \
     KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
@@ -159,6 +162,7 @@ SOURCES += \
     MessageBox.cpp \
     Menu.cpp \
     NewLayerDialog.cpp \
+    NodeAnim.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -203,6 +207,7 @@ SOURCES += \
     SplashScreen.cpp \
     Splitter.cpp \
     TabGroup.cpp \
+    TableItemAnim.cpp \
     TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
@@ -232,6 +237,12 @@ HEADERS += \
     ActionShortcuts.h \
     AddKnobDialog.h \
     AnimatedCheckBox.h \
+    AnimItemBase.h \
+    AnimationModule.h \
+    AnimationModuleSelectionModel.h \
+    AnimationModuleTreeView.h \
+    AnimationModuleEditor.h \
+    AnimationModuleEditorUndoRedo.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
@@ -251,11 +262,7 @@ HEADERS += \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
     DocumentationManager.h \
-    DopeSheet.h \
     DopeSheetView.h \
-    DopeSheetEditorUndoRedo.h \
-    DopeSheetHierarchyView.h \
-    DopeSheetEditor.h \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
@@ -276,6 +283,7 @@ HEADERS += \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
+    KnobAnim.h \
     KnobItemsTableGui.h \
     KnobGui.h \
     KnobGuiContainerI.h \
@@ -302,6 +310,7 @@ HEADERS += \
     MessageBox.h \
     Menu.h \
     NewLayerDialog.h \
+    NodeAnim.h \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
@@ -337,6 +346,7 @@ HEADERS += \
     SpinBoxValidator.h \
     SplashScreen.h \
     Splitter.h \
+    TableItemAnim.h \
     TabGroup.h \
     TableModelView.h \
     TabWidget.h \

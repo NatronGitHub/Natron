@@ -590,20 +590,24 @@ enum OpenGLRequirementsTypeEnum
     eOpenGLRequirementsTypeRendering
 };
 
-enum DopeSheetItemType
+enum AnimatedItemTypeEnum
 {
-    eDopeSheetItemTypeCommon = 1001,
+    eAnimatedItemTypeCommon = 1001,
 
     // Range-based nodes
-    eDopeSheetItemTypeReader,
-    eDopeSheetItemTypeRetime,
-    eDopeSheetItemTypeTimeOffset,
-    eDopeSheetItemTypeFrameRange,
-    eDopeSheetItemTypeGroup,
+    eAnimatedItemTypeReader,
+    eAnimatedItemTypeRetime,
+    eAnimatedItemTypeTimeOffset,
+    eAnimatedItemTypeFrameRange,
+    eAnimatedItemTypeGroup,
 
     // Others
-    eDopeSheetItemTypeKnobRoot,
-    eDopeSheetItemTypeKnobDim
+    eAnimatedItemTypeKnobRoot,
+    eAnimatedItemTypeKnobView,
+    eAnimatedItemTypeKnobDim,
+
+    eAnimatedItemTypeTableItemRoot,
+    eAnimatedItemTypeTableItemAnimation
 };
 
 enum CreateNodeReason

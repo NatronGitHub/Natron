@@ -413,6 +413,7 @@ typedef boost::weak_ptr<PluginMemory> PluginMemoryWPtr;
 typedef boost::weak_ptr<RotoPaintInteract> RotoPaintInteractWPtr;
 typedef boost::weak_ptr<RotoPaint> RotoPaintWPtr;
 typedef boost::weak_ptr<RotoStrokeItem> RotoStrokeItemWPtr;
+typedef boost::weak_ptr<TimeLine> TimeLineWPtr;
 typedef boost::weak_ptr<TrackerParamsProvider> TrackerParamsProviderWPtr;
 typedef boost::weak_ptr<TrackerHelper> TrackerHelperWPtr;
 typedef boost::weak_ptr<TrackMarker> TrackMarkerWPtr;

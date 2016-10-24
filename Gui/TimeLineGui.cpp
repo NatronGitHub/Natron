@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -181,7 +181,7 @@ struct TimelineGuiPrivate
         double zoomRight = parent->toTimeLine(parent->width() - 1);
 
         gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
-        gui->getDopeSheetEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
+        gui->getAnimationModuleEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
     }
 
     void updateOpenedViewersFrameRanges()

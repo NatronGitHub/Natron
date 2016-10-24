@@ -41,7 +41,7 @@
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/GuiAppInstance.h"
@@ -1591,7 +1591,7 @@ CurveWidgetPrivate::insertSelectedKeyFrameConditionnaly(const KeyPtr &key)
 void
 CurveWidgetPrivate::updateDopeSheetViewFrameRange()
 {
-    _gui->getDopeSheetEditor()->centerOn( zoomCtx.left(), zoomCtx.right() );
+    _gui->getAnimationModuleEditor()->centerOn( zoomCtx.left(), zoomCtx.right() );
 }
 
 NATRON_NAMESPACE_EXIT;

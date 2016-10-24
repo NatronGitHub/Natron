@@ -489,20 +489,13 @@ public:
     NodePtr getInput(int index) const;
 
     /**
-     * @brief Returns the input as seen on the gui. This is not necessarily the same as the value returned by getInput.
-     **/
-    NodePtr getGuiInput(int index) const;
-
-    /**
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
     NodePtr getRealInput(int index) const;
 
-    NodePtr getRealGuiInput(int index) const;
-
 private:
 
-    NodePtr getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const;
+    NodePtr getInputInternal(bool useGroupRedirections, int index) const;
 
 public:
 
@@ -522,7 +515,6 @@ public:
      * This can only be called by the main thread.
      **/
     const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<NodeWPtr > & getGuiInputs() const WARN_UNUSED_RETURN;
     std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
@@ -639,7 +631,6 @@ public:
     void getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs);
 
     const NodesWList & getOutputs() const;
-    const NodesWList & getGuiOutputs() const;
     void getOutputs_mt_safe(NodesWList& outputs) const;
 
     /**
@@ -721,9 +712,9 @@ public:
 
 private:
 
-    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
+    bool replaceInputInternal(const NodePtr& input, int inputNumber);
 
-    int disconnectInputInternal(const NodePtr& input, bool useGuiInputs);
+    int disconnectInputInternal(const NodePtr& input);
 
 
     bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;
@@ -784,12 +775,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(bool useGuiValues, const NodePtr& output);
+    void connectOutput(const NodePtr& output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues, const Node* output);
+    int disconnectOutput(const Node* output);
 
 public:
 
@@ -1532,8 +1523,7 @@ Q_SIGNALS:
     void knobsInitialized();
 
     /*
-     * @brief Emitted whenever an input changed on the GUI. Note that at the time this signal is emitted, the value returned by
-     * getInput() is not necessarily the same as the value returned by getGuiInput() since the node might still be rendering.
+     * @brief Emitted whenever an input changed on the GUI.
      */
     void inputChanged(int);
 

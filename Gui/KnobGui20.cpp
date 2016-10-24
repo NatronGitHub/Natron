@@ -51,6 +51,7 @@ KnobGui::onInternalValueChanged(ViewSpec view,
                                 DimIdx dimension,
                                 ValueChangedReasonEnum /*reason*/)
 {
+#pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
     if (_imp->guiRemoved) {
         return;
     }
@@ -72,6 +73,7 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            int dimension,
                                            CurveChangeReason reason)
 {
+#pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
     KnobIPtr knob = getKnob();
     if (!knob) {
         return;
@@ -645,6 +647,8 @@ KnobGui::onRedrawGuiCurve(CurveChangeReason reason,
                           ViewSpec /*view*/,
                           int /*dimension*/)
 {
+    mustRefreshAnimVisibility
+
     CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
 
     switch (curveChangeReason) {

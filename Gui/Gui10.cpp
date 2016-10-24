@@ -40,7 +40,7 @@
 
 #include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Histogram.h"
 #include "Gui/GuiAppInstance.h"
@@ -94,7 +94,7 @@ Gui::createDefaultLayout1()
 
     workshopPane->moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea);
     workshopPane->moveTab(_imp->_curveEditor, _imp->_curveEditor);
-    workshopPane->moveTab(_imp->_dopeSheetEditor, _imp->_dopeSheetEditor);
+    workshopPane->moveTab(_imp->_AnimationModuleEditor, _imp->_AnimationModuleEditor);
     propertiesPane->moveTab(_imp->_propertiesBin, _imp->_propertiesBin);
 
     {

@@ -323,11 +323,11 @@ public:
     void getCurveEditorBGColor(double* r, double* g, double* b) const;
     void getCurveEditorGridColor(double* r, double* g, double* b) const;
     void getCurveEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorBackgroundColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorGridColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorBackgroundColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorScaleColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorGridColor(double* r, double* g, double* b) const;
     void getSliderColor(double* r, double* g, double* b) const;
 
 
@@ -345,7 +345,6 @@ public:
     std::string getSEFontFamily() const;
 
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
-    int getDopeSheetEditorNodeSeparationWith() const;
 
     bool isNaNHandlingEnabled() const;
 
@@ -590,12 +589,12 @@ private:
     KnobColorPtr _curveEditorScaleColor;
 
     // Appearance/Dope Sheet
-    KnobPagePtr _dopeSheetEditorColorsTab;
-    KnobColorPtr _dopeSheetEditorBackgroundColor;
-    KnobColorPtr _dopeSheetEditorRootSectionBackgroundColor;
-    KnobColorPtr _dopeSheetEditorKnobSectionBackgroundColor;
-    KnobColorPtr _dopeSheetEditorScaleColor;
-    KnobColorPtr _dopeSheetEditorGridColor;
+    KnobPagePtr _AnimationModuleEditorColorsTab;
+    KnobColorPtr _AnimationModuleEditorBackgroundColor;
+    KnobColorPtr _AnimationModuleEditorRootSectionBackgroundColor;
+    KnobColorPtr _AnimationModuleEditorKnobSectionBackgroundColor;
+    KnobColorPtr _AnimationModuleEditorScaleColor;
+    KnobColorPtr _AnimationModuleEditorGridColor;
 
     // Appearance/Script Editor
     KnobPagePtr _scriptEditorColorsTab;

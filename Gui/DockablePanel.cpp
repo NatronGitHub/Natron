@@ -536,8 +536,8 @@ DockablePanel::onKnobsRecreated()
         getGui()->getCurveEditor()->removeNode( node );
         getGui()->getCurveEditor()->addNode(node);
 
-        getGui()->removeNodeGuiFromDopeSheetEditor(node);
-        getGui()->addNodeGuiToDopeSheetEditor(node);
+        getGui()->removeNodeGuiFromAnimationModuleEditor(node);
+        getGui()->addNodeGuiToAnimationModuleEditor(node);
     }
 }
 
@@ -919,11 +919,11 @@ DockablePanel::setClosedInternal(bool c)
 
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
-            gui->addNodeGuiToDopeSheetEditor(nodeGui);
+            gui->addNodeGuiToAnimationModuleEditor(nodeGui);
 
         } else {
             gui->removeNodeGuiFromCurveEditor(nodeGui);
-            gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
+            gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
 
         }
         ///Regular show/hide

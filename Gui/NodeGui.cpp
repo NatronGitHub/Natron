@@ -77,7 +77,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -409,7 +409,7 @@ NodeGui::ensurePanelCreated()
     }
 
     gui->addNodeGuiToCurveEditor(thisShared);
-    gui->addNodeGuiToDopeSheetEditor(thisShared);
+    gui->addNodeGuiToAnimationModuleEditor(thisShared);
 
     //Ensure panel for all children if multi-instance
 
@@ -1846,7 +1846,6 @@ NodeGui::activate(bool triggerRender)
     showGui();
 
     _graph->restoreFromTrash( shared_from_this() );
-    //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (triggerRender) {
         std::list<ViewerInstancePtr> viewers;
@@ -1933,7 +1932,7 @@ NodeGui::deactivate(bool triggerRender)
         _graph->moveToTrash( shared_from_this() );
         if ( _graph->getGui() ) {
             _graph->getGui()->getCurveEditor()->removeNode( shared_from_this() );
-            _graph->getGui()->getDopeSheetEditor()->removeNode( shared_from_this() );
+            _graph->getGui()->getAnimationModuleEditor()->removeNode( shared_from_this() );
         }
     }
 
@@ -2463,7 +2462,7 @@ NodeGui::destroyGui()
     guiObj->getCurveEditor()->removeNode( shared_from_this() );
 
     //Remove from dope sheet
-    guiObj->getDopeSheetEditor()->removeNode( shared_from_this() );
+    guiObj->getAnimationModuleEditor()->removeNode( shared_from_this() );
 
 
     //Remove nodegraph if group

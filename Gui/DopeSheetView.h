@@ -109,8 +109,8 @@ public:
         esTransformingKeyframesMiddleLeft
     };
 
-    explicit DopeSheetView(DopeSheet *model,
-                           HierarchyView *hierarchyView,
+    explicit DopeSheetView(AnimationModule *model,
+                           AnimationModuleTreeView *hierarchyView,
                            Gui *gui,
                            const TimeLinePtr &timeline,
                            QWidget *parent = 0);
@@ -219,23 +219,23 @@ public Q_SLOTS:
     void onTimeLineBoundariesChanged(int, int);
 
     /**
-     * @brief Handles 'dsNode' for the next refreshes of the view.
+     * @brief Handles 'NodeAnim' for the next refreshes of the view.
      *
      * If its a range-based node, a new pair describing this range
      * is stored by the view.
      *
      * This slot is automatically called after the dope sheet model
-     * created 'dsNode'.
+     * created 'NodeAnim'.
      */
-    void onNodeAdded(const DSNodePtr& dsNode);
+    void onNodeAdded(const NodeAnimPtr& NodeAnim);
 
     /**
-     * @brief Doesn't handle 'dsNode' for the next refreshes of the view.
+     * @brief Doesn't handle 'NodeAnim' for the next refreshes of the view.
      *
      * This slot is automatically called just before the dope sheet model
-     * remove 'dsNode'.
+     * remove 'NodeAnim'.
      */
-    void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
+    void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
 
     /**
      * @brief If the node associated with the affected keyframe is contained
@@ -253,7 +253,7 @@ public Q_SLOTS:
      * This slot is automatically called after the changing of the value of a
      * specific knob.
      */
-    void onRangeNodeChanged(ViewSpec, int, int);
+    void onRangeNodeChanged(ViewSetSpec, int, int);
 
     /**
      * @brief Computes the bounding rect of the selected keyframes and the ranges

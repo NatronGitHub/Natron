@@ -66,6 +66,8 @@ public:
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL;
     //////
 
+    std::vector<KnobGuiPtr> getKnobsForItem(const KnobTableItemPtr& item) const;
+
     TableView* getTableView() const;
 
     KnobItemsTablePtr getInternalTable() const;

@@ -1096,16 +1096,14 @@ NodeCollection::isSubGraphEditable() const
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<NodeWPtr > inputs, guiInputs;
-    NodesWList outputs, guiOutputs;
+    std::vector<NodeWPtr > inputs;
+    NodesWList outputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
     NodeGroupPrivate()
         : nodesLock(QMutex::Recursive)
         , inputs()
-        , guiInputs()
         , outputs()
-        , guiOutputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
     {
@@ -1399,9 +1397,6 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
             }
         }
 
-        ///Sync gui inputs/outputs
-        _imp->guiInputs = _imp->inputs;
-        _imp->guiOutputs = _imp->outputs;
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1431,13 +1426,11 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             _imp->inputs.push_back(node);
-            _imp->guiInputs.push_back(node);
             thisNode->initializeInputs();
         }
         GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
-            _imp->guiOutputs.push_back(node);
         }
     }
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1475,57 +1468,39 @@ NodeGroup::notifyNodeLabelChanged(const NodePtr& node)
     }
 }
 
-void
-NodeGroup::dequeueConnexions()
-{
-    QMutexLocker k(&_imp->nodesLock);
-
-    _imp->inputs = _imp->guiInputs;
-    _imp->outputs = _imp->guiOutputs;
-}
-
 NodePtr
-NodeGroup::getOutputNode(bool useGuiConnexions) const
+NodeGroup::getOutputNode() const
 {
     QMutexLocker k(&_imp->nodesLock);
 
     ///A group can only have a single output.
-    if ( ( !useGuiConnexions && _imp->outputs.empty() ) || ( useGuiConnexions && _imp->guiOutputs.empty() ) ) {
+    if (_imp->outputs.empty()) {
         return NodePtr();
     }
 
-    return useGuiConnexions ? _imp->guiOutputs.front().lock() : _imp->outputs.front().lock();
+    return _imp->outputs.front().lock();
 }
 
 NodePtr
-NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
+NodeGroup::getOutputNodeInput() const
 {
-    NodePtr output = getOutputNode(useGuiConnexions);
+    NodePtr output = getOutputNode();
 
     if (output) {
-        return useGuiConnexions ? output->getGuiInput(0) : output->getInput(0);
+        return output->getInput(0);
     }
 
     return NodePtr();
 }
 
 NodePtr
-NodeGroup::getRealInputForInput(bool useGuiConnexions,
-                                const NodePtr& input) const
+NodeGroup::getRealInputForInput(const NodePtr& input) const
 {
     {
         QMutexLocker k(&_imp->nodesLock);
-        if (!useGuiConnexions) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                if (_imp->inputs[i].lock() == input) {
-                    return getNode()->getInput(i);
-                }
-            }
-        } else {
-            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-                if (_imp->guiInputs[i].lock() == input) {
-                    return getNode()->getGuiInput(i);
-                }
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i].lock() == input) {
+                return getNode()->getInput(i);
             }
         }
     }
@@ -1534,67 +1509,39 @@ NodeGroup::getRealInputForInput(bool useGuiConnexions,
 }
 
 void
-NodeGroup::getInputsOutputs(NodesList* nodes,
-                            bool useGuiConnexions) const
+NodeGroup::getInputsOutputs(NodesList* nodes) const
 {
     QMutexLocker k(&_imp->nodesLock);
 
-    if (!useGuiConnexions) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodesWList outputs;
-            NodePtr input = _imp->inputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            input->getOutputs_mt_safe(outputs);
-            for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                NodePtr node = it->lock();
-                if (node) {
-                    nodes->push_back(node);
-                }
-            }
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        NodesWList outputs;
+        NodePtr input = _imp->inputs[i].lock();
+        if (!input) {
+            continue;
         }
-    } else {
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodesWList outputs;
-            NodePtr input = _imp->guiInputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            input->getOutputs_mt_safe(outputs);
-            for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                NodePtr node = it->lock();
-                if (node) {
-                    nodes->push_back(node);
-                }
+        input->getOutputs_mt_safe(outputs);
+        for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            NodePtr node = it->lock();
+            if (node) {
+                nodes->push_back(node);
             }
         }
     }
 }
 
 void
-NodeGroup::getInputs(std::vector<NodePtr >* inputs,
-                     bool useGuiConnexions) const
+NodeGroup::getInputs(std::vector<NodePtr >* inputs) const
 {
     QMutexLocker k(&_imp->nodesLock);
 
-    if (!useGuiConnexions) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = _imp->inputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            inputs->push_back(input);
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        NodePtr input = _imp->inputs[i].lock();
+        if (!input) {
+            continue;
         }
-    } else {
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            inputs->push_back(input);
-        }
+        inputs->push_back(input);
     }
+
 }
 
 void

@@ -58,7 +58,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -433,7 +433,7 @@ TabWidget::createMenu()
     menu.addAction( tr("New histogram"), this, SLOT(newHistogramHere()) );
     menu.addAction( tr("Node graph here"), this, SLOT(moveNodeGraphHere()) );
     menu.addAction( tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()) );
-    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveDopeSheetEditorHere()) );
+    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveAnimationModuleEditorHere()) );
     menu.addAction( tr("Properties bin here"), this, SLOT(movePropertiesBinHere()) );
     menu.addAction( tr("Script editor here"), this, SLOT(moveScriptEditorHere()) );
     menu.addAction( tr("Progress Panel here"), this, SLOT(moveProgressPanelHere()) );
@@ -749,9 +749,9 @@ TabWidget::moveCurveEditorHere()
 }
 
 void
-TabWidget::moveDopeSheetEditorHere()
+TabWidget::moveAnimationModuleEditorHere()
 {
-    DopeSheetEditor *editor = _imp->gui->getDopeSheetEditor();
+    AnimationModuleEditor *editor = _imp->gui->getAnimationModuleEditor();
 
     moveTab(editor, editor);
 }

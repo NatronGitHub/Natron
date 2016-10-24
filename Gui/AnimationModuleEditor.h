@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef DOPESHEETEDITOR_H
-#define DOPESHEETEDITOR_H
+#ifndef AnimationModuleEditor_H
+#define AnimationModuleEditor_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -49,12 +49,12 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class DopeSheetEditorPrivate;
+class AnimationModuleEditorPrivate;
 
 /**
- * @class DopeSheetEditor
+ * @class AnimationModuleEditor
  *
- * The DopeSheetEditor class provides several widgets to edit keyframe animations
+ * The AnimationModuleEditor class provides several widgets to edit keyframe animations
  * and video clips.
  *
  * It contains two main widgets : at left, the hierarchy view provides a tree
@@ -68,7 +68,7 @@ class DopeSheetEditorPrivate;
  * The user can select, move, delete the keyframes and set their interpolation.
  * He can move and trim clips too.
  *
- * The DopeSheetEditor class acts like a facade. It's the only class visible
+ * The AnimationModuleEditor class acts like a facade. It's the only class visible
  * from the outside. It means that if you want to add a feature which require
  * some interaction with the other tools of Natron, you must add its "entry
  * point" here.
@@ -84,16 +84,17 @@ class DopeSheetEditorPrivate;
  *
  * These two views query the model to display and modify data.
  */
-class DopeSheetEditor
+class AnimationModuleEditor
     : public QWidget, public PanelWidget
 {
 public:
-    DopeSheetEditor(const std::string& scriptName,
-                    Gui *gui,
-                    const TimeLinePtr& timeline,
-                    QWidget *parent = 0);
-    ~DopeSheetEditor();
+    AnimationModuleEditor(const std::string& scriptName,
+                          Gui *gui,
+                          const TimeLinePtr& timeline,
+                          QWidget *parent = 0);
 
+    virtual ~AnimationModuleEditor();
+    
     /**
      * @brief Tells to the dope sheet model to add 'nodeGui' to the dope sheet
      * editor.
@@ -120,7 +121,7 @@ public:
 
     DopeSheetView* getDopesheetView() const;
 
-    HierarchyView* getHierarchyView() const;
+    AnimationModuleTreeView* getTreeView() const;
 
     void setTreeWidgetWidth(int width);
 
@@ -140,9 +141,9 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
+    boost::scoped_ptr<AnimationModuleEditorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // DOPESHEETEDITOR_H
+#endif // AnimationModuleEditor_H

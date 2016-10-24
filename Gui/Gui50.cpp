@@ -83,7 +83,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/CurveWidget.h"
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -978,7 +978,7 @@ Gui::addMenuEntry(const QString & menuGrouping,
 void
 Gui::setDopeSheetTreeWidth(int width)
 {
-    _imp->_dopeSheetEditor->setTreeWidgetWidth(width);
+    _imp->_AnimationModuleEditor->setTreeWidgetWidth(width);
 }
 
 void

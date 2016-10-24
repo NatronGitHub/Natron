@@ -169,7 +169,7 @@ public:
     ProgressPanel* _progressPanel;
 
     // The dope sheet
-    DopeSheetEditor *_dopeSheetEditor;
+    AnimationModuleEditor *_AnimationModuleEditor;
 
     ///the left toolbar
     QToolBar* _toolBox;

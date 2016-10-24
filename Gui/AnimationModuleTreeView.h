@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef DOPESHEETHIERARCHYVIEW_H
-#define DOPESHEETHIERARCHYVIEW_H
+#ifndef Natron_Gui_AnimationModuleTreeView_H
+#define Natron_Gui_AnimationModuleTreeView_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class HierarchyViewPrivate;
+class AnimationModuleTreeViewPrivate;
 
 /**
  * @brief This class is a part of the hierarchy view.
@@ -63,10 +63,10 @@ class HierarchyViewPrivate;
  * selected only if all their children are selected too.
  *
  * Deal with QTreeWidgetItem::setSelected() is just painful so an instance of
- * this class is set as the selection model of the HierarchyView class.
+ * this class is set as the selection model of the AnimationModuleTreeView class.
  *
  */
-class HierarchyViewSelectionModel
+class AnimationModuleTreeViewSelectionModel
     : public QItemSelectionModel
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -76,12 +76,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    explicit HierarchyViewSelectionModel(DopeSheet* dopesheetModel,
-                                         HierarchyView* view,
-                                         QAbstractItemModel *model,
-                                         QObject *parent = 0);
-    ~HierarchyViewSelectionModel();
+    explicit AnimationModuleTreeViewSelectionModel(const AnimationModulePtr& animModule,
+                                                   AnimationModuleTreeView* view,
+                                                   QAbstractItemModel *model,
+                                                   QObject *parent = 0);
+    virtual ~AnimationModuleTreeViewSelectionModel();
 
+
+    /**
+     * @brief Select the given selection, this is essentially the same as the base class if
+     * recurse is false. On the other hand if recurse is true we also select children
+     * and add parents to the selection if needed.
+     **/
     void selectWithRecursion(const QItemSelection &userSelection,
                              QItemSelectionModel::SelectionFlags command,
                              bool recurse);
@@ -112,14 +118,14 @@ private: /* functions */
 
 private:
 
-    DopeSheet* _dopesheetModel;
-    HierarchyView* _view;
+    AnimationModuleWPtr _model;
+    AnimationModuleTreeView* _view;
 };
 
 
 /**
- * @brief The HierarchyView class describes the hierarchy view of the dope
- * sheet editor.
+ * @brief The AnimationModuleTreeView class represents the tree along side the Curve Editor and
+ * the DopeSheet.
  *
  * The hierarchy view displays the name of each node/knob referenced by the
  * dope sheet editor and handles their organization.
@@ -134,7 +140,7 @@ private:
  * - select the associated keyframes by select an item.
  * - put a settings panel on top by double clicking on an item.
  */
-class HierarchyView
+class AnimationModuleTreeView
     : public QTreeWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -142,16 +148,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit HierarchyView(DopeSheet *dopeSheetModel,
-                           Gui *gui,
-                           QWidget *parent = 0);
-    ~HierarchyView();
+    explicit AnimationModuleTreeView(const AnimationModulePtr& model,
+                                     Gui *gui,
+                                     QWidget *parent = 0);
+    virtual ~AnimationModuleTreeView();
+
+    AnimationModulePtr getModel() const;
 
     /**
-     * @brief Returns a pointer to the DSKnob associated with the item at
+     * @brief Returns a pointer to the KnobAnim associated with the item at
      * the coordinates (0, y) in the tree widget's viewport.
      */
-    DSKnobPtr getDSKnobAt(int y) const;
+    KnobAnimPtr getKnobAnimAt(int y) const;
 
     /**
      * @brief Returns true if 'item' is fully visible.
@@ -175,23 +183,11 @@ public:
 
     void setCanResizeOtherWidget(bool canResize);
 
-    void getSelectedDSKnobs(std::list<DSKnobPtr >* knobs) const;
-
-    /**
-     * @brief Checks if the item associated with 'dsKnob' must be shown
-     * or hidden. Checks also the visible state of the item associated
-     * with its node.
-     *
-     * If the knob has no keyframes then the item is hidden.
-     *
-     * This slot is automatically called when a keyframe associated with
-     * 'dsKnob' is set or removed.
-     */
-    void refreshKnobVisibility(const DSKnobPtr& dsKnob);
+    void getSelectedKnobAnims(std::list<KnobAnimPtr >* knobs) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
+    void drawBranch(QPainter *painter, const QRect &rect, const NodeAnimPtr& closestEnclosingNodeItem, const QColor& nodeColor, QTreeWidgetItem* item) const;
 
     /**
      * @brief Returns true if all childrens of 'item' are hidden,
@@ -209,25 +205,25 @@ protected:
      * @brief Removes 'child' from its parent and append it to the list of
      * children of 'newParent'.
      */
-    void moveItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent) const;
+    void reparentItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent);
 
 private Q_SLOTS:
     /**
-     * @brief Inserts the item associated with 'dsNode' in the hierarchy view.
+     * @brief Inserts the item associated with 'NodeAnim' in the hierarchy view.
      *
      * This slot is automatically called after the dope sheet model
-     * created 'dsNode'.
+     * created 'NodeAnim'.
      */
-    void onNodeAdded(const DSNodePtr& dsNode);
+    void onNodeAdded(const NodeAnimPtr& NodeAnim);
 
     /**
-     * @brief Removes the item associated with 'dsNode' from the hierarchy
+     * @brief Removes the item associated with 'NodeAnim' from the hierarchy
      * view.
      *
      * This slot is automatically called just before the dope sheet model
-     * remove 'dsNode'.
+     * remove 'NodeAnim'.
      */
-    void onNodeAboutToBeRemoved(const DSNodePtr& dsNode);
+    void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
 
     /**
      * @brief Check the selected state of the knob context items which have
@@ -254,12 +250,12 @@ private Q_SLOTS:
      * This slot is automatically called when an item selection is performed
      * by the user.
      */
-    void onSelectionChanged();
+    void onTreeSelectionModelSelectionChanged();
 
 private:
 
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
+    boost::scoped_ptr<AnimationModuleTreeViewPrivate> _imp;
 };
 
 
@@ -274,11 +270,11 @@ private:
  * It also sets the size of each item : the height of an item associated with a
  * knob or a node is unchanged, instead of the height of a range-based node.
  */
-class HierarchyViewItemDelegate
+class AnimationModuleTreeViewItemDelegate
     : public QStyledItemDelegate
 {
 public:
-    explicit HierarchyViewItemDelegate(QObject *parent = 0);
+    explicit AnimationModuleTreeViewItemDelegate(QObject *parent = 0);
 
     virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
@@ -286,4 +282,4 @@ public:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // DOPESHEETHIERARCHYVIEW_H
+#endif // Natron_Gui_AnimationModuleTreeView_H

@@ -405,10 +405,10 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
-DopeSheetEditor *
-Gui::getDopeSheetEditor() const
+AnimationModuleEditor *
+Gui::getAnimationModuleEditor() const
 {
-    return _imp->_dopeSheetEditor;
+    return _imp->_AnimationModuleEditor;
 }
 
 ScriptEditor*
@@ -822,7 +822,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 
     assert( QThread::currentThread() == qApp->thread() );
     if ( (reason == eTimelineChangeReasonUserSeek) ||
-         ( reason == eTimelineChangeReasonDopeSheetEditorSeek) ||
+         ( reason == eTimelineChangeReasonAnimationModuleEditorSeek) ||
          ( reason == eTimelineChangeReasonCurveEditorSeek) ) {
         if ( getApp()->checkAllReadersModificationDate(true) ) {
             return;

@@ -118,14 +118,9 @@ NodeSerialization::encode(YAML::Emitter& em) const
         em << YAML::EndSeq;
     }
 
-    if (_rotoContext) {
-        em << YAML::Key << "Roto" << YAML::Value;
-        _rotoContext->encode(em);
-    }
-
-    if (_trackerContext) {
-        em << YAML::Key << "Tracks" << YAML::Value;
-        _trackerContext->encode(em);
+    if (_tableModel) {
+        em << YAML::Key << "Items" << YAML::Value;
+        _tableModel->encode(em);
     }
 
      // Only serialize clone stuff for non pyplug/non presets
@@ -258,14 +253,11 @@ NodeSerialization::decode(const YAML::Node& node)
             _children.push_back(s);
         }
     }
-    if (node["Roto"]) {
-        _rotoContext.reset(new RotoContextSerialization);
-        _rotoContext->decode(node["Roto"]);
+    if (node["Items"]) {
+        _tableModel.reset(new KnobItemsTableSerialization);
+        _tableModel->decode(node["Items"]);
     }
-    if (node["Tracks"]) {
-        _trackerContext.reset(new TrackerContextSerialization);
-        _trackerContext->decode(node["Tracks"]);
-    }
+
     if (node["CloneMaster"]) {
         _masterNodecriptName = node["CloneMaster"].as<std::string>();
     }

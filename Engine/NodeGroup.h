@@ -377,17 +377,16 @@ public:
 
     virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE ;
 
-    NodePtr getOutputNode(bool useGuiConnexions) const;
+    NodePtr getOutputNode() const;
 
-    NodePtr getOutputNodeInput(bool useGuiConnexions) const;
+    NodePtr getOutputNodeInput() const;
 
-    NodePtr getRealInputForInput(bool useGuiConnexions, const NodePtr& input) const;
+    NodePtr getRealInputForInput(const NodePtr& input) const;
 
-    void getInputs(std::vector<NodePtr>* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr>* inputs) const;
 
-    void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
+    void getInputsOutputs(NodesList* nodes) const;
 
-    void dequeueConnexions();
 
     bool getIsDeactivatingGroup() const;
     void setIsDeactivatingGroup(bool b);

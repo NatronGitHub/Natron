@@ -48,7 +48,7 @@
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
@@ -395,7 +395,7 @@ ViewerTab::setTripleSyncEnabled(bool toggled)
 {
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
-        DopeSheetEditor* deditor = getGui()->getDopeSheetEditor();
+        AnimationModuleEditor* deditor = getGui()->getAnimationModuleEditor();
         CurveEditor* cEditor = getGui()->getCurveEditor();
         //Sync curve editor and dopesheet tree width
         cEditor->setTreeWidgetWidth( deditor->getTreeWidgetWidth() );

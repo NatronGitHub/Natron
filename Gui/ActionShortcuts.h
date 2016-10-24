@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
 #define kShortcutGroupCurveEditor "CurveEditor"
-#define kShortcutGroupDopeSheetEditor "DopeSheetEditor"
+#define kShortcutGroupAnimationModuleEditor "AnimationModuleEditor"
 #define kShortcutGroupPlayer "Player"
 #define kShortcutGroupNodes "Nodes"
 #define kShortcutGroupScriptEditor "ScriptEditor"
@@ -351,26 +351,26 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionCurveEditorPaste "Paste Keyframes"
 
 // Dope Sheet Editor shortcuts
-#define kShortcutIDActionDopeSheetEditorDeleteKeys "deleteKeys"
-#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete Selected Keyframes"
+#define kShortcutIDActionAnimationModuleEditorDeleteKeys "deleteKeys"
+#define kShortcutDescActionAnimationModuleEditorDeleteKeys "Delete Selected Keyframes"
 
-#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
-#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on Selection"
+#define kShortcutIDActionAnimationModuleEditorFrameSelection "frameonselection"
+#define kShortcutDescActionAnimationModuleEditorFrameSelection "Frame on Selection"
 
-#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectall"
-#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select All"
+#define kShortcutIDActionAnimationModuleEditorSelectAllKeyframes "selectall"
+#define kShortcutDescActionAnimationModuleEditorSelectAllKeyframes "Select All"
 
-#define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
-#define kShortcutDescActionDopeSheetEditorRenameNode "Rename Node"
+#define kShortcutIDActionAnimationModuleEditorRenameNode "renamenode"
+#define kShortcutDescActionAnimationModuleEditorRenameNode "Rename Node"
 
-#define kShortcutIDActionDopeSheetEditorCopySelectedKeyframes "copyselectedkeyframes"
-#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy Selected Keyframes"
+#define kShortcutIDActionAnimationModuleEditorCopySelectedKeyframes "copyselectedkeyframes"
+#define kShortcutDescActionAnimationModuleEditorCopySelectedKeyframes "Copy Selected Keyframes"
 
-#define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
-#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste Keyframes"
+#define kShortcutIDActionAnimationModuleEditorPasteKeyframes "pastekeyframes"
+#define kShortcutDescActionAnimationModuleEditorPasteKeyframes "Paste Keyframes"
 
-#define kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute "pastekeyframesAbs"
-#define kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute "Paste Keyframes Absolute"
+#define kShortcutIDActionAnimationModuleEditorPasteKeyframesAbsolute "pastekeyframesAbs"
+#define kShortcutDescActionAnimationModuleEditorPasteKeyframesAbsolute "Paste Keyframes Absolute"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

@@ -127,12 +127,12 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionCurveEditorCenter);
     (void)QT_TR_NOOP(kShortcutDescActionCurveEditorCopy);
     (void)QT_TR_NOOP(kShortcutDescActionCurveEditorPaste);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorDeleteKeys);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorFrameSelection);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorSelectAllKeyframes);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorRenameNode);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorCopySelectedKeyframes);
-    (void)QT_TR_NOOP(kShortcutDescActionDopeSheetEditorPasteKeyframes);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorDeleteKeys);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorFrameSelection);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorSelectAllKeyframes);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorRenameNode);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorCopySelectedKeyframes);
+    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorPasteKeyframes);
     (void)QT_TR_NOOP(kShortcutDescActionScriptEditorPrevScript);
     (void)QT_TR_NOOP(kShortcutDescActionScriptEditorNextScript);
     (void)QT_TR_NOOP(kShortcutDescActionScriptEditorClearHistory);

@@ -5294,7 +5294,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         NodesList inputOutputs;
-        isGroup->getInputsOutputs(&inputOutputs, false);
+        isGroup->getInputsOutputs(&inputOutputs);
         for (NodesList::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
             (*it)->hasOutputNodesConnected(&outputNodes);
         }

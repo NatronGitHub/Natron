@@ -48,7 +48,7 @@ public:
     explicit DimSpec(int index)
         : i(index)
     {
-        assert(index >= -2);
+        assert(index >= -1);
     }
 
     // cast to int is implicit

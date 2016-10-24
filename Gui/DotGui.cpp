@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"

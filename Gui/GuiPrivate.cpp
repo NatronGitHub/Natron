@@ -95,7 +95,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/Gui.h"
@@ -201,7 +201,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _groups()
     , _curveEditor(0)
     , _progressPanel(0)
-    , _dopeSheetEditor(0)
+    , _AnimationModuleEditor(0)
     , _toolBox(0)
     , _propertiesBin(0)
     , _propertiesScrollArea(0)
@@ -392,9 +392,9 @@ GuiPrivate::createCurveEditorGui()
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(kDopeSheetEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
-    _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
-    _dopeSheetEditor->setVisible(false);
+    _AnimationModuleEditor = new AnimationModuleEditor(kAnimationModuleEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
+    _AnimationModuleEditor->setLabel( tr("Dope Sheet").toStdString() );
+    _AnimationModuleEditor->setVisible(false);
 }
 
 void

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef DOPESHEETEDITORUNDOREDO_H
-#define DOPESHEETEDITORUNDOREDO_H
+#ifndef AnimationModuleEditorUNDOREDO_H
+#define AnimationModuleEditorUNDOREDO_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -50,8 +50,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
-typedef std::list<DSKeyPtr> DSKeyPtrList;
+typedef boost::shared_ptr<AnimKeyFrame> AnimKeyFramePtr;
+typedef std::list<AnimKeyFramePtr> AnimKeyFramePtrList;
 
 
 /**
@@ -76,7 +76,7 @@ typedef std::list<DSKeyPtr> DSKeyPtrList;
  *
  * -- Recommandations --
  *
- * As a DSNode, DSKnob, Node, NodeGui, KnobI, etc...is handled as a shared_ptr
+ * As a NodeAnim, KnobAnim, Node, NodeGui, KnobI, etc...is handled as a shared_ptr
  * by its owner class, if you want to store and use an instance in your custom
  * command, you must use a weak_ptr. In your un/redo function, use the
  * weak_ptr::lock() function to retrieve a shared_ptr to your object, then
@@ -124,10 +124,10 @@ class DSMoveKeysAndNodesCommand
     Q_DECLARE_TR_FUNCTIONS(DSMoveKeysAndNodesCommand)
 
 public:
-    DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                              const std::vector<DSNodePtr >& nodes,
+    DSMoveKeysAndNodesCommand(const AnimKeyFramePtrList &keys,
+                              const std::vector<NodeAnimPtr >& nodes,
                               double dt,
-                              DopeSheetEditor *model,
+                              AnimationModuleEditor *model,
                               QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -143,11 +143,11 @@ private:
     void moveSelection(double dt);
 
 private:
-    DSKeyPtrList _keys;
-    std::vector<DSNodePtr > _nodes;
+    AnimKeyFramePtrList _keys;
+    std::vector<NodeAnimPtr > _nodes;
     NodesWList _allDifferentNodes;
     double _dt;
-    DopeSheetEditor *_model;
+    AnimationModuleEditor *_model;
 };
 
 
@@ -157,9 +157,9 @@ class DSTransformKeysCommand
     Q_DECLARE_TR_FUNCTIONS(DSTransformKeysCommand)
 
 public:
-    DSTransformKeysCommand(const DSKeyPtrList &keys,
+    DSTransformKeysCommand(const AnimKeyFramePtrList &keys,
                            const Transform::Matrix3x3& transform,
-                           DopeSheetEditor *model,
+                           AnimationModuleEditor *model,
                            QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -172,24 +172,24 @@ private:
     /**
      * @brief Move the selected keyframes by 'dt' on the dope sheet timeline.
      */
-    void transformKey(const DSKeyPtr& key);
+    void transformKey(const AnimKeyFramePtr& key);
 
 private:
 
 
     struct TransformKeyData
     {
-        DSKeyPtrList keys;
+        AnimKeyFramePtrList keys;
         CurvePtr oldCurve;
         CurvePtr newCurve;
     };
 
-    typedef std::map<DSKnobPtr, TransformKeyData> TransformKeys;
+    typedef std::map<KnobAnimPtr, TransformKeyData> TransformKeys;
 
     bool _firstRedoCalled;
     Transform::Matrix3x3 _transform;
     TransformKeys _keys;
-    DopeSheetEditor *_model;
+    AnimationModuleEditor *_model;
 };
 
 
@@ -203,7 +203,7 @@ class DSLeftTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSLeftTrimReaderCommand)
 
 public:
-    DSLeftTrimReaderCommand(const DSNodePtr &reader,
+    DSLeftTrimReaderCommand(const NodeAnimPtr &reader,
                             double oldTime,
                             double newTime,
                             QUndoCommand *parent = 0);
@@ -221,7 +221,7 @@ private:
     void trimLeft(double firstFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    boost::weak_ptr<NodeAnim> _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -237,10 +237,10 @@ class DSRightTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSRightTrimReaderCommand)
 
 public:
-    DSRightTrimReaderCommand(const DSNodePtr &reader,
+    DSRightTrimReaderCommand(const NodeAnimPtr &reader,
                              double oldTime,
                              double newTime,
-                             DopeSheetEditor * /*model*/,
+                             AnimationModuleEditor * /*model*/,
                              QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -256,7 +256,7 @@ private:
     void trimRight(double lastFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    boost::weak_ptr<NodeAnim> _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -271,9 +271,9 @@ class DSSlipReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSSlipReaderCommand)
 
 public:
-    DSSlipReaderCommand(const DSNodePtr &reader,
+    DSSlipReaderCommand(const NodeAnimPtr &reader,
                         double dt,
-                        DopeSheetEditor *model,
+                        AnimationModuleEditor *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -289,9 +289,9 @@ private:
     void slipReader(double dt);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    boost::weak_ptr<NodeAnim> _readerContext;
     double _dt;
-    DopeSheetEditor *_model;
+    AnimationModuleEditor *_model;
 };
 
 
@@ -307,8 +307,8 @@ class DSRemoveKeysCommand
     Q_DECLARE_TR_FUNCTIONS(DSRemoveKeysCommand)
 
 public:
-    DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
-                        DopeSheetEditor *model,
+    DSRemoveKeysCommand(const std::vector<AnimKeyFrame> &keys,
+                        AnimationModuleEditor *model,
                         QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -318,8 +318,8 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::vector<DopeSheetKey> _keys;
-    DopeSheetEditor *_model;
+    std::vector<AnimKeyFrame> _keys;
+    AnimationModuleEditor *_model;
 };
 
 
@@ -331,7 +331,7 @@ struct DSKeyInterpolationChange
 {
     DSKeyInterpolationChange(KeyframeTypeEnum oldInterpType,
                              KeyframeTypeEnum newInterpType,
-                             const DSKeyPtr & key)
+                             const AnimKeyFramePtr & key)
         : _oldInterpType(oldInterpType),
         _newInterpType(newInterpType),
         _key(key)
@@ -339,7 +339,7 @@ struct DSKeyInterpolationChange
 
     KeyframeTypeEnum _oldInterpType;
     KeyframeTypeEnum _newInterpType;
-    DSKeyPtr _key;
+    AnimKeyFramePtr _key;
 };
 
 
@@ -355,7 +355,7 @@ class DSSetSelectedKeysInterpolationCommand
 
 public:
     DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
-                                          DopeSheetEditor *model,
+                                          AnimationModuleEditor *model,
                                           QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -366,7 +366,7 @@ private:
 
 private:
     std::list<DSKeyInterpolationChange> _changes;
-    DopeSheetEditor *_model;
+    AnimationModuleEditor *_model;
 };
 
 
@@ -382,10 +382,10 @@ class DSPasteKeysCommand
     Q_DECLARE_TR_FUNCTIONS(DSPasteKeysCommand)
 
 public:
-    DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                       const std::list<DSKnobPtr >& dstKnobs,
+    DSPasteKeysCommand(const std::vector<AnimKeyFrame> &keys,
+                       const std::list<KnobAnimPtr >& dstKnobs,
                        bool pasteRelativeToRefTime,
-                       DopeSheetEditor *model,
+                       AnimationModuleEditor *model,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
@@ -407,11 +407,11 @@ private:
     int _refTime;
     int _refKeyindex;
     bool _pasteRelativeToRefTime;
-    std::vector<DopeSheetKey> _keys;
-    std::list<boost::weak_ptr<DSKnob> > _dstKnobs;
-    DopeSheetEditor *_model;
+    std::vector<AnimKeyFrame> _keys;
+    std::list<boost::weak_ptr<KnobAnim> > _dstKnobs;
+    AnimationModuleEditor *_model;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // DOPESHEETEDITORUNDOREDO_H
+#endif // AnimationModuleEditorUNDOREDO_H
