@@ -67,15 +67,22 @@ AnimationModuleSelectionModel::getModel() const
     return _imp->model.lock();
 }
 
-static void addTableItemKeyframesRecursive(const TableItemAnimPtr& item, std::vector<TableItemAnimPtr> *selectedTableItems, KeyFrameSet* result)
+static void addTableItemKeyframes(const TableItemAnimPtr& item,
+                                  bool recurse,
+                                  std::vector<TableItemAnimPtr> *selectedTableItems,
+                                  AnimItemDimViewKeyFramesMap* result)
 {
     if (item->isRangeDrawingEnabled()) {
         selectedTableItems->push_back(item);
     }
-    item->getKeyframes(DimSpec::all(), ViewSetSpec::all(), result);
-    std::vector<TableItemAnimPtr> children = item->getChildren();
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        addTableItemKeyframesRecursive(children[i], selectedTableItems, result);
+    AnimItemDimViewID key(item, ViewSetSpec::all(), DimSpec::all());
+    KeyFrameWithStringSet& keySet = (*result)[key];
+    item->getKeyframes(DimSpec::all(), ViewSetSpec::all(), &keySet);
+    if (recurse) {
+        std::vector<TableItemAnimPtr> children = item->getChildren();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            addTableItemKeyframes(children[i], true, selectedTableItems, result);
+        }
     }
 }
 
@@ -96,17 +103,14 @@ AnimationModuleSelectionModel::selectAll()
 
             // We select keyframes for the root item, this will also select children
             AnimItemDimViewID key(*it2, ViewSetSpec::all(), DimSpec::all());
-            KeyFrameSet &keysForItem = selectedKeyframes[key];
+            KeyFrameWithStringSet &keysForItem = selectedKeyframes[key];
             (*it2)->getKeyframes(DimSpec::all(), ViewSetSpec::all(), &keysForItem);
         }
 
         const std::vector<TableItemAnimPtr>& topLevelTableItems = (*it)->getTopLevelItems();
         for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
             // We select keyframes for the root item, this will also select children
-            AnimItemDimViewID key(*it2, ViewSetSpec::all(), DimSpec::all());
-            KeyFrameSet &keysForItem = selectedKeyframes[key];
-
-            addTableItemKeyframesRecursive(*it2, &selectedTableItems, &keysForItem);
+            addTableItemKeyframes(*it2, true, &selectedTableItems, &selectedKeyframes);
         }
         if ((*it)->isRangeDrawingEnabled()) {
             selectedNodes.push_back(*it);
@@ -118,6 +122,43 @@ AnimationModuleSelectionModel::selectAll()
     makeSelection( selectedKeyframes, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                AnimationModuleSelectionModel::SelectionTypeClear |
                                                                AnimationModuleSelectionModel::SelectionTypeRecurse) );
+}
+
+void
+AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items)
+{
+    AnimItemDimViewKeyFramesMap keys;
+    std::vector<NodeAnimPtr > nodes;
+    std::vector<TableItemAnimPtr> tableItems;
+    
+    AnimationModulePtr animModel = getModel();
+    Q_FOREACH (QTreeWidgetItem * item, items) {
+        AnimatedItemTypeEnum foundType;
+        KnobAnimPtr isKnob;
+        TableItemAnimPtr isTableItem;
+        NodeAnimPtr isNodeItem;
+        ViewSetSpec view;
+        DimSpec dim;
+        bool found = animModel->findItem(item, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+        if (!found) {
+            continue;
+        }
+        
+        if (isKnob) {
+            AnimItemDimViewID p(isKnob, view, dim);
+            KeyFrameWithStringSet& keyframesSet = keys[p];
+            isKnob->getKeyframes(dim, view, &keyframesSet);
+        } else if (isNodeItem) {
+            nodes.push_back(isNodeItem);
+        } else if (isTableItem) {
+            addTableItemKeyframes(isTableItem, false, &tableItems, &keys);
+        }
+    }
+    
+    AnimationModuleSelectionModel::SelectionTypeFlags sFlags = AnimationModuleSelectionModel::SelectionTypeAdd
+    | AnimationModuleSelectionModel::SelectionTypeClear | AnimationModuleSelectionModel::SelectionTypeRecurse;
+    
+    animModel->getSelectionModel().makeSelection(keys, tableItems, nodes, sFlags);
 }
 
 
@@ -157,8 +198,8 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
         if (exists == _imp->selectedKeyframes.end()) {
             _imp->selectedKeyframes[it->first] = it->second;
         } else {
-            for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                KeyFrameSet::iterator timeExist = exists->second.find(*it2);
+            for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                KeyFrameWithStringSet::iterator timeExist = exists->second.find(*it2);
                 if (timeExist == exists->second.end()) {
                     exists->second.erase(timeExist);
                     exists->second.insert(*it2);
@@ -243,12 +284,12 @@ AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
                 return false;
             }
         }
-        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if (!timeSet) {
-                *time = it2->getTime();
+                *time = it2->key.getTime();
                 timeSet = true;
             } else {
-                if (it2->getTime() != *time) {
+                if (it2->key.getTime() != *time) {
                     return false;
                 }
             }
@@ -266,14 +307,16 @@ AnimationModuleSelectionModel::getSelectedKeyframesCount() const
 }
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, DimSpec dimension ,ViewSetSpec view, const KeyFrame &keyframe) const
+AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, DimSpec dimension ,ViewSetSpec view, double time) const
 {
     AnimItemDimViewID key(anim, view, dimension);
     AnimItemDimViewKeyFramesMap::const_iterator found = _imp->selectedKeyframes.find(key);
     if (found == _imp->selectedKeyframes.end()) {
         return false;
     }
-    KeyFrameSet::const_iterator foundKey = found->second.find(keyframe);
+    KeyFrameWithString k;
+    k.key.setTime(time);
+    KeyFrameWithStringSet::const_iterator foundKey = found->second.find(k);
     if (foundKey == found->second.end()) {
         return false;
     }

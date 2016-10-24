@@ -69,6 +69,15 @@ struct VariantTimeValuePair
     Variant value;
 };
 
+struct VariantTimeValuePair_Compare
+{
+    bool operator() (const VariantTimeValuePair& lhs, const VariantTimeValuePair& rhs) const
+    {
+        return lhs.time < rhs.time;
+    }
+};
+
+
 template <typename T>
 inline T variantToType(const Variant& v);
 

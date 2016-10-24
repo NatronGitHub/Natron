@@ -47,7 +47,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Curve.h"
 #include "Engine/Transform.h"
 #include "Engine/Variant.h"
-#include "Gui/GuiFwd.h"
+
+#include "Gui/AnimItemBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -62,26 +63,11 @@ class AddOrRemoveKeysCommand
 
 public:
 
-    struct ObjectKeyFramesData
-    {
-        std::vector<std::list<VariantTimeValuePair> > keyframesPerDim;
-        int dimensionStartIndex;
 
-    };
-
-
-    typedef std::map<AnimatingObjectIWPtr, ObjectKeyFramesData > ObjectKeysToAddMap;
-
-    AddOrRemoveKeysCommand(const ObjectKeysToAddMap & keys,
+    AddOrRemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
                            bool initialCommandIsAdd,
-                           QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _initialCommandIsAdd(initialCommandIsAdd)
-    , _keys(keys)
-    {
-        setText( tr("Add keyframe(s)") );
-    }
-
+                           QUndoCommand *parent);
+    
     virtual ~AddOrRemoveKeysCommand() OVERRIDE
     {
     }
@@ -102,7 +88,7 @@ protected:
 private:
 
     bool _initialCommandIsAdd;
-    ObjectKeysToAddMap _keys;
+    AnimItemDimViewKeyFramesMap _keys;
 };
 
 /**

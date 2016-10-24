@@ -41,7 +41,6 @@
 #include "Gui/GuiFwd.h"
 
 #include "Global/GlobalDefines.h"
-
 #include "Engine/Curve.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
@@ -91,7 +90,7 @@ struct AnimItemDimViewID_CompareLess
 };
 
 
-/*struct KeyFrameWithString
+struct KeyFrameWithString
 {
     KeyFrame key;
     std::string string;
@@ -105,8 +104,9 @@ struct KeyFrameWithString_CompareLess
     }
 };
 
-typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;*/
-typedef std::map<AnimItemDimViewID, KeyFrameSet, AnimItemDimViewID_CompareLess> AnimItemDimViewKeyFramesMap;
+typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;
+
+typedef std::map<AnimItemDimViewID, KeyFrameWithStringSet, AnimItemDimViewID_CompareLess> AnimItemDimViewKeyFramesMap;
 
 class AnimItemBasePrivate;
 class AnimItemBase : public boost::enable_shared_from_this<AnimItemBase>
@@ -150,7 +150,7 @@ public:
     /**
      * @brief Get keyframes associated to the item
      **/
-    void getKeyframes(DimSpec dimension, ViewSetSpec view, KeyFrameSet *result) const;
+    void getKeyframes(DimSpec dimension, ViewSetSpec view, KeyFrameWithStringSet *result) const;
 
     /**
      * @brief Returns the views available in the item.
@@ -170,7 +170,7 @@ private:
 
 
 
-class AnimKeyFramePrivate;
+/*class AnimKeyFramePrivate;
 class AnimKeyFrame
 {
 public:
@@ -206,6 +206,7 @@ struct SortDecreasingFunctor
     bool operator() (const AnimKeyFramePtr& lhs,
                      const AnimKeyFramePtr& rhs);
 };
+*/
 
 class KnobsHolderAnimBase
 {

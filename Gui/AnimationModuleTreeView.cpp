@@ -332,9 +332,6 @@ public:
 
     QColor desaturate(const QColor &color) const;
 
-    // keyframe selection
-    void selectKeyframes(const QList<QTreeWidgetItem *> &items);
-
 
     /* attributes */
     AnimationModuleTreeView *publicInterface;
@@ -556,39 +553,9 @@ AnimationModuleTreeView::getHeightForItemAndChildren(QTreeWidgetItem *item) cons
     return (bottom - top) + 1;
 }
 
-void
-AnimationModuleTreeViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
+static void addTableItemKeyframesRecursive()
 {
-    AnimItemDimViewKeyFramesMap keys;
-    std::vector<NodeAnimPtr > nodes;
-    std::vector<TableItemAnimPtr> tableItems;
-
-    AnimationModulePtr animModel = model.lock();
-    Q_FOREACH (QTreeWidgetItem * item, items) {
-        AnimatedItemTypeEnum foundType;
-        KnobAnimPtr isKnob;
-        TableItemAnimPtr isTableItem;
-        NodeAnimPtr isNodeItem;
-        ViewSetSpec view;
-        DimSpec dim;
-        bool found = animModel->findItem(item, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-        if (!found) {
-            continue;
-        }
-
-        if (isKnob) {
-            isKnob->getKeyframes(dim, view, &keys);
-        } else if (isNodeItem) {
-            nodes.push_back(isNodeItem);
-        } else if (isTableItem) {
-            tableItems.push_back(isTableItem);
-        }
-    }
-
-    AnimationModuleSelectionModel::SelectionTypeFlags sFlags = AnimationModuleSelectionModel::SelectionTypeAdd
-                                                         | AnimationModuleSelectionModel::SelectionTypeClear | AnimationModuleSelectionModel::SelectionTypeRecurse;
-
-    animModel->getSelectionModel().makeSelection(keys, tableItems, nodes, sFlags);
+    
 }
 
 AnimationModuleTreeView::AnimationModuleTreeView(const AnimationModulePtr& model,
@@ -1058,25 +1025,11 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     // Retrieve the knob anim with selected keyframes
     AnimItemDimViewMap uniqueRows;
 
-    AnimKeyFramePtrList selectedKeys;
+    AnimItemDimViewKeyFramesMap selectedKeys;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
 
     getModel()->getSelectionModel().getCurrentSelection(&selectedKeys, &selectedNodes, &tableItems);
-
-    for (AnimKeyFramePtrList::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        AnimItemDimViewID k;
-        k.item = (*it)->getContext();
-        k.dim = (*it)->getDimension();
-        k.view = (*it)->getView();
-
-        AnimItemDimViewMap::iterator found = uniqueRows.find(k);
-        if (found != uniqueRows.end()) {
-            ++found->second;
-        } else {
-            found->second = 1;
-        }
-    }
 
 
     // Prevent recursion
@@ -1091,13 +1044,13 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
 
         // For each knob/dim/view, if all keyframes are selected, add the item to the selection
         std::set<QModelIndex> toSelect;
-        for (AnimItemDimViewMap::const_iterator it = uniqueRows.begin(); it != uniqueRows.end(); ++it) {
+        for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
             bool selectItem = true;
 
-            std::vector<AnimKeyFrame> keys;
-            it->first.item->getKeyframes(it->first.dim, it->first.view, &keys);
+            KeyFrameWithStringSet allKeys;
+            it->first.item->getKeyframes(it->first.dim, it->first.view, &allKeys);
 
-            if ((int)keys.size() != it->second) {
+            if (allKeys.size() != it->second.size()) {
                 selectItem = false;
             }
 
@@ -1195,7 +1148,7 @@ AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
 void
 AnimationModuleTreeView::onTreeSelectionModelSelectionChanged()
 {
-    _imp->selectKeyframes( selectedItems() );
+    getModel()->getSelectionModel().selectItems(selectedItems());
 }
 
 NATRON_NAMESPACE_EXIT;

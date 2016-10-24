@@ -24,7 +24,9 @@
 
 #include "AnimItemBase.h"
 
+#include "Engine/AnimatingObjectI.h"
 #include "Engine/Curve.h"
+#include "Engine/StringAnimationManager.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -42,7 +44,7 @@ public:
 
     }
 
-    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const;
+    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameWithStringSet *result) const;
     
     
 };
@@ -67,17 +69,27 @@ AnimItemBase::getModel() const
 }
 
 void
-AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const
+AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameWithStringSet *result) const
 {
     CurvePtr curve = publicInterface->getCurve(dimension, view);
     if (!curve) {
         return;
     }
-    *result = curve->getKeyFrames_mt_safe();
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    AnimatingObjectIPtr animObject = publicInterface->getInternalAnimItem();
+    StringAnimationManagerPtr stringAnim = animObject->getStringAnimation();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        KeyFrameWithString k;
+        if (stringAnim) {
+            stringAnim->stringFromInterpolatedIndex(it->getValue(), view, &k.string);
+        }
+        k.key = *it;
+        result->insert(k);
+    }
 }
 
 void
-AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameSet *result) const
+AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameWithStringSet *result) const
 {
 
     assert(viewSpec.isAll() || viewSpec.isViewIdx());
@@ -110,7 +122,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameSet 
     }
 }
 
-
+#if 0
 class AnimKeyFramePrivate
 {
 
@@ -269,5 +281,6 @@ bool SortDecreasingFunctor::operator() (const AnimKeyFramePtr& lhs,
         }
     }
 }
+#endif
 
 NATRON_NAMESPACE_EXIT;

@@ -56,63 +56,86 @@ static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeVa
     }
 }
 
+template <typename T>
+static void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
+                                                   std::list<TimeValuePair<T> >* outList)
+{
+    for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+        TimeValuePair<T> p(it->key.getTime(), it->key.getValue());
+        outList->push_back(p);
+    }
+}
+
+template <>
+void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
+                                                  std::list<TimeValuePair<std::string> >* outList)
+{
+    for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
+        TimeValuePair<std::string> p(it->key.getTime(), it->string);
+        outList->push_back(p);
+    }
+}
+
+AddOrRemoveKeysCommand::AddOrRemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                       bool initialCommandIsAdd,
+                       QUndoCommand *parent)
+: QUndoCommand(parent)
+, _initialCommandIsAdd(initialCommandIsAdd)
+, _keys(keys)
+{
+    setText( tr("Add keyframe(s)") );
+}
+
 void
 AddOrRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (ObjectKeysToAddMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
-
-        AnimatingObjectIPtr obj = it->first.lock();
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        
+        AnimatingObjectIPtr obj = it->first.item->getInternalAnimItem();
         if (!obj) {
             continue;
         }
-
-
+        
+        const KeyFrameWithStringSet& keyStringSet = it->second;
+        
         if (!add) {
-            for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
-                std::list<double> keyTimes;
-                for (std::list<VariantTimeValuePair> ::const_iterator it2 = it->second.keyframesPerDim[i].begin(); it2 != it->second.keyframesPerDim[i].end(); ++it2) {
-                    keyTimes.push_back(it2->time);
-                }
-                obj->deleteValuesAtTime(eCurveChangeReasonInternal, keyTimes, ViewSpec::all(), i + it->second.dimensionStartIndex);
+            std::list<double> keyTimes;
+            for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+                keyTimes.push_back(it2->key.getTime());
             }
+            obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim);
+            
         } else {
-
+            
             AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();
             switch (dataType) {
                 case AnimatingObjectI::eKeyframeDataTypeNone:
                 case AnimatingObjectI::eKeyframeDataTypeDouble:
                 {
-                    std::vector<std::list<DoubleTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
-                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
-                        convertVariantTimeValuePairToTypedList<double>(it->second.keyframesPerDim[i], &keyframes[i]);
-                    }
-                    obj->setMultipleDoubleValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                    std::list<DoubleTimeValuePair> keysList;
+                    convertVariantKeyStringSetToTypedList<double>(keyStringSet, &keysList);
+                    obj->setMultipleDoubleValueAtTime(keysList, it->first.view, it->first.dim);
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeBool:
                 {
-                    std::vector<std::list<BoolTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
-                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
-                        convertVariantTimeValuePairToTypedList<bool>(it->second.keyframesPerDim[i], &keyframes[i]);
-                    }
-                    obj->setMultipleBoolValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                    std::list<BoolTimeValuePair> keysList;
+                    convertVariantKeyStringSetToTypedList<bool>(keyStringSet, &keysList);
+                    obj->setMultipleBoolValueAtTime(keysList, it->first.view, it->first.dim);
 
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeString:
                 {
-                    std::vector<std::list<StringTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
-                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
-                        convertVariantTimeValuePairToTypedList<std::string>(it->second.keyframesPerDim[i], &keyframes[i]);
-                    }
-                    obj->setMultipleStringValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                    std::list<StringTimeValuePair> keysList;
+                    convertVariantKeyStringSetToTypedList<std::string>(keyStringSet, &keysList);
+                    obj->setMultipleStringValueAtTime(keysList, it->first.view, it->first.dim);
 
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeInt:
                 {
-                    std::vector<std::list<IntTimeValuePair> > keyframes(it->second.keyframesPerDim.size());
-                    for (std::size_t i = 0; i < it->second.keyframesPerDim.size(); ++i) {
-                        convertVariantTimeValuePairToTypedList<int>(it->second.keyframesPerDim[i], &keyframes[i]);
-                    }
-                    obj->setMultipleIntValueAtTimeAcrossDimensions(keyframes, it->second.dimensionStartIndex, ViewSpec::all(), eValueChangedReasonUserEdited);
+                    std::list<IntTimeValuePair> keysList;
+                    convertVariantKeyStringSetToTypedList<int>(keyStringSet, &keysList);
+                    obj->setMultipleIntValueAtTime(keysList, it->first.view, it->first.dim);
+                    
                     
                 }   break;
             } // end switch

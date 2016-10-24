@@ -118,7 +118,7 @@ class NodeAnim;
 class DialogButtonBox;
 class DockablePanel;
 class DocumentationManager;
-class AnimKeyFrame;
+//class AnimKeyFrame;
 class DopeSheetView;
 class DroppedTreeItem;
 class Edge;
@@ -204,7 +204,7 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
-typedef boost::shared_ptr<AnimKeyFrame> AnimKeyFramePtr;
+//typedef boost::shared_ptr<AnimKeyFrame> AnimKeyFramePtr;
 typedef boost::shared_ptr<AnimItemBase> AnimItemBasePtr;
 typedef boost::shared_ptr<AnimationModule> AnimationModulePtr;
 typedef boost::shared_ptr<BackdropGui> BackdropGuiPtr;
@@ -243,7 +243,7 @@ typedef boost::weak_ptr<TableItem> TableItemWPtr;
 typedef boost::weak_ptr<TableItemAnim> TableItemAnimWPtr;
 typedef boost::weak_ptr<TableModel> TableModelWPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
-typedef std::list<AnimKeyFramePtr> AnimKeyFramePtrList;
+//typedef std::list<AnimKeyFramePtr> AnimKeyFramePtrList;
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class DialogParamHolder;

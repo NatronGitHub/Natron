@@ -117,7 +117,7 @@ public:
     std::list<NodeAnimPtr> nodes;
     boost::scoped_ptr<AnimationModuleSelectionModel> selectionModel;
     boost::scoped_ptr<QUndoStack> undoStack;
-    std::vector<AnimKeyFrame> keyframesClipboard;
+    KeyFrameSet keyframesClipboard;
     TimeLineWPtr timeline;
     AnimationModuleEditor* editor;
 };
@@ -607,9 +607,14 @@ AnimationModule::deleteSelectedKeyframes()
         return;
     }
 
-    std::vector<AnimKeyFrame> toRemove = _imp->selectionModel->getKeyframesSelectionCopy();
-
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
+    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> tableItems;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
+    
     _imp->selectionModel->clearSelection();
+    
+    
 
     _imp->pushUndoCommand( new DSRemoveKeysCommand(toRemove, _imp->editor) );
 }
@@ -792,16 +797,12 @@ AnimationModule::copySelectedKeys()
 
     _imp->keyframesClipboard.clear();
 
-    AnimKeyFramePtrList selectedKeyframes;
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
 
-    for (AnimKeyFramePtrList::const_iterator it = selectedKeyframes.begin();
-         it != selectedKeyframes.end();
-         ++it) {
-        AnimKeyFramePtr selectedKey = (*it);
-
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
         _imp->keyframesClipboard.push_back(*selectedKey);
     }
 }
