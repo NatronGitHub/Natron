@@ -423,6 +423,10 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
             StrUtils::ensureLastPathSeparator(path);
             path += QLatin1String("NatronProjectConverter");
 
+#ifdef __NATRON_WIN32__
+            path += QLatin1String(".exe");
+#endif
+
             if (!QFile::exists(path)) {
                 throw std::runtime_error( tr("Could not find executable %1").arg(path).toStdString() );
             }
