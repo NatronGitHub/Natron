@@ -567,11 +567,6 @@ std::vector<NodeAnimPtr > AnimationModule::getChildrenNodes(const NodeAnimPtr& n
     return children;
 }
 
-/**
- * @brief AnimationModule::getNearestRetimeFromOutputs
- *
- * Returns the first Retime node connected in output with 'NodeAnim' in the node graph.
- */
 NodeAnimPtr AnimationModule::getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const
 {
     std::list<NodePtr> markedNodes;
@@ -799,7 +794,8 @@ AnimationModule::copySelectedKeys()
 
     AnimKeyFramePtrList selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    std::vector<TableItemAnimPtr> tableItems;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
 
     for (AnimKeyFramePtrList::const_iterator it = selectedKeyframes.begin();
          it != selectedKeyframes.end();
@@ -815,8 +811,9 @@ AnimationModule::renameSelectedNode()
 {
     AnimKeyFramePtrList keys;
     std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> tableItems;
 
-    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes);
+    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
     if ( selectedNodes.empty() || (selectedNodes.size() > 1) ) {
         Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
 
@@ -863,16 +860,8 @@ AnimationModule::pasteKeys(bool relative)
         toPaste.push_back(key);
     }
 
-    if ( !toPaste.empty() ) {
-
-        std::list<KnobAnimPtr > dstKnobs;
-        _imp->editor->getTreeView()->getSelectedKnobAnims(&dstKnobs);
-        if (dstKnobs.empty()) {
-            Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
-            return;
-        }
-        _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, dstKnobs, relative, _imp->editor) );
-    }
+    pasteKeys(toPaste, relative);
+  
 }
 
 void
@@ -898,7 +887,9 @@ AnimationModule::setSelectedKeysInterpolation(KeyframeTypeEnum keyType)
 
     AnimKeyFramePtrList selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    std::vector<TableItemAnimPtr> tableItems;
+
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
     std::list<DSKeyInterpolationChange> changes;
 
     for (AnimKeyFramePtrList::iterator it = selectedKeyframes.begin();
@@ -921,7 +912,9 @@ AnimationModule::transformSelectedKeys(const Transform::Matrix3x3& transform)
     }
     AnimKeyFramePtrList selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
+    std::vector<TableItemAnimPtr> tableItems;
+
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
 
     _imp->pushUndoCommand( new DSTransformKeysCommand(selectedKeyframes, transform, _imp->editor) );
 }

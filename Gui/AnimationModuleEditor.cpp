@@ -95,7 +95,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
     _imp->splitter->setHandleWidth(1);
 
-    _imp->model.reset(new AnimationModule(gui, this, timeline));
+    _imp->model = AnimationModule::create(gui, this, timeline);
 
     _imp->treeView = new AnimationModuleTreeView(_imp->model, gui, _imp->splitter);
 
@@ -117,7 +117,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
              _imp->treeView, SLOT(onNodeAboutToBeRemoved(NodeAnimPtr)) );
 
     connect( &_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
-             _imp->treeView, SLOT(onKeyframeSelectionChanged(bool)) );
+             _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
 
     // Main model -> DopeSheetView connections
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),

@@ -42,7 +42,7 @@ public:
 
     }
 
-    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, std::vector<AnimKeyFrame> *result) const;
+    void addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const;
     
     
 };
@@ -67,30 +67,17 @@ AnimItemBase::getModel() const
 }
 
 void
-AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, std::vector<AnimKeyFrame> *result) const
+AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyFrameSet *result) const
 {
-
     CurvePtr curve = publicInterface->getCurve(dimension, view);
     if (!curve) {
         return;
     }
-    KeyFrameSet keyframes = curve->getKeyFrames_mt_safe();
-    if (keyframes.empty()) {
-        return;
-    }
-    QTreeWidgetItem *childItem = publicInterface->getTreeItem(dimension, view);
-    assert(childItem);
-    if (!childItem) {
-        return;
-    }
-
-    for (KeyFrameSet::const_iterator kIt = keyframes.begin(); kIt != keyframes.end(); ++kIt) {
-        result->push_back( AnimKeyFrame(publicInterface->shared_from_this(), *kIt) );
-    }
+    *result = curve->getKeyFrames_mt_safe();
 }
 
 void
-AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, std::vector<AnimKeyFrame> *result) const
+AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameSet *result) const
 {
 
     assert(viewSpec.isAll() || viewSpec.isViewIdx());
@@ -131,13 +118,20 @@ public:
     AnimItemBaseWPtr item;
     KeyFrame key;
 
+    DimSpec dimension;
+    ViewSetSpec view;
+
     // For animating string params we need to also store the string
     std::string animatingStringValue;
 
     AnimKeyFramePrivate(const AnimItemBasePtr& item,
-                        const KeyFrame& kf)
+                        const KeyFrame& kf,
+                        DimSpec dimension,
+                        ViewSetSpec view)
     : item(item)
     , key(kf)
+    , dimension(dimension)
+    , view(view)
     , animatingStringValue()
     {
 
@@ -146,15 +140,16 @@ public:
     AnimKeyFramePrivate(const AnimKeyFramePrivate& other)
     : item(other.item)
     , key(other.key)
+    , dimension(other.dimension)
+    , view(other.view)
     , animatingStringValue(other.animatingStringValue)
     {
 
     }
 };
 
-AnimKeyFrame::AnimKeyFrame(const AnimItemBasePtr& item,
-             const KeyFrame& kf)
-: _imp(new AnimKeyFramePrivate(item, kf))
+AnimKeyFrame::AnimKeyFrame(const AnimItemBasePtr& item, const KeyFrame& kf, DimSpec dimension, ViewSetSpec view)
+: _imp(new AnimKeyFramePrivate(item, kf, dimension, view))
 {
 }
 
@@ -181,6 +176,19 @@ AnimKeyFrame::getStringValue() const
     return _imp->animatingStringValue;
 }
 
+
+DimSpec
+AnimKeyFrame::getDimension() const
+{
+    return _imp->dimension;
+}
+
+ViewSetSpec
+AnimKeyFrame::getView() const
+{
+    return _imp->view;
+}
+
 bool
 AnimKeyFrame::operator==(const AnimKeyFrame &other) const
 {
@@ -195,8 +203,17 @@ AnimKeyFrame::operator==(const AnimKeyFrame &other) const
         return false;
     }
 
+    if (_imp->view != other._imp->view) {
+        return false;
+    }
+
+    if (_imp->dimension != other._imp->dimension) {
+        return false;
+    }
+
     return true;
 }
+
 
 bool SortIncreasingFunctor::operator() (const AnimKeyFramePtr& lhs,
                                         const AnimKeyFramePtr& rhs)
@@ -209,7 +226,19 @@ bool SortIncreasingFunctor::operator() (const AnimKeyFramePtr& lhs,
     } else if ( leftKnobDs.get() > rightKnobDs.get() ) {
         return false;
     } else {
-        return lhs->getKeyFrame().getTime() < rhs->getKeyFrame().getTime();
+        if (lhs->getView() < rhs->getView()) {
+            return true;
+        } else if (lhs->getView() > rhs->getView()) {
+            return false;
+        } else {
+            if (lhs->getDimension() < rhs->getDimension()) {
+                return true;
+            } else if (lhs->getDimension() > rhs->getDimension()) {
+                return false;
+            } else {
+                return lhs->getKeyFrame().getTime() < rhs->getKeyFrame().getTime();
+            }
+        }
     }
 }
 
@@ -220,12 +249,24 @@ bool SortDecreasingFunctor::operator() (const AnimKeyFramePtr& lhs,
     AnimItemBasePtr rightKnobDs = rhs->getContext();
 
     assert(leftKnobDs && rightKnobDs);
-    if ( leftKnobDs.get() < rightKnobDs.get() ) {
+    if ( leftKnobDs.get() > rightKnobDs.get() ) {
         return true;
-    } else if ( leftKnobDs.get() > rightKnobDs.get() ) {
+    } else if ( leftKnobDs.get() < rightKnobDs.get() ) {
         return false;
     } else {
-        return lhs->getKeyFrame().getTime() > rhs->getKeyFrame().getTime();
+        if (lhs->getView() > rhs->getView()) {
+            return true;
+        } else if (lhs->getView() < rhs->getView()) {
+            return false;
+        } else {
+            if (lhs->getDimension() > rhs->getDimension()) {
+                return true;
+            } else if (lhs->getDimension() < rhs->getDimension()) {
+                return false;
+            } else {
+                return lhs->getKeyFrame().getTime() > rhs->getKeyFrame().getTime();
+            }
+        }
     }
 }
 

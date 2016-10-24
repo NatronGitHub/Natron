@@ -166,7 +166,7 @@ private:
 class WarpKeysCommand
     : public QUndoCommand
 {
-    Q_DECLARE_TR_FUNCTIONS(MoveKeysCommand)
+    Q_DECLARE_TR_FUNCTIONS(WarpKeysCommand)
 
 public:
 
@@ -181,9 +181,10 @@ public:
         int dimensionStartIndex;
     };
 
-    typedef std::map<AnimatingObjectIWPtr, WarpObjectKeyFramesData > ObjectKeysToMoveMap;
+    typedef std::map<AnimItemBaseWPtr, WarpObjectKeyFramesData > ObjectKeysToMoveMap;
 
-    WarpKeysCommand(const ObjectKeysToMoveMap& keys,
+    WarpKeysCommand(AnimationModuleEditor* editor,
+                    const ObjectKeysToMoveMap& keys,
                     double dt,
                     double dv,
                     QUndoCommand *parent = 0);

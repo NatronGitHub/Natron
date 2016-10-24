@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Gui/GuiFwd.h"
+
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
@@ -64,6 +66,8 @@ public:
 
     virtual ~TableItemAnim();
 
+    virtual AnimatingObjectIPtr getInternalAnimItem() const OVERRIDE FINAL;
+
     KnobTableItemPtr getInternalItem() const;
 
     NodeAnimPtr getNode() const;
@@ -76,7 +80,7 @@ public:
 
     //// Overriden from AnimItemBase
     virtual QTreeWidgetItem * getRootItem() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual QTreeWidgetItem * getTreeItem(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual QTreeWidgetItem * getTreeItem(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual CurvePtr getCurve(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getTreeItemViewDimension(QTreeWidgetItem* item, DimSpec* dimension, ViewSetSpec* view, AnimatedItemTypeEnum* type) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -87,6 +91,9 @@ public:
 
     virtual void refreshKnobsVisibility() OVERRIDE FINAL;
 
+public Q_SLOTS:
+
+    void onInternalItemLabelChanged(const QString& label, TableChangeReasonEnum);
 
 private:
 

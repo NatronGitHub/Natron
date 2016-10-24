@@ -189,6 +189,12 @@ KnobAnim::getHolder() const
     return _imp->holder.lock();
 }
 
+AnimatingObjectIPtr
+KnobAnim::getInternalAnimItem() const
+{
+    return _imp->knob.lock();
+}
+
 int
 KnobAnim::getNDimensions() const
 {
@@ -278,11 +284,24 @@ KnobAnim::getRootItem() const
 
 
 QTreeWidgetItem *
-KnobAnim::getTreeItem(DimIdx dimension, ViewIdx view) const
+KnobAnim::getTreeItem(DimSpec dimension, ViewSetSpec view) const
 {
+    if (view.isAll()) {
+        return _imp->rootItem;
+    }
+    assert(view.isViewIdx());
+    if (dimension.isAll()) {
+        PerViewItemMap::const_iterator foundView = _imp->viewItems.find(ViewIdx(view));
+        if (foundView == _imp->viewItems.end()) {
+            return 0;
+        }
+        return foundView->second;
+    }
+    assert(!dimension.isAll());
+
     DimensionViewPair p;
-    p.dimension = dimension;
-    p.view = view;
+    p.dimension = DimIdx(dimension);
+    p.view = ViewIdx(view);
     PerDimViewItemMap::const_iterator foundItem = _imp->dimViewItems.find(p);
     if (foundItem == _imp->dimViewItems.end()) {
         return 0;

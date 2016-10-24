@@ -47,7 +47,7 @@ public:
 
     /* attributes */
     AnimationModuleWPtr model;
-    AnimKeyFramePtrList selectedKeyframes;
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::list<TableItemAnimWPtr> selectedTableItems;
     std::list<NodeAnimWPtr> selectedNodes;
 };
@@ -67,7 +67,7 @@ AnimationModuleSelectionModel::getModel() const
     return _imp->model.lock();
 }
 
-static void addTableItemKeyframesRecursive(const TableItemAnimPtr& item, std::vector<TableItemAnimPtr> *selectedTableItems, std::vector<AnimKeyFrame>* result)
+static void addTableItemKeyframesRecursive(const TableItemAnimPtr& item, std::vector<TableItemAnimPtr> *selectedTableItems, KeyFrameSet* result)
 {
     if (item->isRangeDrawingEnabled()) {
         selectedTableItems->push_back(item);
@@ -82,21 +82,31 @@ static void addTableItemKeyframesRecursive(const TableItemAnimPtr& item, std::ve
 void
 AnimationModuleSelectionModel::selectAll()
 {
-    std::vector<AnimKeyFrame> result;
     const std::list<NodeAnimPtr>& nodeRows = getModel()->getNodes();
+
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
+
     for (std::list<NodeAnimPtr>::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
 
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
 
         for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            (*it2)->getKeyframes(DimSpec::all(), ViewSetSpec::all(), &result);
+
+            // We select keyframes for the root item, this will also select children
+            AnimItemDimViewID key(*it2, ViewSetSpec::all(), DimSpec::all());
+            KeyFrameSet &keysForItem = selectedKeyframes[key];
+            (*it2)->getKeyframes(DimSpec::all(), ViewSetSpec::all(), &keysForItem);
         }
 
         const std::vector<TableItemAnimPtr>& topLevelTableItems = (*it)->getTopLevelItems();
         for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
-            addTableItemKeyframesRecursive(*it2, &selectedTableItems, &result);
+            // We select keyframes for the root item, this will also select children
+            AnimItemDimViewID key(*it2, ViewSetSpec::all(), DimSpec::all());
+            KeyFrameSet &keysForItem = selectedKeyframes[key];
+
+            addTableItemKeyframesRecursive(*it2, &selectedTableItems, &keysForItem);
         }
         if ((*it)->isRangeDrawingEnabled()) {
             selectedNodes.push_back(*it);
@@ -105,7 +115,7 @@ AnimationModuleSelectionModel::selectAll()
 
     }
 
-    makeSelection( result, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
+    makeSelection( selectedKeyframes, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                AnimationModuleSelectionModel::SelectionTypeClear |
                                                                AnimationModuleSelectionModel::SelectionTypeRecurse) );
 }
@@ -119,11 +129,11 @@ AnimationModuleSelectionModel::clearSelection()
         return;
     }
 
-    makeSelection(std::vector<AnimKeyFrame>(), std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr >(), AnimationModuleSelectionModel::SelectionTypeClear);
+    makeSelection(AnimItemDimViewKeyFramesMap(), std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr >(), AnimationModuleSelectionModel::SelectionTypeClear);
 }
 
 void
-AnimationModuleSelectionModel::makeSelection(const std::vector<AnimKeyFrame> &keys,
+AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                                              const std::vector<TableItemAnimPtr>& selectedTableItems,
                                              const std::vector<NodeAnimPtr >& nodes,
                                              SelectionTypeFlags selectionFlags)
@@ -141,17 +151,24 @@ AnimationModuleSelectionModel::makeSelection(const std::vector<AnimKeyFrame> &ke
         _imp->selectedTableItems.clear();
     }
 
-    for (std::vector<AnimKeyFrame>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        const AnimKeyFrame& key = (*it);
-        AnimKeyFramePtrList::iterator isAlreadySelected = isKeyFrameSelected(key);
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
 
-        if ( isAlreadySelected == _imp->selectedKeyframes.end() ) {
-            AnimKeyFramePtr dsKey( new AnimKeyFrame(key) );
-            hasChanged = true;
-            _imp->selectedKeyframes.push_back(dsKey);
-        } else if (selectionFlags & AnimationModuleSelectionModel::SelectionTypeToggle) {
-            _imp->selectedKeyframes.erase(isAlreadySelected);
-            hasChanged = true;
+        AnimItemDimViewKeyFramesMap::iterator exists = _imp->selectedKeyframes.find(it->first);
+        if (exists == _imp->selectedKeyframes.end()) {
+            _imp->selectedKeyframes[it->first] = it->second;
+        } else {
+            for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                KeyFrameSet::iterator timeExist = exists->second.find(*it2);
+                if (timeExist == exists->second.end()) {
+                    exists->second.erase(timeExist);
+                    exists->second.insert(*it2);
+                    hasChanged = true;
+                } else if (selectionFlags & AnimationModuleSelectionModel::SelectionTypeToggle) {
+                    exists->second.erase(timeExist);
+                    hasChanged = true;
+                }
+            }
+
         }
     }
 
@@ -189,29 +206,23 @@ AnimationModuleSelectionModel::isEmpty() const
 }
 
 void
-AnimationModuleSelectionModel::getCurrentSelection(AnimKeyFramePtrList* keys, std::vector<NodeAnimPtr >* nodes) const
+AnimationModuleSelectionModel::getCurrentSelection(AnimItemDimViewKeyFramesMap* keys, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const
 {
     *keys =  _imp->selectedKeyframes;
-    for (std::list<boost::weak_ptr<NodeAnim> >::const_iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
+    for (std::list<NodeAnimWPtr >::const_iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
         NodeAnimPtr n = it->lock();
         if (n) {
             nodes->push_back(n);
         }
     }
-}
-
-std::vector<AnimKeyFrame> AnimationModuleSelectionModel::getKeyframesSelectionCopy() const
-{
-    std::vector<AnimKeyFrame> ret;
-
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin();
-         it != _imp->selectedKeyframes.end();
-         ++it) {
-        ret.push_back( AnimKeyFrame(**it) );
+    for (std::list<TableItemAnimWPtr >::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+        TableItemAnimPtr n = it->lock();
+        if (n) {
+            tableItems->push_back(n);
+        }
     }
-
-    return ret;
 }
+
 
 bool
 AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
@@ -219,21 +230,30 @@ AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
     bool timeSet = false;
     AnimItemBasePtr itemSet;
 
+
     if ( _imp->selectedKeyframes.empty() ) {
         return false;
     }
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        AnimItemBasePtr item = (*it)->getContext();
-        assert(item);
-        if (!timeSet) {
-            *time = (*it)->getKeyFrame().getTime();
-            itemSet = item;
-            timeSet = true;
+
+    for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        if (itemSet) {
+            itemSet = it->first.item;
         } else {
-            if ( ( (*it)->getKeyFrame().getTime() != *time ) || (itemSet!= item) ) {
+            if (it->first.item != itemSet) {
                 return false;
             }
         }
+        for (KeyFrameSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (!timeSet) {
+                *time = it2->getTime();
+                timeSet = true;
+            } else {
+                if (it2->getTime() != *time) {
+                    return false;
+                }
+            }
+        }
+
     }
 
     return true;
@@ -246,17 +266,18 @@ AnimationModuleSelectionModel::getSelectedKeyframesCount() const
 }
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelected(const KnobAnimPtr &anim, const KeyFrame &keyframe) const
+AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, DimSpec dimension ,ViewSetSpec view, const KeyFrame &keyframe) const
 {
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        AnimItemBasePtr item = (*it)->getContext();
-        assert(item);
-        if ( (item == anim) && ( (*it)->getKeyFrame().getTime() == keyframe.getTime() ) ) {
-            return true;
-        }
+    AnimItemDimViewID key(anim, view, dimension);
+    AnimItemDimViewKeyFramesMap::const_iterator found = _imp->selectedKeyframes.find(key);
+    if (found == _imp->selectedKeyframes.end()) {
+        return false;
     }
-
-    return false;
+    KeyFrameSet::const_iterator foundKey = found->second.find(keyframe);
+    if (foundKey == found->second.end()) {
+        return false;
+    }
+    return true;
 }
 
 std::list<TableItemAnimWPtr>::iterator
@@ -298,19 +319,6 @@ AnimationModuleSelectionModel::isNodeSelected(const NodeAnimPtr& node) const
     return false;
 }
 
-AnimKeyFramePtrList::iterator
-AnimationModuleSelectionModel::isKeyFrameSelected(const AnimKeyFrame &key) const
-{
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        if (**it == key) {
-            return it;
-        }
-    }
-
-    return _imp->selectedKeyframes.end();
-}
-
-
 
 void
 AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr &removed)
@@ -331,9 +339,9 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr
             it = _imp->selectedTableItems.erase(it);
         }
     }
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+    for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
 
-        AnimItemBasePtr keyHolder = (*it)->getContext();
+        AnimItemBasePtr keyHolder = it->first.item;
         assert(keyHolder);
 
 
@@ -380,9 +388,9 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const TableItemAn
             it = _imp->selectedTableItems.erase(it);
         }
     }
-    for (AnimKeyFramePtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+    for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
 
-        AnimItemBasePtr keyHolder = (*it)->getContext();
+        AnimItemBasePtr keyHolder = it->first.item;
         assert(keyHolder);
 
 

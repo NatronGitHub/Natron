@@ -58,24 +58,21 @@ public:
     void selectAll();
 
     void clearSelection();
-    void makeSelection(const std::vector<AnimKeyFrame> &keys,
+    void makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                        const std::vector<TableItemAnimPtr>& selectedTableItems,
                        const std::vector<NodeAnimPtr >& rangeNodes,
                        SelectionTypeFlags selectionFlags);
 
     bool isEmpty() const;
 
-    void getCurrentSelection(AnimKeyFramePtrList* keys, std::vector<NodeAnimPtr >* nodes) const;
+    void getCurrentSelection(AnimItemDimViewKeyFramesMap* keys, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
 
-    std::vector<AnimKeyFrame> getKeyframesSelectionCopy() const;
 
     bool hasSingleKeyFrameTimeSelected(double* time) const;
 
     int getSelectedKeyframesCount() const;
 
-    bool isKeyframeSelected(const KnobAnimPtr &KnobAnim, const KeyFrame &keyframe) const;
-
-    AnimKeyFramePtrList::iterator isKeyFrameSelected(const AnimKeyFrame &key) const;
+    bool isKeyframeSelected(const AnimItemBasePtr &KnobAnim, DimSpec dimension ,ViewSetSpec view, const KeyFrame &keyframe) const;
 
     /**
      * @brief If this node has a range, such as a Reader or Group, returns whether it is selected or not.

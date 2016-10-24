@@ -167,7 +167,15 @@ public:
     bool canSlipReader(const NodeAnimPtr &reader) const;
 
     void slipReader(const NodeAnimPtr &reader, double dt);
+
+    /**
+     * @brief Copy the current keyframe selection to the internal clipboard
+     **/
     void copySelectedKeys();
+
+    /**
+     * @brief Paste keyframes in the internal clipboard onto selected items
+     **/
     void pasteKeys(bool relative);
 
     void pasteKeys(const std::vector<AnimKeyFrame>& keys, bool relative);

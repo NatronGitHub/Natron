@@ -233,7 +233,7 @@ private Q_SLOTS:
      * This slot is automatically called when a keyframe selection is changed
      * (keyframe added/removed, selection moved) in the dope sheet model.
      */
-    void onKeyframeSelectionChanged(bool recurse);
+    void onSelectionModelKeyframeSelectionChanged(bool recurse);
 
     /**
      * @brief Puts the settings panel associated with 'item' on top of the

@@ -26,6 +26,9 @@
 // ***** END PYTHON BLOCK *****
 
 #include <string>
+#include <map>
+#include <set>
+#include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -39,11 +42,71 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Curve.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @struct For a given animation item, uniquely identifies the given view and dimension.
+ * If view is all, then it identifies the row which represents all views.
+ * If dim is all, then it identifies the row which represents all dimensions.
+ **/
+struct AnimItemDimViewID
+{
+    AnimItemBasePtr item;
+    ViewSetSpec view;
+    DimSpec dim;
+
+    AnimItemDimViewID(const AnimItemBasePtr& item, ViewSetSpec view, DimSpec dim)
+    : item(item)
+    , view(view)
+    , dim(dim)
+    {
+
+    }
+};
+
+struct AnimItemDimViewID_CompareLess
+{
+    bool operator()(const AnimItemDimViewID& lhs, const AnimItemDimViewID& rhs) const
+    {
+
+        if (lhs.view < rhs.view) {
+            return true;
+        } else if (lhs.view > rhs.view) {
+            return false;
+        } else {
+            if (lhs.dim < rhs.dim) {
+                return true;
+            } else if (lhs.dim > rhs.dim) {
+                return false;
+            } else {
+                return lhs.item < rhs.item;
+            }
+        }
+
+    }
+};
+
+
+/*struct KeyFrameWithString
+{
+    KeyFrame key;
+    std::string string;
+};
+
+struct KeyFrameWithString_CompareLess
+{
+    bool operator()(const KeyFrameWithString& lhs, const KeyFrameWithString& rhs) const
+    {
+        return lhs.key.getTime() < rhs.key.getTime();
+    }
+};
+
+typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;*/
+typedef std::map<AnimItemDimViewID, KeyFrameSet, AnimItemDimViewID_CompareLess> AnimItemDimViewKeyFramesMap;
 
 class AnimItemBasePrivate;
 class AnimItemBase : public boost::enable_shared_from_this<AnimItemBase>
@@ -55,7 +118,15 @@ public:
 
     virtual ~AnimItemBase();
 
+    /**
+     * @brief Return the model containing this item
+     **/
     AnimationModulePtr getModel() const;
+
+    /**
+     * @brief Return a pointer to the internal object
+     **/
+    virtual AnimatingObjectIPtr getInternalAnimItem() const = 0;
 
     /**
      * @brief Returns the root tree item for this item
@@ -65,7 +136,7 @@ public:
     /**
      * @brief Returns for the given dimension and view the associated tree item.
      **/
-    virtual QTreeWidgetItem * getTreeItem(DimIdx dimension, ViewIdx view) const = 0;
+    virtual QTreeWidgetItem * getTreeItem(DimSpec dimension, ViewSetSpec view) const = 0;
 
     /**
      * @brief If the given item corresponds to one of this object tree items, returns to which dimension and view
@@ -79,7 +150,7 @@ public:
     /**
      * @brief Get keyframes associated to the item
      **/
-    void getKeyframes(DimSpec dimension, ViewSetSpec view, std::vector<AnimKeyFrame> *result) const;
+    void getKeyframes(DimSpec dimension, ViewSetSpec view, KeyFrameSet *result) const;
 
     /**
      * @brief Returns the views available in the item.
@@ -96,12 +167,15 @@ private:
     boost::scoped_ptr<AnimItemBasePrivate> _imp;
 };
 
+
+
+
 class AnimKeyFramePrivate;
 class AnimKeyFrame
 {
 public:
 
-    AnimKeyFrame(const AnimItemBasePtr& item, const KeyFrame& kf);
+    AnimKeyFrame(const AnimItemBasePtr& item, const KeyFrame& kf, DimSpec dimension, ViewSetSpec view);
 
     AnimKeyFrame(const AnimKeyFrame &other);
 
@@ -112,12 +186,15 @@ public:
     const KeyFrame& getKeyFrame() const;
 
     const std::string& getStringValue() const;
-    
+
+    DimSpec getDimension() const;
+
+    ViewSetSpec getView() const;
+
 private:
 
     boost::scoped_ptr<AnimKeyFramePrivate> _imp;
 };
-
 struct SortIncreasingFunctor
 {
     bool operator() (const AnimKeyFramePtr& lhs,

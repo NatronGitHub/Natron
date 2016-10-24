@@ -247,7 +247,7 @@ WarpKeysCommand::WarpKeysCommand(const ObjectKeysToMoveMap &keys,
 , _keys(keys)
 {
     _warp.reset(new Curve::TranslationKeyFrameWarp(dt, dv));
-    setText( tr("Move keyframes") );
+    setText( tr("Move KeyFrame(s)") );
 }
 
 WarpKeysCommand::WarpKeysCommand(const ObjectKeysToMoveMap& keys,
@@ -257,7 +257,7 @@ WarpKeysCommand::WarpKeysCommand(const ObjectKeysToMoveMap& keys,
 , _keys(keys)
 {
     _warp.reset(new Curve::AffineKeyFrameWarp(matrix));
-    setText( tr("Transform keyframes") );
+    setText( tr("Transform KeyFrame(s)") );
 }
 
 void

@@ -84,6 +84,7 @@ TableItemAnim::TableItemAnim(const AnimationModulePtr& model,
     _imp->parentNode = parentNode;
     _imp->tableItem = item;
 
+    connect(item.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onInternalItemLabelChanged(QString,TableChangeReasonEnum)));
     QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
 
     _imp->nameItem = new QTreeWidgetItem;
@@ -149,8 +150,11 @@ TableItemAnim::getRootItem() const
 }
 
 QTreeWidgetItem *
-TableItemAnim::getTreeItem(DimIdx /*dimension*/, ViewIdx view) const
+TableItemAnim::getTreeItem(DimSpec /*dimension*/, ViewSetSpec view) const
 {
+    if (view.isAll()) {
+        return 0;
+    }
     PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
     if (foundView == _imp->animationItems.end()) {
         return 0;
@@ -191,6 +195,12 @@ TableItemAnim::getInternalItem() const
     return _imp->tableItem.lock();
 }
 
+AnimatingObjectIPtr
+TableItemAnim::getInternalAnimItem() const
+{
+    return _imp->tableItem.lock();
+}
+
 NodeAnimPtr
 TableItemAnim::getNode() const
 {
@@ -207,6 +217,14 @@ const std::vector<KnobAnimPtr>&
 TableItemAnim::getKnobs() const
 {
     return _imp->knobs;
+}
+
+void
+TableItemAnim::onInternalItemLabelChanged(const QString& label, TableChangeReasonEnum)
+{
+    if (_imp->nameItem) {
+        _imp->nameItem->setText(0, label);
+    }
 }
 
 bool
