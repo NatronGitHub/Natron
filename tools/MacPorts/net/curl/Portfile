@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 152697 2016-09-14 21:09:45Z ryandesign@macports.org $
+# $Id: Portfile 154173 2016-10-23 14:02:23Z devans@macports.org $
 
 PortSystem                      1.0
 
@@ -44,6 +44,7 @@ if {${name} eq ${subport}} {
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
+                                --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
                                 --without-libidn \
@@ -55,6 +56,7 @@ if {${name} eq ${subport}} {
                                 --without-polarssl \
                                 --without-spnego \
                                 --without-ssl \
+                                --without-darwinssl \
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
@@ -139,9 +141,18 @@ if {${name} eq ${subport}} {
         configure.args-replace  --disable-ares --enable-ares
     }
 
-    variant gnutls conflicts ssl description {Allow secure connections using GNU TLS} {
+    variant darwinssl conflicts ssl gnutls wolfssl description {Allow secure connections using GNU TLS} {
+        configure.args-replace  --without-darwinssl --with-darwinssl
+    }
+
+    variant gnutls conflicts ssl wolfssl darwinssl description {Allow secure connections using GNU TLS} {
         depends_lib-append      port:gnutls
         configure.args-replace  --without-gnutls --with-gnutls
+    }
+
+    variant wolfssl conflicts ssl gnutls darwinssl description {Allow secure connections using wolfSSL, formerly CyaSSL} {
+        depends_lib-append      port:wolfssl
+        configure.args-replace  --without-cyassl --with-cyassl
     }
 
     variant gss description {Support the Generic Security Service API} {
@@ -186,14 +197,14 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-spnego --with-spnego=${prefix}
     }
 
-    variant ssl conflicts gnutls description {Allow secure connections using OpenSSL} {
+    variant ssl conflicts gnutls wolfssl darwinssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-replace  --without-ssl --with-ssl=${prefix}
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 
-    if {![variant_isset gnutls]} {
+    if {![variant_isset gnutls] && ![variant_isset darwinssl] && ![variant_isset wolfssl]} {
         default_variants +ssl
     }
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153884 2016-10-14 21:43:14Z ryandesign@macports.org $
+# $Id: Portfile 154063 2016-10-19 14:16:51Z larryv@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
@@ -11,7 +11,7 @@ subport             libgcc {}
 epoch               2
 version             6.2.0
 if {${name} eq ${subport}} {
-    revision        1
+    revision        2
 }
 platforms           darwin
 categories          lang

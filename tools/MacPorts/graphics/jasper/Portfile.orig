@@ -1,9 +1,9 @@
-# $Id: Portfile 153913 2016-10-15 19:43:58Z jmr@macports.org $
+# $Id: Portfile 154161 2016-10-23 07:07:00Z jmr@macports.org $
 
 PortSystem      1.0
 
 name            jasper
-version         1.900.3
+version         1.900.5
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -18,8 +18,8 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 be7dd31355f147ec1b372f3db80a30245c10eb6f \
-                sha256 36733dced76c7743ad6890b2a47e46a1f9cdf4af28056f6df66502627de4dd80
+checksums       rmd160 9e5e59182ab25a9f299867ea399a4835a6faccdd \
+                sha256 d5082e14a50a7e461863991a8e932fc06a1b2f2688108c4478c400c39e257ebb
 
 depends_lib     port:jpeg
 

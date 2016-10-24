@@ -1,8 +1,8 @@
---- Portfile.orig	2016-10-19 11:26:44.000000000 +0200
-+++ Portfile	2016-10-19 11:26:58.000000000 +0200
+--- Portfile.orig	2016-10-24 16:30:51.000000000 +0200
++++ Portfile	2016-10-24 16:30:57.000000000 +0200
 @@ -21,7 +21,7 @@
- checksums       rmd160 be7dd31355f147ec1b372f3db80a30245c10eb6f \
-                 sha256 36733dced76c7743ad6890b2a47e46a1f9cdf4af28056f6df66502627de4dd80
+ checksums       rmd160 9e5e59182ab25a9f299867ea399a4835a6faccdd \
+                 sha256 d5082e14a50a7e461863991a8e932fc06a1b2f2688108c4478c400c39e257ebb
  
 -depends_lib     port:jpeg
 +depends_lib     path:lib/libjpeg.dylib:jpeg
