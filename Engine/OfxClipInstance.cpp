@@ -888,6 +888,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         }
     }
 #endif
+    assert( !viewParam.isAll() );
     ViewIdx view;
     if (tls) {
         if ( viewParam.isCurrent() ) {
@@ -906,7 +907,12 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             mipMapLevel = tls->mipMapLevel.back();
         }
     } else {
-        view = ViewIdx( viewParam.value() );
+        if ( viewParam.isCurrent() ) {
+            // no TLS
+            view = ViewIdx(0);
+        } else {
+            view = ViewIdx( viewParam.value() );
+        }
     }
 
     // If the plug-in is requesting the colour plane, it is expected that we return
