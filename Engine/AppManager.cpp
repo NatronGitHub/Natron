@@ -421,10 +421,10 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
             // This is an old boost serialization file, convert the project first
             QString path = appPTR->getApplicationBinaryPath();
             StrUtils::ensureLastPathSeparator(path);
-            path += QLatin1String("NatronProjectConverter");
+            path += QString::fromUtf8("NatronProjectConverter");
 
 #ifdef __NATRON_WIN32__
-            path += QLatin1String(".exe");
+            path += QString::fromUtf8(".exe");
 #endif
 
             if (!QFile::exists(path)) {
@@ -450,7 +450,7 @@ AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& f
             QProcess proc;
 
             QStringList args;
-            args << QLatin1String("-i") << filePathIn << QLatin1String("-o") << *filePathOut;
+            args << QString::fromUtf8("-i") << filePathIn << QString::fromUtf8("-o") << *filePathOut;
             proc.start(path, args);
             proc.waitForFinished();
             if (proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit) {
