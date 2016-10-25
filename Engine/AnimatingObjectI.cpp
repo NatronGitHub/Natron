@@ -186,7 +186,7 @@ AnimatingObjectI::moveValueAtTime(double time, ViewSetSpec view,  DimSpec dimens
 bool
 AnimatingObjectI::moveValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, double dt, double dv, std::vector<KeyFrame>* outKeys)
 {
-    return warpValuesAtTime(times, view, dimension, Curve::TranslationKeyFrameWarp(dt, dv), false /*allowReplacingKeys*/, outKeys);
+    return warpValuesAtTime(times, view, dimension, Curve::TranslationKeyFrameWarp(dt, dv), outKeys);
 }
 
 bool
@@ -205,7 +205,7 @@ AnimatingObjectI::transformValueAtTime(double time, ViewSetSpec view,  DimSpec d
 bool
 AnimatingObjectI::transformValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, std::vector<KeyFrame>* outKeys)
 {
-    return warpValuesAtTime(times, view, dimension, Curve::AffineKeyFrameWarp(matrix), true /*allowReplacingKeys*/, outKeys);
+    return warpValuesAtTime(times, view, dimension, Curve::AffineKeyFrameWarp(matrix),  outKeys);
 }
 
 

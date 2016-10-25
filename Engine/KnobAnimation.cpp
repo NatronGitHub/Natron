@@ -234,7 +234,7 @@ KnobHelper::deleteAnimationAfterTime(double time,
 }
 
 bool
-KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* outKeys)
+KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
 {
     if (!isAnimated(dimension, view)) {
         return false;
@@ -264,7 +264,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 
     // This may fail if we cannot find a keyframe at the given time
     std::vector<KeyFrame> newKeys;
-    if ( !curve->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, outKeys, &keysAdded, &keysRemoved) ) {
+    if ( !curve->transformKeyframesValueAndTime(times, warp, outKeys, &keysAdded, &keysRemoved) ) {
         return false;
     }
     if (outKeys) {
@@ -287,7 +287,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 } // warpValuesAtTimeInternal
 
 bool
-KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowReplacingExistingKeys, std::vector<KeyFrame>* outKeys)
+KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
 {
     if ( times.empty() ) {
         return true;
@@ -302,11 +302,11 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         for (int i = 0; i < _imp->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, allowReplacingExistingKeys, outKeys);
+                    warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, allowReplacingExistingKeys, outKeys);
+                warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, outKeys);
             }
         }
     } else {
@@ -315,11 +315,11 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, allowReplacingExistingKeys, outKeys);
+                warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, outKeys);
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, allowReplacingExistingKeys, outKeys);
+            warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, outKeys);
         }
     }
 
@@ -460,7 +460,7 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
     }
     CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
-        throw std::runtime_error("KnobHelper::warpValuesAtTimeInternal: curve is null");
+        throw std::runtime_error("KnobHelper::setInterpolationAtTimesInternal: curve is null");
     }
 
     for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {

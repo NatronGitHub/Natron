@@ -898,23 +898,14 @@ AnimationModule::setSelectedKeysInterpolation(KeyframeTypeEnum keyType)
         return;
     }
 
-    AnimKeyFramePtrList selectedKeyframes;
+    AnimItemDimViewKeyFramesMap keys;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
+    
+    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
 
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
-    std::list<DSKeyInterpolationChange> changes;
-
-    for (AnimKeyFramePtrList::iterator it = selectedKeyframes.begin();
-         it != selectedKeyframes.end();
-         ++it) {
-        AnimKeyFramePtr keyPtr = (*it);
-        DSKeyInterpolationChange change(keyPtr->getKeyFrame().getInterpolation(), keyType, keyPtr);
-
-        changes.push_back(change);
-    }
-
-    _imp->pushUndoCommand( new DSSetSelectedKeysInterpolationCommand(changes, _imp->editor) );
+    _imp->pushUndoCommand(new SetKeysInterpolationCommand(keys, keyType, 0));
+    
 }
 
 void
@@ -923,13 +914,20 @@ AnimationModule::transformSelectedKeys(const Transform::Matrix3x3& transform)
     if ( _imp->selectionModel->isEmpty() ) {
         return;
     }
-    AnimKeyFramePtrList selectedKeyframes;
+    AnimItemDimViewKeyFramesMap keys;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
-
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
-
-    _imp->pushUndoCommand( new DSTransformKeysCommand(selectedKeyframes, transform, _imp->editor) );
+    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
+    
+    boost::scoped_ptr<Curve::AffineKeyFrameWarp> warp(new Curve::AffineKeyFrameWarp(transform));
+    
+    // Test the warp, if it cannot be applied, do not push an undo/redo command
+    if (!WarpKeysCommand::testWarpOnKeys(keys, *warp)) {
+        return;
+    }
+    
+    // Try once to warp everything, if it doesn't work fail it now
+    _imp->pushUndoCommand(new WarpKeysCommand(keys, transform));
 }
 
 SequenceTime

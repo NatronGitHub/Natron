@@ -177,45 +177,6 @@ private:
 
 
 
-
-/*class AnimKeyFramePrivate;
-class AnimKeyFrame
-{
-public:
-
-    AnimKeyFrame(const AnimItemBasePtr& item, const KeyFrame& kf, DimSpec dimension, ViewSetSpec view);
-
-    AnimKeyFrame(const AnimKeyFrame &other);
-
-    bool operator==(const AnimKeyFrame &other) const;
-
-    AnimItemBasePtr getContext() const;
-
-    const KeyFrame& getKeyFrame() const;
-
-    const std::string& getStringValue() const;
-
-    DimSpec getDimension() const;
-
-    ViewSetSpec getView() const;
-
-private:
-
-    boost::scoped_ptr<AnimKeyFramePrivate> _imp;
-};
-struct SortIncreasingFunctor
-{
-    bool operator() (const AnimKeyFramePtr& lhs,
-                     const AnimKeyFramePtr& rhs);
-};
-
-struct SortDecreasingFunctor
-{
-    bool operator() (const AnimKeyFramePtr& lhs,
-                     const AnimKeyFramePtr& rhs);
-};
-*/
-
 class KnobsHolderAnimBase
 {
 public:

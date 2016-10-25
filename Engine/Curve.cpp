@@ -1337,10 +1337,9 @@ Curve::setKeyFrameValueAndTime(double time,
 bool
 Curve::transformKeyframesValueAndTime(const std::list<double>& times,
                                       const KeyFrameWarp& warp,
-                                      bool allowReplacingExistingKeys,
                                       std::vector<KeyFrame>* newKeys,
-                                      std::list<double>* keysAdded,
-                                      std::list<double>* keysRemoved)
+                                      std::list<double>* keysAddedOut,
+                                      std::list<double>* keysRemovedOut)
 {
     if (times.empty()) {
         return true;
@@ -1349,170 +1348,137 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         return true;
     }
 
-    // Remember which keyframes the user do not want to transform
-    // We use a list here because in C++ 98 the erase() function of a set does not return an iterator
-    // to the next element but we need it in order to be efficient here
-    std::list<KeyFrame> originalKeysNotToTransform;
-
     QMutexLocker l(&_imp->_lock);
 
-    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it!=_imp->keyFrames.end(); ++it) {
-        originalKeysNotToTransform.push_back(*it);
+    // First compute all transformed keyframes
+    std::list<double>::const_iterator next = times.begin();
+    ++next;
+    
+    // We remove progressively for each keyframe warped the corresponding original keyframe
+    // to get in this set only the keyframes that were not modified by this function call
+    // We use a list here because the erase() function in C++98 does not return an iterator
+    // and we need it to be efficient
+    std::list<KeyFrame> originalKeyFramesMinusTransformedKeyFrames;
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        originalKeyFramesMinusTransformedKeyFrames.push_back(*it);
     }
-
-    // Only validate the move operation if we can move ALL keyframes asked for
-    // If the key to move does not exist or the target time already exists and it is not in the keyframes to move in input, fail.
-    std::vector<KeyFrame> currentKeys(times.size());
-
-    // List of transformed keys
-    std::vector<KeyFrame> transformedKeys(times.size());
-
-
-    {
-        int i = 0;
-
-        // To speed up find_if
-        std::list<KeyFrame>::iterator findHint = originalKeysNotToTransform.end();
-
-        std::list<double>::const_iterator next = times.begin();
-        ++next;
-        for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
-
-            // Ensure the user passed increasing sorted keyframes
-            assert(next == times.end() || *next > *it);
-            if (next != times.end() && *next <= *it) {
-                throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
-            }
-
-            std::list<KeyFrame>::iterator found = std::find_if( findHint, originalKeysNotToTransform.end(), KeyFrameTimePredicate(*it) );
-            if (found == originalKeysNotToTransform.end()) {
-                // We could not find the original keyframe to transform
+    
+    // The set containing warped keyframes
+    KeyFrameSet warpedKeyFrames;
+    
+    // To speed up findWithTime search, taking advantage of the fact that input times are ordered
+    std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
+    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
+        // Ensure the user passed increasing sorted keyframes
+        assert(next == times.end() || *next > *it);
+        if (next != times.end() && *next <= *it) {
+            throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
+        }
+        
+        // Find in the original keyframes
+        std::list<KeyFrame>::iterator found = originalKeyFramesMinusTransformedKeyFrames.end();
+        {
+            // Since input keyframe times are sorted, we don't have to find before the time that was found
+            // at the previous iteration
+            std::list<KeyFrame>::iterator findStart = findHint == originalKeyFramesMinusTransformedKeyFrames.end() ? originalKeyFramesMinusTransformedKeyFrames.begin() : findHint;
+            found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
+        }
+        
+        if (found == originalKeyFramesMinusTransformedKeyFrames.end()) {
+            // It can fail here because the time provided by the user does not exist in the original keyframes
+            // or if the same keyframe time was passed multiple times in the input times list.
+            return false;
+        }
+        
+        // Apply warp
+        KeyFrame warpedKey = warp.applyForwardWarp(*found);
+        
+        {
+            std::pair<KeyFrameSet::iterator,bool> insertOk = warpedKeyFrames.insert(warpedKey);
+            if (!insertOk.second) {
+                // 2 input keyframes were warped to the same point
                 return false;
             }
-
-            transformedKeys[i] = warp.applyForwardWarp(*found);
-            // Clamp Y if needed
-            if (_imp->type == CurvePrivate::eCurveTypeInt) {
-                transformedKeys[i].setValue(std::floor(transformedKeys[i].getValue() + 0.5));
-            } else if (_imp->type == CurvePrivate::eCurveTypeBool) {
-                transformedKeys[i].setValue(transformedKeys[i].getValue() < 0.5 ? 0 : 1);
-            }
-
-            double targetTime = transformedKeys[i].getTime();
-
-            if (targetTime != *it) {
-
-                // Do the following only if we need to track failure or keysAdded
-                if (keysAdded || !allowReplacingExistingKeys) {
-                    // Is the target time in the keyframes to move as well ? Just find in the list starting from the current iterator since the list is sorted
-                    std::list<double>::const_iterator foundTargetTimeInInput = times.end();
-
-                    std::list<double>::const_iterator it2 = it;
-                    ++it2;
-                    for (; it2 != times.end(); ++it2) {
-                        if (*it2 >= targetTime) {
-                            if (*it2 == targetTime) {
-                                foundTargetTimeInInput = it2;
-                            }
-                            // If superior to targetTime we are never going to find it anyway since the list is sorted by increasing order
-                            break;
-                        }
-                    }
-
-                    // Ok, the target time is not in the keyframes to move, make sure it does not exist in the current keyframes of the curve then
-                    if (foundTargetTimeInInput == times.end()) {
-
-                        // Search in the current keyframes the target time. If it already exists then it will fail
-                        // We only find from the previous iterator (except on first iteration) since the keyframes are ordered
-
-                        // 1) Note that keyframes from previous iterations have been removed but since we know that the targetTime is not in the original keyframes to mvoe
-                        // we know that it could not have been from the ones we removed.
-                        std::list<KeyFrame>::iterator foundTarget = std::find_if( findHint, originalKeysNotToTransform.end(), KeyFrameTimePredicate(targetTime) );
-                        if (foundTarget != originalKeysNotToTransform.end()) {
-                            if (!allowReplacingExistingKeys) {
-                                return false;
-                            }
-                        } else {
-                            // Ensure that 1) is valid
-                            assert(find(targetTime, _imp->keyFrames.end()) == _imp->keyFrames.end());
-
-                            // There is no keyframe at the current targetTime meaning we are going to add one
-                            if (keysAdded) {
-                                keysAdded->push_back(targetTime);
-                            }
-                        }
-                    }
-                }
-
-                // If caller wants to track keysRemoved we need to find out if we are actually going to remove the keyframe at the input time.
-                if (keysRemoved) {
-                    // If we find in the input list prior to the current time a keyframe that matches the current keyframe, that means we
-                    // are not going to remove the current keyframe
-                    KeyFrame backwardWarpedKey = warp.applyBackwardWarp(*found);
-                    double previousPotentialKeytime = backwardWarpedKey.getTime();
-                    std::list<double>::const_reverse_iterator foundPreviousargetTimeInInput = times.rend();
-
-                    // Loop from previous item to the begining of the input list.
-                    // Stop when we find the item or a time lower than the requested time
-                    // Notice that we use a reverse iterator constructed from the current iterator: it points to the item
-                    // preceding what "it" points to.
-                    std::list<double>::const_reverse_iterator it2(it);
-                    for (; it2 != times.rend(); ++it2) {
-                        if (*it2 <= previousPotentialKeytime) {
-                            if (*it2 == previousPotentialKeytime) {
-                                foundPreviousargetTimeInInput = it2;
-                            }
-                            // If inferior to previousPotentialKeyTime we are never going to find it anyway since the list is sorted by increasing order
-                            break;
-                        }
-                    }
-
-                    if (foundPreviousargetTimeInInput == times.rend()) {
-                        // Cannot find the key in input, it is going to be removed after all
-                        keysRemoved->push_back(previousPotentialKeytime);
-                    }
-                }
-            }
-            if (next != times.end()) {
-                ++next;
-            }
-
-
-            currentKeys[i] = *found;
-
-            // Remove this keyframe from originalKeysNotToTransform
-            findHint = originalKeysNotToTransform.erase(found);
-
-        } // for all times
-    }
-
-    if (newKeys) {
-        newKeys->resize(currentKeys.size());
-    }
-
-    // originalKeysNotToTransform now contains the keyframes in the set that the user do not want to transform
-    _imp->keyFrames.clear();
-
-    // Insert keyframes without evaluating since derivatives are ok (user didn't want to transform)
-    for (std::list<KeyFrame>::iterator it = originalKeysNotToTransform.begin(); it!=originalKeysNotToTransform.end(); ++it) {
-        _imp->keyFrames.insert(*it);
-    }
-
-    // Now insert new keyframes transformed
-    int i = 0;
-    for (std::vector<KeyFrame>::iterator it = transformedKeys.begin(); it!=transformedKeys.end(); ++it, ++i) {
-
-        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
-
-        // There can only be an existing keyframe when allowReplacingExistingKeys is true,
-        // otherwise it should have been caught earlier in the first loop
-        assert(!ret.second || allowReplacingExistingKeys);
-
-        ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
-        if (newKeys) {
-            (*newKeys)[i] = *ret.first;
         }
-
+        
+        // Remove from the set to get a diff of keyframes untouched by the warp operation
+        findHint = originalKeyFramesMinusTransformedKeyFrames.erase(found);
+        
+        if (next != times.end()) {
+            ++next;
+        }
+    } // for all times
+    
+    
+    KeyFrameSet finalSet;
+    
+    // Insert in the final set the original keyframes we did not transform
+    for (std::list<KeyFrame>::iterator it = originalKeyFramesMinusTransformedKeyFrames.begin(); it = originalKeyFramesMinusTransformedKeyFrames.end(); ++it) {
+        finalSet.insert(*it);
+    }
+    
+    if (newKeys) {
+        newKeys->resize(warpedKeyFrames.size());
+    }
+    
+    // Now make up the final keyframe set by merging originalKeyFramesMinusTransformedKeyFrames and warpedKeyFrames
+    {
+        int i = 0;
+        for (KeyFrameSet::const_iterator it = warpedKeyFrames.begin(); it != warpedKeyFrames.end(); ++it, ++i) {
+            std::pair<KeyFrameSet::iterator,bool> insertOk = finalSet.insert(*it);
+            // A warped keyframe overlap an original keyframe left in the set, fail operation
+            if (!insertOk.second) {
+                return false;
+            }
+            // If user want output keys, provide them
+            if (newKeys) {
+                (*newKeys)[i] = (*it);
+            }
+        }
+    }
+    
+    
+    // Make sure we did not overlap any keyframe.
+    assert(finalSet.size() == _imp->keyFrames.size());
+    
+    // Compute keyframes added if needed
+    if (keysAddedOut) {
+        // Keyframes added are those in the final set that are not in the original set
+        KeyFrameSet::iterator findHint = _imp->keyFrames.end();
+        for (KeyFrameSet::const_iterator it = finalSet.begin(); it != finalSet.begin(); ++it) {
+            // Find in the original keyframes
+            findHint = findWithTime(_imp->keyFrames, findHint, it->getTime());
+            if (findHint == finalSet.end()) {
+                keysAddedOut->push_back(it->getTime());
+            }
+        }
+    } // keysAddedOut
+    
+    // Compute keyframes removed if needed
+    if (keysRemovedOut) {
+        // Keyframes removed are those in the original set that are not in the final set
+        KeyFrameSet::iterator findHint = finalSet.end();
+        for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.begin(); ++it) {
+            // Find in the original keyframes
+            findHint = findWithTime(finalSet, findHint, it->getTime());
+            if (findHint == finalSet.end()) {
+                keysRemovedOut->push_back(it->getTime());
+            }
+        }
+    } // keysRemovedOut
+    
+    // Now move finalSet to the member keyframes
+    _imp->keyFrames.clear();
+    for (KeyFrameSet::iterator it = finalSet.begin(); it != finalSet.end(); ++it) {
+        
+        std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
+        
+        // huh, we are just moving one set to another, there cannot be a failure!
+        assert(!ret.second);
+        
+        // refresh derivative
+        ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);
+        
     }
     return true;
 } // transformKeyframesValueAndTime

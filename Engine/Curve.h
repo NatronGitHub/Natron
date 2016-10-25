@@ -297,8 +297,6 @@ public:
             _inverted = inverted;
         }
 
-        virtual bool allowReplacingExistingKeyframes() const = 0;
-
         virtual KeyFrame applyForwardWarp(const KeyFrame& key) const = 0;
 
         virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const = 0;
@@ -336,11 +334,6 @@ public:
         virtual ~TranslationKeyFrameWarp()
         {
 
-        }
-
-        virtual bool allowReplacingExistingKeyframes() const OVERRIDE FINAL
-        {
-            return false;
         }
 
         virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
@@ -399,11 +392,6 @@ public:
 
         }
 
-        virtual bool allowReplacingExistingKeyframes() const OVERRIDE FINAL
-        {
-            return true;
-        }
-
         virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
         {
             if (_inverted) {
@@ -459,7 +447,6 @@ public:
      * @brief Moves multiple keyframes in the set. 
      * @param times The keyframes time to move. It is expected that the times are sorted by increasing order otherwise this function will fail.
      * @param warp The warp to apply to each keyframe
-     * @param allowReplacingExistingKeys When false, if a warped keyframe match an already existing keyframe, the function will fail, otherwise it will just continue blindly
      * @param newKeys If non NULL, the new keyframes corresponding to the input times will be returned
      * @param keysAdded A list of the keyframes that were created
      * @param keysRemoved A list of the keyframes that were removed
@@ -467,7 +454,6 @@ public:
      **/
     bool transformKeyframesValueAndTime(const std::list<double>& times,
                                         const KeyFrameWarp& warp,
-                                        bool allowReplacingExistingKeys,
                                         std::vector<KeyFrame>* newKeys = NULL,
                                         std::list<double>* keysAdded = 0,
                                         std::list<double>* keysRemoved = 0);

@@ -87,47 +87,6 @@ private:
 
 
 
-/**
- * @brief The DSPasteKeysCommand class describes an undoable action that paste
- * the keyframes contained in the dope sheet clipboard.
- *
- * A undo removes the pasted keyframes.
- */
-class DSPasteKeysCommand
-    : public QUndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(DSPasteKeysCommand)
-
-public:
-    DSPasteKeysCommand(const std::vector<AnimKeyFrame> &keys,
-                       const std::list<KnobAnimPtr >& dstKnobs,
-                       bool pasteRelativeToRefTime,
-                       AnimationModuleEditor *model,
-                       QUndoCommand *parent = 0);
-
-    void undo() OVERRIDE FINAL;
-    void redo() OVERRIDE FINAL;
-
-
-    static void setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key);
-private:
-    /**
-     * @brief If 'add' is true, paste the keyframes contained in the dope
-     * sheet clipboard at the time of the current frame indicator.
-     *
-     * Otherwise delete the keys.
-     */
-    void addOrRemoveKeyframe(bool add);
-
-private:
-
-    int _refTime;
-    int _refKeyindex;
-    bool _pasteRelativeToRefTime;
-    std::vector<AnimKeyFrame> _keys;
-    std::list<boost::weak_ptr<KnobAnim> > _dstKnobs;
-    AnimationModuleEditor *_model;
-};
 #endif
 
 NATRON_NAMESPACE_EXIT;

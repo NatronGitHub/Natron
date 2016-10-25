@@ -95,36 +95,74 @@ typedef std::map<AnimItemDimViewIndexIDWithCurve, KeyFrameWithStringSet, AnimIte
 class AddOrRemoveKeysCommand
     : public QUndoCommand
 {
+
+
+
+class AddKeysCommand : public QUndoCommand
+{
+    
     Q_DECLARE_TR_FUNCTIONS(AddKeysCommand)
 
 public:
-
-
-    AddOrRemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
-                           bool initialCommandIsAdd,
-                           QUndoCommand *parent);
     
-    virtual ~AddOrRemoveKeysCommand() OVERRIDE
-    {
-    }
-
-protected:
-
     /**
-     * @brief Add or remove keyframes.
-     * @param clearAndSet If true, this will clear existing keyframes before adding them
-     * @param add True if operation is add, false if it should remove
+     * @brief Add keyframes to curves in keys
+     * @param replaceExistingAnimation If true, any animation will be wiped
      **/
-    void addOrRemoveKeyframe(bool add);
-
-
-    virtual void undo() OVERRIDE;
-    virtual void redo() OVERRIDE;
-
+    AddKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                   QUndoCommand *parent = 0);
+    
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    
 private:
-
-    bool _initialCommandIsAdd;
+    
     AnimItemDimViewKeyFramesMap _keys;
+};
+
+class PasteKeysCommand : public QUndoCommand
+{
+    Q_DECLARE_TR_FUNCTIONS(PasteKeysCommand)
+
+public:
+    /**
+     * @brief Add keyframes in the curves in keys to the dst anim items
+     **/
+    PasteKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                     const std::list<AnimItemBasePtr>& dstAnim,
+                     bool pasteRelativeToCurrentTime,
+                     double currentTime,
+                     QUndoCommand *parent = 0);
+    
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+private:
+    
+    double _offset;
+    std::list<AnimItemBasePtr> _targets;
+    AnimItemDimViewKeyFramesMap _keys;
+};
+
+class RemoveKeysCommand : public QUndoCommand
+{
+    Q_DECLARE_TR_FUNCTIONS(RemoveKeysCommand)
+
+public:
+    /**
+     * @brief Remove keyframes to curves in keys
+     * @param replaceExistingAnimation If true, any animation will be wiped
+     **/
+    RemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                     QUndoCommand *parent = 0);
+    
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    AnimItemDimViewKeyFramesMap _keys;
+
+    
 };
 
 /**
@@ -191,6 +229,11 @@ public:
     {
     }
 
+    /**
+     * @brief Attempts to warp the given keys and return true on success
+     **/
+    static bool testWarpOnKeys(const AnimItemDimViewKeyFramesMap& inKeys, const Curve::KeyFrameWarp& warp);
+    
 private:
 
     virtual void undo() OVERRIDE FINAL;
@@ -296,7 +339,6 @@ private:
     double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
 };
-
 
 
 

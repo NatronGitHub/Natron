@@ -2490,18 +2490,18 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
 }
 
 bool
-KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes)
 {
     bool ok = false;
     if (dimension.isAll()) {
         for (std::size_t i = 0; i < _curves.size(); ++i) {
-            ok |= _curves[i]->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes);
+            ok |= _curves[i]->transformKeyframesValueAndTime(times, warp, keyframes);
         }
     } else {
         if (dimension < 0 || dimension >= (int)_curves.size()) {
             throw std::invalid_argument("KnobParametric: dimension out of range");
         }
-        ok |= _curves[dimension]->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes);
+        ok |= _curves[dimension]->transformKeyframesValueAndTime(times, warp, keyframes);
 
     }
 

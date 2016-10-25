@@ -1482,7 +1482,7 @@ public:
     //////////// Overriden from AnimatingObjectI
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension) OVERRIDE;
-    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
+    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
@@ -1498,7 +1498,7 @@ private:
     void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension);
     void deleteAnimationConditional(double time, ViewSetSpec view, DimSpec dimension, bool before);
     void deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx dimension, bool before);
-    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes);
+    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes);
     void setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys);
     bool setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double left, double right);
     bool setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double derivative, bool isLeft);

@@ -26,7 +26,7 @@
 
 #include <cmath>
 #include <stdexcept>
-
+#include <list>
 #include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
@@ -65,38 +65,34 @@ static void convertVariantTimeValuePairToTypedList(const std::list<VariantTimeVa
 
 template <typename T>
 static void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
-                                                   std::list<TimeValuePair<T> >* outList)
+                                                  double offset,
+                                                  std::list<TimeValuePair<T> >* outList)
 {
     for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<T> p(it->key.getTime(), it->key.getValue());
+        TimeValuePair<T> p(it->key.getTime() + offset, it->key.getValue());
         outList->push_back(p);
     }
 }
 
 template <>
 void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
-                                                  std::list<TimeValuePair<std::string> >* outList)
+                                           double offset,
+                                           std::list<TimeValuePair<std::string> >* outList)
 {
     for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<std::string> p(it->key.getTime(), it->string);
+        TimeValuePair<std::string> p(it->key.getTime() + offset, it->string);
         outList->push_back(p);
     }
 }
 
-AddOrRemoveKeysCommand::AddOrRemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
-                       bool initialCommandIsAdd,
-                       QUndoCommand *parent)
-: QUndoCommand(parent)
-, _initialCommandIsAdd(initialCommandIsAdd)
-, _keys(keys)
-{
-    setText( tr("Add keyframe(s)") );
-}
 
-void
-AddOrRemoveKeysCommand::addOrRemoveKeyframe(bool add)
+
+
+static void
+removeKeyFrames(const AnimItemDimViewKeyFramesMap& keys)
 {
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it) {
+    
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         
         AnimatingObjectIPtr obj = it->first.item->getInternalAnimItem();
         if (!obj) {
@@ -105,65 +101,168 @@ AddOrRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         
         const KeyFrameWithStringSet& keyStringSet = it->second;
         
-        if (!add) {
-            std::list<double> keyTimes;
-            for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
-                keyTimes.push_back(it2->key.getTime());
-            }
-            obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim);
-            
-        } else {
-            
-            AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();
+        std::list<double> keyTimes;
+        for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+            keyTimes.push_back(it2->key.getTime());
+        }
+        obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim);
+        
+    }
+}
+
+static void
+addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
+                                     bool clearExisting,
+                                     double offset,
+                                     const std::list<AnimItemBasePtr>& dstItems)
+{
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        
+       
+        const KeyFrameWithStringSet& keyStringSet = it->second;
+      
+        AnimatingObjectIPtr obj = it->first.item->getInternalAnimItem();
+        if (!obj) {
+            continue;
+        }
+        
+        
+        std::list<AnimatingObjectIPtr> targets;
+        for (std::list<AnimItemBasePtr>::const_iterator it2 = dstItems.begin(); it2!= dstItems.end(); ++it2) {
+            targets.push_back((*it2)->getInternalAnimItem());
+        }
+        if (targets.empty()) {
+            targets.push_back(obj);
+        }
+       
+        if (clearExisting) {
+            // Remove all existing animation
+            obj->removeAnimation(it->first.view, it->first.dim);
+        }
+
+        for (std::list<AnimatingObjectIPtr>::const_iterator it2 = targets.begin(); it2 != targets.end(); ++it2) {
+            AnimatingObjectI::KeyframeDataTypeEnum dataType = (*it2)->getKeyFrameDataType();
             switch (dataType) {
                 case AnimatingObjectI::eKeyframeDataTypeNone:
                 case AnimatingObjectI::eKeyframeDataTypeDouble:
                 {
                     std::list<DoubleTimeValuePair> keysList;
-                    convertVariantKeyStringSetToTypedList<double>(keyStringSet, &keysList);
-                    obj->setMultipleDoubleValueAtTime(keysList, it->first.view, it->first.dim);
+                    convertVariantKeyStringSetToTypedList<double>(keyStringSet, offset, &keysList);
+                    (*it2)->setMultipleDoubleValueAtTime(keysList, it->first.view, it->first.dim);
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeBool:
                 {
                     std::list<BoolTimeValuePair> keysList;
-                    convertVariantKeyStringSetToTypedList<bool>(keyStringSet, &keysList);
-                    obj->setMultipleBoolValueAtTime(keysList, it->first.view, it->first.dim);
-
+                    convertVariantKeyStringSetToTypedList<bool>(keyStringSet, offset, &keysList);
+                    (*it2)->setMultipleBoolValueAtTime(keysList, it->first.view, it->first.dim);
+                    
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeString:
                 {
                     std::list<StringTimeValuePair> keysList;
-                    convertVariantKeyStringSetToTypedList<std::string>(keyStringSet, &keysList);
-                    obj->setMultipleStringValueAtTime(keysList, it->first.view, it->first.dim);
-
+                    convertVariantKeyStringSetToTypedList<std::string>(keyStringSet, offset, &keysList);
+                    (*it2)->setMultipleStringValueAtTime(keysList, it->first.view, it->first.dim);
+                    
                 }   break;
                 case AnimatingObjectI::eKeyframeDataTypeInt:
                 {
                     std::list<IntTimeValuePair> keysList;
-                    convertVariantKeyStringSetToTypedList<int>(keyStringSet, &keysList);
-                    obj->setMultipleIntValueAtTime(keysList, it->first.view, it->first.dim);
+                    convertVariantKeyStringSetToTypedList<int>(keyStringSet, offset, &keysList);
+                    (*it2)->setMultipleIntValueAtTime(keysList, it->first.view, it->first.dim);
                     
                     
                 }   break;
             } // end switch
-        } // !add
-    } // for all objects
+        }
+        
+    }
+} // addKeyFrames
 
-} // addOrRemoveKeyframe
 
 
-void
-AddOrRemoveKeysCommand::undo()
+
+AddKeysCommand::AddKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                               QUndoCommand *parent)
+: QUndoCommand(parent)
+, _keys(keys)
 {
-    addOrRemoveKeyframe(!_initialCommandIsAdd);
+    setText( tr("Add KeyFrame(s)") );
 }
 
 void
-AddOrRemoveKeysCommand::redo()
+AddKeysCommand::undo()
 {
+    removeKeyFrames(_keys);
+} // undo
 
-    addOrRemoveKeyframe(_initialCommandIsAdd);
+void
+AddKeysCommand::redo()
+{
+    addKeyFrames(_keys, false, 0, std::list<AnimItemBasePtr>());
+} // redo
+
+RemoveKeysCommand::RemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                                    QUndoCommand *parent)
+: QUndoCommand(parent)
+,  _keys(keys)
+{
+    setText( tr("Remove KeyFrame(s)") );
 }
+
+void
+RemoveKeysCommand::undo()
+{
+    addKeyFrames(_keys, false, 0, std::list<AnimItemBasePtr>());
+} // undo
+
+void
+RemoveKeysCommand::redo()
+{
+    removeKeyFrames(_keys);
+} // redo
+
+
+PasteKeysCommand::PasteKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                                   const std::list<AnimItemBasePtr>& dstAnim,
+                                   bool pasteRelativeToCurrentTime,
+                                   double currentTime,
+                                   QUndoCommand *parent)
+: QUndoCommand(parent)
+, _offset(0)
+, _dstAnims(dstAnim)
+, _keys(keys)
+{
+    
+    double minSelectedKeyTime(std::numeric_limits<double>::infinity())
+    if (pasteRelativeToCurrentTime) {
+        _flags |= eAddFlagsRelative;
+        
+        
+        for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+            if (it->second.empty()) {
+                continue;
+            }
+            double minTimeForCurve = it->second.begin()->key.getTime();
+            minSelectedKeyTime = std::min(minSelectedKeyTime, minTimeForCurve);
+        }
+    }
+    _offset = !pasteRelativeToCurrentTime ? 0 : currentTime - minSelectedKeyTime;
+    
+    setText( tr("Paste KeyFrame(s)") );
+    
+}
+
+void
+PasteKeysCommand::undo()
+{
+    
+} // undo
+
+void
+PasteKeysCommand::redo()
+{
+    
+} // redo
 
 static void animItemDimViewKeysMapConvert(const AnimItemDimViewKeyFramesMap& keys, KeysWithOldCurveMap* newKeys)
 {
@@ -396,17 +495,18 @@ WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
     _warp.reset(new Curve::TranslationKeyFrameWarp(dt, dv));
     setText( tr("Move KeyFrame(s)") );
 
-   /* for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    /*std::set<NodeAnimPtr> uniqueNodeAnims;
+    for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         AnimatedItemTypeEnum type = (*it)->getItemType();
         if ((*it)->isRangeDrawingEnabled()) {
-            _nodes.push_back(*it);
+            uniqueNodeAnims.insert(*it);
         }
         NodeGroupPtr isGroup = (*it)->getInternalNode()->isEffectNodeGroup();
         if (isGroup) {
             NodesList recurseNodes;
             isGroup->getNodes_recursive(recurseNodes, true);
             for (NodesList::iterator it = recurseNodes.begin(); it != recurseNodes.end(); ++it) {
-                nodesSet.insert(*it);
+                uniqueNodeAnims.insert(*it);
             }
         }
     }*/
@@ -422,6 +522,43 @@ WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
     _warp.reset(new Curve::AffineKeyFrameWarp(matrix));
     setText( tr("Transform KeyFrame(s)") );
 }
+
+bool
+WarpKeysCommand::testWarpOnKeys(const AnimItemDimViewKeyFramesMap& inKeys, const Curve::KeyFrameWarp& warp)
+{
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = inKeys.begin(); it!=inKeys.end();++it) {
+        AnimatingObjectIPtr obj = it->first.item->getInternalAnimItem();
+        if (!obj) {
+            continue;
+        }
+        
+        CurvePtr originalCurve = obj->getAnimationCurve(it->first.view, it->first.dim);
+        if (!originalCurve) {
+            continue;
+        }
+        
+        // Work on a local copy
+        Curve tmpCurve;
+        tmpCurve.clone(*originalCurve);
+        
+        
+        const KeyFrameWithStringSet& keyStringSet = it->second;
+        
+        // Make-up keyframe times to warp for this item/view/dim
+        std::list<double> keyTimes;
+        for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+            keyTimes.push_back(it2->key.getTime());
+        }
+
+        
+        if (!tmpCurve.transformKeyframesValueAndTime(keyTimes, warp)) {
+            return false;
+        }
+        
+    }
+    return true;
+    
+} // testWarpOnKeys
 
 void
 WarpKeysCommand::warpKeys()
@@ -467,7 +604,7 @@ WarpKeysCommand::warpKeys()
 
         // Warp keys...
         std::vector<KeyFrame> newKeyframe;
-        if (obj->warpValuesAtTime(keyTimes, it->first.view, it->first.dim, *_warp, _warp->allowReplacingExistingKeyframes(), &newKeyframe)) {
+        if (obj->warpValuesAtTime(keyTimes, it->first.view, it->first.dim, *_warp, &newKeyframe)) {
 
             // Modify original keys by warped keys
             StringAnimationManagerPtr stringAnim = obj->getStringAnimation();
@@ -528,6 +665,33 @@ WarpKeysCommand::mergeWith(const QUndoCommand * command)
             }
         }
     }
+    
+    if ( cmd->_nodes.size() != _nodes.size() ) {
+        return false;
+    }
+    
+    {
+        std::vector<NodeAnimPtr >::const_iterator itOther = cmd->_nodes.begin();
+        for (std::vector<NodeAnimPtr >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
+            if (*itOther != *it) {
+                return false;
+            }
+        }
+    }
+    
+    if ( cmd->_tableItems.size() != _tableItems.size() ) {
+        return false;
+    }
+    
+    {
+        std::vector<TableItemAnimPtr >::const_iterator itOther = cmd->_tableItems.begin();
+        for (std::vector<TableItemAnimPtr >::const_iterator it = _tableItems.begin(); it != _tableItems.end(); ++it, ++itOther) {
+            if (*itOther != *it) {
+                return false;
+            }
+        }
+    }
+
 
     return _warp->mergeWith(*cmd->_warp);
 
@@ -766,5 +930,123 @@ MoveTangentCommand::mergeWith(const QUndoCommand * command)
     return true;
 
 }
+
+
+
+PasteKeysCommand::PasteKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
+                                   const std::list<AnimItemBasePtr>& dstAnim,
+                                   bool pasteRelativeToRefTime,
+                                   double currentTime,
+                                   QUndoCommand *parent)
+: QUndoCommand(parent)
+, _refTime(currentTime)
+, _pasteRelativeToRefTime(pasteRelativeToRefTime)
+, _keys(keys)
+, _dstAnim(dstAnim)
+{
+
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        if (it->second.empty()) {
+            continue;
+        }
+        double minTimeForCurve = it->second.begin()->key.getTime();
+        _minSelectedKeyTime = std::min(_minSelectedKeyTime, minTimeForCurve);
+    }
+    
+    setText( tr("Paste KeyFrame(s)") );
+}
+
+void
+PasteKeysCommand::undo()
+{
+    addOrRemoveKeyframe(false);
+}
+
+void
+PasteKeysCommand::redo()
+{
+    addOrRemoveKeyframe(true);
+}
+
+void
+PasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
+{
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    KnobStringBasePtr isString = toKnobStringBase(knob);
+    
+    
+    if (isDouble) {
+        key->setValue( isDouble->getValueAtTime(keyTime) );
+    } else if (isBool) {
+        key->setValue( isBool->getValueAtTime(keyTime) );
+    } else if (isInt) {
+        key->setValue( isInt->getValueAtTime(keyTime) );
+    } else if (isString) {
+        std::string v = isString->getValueAtTime(keyTime);
+        double keyFrameValue = 0.;
+        AnimatingKnobStringHelperPtr isStringAnimatedKnob = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(isString);
+        assert(isStringAnimatedKnob);
+        if (isStringAnimatedKnob) {
+            isStringAnimatedKnob->stringToKeyFrameValue(keyTime, ViewIdx(0), v, &keyFrameValue);
+        }
+        key->setValue(keyFrameValue);
+    }
+}
+
+void
+PasteKeysCommand::addOrRemoveKeyframe(bool add)
+{
+    for (std::list<AnimItemBasePtr>::const_iterator it = _dstAnim.begin(); it != _dstAnim.end(); ++it) {
+        
+        AnimatingObjectIPtr animItem = (*it)->getInternalAnimItem();
+        if (!animItem) {
+            continue;
+        }
+        for (AnimItemDimViewKeyFramesMap::const_iterator it2 = _keys.begin(); it2 != _keys.end(); ++it2) {
+            
+            for (KeyFrameWithStringSet::const_iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
+                double keyTime = it3->key.getTime();
+                double setTime = _pasteRelativeToRefTime ? keyTime - _minSelectedKeyTime + _refTime : keyTime;
+                if (!add) {
+                    animItem->deleteValueAtTime(time, <#Natron::ViewSetSpec view#>, <#Natron::DimSpec dimension#>)
+                }
+            }
+        }
+        for (std::size_t i = 0; i < _keys.size(); ++i) {
+            
+            int dim = knobContext->getDimension();
+            KnobIPtr knob = knobContext->getInternalKnob();
+            knob->beginChanges();
+            
+            double keyTime = _keys[i].key.getTime();
+            double setTime = _pasteRelativeToRefTime ? keyTime - _keys[_refKeyindex].key.getTime() + _refTime : keyTime;
+            
+            if (add) {
+                
+                for (int j = 0; j < knob->getDimension(); ++j) {
+                    if ( (dim == -1) || (j == dim) ) {
+                        KeyFrame k = _keys[i].key;
+                        k.setTime(setTime);
+                        
+                        knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
+                    }
+                }
+            } else {
+                for (int j = 0; j < knob->getDimension(); ++j) {
+                    if ( (dim == -1) || (j == dim) ) {
+                        knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j, i == 0);
+                    }
+                }
+            }
+            
+            knob->endChanges();
+        }
+    }
+    
+    
+    _model->refreshSelectionBboxAndRedrawView();
+} // PasteKeysCommand::addOrRemoveKeyframe
 
 NATRON_NAMESPACE_EXIT;

@@ -2006,14 +2006,14 @@ KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec vi
 }
 
 bool
-KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes)
 {
 
     std::list<double> keysAdded, keysRemoved;
     {
         QMutexLocker k(&_imp->lock);
         std::vector<KeyFrame> newKeys;
-        if ( !curve->transformKeyframesValueAndTime(times, warp, allowKeysOverlap, keyframes, &keysAdded, &keysAdded) ) {
+        if ( !curve->transformKeyframesValueAndTime(times, warp, keyframes, &keysAdded, &keysAdded) ) {
             return false;
         }
 
@@ -2033,18 +2033,18 @@ KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx 
 
 
 bool
-KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec /*dimension*/, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes)
+KnobTableItem::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec /*dimension*/, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes)
 {
     bool ok = false;
     if (view.isAll()) {
         for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
-            ok |= warpValuesAtTimeInternal(times, it->first, it->second, warp, allowKeysOverlap, keyframes);
+            ok |= warpValuesAtTimeInternal(times, it->first, it->second, warp, keyframes);
         }
     } else {
         ViewIdx view_i = _imp->getViewIdxFromGetSpec(ViewGetSpec(view.value()));
         PerViewAnimationCurveMap::const_iterator foundView = _imp->animationCurves.find(view_i);
         if (foundView != _imp->animationCurves.end()) {
-            ok |= warpValuesAtTimeInternal(times, view_i, foundView->second, warp, allowKeysOverlap, keyframes);
+            ok |= warpValuesAtTimeInternal(times, view_i, foundView->second, warp, keyframes);
         }
     }
     return ok;

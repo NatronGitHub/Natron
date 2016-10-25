@@ -262,7 +262,7 @@ public:
     virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension) OVERRIDE;
-    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
+    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
@@ -356,7 +356,7 @@ private:
     }
 
     void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve);
-    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0);
+    bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, const CurvePtr& curve, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0);
     void removeAnimationInternal(ViewIdx view, const CurvePtr& curve);
 
 protected:

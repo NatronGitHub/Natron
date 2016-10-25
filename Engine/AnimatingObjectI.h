@@ -450,13 +450,12 @@ public:
      * (as in the current on-going render if called from a render thread) will be set, otherwise all views are set.
      * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
      * at the given index will receive the change, otherwise no change occurs.
-     * @param allowKeysOverlap If false, then if a warped keyframe is on the same time as another existing keyframe, then this function will 
      * return false, otherwise it will just substitute the existing keyframe
      * @param newKey[out] If non null, the new keyframes in return will be assigned to this parameter.
      * @returns True If the keyframes could be warped, false otherwise
      * Note that if this function succeeds, it is guaranteed that all keyframes have been warped.
      **/
-    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, bool allowKeysOverlap, std::vector<KeyFrame>* keyframes = 0) = 0;
+    virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) = 0;
 
     /**
      * @brief Removes all keyframes on the object for the given view in the given dimension.
