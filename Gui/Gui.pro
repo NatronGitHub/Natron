@@ -85,6 +85,7 @@ SOURCES += \
     AnimatedCheckBox.cpp \
     AnimItemBase.cpp \
     AnimationModule.cpp \
+    AnimationModuleUndoRedo.cpp \
     AnimationModuleSelectionModel.cpp \
     AnimationModuleTreeView.cpp \
     AnimationModuleEditor.cpp \
@@ -96,7 +97,6 @@ SOURCES += \
     ColoredFrame.cpp \
     ComboBox.cpp \
     CurveEditor.cpp \
-    CurveEditorUndoRedo.cpp \
     CurveGui.cpp \
     CurveWidget.cpp \
     CurveWidgetDialogs.cpp \
@@ -239,6 +239,7 @@ HEADERS += \
     AnimatedCheckBox.h \
     AnimItemBase.h \
     AnimationModule.h \
+    AnimationModuleUndoRedo.h \
     AnimationModuleSelectionModel.h \
     AnimationModuleTreeView.h \
     AnimationModuleEditor.h \
@@ -250,7 +251,6 @@ HEADERS += \
     ColoredFrame.h \
     ComboBox.h \
     CurveEditor.h \
-    CurveEditorUndoRedo.h \
     CurveGui.h \
     CurveSelection.h \
     CurveWidget.h \

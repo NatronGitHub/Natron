@@ -1142,15 +1142,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
 
                     // Find a matching view name
                     ViewIdx view_i(0);
-                    {
-                        int i = 0;
-                        for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-                            if (boost::iequals(*it2, it->first)) {
-                                view_i = ViewIdx(i);
-                                break;
-                            }
-                        }
-                    }
+                    Project::getViewIndex(projectViews, it->first, &view_i);
 
                     for (std::size_t i = 0; i < it->second.size(); ++i) {
                         if (!it->second[i]._slaveMasterLink.hasLink) {
@@ -1195,15 +1187,7 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                                 }
                             }
                             ViewIdx otherView(0);
-                            {
-                                int i = 0;
-                                for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-                                    if (boost::iequals(*it2, it->second[i]._slaveMasterLink.masterViewName)) {
-                                        otherView = ViewIdx(i);
-                                        break;
-                                    }
-                                }
-                            }
+                            Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
 
                             if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
                                 knob->slaveTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
@@ -1224,15 +1208,8 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
                  it != isKnobSerialization->_values.end(); ++it) {
                 // Find a matching view name
                 ViewIdx view_i(0);
-                {
-                    int i = 0;
-                    for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-                        if (boost::iequals(*it2, it->first)) {
-                            view_i = ViewIdx(i);
-                            break;
-                        }
-                    }
-                }
+                Project::getViewIndex(projectViews, it->first, &view_i);
+                
                 for (std::size_t i = 0; i < it->second.size(); ++i) {
                     try {
                         if ( !it->second[i]._expression.empty() ) {
@@ -8942,6 +8919,18 @@ Node::isLifetimeActivated(int *firstFrame,
     *lastFrame = lifetimeKnob->getValue(DimIdx(1));
 
     return true;
+}
+
+KnobBoolPtr
+Node::getLifeTimeEnabledKnob() const
+{
+    return _imp->enableLifeTimeKnob.lock();
+}
+
+KnobIntPtr
+Node::getLifeTimeKnob() const
+{
+    return _imp->lifeTimeKnob.lock();
 }
 
 bool

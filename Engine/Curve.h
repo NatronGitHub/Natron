@@ -323,6 +323,16 @@ public:
 
         }
 
+        double getDT() const
+        {
+            return _dt;
+        }
+
+        double getDV() const
+        {
+            return _dv;
+        }
+
         virtual ~TranslationKeyFrameWarp()
         {
 

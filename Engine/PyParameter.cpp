@@ -518,18 +518,10 @@ static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, c
         return false;
     }
     const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
-    int i = 0;
     bool foundView = false;
     ViewIdx foundViewIdx;
     std::string stdViewName = viewName.toStdString();
-    for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-        if (boost::iequals(*it2, stdViewName)) {
-
-            foundViewIdx = ViewIdx(i);
-            foundView = true;
-            break;
-        }
-    }
+    foundView = Project::getViewIndex(projectViews, stdViewName, &foundViewIdx);
 
     if (!foundView) {
         return false;

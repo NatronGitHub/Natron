@@ -1278,15 +1278,8 @@ Effect::getRegionOfDefinition(double time, const QString& view) const
     bool foundView = false;
     ViewIdx foundViewIdx;
     std::string stdViewName = view.toStdString();
-    for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-        if (boost::iequals(*it2, stdViewName)) {
-
-            foundViewIdx = ViewIdx(i);
-            foundView = true;
-            break;
-        }
-    }
-
+    foundView = Project::getViewIndex(projectViews, stdViewName, &foundViewIdx);
+  
     if (!foundView) {
         PythonSetInvalidViewName(view);
         return rod;

@@ -221,7 +221,7 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
 
-    pushUndoCommand( new PasteUndoCommand(shared_from_this(), type, cbDim, targetDimension, fromKnob) );
+    pushUndoCommand( new PasteKnobClipBoardUndoCommand(shared_from_this(), type, cbDim, targetDimension, fromKnob) );
 } // pasteClipBoard
 
 void

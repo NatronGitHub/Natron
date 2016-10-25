@@ -55,9 +55,9 @@ NATRON_NAMESPACE_ENTER;
 class AnimationModuleTreeViewPrivate;
 
 /**
- * @brief This class is a part of the hierarchy view.
+ * @brief This class is a part of the tree view.
  *
- * The hierarchy view provides a custom selection of its items.
+ * The tree view provides a custom selection of its items.
  * For example, if the user clicks on an tree node (and not a leaf), all its
  * children must be selected too. If he clicks on a leaf, its parents must be
  * selected only if all their children are selected too.
@@ -126,19 +126,6 @@ private:
 /**
  * @brief The AnimationModuleTreeView class represents the tree along side the Curve Editor and
  * the DopeSheet.
- *
- * The hierarchy view displays the name of each node/knob referenced by the
- * dope sheet editor and handles their organization.
- *
- * /!\ We should use a custom model and not the built-in model of QTreeWidget,
- * for more control.
- *
- * /!\ Use a QSortFilterProxyModel should be considered to hide the items
- * instead of deal with QTreeWidgetItem::setHidden().
- *
- * The other features of the hierarchy view are :
- * - select the associated keyframes by select an item.
- * - put a settings panel on top by double clicking on an item.
  */
 class AnimationModuleTreeView
     : public QTreeWidget
@@ -151,6 +138,7 @@ public:
     explicit AnimationModuleTreeView(const AnimationModulePtr& model,
                                      Gui *gui,
                                      QWidget *parent = 0);
+
     virtual ~AnimationModuleTreeView();
 
     AnimationModulePtr getModel() const;
@@ -174,6 +162,7 @@ public:
      */
     int getHeightForItemAndChildren(QTreeWidgetItem *item) const;
 
+
     /**
      * @brief Returns the last visible (not hidden and not collapsed
      * in its parent) child of 'item".
@@ -182,8 +171,6 @@ public:
     QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
     void setCanResizeOtherWidget(bool canResize);
-
-    void getSelectedKnobAnims(std::list<KnobAnimPtr >* knobs) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

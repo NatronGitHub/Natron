@@ -58,9 +58,9 @@ public:
     void selectAll();
 
     void clearSelection();
-    
+
     void selectItems(const QList<QTreeWidgetItem *> &items);
-    
+
     void makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                        const std::vector<TableItemAnimPtr>& selectedTableItems,
                        const std::vector<NodeAnimPtr >& rangeNodes,
@@ -75,7 +75,7 @@ public:
 
     int getSelectedKeyframesCount() const;
 
-    bool isKeyframeSelected(const AnimItemBasePtr &KnobAnim, DimSpec dimension ,ViewSetSpec view, double time) const;
+    bool isKeyframeSelected(const AnimItemBasePtr &KnobAnim, DimIdx dimension ,ViewIdx view, double time) const;
 
     /**
      * @brief If this node has a range, such as a Reader or Group, returns whether it is selected or not.
@@ -85,6 +85,19 @@ public:
     void removeAnyReferenceFromSelection(const NodeAnimPtr &removed);
 
     void removeAnyReferenceFromSelection(const TableItemAnimPtr& item);
+
+    static void addAnimatedItemKeyframes(const AnimItemBasePtr& item,
+                                         DimSpec dim,
+                                         ViewSetSpec viewSpec,
+                                         AnimItemDimViewKeyFramesMap* result);
+
+    static void addTableItemKeyframes(const TableItemAnimPtr& item,
+                                      bool recurse,
+                                      DimSpec dim,
+                                      ViewSetSpec viewSpec,
+                                      std::vector<TableItemAnimPtr> *selectedTableItems,
+                                      AnimItemDimViewKeyFramesMap* result);
+
 
 Q_SIGNALS:
 

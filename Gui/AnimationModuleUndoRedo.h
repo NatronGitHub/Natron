@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CURVEEDITORUNDOREDO_H
-#define CURVEEDITORUNDOREDO_H
+#ifndef NATRON_GUI_ANIMATION_MODULE_UNDO_REDO_H
+#define NATRON_GUI_ANIMATION_MODULE_UNDO_REDO_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -51,6 +51,42 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimItemBase.h"
 
 NATRON_NAMESPACE_ENTER;
+
+struct AnimItemDimViewIndexIDWithCurve
+{
+    AnimItemDimViewIndexID key;
+    CurvePtr oldCurveState;
+
+    AnimItemDimViewIndexIDWithCurve()
+    : key()
+    , oldCurveState()
+    {
+
+    }
+};
+
+struct AnimItemDimViewIndexIDWithCurve_CompareLess
+{
+    bool operator()(const AnimItemDimViewIndexIDWithCurve& lhs, const AnimItemDimViewIndexIDWithCurve& rhs) const
+    {
+
+        if (lhs.key.view < rhs.key.view) {
+            return true;
+        } else if (lhs.key.view > rhs.key.view) {
+            return false;
+        } else {
+            if (lhs.key.dim < rhs.key.dim) {
+                return true;
+            } else if (lhs.key.dim > rhs.key.dim) {
+                return false;
+            } else {
+                return lhs.key.item < rhs.key.item;
+            }
+        }
+
+    }
+};
+typedef std::map<AnimItemDimViewIndexIDWithCurve, KeyFrameWithStringSet, AnimItemDimViewIndexIDWithCurve_CompareLess> KeysWithOldCurveMap;
 
 
 /**
@@ -101,32 +137,11 @@ class SetKeysCommand : public QUndoCommand
 
 public:
 
-    struct PerDimensionObjectKeyframes
-    {
-        std::list<VariantTimeValuePair> newKeys;
-        CurvePtr oldCurveState;
-    };
-
-    struct SetObjectKeyFramesData
-    {
-
-        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
-        int dimensionStartIndex;
-
-    };
 
 
-    typedef std::map<AnimatingObjectIWPtr, SetObjectKeyFramesData > ObjectKeysToSetMap;
 
-
-    SetKeysCommand(const ObjectKeysToSetMap & keys,
-                   QUndoCommand *parent = 0)
-    : QUndoCommand(parent)
-    , _isFirstRedo(true)
-    , _keys(keys)
-    {
-        setText( tr("Set keyframe(s)") );
-    }
+    SetKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                   QUndoCommand *parent = 0);
 
 
     virtual ~SetKeysCommand() OVERRIDE
@@ -141,13 +156,12 @@ private:
 
 private:
 
-    bool _isFirstRedo;
-    ObjectKeysToSetMap _keys;
+    KeysWithOldCurveMap _keys;
 };
 
 
 /**
- * @class An undo command that can warp keyframes of multiple curves
+ * @class An undo command that can warp multiple keyframes of multiple curves
  **/
 class WarpKeysCommand
     : public QUndoCommand
@@ -156,26 +170,20 @@ class WarpKeysCommand
 
 public:
 
-    struct PerDimensionObjectKeyframes
-    {
-        std::list<double> keysToMove;
-    };
-
-    struct WarpObjectKeyFramesData
-    {
-        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
-        int dimensionStartIndex;
-    };
-
-    typedef std::map<AnimItemBaseWPtr, WarpObjectKeyFramesData > ObjectKeysToMoveMap;
-
-    WarpKeysCommand(AnimationModuleEditor* editor,
-                    const ObjectKeysToMoveMap& keys,
+    /**
+     * @brief Moves given keyframes, nodes and items by dt and dv.
+     **/
+    WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
+                    const std::vector<NodeAnimPtr >& nodes,
+                    const std::vector<TableItemAnimPtr>& tableItems,
                     double dt,
                     double dv,
                     QUndoCommand *parent = 0);
 
-    WarpKeysCommand(const ObjectKeysToMoveMap& keys,
+    /**
+     * @brief Ctor that warps using an affine transformation. Cannot transform nodes and table items
+     **/
+    WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
                     const Transform::Matrix3x3& matrix,
                     QUndoCommand *parent = 0);
     
@@ -193,7 +201,9 @@ private:
 
 private:
     boost::scoped_ptr<Curve::KeyFrameWarp> _warp;
-    ObjectKeysToMoveMap _keys;
+    AnimItemDimViewKeyFramesMap _keys;
+    std::vector<NodeAnimPtr> _nodes;
+    std::vector<TableItemAnimPtr> _tableItems;
 };
 
 
@@ -209,30 +219,9 @@ class SetKeysInterpolationCommand
 
 public:
 
-
-
-    struct PerDimensionObjectKeyframes
-    {
-        std::list<double> keysToChange;
-        KeyframeTypeEnum oldInterp, newInterp;
-    };
-
-    struct InterpolationObjectKeyFramesData
-    {
-        std::vector<PerDimensionObjectKeyframes> keyframesPerDim;
-        int dimensionStartIndex;
-    };
-
-    typedef std::map<AnimatingObjectIWPtr, InterpolationObjectKeyFramesData> ObjectKeyFramesDataMap;
-
-    SetKeysInterpolationCommand(const ObjectKeyFramesDataMap & keys,
-                                QUndoCommand *parent)
-    : QUndoCommand(parent)
-    , _keys(keys)
-    {
-        setText( tr("Set keyframes interpolation") );
-
-    }
+    SetKeysInterpolationCommand(const AnimItemDimViewKeyFramesMap & keys,
+                                KeyframeTypeEnum newInterpolation,
+                                QUndoCommand *parent);
 
     virtual ~SetKeysInterpolationCommand() OVERRIDE
     {
@@ -243,10 +232,10 @@ private:
     virtual void redo() OVERRIDE FINAL;
 
 
-    void setNewInterpolation(bool undo);
 
 private:
-   ObjectKeyFramesDataMap _keys;
+    KeysWithOldCurveMap _keys;
+    KeyframeTypeEnum _newInterpolation;
 };
 
 /**
@@ -268,7 +257,8 @@ public:
 
     MoveTangentCommand(SelectedTangentEnum deriv,
                        const AnimatingObjectIPtr& object,
-                       int dimension,
+                       DimIdx dimension,
+                       ViewIdx view,
                        const KeyFrame& k,
                        double dx,
                        double dy,
@@ -276,7 +266,8 @@ public:
 
     MoveTangentCommand(SelectedTangentEnum deriv,
                        const AnimatingObjectIPtr& object,
-                       int dimension,
+                       DimIdx dimension,
+                       ViewIdx view,
                        const KeyFrame& k,
                        double derivative,
                        QUndoCommand *parent = 0);
@@ -297,15 +288,18 @@ private:
 private:
 
     AnimatingObjectIWPtr _object;
-    int _dimension;
+    DimIdx _dimension;
+    ViewIdx _view;
     double _keyTime;
     SelectedTangentEnum _deriv;
     KeyframeTypeEnum _oldInterp, _newInterp;
     double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
-    bool _firstRedoCalled;
 };
+
+
+
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // CURVEEDITORUNDOREDO_H
+#endif // NATRON_GUI_ANIMATION_MODULE_UNDO_REDO_H

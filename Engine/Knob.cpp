@@ -3373,16 +3373,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
         // Find the view index corresponding to the view name
         ViewIdx view_i(0);
-        {
-            int i = 0;
-            for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-                if (boost::iequals(*it2, it->first)) {
-                    view_i = ViewIdx(i);
-                    break;
-                }
-            }
-        }
-
+        Project::getViewIndex(projectViews, it->first, &view_i);
 
         for (std::size_t d = 0; d < it->second.size(); ++d) {
             
@@ -5119,14 +5110,7 @@ AnimatingKnobStringHelper::loadAnimation(const std::map<std::string,std::map<dou
     std::map<ViewIdx,std::map<double, std::string> > indexMap;
     for (std::map<std::string,std::map<double, std::string> >::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         ViewIdx view_i(0);
-        // Find a view
-        int i = 0;
-        for (std::vector<std::string>::iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-            if (boost::iequals(*it2, it->first)) {
-                view_i = ViewIdx(i);
-                break;
-            }
-        }
+        Project::getViewIndex(projectViews, it->first, &view_i);
         indexMap[view_i] = it->second;
     }
     _animation->load(indexMap);

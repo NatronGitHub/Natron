@@ -172,6 +172,7 @@ public:
 
     std::string getViewName(ViewIdx view) const;
 
+    static bool getViewIndex(const std::vector<std::string>& viewNames, const std::string& viewName, ViewIdx* view);
     bool getViewIndex(const std::string& viewName, ViewIdx* view) const;
 
     int getProjectViewsCount() const;

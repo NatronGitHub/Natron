@@ -3662,15 +3662,8 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
             // Find the view index corresponding to the view name
             ViewIdx view_i(0);
-            {
-                int i = 0;
-                for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
-                    if (boost::iequals(*it2, it->first)) {
-                        view_i = ViewIdx(i);
-                        break;
-                    }
-                }
-            }
+            Project::getViewIndex(projectViews, it->first, &view_i);
+
             BezierShape& shape = _imp->viewShapes[view_i];
             shape.finished = it->second.closed && !_imp->isOpenBezier;
 

@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-#include "Gui/GuiFwd.h"
+#include "Gui/AnimItemBase.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
@@ -160,7 +160,7 @@ public:
     // User interaction
     void deleteSelectedKeyframes();
 
-    void moveSelectedKeysAndNodes(double dt);
+    void moveSelectedKeysAndNodes(double dt, double dv);
     void trimReaderLeft(const NodeAnimPtr &reader, double newFirstFrame);
     void trimReaderRight(const NodeAnimPtr &reader, double newLastFrame);
 
@@ -178,7 +178,7 @@ public:
      **/
     void pasteKeys(bool relative);
 
-    void pasteKeys(const std::vector<AnimKeyFrame>& keys, bool relative);
+    void pasteKeys(const AnimItemDimViewKeyFramesMap& keys, bool relative);
 
     void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
 

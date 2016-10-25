@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
-#include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/AnimationModuleEditorUndoRedo.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;

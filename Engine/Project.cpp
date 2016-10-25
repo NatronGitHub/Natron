@@ -1358,13 +1358,28 @@ Project::getViewName(ViewIdx view) const
 }
 
 bool
+Project::getViewIndex(const std::vector<std::string>& viewNames, const std::string& viewName, ViewIdx* view)
+{
+    *view = ViewIdx(0);
+    for (std::size_t i = 0; i < viewNames.size(); ++i) {
+        if (boost::iequals(viewNames[i], viewName)) {
+            *view = ViewIdx(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 Project::getViewIndex(const std::string& viewName, ViewIdx* view) const
 {
-    const std::vector<std::string>& viewNames = getProjectViewNames();
+    std::list<std::vector<std::string> > pairs;
+    _imp->viewsList->getTable(&pairs);
     {
         int i = 0;
-        for (std::vector<std::string>::const_iterator it2 = viewNames.begin(); it2 != viewNames.end(); ++it2, ++i) {
-            if (boost::iequals(*it2, viewName)) {
+        for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+             it != pairs.end(); ++it) {
+            if (boost::iequals((*it)[0], viewName)) {
                 *view = ViewIdx(i);
                 return true;
             }

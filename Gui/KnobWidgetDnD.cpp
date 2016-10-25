@@ -434,7 +434,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 expr = ss.str();
                 guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, expr) );
             } else if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier) ) {
-                guiKnob->pushUndoCommand( new PasteUndoCommand(guiKnob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source) );
+                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source) );
             }
 
             return true;

@@ -60,8 +60,9 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-//================================================================
-
+/**
+ * @brief This is the undo/redo command that any KnobGui implementation should use to push the value onto the internal knob
+ **/
 template<typename T>
 class KnobUndoCommand
     : public QUndoCommand
@@ -70,49 +71,70 @@ class KnobUndoCommand
 
 public:
 
-    KnobUndoCommand(const KnobGuiPtr& knob,
+    /**
+     * @brief Set the knob value for the given dimension and view
+     **/
+    KnobUndoCommand(const KnobIPtr& knob,
                     const T &oldValue,
                     const T &newValue,
-                    int dimension = 0,
-                    bool refreshGui = true,
+                    DimIdx dimension,
+                    ViewSetSpec view,
+                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
+                    const QString& commandName = QString(),
                     QUndoCommand *parent = 0)
-        : QUndoCommand(parent)
-        , _dimension(dimension)
-        , _oldValue()
-        , _newValue()
-        , _knob(knob)
-        , _valueChangedReturnCode(1)
-        , _merge(true)
-        , _refreshGuiFirstTime(refreshGui)
-        , _firstRedoCalled(false)
+    : QUndoCommand(parent)
+    , _dimension(dimension)
+    , _view(view)
+    , _reason(reason)
+    , _oldValue()
+    , _newValue()
+    , _knob(knob)
+    , _valueChangedReturnCode(1)
+    , _merge(true)
+    , _firstRedoCalled(false)
     {
-        assert(dimension >= 0 && dimension < knob->getKnob()->getNDimensions());
+        assert(dimension >= 0 && dimension < knob->getNDimensions());
         _oldValue.push_back(oldValue);
         _newValue.push_back(newValue);
+
+        if (!commandName.isEmpty()) {
+            setText(commandName);
+        } else {
+            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        }
     }
 
-    ///We moved from std::vector to std::list instead because std::vector<bool> expands to a bit field(std::_Bit_reference)
-    ///and produces an unresolved symbol error.
-    KnobUndoCommand(const KnobGuiPtr& knob,
+    /**
+     * @brief Set the knob value across all dimensions for the given view
+     **/
+    KnobUndoCommand(const KnobIPtr& knob,
                     const std::vector<T> &oldValue,
                     const std::vector<T> &newValue,
-                    bool refreshGui = true,
+                    ViewSetSpec view,
+                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
+                    const QString& commandName = QString(),
                     QUndoCommand *parent = 0)
-        : QUndoCommand(parent)
-        , _dimension(-1)
-        , _oldValue(oldValue)
-        , _newValue(newValue)
-        , _knob(knob)
-        , _valueChangedReturnCode( oldValue.size() )
-        , _merge(true)
-        , _refreshGuiFirstTime(refreshGui)
-        , _firstRedoCalled(false)
-        , _timelineTime(knob->getKnob()->getCurrentTime())
+    : QUndoCommand(parent)
+    , _dimension(-1)
+    , _view(view)
+    , _reason(reason)
+    , _oldValue(oldValue)
+    , _newValue(newValue)
+    , _knob(knob)
+    , _valueChangedReturnCode( oldValue.size() )
+    , _merge(true)
+    , _firstRedoCalled(false)
+    , _timelineTime(knob->getCurrentTime())
     {
-        assert(oldValue.size() == newValue.size() && oldValue.size() == knob->getKnob()->getNDimensions());
+        assert(oldValue.size() == newValue.size() && oldValue.size() == knob->getNDimensions());
 
 
-        setText( tr("Set value of %1").arg( QString::fromUtf8( knob->getKnob()->getLabel().c_str() ) ) );
+        if (!commandName.isEmpty()) {
+            setText(commandName);
+        } else {
+            setText( tr("Set %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        }
+
     }
 
     virtual ~KnobUndoCommand() OVERRIDE
@@ -122,58 +144,61 @@ public:
 private:
     virtual void undo() OVERRIDE FINAL
     {
-        KnobGuiPtr knobUI = _knob.lock();
-        if (!knobUI) {
+
+        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(_knob.lock());
+        if (!knob) {
             return;
         }
-        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(knobUI->getKnob());
-        assert(knob);
 
 
-        assert( (int)_oldValue.size() == knob->getNDimensions() || _dimension != -1 );
+        assert( (int)_oldValue.size() == knob->getNDimensions() || !_dimension.isAll() );
+
+        // wrap changes in a begin/end because we might do 2 API calls with deleteValueAtTime and setValue
+        knob->beginChanges();
 
         // If any keyframe was added due to auto-keying, remove it
         for (std::size_t i = 0; i < _oldValue.size(); ++i) {
-            if (_dimension == -1 || i == _dimension) {
+            if (_dimension.isAll() || i == _dimension) {
                 if (_valueChangedReturnCode[i] == eValueChangedReturnCodeKeyframeAdded) {
-                    knob->deleteValueAtTime(eCurveChangeReasonInternal, _timelineTime, ViewSpec::all(), i);
+                    knob->deleteValueAtTime(_timelineTime, _view, DimIdx(i), _reason);
                 }
             }
         }
 
         // Ensure that no keyframe gets added by the setValue
         knob->setAutoKeyingEnabled(false);
-        if (_dimension == -1) {
+        if (_dimension.isAll()) {
             // Multiple dimensions set at once
-            knob->setValues(_oldValue, ViewSpec::all(), eValueChangedReasonUserEdited, 0);
+            knob->setValueAcrossDimension(_oldValue, _view, _reason);
         } else {
             // Only one dimension set
-            ignore_result(knob->setValue(_oldValue[0], ViewSpec::all(), _dimension, eValueChangedReasonUserEdited, 0));
+            ignore_result(knob->setValue(_oldValue[0], _view, _dimension, _reason));
 
         }
 
         knob->setAutoKeyingEnabled(true);
 
+        knob->endChanges();
+
     } // undo
 
     virtual void redo() OVERRIDE FINAL
     {
-        KnobGuiPtr knobUI = _knob.lock();
-        if (!knobUI) {
+        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(_knob.lock());
+        if (!knob) {
             return;
         }
-        boost::shared_ptr<Knob<T> > knob = boost::dynamic_pointer_cast<Knob<T> >(knobUI->getKnob());
-        assert(knob);
 
 
-        assert( (int)_oldValue.size() == knob->getNDimensions() || _dimension != -1 );
+        assert( (int)_oldValue.size() == knob->getNDimensions() || !_dimension.isAll()  );
 
-        if (_dimension == -1 && (int)_newValue.size() > 1) {
+
+        if (_dimension.isAll() && (int)_newValue.size() > 1) {
             // Multiple dimensions set at once
-            knob->setValues(_newValue, ViewSpec::all(), eValueChangedReasonUserEdited, &_valueChangedReturnCode);
+            knob->setValueAcrossDimension(_newValue, _view, _reason, &_valueChangedReturnCode);
         } else {
             // Only one dimension set
-            _valueChangedReturnCode[0] = knob->setValue(_newValue[0], ViewSpec::all(), _dimension, eValueChangedReasonUserEdited, 0);
+            _valueChangedReturnCode[0] = knob->setValue(_newValue[0], _view, _dimension, _reason);
         }
 
 
@@ -184,7 +209,6 @@ private:
             }
         }
 
-        _firstRedoCalled = true;
     } // redo
 
     virtual int id() const OVERRIDE FINAL
@@ -196,12 +220,12 @@ private:
     {
         const KnobUndoCommand *knobCommand = dynamic_cast<const KnobUndoCommand *>(command);
 
-        if ( !knobCommand || ( command->id() != id() ) ) {
+        if (!knobCommand) {
             return false;
         }
 
-        KnobGuiPtr knob = knobCommand->_knob.lock();
-        if ( (_knob.lock() != knob) || !_merge || !knobCommand->_merge || (_dimension != knobCommand->_dimension) ) {
+        KnobIPtr knob = knobCommand->_knob.lock();
+        if ((_knob.lock() != knob) || !_merge || !knobCommand->_merge || (_dimension != knobCommand->_dimension) || (_view != knobCommand->_view)) {
             return false;
         }
 
@@ -213,14 +237,34 @@ private:
 
 private:
 
-    int _dimension;
+    // If all, _oldValue.size() and _newValue.size() is expected to be of the number of
+    // dimensions of the knob
+    DimSpec _dimension;
+
+    // The view to modify
+    ViewSetSpec _view;
+
+    // The reason to call setValue with
+    ValueChangedReasonEnum _reason;
+
+    // The raw values
     std::vector<T> _oldValue;
     std::vector<T> _newValue;
-    KnobGuiWPtr _knob;
+
+    // Ptr to the knob
+    KnobIWPtr _knob;
+
+    // Remember for each dimension the setValue function status code
+    // to check if undo we need to remove keyframes
     std::vector<ValueChangedReturnCodeEnum> _valueChangedReturnCode;
+
+    // If false we prevent this command from merging with new commands on the same knob/dimension/view
     bool _merge;
-    bool _refreshGuiFirstTime;
+
+    // True once redo() has been called once
     bool _firstRedoCalled;
+
+    // The timeline time at which initially we called redo() the first time
     double _timelineTime;
 };
 
@@ -234,42 +278,61 @@ class MultipleKnobEditsUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(MultipleKnobEditsUndoCommand)
 
-private:
+public:
+    
+    typedef std::map<DimensionViewPair, Variant, DimensionViewPairCompare> PerDimViewVariantMap;
+
     struct ValueToSet
     {
         // Since knobs with different types may be grouped here, we need to use variants
-        Variant newValue, oldValue;
-        int dimension;
+        Variant newValue;
+        PerDimViewVariantMap oldValues;
+        DimSpec dimension;
         double time;
-        ViewSpec view;
+        ViewSetSpec view;
         bool setKeyFrame;
         ValueChangedReturnCodeEnum setValueRetCode;
+        ValueChangedReasonEnum reason;
     };
 
+    
     // For each knob, the second member points to a clone of the knob before the first redo() call was made
-    typedef std::map < KnobGuiWPtr, std::list<ValueToSet> >  ParamsMap;
+    typedef std::map <KnobIWPtr, std::list<ValueToSet> >  ParamsMap;
+
+private:
+
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
-    ValueChangedReasonEnum _reason;
 
 public:
 
     /**
-     * @brief Make a new command
-     * @param createNew If true this command will not merge with a previous same command
-     * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
+     * @brief Create or append a setValue action to the undo/Redo command.
+     * This should be called once the setValue call has been done. The first redo()
+     * call won't do anything.
+     *
+     * @param knob The knob on which the setValue call is made
+     * @param commandName The name of the command as displayed in the "Edit" menu
+     * @param reason the reason given to the corresponding setValue call
+     * @param setValueRetCode The return code given by setValue the first time it was called.
+     * @param createNew If true this command will not merge with a previous command and create a new one
+     * @param setKeyFrame If true, the command will use setValueAtTime instead of setValue in the redo() command.
+     * @param value The value set in the corresponding setValue call
+     * @param dimension The dimension argument passed to setValue
+     * @param time If setKeyframe is true, this is the time argument passed to setValueAtTime
+     * @param view The view argument passed to setValue
      **/
-    MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
+    MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                  const QString& commandName,
                                  ValueChangedReasonEnum reason,
                                  ValueChangedReturnCodeEnum setValueRetCode,
                                  bool createNew,
                                  bool setKeyFrame,
                                  const Variant & value,
-                                 int dimension,
+                                 DimSpec dimension,
                                  double time,
-                                 ViewSpec view);
+                                 ViewSetSpec view);
 
     virtual ~MultipleKnobEditsUndoCommand();
 
@@ -279,24 +342,26 @@ public:
     virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
 };
 
-struct PasteUndoCommandPrivate;
-class PasteUndoCommand
+struct PasteKnobClipBoardUndoCommandPrivate;
+class PasteKnobClipBoardUndoCommand
     : public QUndoCommand
 {
-    Q_DECLARE_TR_FUNCTIONS(PasteUndoCommand)
+    Q_DECLARE_TR_FUNCTIONS(PasteKnobClipBoardUndoCommand)
 
 private:
-    boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
+    boost::scoped_ptr<PasteKnobClipBoardUndoCommandPrivate> _imp;
 
 public:
 
-    PasteUndoCommand(const KnobGuiPtr& knob,
+    PasteKnobClipBoardUndoCommand(const KnobIPtr& knob,
                      KnobClipBoardType type,
-                     int fromDimension,
-                     int targetDimension,
+                     DimSpec fromDimension,
+                     DimSpec targetDimension,
+                     ViewIdx fromView,
+                     ViewSetSpec targetView,
                      const KnobIPtr& fromKnob);
 
-    virtual ~PasteUndoCommand();
+    virtual ~PasteKnobClipBoardUndoCommand();
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -314,7 +379,8 @@ public:
 
     RestoreDefaultsCommand(bool isNodeReset,
                            const std::list<KnobIPtr > & knobs,
-                           int targetDim,
+                           DimSpec targetDim,
+                           ViewSetSpec targetView,
                            QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -322,7 +388,8 @@ public:
 private:
 
     bool _isNodeReset;
-    int _targetDim;
+    DimSpec _targetDim;
+    ViewSetSpec _targetView;
     std::list<KnobIWPtr> _knobs;
     SERIALIZATION_NAMESPACE::KnobSerializationList _serializations;
 };
@@ -336,20 +403,30 @@ public:
 
     SetExpressionCommand(const KnobIPtr & knob,
                          bool hasRetVar,
-                         int dimension,
+                         DimSpec dimension,
+                         ViewSetSpec view,
                          const std::string& expr,
                          QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
+    struct Expr
+    {
+        std::string expression;
+        bool hasRetVar;
+    };
+
+    typedef std::map<DimensionViewPair, Expr, DimensionViewPairCompare> PerDimViewExprMap;
+
 private:
 
+
     KnobIWPtr _knob;
-    std::vector<std::string> _oldExprs;
-    std::vector<bool> _hadRetVar;
+    PerDimViewExprMap _oldExprs;
     std::string _newExpr;
     bool _hasRetVar;
-    int _dimension;
+    DimSpec _dimension;
+    ViewSetSpec _view;
 };
 
 NATRON_NAMESPACE_EXIT;

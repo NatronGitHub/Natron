@@ -77,6 +77,8 @@ static bool getViewSpecFromViewNameInternal(const ItemBase* item, bool allowAll,
     bool foundView = false;
     ViewIdx foundViewIdx;
     std::string stdViewName = viewName.toStdString();
+    foundView = Project::getViewIndex(projectViews, stdViewName, &foundViewIdx);
+
     for (std::vector<std::string>::const_iterator it2 = projectViews.begin(); it2 != projectViews.end(); ++it2, ++i) {
         if (boost::iequals(*it2, stdViewName)) {
 

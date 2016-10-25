@@ -183,7 +183,6 @@ public:
     KnobCurveGui(CurveWidget *curveWidget,
                  CurvePtr  curve,
                  const KnobIPtr& knob,
-                 const RotoContextPtr& roto,
                  int dimension,
                  const QString & name,
                  const QColor & color,
@@ -199,7 +198,6 @@ public:
     }
 
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    RotoContextPtr getRotoContext() const { return _roto; }
 
     KnobIPtr getInternalKnob() const;
 
@@ -218,7 +216,6 @@ public Q_SLOTS:
 
 private:
 
-    RotoContextPtr _roto;
     KnobIPtr _internalKnob;
     KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
@@ -231,14 +228,12 @@ public:
 
     BezierCPCurveGui(CurveWidget *curveWidget,
                      const BezierPtr& bezier,
-                     const RotoContextPtr& roto,
                      const QString & name,
                      const QColor & color,
                      int thickness = 1);
 
     virtual ~BezierCPCurveGui();
 
-    RotoContextPtr getRotoContext() const { return _rotoContext; }
 
     BezierPtr getBezier() const;
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -259,7 +254,6 @@ private:
 
 
     BezierPtr _bezier;
-    RotoContextPtr _rotoContext;
 };
 
 NATRON_NAMESPACE_EXIT;

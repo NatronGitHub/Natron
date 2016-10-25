@@ -1041,6 +1041,10 @@ public:
 
     bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
 
+    KnobBoolPtr getLifeTimeEnabledKnob() const;
+
+    KnobIntPtr getLifeTimeKnob() const;
+
     std::string getNodeExtraLabel() const;
 
 private:

@@ -36,6 +36,7 @@
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
@@ -102,7 +103,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->splitter->addWidget(_imp->treeView);
     _imp->splitter->setStretchFactor(0, 1);
 
-    _imp->dopeSheetView = new DopeSheetView(_imp->model, _imp->treeView, gui, timeline, _imp->splitter);
+    _imp->dopeSheetView = new DopeSheetView(_imp->model.get(), _imp->treeView, gui, timeline, _imp->splitter);
 
     _imp->splitter->addWidget(_imp->dopeSheetView);
     _imp->splitter->setStretchFactor(1, 5);

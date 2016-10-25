@@ -47,29 +47,37 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
 /**
- * @struct For a given animation item, uniquely identifies the given view and dimension.
- * If view is all, then it identifies the row which represents all views.
- * If dim is all, then it identifies the row which represents all dimensions.
+ * @brief  uniquely identifies a valid curve for an animation item
  **/
-struct AnimItemDimViewID
+struct AnimItemDimViewIndexID
 {
     AnimItemBasePtr item;
-    ViewSetSpec view;
-    DimSpec dim;
+    ViewIdx view;
+    DimIdx dim;
 
-    AnimItemDimViewID(const AnimItemBasePtr& item, ViewSetSpec view, DimSpec dim)
+    AnimItemDimViewIndexID()
+    : item()
+    , view()
+    , dim()
+    {
+
+    }
+
+    AnimItemDimViewIndexID(const AnimItemBasePtr& item, ViewIdx view, DimIdx dim)
     : item(item)
     , view(view)
     , dim(dim)
     {
 
     }
+
 };
 
-struct AnimItemDimViewID_CompareLess
+struct AnimItemDimViewIndexID_CompareLess
 {
-    bool operator()(const AnimItemDimViewID& lhs, const AnimItemDimViewID& rhs) const
+    bool operator()(const AnimItemDimViewIndexID& lhs, const AnimItemDimViewIndexID& rhs) const
     {
 
         if (lhs.view < rhs.view) {
@@ -106,7 +114,7 @@ struct KeyFrameWithString_CompareLess
 
 typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;
 
-typedef std::map<AnimItemDimViewID, KeyFrameWithStringSet, AnimItemDimViewID_CompareLess> AnimItemDimViewKeyFramesMap;
+typedef std::map<AnimItemDimViewIndexID, KeyFrameWithStringSet, AnimItemDimViewIndexID_CompareLess> AnimItemDimViewKeyFramesMap;
 
 class AnimItemBasePrivate;
 class AnimItemBase : public boost::enable_shared_from_this<AnimItemBase>

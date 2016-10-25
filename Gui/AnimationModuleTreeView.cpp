@@ -26,7 +26,6 @@
 
 #include <stdexcept>
 
-#include <QtCore/QDebug> //REMOVEME
 #include <QHeaderView>
 #include <QPainter>
 #include <QResizeEvent>
@@ -605,17 +604,6 @@ AnimationModuleTreeView::setCanResizeOtherWidget(bool canResize)
     _imp->_canResizeOtherWidget = canResize;
 }
 
-void
-AnimationModuleTreeView::getSelectedKnobAnims(std::list<KnobAnimPtr >* knobs) const
-{
-    QList<QTreeWidgetItem*> items = selectedItems();
-    for (QList<QTreeWidgetItem*>::iterator it = items.begin(); it != items.end(); ++it) {
-        KnobAnimPtr k = _imp->model->mapNameItemToKnobAnim(*it);
-        if (k) {
-            knobs->push_back(k);
-        }
-    }
-}
 
 void
 AnimationModuleTreeView::resizeEvent(QResizeEvent* e)
@@ -1007,9 +995,6 @@ AnimationModuleTreeView::onNodeAboutToBeRemoved(const NodeAnimPtr& node)
 
 
 
-// For each unique item/dim/view key, the number of selected keyframes
-typedef std::map<AnimItemDimViewID, int, AnimItemDimViewID_CompareLess> AnimItemDimViewMap;
-
 void
 AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
 {
@@ -1023,7 +1008,6 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     // Automatically select items in the tree according to the selection made by the user
 
     // Retrieve the knob anim with selected keyframes
-    AnimItemDimViewMap uniqueRows;
 
     AnimItemDimViewKeyFramesMap selectedKeys;
     std::vector<NodeAnimPtr > selectedNodes;
@@ -1034,57 +1018,52 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
 
     // Prevent recursion
     disconnect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(onTreeSelectionModelSelectionChanged()) );
+               this, SLOT(onTreeSelectionModelSelectionChanged()) );
 
-    // Compose tree selection from the selected keyframes
-    if ( uniqueRows.empty() && selectedNodes.empty() ) {
-        // Clear selection if empty
-        mySelecModel->selectWithRecursion(QItemSelection(), QItemSelectionModel::Clear, recurse);
-    } else {
 
-        // For each knob/dim/view, if all keyframes are selected, add the item to the selection
-        std::set<QModelIndex> toSelect;
-        for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-            bool selectItem = true;
+    // For each knob/dim/view, if all keyframes are selected, add the item to the selection
+    std::set<QModelIndex> toSelect;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
+        bool selectItem = true;
 
-            KeyFrameWithStringSet allKeys;
-            it->first.item->getKeyframes(it->first.dim, it->first.view, &allKeys);
+        KeyFrameWithStringSet allKeys;
+        it->first.item->getKeyframes(it->first.dim, it->first.view, &allKeys);
 
-            if (allKeys.size() != it->second.size()) {
-                selectItem = false;
-            }
-
-            QTreeWidgetItem *knobItem = it->first.item->getRootItem();
-
-            if (selectItem) {
-                toSelect.insert( indexFromItem(knobItem) );
-            }
+        if (allKeys.size() != it->second.size()) {
+            selectItem = false;
         }
 
-        for (std::vector<NodeAnimPtr >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-            toSelect.insert( indexFromItem( (*it)->getTreeItem() ) );
+        QTreeWidgetItem *knobItem = it->first.item->getRootItem();
+
+        if (selectItem) {
+            toSelect.insert( indexFromItem(knobItem) );
         }
-
-        for (std::vector<TableItemAnimPtr>::iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
-            toSelect.insert( indexFromItem( (*it)->getRootItem() ) );
-        }
-
-        QItemSelection selection;
-
-        for (std::set<QModelIndex>::const_iterator indexIt = toSelect.begin();
-             indexIt != toSelect.end();
-             ++indexIt) {
-            QModelIndex index = (*indexIt);
-
-            selection.select(index, index);
-        }
-
-        QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
-        mySelecModel->selectWithRecursion(selection, flags, recurse);
     }
 
+    for (std::vector<NodeAnimPtr >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        toSelect.insert( indexFromItem( (*it)->getTreeItem() ) );
+    }
+
+    for (std::vector<TableItemAnimPtr>::iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
+        toSelect.insert( indexFromItem( (*it)->getRootItem() ) );
+    }
+
+    QItemSelection selection;
+
+    for (std::set<QModelIndex>::const_iterator indexIt = toSelect.begin();
+         indexIt != toSelect.end();
+         ++indexIt) {
+        QModelIndex index = (*indexIt);
+
+        selection.select(index, index);
+    }
+
+    QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
+    mySelecModel->selectWithRecursion(selection, flags, recurse);
+
+
     connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-             this, SLOT(onTreeSelectionModelSelectionChanged()) );
+            this, SLOT(onTreeSelectionModelSelectionChanged()) );
 } // AnimationModuleTreeView::onKeyframeSelectionChanged
 
 void
@@ -1150,6 +1129,8 @@ AnimationModuleTreeView::onTreeSelectionModelSelectionChanged()
 {
     getModel()->getSelectionModel().selectItems(selectedItems());
 }
+
+
 
 NATRON_NAMESPACE_EXIT;
 

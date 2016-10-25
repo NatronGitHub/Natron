@@ -36,7 +36,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#include "Gui/CurveEditorUndoRedo.h" // MoveTangentCommand
+#include "Gui/AnimationModuleEditorUndoRedo.h" // MoveTangentCommand
 #include "Gui/CurveGui.h"
 #include "Gui/Menu.h"
 #include "Gui/TextRenderer.h"

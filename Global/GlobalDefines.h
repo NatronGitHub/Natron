@@ -142,7 +142,6 @@ typedef OfxRangeD RangeD;
 #define kAnimationModuleEditorMoveKeysCommandCompressionID 18
 #define kAnimationModuleEditorLeftTrimCommandCompressionID 19
 #define kAnimationModuleEditorRightTrimCommandCompressionID 20
-#define kAnimationModuleEditorTransformKeysCommandCompressionID 21
 #define kAnimationModuleEditorSlipReaderCommandCompressionID 23
 #define kNodeUndoChangeCommandCompressionID 24
 

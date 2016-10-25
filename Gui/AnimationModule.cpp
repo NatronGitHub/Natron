@@ -43,7 +43,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
-#include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
@@ -57,11 +57,12 @@
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"
-#include "Gui/AnimationModuleEditorUndoRedo.h"
+#include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobItemsTableGui.h"
+#include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Menu.h"
@@ -117,7 +118,7 @@ public:
     std::list<NodeAnimPtr> nodes;
     boost::scoped_ptr<AnimationModuleSelectionModel> selectionModel;
     boost::scoped_ptr<QUndoStack> undoStack;
-    KeyFrameSet keyframesClipboard;
+    AnimItemDimViewKeyFramesMap keyframesClipboard;
     TimeLineWPtr timeline;
     AnimationModuleEditor* editor;
 };
@@ -614,69 +615,86 @@ AnimationModule::deleteSelectedKeyframes()
     
     _imp->selectionModel->clearSelection();
     
-    
 
-    _imp->pushUndoCommand( new DSRemoveKeysCommand(toRemove, _imp->editor) );
+
+    _imp->pushUndoCommand(new AddOrRemoveKeysCommand(selectedKeyframes, false /*add*/, 0 /*parent*/));
 }
 
 
 
 
 void
-AnimationModule::moveSelectedKeysAndNodes(double dt)
+AnimationModule::moveSelectedKeysAndNodes(double dt, double dv)
 {
-#pragma message WARN("Use same undo command for the curve editor and dopesheet")
-    /*AnimKeyFramePtrList selectedKeyframes;
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> tableItems;
+    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
 
-    _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
-
-    ///Constraint dt according to keyframe positions
+    // Constraint dt according to keyframe positions
     double maxLeft = INT_MIN;
     double maxRight = INT_MAX;
-    std::vector<AnimKeyFramePtr> vect;
-    for (AnimKeyFramePtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        KnobAnimPtr knobDs = (*it)->getContext();
-        if (!knobDs) {
+
+
+
+    for (AnimItemDimViewKeyFramesMap::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        AnimItemBasePtr item = it->first.item;
+        if (!item) {
             continue;
         }
-        CurvePtr curve = knobDs->getKnobGui()->getCurve( ViewIdx(0), knobDs->getDimensionSpec() );
-        assert(curve);
+        CurvePtr curve = item->getCurve(it->first.dim, it->first.view);
+        if (!curve) {
+            continue;
+        }
+
+        double epsilon = curve->areKeyFramesTimeClampedToIntegers() ? 1 : 1e-4;
+
+
         KeyFrame prevKey, nextKey;
-        if ( curve->getNextKeyframeTime( (*it)->key.getTime(), &nextKey ) ) {
-            if ( !_imp->selectionModel->keyframeIsSelected(knobDs, nextKey) ) {
-                double diff = nextKey.getTime() - (*it)->key.getTime() - 1;
-                maxRight = std::max( 0., std::min(diff, maxRight) );
+        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
+            // Adjust maxRight so that it can move up to the next keyframe
+            if ( curve->getNextKeyframeTime( it2->key.getTime(), &nextKey ) ) {
+
+
+                // If this keyframe has a next keyframe, check if it is selected
+                KeyFrameWithString k;
+                k.key = nextKey;
+                KeyFrameWithStringSet::const_iterator foundKey = it->second.find(k);
+                if (foundKey == it->second.end()) {
+                    // The next keyframe is not selected
+                    double diff = nextKey.getTime() - it2->key.getTime() - epsilon;
+                    maxRight = std::max( 0., std::min(diff, maxRight) );
+                }
+
             }
-        }
-        if ( curve->getPreviousKeyframeTime( (*it)->key.getTime(), &prevKey ) ) {
-            if ( !_imp->selectionModel->keyframeIsSelected(knobDs, prevKey) ) {
-                double diff = prevKey.getTime()  - (*it)->key.getTime() + 1;
-                maxLeft = std::min( 0., std::max(diff, maxLeft) );
+
+            // Adjust maxLeft so that it can move up to the previous keyframe
+            if ( curve->getPreviousKeyframeTime( it2->key.getTime(), &prevKey ) ) {
+
+                // If this keyframe has a next keyframe, check if it is selected
+                KeyFrameWithString k;
+                k.key = prevKey;
+                KeyFrameWithStringSet::const_iterator foundKey = it->second.find(k);
+                if (foundKey == it->second.end()) {
+                    // The next keyframe is not selected
+                    double diff = prevKey.getTime() - it2->key.getTime() + epsilon;
+                    maxLeft = std::min( 0., std::max(diff, maxLeft) );
+                }
             }
-        }
-        vect.push_back(*it);
-    }
+
+        } // for all keyframes
+    } // for all item/dim/view
+
+    // Do the clamp
     dt = std::min(dt, maxRight);
     dt = std::max(dt, maxLeft);
-    if (dt == 0) {
+    if (dt == 0 && dv == 0) {
         return;
     }
 
-    //Keyframes must be sorted in order according to the user movement otherwise if keyframes are next to each other we might override
-    //another keyframe.
-    //Can only call sort on random iterators
-    if (dt < 0) {
-        std::sort( vect.begin(), vect.end(), SortIncreasingFunctor() );
-    } else {
-        std::sort( vect.begin(), vect.end(), SortDecreasingFunctor() );
-    }
-    selectedKeyframes.clear();
-    for (std::vector<AnimKeyFramePtr>::iterator it = vect.begin(); it != vect.end(); ++it) {
-        selectedKeyframes.push_back(*it);
-    }
-
-    _imp->pushUndoCommand( new DSMoveKeysAndNodesCommand(selectedKeyframes, selectedNodes, dt, _imp->editor) );*/
+    _imp->pushUndoCommand(new WarpKeysCommand(selectedKeyframes, selectedNodes, tableItems, dt, dv));
+    
 } // AnimationModule::moveSelectedKeysAndNodes
 
 void
@@ -685,11 +703,10 @@ AnimationModule::trimReaderLeft(const NodeAnimPtr &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
-    assert(firstFrameKnob);
-    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntPtr firstFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameLastFrame));
     assert(lastFrameKnob);
-    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntPtr originalFrameRangeKnob = toKnobInt( node->getKnobByName(kReaderParamNameOriginalFrameRange));
     assert(originalFrameRangeKnob);
 
 
@@ -703,7 +720,7 @@ AnimationModule::trimReaderLeft(const NodeAnimPtr &reader,
         return;
     }
 
-    _imp->pushUndoCommand( new DSLeftTrimReaderCommand(reader, firstFrame, newFirstFrame) );
+    _imp->pushUndoCommand( new KnobUndoCommand<int>(firstFrameKnob, firstFrame, (int)newFirstFrame, DimIdx(0), ViewSetSpec(0), eValueChangedReasonUserEdited, tr("Trim Left")));
 }
 
 void
@@ -712,11 +729,10 @@ AnimationModule::trimReaderRight(const NodeAnimPtr &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
-    assert(firstFrameKnob);
-    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntPtr firstFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameLastFrame));
     assert(lastFrameKnob);
-    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntPtr originalFrameRangeKnob = toKnobInt( node->getKnobByName(kReaderParamNameOriginalFrameRange));
     assert(originalFrameRangeKnob);
 
     int firstFrame = firstFrameKnob->getValue();
@@ -729,7 +745,7 @@ AnimationModule::trimReaderRight(const NodeAnimPtr &reader,
         return;
     }
 
-    _imp->pushUndoCommand( new DSRightTrimReaderCommand(reader, lastFrame, newLastFrame, _imp->editor) );
+    _imp->pushUndoCommand( new KnobUndoCommand<int>(lastFrameKnob, lastFrame, (int)newLastFrame, DimIdx(0), ViewSetSpec(0), eValueChangedReasonUserEdited, tr("Trim Right")));
 }
 
 bool
@@ -737,12 +753,12 @@ AnimationModule::canSlipReader(const NodeAnimPtr &reader) const
 {
     NodePtr node = reader->getInternalNode();
 
-    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
-    assert(firstFrameKnob);
-    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntPtr firstFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameLastFrame));
     assert(lastFrameKnob);
-    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntPtr originalFrameRangeKnob = toKnobInt( node->getKnobByName(kReaderParamNameOriginalFrameRange));
     assert(originalFrameRangeKnob);
+
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
     ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
@@ -765,12 +781,14 @@ AnimationModule::slipReader(const NodeAnimPtr &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
-    assert(firstFrameKnob);
-    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntPtr firstFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameLastFrame));
     assert(lastFrameKnob);
-    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntPtr originalFrameRangeKnob = toKnobInt( node->getKnobByName(kReaderParamNameOriginalFrameRange));
     assert(originalFrameRangeKnob);
+    KnobIntPtr timeOffsetKnob = toKnobInt( node->getKnobByName(kReaderParamNameTimeOffset));
+    assert(timeOffsetKnob);
+
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
     ///dt is clamped (firstFrame-originalFirstFrame) and (originalLastFrame-lastFrame)
@@ -784,7 +802,12 @@ AnimationModule::slipReader(const NodeAnimPtr &reader,
     dt = std::max( dt, (double)(currentLastFrame - originalLastFrame) );
 
     if (dt != 0) {
-        _imp->pushUndoCommand( new DSSlipReaderCommand(reader, dt, _imp->editor) );
+        EffectInstancePtr effect = node->getEffectInstance();
+        effect->beginMultipleEdits(tr("Slip Reader").toStdString());
+        firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, ViewSetSpec(0), DimIdx(0), eValueChangedReasonUserEdited);
+        lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, ViewSetSpec(0), DimIdx(0), eValueChangedReasonUserEdited);
+        timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSetSpec(0), DimIdx(0), eValueChangedReasonUserEdited);
+        effect->endMultipleEdits();
     }
 }
 
@@ -795,22 +818,19 @@ AnimationModule::copySelectedKeys()
         return;
     }
 
-    _imp->keyframesClipboard.clear();
-
     AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
 
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        _imp->keyframesClipboard.push_back(*selectedKey);
-    }
+    _imp->keyframesClipboard = selectedKeyframes;
+
 }
 
 void
 AnimationModule::renameSelectedNode()
 {
-    AnimKeyFramePtrList keys;
+    AnimItemDimViewKeyFramesMap keys;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
 
@@ -853,20 +873,12 @@ AnimationModule::onNodeNameEditDialogFinished()
 void
 AnimationModule::pasteKeys(bool relative)
 {
-    std::vector<AnimKeyFrame> toPaste;
-
-    for (std::vector<AnimKeyFrame>::const_iterator it = _imp->keyframesClipboard.begin(); it != _imp->keyframesClipboard.end(); ++it) {
-        AnimKeyFrame key = (*it);
-
-        toPaste.push_back(key);
-    }
-
-    pasteKeys(toPaste, relative);
+    pasteKeys(_imp->keyframesClipboard, relative);
   
 }
 
 void
-AnimationModule::pasteKeys(const std::vector<AnimKeyFrame>& keys, bool relative)
+AnimationModule::pasteKeys(const AnimItemDimViewKeyFramesMap& keys, bool relative)
 {
     if ( !keys.empty() ) {
         std::list<KnobAnimPtr > dstKnobs;
