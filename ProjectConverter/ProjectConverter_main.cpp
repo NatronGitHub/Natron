@@ -16,18 +16,24 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #ifndef NATRON_BOOST_SERIALIZATION_COMPAT
 #error "NATRON_BOOST_SERIALIZATION_COMPAT should be defined when compiling ProjectConverter to allow with projects older than Natron 2.2"
 #endif
 
 #include <string>
-#include <QString>
-#include <QStringList>
-#include <QCoreApplication>
-#include <QDir>
-#include <QFile>
 
-#include <QDateTime>
+#include <QtCore/QString>
+#include <QtCore/QStringList>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QDateTime>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
