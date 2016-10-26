@@ -1536,9 +1536,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
     bool renderAborted;
 
-    if (!hasSomethingToRender && !planesToRender->isBeingRenderedElsewhere) {
-        renderAborted = aborted();
-    } else {
+    renderAborted = aborted();
+    if (!renderAborted && (hasSomethingToRender || planesToRender->isBeingRenderedElsewhere) ) {
 #if NATRON_ENABLE_TRIMAP
         ///Only use trimap system if the render cannot be aborted.
         if ( frameArgs->isCurrentFrameRenderNotAbortable() ) {
