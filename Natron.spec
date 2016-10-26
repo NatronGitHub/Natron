@@ -1,6 +1,13 @@
 Summary: Open source compositing software
 Name: Natron
-Version: 2.1.7
+# The two actively maintained versions (that are merged into master)
+Version21: 2.1.7
+Version22: 2.2.0
+
+# The version for this branch of the sources
+Version: %{version21}
+
+# The release number (must be incremented whenever changes to this file generate different binaries)
 Release: 1%{?dist}
 License: GPLv2
 

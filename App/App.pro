@@ -17,7 +17,14 @@
 # ***** END LICENSE BLOCK *****
 
 TARGET = Natron
-VERSION = 2.1.7
+
+# the list of currently maintained versions (those that have to be merged into the master branch)
+VERSION_21 = 2.1.7
+VERSION_22 = 2.2.0
+
+# The version for this branch
+VERSION = $$VERSION_21
+
 TEMPLATE = app
 win32 {
 	CONFIG += console
