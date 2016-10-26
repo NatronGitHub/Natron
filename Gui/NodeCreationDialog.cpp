@@ -203,7 +203,12 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
     Q_EMIT itemCompletionChosen();
     _imp->listView->hide();
     if (_imp->quickExitEnabled) {
-        _imp->dialog->accept();
+        NodeCreationDialog* isNodeDialog = dynamic_cast<NodeCreationDialog*>(_imp->dialog);
+        if (isNodeDialog) {
+            isNodeDialog->finish(true);
+        } else {
+            _imp->dialog->accept();
+        }
     }
 }
 
@@ -219,7 +224,12 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
 
     if (key == Qt::Key_Escape) {
         if (_imp->quickExitEnabled) {
-            _imp->dialog->reject();
+            NodeCreationDialog* isNodeDialog = dynamic_cast<NodeCreationDialog*>(_imp->dialog);
+            if (isNodeDialog) {
+                isNodeDialog->finish(false);
+            } else {
+                _imp->dialog->reject();
+            }
         } else {
             if ( _imp->listView->isVisible() ) {
                 _imp->listView->hide();
@@ -258,7 +268,12 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             setText( _imp->model->index(0).data().toString() );
             Q_EMIT itemCompletionChosen();
             if (_imp->quickExitEnabled) {
-                _imp->dialog->accept();
+                NodeCreationDialog* isNodeDialog = dynamic_cast<NodeCreationDialog*>(_imp->dialog);
+                if (isNodeDialog) {
+                    isNodeDialog->finish(true);
+                } else {
+                    _imp->dialog->accept();
+                }
             }
             e->accept();
         } else {
@@ -277,7 +292,12 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             if (doDialogEnd) {
                 Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
-                    _imp->dialog->accept();
+                    NodeCreationDialog* isNodeDialog = dynamic_cast<NodeCreationDialog*>(_imp->dialog);
+                    if (isNodeDialog) {
+                        isNodeDialog->finish(true);
+                    } else {
+                        _imp->dialog->accept();
+                    }
                 }
                 e->accept();
             } else {
@@ -475,9 +495,9 @@ void
 NodeCreationDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        accept();
+        finish(true);
     } else if (e->key() == Qt::Key_Escape) {
-        reject();
+        finish(false);
     } else {
         QDialog::keyPressEvent(e);
     }
@@ -488,12 +508,18 @@ NodeCreationDialog::changeEvent(QEvent* e)
 {
     if (e->type() == QEvent::ActivationChange) {
         if ( !isActiveWindow() && ( qApp->activeWindow() != _imp->textEdit->getView() ) ) {
-            reject();
+            finish(false);
 
             return;
         }
     }
     QDialog::changeEvent(e);
+}
+
+void
+NodeCreationDialog::finish(bool accepted)
+{
+    Q_EMIT dialogFinished(accepted);
 }
 
 NATRON_NAMESPACE_EXIT;

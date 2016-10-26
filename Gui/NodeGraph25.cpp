@@ -174,8 +174,7 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(accepted()), this, SLOT(onNodeCreationDialogFinished()) );
-            QObject::connect( nodeCreation, SIGNAL(rejected()), this, SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onNodeCreationDialogFinished(bool)) );
             nodeCreation->show();
 
             takeClickFocus();
@@ -189,19 +188,15 @@ NodeGraph::event(QEvent* e)
 }
 
 void
-NodeGraph::onNodeCreationDialogFinished()
+NodeGraph::onNodeCreationDialogFinished(bool accepted)
 {
     NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>( sender() );
 
     if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
         int major;
         QString res = dialog->getNodeName(&major);
 
-        delete dialog;
-
-        switch (ret) {
-        case QDialog::Accepted: {
+        if (accepted) {
             _imp->_lastNodeCreatedName = res;
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
@@ -213,12 +208,10 @@ NodeGraph::onNodeCreationDialogFinished()
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
                 getGui()->getApp()->createNode(args);
             }
-            break;
         }
-        case QDialog::Rejected:
-        default:
-            break;
-        }
+
+        dialog->deleteLater();
+
     }
 }
 
