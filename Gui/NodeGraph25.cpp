@@ -198,7 +198,7 @@ NodeGraph::onNodeCreationDialogFinished()
         int major;
         QString res = dialog->getNodeName(&major);
 
-        dialog->deleteLater();
+        delete dialog;
 
         switch (ret) {
         case QDialog::Accepted: {
