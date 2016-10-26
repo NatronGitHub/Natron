@@ -84,10 +84,12 @@ public:
      **/
     bool isEmpty() const;
 
-    /**
-     * @brief Get current selection
-     **/
-    void getCurrentSelection(AnimItemDimViewKeyFramesMap* keys, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
+    
+    const AnimItemDimViewKeyFramesMap& getCurrentKeyFramesSelection() const;
+    
+    const std::list<NodeAnimPtr >& getCurrentNodesSelection() const;
+    
+    const std::list<TableItemAnimPtr>& getCurrentTableItemsSelection() const;
 
     /**
      * @brief Returns true if all selected keyframes have the given time
@@ -132,9 +134,9 @@ Q_SIGNALS:
 
 private:
 
-    std::list<NodeAnimWPtr>::iterator isNodeSelected(const NodeAnimPtr& node);
+    std::list<NodeAnimPtr>::iterator isNodeSelected(const NodeAnimPtr& node);
 
-    std::list<TableItemAnimWPtr>::iterator isTableItemSelected(const TableItemAnimPtr& node);
+    std::list<TableItemAnimPtr>::iterator isTableItemSelected(const TableItemAnimPtr& node);
     
     boost::scoped_ptr<AnimationModuleSelectionModelPrivate> _imp;
 };

@@ -79,9 +79,6 @@ CurveWidget::CurveWidget(Gui* gui,
         QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(update()) );
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
 
-        double left, right;
-        project->getFrameRange(&left, &right);
-        onTimeLineBoundariesChanged(left, right);
     }
 
     if ( parent->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
@@ -97,9 +94,7 @@ CurveWidget::CurveWidget(Gui* gui,
 
 CurveWidget::~CurveWidget()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    makeCurrent();
+ 
 }
 
 void
@@ -2118,7 +2113,105 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
 
     //insert it into the _selectedKeyFrames
     _imp->insertSelectedKeyFrameConditionnaly(selected);
-}
+} // addKey
+
+void
+CurveWidget::getKeyTangentPoints(KeyFrameSet::const_iterator it,
+                                 const KeyFrameSet& keys,
+                                 QPointF* leftTanPos,
+                                 QPointF* rightTanPos)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    double w = (double)_imp->_widget->width();
+    double h = (double)_imp->_widget->height();
+    double x = key->key.getTime();
+    double y = key->key.getValue();
+    QPointF keyWidgetCoord = _imp->zoomCtx.toWidgetCoordinates(x, y);
+    double leftTanX, leftTanY;
+    {
+        double prevTime = x - 1.;
+        bool hasPrevious = false;
+        if (it != keys.begin()) {
+            KeyFrameSet::const_iterator prev = it;
+            --prev;
+            prevTime = prev->getTime();
+            hasPrevious = true;
+        }
+        
+        // (!key->hasPrevious) ? (x - 1.) : key->prevKey.getTime();
+        double leftTan = key->key.getLeftDerivative();
+        double leftTanXWidgetDiffMax = w / 8.;
+        if (hasPrevious) {
+            double prevKeyXWidgetCoord = _imp->zoomCtx.toWidgetCoordinates(prevTime, 0).x();
+            //set the left derivative X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
+            leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax, (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
+        }
+        //clamp the left derivative Y to 1/8 of the widget height.
+        double leftTanYWidgetDiffMax = std::min( h / 8., leftTanXWidgetDiffMax);
+        assert(leftTanXWidgetDiffMax >= 0.); // both bounds should be positive
+        assert(leftTanYWidgetDiffMax >= 0.);
+        
+        QPointF tanMax = _imp->zoomCtx.toZoomCoordinates(keyWidgetCoord.x() + leftTanXWidgetDiffMax, keyWidgetCoord.y() - leftTanYWidgetDiffMax) - QPointF(x, y);
+        assert(tanMax.x() >= 0.); // both should be positive
+        assert(tanMax.y() >= 0.);
+        
+        if ( tanMax.x() * std::abs(leftTan) < tanMax.y() ) {
+            leftTanX = x - tanMax.x();
+            leftTanY = y - tanMax.x() * leftTan;
+        } else {
+            leftTanX = x - tanMax.y() / std::abs(leftTan);
+            leftTanY = y - tanMax.y() * (leftTan > 0 ? 1 : -1);
+        }
+        assert(std::abs(leftTanX - x) <= tanMax.x() * 1.001); // check that they are effectively clamped (taking into account rounding errors)
+        assert(std::abs(leftTanY - y) <= tanMax.y() * 1.001);
+    }
+    double rightTanX, rightTanY;
+    {
+        double nextTime = x + 1.;
+        bool hasNext = false;
+        {
+            KeyFrameSet::const_iterator next = it;
+            ++next;
+            if (next != keys.end()) {
+                nextTime = next->getTime();
+                hasNext = true;
+            }
+            prevTime = prev->getTime();
+        }
+        double rightTan = key->key.getRightDerivative();
+        double rightTanXWidgetDiffMax = w / 8.;
+        if (hasNext) {
+            double nextKeyXWidgetCoord = _imp->zoomCtx.toWidgetCoordinates(nextTime, 0).x();
+            //set the right derivative X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
+            rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax, ( nextKeyXWidgetCoord - keyWidgetCoord.x() ) / 3.);
+        }
+        //clamp the right derivative Y to 1/8 of the widget height.
+        double rightTanYWidgetDiffMax = std::min( h / 8., rightTanXWidgetDiffMax);
+        assert(rightTanXWidgetDiffMax >= 0.); // both bounds should be positive
+        assert(rightTanYWidgetDiffMax >= 0.);
+        
+        QPointF tanMax = _imp->zoomCtx.toZoomCoordinates(keyWidgetCoord.x() + rightTanXWidgetDiffMax, keyWidgetCoord.y() - rightTanYWidgetDiffMax) - QPointF(x, y);
+        assert(tanMax.x() >= 0.); // both bounds should be positive
+        assert(tanMax.y() >= 0.);
+        
+        if ( tanMax.x() * std::abs(rightTan) < tanMax.y() ) {
+            rightTanX = x + tanMax.x();
+            rightTanY = y + tanMax.x() * rightTan;
+        } else {
+            rightTanX = x + tanMax.y() / std::abs(rightTan);
+            rightTanY = y + tanMax.y() * (rightTan > 0 ? 1 : -1);
+        }
+        assert(std::abs(rightTanX - x) <= tanMax.x() * 1.001); // check that they are effectively clamped (taking into account rounding errors)
+        assert(std::abs(rightTanY - y) <= tanMax.y() * 1.001);
+    }
+    leftTanPos->rx() = leftTanX;
+    leftTanPos->ry() = leftTanY;
+    rightTanPos->rx() = rightTanX;
+    rightTanPos->ry() = rightTanY;
+} // getKeyTangentPoints
+
 
 NATRON_NAMESPACE_EXIT;
 

@@ -48,8 +48,8 @@ public:
     /* attributes */
     AnimationModuleSelectionProviderWPtr model;
     AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::list<TableItemAnimWPtr> selectedTableItems;
-    std::list<NodeAnimWPtr> selectedNodes;
+    std::list<TableItemAnimPtr> selectedTableItems;
+    std::list<NodeAnimPtr> selectedNodes;
 };
 
 AnimationModuleSelectionModel::AnimationModuleSelectionModel(const AnimationModuleSelectionProviderPtr& model)
@@ -269,7 +269,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
     }
 
     for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        std::list<NodeAnimWPtr>::iterator found = isNodeSelected(*it);
+        std::list<NodeAnimPtr>::iterator found = isNodeSelected(*it);
         if ( found == _imp->selectedNodes.end() ) {
             _imp->selectedNodes.push_back(*it);
             hasChanged = true;
@@ -280,7 +280,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
     }
 
     for (std::vector<TableItemAnimPtr >::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
-        std::list<TableItemAnimWPtr>::iterator found = isTableItemSelected(*it);
+        std::list<TableItemAnimPtr>::iterator found = isTableItemSelected(*it);
         if ( found == _imp->selectedTableItems.end() ) {
             _imp->selectedTableItems.push_back(*it);
             hasChanged = true;
@@ -301,24 +301,24 @@ AnimationModuleSelectionModel::isEmpty() const
     return _imp->selectedKeyframes.empty() && _imp->selectedNodes.empty();
 }
 
-void
-AnimationModuleSelectionModel::getCurrentSelection(AnimItemDimViewKeyFramesMap* keys, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const
+const std::list<NodeAnimPtr >&
+AnimationModuleSelectionModel::getCurrentNodesSelection() const
 {
-    *keys =  _imp->selectedKeyframes;
-    for (std::list<NodeAnimWPtr >::const_iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
-        NodeAnimPtr n = it->lock();
-        if (n) {
-            nodes->push_back(n);
-        }
-    }
-    for (std::list<TableItemAnimWPtr >::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
-        TableItemAnimPtr n = it->lock();
-        if (n) {
-            tableItems->push_back(n);
-        }
-    }
+    return _imp->selectedNodes;
 }
 
+const std::list<TableItemAnimPtr>&
+AnimationModuleSelectionModel::getCurrentTableItemsSelection() const
+{
+    return _imp->selectedTableItems;
+}
+
+
+const AnimItemDimViewKeyFramesMap&
+AnimationModuleSelectionModel::getCurrentKeyFramesSelection() const
+{
+    return _imp->selectedKeyframes;
+}
 
 bool
 AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
@@ -382,12 +382,11 @@ AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, D
     return true;
 }
 
-std::list<TableItemAnimWPtr>::iterator
+std::list<TableItemAnimPtr>::iterator
 AnimationModuleSelectionModel::isTableItemSelected(const TableItemAnimPtr& node)
 {
-    for (std::list<TableItemAnimWPtr>::iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
-        TableItemAnimPtr n = it->lock();
-        if ( n && (n == node) ) {
+    for (std::list<TableItemAnimPtr>::iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+        if ( *it == node ) {
             return it;
         }
     }
@@ -395,12 +394,11 @@ AnimationModuleSelectionModel::isTableItemSelected(const TableItemAnimPtr& node)
     return _imp->selectedTableItems.end();
 }
 
-std::list<NodeAnimWPtr>::iterator
+std::list<NodeAnimPtr>::iterator
 AnimationModuleSelectionModel::isNodeSelected(const NodeAnimPtr& node)
 {
-    for (std::list<NodeAnimWPtr>::iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
-        NodeAnimPtr n = it->lock();
-        if ( n && (n == node) ) {
+    for (std::list<NodeAnimPtr>::iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
+        if ( *it == node ) {
             return it;
         }
     }
@@ -411,9 +409,8 @@ AnimationModuleSelectionModel::isNodeSelected(const NodeAnimPtr& node)
 bool
 AnimationModuleSelectionModel::isNodeSelected(const NodeAnimPtr& node) const
 {
-    for (std::list<NodeAnimWPtr>::const_iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
-        NodeAnimPtr n = it->lock();
-        if ( n && (n == node) ) {
+    for (std::list<NodeAnimPtr>::const_iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
+        if ( *it == node) {
             return true;
         }
     }
@@ -426,18 +423,14 @@ void
 AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr &removed)
 {
     // Remove selected item for given node
-    for (std::list<NodeAnimWPtr>::iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
-        if (it->lock() == removed) {
+    for (std::list<NodeAnimPtr>::iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
+        if (*it == removed) {
             _imp->selectedNodes.erase(it);
             break;
         }
     }
-    for (std::list<TableItemAnimWPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
-        TableItemAnimPtr item = it->lock();
-        if (!item) {
-            continue;
-        }
-        if (item->getNode() == removed) {
+    for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+        if ((*it)->getNode() == removed) {
             it = _imp->selectedTableItems.erase(it);
         }
     }
@@ -481,12 +474,9 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr
 void
 AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const TableItemAnimPtr& removed)
 {
-    for (std::list<TableItemAnimWPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
-        TableItemAnimPtr item = it->lock();
-        if (!item) {
-            continue;
-        }
-        if (item == removed) {
+    for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+ 
+        if (*it == removed) {
             it = _imp->selectedTableItems.erase(it);
         }
     }

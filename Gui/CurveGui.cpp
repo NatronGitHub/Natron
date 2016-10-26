@@ -115,6 +115,25 @@ CurveGui::~CurveGui()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 }
 
+AnimItemBasePtr
+CurveGui::getItem() const
+{
+    return _imp->item.lock();
+}
+
+ViewIdx
+CurveGui::getView() const
+{
+    return _imp->view;
+}
+
+DimIdx
+CurveGui::getDimension() const
+{
+    return _imp->dimension;
+}
+
+
 QString
 CurveGui::getName() const
 {
@@ -515,20 +534,16 @@ CurveGui::drawCurve(int curveIndex,
 
     AnimationModuleSelectionModelPtr selectionModel = item->getModel()->getSelectionModel();
     assert(selectionModel);
-    AnimItemDimViewKeyFramesMap selectedKeys;
-    {
-        std::vector<NodeAnimPtr> selectedNodes;
-        std::vector<TableItemAnimPtr> selectedTableItems;
-        selectionModel->getCurrentSelection(&selectedKeys, &selectedNodes, &selectedTableItems);
-    }
+    const AnimItemDimViewKeyFramesMap& selectedKeys = selectionModel->getCurrentKeyFramesSelection();
 
-    KeyFrameWithStringSet* foundThisCurveSelectedKeys = 0;
+
+    const KeyFrameWithStringSet* foundThisCurveSelectedKeys = 0;
     {
         AnimItemDimViewIndexID k;
         k.item = item;
         k.dim = _imp->dimension;
         k.view = _imp->view;
-        AnimItemDimViewKeyFramesMap::iterator foundDimView = selectedKeys.find(k);
+        AnimItemDimViewKeyFramesMap::const_iterator foundDimView = selectedKeys.find(k);
         if (foundDimView != selectedKeys.end()) {
             foundThisCurveSelectedKeys = &foundDimView->second;
         }
@@ -619,7 +634,7 @@ CurveGui::drawCurve(int curveIndex,
         GL_GPU::glEnable(GL_POINT_SMOOTH);
 
 
-        KeyFrameWithStringSet::iterator foundSelectedKey;
+        KeyFrameWithStringSet::const_iterator foundSelectedKey;
         if (foundThisCurveSelectedKeys) {
             foundSelectedKey = foundThisCurveSelectedKeys->end();
         }
@@ -634,7 +649,7 @@ CurveGui::drawCurve(int curveIndex,
 
             bool isKeySelected = false;
             if (foundThisCurveSelectedKeys) {
-                KeyFrameWithStringSet::iterator start = foundSelectedKey == foundThisCurveSelectedKeys->end() ? foundThisCurveSelectedKeys->begin() : foundSelectedKey;
+                KeyFrameWithStringSet::const_iterator start = foundSelectedKey == foundThisCurveSelectedKeys->end() ? foundThisCurveSelectedKeys->begin() : foundSelectedKey;
                 foundSelectedKey = std::find_if(start, foundThisCurveSelectedKeys->end(), KeyFrameWithStringTimePredicate(key.getTime()));
                 isKeySelected = foundSelectedKey != foundThisCurveSelectedKeys->end();
             }
@@ -661,14 +676,17 @@ CurveGui::drawCurve(int curveIndex,
                     GL_GPU::glLineStipple(2, 0xAAAA);
                     GL_GPU::glEnable(GL_LINE_STIPPLE);
                 }
+                
+                QPointF leftTanPos, rightTanPos;
+                _imp->curveWidget->getKeyTangentPoints(k, keyframes, &leftTanPos, &rightTanPos);
 
                 // Draw the derivatives lines
                 GL_GPU::glBegin(GL_LINES);
                 GL_GPU::glColor4f(1., 0.35, 0.35, 1.);
-                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
+                GL_GPU::glVertex2f( leftTanPos.x(), leftTanPos.y() );
                 GL_GPU::glVertex2f(x, y);
                 GL_GPU::glVertex2f(x, y);
-                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
+                GL_GPU::glVertex2f( rightTanPos.x(), rightTanPos.y());
                 GL_GPU::glEnd();
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     GL_GPU::glDisable(GL_LINE_STIPPLE);
@@ -677,8 +695,8 @@ CurveGui::drawCurve(int curveIndex,
 
                 // Draw the tangents handles
                 GL_GPU::glBegin(GL_POINTS);
-                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
+                GL_GPU::glVertex2f( leftTanPos.x(), leftTanPos.y() );
+                GL_GPU::glVertex2f( rightTanPos.x(), rightTanPos.y());
                 GL_GPU::glEnd();
 
                 // If only one keyframe is selected, also draw the coordinates
@@ -686,18 +704,18 @@ CurveGui::drawCurve(int curveIndex,
                     double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor( (key.getLeftDerivative() * rounding) + 0.5 ) / rounding);
                     QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor( (key.getRightDerivative() * rounding) + 0.5 ) / rounding);
-                    double yLeftWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, isSelected->leftTan.second).y();
+                    double yLeftWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, leftTanPos.y()).y();
                     yLeftWidgetCoord += (m.height() + 4);
 
-                    double yRightWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, isSelected->rightTan.second).y();
+                    double yRightWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, rightTanPos.y()).y();
                     yRightWidgetCoord += (m.height() + 4);
 
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
-                    _imp->curveWidget->renderText( isSelected->leftTan.first, _imp->curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                              leftDerivStr, QColor(240, 240, 240), _imp->curveWidget->getFont() );
-                    _imp->curveWidget->renderText( isSelected->rightTan.first, _imp->curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                              rightDerivStr, QColor(240, 240, 240), _imp->curveWidget->getFont() );
+                    _imp->curveWidget->renderText( leftTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                                              leftDerivStr, QColor(240, 240, 240), _imp->curveWidget->font() );
+                    _imp->curveWidget->renderText( rightTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                                              rightDerivStr, QColor(240, 240, 240), _imp->curveWidget->font() );
 
 
                     QString coordStr = QString::fromUtf8("x: %1, y: %2");
@@ -707,7 +725,7 @@ CurveGui::drawCurve(int curveIndex,
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
                     _imp->curveWidget->renderText( x, _imp->curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                                  coordStr, QColor(240, 240, 240), _imp->curveWidget->getFont() );
+                                                  coordStr, QColor(240, 240, 240), _imp->curveWidget->font() );
 
                 }
 

@@ -432,10 +432,13 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
 {
     KnobIPtr knob = getInternalKnob();
     if (useExpressionIfAny && knob) {
-        return knob->getValueAtWithExpression(x, view, dimension);
-    } else {
-        return AnimItemBase::evaluateCurve(false, x, dimension, view);
+        std::string expr = knob->getExpression(dimension, view);
+        if (!expr.empty()) {
+            return knob->getValueAtWithExpression(x, view, dimension);
+        }
     }
+    return AnimItemBase::evaluateCurve(false, x, dimension, view);
+    
 }
 
 

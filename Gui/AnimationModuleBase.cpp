@@ -80,10 +80,7 @@ AnimationModuleBase::deleteSelectedKeyframes()
         return;
     }
 
-    AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-    selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = selectionModel->getCurrentKeyFramesSelection();
 
 
     pushUndoCommand(new RemoveKeysCommand(selectedKeyframes, shared_from_this()));
@@ -100,18 +97,17 @@ AnimationModuleBase::moveSelectedKeysAndNodes(double dt, double dv)
         return;
     }
 
-    AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-    selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
-
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = selectionModel->getCurrentKeyFramesSelection();
+    const std::list<NodeAnimPtr>& selectedNodes = selectionModel->getCurrentNodesSelection();
+    const std::list<TableItemAnimPtr>& selectedTableItems = selectionModel->getCurrentTableItemsSelection();
+    
     // Constraint dt according to keyframe positions
     double maxLeft = INT_MIN;
     double maxRight = INT_MAX;
 
 
 
-    for (AnimItemDimViewKeyFramesMap::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
         AnimItemBasePtr item = it->first.item;
         if (!item) {
             continue;
@@ -167,7 +163,7 @@ AnimationModuleBase::moveSelectedKeysAndNodes(double dt, double dv)
         return;
     }
 
-    pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), selectedNodes, tableItems, dt, dv));
+    pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), selectedNodes, selectedTableItems, dt, dv));
 
 } // AnimationModuleBase::moveSelectedKeysAndNodes
 
@@ -293,10 +289,7 @@ AnimationModuleBase::copySelectedKeys()
         return;
     }
 
-    AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-    selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes, &tableItems);
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = selectionModel->getCurrentKeyFramesSelection();
     
     _imp->keyframesClipboard = selectedKeyframes;
     
@@ -316,11 +309,7 @@ AnimationModuleBase::pasteKeys(const AnimItemDimViewKeyFramesMap& keys, bool rel
         AnimationModuleSelectionModelPtr selectionModel = getSelectionModel();
 
 
-        AnimItemDimViewKeyFramesMap keys;
-        std::vector<NodeAnimPtr > selectedNodes;
-        std::vector<TableItemAnimPtr> tableItems;
-
-        selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
+        const AnimItemDimViewKeyFramesMap& keys = selectionModel->getCurrentKeyFramesSelection();
 
         if (keys.empty() || keys.size() > 1) {
             Dialogs::warningDialog(tr("Paste KeyFrame(s)").toStdString(), tr("You must select exactly one target item to perform this action").toStdString());
@@ -341,18 +330,11 @@ void
 AnimationModuleBase::setSelectedKeysInterpolation(KeyframeTypeEnum keyType)
 {
     AnimationModuleSelectionModelPtr selectionModel = getSelectionModel();
-    if ( selectionModel->isEmpty() ) {
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = selectionModel->getCurrentKeyFramesSelection();
+    if (selectedKeyframes.empty()) {
         return;
     }
-
-
-    AnimItemDimViewKeyFramesMap keys;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-
-    selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
-
-    pushUndoCommand(new SetKeysInterpolationCommand(keys, shared_from_this(), keyType, 0));
+    pushUndoCommand(new SetKeysInterpolationCommand(selectedKeyframes, shared_from_this(), keyType, 0));
 
 }
 
@@ -360,24 +342,20 @@ void
 AnimationModuleBase::transformSelectedKeys(const Transform::Matrix3x3& transform)
 {
     AnimationModuleSelectionModelPtr selectionModel = getSelectionModel();
-    if ( selectionModel->isEmpty() ) {
+
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = selectionModel->getCurrentKeyFramesSelection();
+    if (selectedKeyframes.empty()) {
         return;
     }
-
-    AnimItemDimViewKeyFramesMap keys;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-    selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
-
     boost::scoped_ptr<Curve::AffineKeyFrameWarp> warp(new Curve::AffineKeyFrameWarp(transform));
 
     // Test the warp, if it cannot be applied, do not push an undo/redo command
-    if (!WarpKeysCommand::testWarpOnKeys(keys, *warp)) {
+    if (!WarpKeysCommand::testWarpOnKeys(selectedKeyframes, *warp)) {
         return;
     }
 
     // Try once to warp everything, if it doesn't work fail it now
-    pushUndoCommand(new WarpKeysCommand(keys, shared_from_this(), transform));
+    pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), transform));
 }
 
 

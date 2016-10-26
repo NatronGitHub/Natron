@@ -59,6 +59,12 @@ public:
     CurveGui(CurveWidget *curveWidget, const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view);
 
     virtual ~CurveGui() OVERRIDE;
+    
+    AnimItemBasePtr getItem() const;
+    
+    ViewIdx getView() const;
+    
+    DimIdx getDimension() const;
 
     QString getName() const;
 

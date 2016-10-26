@@ -107,7 +107,7 @@ public:
      * if they are not NULL.
      **/
     CurveGuiPtr isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
-    bool isNearbyKeyFrame(const QPoint & pt, CurveGuiPtr* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
+    AnimItemDimViewAndTime isNearbyKeyFrame(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbyTangent(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbySelectedTangentText(const QPoint & pt) const;
 
@@ -128,18 +128,11 @@ public:
 
     AnimItemDimViewAndTime isNearbyKeyFrameText(const QPoint& pt) const;
 
-    /**
-     * @brief Selects the curve given in parameter and deselects any other curve in the widget.
-     **/
-    void selectCurve(const CurveGuiPtr& curve);
-
     void moveSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl);
 
     void transformSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl, bool shiftHeld);
 
     void moveSelectedTangent(const QPointF & pos);
-
-    void refreshKeyTangents(AnimItemDimViewAndTime & key);
 
     void refreshSelectionRectangle(double x, double y);
 

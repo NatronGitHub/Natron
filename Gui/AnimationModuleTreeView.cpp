@@ -1009,11 +1009,11 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
 
     // Retrieve the knob anim with selected keyframes
 
-    AnimItemDimViewKeyFramesMap selectedKeys;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-
-    getModel()->getSelectionModel()->getCurrentSelection(&selectedKeys, &selectedNodes, &tableItems);
+    AnimationModuleSelectionModelPtr selModel = getModel()->getSelectionModel();
+    
+    const AnimItemDimViewKeyFramesMap& selectedKeys = selModel->getCurrentKeyFramesSelection();
+    const std::list<NodeAnimPtr >& selectedNodes = selModel->getCurrentNodesSelection();
+    const std::list<TableItemAnimPtr>& tableItems = selModel->getCurrentTableItemsSelection();
 
 
     // Prevent recursion
@@ -1040,11 +1040,11 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
         }
     }
 
-    for (std::vector<NodeAnimPtr >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         toSelect.insert( indexFromItem( (*it)->getTreeItem() ) );
     }
 
-    for (std::vector<TableItemAnimPtr>::iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
+    for (std::list<TableItemAnimPtr>::const_iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
         toSelect.insert( indexFromItem( (*it)->getRootItem() ) );
     }
 

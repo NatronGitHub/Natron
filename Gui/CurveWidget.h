@@ -150,6 +150,16 @@ public:
     OfxParamOverlayInteractPtr getCustomInteract() const;
 
     bool hasDrawnOnce() const;
+    
+    
+    /**
+     * @brief Computes the position of the right and left tangents handle in curve coordinates
+     **/
+    void getKeyTangentPoints(KeyFrameSet::const_iterator it,
+                             const KeyFrameSet& keys,
+                             QPointF* leftTanPos,
+                             QPointF* rightTanPos);
+
 
 public Q_SLOTS:
 
