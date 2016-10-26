@@ -42,7 +42,6 @@ class NodeAnim : public QObject,  public boost::enable_shared_from_this<NodeAnim
 
 
     NodeAnim(const AnimationModulePtr& model,
-             AnimatedItemTypeEnum itemType,
              const NodeGuiPtr &nodeGui);
 
 public:
@@ -51,8 +50,8 @@ public:
                               AnimatedItemTypeEnum itemType,
                               const NodeGuiPtr &nodeGui)
     {
-        NodeAnimPtr ret(new NodeAnim(model, itemType, nodeGui));
-        ret->initialize();
+        NodeAnimPtr ret(new NodeAnim(model, nodeGui));
+        ret->initialize(itemType);
         return ret;
     }
 
@@ -96,7 +95,7 @@ private:
 
     TableItemAnimPtr findTableItem(const KnobTableItemPtr& item) const;
 
-    void initialize();
+    void initialize(AnimatedItemTypeEnum itemType);
 
     void initializeKnobsAnim();
     

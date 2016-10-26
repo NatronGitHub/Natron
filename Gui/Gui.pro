@@ -85,11 +85,11 @@ SOURCES += \
     AnimatedCheckBox.cpp \
     AnimItemBase.cpp \
     AnimationModule.cpp \
-    AnimationModuleUndoRedo.cpp \
+    AnimationModuleBase.cpp \
+    AnimationModuleEditor.cpp \
     AnimationModuleSelectionModel.cpp \
     AnimationModuleTreeView.cpp \
-    AnimationModuleEditor.cpp \
-    AnimationModuleEditorUndoRedo.cpp \
+    AnimationModuleUndoRedo.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
@@ -239,11 +239,11 @@ HEADERS += \
     AnimatedCheckBox.h \
     AnimItemBase.h \
     AnimationModule.h \
-    AnimationModuleUndoRedo.h \
+    AnimationModuleBase.h \
+    AnimationModuleEditor.h \
     AnimationModuleSelectionModel.h \
     AnimationModuleTreeView.h \
-    AnimationModuleEditor.h \
-    AnimationModuleEditorUndoRedo.h \
+    AnimationModuleUndoRedo.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
@@ -252,7 +252,6 @@ HEADERS += \
     ComboBox.h \
     CurveEditor.h \
     CurveGui.h \
-    CurveSelection.h \
     CurveWidget.h \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \

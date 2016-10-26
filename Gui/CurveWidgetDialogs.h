@@ -42,7 +42,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/AnimationModuleEditorUndoRedo.h" // KeyPtr
 #include "Gui/CurveGui.h" // CurveGui
 #include "Gui/GuiFwd.h"
 
@@ -156,6 +155,7 @@ Q_SIGNALS:
 
     void valueChanged(int dimension, double value);
 
+    void dialogFinished(bool accepted);
 public Q_SLOTS:
 
     void onXSpinBoxValueChanged(double d);

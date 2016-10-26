@@ -760,7 +760,7 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
             if (isTableItemKnob) {
                 closestEnclosingNode = isTableItemKnob->getNode();
             } else if (isNodeKnob) {
-                closestEnclosingNode = isNodeKnob->getNodeGui();
+                closestEnclosingNode = isNodeKnob;
             }
         }
         if (closestEnclosingNode) {
@@ -1013,7 +1013,7 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> tableItems;
 
-    getModel()->getSelectionModel().getCurrentSelection(&selectedKeys, &selectedNodes, &tableItems);
+    getModel()->getSelectionModel()->getCurrentSelection(&selectedKeys, &selectedNodes, &tableItems);
 
 
     // Prevent recursion
@@ -1127,7 +1127,7 @@ AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
 void
 AnimationModuleTreeView::onTreeSelectionModelSelectionChanged()
 {
-    getModel()->getSelectionModel().selectItems(selectedItems());
+    getModel()->getSelectionModel()->selectItems(selectedItems());
 }
 
 

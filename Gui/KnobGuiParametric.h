@@ -45,7 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
+#include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/KnobGui.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
@@ -55,7 +56,6 @@ NATRON_NAMESPACE_ENTER;
 
 class KnobGuiParametric
     : public KnobGui
-      , public CurveSelection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

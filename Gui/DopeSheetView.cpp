@@ -51,9 +51,9 @@
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheet.h"
+#include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleEditor.h"
-#include "Gui/AnimationModuleEditorUndoRedo.h"
+#include "Gui/AnimationModuleTreeView.h"
 #include "Gui/DopeSheetHierarchyView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
@@ -160,7 +160,7 @@ public:
         kfTextureMasterSelected,
     };
 
-    DopeSheetViewPrivate(DopeSheetView *qq);
+    DopeSheetViewPrivate(DopeSheetView *publicInterface);
     ~DopeSheetViewPrivate();
 
     /* functions */
@@ -195,8 +195,8 @@ public:
 
     bool isNearbySelectedKeysBRec(const QPointF& widgetPos) const;
 
-    std::vector<AnimKeyFrame> isNearByKeyframe(const KnobAnimPtr &KnobAnim, const QPointF &widgetCoords) const;
-    std::vector<AnimKeyFrame> isNearByKeyframe(NodeAnimPtr NodeAnim, const QPointF &widgetCoords) const;
+    std::vector<AnimItemDimViewAndTime> isNearByKeyframe(const KnobAnimPtr &KnobAnim, const QPointF &widgetCoords) const;
+    std::vector<AnimItemDimViewAndTime> isNearByKeyframe(NodeAnimPtr NodeAnim, const QPointF &widgetCoords) const;
 
     double clampedMouseOffset(double fromTime, double toTime);
 
@@ -255,7 +255,7 @@ public:
     // User interaction
     void onMouseLeftButtonDrag(QMouseEvent *e);
 
-    void createSelectionFromRect(const RectD &rect, std::vector<AnimKeyFrame> *result, std::vector<NodeAnimPtr >* selectedNodes);
+    void createSelectionFromRect(const RectD &rect, std::vector<AnimItemDimViewAndTime> *result, std::vector<NodeAnimPtr >* selectedNodes);
 
     void moveCurrentFrameIndicator(double dt);
 
@@ -265,7 +265,7 @@ public:
 
     /* attributes */
     DopeSheetView *publicInterface;
-    AnimationModule *model;
+    AnimationModuleBaseWPtr model;
     AnimationModuleTreeView *treeView;
     Gui *gui;
 
@@ -317,9 +317,9 @@ public:
     bool drawnOnce;
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
-    : publicInterface(qq)
-    , model(0)
+DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *publicInterface)
+    : publicInterface(publicInterface)
+    , model()
     , treeView(0)
     , gui(0)
     , timeline()
@@ -2529,8 +2529,8 @@ DopeSheetViewPrivate::updateCurveWidgetFrameRange()
  *
  * Constructs a DopeSheetView object.
  */
-DopeSheetView::DopeSheetView(DopeSheet *model,
-                             HierarchyView *hierarchyView,
+DopeSheetView::DopeSheetView(const AnimationModuleBasePtr& model,
+                             AnimationModuleTreeView *treeView,
                              Gui *gui,
                              const TimeLinePtr &timeline,
                              QWidget *parent)

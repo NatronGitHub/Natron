@@ -109,10 +109,9 @@ public:
         esTransformingKeyframesMiddleLeft
     };
 
-    explicit DopeSheetView(AnimationModule *model,
-                           AnimationModuleTreeView *hierarchyView,
+    explicit DopeSheetView(const AnimationModuleBasePtr& model,
+                           AnimationModuleTreeView *treeView,
                            Gui *gui,
-                           const TimeLinePtr &timeline,
                            QWidget *parent = 0);
 
     virtual ~DopeSheetView() OVERRIDE;

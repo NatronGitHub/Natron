@@ -30,19 +30,21 @@
 #include <QMutex>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#include "Gui/AnimationModuleEditorUndoRedo.h" // MoveTangentCommand
+#include "Engine/OfxOverlayInteract.h"
+
+
+#include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/CurveGui.h"
 #include "Gui/Menu.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
-#include "Gui/GuiFwd.h"
-#include "Engine/OfxOverlayInteract.h"
 
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
@@ -79,21 +81,24 @@ class CurveWidgetPrivate
 
 public:
     CurveWidgetPrivate(Gui* gui,
-                       CurveSelection* selection,
-                       const TimeLinePtr& timeline,
+                       const AnimationModuleBasePtr& model,
                        CurveWidget* widget);
 
     ~CurveWidgetPrivate();
 
-    void drawSelectionRectangle();
+    AnimationModuleBasePtr getModel() const
+    {
+        return _model.lock();
+    }
 
-    void refreshTimelinePositions();
+    void drawSelectionRectangle();
 
     void drawTimelineMarkers();
 
     void drawCurves();
 
     void drawScale();
+
     void drawSelectedKeyFramesBbox();
 
     /**
@@ -101,10 +106,10 @@ public:
      * If so then the value x and y will be set to the position on the curve
      * if they are not NULL.
      **/
-    Curves::const_iterator isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
+    CurveGuiPtr isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
     bool isNearbyKeyFrame(const QPoint & pt, CurveGuiPtr* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbyTangent(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbyTangent(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbySelectedTangentText(const QPoint & pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
 
@@ -121,7 +126,7 @@ public:
 
     bool isNearbyTimelineBtmPoly(const QPoint & pt) const;
 
-    KeyPtr isNearbyKeyFrameText(const QPoint& pt) const;
+    AnimItemDimViewAndTime isNearbyKeyFrameText(const QPoint& pt) const;
 
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
@@ -134,7 +139,7 @@ public:
 
     void moveSelectedTangent(const QPointF & pos);
 
-    void refreshKeyTangents(KeyPtr & key);
+    void refreshKeyTangents(AnimItemDimViewAndTime & key);
 
     void refreshSelectionRectangle(double x, double y);
 
@@ -142,45 +147,48 @@ public:
 
     void createMenu();
 
-    void insertSelectedKeyFrameConditionnaly(const KeyPtr & key);
-
     void updateDopeSheetViewFrameRange();
 
 private:
 
 
-    void keyFramesWithinRect(const QRectF & rect, SelectedKeys* keys) const;
+    void keyFramesWithinRect(const QRectF & rect, AnimItemDimViewKeyFramesMap* keys) const;
 
 public:
 
+    // Model providing selection and curves
+    AnimationModuleBaseWPtr _model;
+
+    // If there's a custom interact to draw (for parametric parameters)
     boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
-    QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+
+    // the last mouse press or move, in widget coordinates
+    QPoint _lastMousePos;
+
+    // protects zoomCtx for serialization thread
     mutable QMutex zoomCtxMutex;
     ZoomContext zoomCtx;
+
+    // Interaction State
     EventStateEnum _state;
+
+    // Right click menu
     Menu* _rightClickMenu;
-    QColor _selectedCurveColor;
-    QColor _nextCurveAddedColor;
+
+
     TextRenderer textRenderer;
-    QFont* _font;
-    Curves _curves;
-    SelectedKeys _selectedKeyFrames;
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)
     std::vector< KeyFrame > _keyFramesClipBoard;
     QRectF _selectionRectangle;
     QPointF _dragStartPoint;
-    bool _drawSelectedKeyFramesBbox;
     QRectF _selectedKeyFramesBbox;
     QLineF _selectedKeyFramesCrossVertLine;
     QLineF _selectedKeyFramesCrossHorizLine;
-    TimeLinePtr _timeline;
-    bool _timelineEnabled;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewIndexID> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
-    boost::scoped_ptr<QUndoStack> _undoStack;
     Gui* _gui;
     GLuint savedTexture;
     QSize sizeH;
@@ -188,15 +196,10 @@ public:
 
     // True if paintGL() was run at least once
     bool drawnOnce;
-private:
 
-    QPolygonF _timelineTopPoly;
-    QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
 
-public:
 
-    CurveSelection* _selectionModel;
 };
 
 NATRON_NAMESPACE_EXIT;

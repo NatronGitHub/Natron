@@ -507,7 +507,7 @@ void
 EditKeyFrameDialog::onEditingFinished()
 {
     _imp->wasAccepted = true;
-    accept();
+    Q_EMIT dialogFinished(true);
 }
 
 void
@@ -515,7 +515,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
         _imp->wasAccepted = true;
-        accept();
+        Q_EMIT dialogFinished(true);
     } else if (e->key() == Qt::Key_Escape) {
         if (_imp->mode == eEditModeKeyframePosition) {
             moveKeyTo(_imp->originalX, _imp->originalY);
@@ -526,7 +526,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
         if (_imp->ySpinbox) {
             _imp->ySpinbox->blockSignals(true);
         }
-        reject();
+        Q_EMIT dialogFinished(false);
     } else {
         QDialog::keyPressEvent(e);
     }
@@ -546,7 +546,7 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
             if (_imp->ySpinbox) {
                 _imp->ySpinbox->blockSignals(true);
             }
-            reject();
+            Q_EMIT dialogFinished(false);
 
             return;
         }

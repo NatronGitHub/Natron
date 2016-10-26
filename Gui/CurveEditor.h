@@ -43,8 +43,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"
-#include "Gui/CurveSelection.h"
-#include "Gui/AnimationModuleEditorUndoRedo.h"
 #include "Gui/GuiFwd.h"
 
 
@@ -54,7 +52,6 @@ NATRON_NAMESPACE_ENTER;
 struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
-      , public CurveSelection
       , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -81,8 +78,6 @@ public:
 
     void centerOn(const std::vector<CurvePtr > & curves);
 
-    std::pair<QAction*, QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
-    std::list<CurveGuiPtr > findCurve(const KnobGuiPtr& knob, int dimension) const WARN_UNUSED_RETURN;
 
     void hideCurves(const KnobGuiPtr& knob);
 

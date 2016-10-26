@@ -381,6 +381,7 @@ typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
 typedef boost::weak_ptr<AnimatingObjectI> AnimatingObjectIWPtr;
 typedef boost::weak_ptr<AppInstance> AppInstanceWPtr;
 typedef boost::weak_ptr<Bezier> BezierWPtr;
+typedef boost::weak_ptr<Curve> CurveWPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstanceWPtr;
 typedef boost::weak_ptr<HashableObject> HashableObjectWPtr;
 typedef boost::weak_ptr<OSGLContext> OSGLContextWPtr;

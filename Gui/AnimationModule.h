@@ -27,13 +27,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidget>
@@ -44,19 +37,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-#include "Gui/AnimItemBase.h"
+#include "Gui/AnimationModuleBase.h"
+
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
-
-#define kReaderParamNameFirstFrame "firstFrame"
-#define kReaderParamNameLastFrame "lastFrame"
-#define kReaderParamNameStartingTime "startingTime"
-#define kReaderParamNameTimeOffset "timeOffset"
-
-#define kRetimeParamNameSpeed "speed"
-#define kFrameRangeParamNameFrameRange "frameRange"
-#define kTimeOffsetParamNameTimeOffset "timeOffset"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -75,13 +60,16 @@ const int QT_ROLE_CONTEXT_VIEW = Qt::UserRole + 3;
 // Stores a value indicating whether an item is animated
 const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 4;
 
+const int QT_ROLE_CONTEXT_ITEM_POINTER = Qt::UserRole + 5;
 
 class AnimationModulePrivate;
 class AnimationModule
     : public QObject
-    , public boost::enable_shared_from_this<AnimationModule>
+    , public AnimationModuleBase
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 
     AnimationModule(Gui *gui,
@@ -127,15 +115,17 @@ public:
      **/
     void removeNode(const NodeGuiPtr& node);
 
-    /**
-     * @brief Given the treeItem, finds in the model the corresponding item.
-     * @param type[out] Returns the type of the given item. Only one of isKnob, isTableItem
-     * or isNodeItem is valid at once and the type gives an hint on which one is valid.
-     * @param view[out] The view corresponding to the treeItem
-     * @param dimension[out] The dimension corresponding to the treeItem
-     * @return True if the item could be found, false otherwise
-     **/
-    bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const;
+
+    /// Overriden from AnimationModuleSelectionProvider
+    virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getTopLevelItems(std::vector<KnobAnimPtr>* knobs, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const OVERRIDE FINAL;
+    virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /// Overriden from AnimationModuleBase
+    virtual void pushUndoCommand(QUndoCommand *cmd) OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
+    virtual CurveWidget* getCurveWidget() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     NodeAnimPtr findNodeAnim(const NodePtr& node) const;
     NodeAnimPtr findNodeAnim(const KnobIPtr &knob) const;
@@ -154,42 +144,13 @@ public:
 
     NodeAnimPtr getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const;
     NodePtr getNearestReader(const NodeAnimPtr& timeNode) const;
-    AnimationModuleSelectionModel& getSelectionModel() const;
     AnimationModuleEditor* getEditor() const;
 
-    // User interaction
-    void deleteSelectedKeyframes();
-
-    void moveSelectedKeysAndNodes(double dt, double dv);
-    void trimReaderLeft(const NodeAnimPtr &reader, double newFirstFrame);
-    void trimReaderRight(const NodeAnimPtr &reader, double newLastFrame);
-
-    bool canSlipReader(const NodeAnimPtr &reader) const;
-
-    void slipReader(const NodeAnimPtr &reader, double dt);
-
-    /**
-     * @brief Copy the current keyframe selection to the internal clipboard
-     **/
-    void copySelectedKeys();
-
-    /**
-     * @brief Paste keyframes in the internal clipboard onto selected items
-     **/
-    void pasteKeys(bool relative);
-
-    void pasteKeys(const AnimItemDimViewKeyFramesMap& keys, bool relative);
-
-    void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
-
-    void transformSelectedKeys(const Transform::Matrix3x3& transform);
+  
 
     void emit_mustRedrawView() {
         Q_EMIT mustRedrawView();
     }
-
-    // Other
-    SequenceTime getCurrentFrame() const;
 
     void renameSelectedNode();
 
@@ -214,6 +175,10 @@ private:
     boost::scoped_ptr<AnimationModulePrivate> _imp;
 };
 
+inline AnimationModulePtr toAnimationModule(const AnimationModuleBasePtr& p)
+{
+    return boost::dynamic_pointer_cast<AnimationModule>(p);
+}
 
 
 NATRON_NAMESPACE_EXIT;

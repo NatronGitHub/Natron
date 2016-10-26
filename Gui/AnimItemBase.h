@@ -37,6 +37,7 @@
 #endif
 
 
+#include <QString>
 
 #include "Gui/GuiFwd.h"
 
@@ -112,6 +113,12 @@ struct KeyFrameWithString_CompareLess
     }
 };
 
+struct AnimItemDimViewAndTime
+{
+    AnimItemDimViewIndexID id;
+    double time;
+};
+
 typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;
 
 typedef std::map<AnimItemDimViewIndexID, KeyFrameWithStringSet, AnimItemDimViewIndexID_CompareLess> AnimItemDimViewKeyFramesMap;
@@ -122,19 +129,24 @@ class AnimItemBase : public boost::enable_shared_from_this<AnimItemBase>
 
 public:
 
-    AnimItemBase(const AnimationModulePtr& model);
+    AnimItemBase(const AnimationModuleBasePtr& model);
 
     virtual ~AnimItemBase();
 
     /**
      * @brief Return the model containing this item
      **/
-    AnimationModulePtr getModel() const;
+    AnimationModuleBasePtr getModel() const;
 
     /**
      * @brief Return a pointer to the internal object
      **/
     virtual AnimatingObjectIPtr getInternalAnimItem() const = 0;
+
+    /**
+     * @brief Return the label of the curve in the given dimension/view
+     **/
+    virtual QString getViewDimensionLabel(DimIdx dimension, ViewIdx view) const = 0;
 
     /**
      * @brief Returns the root tree item for this item
@@ -147,13 +159,32 @@ public:
     virtual QTreeWidgetItem * getTreeItem(DimSpec dimension, ViewSetSpec view) const = 0;
 
     /**
-     * @brief If the given item corresponds to one of this object tree items, returns to which dimension and view
-     * it corresponds to.
-     * @return True if it could be mapped to a dimension/view, false otherwise.
+     * @brief Returns the curve at the given dimension and view
      **/
-    virtual bool getTreeItemViewDimension(QTreeWidgetItem* item, DimSpec* dimension, ViewSetSpec* view, AnimatedItemTypeEnum* type) const = 0;
-
     virtual CurvePtr getCurve(DimIdx dimension, ViewIdx view) const = 0;
+
+    /**
+     * @brief Returns the gui curve at the given dimension and view
+     **/
+    virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const = 0;
+
+    /**
+     * @brief Returns true if the given dimension/view has an expression set
+     **/
+    virtual bool hasExpression(DimIdx dimension, ViewIdx view) const
+    {
+        Q_UNUSED(dimension);
+        Q_UNUSED(view);
+        return false;
+    }
+
+    /**
+     * @brief Evaluates the curve at given dimension and parametric X and return the Y value
+     * @param useExpressionIfAny If true and if the underlying curve is covered by an expression
+     * this should return the value of the expression instead.
+     * The default implementation doesn't know about expression and just returns the curve value
+     **/
+    virtual double evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, ViewIdx view);
 
     /**
      * @brief Get keyframes associated to the item

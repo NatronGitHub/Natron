@@ -79,10 +79,11 @@ public:
     bool isRangeDrawingEnabled() const;
 
     //// Overriden from AnimItemBase
+    virtual QString getViewDimensionLabel(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual QTreeWidgetItem * getRootItem() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual QTreeWidgetItem * getTreeItem(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual CurvePtr getCurve(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getTreeItemViewDimension(QTreeWidgetItem* item, DimSpec* dimension, ViewSetSpec* view, AnimatedItemTypeEnum* type) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getNDimensions() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ////

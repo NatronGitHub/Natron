@@ -50,35 +50,62 @@ public:
 
     Q_DECLARE_FLAGS(SelectionTypeFlags, SelectionType)
 
-    AnimationModuleSelectionModel(const AnimationModulePtr& model);
+    AnimationModuleSelectionModel(const AnimationModuleSelectionProviderPtr& model);
+
     virtual ~AnimationModuleSelectionModel();
 
-    AnimationModulePtr getModel() const;
+    AnimationModuleSelectionProviderPtr getModel() const;
 
+    /**
+     * @brief Select all items
+     **/
     void selectAll();
 
+    /**
+     * @brief Clear all items from selection
+     **/
     void clearSelection();
 
+    /**
+     * @brief Select given items in the corresponding tree
+     **/
     void selectItems(const QList<QTreeWidgetItem *> &items);
 
+    /**
+     * @brief Set the selection with given flags
+     **/
     void makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                        const std::vector<TableItemAnimPtr>& selectedTableItems,
                        const std::vector<NodeAnimPtr >& rangeNodes,
                        SelectionTypeFlags selectionFlags);
 
+    /**
+     * @brief Returns true if the selection is empty
+     **/
     bool isEmpty() const;
 
+    /**
+     * @brief Get current selection
+     **/
     void getCurrentSelection(AnimItemDimViewKeyFramesMap* keys, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
 
-
+    /**
+     * @brief Returns true if all selected keyframes have the given time
+     **/
     bool hasSingleKeyFrameTimeSelected(double* time) const;
 
+    /**
+     * @brief Returns the count of selected keyframes
+     **/
     int getSelectedKeyframesCount() const;
 
-    bool isKeyframeSelected(const AnimItemBasePtr &KnobAnim, DimIdx dimension ,ViewIdx view, double time) const;
+    /**
+     * @brief Returns true if the given keyframe is selected for the item/dimension/view
+     **/
+    bool isKeyframeSelected(const AnimItemBasePtr &item, DimIdx dimension ,ViewIdx view, double time) const;
 
     /**
-     * @brief If this node has a range, such as a Reader or Group, returns whether it is selected or not.
+     * @brief Returns whether the given node is selected
      **/
     bool isNodeSelected(const NodeAnimPtr& node) const;
 
@@ -101,7 +128,7 @@ public:
 
 Q_SIGNALS:
 
-    void keyframeSelectionChangedFromModel(bool recurse);
+    void selectionChanged(bool recurse);
 
 private:
 

@@ -26,7 +26,7 @@
 
 #include "Engine/KnobItemsTable.h"
 
-#include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleBase.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
@@ -36,7 +36,7 @@ NATRON_NAMESPACE_ENTER;
 class AnimationModuleSelectionModelPrivate
 {
 public:
-    AnimationModuleSelectionModelPrivate(const AnimationModulePtr& model)
+    AnimationModuleSelectionModelPrivate(const AnimationModuleSelectionProviderPtr& model)
     : model(model)
     , selectedKeyframes()
     , selectedTableItems()
@@ -46,13 +46,13 @@ public:
 
 
     /* attributes */
-    AnimationModuleWPtr model;
+    AnimationModuleSelectionProviderWPtr model;
     AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::list<TableItemAnimWPtr> selectedTableItems;
     std::list<NodeAnimWPtr> selectedNodes;
 };
 
-AnimationModuleSelectionModel::AnimationModuleSelectionModel(const AnimationModulePtr& model)
+AnimationModuleSelectionModel::AnimationModuleSelectionModel(const AnimationModuleSelectionProviderPtr& model)
 : _imp(new AnimationModuleSelectionModelPrivate(model))
 {
 }
@@ -61,7 +61,7 @@ AnimationModuleSelectionModel::~AnimationModuleSelectionModel()
 {
 }
 
-AnimationModulePtr
+AnimationModuleSelectionProviderPtr
 AnimationModuleSelectionModel::getModel() const
 {
     return _imp->model.lock();
@@ -121,6 +121,11 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
 
     addAnimatedItemKeyframes(item, dim, viewSpec, result);
 
+    const std::vector<KnobAnimPtr>& knobs = item->getKnobs();
+    for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), result);
+    }
+
     if (recurse) {
         std::vector<TableItemAnimPtr> children = item->getChildren();
         for (std::size_t i = 0; i < children.size(); ++i) {
@@ -129,32 +134,26 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
     }
 }
 
+
 void
 AnimationModuleSelectionModel::selectAll()
 {
-    const std::list<NodeAnimPtr>& nodeRows = getModel()->getNodes();
+
+    std::vector<KnobAnimPtr> topLevelKnobs;
+    std::vector<NodeAnimPtr > topLevelNodes;
+    std::vector<TableItemAnimPtr> topLevelTableItems;
+    getModel()->getTopLevelItems(&topLevelKnobs, &topLevelNodes, &topLevelTableItems);
 
     AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
 
-    for (std::list<NodeAnimPtr>::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
+    for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {
 
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
 
         for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-
-            // We select keyframes for the root item, this will also select children
-            std::list<ViewIdx> views = (*it2)->getViewsList();
-            int nDims = (*it2)->getNDimensions();
-            for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
-                for (int i = 0; i < nDims; ++i) {
-                    AnimItemDimViewIndexID key(*it2, *it3, DimIdx(i));
-                    KeyFrameWithStringSet &keysForItem = selectedKeyframes[key];
-                    (*it2)->getKeyframes(DimIdx(i), *it3, &keysForItem);
-                }
-            }
-
+            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), &selectedKeyframes);
         }
 
         const std::vector<TableItemAnimPtr>& topLevelTableItems = (*it)->getTopLevelItems();
@@ -169,6 +168,15 @@ AnimationModuleSelectionModel::selectAll()
 
     }
 
+    for (std::vector<KnobAnimPtr>::const_iterator it2 = topLevelKnobs.begin(); it2 != topLevelKnobs.end(); ++it2) {
+        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), &selectedKeyframes);
+    }
+
+    for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
+        addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), &selectedTableItems, &selectedKeyframes);
+    }
+
+
     makeSelection( selectedKeyframes, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                AnimationModuleSelectionModel::SelectionTypeClear |
                                                                AnimationModuleSelectionModel::SelectionTypeRecurse) );
@@ -182,8 +190,6 @@ AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items
     std::vector<NodeAnimPtr > nodes;
     std::vector<TableItemAnimPtr> tableItems;
 
-    AnimationModulePtr animModel = getModel();
-
     Q_FOREACH (QTreeWidgetItem * item, items) {
         AnimatedItemTypeEnum foundType;
         KnobAnimPtr isKnob;
@@ -191,7 +197,7 @@ AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items
         NodeAnimPtr isNodeItem;
         ViewSetSpec view;
         DimSpec dim;
-        bool found = animModel->findItem(item, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+        bool found = getModel()->findItem(item, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
         if (!found) {
             continue;
         }
@@ -285,7 +291,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
     }
 
     if (hasChanged) {
-        Q_EMIT keyframeSelectionChangedFromModel(selectionFlags & AnimationModuleSelectionModel::SelectionTypeRecurse);
+        Q_EMIT selectionChanged(selectionFlags & AnimationModuleSelectionModel::SelectionTypeRecurse);
     }
 } // makeSelection
 
@@ -352,7 +358,11 @@ AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
 int
 AnimationModuleSelectionModel::getSelectedKeyframesCount() const
 {
-    return (int)_imp->selectedKeyframes.size();
+    int nKeys = 0;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        nKeys += it->second.size();
+    }
+    return nKeys;
 }
 
 bool

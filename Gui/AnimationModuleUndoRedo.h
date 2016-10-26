@@ -86,38 +86,35 @@ struct AnimItemDimViewIndexIDWithCurve_CompareLess
 
     }
 };
-typedef std::map<AnimItemDimViewIndexIDWithCurve, KeyFrameWithStringSet, AnimItemDimViewIndexIDWithCurve_CompareLess> KeysWithOldCurveMap;
-
-
-/**
- * @class An undo command that can add or remove keyframes on multiple curves at once
- **/
-class AddOrRemoveKeysCommand
-    : public QUndoCommand
-{
-
+typedef std::set<AnimItemDimViewIndexIDWithCurve, AnimItemDimViewIndexIDWithCurve_CompareLess> ItemDimViewCurveSet;
 
 
 class AddKeysCommand : public QUndoCommand
 {
-    
+
     Q_DECLARE_TR_FUNCTIONS(AddKeysCommand)
 
 public:
-    
+
     /**
      * @brief Add keyframes to curves in keys
      * @param replaceExistingAnimation If true, any animation will be wiped
      **/
     AddKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
+                   const AnimationModuleBasePtr& model,
+                   bool replaceExistingAnimation,
                    QUndoCommand *parent = 0);
-    
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
-    
+
+    AnimationModuleBaseWPtr _model;
+    ItemDimViewCurveSet _oldCurves;
+    bool _replaceExistingAnimation;
     AnimItemDimViewKeyFramesMap _keys;
+    bool _isFirstRedo;
 };
 
 class PasteKeysCommand : public QUndoCommand
@@ -126,20 +123,27 @@ class PasteKeysCommand : public QUndoCommand
 
 public:
     /**
-     * @brief Add keyframes in the curves in keys to the dst anim items
+     * @brief Add keyframes in the curves in keys to the dst anim item
      **/
     PasteKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
-                     const std::list<AnimItemBasePtr>& dstAnim,
+                     const AnimationModuleBasePtr& model,
+                     const AnimItemBasePtr& target,
+                     DimSpec targetDim,
+                     ViewSetSpec targetView,
                      bool pasteRelativeToCurrentTime,
                      double currentTime,
                      QUndoCommand *parent = 0);
-    
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 private:
-    
+
+    AnimationModuleBaseWPtr _model;
     double _offset;
-    std::list<AnimItemBasePtr> _targets;
+    AnimItemBasePtr _target;
+    DimSpec _targetDim;
+    ViewSetSpec _targetView;
+    ItemDimViewCurveSet _oldCurves;
     AnimItemDimViewKeyFramesMap _keys;
 };
 
@@ -153,48 +157,18 @@ public:
      * @param replaceExistingAnimation If true, any animation will be wiped
      **/
     RemoveKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
-                     QUndoCommand *parent = 0);
-    
+                      const AnimationModuleBasePtr& model,
+                      QUndoCommand *parent = 0);
+
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
-    
+
+    AnimationModuleBaseWPtr _model;
+    ItemDimViewCurveSet _oldCurves;
     AnimItemDimViewKeyFramesMap _keys;
 
-    
-};
-
-/**
- * @class An undo command that can set all keyframes on multiple curves at once. Existing keyframes are deleted (and restored in undo)
- **/
-class SetKeysCommand : public QUndoCommand
-{
-
-    Q_DECLARE_TR_FUNCTIONS(SetKeysCommand)
-
-public:
-
-
-
-
-    SetKeysCommand(const AnimItemDimViewKeyFramesMap & keys,
-                   QUndoCommand *parent = 0);
-
-
-    virtual ~SetKeysCommand() OVERRIDE
-    {
-    }
-
-private:
-
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    KeysWithOldCurveMap _keys;
 };
 
 
@@ -212,6 +186,7 @@ public:
      * @brief Moves given keyframes, nodes and items by dt and dv.
      **/
     WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
+                    const AnimationModuleBasePtr& model,
                     const std::vector<NodeAnimPtr >& nodes,
                     const std::vector<TableItemAnimPtr>& tableItems,
                     double dt,
@@ -222,6 +197,7 @@ public:
      * @brief Ctor that warps using an affine transformation. Cannot transform nodes and table items
      **/
     WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
+                    const AnimationModuleBasePtr& model,
                     const Transform::Matrix3x3& matrix,
                     QUndoCommand *parent = 0);
     
@@ -243,6 +219,7 @@ private:
     void warpKeys();
 
 private:
+    AnimationModuleBaseWPtr _model;
     boost::scoped_ptr<Curve::KeyFrameWarp> _warp;
     AnimItemDimViewKeyFramesMap _keys;
     std::vector<NodeAnimPtr> _nodes;
@@ -263,6 +240,7 @@ class SetKeysInterpolationCommand
 public:
 
     SetKeysInterpolationCommand(const AnimItemDimViewKeyFramesMap & keys,
+                                const AnimationModuleBasePtr& model,
                                 KeyframeTypeEnum newInterpolation,
                                 QUndoCommand *parent);
 
@@ -277,8 +255,11 @@ private:
 
 
 private:
-    KeysWithOldCurveMap _keys;
+    AnimationModuleBaseWPtr _model;
+    ItemDimViewCurveSet _oldCurves;
+    AnimItemDimViewKeyFramesMap _keys;
     KeyframeTypeEnum _newInterpolation;
+    bool _isFirstRedo;
 };
 
 /**
@@ -298,8 +279,9 @@ public:
     };
 
 
-    MoveTangentCommand(SelectedTangentEnum deriv,
-                       const AnimatingObjectIPtr& object,
+    MoveTangentCommand(const AnimationModuleBasePtr& model,
+                       SelectedTangentEnum deriv,
+                       const AnimItemBasePtr& object,
                        DimIdx dimension,
                        ViewIdx view,
                        const KeyFrame& k,
@@ -307,8 +289,9 @@ public:
                        double dy,
                        QUndoCommand *parent = 0);
 
-    MoveTangentCommand(SelectedTangentEnum deriv,
-                       const AnimatingObjectIPtr& object,
+    MoveTangentCommand(const AnimationModuleBasePtr& model,
+                       SelectedTangentEnum deriv,
+                       const AnimItemBasePtr& object,
                        DimIdx dimension,
                        ViewIdx view,
                        const KeyFrame& k,
@@ -330,7 +313,8 @@ private:
 
 private:
 
-    AnimatingObjectIWPtr _object;
+    AnimationModuleBaseWPtr _model;
+    AnimItemBaseWPtr _object;
     DimIdx _dimension;
     ViewIdx _view;
     double _keyTime;
@@ -338,6 +322,7 @@ private:
     KeyframeTypeEnum _oldInterp, _newInterp;
     double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
+    bool _isFirstRedo;
 };
 
 

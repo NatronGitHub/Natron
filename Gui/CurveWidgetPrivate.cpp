@@ -64,59 +64,37 @@ NATRON_NAMESPACE_ENTER;
 
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
-                                       CurveSelection* selectionModel,
-                                       const TimeLinePtr& timeline,
-                                       CurveWidget* widget)
-    : _lastMousePos()
+                                       const AnimationModuleBasePtr& model,
+                                       CurveWidget* publicInterface)
+    : _model(model)
+    , _lastMousePos()
     , zoomCtx()
     , _state(eEventStateNone)
-    , _rightClickMenu( new Menu(widget) )
-    , _selectedCurveColor(255, 255, 89, 255)
-    , _nextCurveAddedColor()
+    , _rightClickMenu( new Menu(publicInterface) )
     , textRenderer()
-    , _font( new QFont(appFont, appFontSize) )
-    , _curves()
-    , _selectedKeyFrames()
     , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
     , _keyFramesClipBoard()
     , _selectionRectangle()
     , _dragStartPoint()
-    , _drawSelectedKeyFramesBbox(false)
     , _selectedKeyFramesBbox()
     , _selectedKeyFramesCrossVertLine()
     , _selectedKeyFramesCrossHorizLine()
-    , _timeline(timeline)
-    , _timelineEnabled(false)
     , _selectedDerivative()
     , _evaluateOnPenUp(false)
     , _keyDragLastMovement()
-    , _undoStack(new QUndoStack)
     , _gui(gui)
     , savedTexture(0)
     , sizeH()
     , zoomOrPannedSinceLastFit(false)
     , drawnOnce(false)
-    , _timelineTopPoly()
-    , _timelineBtmPoly()
-    , _widget(widget)
-    , _selectionModel(selectionModel)
+    , _widget(publicInterface)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _nextCurveAddedColor.setHsv(200, 255, 255);
-    //_rightClickMenu->setFont( QFont(appFont,appFontSize) );
-    _gui->registerNewUndoStack( _undoStack.get() );
 }
 
 CurveWidgetPrivate::~CurveWidgetPrivate()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    delete _font;
-    _curves.clear();
 }
 
 void
@@ -324,39 +302,6 @@ CurveWidgetPrivate::drawSelectionRectangle()
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
-void
-CurveWidgetPrivate::refreshTimelinePositions()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( (zoomCtx.screenWidth() <= 0) || (zoomCtx.screenWidth() <= 0) ) {
-        return;
-    }
-    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
-    QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, _widget->height() - 1);
-    QPointF btmCursorBtm( _timeline->currentFrame(), btmRight.y() );
-    QPointF btmcursorBtmWidgetCoord = zoomCtx.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
-    QPointF btmCursorTop = zoomCtx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-    QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2., btmcursorBtmWidgetCoord.y() );
-    QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2., btmcursorBtmWidgetCoord.y() );
-    QPointF topCursortop( _timeline->currentFrame(), topLeft.y() );
-    QPointF topcursorTopWidgetCoord = zoomCtx.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
-    QPointF topCursorBtm = zoomCtx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + CURSOR_HEIGHT);
-    QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - CURSOR_WIDTH / 2., topcursorTopWidgetCoord.y() );
-    QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + CURSOR_WIDTH / 2., topcursorTopWidgetCoord.y() );
-
-    _timelineBtmPoly.clear();
-    _timelineTopPoly.clear();
-
-    _timelineBtmPoly.push_back(btmCursorTop);
-    _timelineBtmPoly.push_back(btmCursorLeft);
-    _timelineBtmPoly.push_back(btmCursorRight);
-
-    _timelineTopPoly.push_back(topCursorBtm);
-    _timelineTopPoly.push_back(topCursorLeft);
-    _timelineTopPoly.push_back(topCursorRight);
-}
 
 void
 CurveWidgetPrivate::drawTimelineMarkers()
@@ -366,7 +311,6 @@ CurveWidgetPrivate::drawTimelineMarkers()
     assert( QGLContext::currentContext() == _widget->context() );
     glCheckError(GL_GPU);
 
-    refreshTimelinePositions();
 
     double cursorR, cursorG, cursorB;
     double boundsR, boundsG, boundsB;
@@ -402,19 +346,31 @@ CurveWidgetPrivate::drawTimelineMarkers()
         GL_GPU::glEnable(GL_POLYGON_SMOOTH);
         GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
 
-        assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
+        QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
+        QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, _widget->height() - 1);
+        QPointF btmCursorBtm( _timeline->currentFrame(), btmRight.y() );
+        QPointF btmcursorBtmWidgetCoord = zoomCtx.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
+        QPointF btmCursorTop = zoomCtx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF topCursortop( _timeline->currentFrame(), topLeft.y() );
+        QPointF topcursorTopWidgetCoord = zoomCtx.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
+        QPointF topCursorBtm = zoomCtx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + CURSOR_HEIGHT);
+        QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - CURSOR_WIDTH / 2., topcursorTopWidgetCoord.y() );
+        QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + CURSOR_WIDTH / 2., topcursorTopWidgetCoord.y() );
+
 
         GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( _timelineBtmPoly.at(0).x(), _timelineBtmPoly.at(0).y() );
-        GL_GPU::glVertex2f( _timelineBtmPoly.at(1).x(), _timelineBtmPoly.at(1).y() );
-        GL_GPU::glVertex2f( _timelineBtmPoly.at(2).x(), _timelineBtmPoly.at(2).y() );
+        GL_GPU::glVertex2f( btmCursorTop.x(), btmCursorTop.y() );
+        GL_GPU::glVertex2f( btmCursorLeft.x(), btmCursorLeft.y() );
+        GL_GPU::glVertex2f( btmCursorRight.x(), btmCursorRight.y() );
         GL_GPU::glEnd();
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
         GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( _timelineTopPoly.at(0).x(), _timelineTopPoly.at(0).y() );
-        GL_GPU::glVertex2f( _timelineTopPoly.at(1).x(), _timelineTopPoly.at(1).y() );
-        GL_GPU::glVertex2f( _timelineTopPoly.at(2).x(), _timelineTopPoly.at(2).y() );
+        GL_GPU::glVertex2f( topCursorBtm.x(), topCursorBtm.y() );
+        GL_GPU::glVertex2f( topCursorLeft.x(), topCursorLeft.y() );
+        GL_GPU::glVertex2f( topCursorRight.x(), topCursorRight.y() );
         GL_GPU::glEnd();
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
     glCheckErrorIgnoreOSXBug(GL_GPU);
@@ -428,10 +384,16 @@ CurveWidgetPrivate::drawCurves()
     assert( QGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
-    std::vector<CurveGuiPtr > visibleCurves;
-    _widget->getVisibleCurves(&visibleCurves);
-    int count = (int)visibleCurves.size();
+    AnimItemDimViewKeyFramesMap keys;
+    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> tableItems;
 
+    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
+
+    std::list<CurveGuiPtr> curves;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        it->first.item->getCurveGui(it->first.)
+    }
     for (int i = 0; i < count; ++i) {
         visibleCurves[i]->drawCurve(i, count);
     }

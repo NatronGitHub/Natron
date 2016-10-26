@@ -35,9 +35,9 @@ class AnimItemBasePrivate
 public:
 
     AnimItemBase* publicInterface;
-    AnimationModuleWPtr model;
+    AnimationModuleBaseWPtr model;
 
-    AnimItemBasePrivate(AnimItemBase* publicInterface, const AnimationModulePtr& model)
+    AnimItemBasePrivate(AnimItemBase* publicInterface, const AnimationModuleBasePtr& model)
     : publicInterface(publicInterface)
     , model(model)
     {
@@ -51,7 +51,7 @@ public:
 
 
 
-AnimItemBase::AnimItemBase(const AnimationModulePtr& model)
+AnimItemBase::AnimItemBase(const AnimationModuleBasePtr& model)
 : _imp(new AnimItemBasePrivate(this, model))
 {
 
@@ -62,7 +62,7 @@ AnimItemBase::~AnimItemBase()
 
 }
 
-AnimationModulePtr
+AnimationModuleBasePtr
 AnimItemBase::getModel() const
 {
     return _imp->model.lock();
@@ -120,6 +120,18 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameWith
             _imp->addKeyFramesForDimView(DimIdx(dimension.value()), ViewIdx(viewSpec.value()), result);
         }
     }
+}
+
+double
+AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimension, ViewIdx view)
+{
+    CurvePtr curve = getCurve(dimension, view);
+    assert(curve);
+    if (!curve) {
+        throw std::runtime_error("Curve is null");
+    }
+    return curve->getValueAt(x);
+   
 }
 
 NATRON_NAMESPACE_EXIT;

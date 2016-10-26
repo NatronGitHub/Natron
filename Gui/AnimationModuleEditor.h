@@ -94,7 +94,8 @@ public:
                           QWidget *parent = 0);
 
     virtual ~AnimationModuleEditor();
-    
+
+
     /**
      * @brief Tells to the dope sheet model to add 'nodeGui' to the dope sheet
      * editor.
@@ -120,6 +121,8 @@ public:
     int getTimelineCurrentTime() const;
 
     DopeSheetView* getDopesheetView() const;
+
+    CurveWidget* getCurveWidget() const;
 
     AnimationModuleTreeView* getTreeView() const;
 

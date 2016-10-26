@@ -67,23 +67,11 @@ public:
 
 
 NodeAnim::NodeAnim(const AnimationModulePtr &model,
-                   AnimatedItemTypeEnum itemType,
                    const NodeGuiPtr &nodeGui)
 : _imp(new NodeAnimPrivate)
 {
     _imp->model = model;
-    _imp->nodeType = itemType;
-    _imp->nameItem.reset(new QTreeWidgetItem);
     _imp->nodeGui = nodeGui;
-
-    NodePtr internalNode = nodeGui->getNode();
-
-
-    _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
-    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
-    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
-
-    connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
 
 
 }
@@ -97,8 +85,22 @@ NodeAnim::~NodeAnim()
 }
 
 void
-NodeAnim::initialize()
+NodeAnim::initialize(AnimatedItemTypeEnum itemType)
 {
+    _imp->nodeType = itemType;
+    NodePtr internalNode = getNodeGui()->getNode();
+
+    NodeAnimPtr thisShared = shared_from_this();
+    _imp->nameItem.reset(new QTreeWidgetItem);
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
+    _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
+
+    connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
+
+
+
     initializeKnobsAnim();
 
     initializeTableItems();
@@ -223,7 +225,7 @@ NodeAnim::onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum
         }
     }
     if (found) {
-        getModel()->getSelectionModel().removeAnyReferenceFromSelection(found);
+        getModel()->getSelectionModel()->removeAnyReferenceFromSelection(found);
     }
 }
 

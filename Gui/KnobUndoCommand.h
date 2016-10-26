@@ -158,9 +158,9 @@ private:
 
         // If any keyframe was added due to auto-keying, remove it
         for (std::size_t i = 0; i < _oldValue.size(); ++i) {
-            if (_dimension.isAll() || i == _dimension) {
+            if (_dimension.isAll() || (int)i == _dimension) {
                 if (_valueChangedReturnCode[i] == eValueChangedReturnCodeKeyframeAdded) {
-                    knob->deleteValueAtTime(_timelineTime, _view, DimIdx(i), _reason);
+                    knob->deleteValueAtTime(_timelineTime, _view, DimIdx(i));
                 }
             }
         }
@@ -169,7 +169,7 @@ private:
         knob->setAutoKeyingEnabled(false);
         if (_dimension.isAll()) {
             // Multiple dimensions set at once
-            knob->setValueAcrossDimension(_oldValue, _view, _reason);
+            knob->setValueAcrossDimensions(_oldValue, _view, _reason);
         } else {
             // Only one dimension set
             ignore_result(knob->setValue(_oldValue[0], _view, _dimension, _reason));
@@ -195,7 +195,7 @@ private:
 
         if (_dimension.isAll() && (int)_newValue.size() > 1) {
             // Multiple dimensions set at once
-            knob->setValueAcrossDimension(_newValue, _view, _reason, &_valueChangedReturnCode);
+            knob->setValueAcrossDimensions(_newValue, _view, _reason, &_valueChangedReturnCode);
         } else {
             // Only one dimension set
             _valueChangedReturnCode[0] = knob->setValue(_newValue[0], _view, _dimension, _reason);

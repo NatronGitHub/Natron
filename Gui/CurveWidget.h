@@ -50,7 +50,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
-#include "Gui/AnimationModuleEditorUndoRedo.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -69,33 +68,16 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
     CurveWidget(Gui* gui,
-                CurveSelection* selection,
-                TimeLinePtr timeline = TimeLinePtr(),
-                QWidget* parent = NULL,
-                const QGLWidget* shareWidget = NULL);
+                const AnimationModuleBasePtr& model,
+                QWidget* parent);
 
     virtual ~CurveWidget() OVERRIDE;
-
-    const QFont & getTextFont() const;
 
     void centerOn(double xmin, double xmax);
     void centerOn(double xmin, double xmax, double ymin, double ymax);
 
-    void addCurveAndSetColor(const CurveGuiPtr& curve);
-
-    void removeCurve(CurveGui* curve);
-
     void centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayRange);
-
-    void showCurvesAndHideOthers(const std::vector<CurveGuiPtr > & curves);
-
-    void getVisibleCurves(std::vector<CurveGuiPtr >* curves) const;
-
-    void setSelectedKeys(const SelectedKeys & keys);
-
-    bool isSelectedKey(const CurveGuiPtr& curve, double time) const;
 
     void refreshSelectedKeysAndUpdate();
 
@@ -163,9 +145,6 @@ public:
 
     void refreshCurveDisplayTangents(CurveGui* curve);
 
-    QUndoStack* getUndoStack() const;
-    void pushUndoCommand(QUndoCommand* cmd);
-
     // The interact will be drawn after the background and before any curve
     void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
     OfxParamOverlayInteractPtr getCustomInteract() const;
@@ -179,28 +158,6 @@ public Q_SLOTS:
     void exportCurveToAscii();
 
     void importCurveFromAscii();
-
-    void deleteSelectedKeyFrames();
-
-    void copySelectedKeyFramesToClipBoard();
-
-    void pasteKeyFramesFromClipBoardToSelectedCurve();
-
-    void selectAllKeyFrames();
-
-    void constantInterpForSelectedKeyFrames();
-
-    void linearInterpForSelectedKeyFrames();
-
-    void smoothForSelectedKeyFrames();
-
-    void catmullromInterpForSelectedKeyFrames();
-
-    void cubicInterpForSelectedKeyFrames();
-
-    void horizontalInterpForSelectedKeyFrames();
-
-    void breakDerivativesForSelectedKeyFrames();
 
     void frameAll();
 
@@ -216,11 +173,9 @@ public Q_SLOTS:
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(int, int);
-
     void onUpdateOnPenUpActionTriggered();
 
-    void onEditKeyFrameDialogFinished();
+    void onEditKeyFrameDialogFinished(bool accepted);
 
 private:
 
@@ -235,7 +190,6 @@ private:
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0) OVERRIDE FINAL;
 
     void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font, int flags = 0) const;
@@ -249,10 +203,6 @@ private:
      *@brief See toWidgetCoordinates in ViewerGL.h
      **/
     QPointF toWidgetCoordinates(double x, double y) const;
-
-    const QColor & getSelectedCurveColor() const;
-    const QFont & getFont() const;
-    const SelectedKeys & getSelectedKeyFrames() const;
 
     void addKey(const CurveGuiPtr& curve, double xCurve, double yCurve);
 

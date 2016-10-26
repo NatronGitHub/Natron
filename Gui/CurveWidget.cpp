@@ -61,65 +61,22 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
-/*****************************CURVE WIDGET***********************************************/
-
-
-bool
-CurveWidget::isSelectedKey(const CurveGuiPtr& curve,
-                           double time) const
-{
-    SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.find(curve);
-
-    if ( it == _imp->_selectedKeyFrames.end() ) {
-        return false;
-    }
-
-    for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-        if ( ( time >= ( (*it2)->key.getTime() - 1e-6 ) ) && ( time <= ( (*it2)->key.getTime() + 1e-6 ) ) ) {
-            return true;
-        }
-    }
-
-
-    return false;
-}
-
-void
-CurveWidget::pushUndoCommand(QUndoCommand* cmd)
-{
-    _imp->_undoStack->setActive();
-    _imp->_undoStack->push(cmd);
-}
-
-QUndoStack*
-CurveWidget::getUndoStack() const
-{
-    return _imp->_undoStack.get();
-}
-
-///////////////////////////////////////////////////////////////////
-// CurveWidget
-//
-
 CurveWidget::CurveWidget(Gui* gui,
-                         CurveSelection* selection,
-                         TimeLinePtr timeline,
-                         QWidget* parent,
-                         const QGLWidget* shareWidget)
-    : QGLWidget(parent, shareWidget)
-    , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
+                         const AnimationModuleBasePtr& model,
+                         QWidget* parent)
+    : QGLWidget(parent, NULL /*shareWidget*/)
+    , _imp( new CurveWidgetPrivate(gui, model, this) )
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 
+    TimeLinePtr timeline = model->getTimeline();
     if (timeline) {
         ProjectPtr project = gui->getApp()->getProject();
         assert(project);
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
-        QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)) );
+        QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(update()) );
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
 
         double left, right;
@@ -153,38 +110,6 @@ CurveWidget::initializeGL()
     appPTR->initializeOpenGLFunctionsOnce();
 }
 
-void
-CurveWidget::addCurveAndSetColor(const CurveGuiPtr& curve)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    //update(); //force initializeGL to be called if it wasn't before.
-    _imp->_curves.push_back(curve);
-    curve->setColor(_imp->_nextCurveAddedColor);
-    _imp->_nextCurveAddedColor.setHsv( _imp->_nextCurveAddedColor.hsvHue() + 60,
-                                       _imp->_nextCurveAddedColor.hsvSaturation(), _imp->_nextCurveAddedColor.value() );
-}
-
-void
-CurveWidget::removeCurve(CurveGui *curve)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if (it->get() == curve) {
-            //remove all its keyframes from selected keys
-            SelectedKeys::iterator found = _imp->_selectedKeyFrames.find(*it);
-            if ( found != _imp->_selectedKeyFrames.end() ) {
-                _imp->_selectedKeyFrames.erase(found);
-            }
-
-            _imp->_curves.erase(it);
-            break;
-        }
-    }
-}
 
 void
 CurveWidget::centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayRange)
@@ -285,25 +210,7 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayR
     if ( doCenter && !ret.isNull() ) {
         centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
     }
-}
-
-void
-CurveWidget::showCurvesAndHideOthers(const std::vector<CurveGuiPtr > & curves)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    for (std::list<CurveGuiPtr >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        std::vector<CurveGuiPtr >::const_iterator it2 = std::find(curves.begin(), curves.end(), *it);
-
-        if ( it2 != curves.end() ) {
-            (*it)->setVisible(true);
-        } else {
-            (*it)->setVisible(false);
-        }
-    }
-    update();
-}
+} // centerOn
 
 void
 CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
@@ -374,18 +281,6 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
     refreshSelectedKeysBbox();
 }
 
-void
-CurveWidget::getVisibleCurves(std::vector<CurveGuiPtr >* curves) const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    for (std::list<CurveGuiPtr >::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            curves->push_back(*it);
-        }
-    }
-}
 
 void
 CurveWidget::centerOn(double xmin,
@@ -801,8 +696,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
 
         ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
         ///it closes it.
-        QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditKeyFrameDialogFinished()) );
-        QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditKeyFrameDialogFinished()) );
+        QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditKeyFrameDialogFinished(bool)) );
         dialog->show();
 
         e->accept();
@@ -828,7 +722,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
 } // CurveWidget::mouseDoubleClickEvent
 
 void
-CurveWidget::onEditKeyFrameDialogFinished()
+CurveWidget::onEditKeyFrameDialogFinished(bool /*accepted*/)
 {
     EditKeyFrameDialog* dialog = qobject_cast<EditKeyFrameDialog*>( sender() );
 
@@ -1728,216 +1622,6 @@ CurveWidget::refreshSelectedKeysAndUpdate()
 }
 
 void
-CurveWidget::constantInterpForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeConstant);
-}
-
-void
-CurveWidget::linearInterpForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeLinear);
-}
-
-void
-CurveWidget::smoothForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
-}
-
-void
-CurveWidget::catmullromInterpForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
-}
-
-void
-CurveWidget::cubicInterpForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeCubic);
-}
-
-void
-CurveWidget::horizontalInterpForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
-}
-
-void
-CurveWidget::breakDerivativesForSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->setSelectedKeysInterpolation(eKeyframeTypeBroken);
-}
-
-void
-CurveWidget::deleteSelectedKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( _imp->_selectedKeyFrames.empty() ) {
-        return;
-    }
-
-    _imp->_drawSelectedKeyFramesBbox = false;
-    _imp->_selectedKeyFramesBbox.setBottomRight( QPointF(0, 0) );
-    _imp->_selectedKeyFramesBbox.setTopLeft( _imp->_selectedKeyFramesBbox.bottomRight() );
-
-    //apply the same strategy than for moveSelectedKeyFrames()
-
-    std::map<CurveGuiPtr, std::vector<RemoveKeysCommand::ValueAtTime> >  toRemove;
-    for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        std::vector<RemoveKeysCommand::ValueAtTime>& vect = toRemove[it->first];
-        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-
-            RemoveKeysCommand::ValueAtTime v;
-            v.time = (*it2)->key.getTime();
-            v.value = Variant((*it2)->key.getValue());
-            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
-
-            // For string knobs, we have to store the string because we need to remember the string we removed
-            if (isKnobCurve) {
-                KnobIPtr knob = isKnobCurve->getInternalKnob();
-                AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-                if (isString) {
-                    v.value = Variant(QString::fromUtf8(isString->getStringAtTime(v.time, ViewSpec::current(), 0).c_str()));
-                }
-            }
-            vect.push_back(v);
-        }
-    }
-
-    pushUndoCommand( new RemoveKeysCommand(this, toRemove) );
-
-
-    _imp->_selectedKeyFrames.clear();
-
-    update();
-}
-
-void
-CurveWidget::copySelectedKeyFramesToClipBoard()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->_keyFramesClipBoard.clear();
-    for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            _imp->_keyFramesClipBoard.push_back( (*it2)->key );
-        }
-    }
-}
-
-void
-CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    CurveGuiPtr curve;
-    for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isSelected() ) {
-            curve = (*it);
-            break;
-        }
-    }
-    if (!curve) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first.").toStdString() );
-
-        return;
-    }
-    //this function will call update() for us
-    pushUndoCommand( new AddKeysCommand(this, curve, _imp->_keyFramesClipBoard) );
-}
-
-void
-CurveWidget::selectAllKeyFrames()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _imp->_drawSelectedKeyFramesBbox = true;
-    _imp->_selectedKeyFrames.clear();
-    for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-
-            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
-            bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-            if (internalCurve) {
-                isPeriodic = internalCurve->isCurvePeriodic();
-                parametricRange = internalCurve->getXRange();
-            }
-            KeyFrameSet set = (*it)->getKeyFrames();
-            std::list<KeyPtr>& selectedKeysForcurve = _imp->_selectedKeyFrames[*it];
-            KeyFrameSet::const_iterator it2 = set.begin();
-            KeyFrameSet::const_iterator prev = set.end();
-            KeyFrameSet::const_iterator next = it2;
-            ++next;
-            for (; it2 != set.end(); ++it2) {
-                KeyFrame prevKey;
-                bool hasPrev = false;
-                if ( prev != set.end() ) {
-                    prevKey = *prev;
-                    hasPrev = true;
-                } else if (isPeriodic) {
-                    KeyFrameSet::const_reverse_iterator last = set.rbegin();
-                    prevKey = *last;
-                    prevKey.setTime(prevKey.getTime() - (parametricRange.second - parametricRange.first));
-                    hasPrev = true;
-                }
-                KeyFrame nextKey;
-                bool hasNext = false;
-                if ( next != set.end() ) {
-                    nextKey = *next;
-                    hasNext = true;
-                } else if (isPeriodic) {
-                    KeyFrameSet::const_iterator start = set.begin();
-                    nextKey = *start;
-                    nextKey.setTime(nextKey.getTime() + (parametricRange.second - parametricRange.first));
-                    hasNext = true;
-                }
-                KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
-                selectedKeysForcurve.push_back(newSelectedKey);
-
-                if ( prev != set.end() ) {
-                    ++prev;
-                } else {
-                    prev = set.begin();
-                }
-                if ( next != set.end() ) {
-                    ++next;
-                }
-            }
-        }
-    }
-
-    refreshSelectedKeysAndUpdate();
-}
-
-void
 CurveWidget::loopSelectedCurve()
 {
     CurveEditor* ce = 0;
@@ -1979,7 +1663,7 @@ CurveWidget::loopSelectedCurve()
         std::string script = ss.str();
         ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
     }
-}
+} // loopSelectedCurve
 
 void
 CurveWidget::negateSelectedCurve()
@@ -2012,7 +1696,7 @@ CurveWidget::negateSelectedCurve()
     ss << "-curve(frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
     ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
-}
+} // negateSelectedCurve
 
 void
 CurveWidget::reverseSelectedCurve()
@@ -2045,7 +1729,7 @@ CurveWidget::reverseSelectedCurve()
     ss << "curve(-frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
     ce->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
-}
+} // reverseSelectedCurve
 
 void
 CurveWidget::frameAll()
@@ -2089,51 +1773,6 @@ CurveWidget::onTimeLineFrameChanged(SequenceTime,
     }
 }
 
-void
-CurveWidget::onTimeLineBoundariesChanged(int,
-                                         int)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    update();
-}
-
-const QColor &
-CurveWidget::getSelectedCurveColor() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->_selectedCurveColor;
-}
-
-const QFont &
-CurveWidget::getFont() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return *_imp->_font;
-}
-
-const SelectedKeys &
-CurveWidget::getSelectedKeyFrames() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->_selectedKeyFrames;
-}
-
-const QFont &
-CurveWidget::getTextFont() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return *_imp->_font;
-}
 
 void
 CurveWidget::centerOn(double xmin,
@@ -2182,12 +1821,6 @@ CurveWidget::onUpdateOnPenUpActionTriggered()
     bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     appPTR->getCurrentSettings()->setRenderOnEditingFinishedOnly(!updateOnPenUpOnly);
-}
-
-void
-CurveWidget::focusInEvent(QFocusEvent* e)
-{
-    QGLWidget::focusInEvent(e);
 }
 
 void

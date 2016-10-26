@@ -41,10 +41,17 @@ NATRON_NAMESPACE_ENTER;
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Project.h"
 
+
 #include "Gui/AnimationModule.h"
+#include "Gui/CurveGui.h"
 #include "Gui/KnobItemsTableGui.h"
 
-typedef std::map<ViewIdx, QTreeWidgetItem*> PerViewItemMap;
+struct ItemCurve
+{
+    QTreeWidgetItem* item;
+    CurveGuiPtr curve;
+};
+typedef std::map<ViewIdx, ItemCurve> PerViewItemMap;
 
 class TableItemAnimPrivate
 {
@@ -85,41 +92,7 @@ TableItemAnim::TableItemAnim(const AnimationModulePtr& model,
     _imp->tableItem = item;
 
     connect(item.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onInternalItemLabelChanged(QString,TableChangeReasonEnum)));
-    QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
 
-    _imp->nameItem = new QTreeWidgetItem;
-    _imp->nameItem->setText(0, itemLabel);
-    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemRoot);
-    assert(parentItem);
-    parentItem->addChild(_imp->nameItem);
-
-    if (item->getCanAnimateUserKeyframes()) {
-        std::list<ViewIdx> views = item->getViewsList();
-        const std::vector<std::string>& projectViews = item->getApp()->getProject()->getProjectViewNames();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            QString viewName;
-            if (*it >= 0 && *it < (int)projectViews.size()) {
-                viewName = QString::fromUtf8(projectViews[*it].c_str());
-            }
-            QTreeWidgetItem* animationItem = new QTreeWidgetItem;
-            QString itemLabel;
-            if (views.size() > 1) {
-                itemLabel += viewName + QString::fromUtf8(" ");
-                itemLabel += tr("Animation");
-            }
-            animationItem->setText(0, itemLabel);
-            animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
-            _imp->animationItems[*it] = animationItem;
-            _imp->nameItem->addChild(animationItem);
-        }
-
-    }
-
-    std::vector<KnobTableItemPtr> children = item->getChildren();
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        TableItemAnimPtr child(TableItemAnim::create(model, table, parentNode, children[i], _imp->nameItem));
-        _imp->children.push_back(child);
-    }
 }
 
 TableItemAnim::~TableItemAnim()
@@ -159,7 +132,7 @@ TableItemAnim::getTreeItem(DimSpec /*dimension*/, ViewSetSpec view) const
     if (foundView == _imp->animationItems.end()) {
         return 0;
     }
-    return foundView->second;
+    return foundView->second.item;
 }
 
 CurvePtr
@@ -170,6 +143,30 @@ TableItemAnim::getCurve(DimIdx dimension, ViewIdx view) const
         return CurvePtr();
     }
     return item->getAnimationCurve(view, dimension);
+}
+
+CurveGuiPtr
+TableItemAnim::getCurveGui(DimIdx dimension, ViewIdx view) const
+{
+    PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
+    if (foundView == _imp->animationItems.end()) {
+        return CurveGuiPtr();
+    }
+    return foundView->second.curve;
+
+}
+
+QString
+TableItemAnim::getViewDimensionLabel(DimIdx dimension, ViewIdx view) const
+{
+    QString ret = _imp->nameItem->text(0);
+
+    QTreeWidgetItem* item = getTreeItem(dimension, view);
+    if (item) {
+        ret += QLatin1Char(' ');
+        ret += item->text(0);
+    }
+    return ret;
 }
 
 std::list<ViewIdx>
@@ -271,30 +268,58 @@ TableItemAnim::removeItem(const KnobTableItemPtr& item)
     return TableItemAnimPtr();
 }
 
-bool
-TableItemAnim::getTreeItemViewDimension(QTreeWidgetItem* item, DimSpec* dimension, ViewSetSpec* view, AnimatedItemTypeEnum* type) const
-{
-    if (item == _imp->nameItem) {
-        *dimension = DimSpec::all();
-        *view = ViewSetSpec::all();
-        *type = eAnimatedItemTypeTableItemRoot;
-        return true;
-    }
-
-    for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it != _imp->animationItems.end(); ++it) {
-        if (it->second == item) {
-            *view = ViewSetSpec(it->first);
-            *dimension = DimSpec(0);
-            *type = eAnimatedItemTypeTableItemAnimation;
-            return true;
-        }
-    }
-    return false;
-}
 
 void
 TableItemAnim::initialize()
 {
+    KnobTableItemPtr item = getInternalItem();
+    QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
+
+    AnimItemBasePtr thisShared = shared_from_this();
+
+    _imp->nameItem = new QTreeWidgetItem;
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
+    _imp->nameItem->setText(0, itemLabel);
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemRoot);
+    assert(parentItem);
+    parentItem->addChild(_imp->nameItem);
+
+    CurveWidget* curveWidget = getModel()->getCurveWidget();
+
+    if (item->getCanAnimateUserKeyframes()) {
+        std::list<ViewIdx> views = item->getViewsList();
+        const std::vector<std::string>& projectViews = item->getApp()->getProject()->getProjectViewNames();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            QString viewName;
+            if (*it >= 0 && *it < (int)projectViews.size()) {
+                viewName = QString::fromUtf8(projectViews[*it].c_str());
+            }
+            QTreeWidgetItem* animationItem = new QTreeWidgetItem;
+            QString itemLabel;
+            if (views.size() > 1) {
+                itemLabel += viewName + QString::fromUtf8(" ");
+                itemLabel += tr("Animation");
+            }
+            animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
+            animationItem->setText(0, itemLabel);
+            animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
+            ItemCurve& ic = _imp->animationItems[*it];
+            ic.item = animationItem;
+            if (curveWidget) {
+                ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it))
+            }
+
+            _imp->nameItem->addChild(animationItem);
+        }
+
+    }
+
+    std::vector<KnobTableItemPtr> children = item->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        TableItemAnimPtr child(TableItemAnim::create(model, table, parentNode, children[i], _imp->nameItem));
+        _imp->children.push_back(child);
+    }
+
     initializeKnobsAnim();
 }
 
@@ -346,7 +371,7 @@ TableItemAnim::refreshKnobsVisibility()
 void
 TableItemAnim::refreshVisibility()
 {
-
+    refreshKnobsVisibility();
 }
 
 NATRON_NAMESPACE_EXIT;

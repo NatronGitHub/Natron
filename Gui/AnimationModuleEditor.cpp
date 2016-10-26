@@ -38,11 +38,15 @@
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleTreeView.h"
+#include "Gui/Button.h"
+#include "Gui/CurveWidget.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/Label.h"
+#include "Gui/LineEdit.h"
 #include "Gui/NodeGui.h"
 #include "Gui/GuiMacros.h"
 #include "Engine/TimeLine.h"
@@ -59,19 +63,40 @@ public:
     /* attributes */
     AnimationModuleEditor *publicInterface;
     QVBoxLayout *mainLayout;
-    AnimationModulePtr model;
-    QSplitter *splitter;
+
+
+    QWidget* buttonsContainer;
+    QHBoxLayout* buttonsLayout;
+    Button* curveEditorButton;
+    Button* dopeSheetButton;
+    Button* displayBothButton;
+
+    Label* knobLabel;
+    LineEdit* knobExpressionLineEdit;
+    Label* expressionResultLabel;
+
+
+    QSplitter *treeAndViewSplitter;
+
+
     AnimationModuleTreeView *treeView;
-    DopeSheetView *dopeSheetView;
+
+    QSplitter *viewsSplitter;
+    DopeSheetView* dopeSheetView;
+    CurveWidget* curveView;
+
+    AnimationModulePtr model;
+
 };
 
 AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor *publicInterface)
 : publicInterface(publicInterface)
 , mainLayout(0)
-, model()
 , splitter(0)
 , treeView(0)
 , dopeSheetView(0)
+, curveView(0)
+, model()
 {}
 
 /**
@@ -103,8 +128,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->splitter->addWidget(_imp->treeView);
     _imp->splitter->setStretchFactor(0, 1);
 
-    _imp->dopeSheetView = new DopeSheetView(_imp->model.get(), _imp->treeView, gui, timeline, _imp->splitter);
-
+    _imp->dopeSheetView = new DopeSheetView(_imp->model, _imp->treeView, gui, _imp->splitter);
+    _imp->curveView = new CurveWidget(gui, _imp->model, _imp->splitter);
     _imp->splitter->addWidget(_imp->dopeSheetView);
     _imp->splitter->setStretchFactor(1, 5);
 
@@ -117,7 +142,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     connect( _imp->model.get(), SIGNAL(nodeAboutToBeRemoved(NodeAnimPtr)),
              _imp->treeView, SLOT(onNodeAboutToBeRemoved(NodeAnimPtr)) );
 
-    connect( &_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)),
              _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
 
     // Main model -> DopeSheetView connections
@@ -130,7 +155,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     connect( _imp->model.get(), SIGNAL(modelChanged()),
              _imp->dopeSheetView, SLOT(redraw()) );
 
-    connect( &_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)),
              _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()) );
 
     // HierarchyView -> DopeSheetView connections
@@ -182,6 +207,12 @@ DopeSheetView*
 AnimationModuleEditor::getDopesheetView() const
 {
     return _imp->dopeSheetView;
+}
+
+CurveWidget*
+AnimationModuleEditor::getCurveWidget() const
+{
+    return _imp->curveView;
 }
 
 AnimationModuleTreeView*
