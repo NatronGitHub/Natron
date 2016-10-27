@@ -210,7 +210,7 @@ NodeGraph::onNodeCreationDialogFinished(bool accepted)
             }
         }
 
-        dialog->deleteLater();
+        dialog->close();
 
     }
 }
