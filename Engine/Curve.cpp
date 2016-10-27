@@ -1359,7 +1359,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     // We use a list here because the erase() function in C++98 does not return an iterator
     // and we need it to be efficient
     std::list<KeyFrame> originalKeyFramesMinusTransformedKeyFrames;
-    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
+         it != _imp->keyFrames.end();
+         ++it) {
         originalKeyFramesMinusTransformedKeyFrames.push_back(*it);
     }
     
@@ -1368,7 +1370,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     
     // To speed up findWithTime search, taking advantage of the fact that input times are ordered
     std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
-    for (std::list<double>::const_iterator it = times.begin(); it!=times.end(); ++it, ++i) {
+    for (std::list<double>::const_iterator it = times.begin();
+         it!=times.end();
+         ++it) {
         // Ensure the user passed increasing sorted keyframes
         assert(next == times.end() || *next > *it);
         if (next != times.end() && *next <= *it) {
@@ -1380,7 +1384,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         {
             // Since input keyframe times are sorted, we don't have to find before the time that was found
             // at the previous iteration
-            std::list<KeyFrame>::iterator findStart = findHint == originalKeyFramesMinusTransformedKeyFrames.end() ? originalKeyFramesMinusTransformedKeyFrames.begin() : findHint;
+            std::list<KeyFrame>::iterator findStart = ( ( findHint == originalKeyFramesMinusTransformedKeyFrames.end() ) ?
+                                                       originalKeyFramesMinusTransformedKeyFrames.begin() :
+                                                       findHint );
             found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
         }
         
@@ -1413,7 +1419,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     KeyFrameSet finalSet;
     
     // Insert in the final set the original keyframes we did not transform
-    for (std::list<KeyFrame>::iterator it = originalKeyFramesMinusTransformedKeyFrames.begin(); it = originalKeyFramesMinusTransformedKeyFrames.end(); ++it) {
+    for (std::list<KeyFrame>::const_iterator it = originalKeyFramesMinusTransformedKeyFrames.begin();
+         it != originalKeyFramesMinusTransformedKeyFrames.end();
+         ++it) {
         finalSet.insert(*it);
     }
     
@@ -1424,7 +1432,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     // Now make up the final keyframe set by merging originalKeyFramesMinusTransformedKeyFrames and warpedKeyFrames
     {
         int i = 0;
-        for (KeyFrameSet::const_iterator it = warpedKeyFrames.begin(); it != warpedKeyFrames.end(); ++it, ++i) {
+        for (KeyFrameSet::const_iterator it = warpedKeyFrames.begin();
+             it != warpedKeyFrames.end();
+             ++it, ++i) {
             std::pair<KeyFrameSet::iterator,bool> insertOk = finalSet.insert(*it);
             // A warped keyframe overlap an original keyframe left in the set, fail operation
             if (!insertOk.second) {
@@ -1445,7 +1455,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     if (keysAddedOut) {
         // Keyframes added are those in the final set that are not in the original set
         KeyFrameSet::iterator findHint = _imp->keyFrames.end();
-        for (KeyFrameSet::const_iterator it = finalSet.begin(); it != finalSet.begin(); ++it) {
+        for (KeyFrameSet::const_iterator it = finalSet.begin();
+             it != finalSet.begin();
+             ++it) {
             // Find in the original keyframes
             findHint = findWithTime(_imp->keyFrames, findHint, it->getTime());
             if (findHint == finalSet.end()) {
@@ -1458,7 +1470,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     if (keysRemovedOut) {
         // Keyframes removed are those in the original set that are not in the final set
         KeyFrameSet::iterator findHint = finalSet.end();
-        for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.begin(); ++it) {
+        for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
+             it != _imp->keyFrames.begin();
+             ++it) {
             // Find in the original keyframes
             findHint = findWithTime(finalSet, findHint, it->getTime());
             if (findHint == finalSet.end()) {
@@ -1469,7 +1483,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     
     // Now move finalSet to the member keyframes
     _imp->keyFrames.clear();
-    for (KeyFrameSet::iterator it = finalSet.begin(); it != finalSet.end(); ++it) {
+    for (KeyFrameSet::const_iterator it = finalSet.begin();
+         it != finalSet.end();
+         ++it) {
         
         std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
         
