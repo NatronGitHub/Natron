@@ -7,17 +7,17 @@ OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPo
 
 ## Checkout sources
 
-	git clone https://github.com/MrKepzie/Natron.git
-	cd Natron
+    git clone https://github.com/MrKepzie/Natron.git
+    cd Natron
 
 If you want to compile the bleeding edge version, use the master
 branch:
 
-	git checkout master
-	
+    git checkout master
+
 Update the submodules:
 
-	git submodule update -i --recursive 
+    git submodule update -i --recursive
 
 ## Install libraries
 
@@ -31,8 +31,8 @@ Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 You need an up to date MacPorts version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
-	sudo port selfupdate
-	sudo port upgrade outdated
+    sudo port selfupdate
+    sudo port upgrade outdated
 
 Then, you should add the "ports" provided by Natron. Edit as root the file `/opt/local/etc/macports/sources.conf` (as in `sudo nano /opt/local/etc/macports/sources.conf`) and add the following line at the beginning, with the path to the Natron sources (yes, there are three slashes after `file:`):
 
@@ -52,9 +52,9 @@ If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the defaul
 
 And finally install the required packages:
 
-	sudo port install qt4-mac boost cairo expat
-	sudo port install py27-pyside py27-sphinx
-	sudo ln -s python2.7-config /opt/local/bin/python2-config
+    sudo port install qt4-mac boost cairo expat gsed
+    sudo port install py27-pyside py27-sphinx
+    sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -107,7 +107,7 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo
+    brew install expat cairo gnu-sed
     brew install --build-from-source qt --with-mysql
 
 Qt will not build on macOS Sierra, and the last command fails, but a sierra-compatible brew is available (to be used only in Sierra, since this builds Qt from sources and takes a while)
@@ -132,7 +132,7 @@ The last command above will take a while, since it builds from sources, and shou
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
-	
+
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
 
 ### Installing a patched Qt to avoid stack overflows
@@ -221,17 +221,17 @@ EOF
 You can generate a makefile by opening a Terminal, setting the current
 directory to the toplevel source directory, and typing
 
-	qmake -r
+    qmake -r
 
 then type
 
-	make
-	
+    make
+
 This will create all binaries in all the subprojects folders.
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-	qmake -r CONFIG+=debug
+    qmake -r CONFIG+=debug
 
 * You can also enable logging by adding CONFIG+=log
 
@@ -247,12 +247,12 @@ tracker and in CImg-based plugins.
 
 First, install clang 3.8. On OS X 10.6 Snow Leopard 10.6:
 
-	sudo port install ld64-136 +llvm38 clang-3.8`
+    sudo port install ld64-136 +llvm38 clang-3.8`
 
 On OS X 10.7 or later:
 
-	sudo port install ld64-latest +llvm38 clang-3.8`
- 
+    sudo port install ld64-latest +llvm38 clang-3.8`
+
 Then configure using the following qmake command (replace `macx-clang`with `macx-clang-libc++` on OS X 10.9 and later):
 
     /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang QMAKE_CXX=clang++-mp-3.8 QMAKE_CXX=clang++-mp-3.8 QMAKE_CC=clang-mp-3.8 QMAKE_OBJECTIVE_CXX=clang++-mp-3.8 QMAKE_OBJECTIVE_CC=clang-mp-3.8 QMAKE_LD=clang++-mp-3.8 -r CONFIG+=openmp
@@ -260,21 +260,21 @@ Then configure using the following qmake command (replace `macx-clang`with `macx
 To build the plugins, use the following command-line (on OS X 10.9 and
 later, remove `-stdlib=libstdc++`):
 
-	make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
-	OSMESA_PATH=/opt/osmesa
-	LLVM_PATH=/opt/llvm
-	make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    OSMESA_PATH=/opt/osmesa
+    LLVM_PATH=/opt/llvm
+    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 
-Follow the instruction of build but 
+Follow the instruction of build but
 add -spec macx-xcode to the qmake call command:
 
-	qmake -r -spec macx-xcode
-	
+    qmake -r -spec macx-xcode
+
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
 ### Compiling plugins with Xcode
@@ -318,7 +318,7 @@ On MacPorts, this would look like:
 
 ## Testing
 
-	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+    (cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
 
 ## Generating Python bindings
 
@@ -349,7 +349,7 @@ tools/utils/runPostShiboken.sh
 
 **Note**
 Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
- 
+
 ## OpenFX plugins
 
 Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
@@ -357,8 +357,8 @@ Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:
 
-	brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
-	brew install tuttleofx
+    brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
+    brew install tuttleofx
 
 
 Or have a look at the [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX).
