@@ -43,36 +43,39 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/StringAnimationManager.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/Enums.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleTreeView.h"
-#include "Gui/DopeSheetHierarchyView.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleViewPrivateBase.h"
+#include "Gui/CurveGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobAnim.h"
 #include "Gui/Menu.h"
-#include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeAnim.h"
+#include "Gui/TableItemAnim.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ticks.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ZoomContext.h"
 #include "Gui/TabWidget.h"
 
 #define NATRON_DOPESHEET_MIN_RANGE_FIT 10
+
+#define CURSOR_WIDTH 15
+#define CURSOR_HEIGHT 8
 
 NATRON_NAMESPACE_ENTER;
 
@@ -88,9 +91,6 @@ typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 // Constants
-static const int KF_TEXTURES_COUNT = 18;
-static const int KF_PIXMAP_SIZE = 14;
-static const int KF_X_OFFSET = KF_PIXMAP_SIZE / 2;
 static const int DISTANCE_ACCEPTANCE_FROM_KEYFRAME = 5;
 static const int DISTANCE_ACCEPTANCE_FROM_READER_EDGE = 14;
 static const int DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM = 8;
@@ -124,44 +124,18 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 ////////////////////////// DopeSheetView //////////////////////////
 
-class DopeSheetViewPrivate
+class DopeSheetViewPrivate : public AnimationModuleViewPrivateBase
 {
     Q_DECLARE_TR_FUNCTIONS(DopeSheetView)
 
 public:
-    enum KeyframeTexture
+
+    DopeSheetViewPrivate(Gui* gui, AnimationModuleBasePtr& model, DopeSheetView *publicInterface);
+
+    virtual ~DopeSheetViewPrivate()
     {
-        kfTextureNone = -2,
-        kfTextureInterpConstant = 0,
-        kfTextureInterpConstantSelected,
 
-        kfTextureInterpLinear,
-        kfTextureInterpLinearSelected,
-
-        kfTextureInterpCurve,
-        kfTextureInterpCurveSelected,
-
-        kfTextureInterpBreak,
-        kfTextureInterpBreakSelected,
-
-        kfTextureInterpCurveC,
-        kfTextureInterpCurveCSelected,
-
-        kfTextureInterpCurveH,
-        kfTextureInterpCurveHSelected,
-
-        kfTextureInterpCurveR,
-        kfTextureInterpCurveRSelected,
-
-        kfTextureInterpCurveZ,
-        kfTextureInterpCurveZSelected,
-
-        kfTextureMaster,
-        kfTextureMasterSelected,
-    };
-
-    DopeSheetViewPrivate(DopeSheetView *publicInterface);
-    ~DopeSheetViewPrivate();
+    }
 
     /* functions */
 
@@ -195,51 +169,33 @@ public:
 
     bool isNearbySelectedKeysBRec(const QPointF& widgetPos) const;
 
-    std::vector<AnimItemDimViewAndTime> isNearByKeyframe(const KnobAnimPtr &KnobAnim, const QPointF &widgetCoords) const;
-    std::vector<AnimItemDimViewAndTime> isNearByKeyframe(NodeAnimPtr NodeAnim, const QPointF &widgetCoords) const;
+    KeyFrameWithStringSet isNearByKeyframe(const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, const QPointF &widgetCoords) const;
 
     double clampedMouseOffset(double fromTime, double toTime);
 
     // Textures
-    void generateKeyframeTextures();
-    DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(KeyframeTypeEnum kfType, bool selected) const;
+
 
     // Drawing
     void drawScale() const;
 
     void drawRows() const;
 
-    void drawNodeRow(const NodeAnimPtr NodeAnim) const;
-    void drawKnobRow(const KnobAnimPtr KnobAnim) const;
+    void drawTreeItemRecursive(QTreeWidgetItem* item, std::list<NodeAnimPtr>* nodesRowsOrdered) const;
+
+    void drawNodeRow(QTreeWidgetItem* treeItem, const NodeAnimPtr& item) const;
+    void drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
+    void drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
 
     void drawNodeRowSeparation(const NodeAnimPtr NodeAnim) const;
 
     void drawRange(const NodeAnimPtr &NodeAnim) const;
-    void drawKeyframes(const NodeAnimPtr &NodeAnim) const;
+    void drawKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view) const;
 
-    void drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
-                              bool drawTime,
-                              double time,
-                              const QColor& textColor,
-                              const RectD &rect) const;
 
     void drawGroupOverlay(const NodeAnimPtr &NodeAnim, const NodeAnimPtr &group) const;
 
-    void drawProjectBounds() const;
-    void drawCurrentFrameIndicator();
-
-    void drawSelectionRect() const;
-
-    void drawSelectedKeysBRect() const;
-
-    void renderText(double x, double y,
-                    const QString &text,
-                    const QColor &color,
-                    const QFont &font,
-                    int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
-
     // After or during an user interaction
-    void computeTimelinePositions();
     void computeSelectionRect(const QPointF &origin, const QPointF &current);
 
     void computeSelectedKeysBRect();
@@ -251,54 +207,25 @@ public:
     void computeTimeOffsetRange(const NodeAnimPtr& timeOffset);
     void computeFRRange(const NodeAnimPtr& frameRange);
     void computeGroupRange(const NodeAnimPtr& group);
+    void computeCommonNodeRange(const NodeAnimPtr& node);
 
     // User interaction
     void onMouseLeftButtonDrag(QMouseEvent *e);
 
-    void createSelectionFromRect(const RectD &rect, std::vector<AnimItemDimViewAndTime> *result, std::vector<NodeAnimPtr >* selectedNodes);
+    void createSelectionFromRect(const RectD &rect, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
 
     void moveCurrentFrameIndicator(double dt);
-
-    void createContextMenu();
 
     void updateCurveWidgetFrameRange();
 
     /* attributes */
-    DopeSheetView *publicInterface;
-    AnimationModuleBaseWPtr model;
+    DopeSheetView *_widget;
     AnimationModuleTreeView *treeView;
-    Gui *gui;
 
-    // necessary to retrieve some useful values for drawing
-    TimeLinePtr timeline;
-
-    //
     std::map<NodeAnimPtr, FrameRange> nodeRanges;
     std::list<NodeAnimPtr> nodeRangesBeingComputed; // to avoid recursion in groups
     int rangeComputationRecursion;
 
-    // for rendering
-    QFont *font;
-    TextRenderer textRenderer;
-
-    // for textures
-    GLuint kfTexturesIDs[KF_TEXTURES_COUNT];
-
-    // for navigating
-    mutable QMutex zoomContextMutex;
-    ZoomContext zoomContext;
-    bool zoomOrPannedSinceLastFit;
-
-    // for current time indicator
-    QPolygonF currentFrameIndicatorBottomPoly;
-
-    // for keyframe selection
-    // This is in zoom coordinates...
-    RectD selectionRect;
-
-    // keyframe selection rect
-    // This is in zoom coordinates
-    RectD selectedKeysBRect;
 
     // for various user interaction
     QPointF lastPosOnMousePress;
@@ -309,69 +236,66 @@ public:
     // for clip (Reader, Time nodes) user interaction
     NodeAnimPtr currentEditedReader;
 
-
-    // UI
-    Menu *contextMenu;
-
-    // True if paintGL was run at least once
-    bool drawnOnce;
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *publicInterface)
-    : publicInterface(publicInterface)
-    , model()
-    , treeView(0)
-    , gui(0)
-    , timeline()
-    , nodeRanges()
-    , nodeRangesBeingComputed()
-    , rangeComputationRecursion(0)
-    , font( new QFont(appFont, appFontSize) )
-    , textRenderer()
-    , kfTexturesIDs()
-    , zoomContext()
-    , zoomOrPannedSinceLastFit(false)
-    , selectionRect()
-    , selectedKeysBRect()
-    , lastPosOnMousePress()
-    , lastPosOnMouseMove()
-    , keyDragLastMovement()
-    , eventState(DopeSheetView::esNoEditingState)
-    , currentEditedReader()
-    , contextMenu( new Menu(publicInterface) )
-    , drawnOnce(false)
+DopeSheetViewPrivate::DopeSheetViewPrivate(Gui* gui, AnimationModuleBasePtr& model, DopeSheetView *publicInterface)
+: AnimationModuleViewPrivateBase(gui, publicInterface, model)
+, _widget(0)
+, treeView(0)
+, nodeRanges()
+, nodeRangesBeingComputed()
+, rangeComputationRecursion(0)
+, lastPosOnMousePress()
+, lastPosOnMouseMove()
+, keyDragLastMovement()
+, eventState(DopeSheetView::esNoEditingState)
+, currentEditedReader()
 {
 }
 
-DopeSheetViewPrivate::~DopeSheetViewPrivate()
-{
-    GL_GPU::glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
-}
-
-/*
-   This function is just wrong and confusing, it takes keyTime which is in zoom Coordinates  and y which is in widget coordinates
-   Do not uncomment
-   QRectF DopeSheetViewPrivate::keyframeRect(double keyTime, double y) const
-   {
-    QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
-
-    QRectF ret;
-    ret.setHeight(KF_PIXMAP_SIZE);
-    ret.setLeft(zoomContext.toZoomCoordinates(keyTime - KF_X_OFFSET, y).x());
-    ret.setRight(zoomContext.toZoomCoordinates(keyTime + KF_X_OFFSET, y).x());
-    ret.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-    return ret;
-   }
+/**
+ * @brief DopeSheetView::DopeSheetView
+ *
+ * Constructs a DopeSheetView object.
  */
+DopeSheetView::DopeSheetView(QWidget *parent)
+: AnimationViewBase(parent)
+, _imp()
+{
+    setMouseTracking(true);
+}
+
+/**
+ * @brief DopeSheetView::~DopeSheetView
+ *
+ * Destroys the DopeSheetView object.
+ */
+DopeSheetView::~DopeSheetView()
+{
+}
+
+
+void
+DopeSheetView::initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* /*publicInterface*/)
+{
+    _imp.reset(new DopeSheetViewPrivate(gui, model, this));
+    _imp->_widget = this;
+    AnimationModulePtr animModule = toAnimationModule(model);
+    assert(animModule);
+    _imp->treeView = animModule->getEditor()->getTreeView();
+    setImplementation(_imp);
+}
+
+
 
 RectD
 DopeSheetViewPrivate::getKeyFrameBoundingRectZoomCoords(double keyframeTimeZoomCoords,
                                                         double keyframeYCenterWidgetCoords) const
 {
-    double keyframeTimeWidget = zoomContext.toWidgetCoordinates(keyframeTimeZoomCoords, 0).x();
+    double keyframeTimeWidget = zoomCtx.toWidgetCoordinates(keyframeTimeZoomCoords, 0).x();
     RectD ret;
-    QPointF x1y1 = zoomContext.toZoomCoordinates(keyframeTimeWidget - KF_X_OFFSET, keyframeYCenterWidgetCoords + KF_PIXMAP_SIZE / 2);
-    QPointF x2y2 = zoomContext.toZoomCoordinates(keyframeTimeWidget + KF_X_OFFSET, keyframeYCenterWidgetCoords - KF_PIXMAP_SIZE / 2);
+    QPointF x1y1 = zoomCtx.toZoomCoordinates(keyframeTimeWidget - KF_X_OFFSET, keyframeYCenterWidgetCoords + KF_PIXMAP_SIZE / 2);
+    QPointF x2y2 = zoomCtx.toZoomCoordinates(keyframeTimeWidget + KF_X_OFFSET, keyframeYCenterWidgetCoords - KF_PIXMAP_SIZE / 2);
 
     ret.x1 = x1y1.x();
     ret.y1 = x1y1.y();
@@ -379,50 +303,6 @@ DopeSheetViewPrivate::getKeyFrameBoundingRectZoomCoords(double keyframeTimeZoomC
     ret.y2 = x2y2.y();
 
     return ret;
-}
-
-/**
- * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
- **/
-void
-DopeSheetView::toWidgetCoordinates(double *x,
-                                   double *y) const
-{
-    QPointF p = _imp->zoomContext.toWidgetCoordinates(*x, *y);
-
-    *x = p.x();
-    *y = p.y();
-}
-
-/**
- * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
- **/
-void
-DopeSheetView::toCanonicalCoordinates(double *x,
-                                      double *y) const
-{
-    QPointF p = _imp->zoomContext.toZoomCoordinates(*x, *y);
-
-    *x = p.x();
-    *y = p.y();
-}
-
-/**
- * @brief Returns the font height, i.e: the height of the highest letter for this font
- **/
-int
-DopeSheetView::getWidgetFontHeight() const
-{
-    return fontMetrics().height();
-}
-
-/**
- * @brief Returns for a string the estimated pixel size it would take on the widget
- **/
-int
-DopeSheetView::getStringWidthForCurrentFont(const std::string& string) const
-{
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
 
 /*
@@ -436,12 +316,12 @@ DopeSheetViewPrivate::rectToZoomCoordinates(const QRectF &rect) const
 {
     QPointF topLeft = rect.topLeft();
 
-    topLeft = zoomContext.toZoomCoordinates( topLeft.x(), topLeft.y() );
+    topLeft = zoomCtx.toZoomCoordinates( topLeft.x(), topLeft.y() );
     RectD ret;
     ret.x1 = topLeft.x();
     ret.y2 = topLeft.y();
     QPointF bottomRight = rect.bottomRight();
-    bottomRight = zoomContext.toZoomCoordinates( bottomRight.x(), bottomRight.y() );
+    bottomRight = zoomCtx.toZoomCoordinates( bottomRight.x(), bottomRight.y() );
     ret.x2 = bottomRight.x();
     ret.y1 = bottomRight.y();
     assert(ret.y2 >= ret.y1 && ret.x2 >= ret.x1);
@@ -458,8 +338,8 @@ DopeSheetViewPrivate::rectToZoomCoordinates(const QRectF &rect) const
 QRectF
 DopeSheetViewPrivate::rectToWidgetCoordinates(const RectD &rect) const
 {
-    QPointF topLeft = zoomContext.toWidgetCoordinates(rect.x1, rect.y2);
-    QPointF bottomRight = zoomContext.toWidgetCoordinates(rect.x2, rect.y1);
+    QPointF topLeft = zoomCtx.toWidgetCoordinates(rect.x1, rect.y2);
+    QPointF bottomRight = zoomCtx.toWidgetCoordinates(rect.x2, rect.y1);
 
     return QRectF( topLeft.x(), topLeft.y(), bottomRight.x() - topLeft.x(), bottomRight.y() - topLeft.y() );
 }
@@ -469,18 +349,18 @@ DopeSheetViewPrivate::nameItemRectToRowRect(const QRectF &rect) const
 {
     QPointF topLeft = rect.topLeft();
 
-    topLeft = zoomContext.toZoomCoordinates( topLeft.x(), topLeft.y() );
+    topLeft = zoomCtx.toZoomCoordinates( topLeft.x(), topLeft.y() );
     QPointF bottomRight = rect.bottomRight();
-    bottomRight = zoomContext.toZoomCoordinates( bottomRight.x(), bottomRight.y() );
+    bottomRight = zoomCtx.toZoomCoordinates( bottomRight.x(), bottomRight.y() );
 
-    return QRectF( QPointF( zoomContext.left(), topLeft.y() ),
-                   QPointF( zoomContext.right(), bottomRight.y() ) );
+    return QRectF( QPointF( zoomCtx.left(), topLeft.y() ),
+                   QPointF( zoomCtx.right(), bottomRight.y() ) );
 }
 
 Qt::CursorShape
 DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
 {
-    QPointF clickZoomCoords = zoomContext.toZoomCoordinates( widgetCoords.x(), widgetCoords.y() );
+    QPointF clickZoomCoords = zoomCtx.toZoomCoordinates( widgetCoords.x(), widgetCoords.y() );
 
     if ( isNearbySelectedKeysBRec(widgetCoords) ) {
         return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
@@ -492,64 +372,59 @@ DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
         return getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
     }
 
-    ///Look for a range node
-    AnimTreeItemNodeMap nodes = model->getItemNodeMap();
-    for (AnimTreeItemNodeMap::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( it->second->isRangeDrawingEnabled() ) {
-            std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find( it->second );
+    // Look for a range node
+    AnimationModuleBasePtr animModel = _model.lock();
+    const std::list<NodeAnimPtr>& selectedNodes = animModel->getSelectionModel()->getCurrentNodesSelection();
+    for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        if ( (*it)->isRangeDrawingEnabled() ) {
+            std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
             if ( foundRange == nodeRanges.end() ) {
                 continue;
             }
 
-            QRectF treeItemRect = hierarchyView->visualItemRect(it->first);
+            QRectF treeItemRect = treeView->visualItemRect((*it)->getTreeItem());
             const FrameRange& range = foundRange->second;
             RectD nodeClipRect;
             nodeClipRect.x1 = range.first;
             nodeClipRect.x2 = range.second;
-            nodeClipRect.y2 = zoomContext.toZoomCoordinates( 0, treeItemRect.top() ).y();
-            nodeClipRect.y1 = zoomContext.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
+            nodeClipRect.y2 = zoomCtx.toZoomCoordinates( 0, treeItemRect.top() ).y();
+            nodeClipRect.y1 = zoomCtx.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
 
-            AnimatedItemType nodeType = it->second->getItemType();
+            AnimatedItemTypeEnum nodeType = (*it)->getItemType();
             if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
-                if ( (nodeType == eAnimatedItemTypeGroup) ||
-                     ( nodeType == eAnimatedItemTypeReader) ||
-                     ( nodeType == eAnimatedItemTypeTimeOffset) ||
-                     ( nodeType == eAnimatedItemTypeFrameRange) ) {
-                    return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
-                }
+                return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
             }
             if (nodeType == eAnimatedItemTypeReader) {
                 if ( isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
                     return getCursorForEventState(DopeSheetView::esReaderLeftTrim);
                 } else if ( isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
                     return getCursorForEventState(DopeSheetView::esReaderRightTrim);
-                } else if ( model->canSlipReader(it->second) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
+                } else if ( animModel->canSlipReader(*it) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
                     return getCursorForEventState(DopeSheetView::esReaderSlip);
                 }
             }
         }
     } // for (AnimTreeItemNodeMap::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
 
-    QTreeWidgetItem *treeItem = hierarchyView->itemAt( 0, widgetCoords.y() );
+    QTreeWidgetItem *treeItem = treeView->itemAt( 0, widgetCoords.y() );
     //Did not find a range node, look for keyframes
     if (treeItem) {
-        AnimTreeItemNodeMap NodeAnimItems = model->getItemNodeMap();
-        AnimTreeItemNodeMap::const_iterator foundNodeAnim = NodeAnimItems.find(treeItem);
-        if ( foundNodeAnim != NodeAnimItems.end() ) {
-            const NodeAnimPtr &NodeAnim = (*foundNodeAnim).second;
-            AnimatedItemType nodeType = NodeAnim->getItemType();
-            if (nodeType == eAnimatedItemTypeCommon) {
-                std::vector<AnimKeyFrame> keysUnderMouse = isNearByKeyframe(NodeAnim, widgetCoords);
 
-                if ( !keysUnderMouse.empty() ) {
-                    return getCursorForEventState(DopeSheetView::esPickKeyframe);
-                }
+        AnimatedItemTypeEnum itemType;
+        KnobAnimPtr isKnob;
+        NodeAnimPtr isNode;
+        TableItemAnimPtr isTableItem;
+        ViewSetSpec view;
+        DimSpec dimension;
+        if (animModel->findItem(treeItem, &itemType, &isKnob, &isTableItem, &isNode, &view, &dimension)) {
+            AnimItemBasePtr itemBase;
+            if (isKnob) {
+                itemBase = isKnob;
+            } else if (isTableItem) {
+                itemBase = isTableItem;
             }
-        } else { // if (foundNodeAnim != NodeAnimItems.end()) {
-            //We may be on a knob row
-            KnobAnimPtr KnobAnim = hierarchyView->getKnobAnimAt( widgetCoords.y() );
-            if (KnobAnim) {
-                std::vector<AnimKeyFrame> keysUnderMouse = isNearByKeyframe(KnobAnim, widgetCoords);
+            if (itemBase) {
+                KeyFrameWithStringSet keysUnderMouse = isNearByKeyframe(itemBase, dimension, view, widgetCoords);
 
                 if ( !keysUnderMouse.empty() ) {
                     return getCursorForEventState(DopeSheetView::esPickKeyframe);
@@ -600,155 +475,58 @@ bool
 DopeSheetViewPrivate::isNearByClipRectLeft(const QPointF& zoomCoordPos,
                                            const RectD &clipRect) const
 {
-    QPointF widgetPos = zoomContext.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
-    QPointF rectx1y1 = zoomContext.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
-    QPointF rectx2y2 = zoomContext.toWidgetCoordinates( clipRect.right(), clipRect.top() );
+    QPointF widgetPos = zoomCtx.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
+    QPointF rectx1y1 = zoomCtx.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
+    QPointF rectx2y2 = zoomCtx.toWidgetCoordinates( clipRect.right(), clipRect.top() );
 
-    return ( (widgetPos.x() >= rectx1y1.x() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
+    return ( (widgetPos.x() >= rectx1y1.x() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) &&
              ( widgetPos.x() <= rectx1y1.x() ) &&
-             (widgetPos.y() <= rectx1y1.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             (widgetPos.y() >= rectx2y2.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) );
+             (widgetPos.y() <= rectx1y1.y() + TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) &&
+             (widgetPos.y() >= rectx2y2.y() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) );
 }
 
 bool
 DopeSheetViewPrivate::isNearByClipRectRight(const QPointF& zoomCoordPos,
                                             const RectD &clipRect) const
 {
-    QPointF widgetPos = zoomContext.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
-    QPointF rectx1y1 = zoomContext.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
-    QPointF rectx2y2 = zoomContext.toWidgetCoordinates( clipRect.right(), clipRect.top() );
+    QPointF widgetPos = zoomCtx.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
+    QPointF rectx1y1 = zoomCtx.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
+    QPointF rectx2y2 = zoomCtx.toWidgetCoordinates( clipRect.right(), clipRect.top() );
 
     return ( ( widgetPos.x() >= rectx2y2.x() ) &&
-             (widgetPos.x() <= rectx2y2.x() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             (widgetPos.y() <= rectx1y1.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             (widgetPos.y() >= rectx2y2.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) );
+             (widgetPos.x() <= rectx2y2.x() + TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) &&
+             (widgetPos.y() <= rectx1y1.y() + TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) &&
+             (widgetPos.y() >= rectx2y2.y() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) );
 }
 
 bool
 DopeSheetViewPrivate::isNearByClipRectBottom(const QPointF& zoomCoordPos,
                                              const RectD &clipRect) const
 {
-    QPointF widgetPos = zoomContext.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
-    QPointF rectx1y1 = zoomContext.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
-    QPointF rectx2y2 = zoomContext.toWidgetCoordinates( clipRect.right(), clipRect.top() );
+    QPointF widgetPos = zoomCtx.toWidgetCoordinates( zoomCoordPos.x(), zoomCoordPos.y() );
+    QPointF rectx1y1 = zoomCtx.toWidgetCoordinates( clipRect.left(), clipRect.bottom() );
+    QPointF rectx2y2 = zoomCtx.toWidgetCoordinates( clipRect.right(), clipRect.top() );
 
-    return ( (widgetPos.x() >= rectx1y1.x() - DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM) &&
-             (widgetPos.x() <= rectx2y2.x() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             (widgetPos.y() <= rectx1y1.y() + DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM) &&
-             (widgetPos.y() >= rectx1y1.y() - DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM) );
+    return ( (widgetPos.x() >= rectx1y1.x() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM)) &&
+             (widgetPos.x() <= rectx2y2.x() + TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_EDGE)) &&
+             (widgetPos.y() <= rectx1y1.y() + TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM)) &&
+             (widgetPos.y() >= rectx1y1.y() - TO_DPIX(DISTANCE_ACCEPTANCE_FROM_READER_BOTTOM)) );
 }
 
-bool
-DopeSheetViewPrivate::isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const
+KeyFrameWithStringSet DopeSheetViewPrivate::isNearByKeyframe(const AnimItemBasePtr &item,
+                                                                            DimSpec dimension, ViewSetSpec view,
+                                                                            const QPointF &widgetCoords) const
 {
-    return ( currentFrameIndicatorBottomPoly.containsPoint(zoomCoords, Qt::OddEvenFill) );
-}
+    KeyFrameWithStringSet ret;
+    KeyFrameWithStringSet keys;
+    item->getKeyframes(dimension, view, &keys);
 
-bool
-DopeSheetViewPrivate::isNearbySelectedKeysBRectRightEdge(const QPointF& widgetPos) const
-{
-    QPointF topLeft = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, selectedKeysBRect.y2);
-    QPointF bottomRight = zoomContext.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1);
+    for (KeyFrameWithStringSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
 
-    return ( widgetPos.x() >= ( bottomRight.x() ) &&
-             widgetPos.x() <= (bottomRight.x() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             widgetPos.y() <= (bottomRight.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             widgetPos.y() >= (topLeft.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) );
-}
+        double keyframeXWidget = zoomCtx.toWidgetCoordinates(it->key.getTime(), 0).x();
 
-bool
-DopeSheetViewPrivate::isNearbySelectedKeysBRectLeftEdge(const QPointF& widgetPos) const
-{
-    QPointF topLeft = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, selectedKeysBRect.y2);
-    QPointF bottomRight = zoomContext.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1);
-
-    return ( widgetPos.x() >= (topLeft.x() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             widgetPos.x() <= ( topLeft.x() ) &&
-             widgetPos.y() <= (bottomRight.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             widgetPos.y() >= (topLeft.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) );
-}
-
-bool
-DopeSheetViewPrivate::isNearbySelectedKeysBRec(const QPointF& widgetPos) const
-{
-    QPointF topLeft = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, selectedKeysBRect.y2);
-    QPointF bottomRight = zoomContext.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1);
-
-    return ( widgetPos.x() >= ( topLeft.x() ) &&
-             widgetPos.x() <= ( bottomRight.x() ) &&
-             widgetPos.y() <= (bottomRight.y() + DISTANCE_ACCEPTANCE_FROM_READER_EDGE) &&
-             widgetPos.y() >= (topLeft.y() - DISTANCE_ACCEPTANCE_FROM_READER_EDGE) );
-}
-
-std::vector<AnimKeyFrame> DopeSheetViewPrivate::isNearByKeyframe(const KnobAnimPtr &KnobAnim,
-                                                                 const QPointF &widgetCoords) const
-{
-    assert(KnobAnim);
-
-    std::vector<AnimKeyFrame> ret;
-    KnobIPtr knob = KnobAnim->getKnobGui()->getKnob();
-    int dim = KnobAnim->getDimension();
-    int startDim = 0;
-    int endDim = knob->getDimension();
-
-    if (dim > -1) {
-        startDim = dim;
-        endDim = dim + 1;
-    }
-
-    for (int i = startDim; i < endDim; ++i) {
-        KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
-
-        for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-             kIt != keyframes.end();
-             ++kIt) {
-            KeyFrame kf = (*kIt);
-            QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
-
-            if (std::abs( widgetCoords.x() - keyframeWidgetPos.x() ) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                KnobAnimPtr context;
-                if (dim == -1) {
-                    QTreeWidgetItem *childItem = KnobAnim->findDimTreeItem(i);
-                    context = model->mapNameItemToKnobAnim(childItem);
-                } else {
-                    context = KnobAnim;
-                }
-
-                ret.push_back( AnimKeyFrame(context, kf) );
-            }
-        }
-    }
-
-    return ret;
-}
-
-std::vector<AnimKeyFrame> DopeSheetViewPrivate::isNearByKeyframe(NodeAnimPtr NodeAnim,
-                                                                 const QPointF &widgetCoords) const
-{
-    std::vector<AnimKeyFrame> ret;
-    const AnimTreeItemKnobMap& KnobAnims = NodeAnim->getItemKnobMap();
-
-    for (AnimTreeItemKnobMap::const_iterator it = KnobAnims.begin(); it != KnobAnims.end(); ++it) {
-        KnobAnimPtr KnobAnim = (*it).second;
-        KnobGuiPtr knobGui = KnobAnim->getKnobGui();
-        assert(knobGui);
-        int dim = KnobAnim->getDimension();
-
-        if (dim == -1) {
-            continue;
-        }
-
-        KeyFrameSet keyframes = knobGui->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
-
-        for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-             kIt != keyframes.end();
-             ++kIt) {
-            KeyFrame kf = (*kIt);
-            QPointF keyframeWidgetPos = zoomContext.toWidgetCoordinates(kf.getTime(), 0);
-
-            if (std::abs( widgetCoords.x() - keyframeWidgetPos.x() ) < DISTANCE_ACCEPTANCE_FROM_KEYFRAME) {
-                ret.push_back( AnimKeyFrame(KnobAnim, kf) );
-            }
+        if (std::abs( widgetCoords.x() - keyframeXWidget ) < TO_DPIX(DISTANCE_ACCEPTANCE_FROM_KEYFRAME)) {
+            ret.insert(*it);
         }
     }
 
@@ -772,92 +550,7 @@ DopeSheetViewPrivate::clampedMouseOffset(double fromTime,
     return dt;
 }
 
-void
-DopeSheetViewPrivate::generateKeyframeTextures()
-{
-    QImage kfTexturesImages[KF_TEXTURES_COUNT];
 
-    kfTexturesImages[0].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_constant.png") );
-    kfTexturesImages[1].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_constant_selected.png") );
-    kfTexturesImages[2].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_linear.png") );
-    kfTexturesImages[3].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_linear_selected.png") );
-    kfTexturesImages[4].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve.png") );
-    kfTexturesImages[5].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_selected.png") );
-    kfTexturesImages[6].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_break.png") );
-    kfTexturesImages[7].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_break_selected.png") );
-    kfTexturesImages[8].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_c.png") );
-    kfTexturesImages[9].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_c_selected.png") );
-    kfTexturesImages[10].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_h.png") );
-    kfTexturesImages[11].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_h_selected.png") );
-    kfTexturesImages[12].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_r.png") );
-    kfTexturesImages[13].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_r_selected.png") );
-    kfTexturesImages[14].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_z.png") );
-    kfTexturesImages[15].load( QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_z_selected.png") );
-    kfTexturesImages[16].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root.png") );
-    kfTexturesImages[17].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root_selected.png") );
-
-    GL_GPU::glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
-
-    GL_GPU::glEnable(GL_TEXTURE_2D);
-
-    for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
-        if (std::max( kfTexturesImages[i].width(), kfTexturesImages[i].height() ) != KF_PIXMAP_SIZE) {
-            kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        }
-        kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
-        GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
-
-        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        GL_GPU::glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits() );
-    }
-
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
-    GL_GPU::glDisable(GL_TEXTURE_2D);
-}
-
-DopeSheetViewPrivate::KeyframeTexture
-DopeSheetViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
-                                                bool selected) const
-{
-    DopeSheetViewPrivate::KeyframeTexture ret = DopeSheetViewPrivate::kfTextureNone;
-
-    switch (kfType) {
-    case eKeyframeTypeConstant:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpConstantSelected : DopeSheetViewPrivate::kfTextureInterpConstant;
-        break;
-    case eKeyframeTypeLinear:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpLinearSelected : DopeSheetViewPrivate::kfTextureInterpLinear;
-        break;
-    case eKeyframeTypeBroken:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpBreakSelected : DopeSheetViewPrivate::kfTextureInterpBreak;
-        break;
-    case eKeyframeTypeFree:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveSelected : DopeSheetViewPrivate::kfTextureInterpCurve;
-        break;
-    case eKeyframeTypeSmooth:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveZSelected : DopeSheetViewPrivate::kfTextureInterpCurveZ;
-        break;
-    case eKeyframeTypeCatmullRom:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveRSelected : DopeSheetViewPrivate::kfTextureInterpCurveR;
-        break;
-    case eKeyframeTypeCubic:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveCSelected : DopeSheetViewPrivate::kfTextureInterpCurveC;
-        break;
-    case eKeyframeTypeHorizontal:
-        ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveHSelected : DopeSheetViewPrivate::kfTextureInterpCurveH;
-        break;
-    default:
-        ret = DopeSheetViewPrivate::kfTextureNone;
-        break;
-    }
-
-    return ret;
-}
 
 /**
  * @brief DopeSheetViewPrivate::drawScale
@@ -867,17 +560,17 @@ DopeSheetViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
 void
 DopeSheetViewPrivate::drawScale() const
 {
-    running_in_main_thread_and_context(publicInterface);
+    running_in_main_thread_and_context(_widget);
 
-    QPointF bottomLeft = zoomContext.toZoomCoordinates(0, publicInterface->height() - 1);
-    QPointF topRight = zoomContext.toZoomCoordinates(publicInterface->width() - 1, 0);
+    QPointF bottomLeft = zoomCtx.toZoomCoordinates(0, _widget->height() - 1);
+    QPointF topRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, 0);
 
     // Don't attempt to draw a scale on a widget with an invalid height
-    if (publicInterface->height() <= 1) {
+    if (_widget->height() <= 1) {
         return;
     }
 
-    QFontMetrics fontM(*font);
+    QFontMetrics fontM(_widget->font());
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
 
@@ -898,7 +591,7 @@ DopeSheetViewPrivate::drawScale() const
         GL_GPU::glEnable(GL_BLEND);
         GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        const double rangePixel = publicInterface->width();
+        const double rangePixel = _widget->width();
         const double range_min = bottomLeft.x();
         const double range_max = topRight.x();
         const double range = range_max - range_min;
@@ -960,7 +653,7 @@ DopeSheetViewPrivate::drawScale() const
                     QColor c = scaleColor;
                     c.setAlpha(255 * alphaText);
 
-                    renderText(value, bottomLeft.y(), s, c, *font, Qt::AlignHCenter);
+                    renderText(value, bottomLeft.y(), s, c, _widget->font(), Qt::AlignHCenter);
 
                     // Uncomment the line below to draw the indicator on top too
                     // parent->renderText(value, topRight.y() - 20, s, c, *font);
@@ -970,96 +663,99 @@ DopeSheetViewPrivate::drawScale() const
     }
 } // DopeSheetViewPrivate::drawScale
 
-/**
- * @brief DopeSheetViewPrivate::drawRows
- *
- *
- *
- * These rows have the same height as an item from the hierarchy view.
- */
+
+void
+DopeSheetViewPrivate::drawTreeItemRecursive(QTreeWidgetItem* item, std::list<NodeAnimPtr>* nodesRowsOrdered) const
+{
+    assert(item);
+    if ( item->isHidden() ) {
+        return;
+    }
+
+    QTreeWidgetItem* parentItem = item->parent();
+    if (parentItem && !parentItem->isExpanded()) {
+        return;
+    }
+
+    AnimatedItemTypeEnum type = (AnimatedItemTypeEnum)item->data(0, QT_ROLE_CONTEXT_TYPE).toInt();
+    void* ptr = item->data(0, QT_ROLE_CONTEXT_ITEM_POINTER).value<void*>();
+    assert(ptr);
+    if (!ptr) {
+        return;
+    }
+    DimSpec dimension = DimSpec(item->data(0, QT_ROLE_CONTEXT_DIM).toInt());
+    ViewSetSpec view = ViewSetSpec(item->data(0, QT_ROLE_CONTEXT_VIEW).toInt());
+
+    NodeAnimPtr isNodeAnim;
+    TableItemAnimPtr isTableItemAnim;
+    KnobAnimPtr isKnobAnim;
+    switch (type) {
+        case eAnimatedItemTypeCommon:
+        case eAnimatedItemTypeFrameRange:
+        case eAnimatedItemTypeGroup:
+        case eAnimatedItemTypeReader:
+        case eAnimatedItemTypeRetime:
+        case eAnimatedItemTypeTimeOffset: {
+            isNodeAnim = ((NodeAnim*)ptr)->shared_from_this();
+        }   break;
+        case eAnimatedItemTypeTableItemAnimation:
+        case eAnimatedItemTypeTableItemRoot: {
+            isTableItemAnim = toTableItemAnim(((AnimItemBase*)ptr)->shared_from_this());
+        }   break;
+        case eAnimatedItemTypeKnobDim:
+        case eAnimatedItemTypeKnobRoot:
+        case eAnimatedItemTypeKnobView: {
+            isKnobAnim = toKnobAnim(((AnimItemBase*)ptr)->shared_from_this());
+        }   break;
+    }
+
+    if (isNodeAnim) {
+        drawNodeRow(item, isNodeAnim);
+        nodesRowsOrdered->push_back(isNodeAnim);
+    } else if (isKnobAnim) {
+        drawKnobRow(item, isKnobAnim, dimension, view);
+    } else if (isTableItemAnim) {
+        drawTableItemRow(item, isTableItemAnim, dimension, view);
+    }
+
+} // drawTreeItemRecursive
+
 void
 DopeSheetViewPrivate::drawRows() const
 {
-    running_in_main_thread_and_context(publicInterface);
+    running_in_main_thread_and_context(_widget);
 
-    AnimTreeItemNodeMap treeItemsAndNodeAnims = model->getItemNodeMap();
-
-    // Perform drawing
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        for (AnimTreeItemNodeMap::const_iterator it = treeItemsAndNodeAnims.begin();
-             it != treeItemsAndNodeAnims.end();
-             ++it) {
-            QTreeWidgetItem *treeItem = (*it).first;
-
-            if ( treeItem->isHidden() ) {
+        std::list<NodeAnimPtr> nodesAnimOrdered;
+        int nTopLevelTreeItems = treeView->topLevelItemCount();
+        for (int i = 0; i < nTopLevelTreeItems; ++i) {
+            QTreeWidgetItem* topLevelItem = treeView->topLevelItem(nTopLevelTreeItems);
+            if (!topLevelItem) {
                 continue;
             }
-
-            if ( QTreeWidgetItem * parentItem = treeItem->parent() ) {
-                if ( !parentItem->isExpanded() ) {
-                    continue;
-                }
-            }
-
-            GL_GPU::glEnable(GL_BLEND);
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            NodeAnimPtr NodeAnim = (*it).second;
-
-            drawNodeRow(NodeAnim);
-
-            const AnimTreeItemKnobMap& knobItems = NodeAnim->getItemKnobMap();
-            for (AnimTreeItemKnobMap::const_iterator it2 = knobItems.begin();
-                 it2 != knobItems.end();
-                 ++it2) {
-                KnobAnimPtr KnobAnim = (*it2).second;
-
-                drawKnobRow(KnobAnim);
-            }
-
-            {
-                NodeAnimPtr group = model->getGroupNodeAnim( NodeAnim );
-                if (group) {
-                    drawGroupOverlay(NodeAnim, group);
-                }
-            }
-
-            AnimatedItemType nodeType = NodeAnim->getItemType();
-
-            if ( NodeAnim->isRangeDrawingEnabled() ) {
-                drawRange(NodeAnim);
-            }
-
-            if (nodeType != eAnimatedItemTypeGroup) {
-                drawKeyframes(NodeAnim);
-            }
+            drawTreeItemRecursive(topLevelItem, &nodesAnimOrdered);
+            
         }
 
         // Draw node rows separations
-        for (AnimTreeItemNodeMap::const_iterator it = treeItemsAndNodeAnims.begin();
-             it != treeItemsAndNodeAnims.end();
-             ++it) {
-            NodeAnimPtr NodeAnim = (*it).second;
-            bool isTreeViewTopItem = !hierarchyView->itemAbove( NodeAnim->getTreeItem() );
+        for (std::list<NodeAnimPtr>::const_iterator it = nodesAnimOrdered.begin(); it != nodesAnimOrdered.end(); ++it) {
+            bool isTreeViewTopItem = !treeView->itemAbove( (*it)->getTreeItem() );
             if (!isTreeViewTopItem) {
-                drawNodeRowSeparation(NodeAnim);
+                drawNodeRowSeparation(*it);
             }
         }
-    }
+
+    } // GlProtectAttrib
 } // DopeSheetViewPrivate::drawRows
 
-/**
- * @brief DopeSheetViewPrivate::drawNodeRow
- *
- *
- */
 void
-DopeSheetViewPrivate::drawNodeRow(const NodeAnimPtr NodeAnim) const
+DopeSheetViewPrivate::drawNodeRow(QTreeWidgetItem* /*treeItem*/, const NodeAnimPtr& item) const
 {
-    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-    QRectF nameItemRect = hierarchyView->visualItemRect( NodeAnim->getTreeItem() );
+    QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
     SettingsPtr settings = appPTR->getCurrentSettings();
     double rootR, rootG, rootB, rootA;
@@ -1074,26 +770,39 @@ DopeSheetViewPrivate::drawNodeRow(const NodeAnimPtr NodeAnim) const
     GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
     GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
     GL_GPU::glEnd();
-}
 
-/**
- * @brief DopeSheetViewPrivate::drawKnobRow
- *
- *
- */
-void
-DopeSheetViewPrivate::drawKnobRow(const KnobAnimPtr KnobAnim) const
-{
-    if ( KnobAnim->getTreeItem()->isHidden() ) {
-        return;
+    {
+        AnimationModulePtr animModel = toAnimationModule(_model.lock());
+        if (animModel) {
+            NodeAnimPtr group = animModel->getGroupNodeAnim(item);
+            if (group) {
+                drawGroupOverlay(item, group);
+            }
+        }
     }
 
-    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-    QRectF nameItemRect = hierarchyView->visualItemRect( KnobAnim->getTreeItem() );
+    if ( item->isRangeDrawingEnabled() ) {
+        drawRange(item);
+    }
+
+}
+
+void
+DopeSheetViewPrivate::drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const
+{
+
+}
+
+void
+DopeSheetViewPrivate::drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& item, DimSpec dimension, ViewSetSpec view) const
+{
+
+
+    QRectF nameItemRect = treeView->visualItemRect(treeItem);
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
     SettingsPtr settings = appPTR->getCurrentSettings();
     double bkR, bkG, bkB, bkA;
-    if ( KnobAnim->isMultiDimRoot() ) {
+    if ( dimension.isAll() || view.isAll() ) {
         settings->getAnimationModuleEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
     } else {
         settings->getAnimationModuleEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
@@ -1107,13 +816,15 @@ DopeSheetViewPrivate::drawKnobRow(const KnobAnimPtr KnobAnim) const
     GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
     GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
     GL_GPU::glEnd();
+
+    drawKeyframes(treeItem, item, dimension, view);
 }
 
 void
-DopeSheetViewPrivate::drawNodeRowSeparation(const NodeAnimPtr NodeAnim) const
+DopeSheetViewPrivate::drawNodeRowSeparation(const NodeAnimPtr item) const
 {
     GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
-    QRectF nameItemRect = hierarchyView->visualItemRect( NodeAnim->getTreeItem() );
+    QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
     GL_GPU::glLineWidth(TO_DPIY(4));
@@ -1126,22 +837,22 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const NodeAnimPtr NodeAnim) const
 }
 
 void
-DopeSheetViewPrivate::drawRange(const NodeAnimPtr &NodeAnim) const
+DopeSheetViewPrivate::drawRange(const NodeAnimPtr &item) const
 {
     // Draw the clip
     {
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find( NodeAnim );
+        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find( item );
         if ( foundRange == nodeRanges.end() ) {
             return;
         }
 
 
         const FrameRange& range = foundRange->second;
-        QRectF treeItemRect = hierarchyView->visualItemRect( NodeAnim->getTreeItem() );
+        QRectF treeItemRect = treeView->visualItemRect( item->getTreeItem() );
         QPointF treeRectTopLeft = treeItemRect.topLeft();
-        treeRectTopLeft = zoomContext.toZoomCoordinates( treeRectTopLeft.x(), treeRectTopLeft.y() );
+        treeRectTopLeft = zoomCtx.toZoomCoordinates( treeRectTopLeft.x(), treeRectTopLeft.y() );
         QPointF treeRectBtmRight = treeItemRect.bottomRight();
-        treeRectBtmRight = zoomContext.toZoomCoordinates( treeRectBtmRight.x(), treeRectBtmRight.y() );
+        treeRectBtmRight = zoomCtx.toZoomCoordinates( treeRectBtmRight.x(), treeRectBtmRight.y() );
 
         RectD clipRectZoomCoords;
         clipRectZoomCoords.x1 = range.first;
@@ -1149,16 +860,16 @@ DopeSheetViewPrivate::drawRange(const NodeAnimPtr &NodeAnim) const
         clipRectZoomCoords.y2 = treeRectTopLeft.y();
         clipRectZoomCoords.y1 = treeRectBtmRight.y();
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
-        QColor fillColor = NodeAnim->getNodeGui()->getCurrentColor();
+        QColor fillColor = item->getNodeGui()->getCurrentColor();
         fillColor = QColor::fromHsl( fillColor.hslHue(), 50, fillColor.lightness() );
 
-        bool isSelected = model->getSelectionModel()->isRangeNodeSelected(NodeAnim);
+        bool isSelected = _model.lock()->getSelectionModel()->isNodeSelected(item);
 
 
         // If necessary, draw the original frame range line
         float clipRectCenterY = 0.;
-        if ( isSelected && (NodeAnim->getItemType() == eAnimatedItemTypeReader) ) {
-            NodePtr node = NodeAnim->getInternalNode();
+        if ( isSelected && (item->getItemType() == eAnimatedItemTypeReader) ) {
+            NodePtr node = item->getInternalNode();
 
             KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
             assert(firstFrameKnob);
@@ -1168,8 +879,8 @@ DopeSheetViewPrivate::drawRange(const NodeAnimPtr &NodeAnim) const
             KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
             assert(originalFrameRangeKnob);
 
-            int originalFirstFrame = originalFrameRangeKnob->getValue(0);
-            int originalLastFrame = originalFrameRangeKnob->getValue(1);
+            int originalFirstFrame = originalFrameRangeKnob->getValue(DimIdx(0));
+            int originalLastFrame = originalFrameRangeKnob->getValue(DimIdx(1));
             int firstFrame = firstFrameKnob->getValue();
             int lineBegin = range.first - (firstFrame - originalFirstFrame);
             int frameCount = originalLastFrame - originalFirstFrame + 1;
@@ -1224,242 +935,94 @@ DopeSheetViewPrivate::drawRange(const NodeAnimPtr &NodeAnim) const
             GL_GPU::glEnd();
         }
 
-        if ( isSelected && (NodeAnim->getItemType() == eAnimatedItemTypeReader) ) {
+        if ( isSelected && (item->getItemType() == eAnimatedItemTypeReader) ) {
             SettingsPtr settings = appPTR->getCurrentSettings();
             double selectionColorRGB[3];
             settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
             QColor selectionColor;
             selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
 
-            QFontMetrics fm(*font);
+            QFontMetrics fm(_widget->font());
             int fontHeigt = fm.height();
             QString leftText = QString::number(range.first);
             QString rightText = QString::number(range.second - 1);
             int rightTextW = fm.width(rightText);
-            QPointF textLeftPos( zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.first, 0).x() + 3, 0).x(),
-                                 zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
+            QPointF textLeftPos( zoomCtx.toZoomCoordinates(zoomCtx.toWidgetCoordinates(range.first, 0).x() + 3, 0).x(),
+                                 zoomCtx.toZoomCoordinates(0, zoomCtx.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
 
-            renderText(textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, *font);
+            renderText(textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, _widget->font());
 
-            QPointF textRightPos( zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.second, 0).x() - rightTextW - 3, 0).x(),
-                                  zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
+            QPointF textRightPos( zoomCtx.toZoomCoordinates(zoomCtx.toWidgetCoordinates(range.second, 0).x() - rightTextW - 3, 0).x(),
+                                  zoomCtx.toZoomCoordinates(0, zoomCtx.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
 
-            renderText(textRightPos.x(), textRightPos.y(), rightText, selectionColor, *font);
+            renderText(textRightPos.x(), textRightPos.y(), rightText, selectionColor, _widget->font());
         }
     }
 } // DopeSheetViewPrivate::drawRange
 
-/**
- * @brief DopeSheetViewPrivate::drawKeyframes
- *
- *
- */
+
 void
-DopeSheetViewPrivate::drawKeyframes(const NodeAnimPtr &NodeAnim) const
+DopeSheetViewPrivate::drawKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view) const
 {
-    running_in_main_thread_and_context(publicInterface);
-
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    double selectionColorRGB[3];
-    settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+    running_in_main_thread_and_context(_widget);
     QColor selectionColor;
-    selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
-
-    // Perform drawing
     {
-        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        const AnimTreeItemKnobMap& knobItems = NodeAnim->getItemKnobMap();
-        double kfTimeSelected;
-        int hasSingleKfTimeSelected = model->getSelectionModel()->hasSingleKeyFrameTimeSelected(&kfTimeSelected);
-        std::map<double, bool> nodeKeytimes;
-        std::map<KnobAnim *, std::map<double, bool> > knobsKeytimes;
-
-        for (AnimTreeItemKnobMap::const_iterator it = knobItems.begin();
-             it != knobItems.end();
-             ++it) {
-            KnobAnimPtr KnobAnim = (*it).second;
-            QTreeWidgetItem *knobTreeItem = KnobAnim->getTreeItem();
-
-            // The knob is no longer animated
-            if ( knobTreeItem->isHidden() ) {
-                continue;
-            }
-
-            int dim = KnobAnim->getDimension();
-
-            if (dim == -1) {
-                continue;
-            }
-
-            KeyFrameSet keyframes = KnobAnim->getKnobGui()->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
-
-            for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-                 kIt != keyframes.end();
-                 ++kIt) {
-                KeyFrame kf = (*kIt);
-                double keyTime = kf.getTime();
-
-                // Clip keyframes horizontally //TODO Clip vertically too
-                if ( ( keyTime < zoomContext.left() ) || ( keyTime > zoomContext.right() ) ) {
-                    continue;
-                }
-
-                double rowCenterYWidget = hierarchyView->visualItemRect( KnobAnim->getTreeItem() ).center().y();
-                RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
-                bool kfSelected = model->getSelectionModel()->keyframeIsSelected(KnobAnim, kf);
-
-                // Draw keyframe in the knob dim row only if it's visible
-                bool drawInDimRow = hierarchyView->itemIsVisibleFromOutside(knobTreeItem);
-
-                if (drawInDimRow) {
-                    DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType( kf.getInterpolation(),
-                                                                                               kfSelected || selectionRect.intersects(zoomKfRect) );
-
-                    if (texType != DopeSheetViewPrivate::kfTextureNone) {
-                        drawTexturedKeyframe(texType, hasSingleKfTimeSelected && kfSelected,
-                                             kfTimeSelected, selectionColor, zoomKfRect);
-                    }
-                }
-
-                // Fill the knob times map
-                {
-                    KnobAnimPtr rootKnobAnim = model->mapNameItemToKnobAnim( knobTreeItem->parent() );
-                    if (rootKnobAnim) {
-                        assert(rootKnobAnim);
-                        const std::map<double, bool>& map = knobsKeytimes[rootKnobAnim.get()];
-                        bool knobTimeExists = ( map.find(keyTime) != map.end() );
-
-                        if (!knobTimeExists) {
-                            knobsKeytimes[rootKnobAnim.get()][keyTime] = kfSelected;
-                        } else {
-                            bool knobTimeIsSelected = knobsKeytimes[rootKnobAnim.get()][keyTime];
-
-                            if (!knobTimeIsSelected && kfSelected) {
-                                knobsKeytimes[rootKnobAnim.get()][keyTime] = true;
-                            }
-                        }
-                    }
-                }
-
-                // Fill the node times map
-                bool nodeTimeExists = ( nodeKeytimes.find(keyTime) != nodeKeytimes.end() );
-
-                if (!nodeTimeExists) {
-                    nodeKeytimes[keyTime] = kfSelected;
-                } else {
-                    bool nodeTimeIsSelected = nodeKeytimes[keyTime];
-
-                    if (!nodeTimeIsSelected && kfSelected) {
-                        nodeKeytimes[keyTime] = true;
-                    }
-                }
-            }
-        }
-
-        // Draw master keys in knob root section
-        for (std::map<KnobAnim *, std::map<double, bool> >::const_iterator it = knobsKeytimes.begin();
-             it != knobsKeytimes.end();
-             ++it) {
-            QTreeWidgetItem *knobRootItem = (*it).first->getTreeItem();
-            std::map<double, bool> knobTimes = (*it).second;
-
-            for (std::map<double, bool>::const_iterator mIt = knobTimes.begin();
-                 mIt != knobTimes.end();
-                 ++mIt) {
-                double time = (*mIt).first;
-                bool drawSelected = (*mIt).second;
-                bool drawInKnobRootRow = hierarchyView->itemIsVisibleFromOutside(knobRootItem);
-
-                if (drawInKnobRootRow) {
-                    double newCenterY = hierarchyView->visualItemRect(knobRootItem).center().y();
-                    RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(time, newCenterY);
-                    DopeSheetViewPrivate::KeyframeTexture textureType = (drawSelected)
-                                                                        ? DopeSheetViewPrivate::kfTextureMasterSelected
-                                                                        : DopeSheetViewPrivate::kfTextureMaster;
-
-                    drawTexturedKeyframe(textureType, hasSingleKfTimeSelected && drawSelected,
-                                         kfTimeSelected, selectionColor, zoomKfRect);
-                }
-            }
-        }
-
-        // Draw master keys in node section
-        for (std::map<double, bool>::const_iterator it = nodeKeytimes.begin();
-             it != nodeKeytimes.end();
-             ++it) {
-            double time = (*it).first;
-            bool drawSelected = (*it).second;
-            QTreeWidgetItem *nodeItem = NodeAnim->getTreeItem();
-            bool drawInNodeRow = hierarchyView->itemIsVisibleFromOutside(nodeItem);
-
-            if (drawInNodeRow) {
-                double newCenterY = hierarchyView->visualItemRect(nodeItem).center().y();
-                RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(time, newCenterY);
-                DopeSheetViewPrivate::KeyframeTexture textureType = (drawSelected)
-                                                                    ? DopeSheetViewPrivate::kfTextureMasterSelected
-                                                                    : DopeSheetViewPrivate::kfTextureMaster;
-
-                drawTexturedKeyframe(textureType, hasSingleKfTimeSelected && drawSelected,
-                                     kfTimeSelected, selectionColor, zoomKfRect);
-            }
-        }
+        double selectionColorRGB[3];
+        appPTR->getCurrentSettings()->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+        selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
     }
+
+    double rowCenterYWidget = treeView->visualItemRect(treeItem).center().y();
+
+
+    // Draw keyframe in the knob dim row only if it's visible
+    bool drawInDimRow = treeView->itemIsVisible(treeItem);
+
+    AnimationModuleBasePtr animModel = _model.lock();
+    AnimationModuleSelectionModelPtr selectModel = animModel->getSelectionModel();
+
+    double singleSelectedTime;
+    bool hasSingleKfTimeSelected = selectModel->hasSingleKeyFrameTimeSelected(&singleSelectedTime);
+
+    AnimItemDimViewKeyFramesMap dimViewKeys;
+    item->getKeyframes(dimension, view, &dimViewKeys);
+
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
+
+        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
+            const double keyTime = it2->key.getTime();
+            RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
+
+            bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, it->first.dim, it->first.view, keyTime);
+
+            if (drawInDimRow) {
+                DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType( it2->key.getInterpolation(), isKeyFrameSelected || selectionRect.intersects(zoomKfRect) /*draSelected*/ );
+
+                if (texType != DopeSheetViewPrivate::kfTextureNone) {
+                    drawTexturedKeyframe(texType, hasSingleKfTimeSelected && isKeyFrameSelected /*drawKeyTime*/, keyTime, selectionColor, zoomKfRect);
+                }
+            }
+        } // for all keyframes
+
+    } // for all dim/view
+
 } // DopeSheetViewPrivate::drawKeyframes
 
-void
-DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture textureType,
-                                           bool drawTime,
-                                           double time,
-                                           const QColor& textColor,
-                                           const RectD &rect) const
-{
-    GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-    GLProtectMatrix<GL_GPU> pr(GL_MODELVIEW);
 
-    GL_GPU::glEnable(GL_TEXTURE_2D);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
-
-    GL_GPU::glBegin(GL_POLYGON);
-    GL_GPU::glTexCoord2f(0.0f, 1.0f);
-    GL_GPU::glVertex2f( rect.left(), rect.top() );
-    GL_GPU::glTexCoord2f(0.0f, 0.0f);
-    GL_GPU::glVertex2f( rect.left(), rect.bottom() );
-    GL_GPU::glTexCoord2f(1.0f, 0.0f);
-    GL_GPU::glVertex2f( rect.right(), rect.bottom() );
-    GL_GPU::glTexCoord2f(1.0f, 1.0f);
-    GL_GPU::glVertex2f( rect.right(), rect.top() );
-    GL_GPU::glEnd();
-
-    GL_GPU::glColor4f(1, 1, 1, 1);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
-
-    GL_GPU::glDisable(GL_TEXTURE_2D);
-
-    if (drawTime) {
-        QString text = QString::number(time);
-        QPointF p = zoomContext.toWidgetCoordinates( rect.right(), rect.bottom() );
-        p.rx() += 3;
-        p = zoomContext.toZoomCoordinates( p.x(), p.y() );
-        renderText(p.x(), p.y(), text, textColor, *font);
-    }
-}
 
 void
-DopeSheetViewPrivate::drawGroupOverlay(const NodeAnimPtr &NodeAnim,
+DopeSheetViewPrivate::drawGroupOverlay(const NodeAnimPtr &item,
                                        const NodeAnimPtr &group) const
 {
     // Get the overlay color
     double r, g, b;
 
-    NodeAnim->getNodeGui()->getColor(&r, &g, &b);
+    item->getNodeGui()->getColor(&r, &g, &b);
 
     // Compute the area to fill
-    int height = hierarchyView->getHeightForItemAndChildren( NodeAnim->getTreeItem() );
-    QRectF nameItemRect = hierarchyView->visualItemRect( NodeAnim->getTreeItem() );
+    int height = treeView->getHeightForItemAndChildren( item->getTreeItem() );
+    QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
 
     assert( nodeRanges.find( group ) != nodeRanges.end() );
     FrameRange groupRange = nodeRanges.find( group )->second; // map::at() is C++11
@@ -1467,8 +1030,8 @@ DopeSheetViewPrivate::drawGroupOverlay(const NodeAnimPtr &NodeAnim,
     overlayRect.x1 = groupRange.first;
     overlayRect.x2 = groupRange.second;
 
-    overlayRect.y1 = zoomContext.toZoomCoordinates(0, nameItemRect.top() + height).y();
-    overlayRect.y2 = zoomContext.toZoomCoordinates( 0, nameItemRect.top() ).y();
+    overlayRect.y1 = zoomCtx.toZoomCoordinates(0, nameItemRect.top() + height).y();
+    overlayRect.y2 = zoomCtx.toZoomCoordinates( 0, nameItemRect.top() ).y();
 
     // Perform drawing
     {
@@ -1486,254 +1049,6 @@ DopeSheetViewPrivate::drawGroupOverlay(const NodeAnimPtr &NodeAnim,
 }
 
 void
-DopeSheetViewPrivate::drawProjectBounds() const
-{
-    running_in_main_thread_and_context(publicInterface);
-
-    double bottom = zoomContext.toZoomCoordinates(0, publicInterface->height() - 1).y();
-    double top = zoomContext.toZoomCoordinates(publicInterface->width() - 1, 0).y();
-    double projectStart, projectEnd;
-    if (!gui) {
-        return;
-    }
-    GuiAppInstancePtr app = gui->getApp();
-    if (!app) {
-        return;
-    }
-    app->getFrameRange(&projectStart, &projectEnd);
-
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    double colorR, colorG, colorB;
-    settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
-
-    // Perform drawing
-    {
-        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-
-        GL_GPU::glColor4f(colorR, colorG, colorB, 1.f);
-
-        // Draw start bound
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2f(projectStart, top);
-        GL_GPU::glVertex2f(projectStart, bottom);
-        GL_GPU::glEnd();
-
-        // Draw end bound
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2f(projectEnd, top);
-        GL_GPU::glVertex2f(projectEnd, bottom);
-        GL_GPU::glEnd();
-    }
-}
-
-/**
- * @brief DopeSheetViewPrivate::drawIndicator
- *
- *
- */
-void
-DopeSheetViewPrivate::drawCurrentFrameIndicator()
-{
-    running_in_main_thread_and_context(publicInterface);
-
-    computeTimelinePositions();
-
-    int top = zoomContext.toZoomCoordinates(0, 0).y();
-    int bottom = zoomContext.toZoomCoordinates(publicInterface->width() - 1,
-                                               publicInterface->height() - 1).y();
-    int currentFrame = timeline->currentFrame();
-
-    // Retrieve settings for drawing
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    double colorR, colorG, colorB;
-    settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
-
-    // Perform drawing
-    {
-        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_HINT_BIT | GL_ENABLE_BIT |
-                          GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
-
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        GL_GPU::glEnable(GL_LINE_SMOOTH);
-        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-
-        GL_GPU::glColor4f(colorR, colorG, colorB, 1.f);
-
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2f(currentFrame, top);
-        GL_GPU::glVertex2f(currentFrame, bottom);
-        GL_GPU::glEnd();
-
-        GL_GPU::glEnable(GL_POLYGON_SMOOTH);
-        GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
-
-        // Draw bottom polygon
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(0).x(), currentFrameIndicatorBottomPoly.at(0).y() );
-        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(1).x(), currentFrameIndicatorBottomPoly.at(1).y() );
-        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(2).x(), currentFrameIndicatorBottomPoly.at(2).y() );
-        GL_GPU::glEnd();
-    }
-} // DopeSheetViewPrivate::drawCurrentFrameIndicator
-
-/**
- * @brief DopeSheetViewPrivate::drawSelectionRect
- *
- *
- */
-void
-DopeSheetViewPrivate::drawSelectionRect() const
-{
-    running_in_main_thread_and_context(publicInterface);
-
-    // Perform drawing
-    {
-        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
-
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        GL_GPU::glEnable(GL_LINE_SMOOTH);
-        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-
-        GL_GPU::glColor4f(0.3, 0.3, 0.3, 0.2);
-
-        // Draw rect
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y1);
-        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y2);
-        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y2);
-        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y1);
-        GL_GPU::glEnd();
-
-        GL_GPU::glLineWidth(1.5);
-
-        // Draw outline
-        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y1);
-        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y2);
-        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y2);
-        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y1);
-        GL_GPU::glEnd();
-
-        glCheckError(GL_GPU);
-    }
-}
-
-/**
- * @brief DopeSheetViewPrivate::drawSelectedKeysBRect
- *
- *
- */
-void
-DopeSheetViewPrivate::drawSelectedKeysBRect() const
-{
-    running_in_main_thread_and_context(publicInterface);
-
-    // Perform drawing
-    {
-        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
-
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        GL_GPU::glEnable(GL_LINE_SMOOTH);
-        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-
-        GL_GPU::glLineWidth(1.5);
-
-        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
-
-        // Draw outline
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.bottom() );
-        GL_GPU::glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.top() );
-        GL_GPU::glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.top() );
-        GL_GPU::glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.bottom() );
-        GL_GPU::glEnd();
-
-        // Draw center cross lines
-        const int CROSS_LINE_OFFSET = 10;
-        QPointF bRectCenter( (selectedKeysBRect.x1 + selectedKeysBRect.x2) / 2., (selectedKeysBRect.y1 + selectedKeysBRect.y2) / 2. );
-        QPointF bRectCenterWidgetCoords = zoomContext.toWidgetCoordinates( bRectCenter.x(), bRectCenter.y() );
-        QLineF horizontalLine( zoomContext.toZoomCoordinates( bRectCenterWidgetCoords.x() - CROSS_LINE_OFFSET, bRectCenterWidgetCoords.y() ),
-                               zoomContext.toZoomCoordinates( bRectCenterWidgetCoords.x() + CROSS_LINE_OFFSET, bRectCenterWidgetCoords.y() ) );
-        QLineF verticalLine( zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() - CROSS_LINE_OFFSET),
-                             zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() + CROSS_LINE_OFFSET) );
-
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2f( horizontalLine.p1().x(), horizontalLine.p1().y() );
-        GL_GPU::glVertex2f( horizontalLine.p2().x(), horizontalLine.p2().y() );
-
-        GL_GPU::glVertex2f( verticalLine.p1().x(), verticalLine.p1().y() );
-        GL_GPU::glVertex2f( verticalLine.p2().x(), verticalLine.p2().y() );
-        GL_GPU::glEnd();
-
-        glCheckError(GL_GPU);
-    }
-}
-
-void
-DopeSheetViewPrivate::renderText(double x,
-                                 double y,
-                                 const QString &text,
-                                 const QColor &color,
-                                 const QFont &font,
-                                 int flags) const
-{
-    running_in_main_thread_and_context(publicInterface);
-
-    if ( text.isEmpty() ) {
-        return;
-    }
-
-    double w = double( publicInterface->width() );
-    double h = double( publicInterface->height() );
-    double bottom = zoomContext.bottom();
-    double left = zoomContext.left();
-    double top =  zoomContext.top();
-    double right = zoomContext.right();
-
-    if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
-        return;
-    }
-
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
-
-    textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
-
-    glCheckError(GL_GPU);
-}
-
-void
-DopeSheetViewPrivate::computeTimelinePositions()
-{
-    running_in_main_thread();
-
-    if ( (zoomContext.screenWidth() <= 0) || (zoomContext.screenHeight() <= 0) ) {
-        return;
-    }
-    double polyHalfWidth = 7.5;
-    double polyHeight = 7.5;
-    int bottom = zoomContext.toZoomCoordinates(publicInterface->width() - 1,
-                                               publicInterface->height() - 1).y();
-    int currentFrame = timeline->currentFrame();
-    QPointF bottomCursorBottom(currentFrame, bottom);
-    QPointF bottomCursorBottomWidgetCoords = zoomContext.toWidgetCoordinates( bottomCursorBottom.x(), bottomCursorBottom.y() );
-    QPointF leftPoint = zoomContext.toZoomCoordinates( bottomCursorBottomWidgetCoords.x() - polyHalfWidth, bottomCursorBottomWidgetCoords.y() );
-    QPointF rightPoint = zoomContext.toZoomCoordinates( bottomCursorBottomWidgetCoords.x() + polyHalfWidth, bottomCursorBottomWidgetCoords.y() );
-    QPointF topPoint = zoomContext.toZoomCoordinates(bottomCursorBottomWidgetCoords.x(), bottomCursorBottomWidgetCoords.y() - polyHeight);
-
-    currentFrameIndicatorBottomPoly.clear();
-
-    currentFrameIndicatorBottomPoly << leftPoint
-                                    << rightPoint
-                                    << topPoint;
-}
-
-void
 DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin,
                                            const QPointF &current)
 {
@@ -1746,49 +1061,55 @@ DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin,
 void
 DopeSheetViewPrivate::computeSelectedKeysBRect()
 {
-    AnimKeyFramePtrList selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-
-    model->getSelectionModel()->getCurrentSelection(&selectedKeyframes, &selectedNodes);
-
-    if ( ( (selectedKeyframes.size() <= 1) && selectedNodes.empty() ) ||
-         ( selectedKeyframes.empty() && ( selectedNodes.size() <= 1) ) ) {
-        selectedKeysBRect.clear();
-
-        return;
-    }
+    AnimationModuleBasePtr model = _model.lock();
+    const AnimItemDimViewKeyFramesMap& selectedKeyframes = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
+    //const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
 
     selectedKeysBRect.setupInfinity();
 
-    for (AnimKeyFramePtrList::const_iterator it = selectedKeyframes.begin();
-         it != selectedKeyframes.end();
-         ++it) {
-        KnobAnimPtr knobContext = (*it)->context.lock();
-        assert(knobContext);
+    RectD bbox;
+    bool bboxSet = false;
+    int nKeysInSelection = 0;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            ++nKeysInSelection;
+            double x = it2->key.getTime();
+            double y = it2->key.getValue();
+            if (bboxSet) {
+                if ( x < bbox.left() ) {
+                    bbox.set_left(x);
+                }
+                if ( x > bbox.right() ) {
+                    bbox.set_right(x);
+                }
+                if ( y > bbox.top() ) {
+                    bbox.set_top(y);
+                }
+                if ( y < bbox.bottom() ) {
+                    bbox.set_bottom(y);
+                }
+            } else {
+                bboxSet = true;
+                bbox.set_left(x);
+                bbox.set_right(x);
+                bbox.set_top(y);
+                bbox.set_bottom(y);
+            }
 
-        QTreeWidgetItem *keyItem = knobContext->getTreeItem();
-        double time = (*it)->key.getTime();
-
-        //x1,x2 are in zoom coords
-        selectedKeysBRect.x1 = std::min(time, selectedKeysBRect.x1);
-        selectedKeysBRect.x2 = std::max(time, selectedKeysBRect.x2);
-
-
-        QRect keyItemRect = hierarchyView->visualItemRect(keyItem);
-        if ( !keyItemRect.isNull() && !keyItemRect.isEmpty() ) {
-            double y = keyItemRect.center().y();
-
-            //y1,y2 are in widget coords
-            selectedKeysBRect.y1 = std::min(y, selectedKeysBRect.y1);
-            selectedKeysBRect.y2 = std::max(y, selectedKeysBRect.y2);
         }
+        
     }
 
-    for (std::vector<NodeAnimPtr >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    int nNodesInSelection = 0;
+    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
         if ( foundRange == nodeRanges.end() ) {
             continue;
         }
+
+        ++nNodesInSelection;
+
         const FrameRange& range = foundRange->second;
 
         //x1,x2 are in zoom coords
@@ -1796,7 +1117,7 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
         selectedKeysBRect.x2 = std::max(range.second, selectedKeysBRect.x2);
 
         QTreeWidgetItem* nodeItem = (*it)->getTreeItem();
-        QRect itemRect = hierarchyView->visualItemRect(nodeItem);
+        QRect itemRect = treeView->visualItemRect(nodeItem);
         if ( !itemRect.isNull() && !itemRect.isEmpty() ) {
             double y = itemRect.center().y();
 
@@ -1806,21 +1127,21 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
         }
     }
 
-    QTreeWidgetItem *bottomMostItem = hierarchyView->itemAt(0, selectedKeysBRect.y2);
-    double bottom = hierarchyView->visualItemRect(bottomMostItem).bottom();
-    bottom = zoomContext.toZoomCoordinates(0, bottom).y();
+    QTreeWidgetItem *bottomMostItem = treeView->itemAt(0, selectedKeysBRect.y2);
+    double bottom = treeView->visualItemRect(bottomMostItem).bottom();
+    bottom = zoomCtx.toZoomCoordinates(0, bottom).y();
 
-    QTreeWidgetItem *topMostItem = hierarchyView->itemAt(0, selectedKeysBRect.y1);
-    double top = hierarchyView->visualItemRect(topMostItem).top();
-    top = zoomContext.toZoomCoordinates(0, top).y();
+    QTreeWidgetItem *topMostItem = treeView->itemAt(0, selectedKeysBRect.y1);
+    double top = treeView->visualItemRect(topMostItem).top();
+    top = zoomCtx.toZoomCoordinates(0, top).y();
 
     selectedKeysBRect.y1 = bottom;
     selectedKeysBRect.y2 = top;
 
     if ( !selectedKeysBRect.isNull() ) {
         /// Adjust the bounding rect of the size of a keyframe
-        double leftWidget = zoomContext.toWidgetCoordinates(selectedKeysBRect.x1, 0).x();
-        double leftAdjustedZoom = zoomContext.toZoomCoordinates(leftWidget - KF_X_OFFSET, 0).x();
+        double leftWidget = zoomCtx.toWidgetCoordinates(selectedKeysBRect.x1, 0).x();
+        double leftAdjustedZoom = zoomCtx.toZoomCoordinates(leftWidget - KF_X_OFFSET, 0).x();
         double xAdjustOffset = (selectedKeysBRect.x1 - leftAdjustedZoom);
 
         selectedKeysBRect.x1 -= xAdjustOffset;
@@ -1829,43 +1150,45 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
 } // DopeSheetViewPrivate::computeSelectedKeysBRect
 
 void
-DopeSheetViewPrivate::computeRangesBelow(const NodeAnimPtr& NodeAnim)
+DopeSheetViewPrivate::computeRangesBelow(const NodeAnimPtr& node)
 {
-    AnimTreeItemNodeMap nodeRows = model->getItemNodeMap();
+    std::vector<NodeAnimPtr> allNodes;
+    _model.lock()->getTopLevelNodes(&allNodes);
 
-    for (AnimTreeItemNodeMap::const_iterator it = nodeRows.begin(); it != nodeRows.end(); ++it) {
-        QTreeWidgetItem *item = (*it).first;
-        NodeAnimPtr toCompute = (*it).second;
-
-        if ( hierarchyView->visualItemRect(item).y() >= hierarchyView->visualItemRect( NodeAnim->getTreeItem() ).y() ) {
-            computeNodeRange( toCompute );
+    double thisNodeY = treeView->visualItemRect( node->getTreeItem() ).y();
+    for (std::vector<NodeAnimPtr>::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+        if ( treeView->visualItemRect((*it)->getTreeItem()).y() >=  thisNodeY) {
+            computeNodeRange(*it);
         }
     }
 }
 
 void
-DopeSheetViewPrivate::computeNodeRange(const NodeAnimPtr& NodeAnim)
+DopeSheetViewPrivate::computeNodeRange(const NodeAnimPtr& node)
 {
-    AnimatedItemType nodeType = NodeAnim->getItemType();
+    AnimatedItemTypeEnum nodeType = node->getItemType();
 
     switch (nodeType) {
-    case eAnimatedItemTypeReader:
-        computeReaderRange(NodeAnim);
-        break;
-    case eAnimatedItemTypeRetime:
-        computeRetimeRange(NodeAnim);
-        break;
-    case eAnimatedItemTypeTimeOffset:
-        computeTimeOffsetRange(NodeAnim);
-        break;
-    case eAnimatedItemTypeFrameRange:
-        computeFRRange(NodeAnim);
-        break;
-    case eAnimatedItemTypeGroup:
-        computeGroupRange(NodeAnim);
-        break;
-    default:
-        break;
+        case eAnimatedItemTypeReader:
+            computeReaderRange(node);
+            break;
+        case eAnimatedItemTypeRetime:
+            computeRetimeRange(node);
+            break;
+        case eAnimatedItemTypeTimeOffset:
+            computeTimeOffsetRange(node);
+            break;
+        case eAnimatedItemTypeFrameRange:
+            computeFRRange(node);
+            break;
+        case eAnimatedItemTypeGroup:
+            computeGroupRange(node);
+            break;
+        case eAnimatedItemTypeCommon:
+            computeCommonNodeRange(node);
+            break;
+        default:
+            break;
     }
 }
 
@@ -1901,6 +1224,8 @@ DopeSheetViewPrivate::computeReaderRange(const NodeAnimPtr& reader)
                      startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
 
     nodeRanges[reader] = range;
+
+    AnimationModulePtr model = toAnimationModule(_model.lock());
 
     {
         NodeAnimPtr isInGroup = model->getGroupNodeAnim(reader);
@@ -1949,9 +1274,6 @@ DopeSheetViewPrivate::computeRetimeRange(const NodeAnimPtr& retimer)
         }
 
         FrameRange range;
-#ifdef DEBUG
-#pragma message WARN("only considering first view")
-#endif
         {
             const FrameRangesMap& rangeFirst = framesFirst[0];
             assert( !rangeFirst.empty() );
@@ -2016,6 +1338,8 @@ DopeSheetViewPrivate::computeTimeOffsetRange(const NodeAnimPtr& timeOffset)
 
     // Retrieve nearest reader useful values
     {
+        AnimationModulePtr model = toAnimationModule(_model.lock());
+
         NodeAnimPtr nearestReader = model->findNodeAnim( model->getNearestReader(timeOffset) );
         if (nearestReader) {
             assert( nodeRanges.find( nearestReader ) != nodeRanges.end() );
@@ -2041,6 +1365,32 @@ DopeSheetViewPrivate::computeTimeOffsetRange(const NodeAnimPtr& timeOffset)
 }
 
 void
+DopeSheetViewPrivate::computeCommonNodeRange(const NodeAnimPtr& node)
+{
+    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), node) != nodeRangesBeingComputed.end() ) {
+        return;
+    }
+    nodeRangesBeingComputed.push_back(node);
+    ++rangeComputationRecursion;
+
+
+    FrameRange range;
+    int first,last;
+    bool lifetimeEnabled = node->getNodeGui()->getNode()->isLifetimeActivated(&first, &last);
+
+    if (lifetimeEnabled) {
+        range.first = first;
+        range.second = last;
+        nodeRanges[node] = range;
+    }
+
+    --rangeComputationRecursion;
+    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), node);
+    assert( found != nodeRangesBeingComputed.end() );
+    nodeRangesBeingComputed.erase(found);
+}
+
+void
 DopeSheetViewPrivate::computeFRRange(const NodeAnimPtr& frameRange)
 {
     if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange) != nodeRangesBeingComputed.end() ) {
@@ -2056,8 +1406,8 @@ DopeSheetViewPrivate::computeFRRange(const NodeAnimPtr& frameRange)
     assert(frameRangeKnob);
 
     FrameRange range;
-    range.first = frameRangeKnob->getValue(0);
-    range.second = frameRangeKnob->getValue(1);
+    range.first = frameRangeKnob->getValue(DimIdx(0));
+    range.second = frameRangeKnob->getValue(DimIdx(1));
 
     nodeRanges[frameRange] = range;
 
@@ -2078,6 +1428,8 @@ DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& group)
     if (!node) {
         return;
     }
+
+    AnimationModulePtr model = toAnimationModule(_model.lock());
 
     FrameRange range;
     std::set<double> times;
@@ -2159,10 +1511,10 @@ DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& group)
 void
 DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 {
-    QPointF mouseZoomCoords = zoomContext.toZoomCoordinates( e->x(), e->y() );
-    QPointF lastZoomCoordsOnMousePress = zoomContext.toZoomCoordinates( lastPosOnMousePress.x(),
+    QPointF mouseZoomCoords = zoomCtx.toZoomCoordinates( e->x(), e->y() );
+    QPointF lastZoomCoordsOnMousePress = zoomCtx.toZoomCoordinates( lastPosOnMousePress.x(),
                                                                         lastPosOnMousePress.y() );
-    QPointF lastZoomCoordsOnMouseMove = zoomContext.toZoomCoordinates( lastPosOnMouseMove.x(),
+    QPointF lastZoomCoordsOnMouseMove = zoomCtx.toZoomCoordinates( lastPosOnMouseMove.x(),
                                                                        lastPosOnMouseMove.y() );
     double currentTime = mouseZoomCoords.x();
     double dt = clampedMouseOffset(lastZoomCoordsOnMousePress.x(), currentTime);
@@ -2171,18 +1523,18 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     switch (eventState) {
     case DopeSheetView::esMoveKeyframeSelection: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (gui) {
-                gui->setDraftRenderEnabled(true);
+            if (_gui) {
+                _gui->setDraftRenderEnabled(true);
             }
-            model->moveSelectedKeysAndNodes(dt);
+            _model.lock()->moveSelectedKeysAndNodes(dt, 0);
         }
 
         break;
     }
     case DopeSheetView::esTransformingKeyframesMiddleLeft:
     case DopeSheetView::esTransformingKeyframesMiddleRight: {
-        if (gui) {
-            gui->setDraftRenderEnabled(true);
+        if (_gui) {
+            _gui->setDraftRenderEnabled(true);
         }
         bool shiftHeld = modCASIsShift(e);
         QPointF center;
@@ -2211,13 +1563,13 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
         }
 
         Transform::Matrix3x3 transform = Transform::matTransformCanonical( tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y() );
-        model->transformSelectedKeys(transform);
+        _model.lock()->transformSelectedKeys(transform);
         break;
     }
     case DopeSheetView::esMoveCurrentFrameIndicator: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (gui) {
-                gui->setDraftRenderEnabled(true);
+            if (_gui) {
+                _gui->setDraftRenderEnabled(true);
             }
             moveCurrentFrameIndicator(dt);
         }
@@ -2227,46 +1579,46 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esSelectionByRect: {
         computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
 
-        publicInterface->redraw();
+        _widget->redraw();
 
         break;
     }
     case DopeSheetView::esReaderLeftTrim: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (gui) {
-                gui->setDraftRenderEnabled(true);
+            if (_gui) {
+                _gui->setDraftRenderEnabled(true);
             }
             KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
-            model->trimReaderLeft(currentEditedReader, newFirstFrame);
+            _model.lock()->trimReaderLeft(currentEditedReader, newFirstFrame);
         }
 
         break;
     }
     case DopeSheetView::esReaderRightTrim: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (gui) {
-                gui->setDraftRenderEnabled(true);
+            if (_gui) {
+                _gui->setDraftRenderEnabled(true);
             }
             KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
 
-            model->trimReaderRight(currentEditedReader, newLastFrame);
+            _model.lock()->trimReaderRight(currentEditedReader, newLastFrame);
         }
 
         break;
     }
     case DopeSheetView::esReaderSlip: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (gui) {
-                gui->setDraftRenderEnabled(true);
+            if (_gui) {
+                _gui->setDraftRenderEnabled(true);
             }
-            model->slipReader(currentEditedReader, dt);
+            _model.lock()->slipReader(currentEditedReader, dt);
         }
 
         break;
@@ -2281,455 +1633,125 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 } // DopeSheetViewPrivate::onMouseLeftButtonDrag
 
 void
-DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect,
-                                              std::vector<AnimKeyFrame> *result,
-                                              std::vector<NodeAnimPtr >* selectedNodes)
+DopeSheetViewPrivate::createSelectionFromRect(const RectD &canonicalRect,
+                                              AnimItemDimViewKeyFramesMap *keys,
+                                              std::vector<NodeAnimPtr >* nodes,
+                                              std::vector<TableItemAnimPtr >* tableItems)
 {
-    AnimTreeItemNodeMap NodeAnims = model->getItemNodeMap();
 
-    for (AnimTreeItemNodeMap::const_iterator it = NodeAnims.begin(); it != NodeAnims.end(); ++it) {
-        const NodeAnimPtr& NodeAnim = (*it).second;
-        const AnimTreeItemKnobMap& KnobAnims = NodeAnim->getItemKnobMap();
+    AnimationModuleSelectionModelPtr selectModel = _model.lock()->getSelectionModel();
+    const AnimItemDimViewKeyFramesMap& selectedKeys = selectModel->getCurrentKeyFramesSelection();
 
-        for (AnimTreeItemKnobMap::const_iterator it2 = KnobAnims.begin(); it2 != KnobAnims.end(); ++it2) {
-            KnobAnimPtr KnobAnim = (*it2).second;
-            int dim = KnobAnim->getDimension();
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
+        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        if (!guiCurve) {
+            continue;
+        }
 
-            if (dim == -1) {
-                continue;
-            }
+        KeyFrameSet set = guiCurve->getKeyFrames();
+        if ( set.empty() ) {
+            continue;
+        }
 
-            KeyFrameSet keyframes = KnobAnim->getKnobGui()->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
+        StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
 
-            for (KeyFrameSet::const_iterator kIt = keyframes.begin();
-                 kIt != keyframes.end();
-                 ++kIt) {
-                KeyFrame kf = (*kIt);
-                double y = hierarchyView->visualItemRect( KnobAnim->getTreeItem() ).center().y();
-                RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(kf.getTime(), y);
 
-                if ( zoomCoordsRect.intersects(zoomKfRect) ) {
-                    result->push_back( AnimKeyFrame(KnobAnim, kf) );
+        KeyFrameWithStringSet& outKeys = (*keys)[it->first];
+
+        for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
+            double y = it2->getValue();
+            double x = it2->getTime();
+            if ( (x <= canonicalRect.x2) && (x >= canonicalRect.x1) && (y <= canonicalRect.y2) && (y >= canonicalRect.y1) ) {
+                //KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
+                KeyFrameWithString k;
+                k.key = *it2;
+                if (stringAnim) {
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &k.string);
                 }
+                outKeys.insert(k);
             }
         }
 
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find( NodeAnim );
-        if ( foundRange != nodeRanges.end() ) {
-            QPoint visualRectCenter = hierarchyView->visualItemRect( NodeAnim->getTreeItem() ).center();
-            QPointF center = zoomContext.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
-            if ( zoomCoordsRect.contains( (foundRange->second.first + foundRange->second.second) / 2., center.y() ) ) {
-                selectedNodes->push_back(NodeAnim);
-            }
+    }
+
+    const std::list<NodeAnimPtr>& selectedNodes = selectModel->getCurrentNodesSelection();
+
+    for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
+        if ( foundRange == nodeRanges.end() ) {
+            continue;
         }
+        QPoint visualRectCenter = treeView->visualItemRect( (*it)->getTreeItem() ).center();
+        QPointF center = zoomCtx.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
+
+        if ( canonicalRect.contains( (foundRange->second.first + foundRange->second.second) / 2., center.y() ) ) {
+            nodes->push_back(*it);
+        }
+
     }
 }
 
 void
 DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
 {
-    if (!gui) {
+    AnimationModuleBasePtr animModel = _model.lock();
+    if (!animModel) {
         return;
     }
-    gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
+    TimeLinePtr timeline = animModel->getTimeline();
+    if (!timeline) {
+        return;
+    }
+    if (!_gui) {
+        return;
+    }
+    _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
 
-    double toTime = timeline->currentFrame() + dt;
+    double toTime = animModel->getTimeline()->currentFrame() + dt;
 
-    gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(SequenceTime(toTime), false, OutputEffectInstancePtr(),
-                        eTimelineChangeReasonAnimationModuleEditorSeek);
+    _gui->setDraftRenderEnabled(true);
+    timeline->seekFrame(SequenceTime(toTime), false, OutputEffectInstancePtr(), eTimelineChangeReasonDopeSheetEditorSeek);
 }
-
-void
-DopeSheetViewPrivate::createContextMenu()
-{
-    running_in_main_thread();
-
-    contextMenu->clear();
-
-    // Create menus
-
-    // Edit menu
-    Menu *editMenu = new Menu(contextMenu);
-    editMenu->setTitle( tr("Edit") );
-
-    contextMenu->addAction( editMenu->menuAction() );
-
-    // Interpolation menu
-    Menu *interpMenu = new Menu(contextMenu);
-    interpMenu->setTitle( tr("Interpolation") );
-
-    contextMenu->addAction( interpMenu->menuAction() );
-
-    // View menu
-    Menu *viewMenu = new Menu(contextMenu);
-    viewMenu->setTitle( tr("View") );
-
-    contextMenu->addAction( viewMenu->menuAction() );
-
-    // Create actions
-
-    // Edit actions
-    QAction *removeSelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                                    kShortcutIDActionAnimationModuleEditorDeleteKeys,
-                                                                    kShortcutDescActionAnimationModuleEditorDeleteKeys,
-                                                                    editMenu);
-    QObject::connect( removeSelectedKeyframesAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(deleteSelectedKeyframes()) );
-    editMenu->addAction(removeSelectedKeyframesAction);
-
-    QAction *copySelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                                  kShortcutIDActionAnimationModuleEditorCopySelectedKeyframes,
-                                                                  kShortcutDescActionAnimationModuleEditorCopySelectedKeyframes,
-                                                                  editMenu);
-    QObject::connect( copySelectedKeyframesAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(copySelectedKeyframes()) );
-    editMenu->addAction(copySelectedKeyframesAction);
-
-    QAction *pasteKeyframesAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                           kShortcutIDActionAnimationModuleEditorPasteKeyframes,
-                                                           kShortcutDescActionAnimationModuleEditorPasteKeyframes,
-                                                           editMenu);
-    QObject::connect( pasteKeyframesAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(pasteKeyframesRelative()) );
-    editMenu->addAction(pasteKeyframesAction);
-
-    QAction *pasteKeyframesAbsAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                           kShortcutIDActionAnimationModuleEditorPasteKeyframesAbsolute,
-                                                           kShortcutDescActionAnimationModuleEditorPasteKeyframesAbsolute,
-                                                           editMenu);
-    QObject::connect( pasteKeyframesAbsAction, SIGNAL(triggered()),
-                     publicInterface, SLOT(pasteKeyframesAbsolute()) );
-    editMenu->addAction(pasteKeyframesAbsAction);
-
-    QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                               kShortcutIDActionAnimationModuleEditorSelectAllKeyframes,
-                                                               kShortcutDescActionAnimationModuleEditorSelectAllKeyframes,
-                                                               editMenu);
-    QObject::connect( selectAllKeyframesAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(onSelectedAllTriggered()) );
-    editMenu->addAction(selectAllKeyframesAction);
-
-
-    // Interpolation actions
-    QAction *constantInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                           kShortcutIDActionCurveEditorConstant,
-                                                           kShortcutDescActionCurveEditorConstant,
-                                                           interpMenu);
-    QPixmap pix;
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_CONSTANT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    constantInterpAction->setIcon( QIcon(pix) );
-    constantInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( constantInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(constantInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(constantInterpAction);
-
-    QAction *linearInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                         kShortcutIDActionCurveEditorLinear,
-                                                         kShortcutDescActionCurveEditorLinear,
-                                                         interpMenu);
-
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_LINEAR, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    linearInterpAction->setIcon( QIcon(pix) );
-    linearInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( linearInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(linearInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(linearInterpAction);
-
-    QAction *smoothInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                         kShortcutIDActionCurveEditorSmooth,
-                                                         kShortcutDescActionCurveEditorSmooth,
-                                                         interpMenu);
-
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_Z, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    smoothInterpAction->setIcon( QIcon(pix) );
-    smoothInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( smoothInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(smoothInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(smoothInterpAction);
-
-    QAction *catmullRomInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                             kShortcutIDActionCurveEditorCatmullrom,
-                                                             kShortcutDescActionCurveEditorCatmullrom,
-                                                             interpMenu);
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_R, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    catmullRomInterpAction->setIcon( QIcon(pix) );
-    catmullRomInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( catmullRomInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(catmullRomInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(catmullRomInterpAction);
-
-    QAction *cubicInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                        kShortcutIDActionCurveEditorCubic,
-                                                        kShortcutDescActionCurveEditorCubic,
-                                                        interpMenu);
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_C, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    cubicInterpAction->setIcon( QIcon(pix) );
-    cubicInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( cubicInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(cubicInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(cubicInterpAction);
-
-    QAction *horizontalInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                             kShortcutIDActionCurveEditorHorizontal,
-                                                             kShortcutDescActionCurveEditorHorizontal,
-                                                             interpMenu);
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_H, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    horizontalInterpAction->setIcon( QIcon(pix) );
-    horizontalInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( horizontalInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(horizontalInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(horizontalInterpAction);
-
-    QAction *breakInterpAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                        kShortcutIDActionCurveEditorBreak,
-                                                        kShortcutDescActionCurveEditorBreak,
-                                                        interpMenu);
-    appPTR->getIcon(NATRON_PIXMAP_INTERP_BREAK, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
-    breakInterpAction->setIcon( QIcon(pix) );
-    breakInterpAction->setIconVisibleInMenu(true);
-
-    QObject::connect( breakInterpAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(breakInterpSelectedKeyframes()) );
-
-    interpMenu->addAction(breakInterpAction);
-
-    // View actions
-    QAction *frameSelectionAction = new ActionWithShortcut(kShortcutGroupAnimationModuleEditor,
-                                                           kShortcutIDActionAnimationModuleEditorFrameSelection,
-                                                           kShortcutDescActionAnimationModuleEditorFrameSelection,
-                                                           viewMenu);
-    QObject::connect( frameSelectionAction, SIGNAL(triggered()),
-                      publicInterface, SLOT(centerOnSelection()) );
-    viewMenu->addAction(frameSelectionAction);
-} // DopeSheetViewPrivate::createContextMenu
-
 void
 DopeSheetViewPrivate::updateCurveWidgetFrameRange()
 {
-    CurveWidget *curveWidget = gui->getCurveEditor()->getCurveWidget();
-
-    curveWidget->centerOn( zoomContext.left(), zoomContext.right() );
-}
-
-/**
- * @brief DopeSheetView::DopeSheetView
- *
- * Constructs a DopeSheetView object.
- */
-DopeSheetView::DopeSheetView(const AnimationModuleBasePtr& model,
-                             AnimationModuleTreeView *treeView,
-                             Gui *gui,
-                             const TimeLinePtr &timeline,
-                             QWidget *parent)
-    : QGLWidget(parent)
-    , _imp( new DopeSheetViewPrivate(this) )
-{
-    _imp->model = model;
-    _imp->hierarchyView = hierarchyView;
-    _imp->gui = gui;
-    _imp->timeline = timeline;
-
-    setMouseTracking(true);
-
-    if (timeline) {
-        ProjectPtr project = gui->getApp()->getProject();
-        assert(project);
-
-        connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
-        connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)) );
-
-        onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
-
-        double left, right;
-        project->getFrameRange(&left, &right);
-        onTimeLineBoundariesChanged(left, right);
-    }
-}
-
-/**
- * @brief DopeSheetView::~DopeSheetView
- *
- * Destroys the DopeSheetView object.
- */
-DopeSheetView::~DopeSheetView()
-{
-}
-
-void
-DopeSheetView::centerOn(double xMin,
-                        double xMax)
-{
-    double ymin = _imp->zoomContext.bottom();
-    double ymax = _imp->zoomContext.top();
-
-    if (ymin >= ymax) {
+    AnimationModulePtr animModel = toAnimationModule(_model.lock());
+    if (!animModel) {
         return;
     }
-    _imp->zoomContext.fill( xMin, xMax, ymin, ymax );
-
-    redraw();
+    CurveWidget *curveWidget = animModel->getEditor()->getCurveWidget();
+    curveWidget->centerOn( zoomCtx.left(), zoomCtx.right() );
 }
+
+
 
 std::pair<double, double> DopeSheetView::getKeyframeRange() const
 {
-    std::pair<double, double> ret;
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
-    AnimTreeItemNodeMap NodeAnimItems = _imp->model->getItemNodeMap();
 
-    for (AnimTreeItemNodeMap::const_iterator it = NodeAnimItems.begin(); it != NodeAnimItems.end(); ++it) {
-        if ( (*it).first->isHidden() ) {
+    std::pair<double, double> ret = std::make_pair(0, 0);
+
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
+    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> selectedTableItems;
+    _imp->_model.lock()->getSelectionModel()->getAllKeyFrames(&selectedKeyframes, &selectedNodes, &selectedTableItems);
+
+    bool rangeSet = false;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        if (it->second.empty()) {
             continue;
         }
-
-        const NodeAnimPtr& NodeAnim = (*it).second;
-        const AnimTreeItemKnobMap& KnobAnimItems = NodeAnim->getItemKnobMap();
-
-        for (AnimTreeItemKnobMap::const_iterator itKnob = KnobAnimItems.begin(); itKnob != KnobAnimItems.end(); ++itKnob) {
-            if ( (*itKnob).first->isHidden() ) {
-                continue;
-            }
-
-            const KnobAnimPtr& KnobAnim = (*itKnob).second;
-
-            for (int i = 0; i < KnobAnim->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = KnobAnim->getKnobGui()->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
-
-                if ( keyframes.empty() ) {
-                    continue;
-                }
-
-                dimFirstKeys.push_back( keyframes.begin()->getTime() );
-                dimLastKeys.push_back( keyframes.rbegin()->getTime() );
-            }
-        }
-
-        // Also append the range of the clip if this is a Reader/Group/Time node
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( NodeAnim );
-        if ( foundRange != _imp->nodeRanges.end() ) {
-            const FrameRange& range = foundRange->second;
-            if ( !dimFirstKeys.empty() ) {
-                dimFirstKeys[0] = range.first;
-            } else {
-                dimFirstKeys.push_back(range.first);
-            }
-            if ( !dimLastKeys.empty() ) {
-                dimLastKeys[0] = range.second;
-            } else {
-                dimLastKeys.push_back(range.second);
-            }
+        if (!rangeSet) {
+            ret.first = it->second.begin()->key.getTime();
+            ret.second = it->second.rbegin()->key.getTime();
+            rangeSet = true;
+        } else {
+            ret.first = std::min(ret.first,it->second.begin()->key.getTime());
+            ret.first = std::max(ret.first,it->second.begin()->key.getTime());
         }
     }
-
-    if ( dimFirstKeys.empty() || dimLastKeys.empty() ) {
-        ret.first = 0;
-        ret.second = 0;
-    } else {
-        ret.first = *std::min_element( dimFirstKeys.begin(), dimFirstKeys.end() );
-        ret.second = *std::max_element( dimLastKeys.begin(), dimLastKeys.end() );
-    }
-
     return ret;
 } // DopeSheetView::getKeyframeRange
 
-/**
- * @brief DopeSheetView::swapOpenGLBuffers
- *
- *
- */
-void
-DopeSheetView::swapOpenGLBuffers()
-{
-    running_in_main_thread();
-
-    swapBuffers();
-}
-
-/**
- * @brief DopeSheetView::redraw
- *
- *
- */
-void
-DopeSheetView::redraw()
-{
-    running_in_main_thread();
-
-    update();
-}
-
-
-void
-DopeSheetView::getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const
-{
-    QGLFormat f = format();
-    *hasAlpha = f.alpha();
-    int r = f.redBufferSize();
-    if (r == -1) {
-        r = 8;// taken from qgl.h
-    }
-    int g = f.greenBufferSize();
-    if (g == -1) {
-        g = 8;// taken from qgl.h
-    }
-    int b = f.blueBufferSize();
-    if (b == -1) {
-        b = 8;// taken from qgl.h
-    }
-    int size = r;
-    size = std::min(size, g);
-    size = std::min(size, b);
-    *depthPerComponents = size;
-}
-
-/**
- * @brief DopeSheetView::getViewportSize
- *
- *
- */
-void
-DopeSheetView::getViewportSize(double &width,
-                               double &height) const
-{
-    running_in_main_thread();
-
-    width = this->width();
-    height = this->height();
-}
-
-/**
- * @brief DopeSheetView::getPixelScale
- *
- *
- */
-void
-DopeSheetView::getPixelScale(double &xScale,
-                             double &yScale) const
-{
-    running_in_main_thread();
-
-    xScale = _imp->zoomContext.screenPixelWidth();
-    yScale = _imp->zoomContext.screenPixelHeight();
-}
-
-/**
- * @brief DopeSheetView::getBackgroundColour
- *
- *
- */
 void
 DopeSheetView::getBackgroundColour(double &r,
                                    double &g,
@@ -2741,85 +1763,35 @@ DopeSheetView::getBackgroundColour(double &r,
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
 }
 
-RectD
-DopeSheetView::getViewportRect() const
+void
+DopeSheetView::centerOnAllItems()
 {
-    RectD bbox;
-    {
-        bbox.x1 = _imp->zoomContext.left();
-        bbox.y1 = _imp->zoomContext.bottom();
-        bbox.x2 = _imp->zoomContext.right();
-        bbox.y2 = _imp->zoomContext.top();
+    centerOnRangeInternal(getKeyframeRange());
+}
+
+void
+DopeSheetView::centerOnRangeInternal(const std::pair<double, double>& range)
+{
+
+    if (range.first == range.second) {
+        return;
     }
 
-    return bbox;
-}
-
-void
-DopeSheetView::getCursorPosition(double& x,
-                                 double& y) const
-{
-    QPoint p = QCursor::pos();
-
-    p = mapFromGlobal(p);
-    QPointF mappedPos = _imp->zoomContext.toZoomCoordinates( p.x(), p.y() );
-    x = mappedPos.x();
-    y = mappedPos.y();
-}
-
-/**
- * @brief DopeSheetView::saveOpenGLContext
- *
- *
- */
-void
-DopeSheetView::saveOpenGLContext()
-{
-    running_in_main_thread();
-}
-
-/**
- * @brief DopeSheetView::restoreOpenGLContext
- *
- *
- */
-void
-DopeSheetView::restoreOpenGLContext()
-{
-    running_in_main_thread();
-}
-
-/**
- * @brief DopeSheetView::getCurrentRenderScale
- *
- *
- */
-unsigned int
-DopeSheetView::getCurrentRenderScale() const
-{
-    return 0;
-}
-
-void
-DopeSheetView::onSelectedAllTriggered()
-{
-    _imp->model->getSelectionModel()->selectAll();
-
-    if (_imp->model->getSelectionModel()->getSelectedKeyframesCount() > 1) {
-        _imp->computeSelectedKeysBRect();
+    std::pair<double, double> finalRange = range;
+    double actualRange = (range.second - range.first);
+    if (actualRange < NATRON_DOPESHEET_MIN_RANGE_FIT) {
+        double diffRange = NATRON_DOPESHEET_MIN_RANGE_FIT - actualRange;
+        diffRange /= 2;
+        finalRange.first -= diffRange;
+        finalRange.second += diffRange;
     }
 
-    redraw();
-}
 
-void
-DopeSheetView::deleteSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->deleteSelectedKeyframes();
+    _imp->zoomCtx.fill( finalRange.first, finalRange.second,
+                       _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
 
     redraw();
+
 }
 
 void
@@ -2827,155 +1799,26 @@ DopeSheetView::centerOnSelection()
 {
     running_in_main_thread();
 
-    int selectedKeyframesCount = _imp->model->getSelectionModel()->getSelectedKeyframesCount();
+    int selectedKeyframesCount = _imp->_model.lock()->getSelectionModel()->getSelectedKeyframesCount();
 
-    if (selectedKeyframesCount == 1) {
-        return;
-    }
 
     FrameRange range;
 
     // frame on project bounds
-    if (!selectedKeyframesCount) {
+    if (selectedKeyframesCount <= 1) {
         range = getKeyframeRange();
-    }
-    // or frame on current selection
-    else {
+    }  else {
+        // or frame on current selection
         range.first = _imp->selectedKeysBRect.left();
         range.second = _imp->selectedKeysBRect.right();
     }
-
-    if (range.first == range.second) {
-        return;
-    }
-
-    double actualRange = (range.second - range.first);
-    if (actualRange < NATRON_DOPESHEET_MIN_RANGE_FIT) {
-        double diffRange = NATRON_DOPESHEET_MIN_RANGE_FIT - actualRange;
-        diffRange /= 2;
-        range.first -= diffRange;
-        range.second += diffRange;
-    }
-
-
-    _imp->zoomContext.fill( range.first, range.second,
-                            _imp->zoomContext.bottom(), _imp->zoomContext.top() );
-
-    _imp->computeTimelinePositions();
-
-    if (selectedKeyframesCount > 1) {
-        _imp->computeSelectedKeysBRect();
-    }
-
-    redraw();
-}
-
-void
-DopeSheetView::constantInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeConstant);
-}
-
-void
-DopeSheetView::linearInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeLinear);
-}
-
-void
-DopeSheetView::smoothInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
-}
-
-void
-DopeSheetView::catmullRomInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
-}
-
-void
-DopeSheetView::cubicInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCubic);
-}
-
-void
-DopeSheetView::horizontalInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
-}
-
-void
-DopeSheetView::breakInterpSelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeBroken);
-}
-
-void
-DopeSheetView::copySelectedKeyframes()
-{
-    running_in_main_thread();
-
-    _imp->model->copySelectedKeys();
-}
-
-void
-DopeSheetView::pasteKeyframes(bool relative)
-{
-    running_in_main_thread();
-
-    _imp->model->pasteKeys(relative);
-}
-
-void
-DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime,
-                                      int reason)
-{
-    Q_UNUSED(sTime);
-    Q_UNUSED(reason);
-
-    running_in_main_thread();
-
-    if ( _imp->gui->isGUIFrozen() ) {
-        return;
-    }
-
-    _imp->computeTimelinePositions();
-
-    if ( isVisible() ) {
-        redraw();
-    }
-}
-
-void
-DopeSheetView::onTimeLineBoundariesChanged(int,
-                                           int)
-{
-    running_in_main_thread();
-    if ( isVisible() ) {
-        redraw();
-    }
+    centerOnRangeInternal(range);
 }
 
 void
 DopeSheetView::onNodeAdded(const NodeAnimPtr& NodeAnim)
 {
-    AnimatedItemType nodeType = NodeAnim->getItemType();
+    AnimatedItemTypeEnum nodeType = NodeAnim->getItemType();
     NodePtr node = NodeAnim->getInternalNode();
     bool mustComputeNodeRange = true;
 
@@ -3170,22 +2013,10 @@ DopeSheetView::onKeyframeSelectionChanged()
     refreshSelectionBboxAndRedraw();
 }
 
-/**
- * @brief DopeSheetView::initializeGL
- *
- *
- */
 void
 DopeSheetView::initializeGL()
 {
-    running_in_main_thread();
-    appPTR->initializeOpenGLFunctionsOnce();
-
-    if ( !appPTR->isOpenGLLoaded() ) {
-        return;
-    }
-
-    _imp->generateKeyframeTextures();
+    _imp->initializeGLCommon();
 }
 
 /**
@@ -3210,8 +2041,8 @@ DopeSheetView::resizeGL(int w,
     GL_GPU::glViewport(0, 0, w, h);
 
     {
-        QMutexLocker k(&_imp->zoomContextMutex);
-        _imp->zoomContext.setScreenSize(w, h);
+        QMutexLocker k(&_imp->zoomCtxMutex);
+        _imp->zoomCtx.setScreenSize(w, h);
     }
 
     // Don't do the following when the height of the widget is irrelevant
@@ -3246,17 +2077,17 @@ DopeSheetView::paintGL()
 
     glCheckError(GL_GPU);
 
-    if (_imp->zoomContext.factor() <= 0) {
+    if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
 
     _imp->drawnOnce = true;
     
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
-    zoomLeft = _imp->zoomContext.left();
-    zoomRight = _imp->zoomContext.right();
-    zoomBottom = _imp->zoomContext.bottom();
-    zoomTop = _imp->zoomContext.top();
+    zoomLeft = _imp->zoomCtx.left();
+    zoomRight = _imp->zoomCtx.right();
+    zoomBottom = _imp->zoomCtx.bottom();
+    zoomTop = _imp->zoomCtx.top();
 
     // Retrieve the appropriate settings for drawing
     SettingsPtr settings = appPTR->getCurrentSettings();
@@ -3337,7 +2168,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-    QPointF clickZoomCoords = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
+    QPointF clickZoomCoords = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     if ( buttonDownIsLeft(e) ) {
         if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRec( e->pos() ) ) {
@@ -3374,8 +2205,8 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
                     RectD nodeClipRect;
                     nodeClipRect.x1 = range.first;
                     nodeClipRect.x2 = range.second;
-                    nodeClipRect.y2 = _imp->zoomContext.toZoomCoordinates( 0, treeItemRect.top() ).y();
-                    nodeClipRect.y1 = _imp->zoomContext.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
+                    nodeClipRect.y2 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.top() ).y();
+                    nodeClipRect.y1 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
 
                     AnimatedItemType nodeType = it->second->getItemType();
 
@@ -3481,7 +2312,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
             if ( !modCASIsShift(e) ) {
                 _imp->model->getSelectionModel()->clearKeyframeSelection();
 
-                    /*double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                    /*double keyframeTime = std::floor(_imp->zoomCtx.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
                     _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, OutputEffectInstancePtr(),
                                               eTimelineChangeReasonAnimationModuleEditorSeek);*/
 
@@ -3501,7 +2332,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 {
     running_in_main_thread();
 
-    QPointF mouseZoomCoords = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
+    QPointF mouseZoomCoords = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     bool caught = true;
     if (e->buttons() == Qt::NoButton) {
@@ -3514,41 +2345,41 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
         const double par_min = 0.0001;
         const double par_max = 10000.;
         double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-        QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMousePress.x(),
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->lastPosOnMousePress.x(),
                                                                   _imp->lastPosOnMousePress.y() );
 
         // Alt + Wheel: zoom time only, keep point under mouse
-        double par = _imp->zoomContext.aspectRatio() * scaleFactorX;
+        double par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
         if (par <= par_min) {
             par = par_min;
-            scaleFactorX = par / _imp->zoomContext.aspectRatio();
+            scaleFactorX = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
-            scaleFactorX = par / _imp->zoomContext.factor();
+            scaleFactorX = par / _imp->zoomCtx.factor();
         }
-        _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
 
         redraw();
 
         // Synchronize the dope sheet editor and opened viewers
         if ( _imp->gui->isTripleSyncEnabled() ) {
             _imp->updateCurveWidgetFrameRange();
-            _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
+            _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
         }
     } else if ( buttonDownIsLeft(e) ) {
         _imp->onMouseLeftButtonDrag(e);
     } else if ( buttonDownIsMiddle(e) ) {
-        double dx = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
+        double dx = _imp->zoomCtx.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
                                                          _imp->lastPosOnMouseMove.y() ).x() - mouseZoomCoords.x();
-        QMutexLocker k(&_imp->zoomContextMutex);
-        _imp->zoomContext.translate(dx, 0);
+        QMutexLocker k(&_imp->zoomCtxMutex);
+        _imp->zoomCtx.translate(dx, 0);
 
         redraw();
 
         // Synchronize the curve editor and opened viewers
         if ( _imp->gui->isTripleSyncEnabled() ) {
             _imp->updateCurveWidgetFrameRange();
-            _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
+            _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
         }
     } else {
         caught = false;
@@ -3637,7 +2468,7 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
         KnobAnimPtr KnobAnim = _imp->hierarchyView->getKnobAnimAt( e->pos().y() );
         if (KnobAnim) {
             std::vector<AnimKeyFrame> toPaste;
-            double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+            double keyframeTime = std::floor(_imp->zoomCtx.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
             int dim = KnobAnim->getDimension();
             KnobIPtr knob = KnobAnim->getInternalKnob();
             bool hasKeyframe = false;
@@ -3679,24 +2510,24 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     static const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
     double par;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     _imp->zoomOrPannedSinceLastFit = true;
 
-    par = _imp->zoomContext.aspectRatio() * scaleFactor;
+    par = _imp->zoomCtx.aspectRatio() * scaleFactor;
 
     if (par <= par_min) {
         par = par_min;
-        scaleFactor = par / _imp->zoomContext.aspectRatio();
+        scaleFactor = par / _imp->zoomCtx.aspectRatio();
     } else if (par > par_max) {
         par = par_max;
-        scaleFactor = par / _imp->zoomContext.aspectRatio();
+        scaleFactor = par / _imp->zoomCtx.aspectRatio();
     }
 
 
     {
-        QMutexLocker k(&_imp->zoomContextMutex);
-        _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+        QMutexLocker k(&_imp->zoomCtxMutex);
+        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
     _imp->computeSelectedKeysBRect();
 
@@ -3705,14 +2536,8 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     // Synchronize the curve editor and opened viewers
     if ( _imp->gui->isTripleSyncEnabled() ) {
         _imp->updateCurveWidgetFrameRange();
-        _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
+        _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
     }
-}
-
-void
-DopeSheetView::focusInEvent(QFocusEvent *e)
-{
-    QGLWidget::focusInEvent(e);
 }
 
 /**
@@ -3721,11 +2546,11 @@ DopeSheetView::focusInEvent(QFocusEvent *e)
 void
 DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
 {
-    QMutexLocker k(&_imp->zoomContextMutex);
-    *zoomLeft = _imp->zoomContext.left();
-    *zoomBottom = _imp->zoomContext.bottom();
-    *zoomFactor = _imp->zoomContext.factor();
-    *zoomAspectRatio = _imp->zoomContext.aspectRatio();
+    QMutexLocker k(&_imp->zoomCtxMutex);
+    *zoomLeft = _imp->zoomCtx.left();
+    *zoomBottom = _imp->zoomCtx.bottom();
+    *zoomFactor = _imp->zoomCtx.factor();
+    *zoomAspectRatio = _imp->zoomCtx.aspectRatio();
 }
 
 /**
@@ -3734,8 +2559,8 @@ DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomF
 void
 DopeSheetView::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
 {
-    QMutexLocker k(&_imp->zoomContextMutex);
-    _imp->zoomContext.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+    QMutexLocker k(&_imp->zoomCtxMutex);
+    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
 

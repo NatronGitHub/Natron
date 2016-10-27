@@ -39,11 +39,11 @@
 
 
 #include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleViewPrivateBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/CurveGui.h"
 #include "Gui/Menu.h"
-#include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 
 
@@ -75,31 +75,23 @@ enum EventStateEnum
 
 // although all members are public, CurveWidgetPrivate is really a class because it has lots of member functions
 // (in fact, many members could probably be made private)
-class CurveWidgetPrivate
+class CurveWidgetPrivate : public AnimationModuleViewPrivateBase
 {
     Q_DECLARE_TR_FUNCTIONS(CurveWidget)
 
 public:
     CurveWidgetPrivate(Gui* gui,
                        const AnimationModuleBasePtr& model,
-                       CurveWidget* widget);
+                       AnimationViewBase* publicInterface);
 
-    ~CurveWidgetPrivate();
+    virtual ~CurveWidgetPrivate();
 
-    AnimationModuleBasePtr getModel() const
-    {
-        return _model.lock();
-    }
-
-    void drawSelectionRectangle();
-
-    void drawTimelineMarkers();
+    virtual void addMenuOptions() OVERRIDE FINAL;
 
     void drawCurves();
 
     void drawScale();
 
-    void drawSelectedKeyFramesBbox();
 
     /**
      * @brief Returns whether the click at position pt is nearby the curve.
@@ -107,28 +99,11 @@ public:
      * if they are not NULL.
      **/
     CurveGuiPtr isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
-    AnimItemDimViewAndTime isNearbyKeyFrame(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbyTangent(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewAndTime > isNearbySelectedTangentText(const QPoint & pt) const;
+    AnimItemDimViewKeyFrame isNearbyKeyFrame(const QPoint & pt) const;
+    AnimItemDimViewKeyFrame isNearbyKeyFrameText(const QPoint& pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbyTangent(const QPoint & pt) const;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbySelectedTangentText(const QPoint & pt) const;
 
-    bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
-
-    bool isNearbyBboxTopLeft(const QPoint& pt) const;
-    bool isNearbyBboxMidLeft(const QPoint& pt) const;
-    bool isNearbyBboxBtmLeft(const QPoint& pt) const;
-    bool isNearbyBboxMidBtm(const QPoint& pt) const;
-    bool isNearbyBboxBtmRight(const QPoint& pt) const;
-    bool isNearbyBboxMidRight(const QPoint& pt) const;
-    bool isNearbyBboxTopRight(const QPoint& pt) const;
-    bool isNearbyBboxMidTop(const QPoint& pt) const;
-
-    bool isNearbyTimelineTopPoly(const QPoint & pt) const;
-
-    bool isNearbyTimelineBtmPoly(const QPoint & pt) const;
-
-    AnimItemDimViewAndTime isNearbyKeyFrameText(const QPoint& pt) const;
-
-    void moveSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl);
 
     void transformSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl, bool shiftHeld);
 
@@ -136,21 +111,10 @@ public:
 
     void refreshSelectionRectangle(double x, double y);
 
-    void setSelectedKeysInterpolation(KeyframeTypeEnum type);
-
-    void createMenu();
-
     void updateDopeSheetViewFrameRange();
 
-private:
+    void keyFramesWithinRect(const RectD& canonicalRect, AnimItemDimViewKeyFramesMap* keys) const;
 
-
-    void keyFramesWithinRect(const QRectF & rect, AnimItemDimViewKeyFramesMap* keys) const;
-
-public:
-
-    // Model providing selection and curves
-    AnimationModuleBaseWPtr _model;
 
     // If there's a custom interact to draw (for parametric parameters)
     boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
@@ -158,38 +122,16 @@ public:
     // the last mouse press or move, in widget coordinates
     QPoint _lastMousePos;
 
-    // protects zoomCtx for serialization thread
-    mutable QMutex zoomCtxMutex;
-    ZoomContext zoomCtx;
 
     // Interaction State
     EventStateEnum _state;
 
-    // Right click menu
-    Menu* _rightClickMenu;
-
-
-    TextRenderer textRenderer;
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)
-    std::vector< KeyFrame > _keyFramesClipBoard;
-    QRectF _selectionRectangle;
     QPointF _dragStartPoint;
-    QRectF _selectedKeyFramesBbox;
-    QLineF _selectedKeyFramesCrossVertLine;
-    QLineF _selectedKeyFramesCrossHorizLine;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewIndexID> _selectedDerivative;
-    bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
-    QPointF _keyDragLastMovement;
-    Gui* _gui;
-    GLuint savedTexture;
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame> _selectedDerivative;
     QSize sizeH;
-    bool zoomOrPannedSinceLastFit;
-
-    // True if paintGL() was run at least once
-    bool drawnOnce;
-
     CurveWidget* _widget;
 
 

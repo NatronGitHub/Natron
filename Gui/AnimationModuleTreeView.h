@@ -154,7 +154,7 @@ public:
      *
      * If one of its parents is collapsed, returns false.
      */
-    bool itemIsVisibleFromOutside(QTreeWidgetItem *item) const;
+    bool itemIsVisible(QTreeWidgetItem *item) const;
 
     /**
      * @brief Returns the height occuped in the view by 'item' and its

@@ -60,6 +60,7 @@ public:
      * @brief Select all items
      **/
     void selectAll();
+    void getAllKeyFrames(AnimItemDimViewKeyFramesMap* keyframes, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
 
     /**
      * @brief Clear all items from selection
@@ -134,9 +135,7 @@ Q_SIGNALS:
 
 private:
 
-    std::list<NodeAnimPtr>::iterator isNodeSelected(const NodeAnimPtr& node);
 
-    std::list<TableItemAnimPtr>::iterator isTableItemSelected(const TableItemAnimPtr& node);
     
     boost::scoped_ptr<AnimationModuleSelectionModelPrivate> _imp;
 };

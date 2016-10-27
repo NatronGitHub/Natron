@@ -136,6 +136,7 @@ public:
 
     virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
+    void setSelectedCurveExpression(const QString& expression);
 
 private:
 

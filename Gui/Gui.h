@@ -319,7 +319,6 @@ public:
                            const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
-    CurveEditor* getCurveEditor() const;
     AnimationModuleEditor * getAnimationModuleEditor() const;
     ScriptEditor* getScriptEditor() const;
     ProgressPanel* getProgressPanel() const;

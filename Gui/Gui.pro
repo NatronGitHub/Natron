@@ -90,6 +90,8 @@ SOURCES += \
     AnimationModuleSelectionModel.cpp \
     AnimationModuleTreeView.cpp \
     AnimationModuleUndoRedo.cpp \
+    AnimationModuleViewBase.cpp \
+    AnimationModuleViewPrivateBase.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
@@ -244,6 +246,8 @@ HEADERS += \
     AnimationModuleSelectionModel.h \
     AnimationModuleTreeView.h \
     AnimationModuleUndoRedo.h \
+    AnimationModuleViewBase.h \
+    AnimationModuleViewPrivateBase.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \

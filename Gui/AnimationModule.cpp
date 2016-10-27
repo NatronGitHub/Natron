@@ -413,7 +413,7 @@ AnimationModule::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type,
 } // findItem
 
 void
-AnimationModule::getTopLevelItems(std::vector<KnobAnimPtr>* /*knobs*/, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* /*tableItems*/) const
+AnimationModule::getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
 {
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         nodes->push_back(*it);
@@ -541,14 +541,9 @@ AnimationModule::getEditor() const
 void
 AnimationModule::renameSelectedNode()
 {
-    AnimItemDimViewKeyFramesMap keys;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> tableItems;
-
-    _imp->selectionModel->getCurrentSelection(&keys, &selectedNodes, &tableItems);
+    const std::list<NodeAnimPtr >& selectedNodes = _imp->selectionModel->getCurrentNodesSelection();
     if ( selectedNodes.empty() || (selectedNodes.size() > 1) ) {
         Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
-
         return;
     }
 
@@ -590,7 +585,7 @@ AnimationModule::getTimeline() const
 void
 AnimationModule::refreshSelectionBboxAndUpdateView()
 {
-    #pragma message WARN("TODO")
+    _imp->editor->refreshSelectionBboxAndRedrawView();
 }
 
 CurveWidget*

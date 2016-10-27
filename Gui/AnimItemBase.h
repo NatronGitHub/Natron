@@ -113,10 +113,10 @@ struct KeyFrameWithString_CompareLess
     }
 };
 
-struct AnimItemDimViewAndTime
+struct AnimItemDimViewKeyFrame
 {
     AnimItemDimViewIndexID id;
-    double time;
+    KeyFrameWithString key;
 };
 
 typedef std::set<KeyFrameWithString, KeyFrameWithString_CompareLess> KeyFrameWithStringSet;
@@ -168,6 +168,7 @@ public:
      **/
     virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const = 0;
 
+
     /**
      * @brief Returns true if the given dimension/view has an expression set
      **/
@@ -187,9 +188,17 @@ public:
     virtual double evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, ViewIdx view);
 
     /**
-     * @brief Get keyframes associated to the item
+     * @brief Returns a set of all keyframes for given dimension/view
+     * If dimension is all or view is all it will merge keyframes of all dimensions/views
+     * respectively. In case all is passed to either dimension or view, the value of the
+     * keyframes is irrelevant.
      **/
     void getKeyframes(DimSpec dimension, ViewSetSpec view, KeyFrameWithStringSet *result) const;
+
+    /**
+     * @brief Same as getKeyframes above, except that each dimension/view pair has its own keyframe set 
+     **/
+    void getKeyframes(DimSpec dimension, ViewSetSpec view, AnimItemDimViewKeyFramesMap *result) const;
 
     /**
      * @brief Returns the views available in the item.

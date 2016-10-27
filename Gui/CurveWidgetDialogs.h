@@ -146,7 +146,7 @@ public:
 
     EditKeyFrameDialog(EditModeEnum mode,
                        CurveWidget* curveWidget,
-                       const KeyPtr& key,
+                       const AnimItemDimViewKeyFrame& key,
                        QWidget* parent);
 
     virtual ~EditKeyFrameDialog();

@@ -27,40 +27,16 @@
 
 #include "Global/Macros.h"
 
-#include <set>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QtOpenGL/QGLWidget>
-#include <QtCore/QMetaType>
-#include <QDialog>
-#include <QtCore/QByteArray>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Global/GlobalDefines.h"
-
-#include "Engine/OverlaySupport.h"
-#include "Engine/Curve.h"
-
-#include "Gui/GuiFwd.h"
+#include "Gui/AnimationModuleViewBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class CurveWidgetPrivate;
 
-class CurveWidget
-    : public QGLWidget, public OverlaySupport
+class CurveWidget : public AnimationViewBase
 {
-    friend class CurveGui;
-    friend class CurveWidgetPrivate;
+
 
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -68,89 +44,35 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    CurveWidget(Gui* gui,
-                const AnimationModuleBasePtr& model,
-                QWidget* parent);
+    CurveWidget(QWidget* parent);
 
     virtual ~CurveWidget() OVERRIDE;
 
-    void centerOn(double xmin, double xmax);
-    void centerOn(double xmin, double xmax, double ymin, double ymax);
-
-    void centerOn(const std::vector<CurveGuiPtr > & curves, bool useDisplayRange);
-
-    void refreshSelectedKeysAndUpdate();
-
-    double getZoomFactor() const;
-
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
-
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
-
-    /**
-     * @brief Swap the OpenGL buffers.
-     **/
-    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-
-    /**
-     * @brief Repaint
-     **/
-    virtual void redraw() OVERRIDE FINAL;
-
-    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
-
-    /**
-     * @brief Returns the width and height of the viewport in window coordinates.
-     **/
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-
-    /**
-     * @brief Returns the pixel scale of the viewport.
-     **/
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-
-    /**
-     * @brief Returns the colour of the background (i.e: clear color) of the viewport.
-     **/
+    // Overriden from AnimationViewBase
+    virtual void centerOnAllItems() OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
+    virtual void refreshSelectionBoundingBox() OVERRIDE FINAL;
+private:
+    virtual void initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
+    virtual void drawView() OVERRIDE FINAL;
+public:
 
-    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual void saveOpenGLContext() OVERRIDE FINAL;
-    virtual void restoreOpenGLContext() OVERRIDE FINAL;
-
+    
     /**
-     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     * @brief Convenience function: fill the view according to the bounding box of all given curves.
+     * @param curves The curves to compute the bounding box from. If empty, uses all selected curves
+     * in the tree view.
+     * @param useDisplayRange If true, then if the curves have a display range, it uses it in order
+     * to compute the bounding box of a curve, otherwise it uses the bounding box of its keyframes.
      **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    void centerOnCurves(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange);
 
-    /**
-     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
-     **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
-
-    /**
-     * @brief Returns the font height, i.e: the height of the highest letter for this font
-     **/
-    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
-     **/
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-    void updateSelectionAfterCurveChange(CurveGui* curve);
-
-    void refreshCurveDisplayTangents(CurveGui* curve);
 
     // The interact will be drawn after the background and before any curve
     void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
     OfxParamOverlayInteractPtr getCustomInteract() const;
 
-    bool hasDrawnOnce() const;
-    
+  
     
     /**
      * @brief Computes the position of the right and left tangents handle in curve coordinates
@@ -163,35 +85,19 @@ public:
 
 public Q_SLOTS:
 
-    void refreshDisplayedTangents();
-
-    void exportCurveToAscii();
-
-    void importCurveFromAscii();
-
-    void frameAll();
-
-    void frameSelectedCurve();
-
-    void loopSelectedCurve();
-
-    void negateSelectedCurve();
-
-    void reverseSelectedCurve();
-
-    void refreshSelectedKeysBbox();
-
-    void onTimeLineFrameChanged(SequenceTime time, int reason);
-
-    void onUpdateOnPenUpActionTriggered();
-
     void onEditKeyFrameDialogFinished(bool accepted);
 
+    void onExportCurveToAsciiActionTriggered();
+
+    void onImportCurveFromAsciiActionTriggered();
+
+    void onApplyLoopExpressionOnSelectedCurveActionTriggered();
+
+    void onApplyNegateExpressionOnSelectedCurveActionTriggered();
+
+    void onApplyReverseExpressionOnSelectedCurveActionTriggered();
 private:
 
-    virtual void initializeGL() OVERRIDE FINAL;
-    virtual void resizeGL(int width, int height) OVERRIDE FINAL;
-    virtual void paintGL() OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -199,27 +105,14 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0) OVERRIDE FINAL;
 
-    void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font, int flags = 0) const;
-
-    /**
-     *@brief See toZoomCoordinates in ViewerGL.h
-     **/
-    QPointF toZoomCoordinates(double x, double y) const;
-
-    /**
-     *@brief See toWidgetCoordinates in ViewerGL.h
-     **/
-    QPointF toWidgetCoordinates(double x, double y) const;
 
     void addKey(const CurveGuiPtr& curve, double xCurve, double yCurve);
 
 private:
 
 
-    boost::scoped_ptr<CurveWidgetPrivate> _imp;
+    boost::shared_ptr<CurveWidgetPrivate> _imp;
 };
 
 

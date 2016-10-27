@@ -27,60 +27,12 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include "Global/GlobalDefines.h"
-
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-
-#if QT_VERSION >= 0x050000
-#include <QtWidgets/QTreeWidget>
-#else
-#include <QtGui/QTreeWidget>
-#endif
-
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Engine/OverlaySupport.h"
-#include "Engine/ViewIdx.h"
-
-#include "Gui/GuiFwd.h"
+#include "Gui/AnimationModuleViewBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class DopeSheetViewPrivate;
-
-/**
- * @brief The DopeSheetView class describes the dope sheet view view of the
- * dope sheet editor.
- *
- * It strongly depends of the hierarchy view because the keyframes, clips...
- * must be drawn in front of its items.
- *
- * The dope sheet view provides the following undoable interactions :
- * - select keyframes with a click or a rectangle selection, and move them.
- * - delete the selected keyframes.
- * - move a clip and trim it.
- * - move an entire group, including its keyframes and clips.
- * - apply a spectific interpolation to the selected keyframes.
- * - copy/paste keyframes.
- *
- * and the following features :
- * - center the timeline on the current selection.
- * - move the current frame indicator.
- * - dragging the timeline using the middle mouse button.
- *
- * /!\ This class should depends less of the hierarchy view.
- */
-class DopeSheetView
-    : public QGLWidget, public OverlaySupport
+class DopeSheetView : public AnimationViewBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -109,19 +61,11 @@ public:
         esTransformingKeyframesMiddleLeft
     };
 
-    explicit DopeSheetView(const AnimationModuleBasePtr& model,
-                           AnimationModuleTreeView *treeView,
-                           Gui *gui,
-                           QWidget *parent = 0);
+    explicit DopeSheetView(QWidget *parent);
 
     virtual ~DopeSheetView() OVERRIDE;
 
-    /**
-     * @brief Set the current timeline range on ['xMin', 'xMax'].
-     */
-    void centerOn(double xMin, double xMax);
 
-    bool hasDrawnOnce() const;
 
     /**
      * @brief Returns a pair composed of the first keyframe (or the starting
@@ -132,90 +76,17 @@ public:
      */
     std::pair<double, double> getKeyframeRange() const;
 
-
-    /**
-     * @brief Returns the timeline's current frame.
-     */
-    SequenceTime getCurrentFrame() const;
-
-    void swapOpenGLBuffers() OVERRIDE FINAL;
-    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
-    void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
-    void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    void saveOpenGLContext() OVERRIDE FINAL;
-    void restoreOpenGLContext() OVERRIDE FINAL;
-    unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
-    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    // Overriden from AnimationViewBase
+    virtual void centerOnAllItems() OVERRIDE FINAL;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual void refreshSelectionBoundingBox() OVERRIDE FINAL;
+private:
+    virtual void initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
+    virtual void drawView() OVERRIDE FINAL;
 
 
-    /**
-     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
-     **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
-     **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
-
-    /**
-     * @brief Returns the font height, i.e: the height of the highest letter for this font
-     **/
-    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
-     **/
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-    /**
-     * @brief Get the current orthographic projection
-     **/
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const ;
-
-    /**
-     * @brief Set the current orthographic projection
-     **/
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) ;
-
-    void refreshSelectionBboxAndRedraw();
 
 public Q_SLOTS:
-    void redraw() OVERRIDE FINAL;
-
-protected:
-    void initializeGL() OVERRIDE FINAL;
-    void resizeGL(int w, int h) OVERRIDE FINAL;
-    void paintGL() OVERRIDE FINAL;
-
-    /* events */
-    void mousePressEvent(QMouseEvent *e) OVERRIDE FINAL;
-    void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
-    void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
-    void mouseDoubleClickEvent(QMouseEvent *e) OVERRIDE FINAL;
-
-    void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
-
-    void focusInEvent(QFocusEvent *e) OVERRIDE FINAL;
-
-public Q_SLOTS:
-    /**
-     * @brief Computes the timeline positions and refresh the view.
-     *
-     * This slot is automatically called when the current frame has changed.
-     */
-    void onTimeLineFrameChanged(SequenceTime sTime, int reason);
-
-    /**
-     * @brief Computes the timeline boundaries and refresh the view.
-     *
-     * This slot is automatically called when the frame range of the project
-     * has changed.
-     */
-    void onTimeLineBoundariesChanged(int, int);
 
     /**
      * @brief Handles 'NodeAnim' for the next refreshes of the view.
@@ -281,23 +152,6 @@ public Q_SLOTS:
      */
     void onKeyframeSelectionChanged();
 
-    // Actions
-
-    /**
-     * @brief Select all the keyframes displayed in the view.
-     *
-     * This slot is automatically called when the user triggers the menu action
-     * or presses Ctrl + A.
-     */
-    void onSelectedAllTriggered();
-
-    /**
-     * @brief Delete the selected keyframes.
-     *
-     * This slot is automatically called when the user triggers the menu action
-     * or presses Del.
-     */
-    void deleteSelectedKeyframes();
 
     /**
      * @brief Center the view content on the current selection.
@@ -308,51 +162,19 @@ public Q_SLOTS:
      */
     void centerOnSelection();
 
-    /**
-     * The following functions apply a specific interpolation to the
-     * selected keyframes.
-     *
-     * Each slot can be called by triggering its menu action or by pressing
-     * its keyboard shortcut. See GuiApplicationManager.cpp.
-     */
-    void constantInterpSelectedKeyframes();
-    void linearInterpSelectedKeyframes();
-    void smoothInterpSelectedKeyframes();
-    void catmullRomInterpSelectedKeyframes();
-    void cubicInterpSelectedKeyframes();
-    void horizontalInterpSelectedKeyframes();
-    void breakInterpSelectedKeyframes();
+private:
 
-    /**
-     * @brief Copy the selected keyframes.
-     *
-     * This slot is automatically called when the user triggers the menu action
-     * or presses Ctrl + C.
-     */
-    void copySelectedKeyframes();
+    void centerOnRangeInternal(const std::pair<double, double>& range);
 
+    void mousePressEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseDoubleClickEvent(QMouseEvent *e) OVERRIDE FINAL;
 
-    /**
-     * @brief Paste the keyframes existing in the clipboard. The keyframes will
-     * be placed at the time of the current frame indicator.
-     *
-     * This slot is automatically called when the user triggers the menu action
-     * or presses Ctrl + V.
-     */
-    void pasteKeyframes(bool relative);
-
-    void pasteKeyframesAbsolute()
-    {
-        pasteKeyframes(false);
-    }
-
-    void pasteKeyframesRelative()
-    {
-        pasteKeyframes(true);
-    }
+    void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
 
 private: /* attributes */
-    boost::scoped_ptr<DopeSheetViewPrivate> _imp;
+    boost::shared_ptr<DopeSheetViewPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

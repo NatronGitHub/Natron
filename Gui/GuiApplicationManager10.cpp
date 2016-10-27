@@ -857,39 +857,23 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, kShortcutDescActionGraphOpenNodePanel, Qt::NoModifier, Qt::Key_Return);
 
 
-    ///CurveEditor
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier, Qt::Key_Backspace);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSmooth, kShortcutDescActionCurveEditorSmooth, Qt::NoModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorLinear, kShortcutDescActionCurveEditorLinear, Qt::NoModifier, Qt::Key_L);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCatmullrom, kShortcutDescActionCurveEditorCatmullrom, Qt::NoModifier, Qt::Key_R);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCubic, kShortcutDescActionCurveEditorCubic, Qt::NoModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorHorizontal, kShortcutDescActionCurveEditorHorizontal, Qt::NoModifier, Qt::Key_H);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak, kShortcutDescActionCurveEditorBreak, Qt::NoModifier, Qt::Key_X);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, kShortcutDescActionCurveEditorSelectAll, Qt::ControlModifier, Qt::Key_A);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenterAll, kShortcutDescActionCurveEditorCenterAll
+    // Animation Module
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys, kShortcutDescActionAnimationModuleRemoveKeys, Qt::NoModifier, Qt::Key_Backspace);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleConstant, kShortcutDescActionAnimationModuleConstant, Qt::NoModifier, Qt::Key_K);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSmooth, kShortcutDescActionAnimationModuleSmooth, Qt::NoModifier, Qt::Key_Z);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleLinear, kShortcutDescActionAnimationModuleLinear, Qt::NoModifier, Qt::Key_L);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCatmullrom, kShortcutDescActionAnimationModuleCatmullrom, Qt::NoModifier, Qt::Key_R);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCubic, kShortcutDescActionAnimationModuleCubic, Qt::NoModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleHorizontal, kShortcutDescActionAnimationModuleHorizontal, Qt::NoModifier, Qt::Key_H);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleBreak, kShortcutDescActionAnimationModuleBreak, Qt::NoModifier, Qt::Key_X);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSelectAll, kShortcutDescActionAnimationModuleSelectAll, Qt::ControlModifier, Qt::Key_A);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenterAll, kShortcutDescActionAnimationModuleCenterAll
                     , Qt::NoModifier, Qt::Key_A);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter, kShortcutDescActionCurveEditorCenter
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenter, kShortcutDescActionAnimationModuleCenter
                     , Qt::NoModifier, Qt::Key_F);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, kShortcutDescActionCurveEditorCopy, Qt::ControlModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, kShortcutDescActionCurveEditorPaste, Qt::ControlModifier, Qt::Key_V);
-
-    // Dope Sheet Editor
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorDeleteKeys, kShortcutDescActionAnimationModuleEditorDeleteKeys, Qt::NoModifier, Qt::Key_Backspace);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorFrameSelection, kShortcutDescActionAnimationModuleEditorFrameSelection, Qt::NoModifier, Qt::Key_F);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorSelectAllKeyframes, kShortcutDescActionAnimationModuleEditorSelectAllKeyframes, Qt::ControlModifier, Qt::Key_A);
-
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorSmooth, kShortcutDescActionCurveEditorSmooth, Qt::NoModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorLinear, kShortcutDescActionCurveEditorLinear, Qt::NoModifier, Qt::Key_L);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorCatmullrom, kShortcutDescActionCurveEditorCatmullrom, Qt::NoModifier, Qt::Key_R);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorCubic, kShortcutDescActionCurveEditorCubic, Qt::NoModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorHorizontal, kShortcutDescActionCurveEditorHorizontal, Qt::NoModifier, Qt::Key_H);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorBreak, kShortcutDescActionCurveEditorBreak, Qt::NoModifier, Qt::Key_X);
-
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorCopySelectedKeyframes, kShortcutDescActionAnimationModuleEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorPasteKeyframes, kShortcutDescActionAnimationModuleEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorPasteKeyframesAbsolute, kShortcutDescActionAnimationModuleEditorPasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCopy, kShortcutDescActionAnimationModuleCopy, Qt::ControlModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes, kShortcutDescActionAnimationModulePasteKeyframes, Qt::ControlModifier, Qt::Key_V);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, kShortcutDescActionAnimationModulePasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
 
     //Script editor
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);

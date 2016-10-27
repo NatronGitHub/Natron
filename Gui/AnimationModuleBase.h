@@ -76,7 +76,20 @@ public:
     /**
      * @brief Return a list of all top-level items in the model
      **/
-    virtual void getTopLevelItems(std::vector<KnobAnimPtr>* knobs, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const = 0;
+    virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const
+    {
+        Q_UNUSED(knobs);
+    }
+
+    virtual void getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
+    {
+        Q_UNUSED(nodes);
+    }
+
+    virtual void getTopLevelTableItems(std::vector<TableItemAnimPtr>* tableItems) const
+    {
+        Q_UNUSED(tableItems);
+    }
 
     /**
      * @brief Return a pointer to the selection model

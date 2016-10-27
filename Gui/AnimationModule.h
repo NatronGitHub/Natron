@@ -118,7 +118,7 @@ public:
 
     /// Overriden from AnimationModuleSelectionProvider
     virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getTopLevelItems(std::vector<KnobAnimPtr>* knobs, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const OVERRIDE FINAL;
+    virtual void getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const OVERRIDE FINAL;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// Overriden from AnimationModuleBase

@@ -122,6 +122,61 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameWith
     }
 }
 
+void
+AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimViewKeyFramesMap *result) const
+{
+
+    assert(viewSpec.isAll() || viewSpec.isViewIdx());
+
+
+    AnimItemBasePtr thisShared = boost::const_pointer_cast<AnimItemBase>(shared_from_this());
+    std::list<ViewIdx> views = getViewsList();
+    if (dimension.isAll()) {
+        int nDims = getNDimensions();
+        for (int i = 0; i < nDims; ++i) {
+            if (viewSpec.isAll()) {
+                for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                    AnimItemDimViewIndexID id;
+                    id.item = thisShared;
+                    id.dim = DimIdx(i);
+                    id.view = *it;
+                    KeyFrameWithStringSet& keys = (*result)[id];
+                    _imp->addKeyFramesForDimView(DimIdx(i), *it, &keys);
+                }
+            } else {
+                assert(viewSpec.isViewIdx());
+                AnimItemDimViewIndexID id;
+                id.item = thisShared;
+                id.dim = DimIdx(i);
+                id.view = ViewIdx(viewSpec.value());
+                KeyFrameWithStringSet& keys = (*result)[id];
+                _imp->addKeyFramesForDimView(DimIdx(i), ViewIdx(viewSpec.value()), &keys);
+            }
+        }
+    } else {
+        if (viewSpec.isAll()) {
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                AnimItemDimViewIndexID id;
+                id.item = thisShared;
+                id.dim = DimIdx(dimension.value());
+                id.view = *it;
+                KeyFrameWithStringSet& keys = (*result)[id];
+                _imp->addKeyFramesForDimView(DimIdx(dimension.value()), *it, &keys);
+            }
+
+        } else {
+            assert(viewSpec.isViewIdx());
+            AnimItemDimViewIndexID id;
+            id.item = thisShared;
+            id.dim = DimIdx(dimension.value());
+            id.view = ViewIdx(viewSpec.value());
+            KeyFrameWithStringSet& keys = (*result)[id];
+
+            _imp->addKeyFramesForDimView(DimIdx(dimension.value()), ViewIdx(viewSpec.value()), &keys);
+        }
+    }
+}
+
 double
 AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimension, ViewIdx view)
 {

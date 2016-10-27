@@ -169,7 +169,7 @@ private:
         knob->setAutoKeyingEnabled(false);
         if (_dimension.isAll()) {
             // Multiple dimensions set at once
-            knob->setValueAcrossDimensions(_oldValue, _view, _reason);
+            knob->setValueAcrossDimensions(_oldValue, DimIdx(0), _view, _reason);
         } else {
             // Only one dimension set
             ignore_result(knob->setValue(_oldValue[0], _view, _dimension, _reason));
@@ -195,7 +195,7 @@ private:
 
         if (_dimension.isAll() && (int)_newValue.size() > 1) {
             // Multiple dimensions set at once
-            knob->setValueAcrossDimensions(_newValue, _view, _reason, &_valueChangedReturnCode);
+            knob->setValueAcrossDimensions(_newValue, DimIdx(0), _view, _reason, &_valueChangedReturnCode);
         } else {
             // Only one dimension set
             _valueChangedReturnCode[0] = knob->setValue(_newValue[0], _view, _dimension, _reason);

@@ -633,11 +633,11 @@ KnobAnimPtr AnimationModuleTreeView::getKnobAnimAt(int y) const
 }
 
 bool
-AnimationModuleTreeView::itemIsVisibleFromOutside(QTreeWidgetItem *item) const
+AnimationModuleTreeView::itemIsVisible(QTreeWidgetItem *item) const
 {
     bool ret = true;
     QTreeWidgetItem *it = item->parent();
-
+    
     while (it) {
         if ( !it->isExpanded() ) {
             ret = false;

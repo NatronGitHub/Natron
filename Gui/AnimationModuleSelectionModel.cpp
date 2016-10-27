@@ -44,6 +44,10 @@ public:
     {
     }
 
+    std::list<NodeAnimPtr>::iterator isNodeSelected(const NodeAnimPtr& node);
+
+    std::list<TableItemAnimPtr>::iterator isTableItemSelected(const TableItemAnimPtr& node);
+
 
     /* attributes */
     AnimationModuleSelectionProviderWPtr model;
@@ -134,48 +138,63 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
     }
 }
 
-
 void
-AnimationModuleSelectionModel::selectAll()
+AnimationModuleSelectionModel::getAllKeyFrames(AnimItemDimViewKeyFramesMap* selectedKeyframes, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr>* selectedTableItems) const
 {
 
-    std::vector<KnobAnimPtr> topLevelKnobs;
-    std::vector<NodeAnimPtr > topLevelNodes;
-    std::vector<TableItemAnimPtr> topLevelTableItems;
-    getModel()->getTopLevelItems(&topLevelKnobs, &topLevelNodes, &topLevelTableItems);
+    AnimationModuleSelectionProviderPtr model = getModel();
 
-    AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> selectedTableItems;
+    std::vector<KnobAnimPtr> topLevelKnobs;
+    model->getTopLevelKnobs(&topLevelKnobs);
+
+    std::vector<NodeAnimPtr > topLevelNodes;
+    model->getTopLevelNodes(&topLevelNodes);
+
+    std::vector<TableItemAnimPtr> topLevelTableItems;
+    model->getTopLevelTableItems(&topLevelTableItems);
+
+
 
     for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {
 
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
 
         for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), &selectedKeyframes);
+            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
         }
 
         const std::vector<TableItemAnimPtr>& topLevelTableItems = (*it)->getTopLevelItems();
         for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
             // We select keyframes for the root item, this will also select children
-            addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), &selectedTableItems, &selectedKeyframes);
+            addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
         }
         if ((*it)->isRangeDrawingEnabled()) {
-            selectedNodes.push_back(*it);
+            selectedNodes->push_back(*it);
         }
 
 
     }
 
     for (std::vector<KnobAnimPtr>::const_iterator it2 = topLevelKnobs.begin(); it2 != topLevelKnobs.end(); ++it2) {
-        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), &selectedKeyframes);
+        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
     }
 
     for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
-        addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), &selectedTableItems, &selectedKeyframes);
+        addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
     }
 
+}
+
+void
+AnimationModuleSelectionModel::selectAll()
+{
+
+
+
+    AnimItemDimViewKeyFramesMap selectedKeyframes;
+    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> selectedTableItems;
+    getAllKeyFrames(&selectedKeyframes, &selectedNodes, &selectedTableItems);
 
     makeSelection( selectedKeyframes, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                AnimationModuleSelectionModel::SelectionTypeClear |
@@ -269,7 +288,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
     }
 
     for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        std::list<NodeAnimPtr>::iterator found = isNodeSelected(*it);
+        std::list<NodeAnimPtr>::iterator found = _imp->isNodeSelected(*it);
         if ( found == _imp->selectedNodes.end() ) {
             _imp->selectedNodes.push_back(*it);
             hasChanged = true;
@@ -280,7 +299,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
     }
 
     for (std::vector<TableItemAnimPtr >::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
-        std::list<TableItemAnimPtr>::iterator found = isTableItemSelected(*it);
+        std::list<TableItemAnimPtr>::iterator found = _imp->isTableItemSelected(*it);
         if ( found == _imp->selectedTableItems.end() ) {
             _imp->selectedTableItems.push_back(*it);
             hasChanged = true;
@@ -383,27 +402,27 @@ AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, D
 }
 
 std::list<TableItemAnimPtr>::iterator
-AnimationModuleSelectionModel::isTableItemSelected(const TableItemAnimPtr& node)
+AnimationModuleSelectionModelPrivate::isTableItemSelected(const TableItemAnimPtr& node)
 {
-    for (std::list<TableItemAnimPtr>::iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+    for (std::list<TableItemAnimPtr>::iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
         if ( *it == node ) {
             return it;
         }
     }
 
-    return _imp->selectedTableItems.end();
+    return selectedTableItems.end();
 }
 
 std::list<NodeAnimPtr>::iterator
-AnimationModuleSelectionModel::isNodeSelected(const NodeAnimPtr& node)
+AnimationModuleSelectionModelPrivate::isNodeSelected(const NodeAnimPtr& node)
 {
-    for (std::list<NodeAnimPtr>::iterator it = _imp->selectedNodes.begin(); it != _imp->selectedNodes.end(); ++it) {
+    for (std::list<NodeAnimPtr>::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         if ( *it == node ) {
             return it;
         }
     }
 
-    return _imp->selectedNodes.end();
+    return selectedNodes.end();
 }
 
 bool

@@ -34,11 +34,13 @@
 
 #include "Serialization/WorkspaceSerialization.h"
 
+
 #include "Gui/ActionShortcuts.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/Button.h"
+#include "Gui/CurveGui.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
@@ -46,9 +48,13 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
+#include "Gui/KnobAnim.h"
+#include "Gui/KnobUndoCommand.h"
 #include "Gui/LineEdit.h"
 #include "Gui/NodeGui.h"
 #include "Gui/GuiMacros.h"
+
+#include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -195,6 +201,7 @@ void
 AnimationModuleEditor::refreshSelectionBboxAndRedrawView()
 {
     _imp->dopeSheetView->refreshSelectionBboxAndRedraw();
+    _imp->curveView->refreshSelectionBboxAndRedraw();
 }
 
 int
@@ -336,5 +343,34 @@ AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportDat
     _imp->dopeSheetView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
     return true;
 }
+
+
+void
+AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
+{
+    std::list<CurveGuiPtr> curves = _imp->getSelectedCurves();
+    if (curves.empty() || curves.size() > 1) {
+        throw std::invalid_argument("Cannot set expression on multiple items");
+    }
+    KnobAnimPtr isKnobAnim = toKnobAnim(curves.front()->getItem());
+    if (!isKnobAnim) {
+        throw std::invalid_argument("Cannot set expression on non knob");
+    }
+    KnobIPtr knob = isKnobAnim->getInternalKnob();
+    const CurveGuiPtr& curve = curves.front();
+    DimIdx dimension = curve->getDimension();
+    ViewIdx view = curve->getView();
+    std::string exprResult;
+    if ( !expression.isEmpty() ) {
+        try {
+            knob->validateExpression(expression.toStdString(), dimension, view, false /*hasRetVariable*/, &exprResult);
+        } catch (...) {
+            _imp->expressionResultLabel->setText( tr("Error") );
+            return;
+        }
+    }
+    pushUndoCommand( new SetExpressionCommand(knob, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
+}
+
 
 NATRON_NAMESPACE_EXIT;
