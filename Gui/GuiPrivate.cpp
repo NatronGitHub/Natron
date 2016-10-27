@@ -295,6 +295,12 @@ GuiPrivate::notifyGuiClosing()
 
     const NodesGuiList allNodes = _nodeGraphArea->getAllActiveNodes();
 
+    {
+        // we do not need this list anymore, avoid using it
+        QMutexLocker k(&this->openedPanelsMutex);
+        this->openedPanels.clear();
+    }
+
     for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         DockablePanel* panel = (*it)->getSettingPanel();
         if (panel) {
