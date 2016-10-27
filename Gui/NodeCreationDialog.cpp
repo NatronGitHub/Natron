@@ -321,11 +321,13 @@ struct NodeCreationDialogPrivate
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
     PluginsMap items;
+    bool isFinished;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
         , textEdit(NULL)
         , items( appPTR->getPluginsList() )
+        , isFinished(false)
     {
     }
 };
@@ -361,7 +363,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setObjectName( QString::fromUtf8("nodeCreationDialog") );
-    setAttribute(Qt::WA_DeleteOnClose, false);
+    //setAttribute(Qt::WA_DeleteOnClose, false);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
 
@@ -519,6 +521,10 @@ NodeCreationDialog::changeEvent(QEvent* e)
 void
 NodeCreationDialog::finish(bool accepted)
 {
+    if (_imp->isFinished) {
+        return;
+    }
+    _imp->isFinished = true;
     Q_EMIT dialogFinished(accepted);
 }
 
