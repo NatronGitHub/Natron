@@ -18,6 +18,8 @@
 
 #include "AnimatingObjectI.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 AnimatingObjectI::AnimatingObjectI()
