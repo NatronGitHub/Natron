@@ -1510,7 +1510,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
                 dialogType = KnobFile::eKnobFileDialogTypeSaveFile;
             }
         }
-
+        k->setDialogType(dialogType);
 
         std::string defValue = defaultStr->text().toStdString();
         k->setDefaultValue(defValue);
