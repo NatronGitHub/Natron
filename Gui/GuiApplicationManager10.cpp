@@ -666,9 +666,9 @@ GuiApplicationManager::loadShortcuts()
                 nbShortcutsSet = true;
             }
 
-            bool hasNonNullKeybind = false;
 
             if (!nbShortcutsSet) {
+                bool hasNonNullKeybind = false;
                 if (kAction) {
                     if ( settings.contains( it2->first + QString::fromUtf8("_Symbol") ) ) {
                         Qt::Key key = (Qt::Key)settings.value( it2->first + QString::fromUtf8("_Symbol") ).toInt();
@@ -696,7 +696,7 @@ GuiApplicationManager::loadShortcuts()
                                     kAction->currentShortcut.clear();
                                 }
                                 kAction->currentShortcut.push_back(key);
-                                hasNonNullKeybind = true;
+                                //hasNonNullKeybind = true;
                             } else {
                                 continue;
                             }

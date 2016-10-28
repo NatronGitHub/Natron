@@ -972,14 +972,14 @@ DockablePanel::setClosedInternal(bool c)
         }
 
 
-        if (!c) {
-            gui->addNodeGuiToCurveEditor(nodeGui);
-            gui->addNodeGuiToDopeSheetEditor(nodeGui);
-
-        } else {
-            gui->removeNodeGuiFromCurveEditor(nodeGui);
-            gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
-
+        if (gui) {
+            if (!c) {
+                gui->addNodeGuiToCurveEditor(nodeGui);
+                gui->addNodeGuiToDopeSheetEditor(nodeGui);
+            } else {
+                gui->removeNodeGuiFromCurveEditor(nodeGui);
+                gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
+            }
         }
         ///Regular show/hide
         if (c) {
@@ -1087,8 +1087,11 @@ DockablePanel::floatPanelInWindow(FloatingWidget* window)
 FloatingWidget*
 DockablePanel::floatPanel()
 {
-    FloatingWidget* window = new FloatingWidget(_imp->_gui, _imp->_gui);
-    floatPanelInWindow(window);
+    if (!_imp->_floating) {
+        FloatingWidget* window = new FloatingWidget(_imp->_gui, _imp->_gui);
+        floatPanelInWindow(window);
+        assert(_imp->_floatingWidget == window);
+    }
     return _imp->_floatingWidget;
 }
 

@@ -1301,6 +1301,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 isGroup = true;
             }
         }
+        assert(isPage != isGroup);
         if (isPage) {
             KnobPagePtr page;
             if (!found) {
@@ -1320,7 +1321,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
             }
 
-        } else { //!ispage
+        } else if (isGroup) { //!ispage
             KnobGroupPtr grp;
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(_imp->effect, groupSerialization->_label, 1, false);

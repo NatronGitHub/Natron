@@ -475,6 +475,7 @@ NodeGui::getInitialSize(int *w,
 {
     PluginPtr plugin = getNode()->getPlugin();
     if (!plugin) {
+        *w = *h = 0;
         return;
     }
     QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());

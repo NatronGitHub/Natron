@@ -817,7 +817,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
             }
 
         }
-
+        Q_UNUSED(hasUploadedVertices);
 
         if (glContext->isGPUContext()) {
             GL_GPU::glDisable(GL_BLEND);
