@@ -356,7 +356,7 @@ public:
 
     virtual void refreshAllPreviews() {}
 
-    virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const { Q_UNUSED(bitdepthPerComponent); Q_UNUSED(hasAlpha);}
+    virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const { *bitdepthPerComponent = 0; *hasAlpha = false;}
 
     virtual void declareCurrentAppVariable_Python();
 

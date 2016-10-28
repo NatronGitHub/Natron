@@ -641,8 +641,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
 
-        int bitdepthPerComponent;
-        bool hasAlpha;
+        int bitdepthPerComponent = 0;
+        bool hasAlpha = false;
         getApp()->getViewersOpenGLContextFormat(&bitdepthPerComponent, &hasAlpha);
         interactDesc.describe(bitdepthPerComponent, hasAlpha);
         OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
