@@ -371,7 +371,7 @@ ViewerTab::onRenderStatsAvailable(int time,
 void
 ViewerTab::synchronizeOtherViewersProjection()
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }

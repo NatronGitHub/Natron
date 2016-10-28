@@ -325,7 +325,7 @@ void
 ViewerTab::setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex)
 {
     std::string formatName, infoBarName;
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }

@@ -829,7 +829,7 @@ void
 CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,
                                  int)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1602,7 +1602,7 @@ CurveEditor::getSelectedCurve() const
 void
 CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1663,7 +1663,7 @@ CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
 void
 CurveEditor::refreshCurrentExpression()
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }

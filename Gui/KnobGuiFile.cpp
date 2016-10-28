@@ -93,7 +93,7 @@ KnobGuiFile::removeSpecificGui()
 void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -602,7 +602,7 @@ KnobGuiPath::editUserEntry(QStringList& row)
 void
 KnobGuiPath::entryRemoved(const QStringList& row)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -624,7 +624,7 @@ KnobGuiPath::tableChanged(int row,
                           int col,
                           std::string* newEncodedValue)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }

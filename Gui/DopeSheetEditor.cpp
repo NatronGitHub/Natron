@@ -177,7 +177,7 @@ DopeSheetEditor::refreshSelectionBboxAndRedrawView()
 int
 DopeSheetEditor::getTimelineCurrentTime() const
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return 0;
     }

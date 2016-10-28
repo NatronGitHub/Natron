@@ -80,7 +80,7 @@ ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -130,7 +130,7 @@ void
 ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -232,7 +232,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     }
     QPointF transformViewportPos;
     QPointF transformPos;
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return false;
     }
@@ -323,7 +323,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  double pressure,
                                  double timestamp)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return false;
     }
@@ -386,7 +386,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                                         const QPointF & viewportPos,
                                         const QPointF & pos)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return false;
     }
@@ -483,7 +483,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             double pressure,
                                             double timestamp)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -587,7 +587,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    double pressure,
                                    double timestamp)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -654,7 +654,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                double pressure,
                                double timestamp)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -899,7 +899,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -965,7 +965,7 @@ bool
 ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1040,7 +1040,7 @@ bool
 ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1122,7 +1122,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1187,7 +1187,7 @@ bool
 ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
                                    QKeyEvent* e)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1236,7 +1236,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
 bool
 ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }
@@ -1303,7 +1303,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
-    Gui* gui = gui->getGui();
+    Gui* gui = getGui();
     if (!gui) {
         return;
     }

@@ -314,10 +314,10 @@ ViewerTab::eventFilter(QObject *target,
             if (app) {
                 ViewerNodePtr viewerNode = _imp->viewerNode.lock();
                 if (viewerNode) {
-                    NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
-                    assert(gui_i);
-                    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                    gui->selectNode(gui);
+                    NodeGuiIPtr nodegui_i = viewerNode->getNode()->getNodeGui();
+                    assert(nodegui_i);
+                    NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+                    gui->selectNode(nodegui);
                 }
             }
         }
