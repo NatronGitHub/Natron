@@ -1306,8 +1306,8 @@ KnobGuiContainerHelper::refreshPageVisibility(const KnobPagePtr& page)
                 } else {
                     KnobsVec children = page->getChildren();
                     bool visible = false;
-                    for (KnobsVec::const_iterator it = children.begin(); it!=children.end(); ++it) {
-                        visible |= !(*it)->getIsSecret();
+                    for (KnobsVec::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                        visible |= !(*it2)->getIsSecret();
                     }
                     if (visible) {
                         pagesToDisplay.push_back(it->second);
