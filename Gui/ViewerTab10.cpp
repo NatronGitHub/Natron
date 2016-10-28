@@ -245,16 +245,21 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
-        if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
+        Gui* gui = getGui();
+        if (!gui) {
             return;
         }
-        getGui()->getApp()->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
+        GuiAppInstPtr app = gui->getApp();
+        if ( !app || app->checkAllReadersModificationDate(true) ) {
+            return;
+        }
+        app->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
         std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(app->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
     }
 }
 
@@ -288,12 +293,11 @@ ViewerTab::abortRendering()
 void
 ViewerTab::onEngineStarted(bool forward)
 {
-    if ( !getGui() ) {
+    Gui* gui = getGui();
+    if (!gui) {
         return;
     }
-
-
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
+    const std::list<ViewerTab*>& viewers = gui->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it)->_imp->play_Forward_Button ) {
             (*it)->_imp->play_Forward_Button->setDown(forward);
@@ -306,8 +310,8 @@ ViewerTab::onEngineStarted(bool forward)
         }
     }
 
-    if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-        getGui()->onFreezeUIButtonClicked(true);
+    if ( !gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+        gui->onFreezeUIButtonClicked(true);
     }
 }
 
@@ -375,16 +379,21 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
-        if ( getGui()->getApp()->checkAllReadersModificationDate(true) ) {
+        Gui* gui = getGui();
+        if (!gui) {
             return;
         }
-        getGui()->getApp()->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
+        GuiAppInstPtr app = gui->getApp();
+        if ( !app || app->checkAllReadersModificationDate(true) ) {
+            return;
+        }
+        app->setLastViewerUsingTimeline( _imp->viewerNode->getNode() );
         std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(app->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
     }
 }
 
@@ -392,7 +401,15 @@ void
 ViewerTab::refresh(bool enableRenderStats)
 {
     //Check if readers files have changed on disk
-    getGui()->getApp()->checkAllReadersModificationDate(false);
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstPtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    app->checkAllReadersModificationDate(false);
     abortRendering();
     _imp->viewerNode->forceFullComputationOnNextFrame();
     if (!enableRenderStats) {
@@ -468,7 +485,12 @@ void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
                                  int reason)
 {
-    if ( !getGui() ) {
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstPtr app = gui->getApp();
+    if (!app) {
         return;
     }
     TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
@@ -476,7 +498,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
         _imp->currentFrameBox->setValue(time);
     }
 
-    if ( _imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine() ) {
+    if ( _imp->timeLineGui->getTimeline() != app->getTimeLine() ) {
         _imp->viewerNode->renderCurrentFrame(true);
     }
 }
@@ -500,7 +522,8 @@ ViewerTab::centerViewer()
 
 ViewerTab::~ViewerTab()
 {
-    if ( getGui() ) {
+    Gui* gui = getGui();
+    if (gui) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
             boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
@@ -513,15 +536,16 @@ ViewerTab::~ViewerTab()
                         assert(graph);
                     }
                 } else {
-                    graph = getGui()->getNodeGraph();
+                    graph = gui->getNodeGraph();
                 }
             }
             _imp->viewerNode->invalidateUiContext();
         } else {
-            graph = getGui()->getNodeGraph();
+            graph = gui->getNodeGraph();
         }
         assert(graph);
-        if ( getGui()->getApp() && !getGui()->getApp()->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
+        GuiAppInstPtr app = gui->getApp();
+        if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
     }
@@ -574,10 +598,16 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
-    if ( getGui() ) {
-        getGui()->setActiveViewer(this);
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
     }
+    GuiAppInstPtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
+    gui->setActiveViewer(this);
 
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
@@ -719,10 +749,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         onPlaybackOutButtonClicked();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
-        getGui()->getApp()->goToPreviousKeyframe();
+        app->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
-        getGui()->getApp()->goToNextKeyframe();
+        app->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         centerViewer();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
@@ -914,11 +944,17 @@ ViewerTab::eventFilter(QObject *target,
                        QEvent* e)
 {
     if (e->type() == QEvent::MouseButtonPress) {
-        if ( getGui() && getGui()->getApp() ) {
-            boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
-            assert(gui_i);
-            NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-            getGui()->selectNode(gui);
+        Gui* gui = getGui();
+        if (gui) {
+            GuiAppInstPtr app = gui->getApp();
+            if (app) {
+                boost::shared_ptr<NodeGuiI> nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
+                assert(nodegui_i);
+                NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+                if (nodegui) {
+                    gui->selectNode(nodegui);
+                }
+            }
         }
     }
 
