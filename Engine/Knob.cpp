@@ -5794,7 +5794,9 @@ KnobHolder::moveViewerUIKnobOneStepUp(const KnobIPtr& knob)
             if (i == 0) {
                 return false;
             }
-            std::swap(_imp->knobsWithViewerUI[i - 1], _imp->knobsWithViewerUI[i]);
+            // can't swap weak pointers using std::swap!
+            // std::swap(_imp->knobsWithViewerUI[i - 1], _imp->knobsWithViewerUI[i]);
+            _imp->knobsWithViewerUI[i].swap(_imp->knobsWithViewerUI[i - 1]);
             return true;
         }
     }
@@ -5810,7 +5812,9 @@ KnobHolder::moveViewerUIOneStepDown(const KnobIPtr& knob)
             if (i == _imp->knobsWithViewerUI.size() - 1) {
                 return false;
             }
-            std::swap(_imp->knobsWithViewerUI[i + 1], _imp->knobsWithViewerUI[i]);
+            // can't swap weak pointers using std::swap!
+            // std::swap(_imp->knobsWithViewerUI[i + 1], _imp->knobsWithViewerUI[i]);
+            _imp->knobsWithViewerUI[i].swap(_imp->knobsWithViewerUI[i + 1]);
             return true;
         }
     }
