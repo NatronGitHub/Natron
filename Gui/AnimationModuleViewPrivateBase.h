@@ -136,6 +136,25 @@ public:
     // Called in the end of createMenu
     virtual void addMenuOptions();
 
+    /**
+     * @brief A thin wrapper around AnimationModuleBase::moveSelectedKeysAndNodes that clamps keyframes motion to integers if needed
+     **/
+    void moveSelectedKeyFrames(const QPointF& lastCanonicalPos, const QPointF& newCanonicalPos);
+
+    enum TransformSelectionCenterEnum
+    {
+        eTransformSelectionCenterMiddle,
+        eTransformSelectionCenterLeft,
+        eTransformSelectionCenterRight,
+        eTransformSelectionCenterBottom,
+        eTransformSelectionCenterTop
+    };
+
+    void transformSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl, bool shiftHeld, TransformSelectionCenterEnum centerType, bool scaleX, bool scaleY);
+
+    void moveCurrentFrameIndicator(int frame);
+
+    
 public:
 
     // ptr to the widget
@@ -171,7 +190,16 @@ public:
 
     bool drawnOnce;
 
+    // the last mouse press pos in widget coordinates
+    QPointF _dragStartPoint;
 
+    // the last mouse press or move, in widget coordinates
+    QPoint _lastMousePos;
+
+
+    bool _mustSetDragOrientation;
+    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
+    QPointF _keyDragLastMovement;
 
 };
 

@@ -87,6 +87,11 @@ class AnimationModuleEditorPrivate;
 class AnimationModuleEditor
     : public QWidget, public PanelWidget
 {
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
 public:
     AnimationModuleEditor(const std::string& scriptName,
                           Gui *gui,
@@ -126,10 +131,6 @@ public:
 
     AnimationModuleTreeView* getTreeView() const;
 
-    void setTreeWidgetWidth(int width);
-
-    int getTreeWidgetWidth() const;
-
     void onInputEventCalled();
 
     virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
@@ -137,6 +138,14 @@ public:
     virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
     void setSelectedCurveExpression(const QString& expression);
+
+public Q_SLOTS:
+
+    void onExprLineEditFinished();
+
+    void onViewCurrentIndexChanged(int index);
+
+    void onSelectionModelSelectionChanged(bool recurse);
 
 private:
 

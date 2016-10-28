@@ -70,7 +70,6 @@ CurveWidget::CurveWidget(QWidget* parent)
 {
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    setMouseTracking(true);
 
     if ( parent->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
         ///if this is the curve widget associated to the CurveEditor
@@ -89,11 +88,28 @@ CurveWidget::~CurveWidget()
 }
 
 void
-CurveWidget::initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface)
+CurveWidget::initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* publicInterface)
 {
     _imp.reset(new CurveWidgetPrivate(gui, model, publicInterface));
     _imp->_widget = this;
     setImplementation(_imp);
+}
+
+void
+CurveWidget::centerOnAllItems()
+{
+    centerOnCurves(std::vector<boost::shared_ptr<CurveGui> >(), false);
+}
+
+void
+CurveWidget::centerOnSelection()
+{
+    std::vector<CurveGuiPtr > selection = _imp->getSelectedCurves();
+    if ( selection.empty() ) {
+        centerOnAllItems();
+    } else {
+        centerOnCurves(selection, false);
+    }
 }
 
 void
@@ -354,16 +370,19 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         }
     }
 
+    _imp->_lastMousePos = e->pos();
+    _imp->_dragStartPoint = e->pos();
+    _imp->_keyDragLastMovement.ry() = _imp->_keyDragLastMovement.rx() = 0;
+
+
     setFocus();
     ////
     // right button: popup menu
     if ( buttonDownIsRight(e) ) {
         _imp->createMenu();
         _imp->_rightClickMenu->exec( mapToGlobal( e->pos() ) );
-        _imp->_dragStartPoint = e->pos();
         // no need to set _imp->_lastMousePos
         // no need to set _imp->_dragStartPoint
-
         // no need to update()
         e->accept();
 
@@ -377,9 +396,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         CurveGuiPtr foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
         if (foundCurveNearby) {
             addKey(foundCurveNearby, xCurve, yCurve);
-
-            _imp->_dragStartPoint = e->pos();
-            _imp->_lastMousePos = e->pos();
         }
         e->accept();
 
@@ -390,10 +406,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
         _imp->_state = eEventStateDraggingView;
-        _imp->_lastMousePos = e->pos();
-        _imp->_dragStartPoint = e->pos();
-        // no need to set _imp->_dragStartPoint
-
         // no need to update()
         e->accept();
 
@@ -404,9 +416,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
                   ( buttonMetaAlt(e) == (Qt::AltModifier | Qt::MetaModifier) ) ) ) {
         // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
         _imp->_state = eEventStateZooming;
-        _imp->_lastMousePos = e->pos();
-        _imp->_dragStartPoint = e->pos();
-
         e->accept();
 
         return;
@@ -439,10 +448,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         }
         if (caughtBbox) {
             _imp->_mustSetDragOrientation = true;
-
-            _imp->_dragStartPoint = e->pos();
-            _imp->_lastMousePos = e->pos();
-
             //no need to update()
             e->accept();
 
@@ -461,9 +466,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingKeys;
         setCursor( QCursor(Qt::CrossCursor) );
-
-        _imp->_dragStartPoint = e->pos();
-        _imp->_lastMousePos = e->pos();
         update(); // the keyframe changes color and the derivatives must be drawn
         e->accept();
 
@@ -480,9 +482,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingTangent;
         _imp->_selectedDerivative = selectedTan;
-        _imp->_lastMousePos = e->pos();
-        //no need to set _imp->_dragStartPoint
-        update();
+        update(); // We selected a tangent, it must be redrawn
         e->accept();
 
         return;
@@ -510,8 +510,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingTimeline;
-        _imp->_lastMousePos = e->pos();
-        // no need to set _imp->_dragStartPoint
 
         // no need to update()
         e->accept();
@@ -526,8 +524,6 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         model->getSelectionModel()->clearSelection();
     }
     _imp->_state = eEventStateSelecting;
-    _imp->_lastMousePos = e->pos();
-    _imp->_dragStartPoint = e->pos();
 
     e->accept();
 } // mousePressEvent
@@ -553,7 +549,8 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
         }
     }
 
-    if (prevState == eEventStateSelecting) { // should other cases be considered?
+    if (prevState == eEventStateSelecting) {
+        // We must redraw to remove the selection rectangle
         update();
     }
 } // CurveWidget::mouseReleaseEvent
@@ -662,15 +659,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
         case eEventStateDraggingKeys: {
             if (!_imp->_mustSetDragOrientation) {
-                if (nbSelectedKeys > 0) {
-                    if (_imp->_gui) {
-                        _imp->_gui->setDraftRenderEnabled(true);
-                    }
-                    double dx = ( newClick_opengl.x() - oldClick_opengl.x() );
-                    double dy = ( newClick_opengl.y() - oldClick_opengl.y() );
-
-                    model->moveSelectedKeysAndNodes(dx, dy);
-                }
+                _imp->moveSelectedKeyFrames(newClick_opengl, oldClick_opengl);
             }
         }   break;
         case eEventStateDraggingBtmLeftBbox:
@@ -681,12 +670,35 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         case eEventStateDraggingMidTopBbox:
         case eEventStateDraggingTopLeftBbox:
         case eEventStateDraggingMidLeftBbox: {
-            if (nbSelectedKeys > 0) {
-                if (_imp->_gui) {
-                    _imp->_gui->setDraftRenderEnabled(true);
-                }
-                _imp->transformSelectedKeyFrames( oldClick_opengl, newClick_opengl, modCASIsShift(e) );
+           
+            AnimationModuleViewPrivateBase::TransformSelectionCenterEnum centerType;
+            if (_imp->_state == eEventStateDraggingMidBtmBbox) {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterTop;
+            } else if (_imp->_state == eEventStateDraggingMidLeftBbox) {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterRight;
+            } else if (_imp->_state == eEventStateDraggingMidTopBbox) {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterBottom;
+            } else if (_imp->_state == eEventStateDraggingMidRightBbox) {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterLeft;
+            } else {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterMiddle;
             }
+            bool scaleBoth = _imp->_state == eEventStateDraggingTopLeftBbox ||
+            _imp->_state == eEventStateDraggingTopRightBbox ||
+            _imp->_state == eEventStateDraggingBtmRightBbox ||
+            _imp->_state == eEventStateDraggingBtmLeftBbox;
+
+            bool scaleX = scaleBoth ||
+            _imp->_state == eEventStateDraggingMidLeftBbox ||
+            _imp->_state == eEventStateDraggingMidRightBbox;
+
+
+            bool scaleY = scaleBoth ||
+            _imp->_state == eEventStateDraggingMidTopBbox ||
+            _imp->_state == eEventStateDraggingMidBtmBbox;
+
+            _imp->transformSelectedKeyFrames( oldClick_opengl, newClick_opengl, modCASIsShift(e), centerType, scaleX, scaleY );
+
         }  break;
         case eEventStateSelecting:
             _imp->refreshSelectionRectangle( (double)e->x(), (double)e->y() );
@@ -699,12 +711,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             _imp->moveSelectedTangent(newClick_opengl);
             break;
         case eEventStateDraggingTimeline: {
-            TimeLinePtr timeline = model->getTimeline();
-            if (timeline) {
-                _imp->_gui->setDraftRenderEnabled(true);
-                _imp->_gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
-                timeline->seekFrame( (int)newClick_opengl.x(), false, OutputEffectInstancePtr(),  eTimelineChangeReasonCurveEditorSeek );
-            }
+            _imp->moveCurrentFrameIndicator((int)newClick_opengl.x());
         }   break;
         case eEventStateZooming: {
             if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {

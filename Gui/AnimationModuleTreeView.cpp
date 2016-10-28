@@ -615,40 +615,29 @@ AnimationModuleTreeView::resizeEvent(QResizeEvent* e)
     }
 }
 
-KnobAnimPtr AnimationModuleTreeView::getKnobAnimAt(int y) const
+static bool isItemVisibleRecursiveInternal(QTreeWidgetItem* item, bool checkExpand)
 {
-    QTreeWidgetItem *itemUnderPoint = itemAt(TO_DPIX(5), y);
-    AnimatedItemTypeEnum foundType;
-    KnobAnimPtr isKnob;
-    TableItemAnimPtr isTableItem;
-    NodeAnimPtr isNodeItem;
-    ViewSetSpec view;
-    DimSpec dim;
-    bool found = getModel()->findItem(itemUnderPoint, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-    (void)found;
-    if (isKnob) {
-        return isKnob;
+    if (!item) {
+        return false;
     }
-    return KnobAnimPtr();
+    if (item->isHidden()) {
+        return false;
+    }
+    if (checkExpand && !item->isExpanded()) {
+        return false;
+    }
+
+    QTreeWidgetItem *parent = item->parent();
+    if (parent) {
+        return isItemVisibleRecursiveInternal(parent, true);
+    }
+    return true;
 }
 
 bool
-AnimationModuleTreeView::itemIsVisible(QTreeWidgetItem *item) const
+AnimationModuleTreeView::isItemVisibleRecursive(QTreeWidgetItem *item) const
 {
-    bool ret = true;
-    QTreeWidgetItem *it = item->parent();
-    
-    while (it) {
-        if ( !it->isExpanded() ) {
-            ret = false;
-
-            break;
-        }
-
-        it = it->parent();
-    }
-
-    return ret;
+    return isItemVisibleRecursiveInternal(item, false);
 }
 
 QTreeWidgetItem *

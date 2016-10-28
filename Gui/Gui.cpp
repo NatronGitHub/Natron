@@ -296,27 +296,15 @@ Gui::getProjectGui() const
 
 
 void
-Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
-{
-    _imp->_curveEditor->addNode(node);
-}
-
-void
-Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
-{
-    _imp->_curveEditor->removeNode( node );
-}
-
-void
 Gui::addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_AnimationModuleEditor->addNode(node);
+    _imp->_animationModule->addNode(node);
 }
 
 void
 Gui::removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_AnimationModuleEditor->removeNode( node );
+    _imp->_animationModule->removeNode( node );
 }
 
 void

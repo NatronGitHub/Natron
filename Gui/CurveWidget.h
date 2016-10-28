@@ -50,10 +50,11 @@ public:
 
     // Overriden from AnimationViewBase
     virtual void centerOnAllItems() OVERRIDE FINAL;
+    virtual void centerOnSelection() OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void refreshSelectionBoundingBox() OVERRIDE FINAL;
 private:
-    virtual void initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
+    virtual void initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
     virtual void drawView() OVERRIDE FINAL;
 public:
 

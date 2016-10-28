@@ -40,16 +40,18 @@ NATRON_NAMESPACE_ENTER;
 struct AnimationModuleBasePrivate
 {
     AnimItemDimViewKeyFramesMap keyframesClipboard;
+    Gui* gui;
 
-    AnimationModuleBasePrivate()
+    AnimationModuleBasePrivate(Gui* gui)
     : keyframesClipboard()
+    , gui(gui)
     {
 
     }
 };
 
-AnimationModuleBase::AnimationModuleBase()
-: _imp(new AnimationModuleBasePrivate())
+AnimationModuleBase::AnimationModuleBase(Gui* gui)
+: _imp(new AnimationModuleBasePrivate(gui))
 {
 
 }
@@ -163,6 +165,13 @@ AnimationModuleBase::moveSelectedKeysAndNodes(double dt, double dv)
         return;
     }
 
+
+
+    if (_imp->gui) {
+        _imp->gui->setDraftRenderEnabled(true);
+    }
+
+
     pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), selectedNodes, selectedTableItems, dt, dv));
 
 } // AnimationModuleBase::moveSelectedKeysAndNodes
@@ -171,6 +180,7 @@ void
 AnimationModuleBase::trimReaderLeft(const NodeAnimPtr &reader,
                                 double newFirstFrame)
 {
+
     NodePtr node = reader->getInternalNode();
 
     KnobIntPtr firstFrameKnob = toKnobInt(node->getKnobByName(kReaderParamNameFirstFrame));
@@ -189,7 +199,9 @@ AnimationModuleBase::trimReaderLeft(const NodeAnimPtr &reader,
     if (newFirstFrame == firstFrame) {
         return;
     }
-
+    if (_imp->gui) {
+        _imp->gui->setDraftRenderEnabled(true);
+    }
     pushUndoCommand( new KnobUndoCommand<int>(firstFrameKnob, firstFrame, (int)newFirstFrame, DimIdx(0), ViewSetSpec(0), eValueChangedReasonUserEdited, tr("Trim Left")));
 }
 
@@ -214,7 +226,9 @@ AnimationModuleBase::trimReaderRight(const NodeAnimPtr &reader,
     if (newLastFrame == lastFrame) {
         return;
     }
-
+    if (_imp->gui) {
+        _imp->gui->setDraftRenderEnabled(true);
+    }
     pushUndoCommand( new KnobUndoCommand<int>(lastFrameKnob, lastFrame, (int)newLastFrame, DimIdx(0), ViewSetSpec(0), eValueChangedReasonUserEdited, tr("Trim Right")));
 }
 
@@ -272,6 +286,11 @@ AnimationModuleBase::slipReader(const NodeAnimPtr &reader,
     dt = std::max( dt, (double)(currentLastFrame - originalLastFrame) );
 
     if (dt != 0) {
+
+        if (_imp->gui) {
+            _imp->gui->setDraftRenderEnabled(true);
+        }
+        
         EffectInstancePtr effect = node->getEffectInstance();
         effect->beginMultipleEdits(tr("Slip Reader").toStdString());
         firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, ViewSetSpec(0), DimIdx(0), eValueChangedReasonUserEdited);
@@ -354,6 +373,11 @@ AnimationModuleBase::transformSelectedKeys(const Transform::Matrix3x3& transform
         return;
     }
 
+    if (_imp->gui) {
+        _imp->gui->setDraftRenderEnabled(true);
+    }
+
+    
     // Try once to warp everything, if it doesn't work fail it now
     pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), transform));
 }

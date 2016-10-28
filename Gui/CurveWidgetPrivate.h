@@ -104,9 +104,6 @@ public:
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbyTangent(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbySelectedTangentText(const QPoint & pt) const;
 
-
-    void transformSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl, bool shiftHeld);
-
     void moveSelectedTangent(const QPointF & pos);
 
     void refreshSelectionRectangle(double x, double y);
@@ -119,17 +116,11 @@ public:
     // If there's a custom interact to draw (for parametric parameters)
     boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
 
-    // the last mouse press or move, in widget coordinates
-    QPoint _lastMousePos;
-
 
     // Interaction State
     EventStateEnum _state;
 
-    bool _mustSetDragOrientation;
-    QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)
-    QPointF _dragStartPoint;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame> _selectedDerivative;
     QSize sizeH;
     CurveWidget* _widget;

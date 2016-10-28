@@ -206,7 +206,9 @@ struct KnobTableItemPrivate
     , lock()
     , animationCurves()
     {
-        animationCurves[ViewIdx(0)].reset(new Curve());
+        CurvePtr c(new Curve);
+        c->setYComponentMovable(false);
+        animationCurves[ViewIdx(0)] = c;
     }
 
     ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
@@ -1729,6 +1731,7 @@ KnobTableItem::splitView(ViewIdx view)
         CurvePtr& foundCurve = _imp->animationCurves[view];
         if (!foundCurve) {
             foundCurve.reset(new Curve);
+            foundCurve->setYComponentMovable(false);
         }
     }
 

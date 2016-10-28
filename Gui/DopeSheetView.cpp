@@ -56,6 +56,7 @@
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleViewPrivateBase.h"
+#include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/CurveGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
@@ -171,8 +172,6 @@ public:
 
     KeyFrameWithStringSet isNearByKeyframe(const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, const QPointF &widgetCoords) const;
 
-    double clampedMouseOffset(double fromTime, double toTime);
-
     // Textures
 
 
@@ -185,6 +184,7 @@ public:
 
     void drawNodeRow(QTreeWidgetItem* treeItem, const NodeAnimPtr& item) const;
     void drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
+    void drawAnimItemRow(QTreeWidgetItem* treeItem, const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const;
     void drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
 
     void drawNodeRowSeparation(const NodeAnimPtr NodeAnim) const;
@@ -214,7 +214,6 @@ public:
 
     void createSelectionFromRect(const RectD &rect, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
 
-    void moveCurrentFrameIndicator(double dt);
 
     void updateCurveWidgetFrameRange();
 
@@ -226,11 +225,6 @@ public:
     std::list<NodeAnimPtr> nodeRangesBeingComputed; // to avoid recursion in groups
     int rangeComputationRecursion;
 
-
-    // for various user interaction
-    QPointF lastPosOnMousePress;
-    QPointF lastPosOnMouseMove;
-    double keyDragLastMovement;
     DopeSheetView::EventStateEnum eventState;
 
     // for clip (Reader, Time nodes) user interaction
@@ -245,10 +239,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(Gui* gui, AnimationModuleBasePtr& mod
 , nodeRanges()
 , nodeRangesBeingComputed()
 , rangeComputationRecursion(0)
-, lastPosOnMousePress()
-, lastPosOnMouseMove()
-, keyDragLastMovement()
-, eventState(DopeSheetView::esNoEditingState)
+, eventState(DopeSheetView::eEventStateNoEditingState)
 , currentEditedReader()
 {
 }
@@ -262,7 +253,6 @@ DopeSheetView::DopeSheetView(QWidget *parent)
 : AnimationViewBase(parent)
 , _imp()
 {
-    setMouseTracking(true);
 }
 
 /**
@@ -276,7 +266,7 @@ DopeSheetView::~DopeSheetView()
 
 
 void
-DopeSheetView::initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* /*publicInterface*/)
+DopeSheetView::initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* /*publicInterface*/)
 {
     _imp.reset(new DopeSheetViewPrivate(gui, model, this));
     _imp->_widget = this;
@@ -363,13 +353,13 @@ DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
     QPointF clickZoomCoords = zoomCtx.toZoomCoordinates( widgetCoords.x(), widgetCoords.y() );
 
     if ( isNearbySelectedKeysBRec(widgetCoords) ) {
-        return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
+        return getCursorForEventState(DopeSheetView::eEventStateMoveKeyframeSelection);
     } else if ( isNearbySelectedKeysBRectRightEdge(widgetCoords) ) {
-        return getCursorForEventState(DopeSheetView::esTransformingKeyframesMiddleRight);
+        return getCursorForEventState(DopeSheetView::eEventStateDraggingMidRightBbox);
     } else if ( isNearbySelectedKeysBRectLeftEdge(widgetCoords) ) {
-        return getCursorForEventState(DopeSheetView::esTransformingKeyframesMiddleLeft);
+        return getCursorForEventState(DopeSheetView::eEventStateDraggingMidLeftBbox);
     } else if ( isNearByCurrentFrameIndicatorBottom(clickZoomCoords) ) {
-        return getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
+        return getCursorForEventState(DopeSheetView::eEventStateMoveCurrentFrameIndicator);
     }
 
     // Look for a range node
@@ -392,15 +382,15 @@ DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
 
             AnimatedItemTypeEnum nodeType = (*it)->getItemType();
             if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
-                return getCursorForEventState(DopeSheetView::esMoveKeyframeSelection);
+                return getCursorForEventState(DopeSheetView::eEventStateMoveKeyframeSelection);
             }
             if (nodeType == eAnimatedItemTypeReader) {
                 if ( isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
-                    return getCursorForEventState(DopeSheetView::esReaderLeftTrim);
+                    return getCursorForEventState(DopeSheetView::eEventStateReaderLeftTrim);
                 } else if ( isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
-                    return getCursorForEventState(DopeSheetView::esReaderRightTrim);
+                    return getCursorForEventState(DopeSheetView::eEventStateReaderRightTrim);
                 } else if ( animModel->canSlipReader(*it) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
-                    return getCursorForEventState(DopeSheetView::esReaderSlip);
+                    return getCursorForEventState(DopeSheetView::eEventStateReaderSlip);
                 }
             }
         }
@@ -427,13 +417,13 @@ DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
                 KeyFrameWithStringSet keysUnderMouse = isNearByKeyframe(itemBase, dimension, view, widgetCoords);
 
                 if ( !keysUnderMouse.empty() ) {
-                    return getCursorForEventState(DopeSheetView::esPickKeyframe);
+                    return getCursorForEventState(DopeSheetView::eEventStatePickKeyframe);
                 }
             }
         }
     } // if (treeItem) {
 
-    return getCursorForEventState(DopeSheetView::esNoEditingState);
+    return getCursorForEventState(DopeSheetView::eEventStateNoEditingState);
 } // DopeSheetViewPrivate::getCursorDuringHover
 
 Qt::CursorShape
@@ -442,27 +432,27 @@ DopeSheetViewPrivate::getCursorForEventState(DopeSheetView::EventStateEnum es) c
     Qt::CursorShape cursorShape;
 
     switch (es) {
-    case DopeSheetView::esPickKeyframe:
+    case DopeSheetView::eEventStatePickKeyframe:
         cursorShape = Qt::CrossCursor;
         break;
-    case DopeSheetView::esMoveKeyframeSelection:
+    case DopeSheetView::eEventStateMoveKeyframeSelection:
         cursorShape = Qt::OpenHandCursor;
         break;
-    case DopeSheetView::esReaderLeftTrim:
-    case DopeSheetView::esMoveCurrentFrameIndicator:
+    case DopeSheetView::eEventStateReaderLeftTrim:
+    case DopeSheetView::eEventStateMoveCurrentFrameIndicator:
         cursorShape = Qt::SplitHCursor;
         break;
-    case DopeSheetView::esReaderRightTrim:
+    case DopeSheetView::eEventStateReaderRightTrim:
         cursorShape = Qt::SplitHCursor;
         break;
-    case DopeSheetView::esReaderSlip:
+    case DopeSheetView::eEventStateReaderSlip:
         cursorShape = Qt::SizeHorCursor;
         break;
-    case DopeSheetView::esTransformingKeyframesMiddleLeft:
-    case DopeSheetView::esTransformingKeyframesMiddleRight:
+    case DopeSheetView::eEventStateDraggingMidLeftBbox:
+    case DopeSheetView::eEventStateDraggingMidRightBbox:
         cursorShape = Qt::SplitHCursor;
         break;
-    case DopeSheetView::esNoEditingState:
+    case DopeSheetView::eEventStateNoEditingState:
     default:
         cursorShape = Qt::ArrowCursor;
         break;
@@ -533,30 +523,6 @@ KeyFrameWithStringSet DopeSheetViewPrivate::isNearByKeyframe(const AnimItemBaseP
     return ret;
 }
 
-double
-DopeSheetViewPrivate::clampedMouseOffset(double fromTime,
-                                         double toTime)
-{
-    double totalMovement = toTime - fromTime;
-
-    // Clamp the motion to the nearet integer
-    totalMovement = std::floor(totalMovement + 0.5);
-
-    double dt = totalMovement - keyDragLastMovement;
-
-    // Update the last drag movement
-    keyDragLastMovement = totalMovement;
-
-    return dt;
-}
-
-
-
-/**
- * @brief DopeSheetViewPrivate::drawScale
- *
- * Draws the dope sheet's grid and time indicators.
- */
 void
 DopeSheetViewPrivate::drawScale() const
 {
@@ -665,7 +631,7 @@ DopeSheetViewPrivate::drawScale() const
 
 
 void
-DopeSheetViewPrivate::drawTreeItemRecursive(QTreeWidgetItem* item, std::list<NodeAnimPtr>* nodesRowsOrdered) const
+DopeSheetViewPrivate::drawTreeItemRecursive(QTreeWidgetItem* item,  std::list<NodeAnimPtr>* nodesRowsOrdered) const
 {
     assert(item);
     if ( item->isHidden() ) {
@@ -716,6 +682,12 @@ DopeSheetViewPrivate::drawTreeItemRecursive(QTreeWidgetItem* item, std::list<Nod
         drawKnobRow(item, isKnobAnim, dimension, view);
     } else if (isTableItemAnim) {
         drawTableItemRow(item, isTableItemAnim, dimension, view);
+    }
+
+    int nChildren = item->childCount();
+    for (int i = 0; i < nChildren; ++i) {
+        QTreeWidgetItem* child = item->child(i);
+        drawTreeItemRecursive(child, nodesRowsOrdered);
     }
 
 } // drawTreeItemRecursive
@@ -790,13 +762,18 @@ DopeSheetViewPrivate::drawNodeRow(QTreeWidgetItem* /*treeItem*/, const NodeAnimP
 void
 DopeSheetViewPrivate::drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const
 {
-
+    drawAnimItemRow(treeItem, item, dimension, view);
 }
 
 void
 DopeSheetViewPrivate::drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& item, DimSpec dimension, ViewSetSpec view) const
 {
+    drawAnimItemRow(treeItem, item, dimension, view);
+}
 
+void
+DopeSheetViewPrivate::drawAnimItemRow(QTreeWidgetItem* treeItem, const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const
+{
 
     QRectF nameItemRect = treeView->visualItemRect(treeItem);
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
@@ -819,6 +796,7 @@ DopeSheetViewPrivate::drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& 
 
     drawKeyframes(treeItem, item, dimension, view);
 }
+
 
 void
 DopeSheetViewPrivate::drawNodeRowSeparation(const NodeAnimPtr item) const
@@ -976,7 +954,7 @@ DopeSheetViewPrivate::drawKeyframes(QTreeWidgetItem* treeItem, const AnimItemBas
 
 
     // Draw keyframe in the knob dim row only if it's visible
-    bool drawInDimRow = treeView->itemIsVisible(treeItem);
+    bool drawInDimRow = treeView->isItemVisibleRecursive(treeItem);
 
     AnimationModuleBasePtr animModel = _model.lock();
     AnimationModuleSelectionModelPtr selectModel = animModel->getSelectionModel();
@@ -1418,14 +1396,14 @@ DopeSheetViewPrivate::computeFRRange(const NodeAnimPtr& frameRange)
 }
 
 void
-DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& group)
+DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& groupAnim)
 {
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group) != nodeRangesBeingComputed.end() ) {
+    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), groupAnim) != nodeRangesBeingComputed.end() ) {
         return;
     }
 
-    NodePtr node = group->getInternalNode();
-    if (!node) {
+    NodePtr internalNode = groupAnim->getInternalNode();
+    if (!internalNode) {
         return;
     }
 
@@ -1433,60 +1411,67 @@ DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& group)
 
     FrameRange range;
     std::set<double> times;
-    NodeGroupPtr nodegroup = node->isEffectNodeGroup();
+    NodeGroupPtr nodegroup = internalNode->isEffectNodeGroup();
     assert(nodegroup);
     if (!nodegroup) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
     }
 
-    nodeRangesBeingComputed.push_back(group);
+    nodeRangesBeingComputed.push_back(groupAnim);
     ++rangeComputationRecursion;
 
 
     NodesList nodes = nodegroup->getNodes();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr node = (*it);
-        NodeAnimPtr NodeAnim = model->findNodeAnim(node);
+        NodeAnimPtr childAnim = model->findNodeAnim(*it);
 
-        if (!NodeAnim) {
+        if (!childAnim) {
             continue;
         }
 
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
-
-        if ( !nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible() ) {
+        if (!treeView->isItemVisibleRecursive(childAnim->getTreeItem())) {
             continue;
         }
 
-        computeNodeRange(NodeAnim);
+        NodeGuiPtr childGui = childAnim->getNodeGui();
 
-        std::map<NodeAnimPtr, FrameRange >::iterator found = nodeRanges.find(NodeAnim);
+
+        computeNodeRange(childAnim);
+
+        std::map<NodeAnimPtr, FrameRange >::iterator found = nodeRanges.find(childAnim);
         if ( found != nodeRanges.end() ) {
             times.insert(found->second.first);
             times.insert(found->second.second);
         }
 
-        const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-        for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin();
-             it != knobs.end();
-             ++it) {
-            const KnobGuiPtr& knobGui = (*it).second;
-            KnobIPtr knob = knobGui->getKnob();
+        const KnobsVec &knobs = childGui->getNode()->getKnobs();
 
-            if ( !knob->isAnimationEnabled() || !knob->hasAnimation() ) {
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+
+            if ( !(*it2)->isAnimationEnabled() || !(*it2)->hasAnimation() ) {
                 continue;
             } else {
-                for (int i = 0; i < knob->getDimension(); ++i) {
-                    KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
-
-                    if ( keyframes.empty() ) {
-                        continue;
+                int nDims = (*it2)->getNDimensions();
+                std::list<ViewIdx> views = (*it2)->getViewsList();
+                for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
+                    for (int i = 0; i < nDims; ++i) {
+                        CurvePtr curve = (*it2)->getCurve(*it3, DimIdx(i));
+                        if (!curve) {
+                            continue;
+                        }
+                        int nKeys = curve->getKeyFramesCount();
+                        if (nKeys > 0) {
+                            KeyFrame k;
+                            if (curve->getKeyFrameWithIndex(0, &k)) {
+                                times.insert( k.getTime() );
+                            }
+                            if (curve->getKeyFrameWithIndex(nKeys - 1, &k)) {
+                                times.insert( k.getTime() );
+                            }
+                        }
                     }
-
-                    times.insert( keyframes.begin()->getTime() );
-                    times.insert( keyframes.rbegin()->getTime() );
                 }
             }
         }
@@ -1500,10 +1485,10 @@ DopeSheetViewPrivate::computeGroupRange(const NodeAnimPtr& group)
         range.second = *times.rbegin();
     }
 
-    nodeRanges[group] = range;
+    nodeRanges[groupAnim] = range;
 
     --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), group);
+    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), groupAnim);
     assert( found != nodeRangesBeingComputed.end() );
     nodeRangesBeingComputed.erase(found);
 } // DopeSheetViewPrivate::computeGroupRange
@@ -1512,123 +1497,66 @@ void
 DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 {
     QPointF mouseZoomCoords = zoomCtx.toZoomCoordinates( e->x(), e->y() );
-    QPointF lastZoomCoordsOnMousePress = zoomCtx.toZoomCoordinates( lastPosOnMousePress.x(),
-                                                                        lastPosOnMousePress.y() );
-    QPointF lastZoomCoordsOnMouseMove = zoomCtx.toZoomCoordinates( lastPosOnMouseMove.x(),
-                                                                       lastPosOnMouseMove.y() );
-    double currentTime = mouseZoomCoords.x();
-    double dt = clampedMouseOffset(lastZoomCoordsOnMousePress.x(), currentTime);
-    double dv = mouseZoomCoords.y() - lastZoomCoordsOnMouseMove.y();
+    QPointF lastZoomCoordsOnMousePress = zoomCtx.toZoomCoordinates( _dragStartPoint.x(), _dragStartPoint.y() );
+    QPointF lastZoomCoordsOnMouseMove = zoomCtx.toZoomCoordinates( _lastMousePos.x(), _lastMousePos.y() );
 
     switch (eventState) {
-    case DopeSheetView::esMoveKeyframeSelection: {
-        if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (_gui) {
-                _gui->setDraftRenderEnabled(true);
-            }
-            _model.lock()->moveSelectedKeysAndNodes(dt, 0);
+        case DopeSheetView::eEventStateMoveKeyframeSelection: {
+            moveSelectedKeyFrames(lastZoomCoordsOnMouseMove, mouseZoomCoords);
+            break;
         }
-
-        break;
-    }
-    case DopeSheetView::esTransformingKeyframesMiddleLeft:
-    case DopeSheetView::esTransformingKeyframesMiddleRight: {
-        if (_gui) {
-            _gui->setDraftRenderEnabled(true);
-        }
-        bool shiftHeld = modCASIsShift(e);
-        QPointF center;
-        if (!shiftHeld) {
-            if (eventState == DopeSheetView::esTransformingKeyframesMiddleLeft) {
-                center.rx() = selectedKeysBRect.x2;
+        case DopeSheetView::eEventStateDraggingMidLeftBbox:
+        case DopeSheetView::eEventStateDraggingMidRightBbox: {
+            AnimationModuleViewPrivateBase::TransformSelectionCenterEnum centerType;
+            if (eventState == DopeSheetView::eEventStateDraggingMidLeftBbox) {
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterRight;
             } else {
-                center.rx() = selectedKeysBRect.x1;
+                centerType = AnimationModuleViewPrivateBase::eTransformSelectionCenterLeft;
             }
-            center.ry() = (selectedKeysBRect.y1 + selectedKeysBRect.y2) / 2.;
-        } else {
-            center = QPointF( (selectedKeysBRect.x1 + selectedKeysBRect.x2) / 2., (selectedKeysBRect.y1 + selectedKeysBRect.y2) / 2. );
+            const bool scaleX = true;
+            const bool scaleY = false;
+
+            transformSelectedKeyFrames( lastZoomCoordsOnMouseMove, mouseZoomCoords, modCASIsShift(e), centerType, scaleX, scaleY );
+            break;
         }
-
-
-        double sx = 1., sy = 1.;
-        double tx = 0., ty = 0.;
-        double oldX = mouseZoomCoords.x() - dt;
-        double oldY = mouseZoomCoords.y() - dv;
-        // the scale ratio is the ratio of distances to the center
-        double prevDist = ( oldX - center.x() ) * ( oldX - center.x() ) + ( oldY - center.y() ) * ( oldY - center.y() );
-        if (prevDist != 0) {
-            double dist = ( mouseZoomCoords.x() - center.x() ) * ( mouseZoomCoords.x() - center.x() ) + ( mouseZoomCoords.y() - center.y() ) * ( mouseZoomCoords.y() - center.y() );
-            double ratio = std::sqrt(dist / prevDist);
-            sx *= ratio;
+        case DopeSheetView::eEventStateMoveCurrentFrameIndicator: {
+            moveCurrentFrameIndicator(mouseZoomCoords.x());
+            break;
         }
-
-        Transform::Matrix3x3 transform = Transform::matTransformCanonical( tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y() );
-        _model.lock()->transformSelectedKeys(transform);
-        break;
-    }
-    case DopeSheetView::esMoveCurrentFrameIndicator: {
-        if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (_gui) {
-                _gui->setDraftRenderEnabled(true);
-            }
-            moveCurrentFrameIndicator(dt);
+        case DopeSheetView::eEventStateSelectionByRect: {
+            computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
+            _widget->redraw();
+            break;
         }
+        case DopeSheetView::eEventStateReaderLeftTrim: {
 
-        break;
-    }
-    case DopeSheetView::esSelectionByRect: {
-        computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
-
-        _widget->redraw();
-
-        break;
-    }
-    case DopeSheetView::esReaderLeftTrim: {
-        if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (_gui) {
-                _gui->setDraftRenderEnabled(true);
-            }
-            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntPtr timeOffsetKnob = toKnobInt(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset));
             assert(timeOffsetKnob);
-
-            double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
-
+            double newFirstFrame = std::floor(mouseZoomCoords.x() - timeOffsetKnob->getValue() + 0.5);
             _model.lock()->trimReaderLeft(currentEditedReader, newFirstFrame);
+
+
+            break;
         }
-
-        break;
-    }
-    case DopeSheetView::esReaderRightTrim: {
-        if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (_gui) {
-                _gui->setDraftRenderEnabled(true);
-            }
-            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+        case DopeSheetView::eEventStateReaderRightTrim: {
+            KnobIntPtr timeOffsetKnob = toKnobInt(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset));
             assert(timeOffsetKnob);
-
-            double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
+            double newLastFrame = std::floor(mouseZoomCoords.x() - timeOffsetKnob->getValue() + 0.5);
 
             _model.lock()->trimReaderRight(currentEditedReader, newLastFrame);
+            break;
         }
-
-        break;
-    }
-    case DopeSheetView::esReaderSlip: {
-        if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
-            if (_gui) {
-                _gui->setDraftRenderEnabled(true);
-            }
+        case DopeSheetView::eEventStateReaderSlip: {
+            double dt = mouseZoomCoords.x() - lastZoomCoordsOnMouseMove.x();
             _model.lock()->slipReader(currentEditedReader, dt);
+            
+            break;
         }
-
-        break;
-    }
-    case DopeSheetView::esNoEditingState:
-        eventState = DopeSheetView::esSelectionByRect;
-
-        break;
-    default:
-        break;
+        case DopeSheetView::eEventStateNoEditingState:
+            eventState = DopeSheetView::eEventStateSelectionByRect;
+            break;
+        default:
+            break;
     } // switch
 } // DopeSheetViewPrivate::onMouseLeftButtonDrag
 
@@ -1636,7 +1564,7 @@ void
 DopeSheetViewPrivate::createSelectionFromRect(const RectD &canonicalRect,
                                               AnimItemDimViewKeyFramesMap *keys,
                                               std::vector<NodeAnimPtr >* nodes,
-                                              std::vector<TableItemAnimPtr >* tableItems)
+                                              std::vector<TableItemAnimPtr >* /*tableItems*/)
 {
 
     AnimationModuleSelectionModelPtr selectModel = _model.lock()->getSelectionModel();
@@ -1691,27 +1619,6 @@ DopeSheetViewPrivate::createSelectionFromRect(const RectD &canonicalRect,
     }
 }
 
-void
-DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
-{
-    AnimationModuleBasePtr animModel = _model.lock();
-    if (!animModel) {
-        return;
-    }
-    TimeLinePtr timeline = animModel->getTimeline();
-    if (!timeline) {
-        return;
-    }
-    if (!_gui) {
-        return;
-    }
-    _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
-
-    double toTime = animModel->getTimeline()->currentFrame() + dt;
-
-    _gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(SequenceTime(toTime), false, OutputEffectInstancePtr(), eTimelineChangeReasonDopeSheetEditorSeek);
-}
 void
 DopeSheetViewPrivate::updateCurveWidgetFrameRange()
 {
@@ -1770,6 +1677,27 @@ DopeSheetView::centerOnAllItems()
 }
 
 void
+DopeSheetView::centerOnSelection()
+{
+    running_in_main_thread();
+
+    int selectedKeyframesCount = _imp->_model.lock()->getSelectionModel()->getSelectedKeyframesCount();
+
+
+    FrameRange range;
+
+    // frame on project bounds
+    if (selectedKeyframesCount <= 1) {
+        range = getKeyframeRange();
+    }  else {
+        // or frame on current selection
+        range.first = _imp->selectedKeysBRect.left();
+        range.second = _imp->selectedKeysBRect.right();
+    }
+    centerOnRangeInternal(range);
+}
+
+void
 DopeSheetView::centerOnRangeInternal(const std::pair<double, double>& range)
 {
 
@@ -1794,196 +1722,198 @@ DopeSheetView::centerOnRangeInternal(const std::pair<double, double>& range)
 
 }
 
-void
-DopeSheetView::centerOnSelection()
-{
-    running_in_main_thread();
 
-    int selectedKeyframesCount = _imp->_model.lock()->getSelectionModel()->getSelectedKeyframesCount();
-
-
-    FrameRange range;
-
-    // frame on project bounds
-    if (selectedKeyframesCount <= 1) {
-        range = getKeyframeRange();
-    }  else {
-        // or frame on current selection
-        range.first = _imp->selectedKeysBRect.left();
-        range.second = _imp->selectedKeysBRect.right();
-    }
-    centerOnRangeInternal(range);
-}
 
 void
-DopeSheetView::onNodeAdded(const NodeAnimPtr& NodeAnim)
+DopeSheetView::onNodeAdded(const NodeAnimPtr& node)
 {
-    AnimatedItemTypeEnum nodeType = NodeAnim->getItemType();
-    NodePtr node = NodeAnim->getInternalNode();
-    bool mustComputeNodeRange = true;
+    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
+    AnimatedItemTypeEnum nodeType = node->getItemType();
+    NodePtr internalNode = node->getInternalNode();
 
     if (nodeType == eAnimatedItemTypeCommon) {
-        if ( _imp->model->isPartOfGroup(NodeAnim) ) {
-            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = NodeAnim->getNodeGui()->getKnobs();
-
-            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-                KnobIPtr knob = knobIt->first.lock();
-                const KnobGuiPtr& knobGui = knobIt->second;
-                connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
-                         this, SLOT(onKeyframeChanged()) );
-
-                connect( knobGui.get(), SIGNAL(keyFrameSet()),
-                         this, SLOT(onKeyframeChanged()) );
-
-                connect( knobGui.get(), SIGNAL(keyFrameRemoved()),
-                         this, SLOT(onKeyframeChanged()) );
+        NodeGroupPtr isInGroup = toNodeGroup(internalNode->getGroup());
+        if (isInGroup) {
+            const KnobsVec& knobs = internalNode->getKnobs();
+            for (KnobsVec::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+                connect((*knobIt)->getSignalSlotHandler().get(), SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,DimIdx)),
+                         this, SLOT(onKnobAnimationChanged()) );
             }
         }
+        // Also connect the lifetime knob
+        KnobIntPtr lifeTimeKnob = internalNode->getLifeTimeKnob();
+        if (lifeTimeKnob) {
+            connect( lifeTimeKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                this, SLOT(onRangeNodeKnobChanged()) );
+        }
 
-        mustComputeNodeRange = false;
     } else if (nodeType == eAnimatedItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        KnobIPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
+        KnobIPtr lastFrameKnob = internalNode->getKnobByName(kReaderParamNameLastFrame);
         if (!lastFrameKnob) {
             return;
         }
         boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnobHandler =  lastFrameKnob->getSignalSlotHandler();
         assert(lastFrameKnob);
-        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = internalNode->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
-        connect( lastFrameKnobHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+        connect( lastFrameKnobHandler.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                 this, SLOT(onRangeNodeKnobChanged()) );
 
-        connect( startingTimeKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+        connect( startingTimeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                 this, SLOT(onRangeNodeKnobChanged()) );
 
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
         // refreshes of the view.
     } else if (nodeType == eAnimatedItemTypeRetime) {
-        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  internalNode->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
-        connect( speedKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+        connect( speedKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                 this, SLOT(onRangeNodeKnobChanged()) );
     } else if (nodeType == eAnimatedItemTypeTimeOffset) {
-        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  internalNode->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
-        connect( timeOffsetKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+        connect( timeOffsetKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                 this, SLOT(onRangeNodeKnobChanged()) );
     } else if (nodeType == eAnimatedItemTypeFrameRange) {
-        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
+        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  internalNode->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
-        connect( frameRangeKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+        connect( frameRangeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
+                 this, SLOT(onRangeNodeKnobChanged()) );
     }
 
-    if (mustComputeNodeRange) {
-        _imp->computeNodeRange(NodeAnim);
+    _imp->computeNodeRange(node);
+
+
+    NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim(node);
+    if (parentGroupNodeAnim) {
+        _imp->computeGroupRange( parentGroupNodeAnim );
     }
 
-    {
-        NodeAnimPtr parentGroupNodeAnim = _imp->model->getGroupNodeAnim(NodeAnim);
-        if (parentGroupNodeAnim) {
-            _imp->computeGroupRange( parentGroupNodeAnim );
-        }
-    }
 } // DopeSheetView::onNodeAdded
 
 void
 DopeSheetView::onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim)
 {
+    // Refresh the group range
     {
-        NodeAnimPtr parentGroupNodeAnim = _imp->model->getGroupNodeAnim(NodeAnim);
+        AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
+        NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim(NodeAnim);
         if (parentGroupNodeAnim) {
             _imp->computeGroupRange( parentGroupNodeAnim );
         }
     }
 
+    // remove the node from the frame ranges
     std::map<NodeAnimPtr, FrameRange>::iterator toRemove = _imp->nodeRanges.find(NodeAnim);
 
     if ( toRemove != _imp->nodeRanges.end() ) {
         _imp->nodeRanges.erase(toRemove);
     }
 
+    // Recompute selection rectangle bounding box
     _imp->computeSelectedKeysBRect();
 
+    // update view
     redraw();
 }
 
 void
-DopeSheetView::onKeyframeChanged()
+DopeSheetView::onKnobAnimationChanged()
 {
-    QObject *signalSender = sender();
-    NodeAnimPtr NodeAnim;
-
-    {
-        KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
-        if (knobHandler) {
-            NodeAnim = _imp->model->findNodeAnim( knobHandler->getKnob() );
-        } else {
-            KnobGui *knobGui = qobject_cast<KnobGui *>(signalSender);
-            if (knobGui) {
-                NodeAnim = _imp->model->findNodeAnim( knobGui->getKnob() );
-            }
-        }
+    KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(sender());
+    if (!knobHandler) {
+        return;
     }
+    KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
+    EffectInstancePtr effectInstance = toEffectInstance(holder);
+    if (!effectInstance) {
+        return;
+    }
+    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
 
-    if (!NodeAnim) {
+    NodeAnimPtr node = animModel->findNodeAnim( effectInstance->getNode() );
+
+    if (!node) {
         return;
     }
 
     {
-        NodeAnimPtr parentGroupNodeAnim = _imp->model->getGroupNodeAnim( NodeAnim );
+        NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim( node );
         if (parentGroupNodeAnim) {
             _imp->computeGroupRange( parentGroupNodeAnim );
         }
     }
-}
 
-void
-DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/,
-                                  int /*dimension*/,
-                                  int /*reason*/)
-{
-    QObject *signalSender = sender();
-    NodeAnimPtr NodeAnim;
-
-    {
-        KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
-        if (knobHandler) {
-            KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
-            EffectInstancePtr effectInstance = toEffectInstance(holder);
-            assert(effectInstance);
-            if (!effectInstance) {
-                return;
-            }
-            NodeAnim = _imp->model->findNodeAnim( effectInstance->getNode() );
-        }
-    }
-
-    if (!NodeAnim) {
-        return;
-    }
-    _imp->computeNodeRange( NodeAnim );
-
-    //Since this function is called a lot, let a chance to Qt to concatenate events
-    //NB: updateGL() does not concatenate
+    // Since this function is called a lot, let a chance to Qt to concatenate events
+    // NB: updateGL() does not concatenate
     update();
 }
 
 void
-DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
+DopeSheetView::onRangeNodeKnobChanged()
+{
+    KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(sender());
+    if (!knobHandler) {
+        return;
+    }
+
+    KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
+    EffectInstancePtr effectInstance = toEffectInstance(holder);
+    if (!effectInstance) {
+        return;
+    }
+    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
+
+    NodeAnimPtr node = animModel->findNodeAnim( effectInstance->getNode() );
+
+    if (!node) {
+        return;
+    }
+    _imp->computeNodeRange(node);
+
+    // Since this function is called a lot, let a chance to Qt to concatenate events
+    // NB: updateGL() does not concatenate
+    update();
+}
+
+void
+DopeSheetView::onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
 {
     // Compute the range rects of affected items
+    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
     {
-        NodeAnimPtr NodeAnim = _imp->model->findParentNodeAnim(item);
-        if (NodeAnim) {
-            _imp->computeRangesBelow( NodeAnim );
+        NodeAnimPtr isNode;
+        KnobAnimPtr isKnob;
+        TableItemAnimPtr isTableItem;
+        AnimatedItemTypeEnum type;
+        ViewSetSpec view;
+        DimSpec dimension;
+        bool found = animModel->findItem(item, &type, &isKnob, &isTableItem, &isNode, &view, &dimension);
+        if (!found) {
+            return;
+        }
+        if (isTableItem) {
+            isNode = isTableItem->getNode();
+        } else if (isKnob) {
+            TableItemAnimPtr knobContainer = toTableItemAnim(isKnob->getHolder());
+            if (knobContainer) {
+                isNode = knobContainer->getNode();
+            }
+            NodeAnimPtr nodeContainer = toNodeAnim(isKnob->getHolder());
+            if (nodeContainer) {
+                isNode = nodeContainer;
+            }
+        }
+
+        if (isNode) {
+            _imp->computeRangesBelow(isNode);
         }
     }
 
@@ -1993,159 +1923,53 @@ DopeSheetView::onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
 }
 
 void
-DopeSheetView::onHierarchyViewScrollbarMoved(int /*value*/)
+DopeSheetView::onAnimationTreeViewScrollbarMoved(int /*value*/)
 {
     _imp->computeSelectedKeysBRect();
 
     redraw();
 }
 
-void
-DopeSheetView::refreshSelectionBboxAndRedraw()
-{
-    _imp->computeSelectedKeysBRect();
-    redraw();
-}
-
-void
-DopeSheetView::onKeyframeSelectionChanged()
-{
-    refreshSelectionBboxAndRedraw();
-}
-
-void
-DopeSheetView::initializeGL()
-{
-    _imp->initializeGLCommon();
-}
-
-/**
- * @brief DopeSheetView::resizeGL
- *
- *
- */
-void
-DopeSheetView::resizeGL(int w,
-                        int h)
-{
-    running_in_main_thread_and_context(this);
-
-    if ( !appPTR->isOpenGLLoaded() ) {
-        return;
-    }
-
-    if (h == 0) {
-        h = 1;
-    }
-
-    GL_GPU::glViewport(0, 0, w, h);
-
-    {
-        QMutexLocker k(&_imp->zoomCtxMutex);
-        _imp->zoomCtx.setScreenSize(w, h);
-    }
-
-    // Don't do the following when the height of the widget is irrelevant
-    if (h == 1) {
-        return;
-    }
-
-    // Find out what are the selected keyframes and center on them
-    if (!_imp->zoomOrPannedSinceLastFit) {
-        centerOnSelection();
-    }
-}
-
-bool
-DopeSheetView::hasDrawnOnce() const
-{
-    return _imp->drawnOnce;
-}
 
 /**
  * @brief DopeSheetView::paintGL
  */
 void
-DopeSheetView::paintGL()
+DopeSheetView::drawView()
 {
-    running_in_main_thread_and_context(this);
+    _imp->drawScale();
+    _imp->drawTimelineMarkers();
+    _imp->drawRows();
 
-    if ( !appPTR->isOpenGLLoaded() ) {
-        return;
+    if (_imp->eventState == DopeSheetView::eEventStateSelectionByRect) {
+        _imp->drawSelectionRect();
+    }
+
+    if ( !_imp->selectedKeysBRect.isNull() ) {
+        _imp->drawSelectedKeyFramesBbox();
     }
 
 
-    glCheckError(GL_GPU);
-
-    if (_imp->zoomCtx.factor() <= 0) {
-        return;
-    }
-
-    _imp->drawnOnce = true;
-    
-    double zoomLeft, zoomRight, zoomBottom, zoomTop;
-    zoomLeft = _imp->zoomCtx.left();
-    zoomRight = _imp->zoomCtx.right();
-    zoomBottom = _imp->zoomCtx.bottom();
-    zoomTop = _imp->zoomCtx.top();
-
-    // Retrieve the appropriate settings for drawing
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    double bgR, bgG, bgB;
-    settings->getAnimationModuleEditorBackgroundColor(&bgR, &bgG, &bgB);
-
-    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
-        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
-
-        return;
-    }
-
-    {
-        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
-
-        GL_GPU::glLoadIdentity();
-        GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
-
-        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
-
-        GL_GPU::glLoadIdentity();
-
-        glCheckError(GL_GPU);
-
-        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
-        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
-
-        _imp->drawScale();
-        _imp->drawProjectBounds();
-        _imp->drawRows();
-
-        if (_imp->eventState == DopeSheetView::esSelectionByRect) {
-            _imp->drawSelectionRect();
-        }
-
-        if ( !_imp->selectedKeysBRect.isNull() ) {
-            _imp->drawSelectedKeysBRect();
-        }
-
-        _imp->drawCurrentFrameIndicator();
-    }
-    glCheckError(GL_GPU);
-} // DopeSheetView::paintGL
+}
 
 void
 DopeSheetView::mousePressEvent(QMouseEvent *e)
 {
     running_in_main_thread();
 
-    _imp->model->getEditor()->onInputEventCalled();
+    AnimationModulePtr animModule = toAnimationModule(_imp->_model.lock());
+    assert(animModule);
+    animModule->getEditor()->onInputEventCalled();
 
     bool didSomething = false;
 
+    _imp->_dragStartPoint = e->pos();
+    _imp->_lastMousePos = e->pos();
+    _imp->_keyDragLastMovement.ry() = _imp->_keyDragLastMovement.rx() = 0;
+
     if ( buttonDownIsRight(e) ) {
-        _imp->createContextMenu();
-        _imp->contextMenu->exec( mapToGlobal( e->pos() ) );
+        _imp->createMenu();
+        _imp->_rightClickMenu->exec( mapToGlobal( e->pos() ) );
 
         e->accept();
 
@@ -2154,16 +1978,15 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
     }
 
     if ( buttonDownIsMiddle(e) ) {
-        _imp->eventState = DopeSheetView::esDraggingView;
+        _imp->eventState = DopeSheetView::eEventStateDraggingView;
         didSomething = true;
     } else if ( ( (e->buttons() & Qt::MiddleButton) &&
                   ( ( buttonMetaAlt(e) == Qt::AltModifier) || (e->buttons() & Qt::LeftButton) ) ) ||
                 ( (e->buttons() & Qt::LeftButton) &&
                   ( buttonMetaAlt(e) == (Qt::AltModifier | Qt::MetaModifier) ) ) ) {
         // Alt + middle or Left + middle or Crtl + Alt + Left = zoom
-        _imp->eventState = esZoomingView;
-        _imp->lastPosOnMousePress = e->pos();
-        _imp->lastPosOnMouseMove = e->pos();
+        _imp->eventState = eEventStateZoomingView;
+
 
         return;
     }
@@ -2172,134 +1995,127 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
 
     if ( buttonDownIsLeft(e) ) {
         if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRec( e->pos() ) ) {
-            _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
+            _imp->eventState = DopeSheetView::eEventStateMoveKeyframeSelection;
             didSomething = true;
         } else if ( _imp->isNearByCurrentFrameIndicatorBottom(clickZoomCoords) ) {
-            _imp->eventState = DopeSheetView::esMoveCurrentFrameIndicator;
+            _imp->eventState = DopeSheetView::eEventStateMoveCurrentFrameIndicator;
             didSomething = true;
         } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectLeftEdge( e->pos() ) ) {
-            _imp->eventState = DopeSheetView::esTransformingKeyframesMiddleLeft;
+            _imp->eventState = DopeSheetView::eEventStateDraggingMidLeftBbox;
             didSomething = true;
         } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectRightEdge( e->pos() ) ) {
-            _imp->eventState = DopeSheetView::esTransformingKeyframesMiddleRight;
+            _imp->eventState = DopeSheetView::eEventStateDraggingMidRightBbox;
             didSomething = true;
         }
 
-        DopeSheetSelectionModel::SelectionTypeFlags sFlags = DopeSheetSelectionModel::SelectionTypeAdd;
+        AnimationModuleSelectionModel::SelectionTypeFlags sFlags = AnimationModuleSelectionModel::SelectionTypeAdd;
         if ( !modCASIsShift(e) ) {
-            sFlags |= DopeSheetSelectionModel::SelectionTypeClear;
+            sFlags |= AnimationModuleSelectionModel::SelectionTypeClear;
         }
 
         if (!didSomething) {
-            ///Look for a range node
-            AnimTreeItemNodeMap nodes = _imp->model->getItemNodeMap();
-            for (AnimTreeItemNodeMap::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                if ( it->second->isRangeDrawingEnabled() ) {
-                    std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = _imp->nodeRanges.find( it->second );
-                    if ( foundRange == _imp->nodeRanges.end() ) {
-                        continue;
+            // Look for a range node
+            for (std::map<NodeAnimPtr, FrameRange >::const_iterator it = _imp->nodeRanges.begin(); it != _imp->nodeRanges.end(); ++it) {
+
+                QRectF treeItemRect = _imp->treeView->visualItemRect(it->first->getTreeItem());
+                const FrameRange& range = it->second;
+                RectD nodeClipRect;
+                nodeClipRect.x1 = range.first;
+                nodeClipRect.x2 = range.second;
+                nodeClipRect.y2 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.top() ).y();
+                nodeClipRect.y1 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
+
+                AnimatedItemTypeEnum nodeType = it->first->getItemType();
+
+                // If we click inside a range, start dragging
+                if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
+                    AnimItemDimViewKeyFramesMap selectedKeys;
+                    std::vector<NodeAnimPtr > selectedNodes;
+                    selectedNodes.push_back(it->first);
+                    std::vector<TableItemAnimPtr > selectedTableItems;
+                    animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
+
+                    if ( (nodeType == eAnimatedItemTypeGroup) ||
+                        ( nodeType == eAnimatedItemTypeReader) ||
+                        ( nodeType == eAnimatedItemTypeTimeOffset) ||
+                        ( nodeType == eAnimatedItemTypeFrameRange) ||
+                        ( nodeType == eAnimatedItemTypeCommon)) {
+                        _imp->eventState = DopeSheetView::eEventStateMoveKeyframeSelection;
+                        didSomething = true;
                     }
+                    break;
+                }
 
-                    QRectF treeItemRect = _imp->hierarchyView->visualItemRect(it->first);
-                    const FrameRange& range = foundRange->second;
-                    RectD nodeClipRect;
-                    nodeClipRect.x1 = range.first;
-                    nodeClipRect.x2 = range.second;
-                    nodeClipRect.y2 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.top() ).y();
-                    nodeClipRect.y1 = _imp->zoomCtx.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
-
-                    AnimatedItemType nodeType = it->second->getItemType();
-
-                    if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
-                        std::vector<AnimKeyFrame> keysUnderMouse;
+                if (nodeType == eAnimatedItemTypeReader) {
+                    _imp->currentEditedReader = it->first;
+                    if ( _imp->isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
+                        AnimItemDimViewKeyFramesMap selectedKeys;
                         std::vector<NodeAnimPtr > selectedNodes;
-                        selectedNodes.push_back(it->second);
+                        selectedNodes.push_back(it->first);
+                        std::vector<TableItemAnimPtr > selectedTableItems;
+                        animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
-                        _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
-
-                        if ( (nodeType == eAnimatedItemTypeGroup) ||
-                             ( nodeType == eAnimatedItemTypeReader) ||
-                             ( nodeType == eAnimatedItemTypeTimeOffset) ||
-                             ( nodeType == eAnimatedItemTypeFrameRange) ) {
-                            _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
-                            didSomething = true;
-                        }
+                        _imp->eventState = DopeSheetView::eEventStateReaderLeftTrim;
+                        didSomething = true;
+                        break;
+                    } else if ( _imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
+                        AnimItemDimViewKeyFramesMap selectedKeys;
+                        std::vector<NodeAnimPtr > selectedNodes;
+                        selectedNodes.push_back(it->first);
+                        std::vector<TableItemAnimPtr > selectedTableItems;
+                        animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
+                        _imp->eventState = DopeSheetView::eEventStateReaderRightTrim;
+                        didSomething = true;
+                        break;
+                    } else if ( animModule->canSlipReader(it->first) && _imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
+                        AnimItemDimViewKeyFramesMap selectedKeys;
+                        std::vector<NodeAnimPtr > selectedNodes;
+                        selectedNodes.push_back(it->first);
+                        std::vector<TableItemAnimPtr > selectedTableItems;
+                        animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
+                        _imp->eventState = DopeSheetView::eEventStateReaderSlip;
+                        didSomething = true;
                         break;
                     }
-
-                    if (nodeType == eAnimatedItemTypeReader) {
-                        _imp->currentEditedReader = it->second;
-                        if ( _imp->isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
-                            std::vector<AnimKeyFrame> keysUnderMouse;
-                            std::vector<NodeAnimPtr > selectedNodes;
-                            selectedNodes.push_back(it->second);
-
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
-                            _imp->eventState = DopeSheetView::esReaderLeftTrim;
-                            didSomething = true;
-                            break;
-                        } else if ( _imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
-                            std::vector<AnimKeyFrame> keysUnderMouse;
-                            std::vector<NodeAnimPtr > selectedNodes;
-                            selectedNodes.push_back(it->second);
-
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
-                            _imp->eventState = DopeSheetView::esReaderRightTrim;
-                            didSomething = true;
-                            break;
-                        } else if ( _imp->model->canSlipReader(it->second) && _imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
-                            std::vector<AnimKeyFrame> keysUnderMouse;
-                            std::vector<NodeAnimPtr > selectedNodes;
-                            selectedNodes.push_back(it->second);
-
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
-                            _imp->eventState = DopeSheetView::esReaderSlip;
-                            didSomething = true;
-                            break;
-                        }
-                    }
                 }
-            }
+            } // for all range nodes
+
         } // if (!didSomething)
 
         if (!didSomething) {
-            QTreeWidgetItem *treeItem = _imp->hierarchyView->itemAt( 0, e->y() );
-            //Did not find a range node, look for keyframes
+            QTreeWidgetItem *treeItem = _imp->treeView->itemAt( 0, e->y() );
+            // Did not find a range node, look for keyframes
             if (treeItem) {
-                AnimTreeItemNodeMap NodeAnimItems = _imp->model->getItemNodeMap();
-                AnimTreeItemNodeMap::const_iterator foundNodeAnim = NodeAnimItems.find(treeItem);
-                if ( foundNodeAnim != NodeAnimItems.end() ) {
-                    const NodeAnimPtr &NodeAnim = (*foundNodeAnim).second;
-                    AnimatedItemType nodeType = NodeAnim->getItemType();
-                    if (nodeType == eAnimatedItemTypeCommon) {
-                        std::vector<AnimKeyFrame> keysUnderMouse = _imp->isNearByKeyframe( NodeAnim, e->pos() );
 
-                        if ( !keysUnderMouse.empty() ) {
-                            std::vector<NodeAnimPtr > selectedNodes;
-
-                            sFlags |= DopeSheetSelectionModel::SelectionTypeRecurse;
-
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
-
-                            _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
-                            didSomething = true;
-                        }
+                AnimatedItemTypeEnum itemType;
+                KnobAnimPtr isKnob;
+                NodeAnimPtr isNode;
+                TableItemAnimPtr isTableItem;
+                ViewSetSpec view;
+                DimSpec dimension;
+                if (animModule->findItem(treeItem, &itemType, &isKnob, &isTableItem, &isNode, &view, &dimension)) {
+                    AnimItemBasePtr animItem;
+                    if (isTableItem) {
+                        animItem = isTableItem;
+                    } else if (isKnob) {
+                        animItem = isKnob;
                     }
-                } else { // if (foundNodeAnim != NodeAnimItems.end()) {
-                    //We may be on a knob row
-                    KnobAnimPtr KnobAnim = _imp->hierarchyView->getKnobAnimAt( e->pos().y() );
-                    if (KnobAnim) {
-                        std::vector<AnimKeyFrame> keysUnderMouse = _imp->isNearByKeyframe( KnobAnim, e->pos() );
+                    if (animItem) {
+                        KeyFrameWithStringSet keysUnderMouse = _imp->isNearByKeyframe(animItem, dimension, view, e->pos());
 
-                        if ( !keysUnderMouse.empty() ) {
-                            sFlags |= DopeSheetSelectionModel::SelectionTypeRecurse;
+                        if (!keysUnderMouse.empty()) {
+                            sFlags |= AnimationModuleSelectionModel::SelectionTypeRecurse;
 
+                            AnimItemDimViewKeyFramesMap selectedKeys;
+                            animItem->getKeyframes(dimension, view, &selectedKeys);
                             std::vector<NodeAnimPtr > selectedNodes;
-                            _imp->model->getSelectionModel()->makeSelection(keysUnderMouse, selectedNodes, sFlags);
+                            std::vector<TableItemAnimPtr > selectedTableItems;
+                            animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
-                            _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
+                            _imp->eventState = DopeSheetView::eEventStateMoveKeyframeSelection;
                             didSomething = true;
                         }
+                        
                     }
                 }
             } // if (treeItem) {
@@ -2308,22 +2124,14 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
 
 
         // So the user left clicked on background
-        if (_imp->eventState == DopeSheetView::esNoEditingState) {
+        if (_imp->eventState == DopeSheetView::eEventStateNoEditingState) {
             if ( !modCASIsShift(e) ) {
-                _imp->model->getSelectionModel()->clearKeyframeSelection();
-
-                    /*double keyframeTime = std::floor(_imp->zoomCtx.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
-                    _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, OutputEffectInstancePtr(),
-                                              eTimelineChangeReasonAnimationModuleEditorSeek);*/
-
+                animModule->getSelectionModel()->clearSelection();
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
             _imp->selectionRect.y1 = _imp->selectionRect.y2 = clickZoomCoords.y();
         }
-
-        _imp->lastPosOnMousePress = e->pos();
-        _imp->keyDragLastMovement = 0.;
     }
 } // DopeSheetView::mousePressEvent
 
@@ -2338,15 +2146,14 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     if (e->buttons() == Qt::NoButton) {
         setCursor( _imp->getCursorDuringHover( e->pos() ) );
         caught = false;
-    } else if (_imp->eventState == DopeSheetView::esZoomingView) {
+    } else if (_imp->eventState == DopeSheetView::eEventStateZoomingView) {
         _imp->zoomOrPannedSinceLastFit = true;
 
-        int deltaX = 2 * ( e->x() - _imp->lastPosOnMouseMove.x() );
+        int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
         const double par_min = 0.0001;
         const double par_max = 10000.;
         double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->lastPosOnMousePress.x(),
-                                                                  _imp->lastPosOnMousePress.y() );
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
 
         // Alt + Wheel: zoom time only, keep point under mouse
         double par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
@@ -2362,38 +2169,40 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
         redraw();
 
         // Synchronize the dope sheet editor and opened viewers
-        if ( _imp->gui->isTripleSyncEnabled() ) {
+        if ( _imp->_gui->isTripleSyncEnabled() ) {
             _imp->updateCurveWidgetFrameRange();
-            _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+            _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
         }
     } else if ( buttonDownIsLeft(e) ) {
         _imp->onMouseLeftButtonDrag(e);
     } else if ( buttonDownIsMiddle(e) ) {
-        double dx = _imp->zoomCtx.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
-                                                         _imp->lastPosOnMouseMove.y() ).x() - mouseZoomCoords.x();
+        double dx = _imp->zoomCtx.toZoomCoordinates( _imp->_lastMousePos.x(),  _imp->_lastMousePos.y() ).x() - mouseZoomCoords.x();
         QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->zoomCtx.translate(dx, 0);
 
         redraw();
 
         // Synchronize the curve editor and opened viewers
-        if ( _imp->gui->isTripleSyncEnabled() ) {
+        if ( _imp->_gui->isTripleSyncEnabled() ) {
             _imp->updateCurveWidgetFrameRange();
-            _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+            _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
         }
     } else {
         caught = false;
     }
 
-    _imp->lastPosOnMouseMove = e->pos();
+    _imp->_lastMousePos = e->pos();
     if (!caught) {
-        TabWidget* tab = 0;
-        tab = _imp->model->getEditor()->getParentPane() ;
-        if (tab) {
-            // If the Viewer is in a tab, send the tab widget the event directly
-            qApp->sendEvent(tab, e);
-        } else {
-            QGLWidget::mouseMoveEvent(e);
+        AnimationModulePtr module = toAnimationModule(_imp->_model.lock());
+        if (module) {
+            TabWidget* tab = 0;
+            tab = module->getEditor()->getParentPane() ;
+            if (tab) {
+                // If the Viewer is in a tab, send the tab widget the event directly
+                qApp->sendEvent(tab, e);
+            } else {
+                QGLWidget::mouseMoveEvent(e);
+            }
         }
     }
 } // DopeSheetView::mouseMoveEvent
@@ -2405,17 +2214,18 @@ DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
 
     bool mustRedraw = false;
 
-    if (_imp->eventState == DopeSheetView::esSelectionByRect) {
+    if (_imp->eventState == DopeSheetView::eEventStateSelectionByRect) {
         if ( !_imp->selectionRect.isNull() ) {
-            std::vector<AnimKeyFrame> tempSelection;
+            AnimItemDimViewKeyFramesMap selectedKeys;
             std::vector<NodeAnimPtr > nodesSelection;
-            _imp->createSelectionFromRect(_imp->selectionRect, &tempSelection, &nodesSelection);
+            std::vector<TableItemAnimPtr> tableItemSelection;
+            _imp->createSelectionFromRect(_imp->selectionRect, &selectedKeys, &nodesSelection, &tableItemSelection);
 
-            DopeSheetSelectionModel::SelectionTypeFlags sFlags = ( modCASIsShift(e) )
-                                                                 ? DopeSheetSelectionModel::SelectionTypeToggle
-                                                                 : DopeSheetSelectionModel::SelectionTypeAdd;
+            AnimationModuleSelectionModel::SelectionTypeFlags sFlags = ( modCASIsShift(e) )
+                                                                 ? AnimationModuleSelectionModel::SelectionTypeToggle
+                                                                 : AnimationModuleSelectionModel::SelectionTypeAdd;
 
-            _imp->model->getSelectionModel()->makeSelection(tempSelection, nodesSelection, sFlags);
+            _imp->_model.lock()->getSelectionModel()->makeSelection(selectedKeys, tableItemSelection, nodesSelection, sFlags);
 
             _imp->computeSelectedKeysBRect();
         }
@@ -2423,36 +2233,18 @@ DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
         _imp->selectionRect.clear();
 
         mustRedraw = true;
-    } else if (_imp->eventState == DopeSheetView::esMoveCurrentFrameIndicator) {
-        if ( _imp->gui->isDraftRenderEnabled() ) {
-            _imp->gui->setDraftRenderEnabled(false);
-            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
-            if (autoProxyEnabled) {
-                _imp->gui->renderAllViewers(true);
-            }
-        }
-    } else if ( (_imp->eventState == DopeSheetView::esMoveKeyframeSelection) ||
-                ( _imp->eventState == DopeSheetView::esReaderLeftTrim) ||
-                ( _imp->eventState == DopeSheetView::esReaderRightTrim) ||
-                ( _imp->eventState == DopeSheetView::esReaderSlip) ||
-                ( _imp->eventState == DopeSheetView::esTransformingKeyframesMiddleLeft) ||
-                ( _imp->eventState == DopeSheetView::esTransformingKeyframesMiddleRight) ) {
-        if ( _imp->gui->isDraftRenderEnabled() ) {
-            _imp->gui->setDraftRenderEnabled(false);
-            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
-            if (autoProxyEnabled) {
-                _imp->gui->renderAllViewers(true);
-            }
+    }
+
+    if ( _imp->_gui->isDraftRenderEnabled() ) {
+        _imp->_gui->setDraftRenderEnabled(false);
+        bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+        if (autoProxyEnabled) {
+            _imp->_gui->renderAllViewers(true);
         }
     }
 
-    if (_imp->eventState != esNoEditingState) {
-        _imp->eventState = esNoEditingState;
-
-        if (_imp->currentEditedReader) {
-            _imp->currentEditedReader.reset();
-        }
-    }
+    _imp->currentEditedReader.reset();
+    _imp->eventState = eEventStateNoEditingState;
 
     if (mustRedraw) {
         redraw();
@@ -2465,36 +2257,85 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
     running_in_main_thread();
 
     if ( modCASIsControl(e) ) {
-        KnobAnimPtr KnobAnim = _imp->hierarchyView->getKnobAnimAt( e->pos().y() );
-        if (KnobAnim) {
-            std::vector<AnimKeyFrame> toPaste;
-            double keyframeTime = std::floor(_imp->zoomCtx.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
-            int dim = KnobAnim->getDimension();
-            KnobIPtr knob = KnobAnim->getInternalKnob();
-            bool hasKeyframe = false;
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                if ( (i == dim) || (dim == -1) ) {
-                    CurvePtr curve = knob->getGuiCurve(ViewIdx(0), i);
-                    KeyFrame k;
-                    if ( curve && curve->getKeyFrameWithTime(keyframeTime, &k) ) {
-                        hasKeyframe = true;
-                        break;
-                    }
-                }
-            }
-            if (!hasKeyframe) {
-                _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, OutputEffectInstancePtr(),
-                                          eTimelineChangeReasonAnimationModuleEditorSeek);
 
-                KeyFrame k(keyframeTime, 0);
-                AnimKeyFrame key(KnobAnim, k);
-                toPaste.push_back(key);
-                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
-                _imp->model->pasteKeys(toPaste, true);
+        AnimationModuleBasePtr model = _imp->_model.lock();
+
+        QTreeWidgetItem *itemUnderPoint = _imp->treeView->itemAt(TO_DPIX(5), e->pos().y());
+        AnimatedItemTypeEnum foundType;
+        KnobAnimPtr isKnob;
+        TableItemAnimPtr isTableItem;
+        NodeAnimPtr isNodeItem;
+        ViewSetSpec view;
+        DimSpec dim;
+        bool found = model->findItem(itemUnderPoint, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+        (void)found;
+
+        if (isKnob) {
+
+            KnobStringBasePtr isStringKnob = toKnobStringBase(isKnob->getInternalKnob());
+            if (isStringKnob) {
+                // Cannot add keys on a string knob from the dopesheet
+                return;
             }
-        }
-    }
-}
+            KeyFrameWithStringSet underMouse = _imp->isNearByKeyframe(isKnob, dim, view, e->pos());
+            if (underMouse.empty()) {
+
+                double keyframeTime = std::floor(_imp->zoomCtx.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                _imp->moveCurrentFrameIndicator(keyframeTime);
+
+                AnimItemDimViewKeyFramesMap keysToAdd;
+                if (dim.isAll()) {
+                    if (view.isAll()) {
+                        std::list<ViewIdx> views = isKnob->getViewsList();
+                        int nDims = isKnob->getNDimensions();
+                        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                            for (int i = 0; i < nDims; ++i) {
+                                AnimItemDimViewIndexID itemKey(isKnob, *it, DimIdx(i));
+                                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                                KeyFrameWithString k;
+                                double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), *it);
+                                k.key = KeyFrame(keyframeTime, yCurve);
+                                keys.insert(k);
+                            }
+                        }
+                    } else {
+                        AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(dim));
+                        KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                        KeyFrameWithString k;
+                        double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
+                        k.key = KeyFrame(keyframeTime, yCurve);
+                        keys.insert(k);
+                    }
+                } else {
+                    if (view.isAll()) {
+                        std::list<ViewIdx> views = isKnob->getViewsList();
+                        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                            AnimItemDimViewIndexID itemKey(isKnob, *it, DimIdx(dim));
+                            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                            KeyFrameWithString k;
+                            double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), *it);
+                            k.key = KeyFrame(keyframeTime, yCurve);
+                            keys.insert(k);
+
+                        }
+                    } else {
+                        AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(dim));
+                        KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                        KeyFrameWithString k;
+                        double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
+                        k.key = KeyFrame(keyframeTime, yCurve);
+                        keys.insert(k);
+                    }
+
+                }
+
+                model->pushUndoCommand( new AddKeysCommand(keysToAdd, model, false /*clearAndAdd*/) );
+                
+                
+            } // !underMouse.empty()
+        } // isKnob
+    } // isCtrl
+} // mouseDoubleClickEvent
 
 void
 DopeSheetView::wheelEvent(QWheelEvent *e)
@@ -2534,33 +2375,10 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     redraw();
 
     // Synchronize the curve editor and opened viewers
-    if ( _imp->gui->isTripleSyncEnabled() ) {
+    if ( _imp->_gui->isTripleSyncEnabled() ) {
         _imp->updateCurveWidgetFrameRange();
-        _imp->gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+        _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
     }
-}
-
-/**
- * @brief Get the current orthographic projection
- **/
-void
-DopeSheetView::getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const
-{
-    QMutexLocker k(&_imp->zoomCtxMutex);
-    *zoomLeft = _imp->zoomCtx.left();
-    *zoomBottom = _imp->zoomCtx.bottom();
-    *zoomFactor = _imp->zoomCtx.factor();
-    *zoomAspectRatio = _imp->zoomCtx.aspectRatio();
-}
-
-/**
- * @brief Set the current orthographic projection
- **/
-void
-DopeSheetView::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
-{
-    QMutexLocker k(&_imp->zoomCtxMutex);
-    _imp->zoomCtx.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
 }
 
 

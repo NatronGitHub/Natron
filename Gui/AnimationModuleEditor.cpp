@@ -41,6 +41,7 @@
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
+#include "Gui/ComboBox.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
@@ -52,6 +53,7 @@
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/LineEdit.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
 
 #include "Engine/KnobTypes.h"
@@ -73,21 +75,19 @@ public:
 
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
-    Button* curveEditorButton;
-    Button* dopeSheetButton;
-    Button* displayBothButton;
+    ComboBox* displayViewChoice;
 
     Label* knobLabel;
     LineEdit* knobExpressionLineEdit;
     Label* expressionResultLabel;
 
 
-    QSplitter *treeAndViewSplitter;
+    Splitter *treeAndViewSplitter;
 
 
     AnimationModuleTreeView *treeView;
 
-    QSplitter *viewsSplitter;
+    Splitter *viewsSplitter;
     DopeSheetView* dopeSheetView;
     CurveWidget* curveView;
 
@@ -98,12 +98,20 @@ public:
 AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor *publicInterface)
 : publicInterface(publicInterface)
 , mainLayout(0)
-, splitter(0)
+, buttonsContainer(0)
+, buttonsLayout(0)
+, displayViewChoice(0)
+, knobLabel(0)
+, knobExpressionLineEdit(0)
+, expressionResultLabel(0)
+, treeAndViewSplitter(0)
 , treeView(0)
+, viewsSplitter(0)
 , dopeSheetView(0)
 , curveView(0)
 , model()
-{}
+{
+}
 
 /**
  * @brief AnimationModuleEditor::AnimationModuleEditor
@@ -124,49 +132,87 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->setSpacing(0);
 
-    _imp->splitter = new QSplitter(Qt::Horizontal, this);
-    _imp->splitter->setHandleWidth(1);
+    _imp->buttonsContainer = new QWidget(this);
+    _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
+    _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->buttonsLayout->setSpacing(0);
+
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+
+    QPixmap pixCurveEditor, pixDopeSheet, pixSplit;
+    appPTR->getIcon(NATRON_PIXMAP_CURVE_EDITOR, iconSize, &pixCurveEditor);
+    appPTR->getIcon(NATRON_PIXMAP_DOPE_SHEET, iconSize, &pixDopeSheet);
+
+    _imp->displayViewChoice = new ComboBox(_imp->buttonsContainer);
+    _imp->displayViewChoice->addItem(tr("Curve Editor"), pixCurveEditor, QKeySequence());
+    _imp->displayViewChoice->addItem(tr("Dope Sheet"), pixDopeSheet, QKeySequence());
+    _imp->displayViewChoice->addItem(tr("Split"), QIcon(), QKeySequence());
+    _imp->displayViewChoice->setCurrentIndex_no_emit(0);
+    connect(_imp->displayViewChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewCurrentIndexChanged(int)));
+    _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
+
+    _imp->buttonsLayout->addSpacing(TO_DPIX(10));
+
+    _imp->knobLabel = new Label(_imp->buttonsContainer);
+    _imp->knobLabel->setAltered(true);
+    _imp->knobLabel->setText( tr("No curve selected") );
+    _imp->knobExpressionLineEdit = new LineEdit(_imp->buttonsContainer);
+    _imp->knobExpressionLineEdit->setReadOnly_NoFocusRect(true);
+    QObject::connect( _imp->knobExpressionLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()) );
+    _imp->expressionResultLabel = new Label(_imp->buttonsContainer);
+    _imp->expressionResultLabel->setAltered(true);
+    _imp->expressionResultLabel->setText( QString::fromUtf8("= ") );
+
+
+    _imp->buttonsLayout->addWidget(_imp->knobLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(5));
+    _imp->buttonsLayout->addWidget(_imp->knobExpressionLineEdit);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(5));
+    _imp->buttonsLayout->addWidget(_imp->expressionResultLabel);
+    _imp->buttonsLayout->addStretch();
+
+    _imp->mainLayout->addWidget(_imp->buttonsContainer);
+
+    _imp->treeAndViewSplitter = new Splitter(Qt::Horizontal, gui, this);
 
     _imp->model = AnimationModule::create(gui, this, timeline);
+    _imp->treeView = new AnimationModuleTreeView(_imp->model, gui, _imp->treeAndViewSplitter);
 
-    _imp->treeView = new AnimationModuleTreeView(_imp->model, gui, _imp->splitter);
+    _imp->treeAndViewSplitter->addWidget(_imp->treeView);
 
-    _imp->splitter->addWidget(_imp->treeView);
-    _imp->splitter->setStretchFactor(0, 1);
+    _imp->viewsSplitter = new Splitter(Qt::Horizontal, gui, _imp->treeAndViewSplitter);
 
-    _imp->dopeSheetView = new DopeSheetView(_imp->model, _imp->treeView, gui, _imp->splitter);
-    _imp->curveView = new CurveWidget(gui, _imp->model, _imp->splitter);
-    _imp->splitter->addWidget(_imp->dopeSheetView);
-    _imp->splitter->setStretchFactor(1, 5);
+    _imp->dopeSheetView = new DopeSheetView(_imp->viewsSplitter);
+    _imp->curveView = new CurveWidget(_imp->viewsSplitter);
 
-    _imp->mainLayout->addWidget(_imp->splitter);
+    _imp->dopeSheetView->initialize(gui, _imp->model);
+    _imp->curveView->initialize(gui, _imp->model);
+    
+    _imp->viewsSplitter->addWidget(_imp->dopeSheetView);
+    _imp->viewsSplitter->addWidget(_imp->curveView);
+    _imp->dopeSheetView->hide();
 
-    // Main model -> HierarchyView connections
+    _imp->treeAndViewSplitter->addWidget(_imp->viewsSplitter);
+    _imp->mainLayout->addWidget(_imp->treeAndViewSplitter);
+
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), this, SLOT(onSelectionModelSelectionChanged(bool)) );
+
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
+
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
              _imp->treeView, SLOT(onNodeAdded(NodeAnimPtr)) );
 
     connect( _imp->model.get(), SIGNAL(nodeAboutToBeRemoved(NodeAnimPtr)),
              _imp->treeView, SLOT(onNodeAboutToBeRemoved(NodeAnimPtr)) );
 
-    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)),
-             _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
-
-    // Main model -> DopeSheetView connections
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
              _imp->dopeSheetView, SLOT(onNodeAdded(NodeAnimPtr)) );
 
     connect( _imp->model.get(), SIGNAL(nodeAboutToBeRemoved(NodeAnimPtr)),
              _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(NodeAnimPtr)) );
 
-    connect( _imp->model.get(), SIGNAL(modelChanged()),
-             _imp->dopeSheetView, SLOT(redraw()) );
-
-    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)),
-             _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()) );
-
-    // HierarchyView -> DopeSheetView connections
     connect( _imp->treeView->verticalScrollBar(), SIGNAL(valueChanged(int)),
-             _imp->dopeSheetView, SLOT(onHierarchyViewScrollbarMoved(int)) );
+             _imp->dopeSheetView, SLOT(onAnimationTreeViewScrollbarMoved(int)) );
 
     connect( _imp->treeView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
              _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
@@ -195,6 +241,7 @@ AnimationModuleEditor::centerOn(double xMin,
                                 double xMax)
 {
     _imp->dopeSheetView->centerOn(xMin, xMax);
+    _imp->curveView->centerOn(xMin, xMax);
 }
 
 void
@@ -228,24 +275,6 @@ AnimationModuleEditor::getTreeView() const
     return _imp->treeView;
 }
 
-void
-AnimationModuleEditor::setTreeWidgetWidth(int width)
-{
-    _imp->treeView->setCanResizeOtherWidget(false);
-    QList<int> sizes;
-    sizes << width << _imp->dopeSheetView->width();
-    _imp->splitter->setSizes(sizes);
-    _imp->treeView->setCanResizeOtherWidget(true);
-}
-
-int
-AnimationModuleEditor::getTreeWidgetWidth() const
-{
-    QList<int> sizes = _imp->splitter->sizes();
-    assert(sizes.size() > 0);
-
-    return sizes.front();
-}
 
 void
 AnimationModuleEditor::keyPressEvent(QKeyEvent* e)
@@ -256,32 +285,6 @@ AnimationModuleEditor::keyPressEvent(QKeyEvent* e)
 
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         _imp->model->renameSelectedNode();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorDeleteKeys, modifiers, key) ) {
-        _imp->dopeSheetView->deleteSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorFrameSelection, modifiers, key) ) {
-        _imp->dopeSheetView->centerOnSelection();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorSelectAllKeyframes, modifiers, key) ) {
-        _imp->dopeSheetView->onSelectedAllTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
-        _imp->dopeSheetView->constantInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorLinear, modifiers, key) ) {
-        _imp->dopeSheetView->linearInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorSmooth, modifiers, key) ) {
-        _imp->dopeSheetView->smoothInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorCatmullrom, modifiers, key) ) {
-        _imp->dopeSheetView->catmullRomInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorCubic, modifiers, key) ) {
-        _imp->dopeSheetView->cubicInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorHorizontal, modifiers, key) ) {
-        _imp->dopeSheetView->horizontalInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionCurveEditorBreak, modifiers, key) ) {
-        _imp->dopeSheetView->breakInterpSelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorCopySelectedKeyframes, modifiers, key) ) {
-        _imp->dopeSheetView->copySelectedKeyframes();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorPasteKeyframes, modifiers, key) ) {
-        _imp->dopeSheetView->pasteKeyframesRelative();
-    } else if ( isKeybind(kShortcutGroupAnimationModuleEditor, kShortcutIDActionAnimationModuleEditorPasteKeyframesAbsolute, modifiers, key) ) {
-        _imp->dopeSheetView->pasteKeyframesAbsolute();
     } else {
         accept = false;
     }
@@ -330,17 +333,19 @@ AnimationModuleEditor::getUndoStack() const
 bool
 AnimationModuleEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
 {
-    if (!_imp->dopeSheetView->hasDrawnOnce()) {
+
+    if (!_imp->curveView->hasDrawnOnce()) {
         return false;
     }
-    _imp->dopeSheetView->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+    _imp->curveView->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
+
     return true;
 }
 
 bool
 AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
 {
-    _imp->dopeSheetView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    _imp->curveView->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
     return true;
 }
 
@@ -372,5 +377,51 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     pushUndoCommand( new SetExpressionCommand(knob, false /*hasRetVariable*/, dimension, view, expression.toStdString()) );
 }
 
+void
+AnimationModuleEditor::onExprLineEditFinished()
+{
+    setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
+}
+
+void
+AnimationModuleEditor::onViewCurrentIndexChanged(int index)
+{
+    if (index == 0) {
+        // CurveEditor
+        _imp->curveView->show();
+        _imp->dopeSheetView->hide();
+    } else if (index == 1) {
+        // DopeSheet
+        _imp->curveView->hide();
+        _imp->dopeSheetView->show();
+    } else if (index == 2) {
+        // Split
+        _imp->curveView->show();
+        _imp->dopeSheetView->show();
+    }
+}
+
+void
+AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
+{
+    const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->model->getSelectionModel()->getCurrentKeyFramesSelection();
+    bool expressionFieldsEnabled = true;
+    if (selectedKeys.size() > 1) {
+        expressionFieldsEnabled = false;
+    }
+    if (expressionFieldsEnabled) {
+        for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it!=selectedKeys.end(); ++it) {
+            KnobAnimPtr knob = toKnobAnim(it->first.item);
+            if (!knob) {
+                expressionFieldsEnabled = false;
+                break;
+            }
+        }
+    }
+    _imp->knobLabel->setVisible(expressionFieldsEnabled);
+    _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
+    _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
+
+}
 
 NATRON_NAMESPACE_EXIT;

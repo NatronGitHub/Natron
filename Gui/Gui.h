@@ -90,10 +90,6 @@ public:
     void createGui();
 
 
-    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
-
-    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
-
     void addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node);
     void removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr& node);
 
@@ -434,10 +430,6 @@ public:
 
     void setTripleSyncEnabled(bool enabled);
     bool isTripleSyncEnabled() const;
-
-    void setDopeSheetTreeWidth(int width);
-    void setCurveEditorTreeWidth(int width);
-
 
     void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
 

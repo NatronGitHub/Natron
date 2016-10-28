@@ -104,7 +104,7 @@ class AnimationModuleBase : public AnimationModuleSelectionProvider, public boos
 
 public:
 
-    AnimationModuleBase();
+    AnimationModuleBase(Gui* gui);
 
     virtual ~AnimationModuleBase();
 

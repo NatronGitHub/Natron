@@ -66,7 +66,7 @@ public:
 
     virtual ~AnimationViewBase();
 
-    void initialize(Gui* gui, AnimationModuleBasePtr& model);
+    void initialize(Gui* gui, const AnimationModuleBasePtr& model);
 
     bool hasDrawnOnce() const;
 
@@ -101,7 +101,6 @@ public:
     QPointF toZoomCoordinates(double x, double y) const;
     QPointF toWidgetCoordinates(double x, double y) const;
 
-
     /**
      * @brief Make the view fill the given rectangle.
      **/
@@ -113,6 +112,8 @@ public:
     void centerOn(double xmin, double xmax);
 
     virtual void centerOnAllItems() = 0;
+
+    virtual void centerOnSelection() = 0;
 
 public Q_SLOTS:
 
@@ -132,11 +133,11 @@ public Q_SLOTS:
 
     void onCenterOnSelectedCurvesActionTriggered();
 
-
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
     void onUpdateOnPenUpActionTriggered();
-    
+
+    void onSelectionModelKeyframeSelectionChanged();
 
 protected:
 
@@ -155,7 +156,7 @@ protected:
         _imp = imp;
     }
 
-    virtual void initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) = 0;
+    virtual void initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) = 0;
 
     virtual void drawView() = 0;
 private:

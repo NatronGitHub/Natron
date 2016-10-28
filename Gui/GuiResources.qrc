@@ -154,11 +154,13 @@
         <file>Resources/Images/colorwheel.png</file>
         <file>Resources/Images/colorwheel_overlay.png</file>
         <file>Resources/Images/combobox.png</file>
+        <file>Resources/Images/CurveEditorIcon.png</file>
         <file>Resources/Images/cursor.png</file>
         <file>Resources/Images/curve.png</file>
         <file>Resources/Images/cuspPoints.png</file>
         <file>Resources/Images/diskcache_icon.png</file>
         <file>Resources/Images/dot_icon.png</file>
+        <file>Resources/Images/DopeSheetIcon.png</file>
         <file>Resources/Images/ellipse.png</file>
         <file>Resources/Images/enter_group.png</file>
         <file>Resources/Images/execScript.png</file>
@@ -201,6 +203,7 @@
         <file>Resources/Images/nextIncr.png</file>
         <file>Resources/Images/nextKF.png</file>
         <file>Resources/Images/nextScript.png</file>
+        <file>Resources/Images/NodeGraphIcon.png</file>
         <file>Resources/Images/open-file.png</file>
         <file>Resources/Images/openCloseCurve.png</file>
         <file>Resources/Images/openeffects.png</file>

@@ -92,7 +92,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"
@@ -199,9 +198,8 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _nodeGraphArea(0)
     , _lastFocusedGraph(0)
     , _groups()
-    , _curveEditor(0)
     , _progressPanel(0)
-    , _AnimationModuleEditor(0)
+    , _animationModule(0)
     , _toolBox(0)
     , _propertiesBin(0)
     , _propertiesScrollArea(0)
@@ -381,20 +379,13 @@ GuiPrivate::createNodeGraphGui()
     _nodeGraphArea->setVisible(false);
 }
 
-void
-GuiPrivate::createCurveEditorGui()
-{
-    _curveEditor = new CurveEditor(kCurveEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
-    _curveEditor->setLabel( tr("Curve Editor").toStdString() );
-    _curveEditor->setVisible(false);
-}
 
 void
-GuiPrivate::createDopeSheetGui()
+GuiPrivate::createAnimationModuleGui()
 {
-    _AnimationModuleEditor = new AnimationModuleEditor(kAnimationModuleEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
-    _AnimationModuleEditor->setLabel( tr("Dope Sheet").toStdString() );
-    _AnimationModuleEditor->setVisible(false);
+    _animationModule = new AnimationModuleEditor(kAnimationModuleEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
+    _animationModule->setLabel( tr("Animation").toStdString() );
+    _animationModule->setVisible(false);
 }
 
 void

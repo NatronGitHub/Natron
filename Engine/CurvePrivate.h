@@ -70,6 +70,7 @@ struct CurvePrivate
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
     bool isParametric;
     bool isPeriodic;
+    bool canMoveY;
 
     CurvePrivate()
         : keyFrames()
@@ -87,6 +88,7 @@ struct CurvePrivate
         , _lock(QMutex::Recursive)
         , isParametric(false)
         , isPeriodic(false)
+        , canMoveY(true)
     {
     }
 
@@ -109,6 +111,7 @@ struct CurvePrivate
         yMin = other.yMin;
         yMax = other.yMax;
         isPeriodic = other.isPeriodic;
+        canMoveY = other.canMoveY;
     }
 
     

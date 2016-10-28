@@ -211,6 +211,7 @@ public:
      * modify the Y component of the curve.
      **/
     bool isYComponentMovable() const WARN_UNUSED_RETURN;
+    void setYComponentMovable(bool canEdit);
 
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;

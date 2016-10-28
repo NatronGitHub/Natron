@@ -67,11 +67,11 @@ AnimationViewBase::AnimationViewBase(QWidget* parent)
 : QGLWidget(parent)
 , _imp()
 {
-
+    setMouseTracking(true);
 }
 
 void
-AnimationViewBase::initialize(Gui* gui, AnimationModuleBasePtr& model)
+AnimationViewBase::initialize(Gui* gui, const AnimationModuleBasePtr& model)
 {
     if (_imp) {
         return;
@@ -541,24 +541,21 @@ AnimationViewBase::onSetInterpolationActionTriggered()
 void
 AnimationViewBase::onCenterAllCurvesActionTriggered()
 {
-    centerOn(std::vector<boost::shared_ptr<CurveGui> >(), false);
+    centerOnAllItems();
+    
 }
 
 void
 AnimationViewBase::onCenterOnSelectedCurvesActionTriggered()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    std::vector<CurveGuiPtr > selection = _imp->getSelectedCurves();
-    if ( selection.empty() ) {
-        onCenterAllCurvesActionTriggered();
-        //Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first in the left pane.").toStdString() );
-    } else {
-        centerOn(selection, false);
-    }
+    centerOnSelection();
 }
 
+void
+AnimationViewBase::onSelectionModelKeyframeSelectionChanged()
+{
+    refreshSelectionBboxAndRedraw();
+}
 
 void
 AnimationViewBase::onUpdateOnPenUpActionTriggered()

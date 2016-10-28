@@ -47,18 +47,18 @@ public:
      */
     enum EventStateEnum
     {
-        esNoEditingState,
-        esPickKeyframe,
-        esReaderLeftTrim,
-        esReaderRightTrim,
-        esReaderSlip,
-        esSelectionByRect,
-        esMoveKeyframeSelection,
-        esMoveCurrentFrameIndicator,
-        esDraggingView,
-        esZoomingView,
-        esTransformingKeyframesMiddleRight,
-        esTransformingKeyframesMiddleLeft
+        eEventStateNoEditingState,
+        eEventStatePickKeyframe,
+        eEventStateReaderLeftTrim,
+        eEventStateReaderRightTrim,
+        eEventStateReaderSlip,
+        eEventStateSelectionByRect,
+        eEventStateMoveKeyframeSelection,
+        eEventStateMoveCurrentFrameIndicator,
+        eEventStateDraggingView,
+        eEventStateZoomingView,
+        eEventStateDraggingMidLeftBbox,
+        eEventStateDraggingMidRightBbox
     };
 
     explicit DopeSheetView(QWidget *parent);
@@ -78,10 +78,11 @@ public:
 
     // Overriden from AnimationViewBase
     virtual void centerOnAllItems() OVERRIDE FINAL;
+    virtual void centerOnSelection() OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void refreshSelectionBoundingBox() OVERRIDE FINAL;
 private:
-    virtual void initializeImplementation(Gui* gui, AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
+    virtual void initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) OVERRIDE FINAL;
     virtual void drawView() OVERRIDE FINAL;
 
 
@@ -114,7 +115,7 @@ public Q_SLOTS:
      * This slot is automatically called when when a keyframe in the project
      * is set, removed or moved..
      */
-    void onKeyframeChanged();
+    void onKnobAnimationChanged();
 
     /**
      * @brief Updates the range of the node associated with the modified knob
@@ -123,44 +124,12 @@ public Q_SLOTS:
      * This slot is automatically called after the changing of the value of a
      * specific knob.
      */
-    void onRangeNodeChanged(ViewSetSpec, int, int);
+    void onRangeNodeKnobChanged();
 
-    /**
-     * @brief Computes the bounding rect of the selected keyframes and the ranges
-     * displayed under 'item'.
-     *
-     * Triggers a refresh too.
-     *
-     * This slot is automatically called when 'item' is expanded or collapsed.
-     */
-    void onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
+    void onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
 
-    /**
-     * @brief Triggers a refresh.
-     *
-     * This slot is automatically called when the user scrolls in the hierarchy
-     * view.
-     */
-    void onHierarchyViewScrollbarMoved(int);
+    void onAnimationTreeViewScrollbarMoved(int);
 
-    /**
-     * @brief Computes the bounding rect of the selected keyframes and
-     * triggers a refresh.
-     *
-     * This slot is automatically called when a keyframe selection is changed
-     * (modified, moved...).
-     */
-    void onKeyframeSelectionChanged();
-
-
-    /**
-     * @brief Center the view content on the current selection.
-     *
-     * If no selection exists, center on the whole project.
-     *
-     * This slot is automatically called when the user presses 'F'.
-     */
-    void centerOnSelection();
 
 private:
 

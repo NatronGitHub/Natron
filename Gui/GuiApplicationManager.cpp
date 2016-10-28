@@ -587,7 +587,15 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
             path = NATRON_IMAGES_PATH "saveScript.png";
             break;
-
+        case NATRON_PIXMAP_CURVE_EDITOR:
+            path = NATRON_IMAGES_PATH "CurveEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_DOPE_SHEET:
+            path = NATRON_IMAGES_PATH "DopeSheetIcon.png";
+            break;
+        case NATRON_PIXMPA_NODE_GRAPH:
+            path = NATRON_IMAGES_PATH "NodeGraphIcon.png";
+            break;
 
         case NATRON_PIXMAP_MERGE_ATOP:
             path = NATRON_IMAGES_PATH "merge_atop.png";

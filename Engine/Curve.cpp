@@ -256,6 +256,10 @@ Curve::Curve(const KnobIPtr& owner,
         _imp->isParametric = true;
         found = true;
     }
+
+    if (_imp->type == CurvePrivate::eCurveTypeString) {
+        _imp->canMoveY = false;
+    }
     assert(found);
 }
 
@@ -1909,7 +1913,14 @@ Curve::isYComponentMovable() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type != CurvePrivate::eCurveTypeString;
+    return _imp->canMoveY;
+}
+
+void
+Curve::setYComponentMovable(bool canEdit)
+{
+    QMutexLocker l(&_imp->_lock);
+    _imp->canMoveY = canEdit;
 }
 
 bool

@@ -396,15 +396,11 @@ ViewerTab::setTripleSyncEnabled(bool toggled)
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
         AnimationModuleEditor* deditor = getGui()->getAnimationModuleEditor();
-        CurveEditor* cEditor = getGui()->getCurveEditor();
-        //Sync curve editor and dopesheet tree width
-        cEditor->setTreeWidgetWidth( deditor->getTreeWidgetWidth() );
 
         SequenceTime left, right;
         _imp->timeLineGui->getVisibleRange(&left, &right);
         getGui()->centerOpenedViewersOn(left, right);
         deditor->centerOn(left, right);
-        cEditor->getCurveWidget()->centerOn(left, right);
     }
 }
 

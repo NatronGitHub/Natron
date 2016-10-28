@@ -164,12 +164,10 @@ public:
     NodeGraph* _lastFocusedGraph;
     std::list<NodeGraph*> _groups;
 
-    ///The curve editor.
-    CurveEditor *_curveEditor;
     ProgressPanel* _progressPanel;
 
     // The dope sheet
-    AnimationModuleEditor *_AnimationModuleEditor;
+    AnimationModuleEditor *_animationModule;
 
     ///the left toolbar
     QToolBar* _toolBox;
@@ -268,9 +266,7 @@ public:
     ///Must be called absolutely before createPropertiesBinGui
     void createNodeGraphGui();
 
-    void createCurveEditorGui();
-
-    void createDopeSheetGui();
+    void createAnimationModuleGui();
 
     void createScriptEditorGui();
 

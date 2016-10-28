@@ -67,6 +67,11 @@ AnimationModuleViewPrivateBase::AnimationModuleViewPrivateBase(Gui* gui, Animati
 , _rightClickMenu( new Menu(publicInterface) )
 , savedTexture(0)
 , drawnOnce(false)
+, _dragStartPoint()
+, _lastMousePos()
+, _mustSetDragOrientation(false)
+, _mouseDragOrientation()
+, _keyDragLastMovement()
 {
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
         kfTexturesIDs[i] = 0;
@@ -820,5 +825,160 @@ AnimationModuleViewPrivateBase::createMenu()
 
     addMenuOptions();
 } // createMenu
+
+
+void
+AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonicalPos,  const QPointF & newCanonicalPos)
+{
+
+
+    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
+
+    // Animation curves can only be moved on integer X values, hence clamp the motion
+    bool clampXToIntegers = false;
+    bool clampYToIntegers = false;
+    bool canMoveY = true;
+
+    QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(), _dragStartPoint.y() );
+    QPointF deltaSinceDragStart;
+    deltaSinceDragStart.rx() = newCanonicalPos.x() - dragStartPointOpenGL.x();
+    deltaSinceDragStart.ry() = newCanonicalPos.y() - dragStartPointOpenGL.y();
+
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        CurveGuiPtr curve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        if (!curve) {
+            continue;
+        }
+        if (curve->areKeyFramesTimeClampedToIntegers()) {
+            clampXToIntegers = true;
+            // Round to the nearest integer the keyframes total motion (in X only)
+            deltaSinceDragStart.rx() = std::floor(deltaSinceDragStart.x() + 0.5);
+        }
+        if (!curve->isYComponentMovable()) {
+            canMoveY = false;
+        }
+
+        // Also round the motion in Y if the curve represent a boolean or integer curve
+        if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+            deltaSinceDragStart.ry() = std::max( 0., std::min(std::floor(deltaSinceDragStart.y() + 0.5), 1.) );
+        } else if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+            clampYToIntegers = true;
+            deltaSinceDragStart.ry() = std::floor(deltaSinceDragStart.y() + 0.5);
+        }
+    }
+
+
+    // Compute delta in time
+    double dt = 0;
+    if (_mouseDragOrientation.x() != 0) {
+        if (clampXToIntegers) {
+            // We clamp the whole motion and not just the delta between the last pos and the new position otherwise dt would always be clamped
+            dt = deltaSinceDragStart.x() - _keyDragLastMovement.x();
+            // And update _keyDragLastMovement
+            _keyDragLastMovement.rx() = deltaSinceDragStart.x();
+        } else {
+            dt = newCanonicalPos.x() - oldCanonicalPos.x();
+        }
+    }
+
+
+    // Compute delta in value
+    double dv = 0;
+    if (canMoveY) {
+        if (_mouseDragOrientation.y() != 0) {
+            if (clampYToIntegers) {
+                // We clamp the whole motion and not just the delta between the last pos and the new position otherwise dv would always be clamped
+                dv = deltaSinceDragStart.y() - _keyDragLastMovement.y();
+                _keyDragLastMovement.ry() = deltaSinceDragStart.y();
+            } else {
+                dv = newCanonicalPos.y() - oldCanonicalPos.y();
+            }
+        }
+
+    }
+
+    _model.lock()->moveSelectedKeysAndNodes(dt, dv);
+} // moveSelectedKeyFrames
+
+
+
+void
+AnimationModuleViewPrivateBase::transformSelectedKeyFrames(const QPointF & oldPosCanonical,  const QPointF & newPosCanonical, bool shiftHeld, TransformSelectionCenterEnum centerType, bool scaleX, bool scaleY)
+{
+    if (newPosCanonical == oldPosCanonical) {
+        return;
+    }
+
+    double dt = newPosCanonical.x() - oldPosCanonical.x();
+    double dv = newPosCanonical.y() - oldPosCanonical.y();
+
+    if (dt == 0 && dv == 0) {
+        return;
+    }
+
+    QPointF center((selectedKeysBRect.x1 + selectedKeysBRect.x2) / 2., (selectedKeysBRect.y1 + selectedKeysBRect.y2) / 2.);
+
+    if (shiftHeld) {
+        switch (centerType) {
+            case eTransformSelectionCenterBottom:
+                center.ry() = selectedKeysBRect.y1;
+                break;
+            case eTransformSelectionCenterLeft:
+                center.rx() = selectedKeysBRect.x2;
+                break;
+            case eTransformSelectionCenterRight:
+                center.rx() = selectedKeysBRect.x1;
+                break;
+            case eTransformSelectionCenterTop:
+                center.ry() = selectedKeysBRect.y2;
+                break;
+            case eTransformSelectionCenterMiddle:
+                break;
+        }
+    }
+    double sx = 1., sy = 1.;
+    double tx = 0., ty = 0.;
+    double oldX = newPosCanonical.x() - dt;
+    double oldY = newPosCanonical.y() - dv;
+    // the scale ratio is the ratio of distances to the center
+    double prevDist = ( oldX - center.x() ) * ( oldX - center.x() ) + ( oldY - center.y() ) * ( oldY - center.y() );
+
+    if (prevDist != 0) {
+        double dist = ( newPosCanonical.x() - center.x() ) * ( newPosCanonical.x() - center.x() ) + ( newPosCanonical.y() - center.y() ) * ( newPosCanonical.y() - center.y() );
+        double ratio = std::sqrt(dist / prevDist);
+
+        if (scaleX) {
+            sx *= ratio;
+        }
+        if (scaleY) {
+            sy *= ratio;
+        }
+    }
+    Transform::Matrix3x3 transform =  Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y());
+    _model.lock()->transformSelectedKeys(transform);
+
+
+} // transformSelectedKeyFrames
+
+
+void
+AnimationModuleViewPrivateBase::moveCurrentFrameIndicator(int frame)
+{
+    AnimationModuleBasePtr animModel = _model.lock();
+    if (!animModel) {
+        return;
+    }
+    TimeLinePtr timeline = animModel->getTimeline();
+    if (!timeline) {
+        return;
+    }
+    if (!_gui) {
+        return;
+    }
+    _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
+
+    _gui->setDraftRenderEnabled(true);
+    timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonDopeSheetEditorSeek);
+}
 
 NATRON_NAMESPACE_EXIT;

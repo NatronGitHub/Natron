@@ -120,8 +120,7 @@ typedef OfxRangeD RangeD;
 
 
 #define kNodeGraphObjectName "nodeGraph"
-#define kCurveEditorObjectName "curveEditor"
-#define kAnimationDopeSheetEditorObjectName "dopeSheetEditor"
+#define kAnimationModuleEditorObjectName "animationModule"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3

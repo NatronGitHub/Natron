@@ -178,9 +178,5 @@ CurveEditor::refreshCurrentExpression()
     _imp->resultLabel->setText( QString::fromUtf8("= ") + QString::number(v) );
 }
 
-void
-CurveEditor::onExprLineEditFinished()
-{
-    setSelectedCurveExpression( _imp->knobLineEdit->text() );
-}
+
 #endif

@@ -143,18 +143,13 @@ public:
 
     AnimationModulePtr getModel() const;
 
-    /**
-     * @brief Returns a pointer to the KnobAnim associated with the item at
-     * the coordinates (0, y) in the tree widget's viewport.
-     */
-    KnobAnimPtr getKnobAnimAt(int y) const;
 
     /**
      * @brief Returns true if 'item' is fully visible.
      *
      * If one of its parents is collapsed, returns false.
      */
-    bool itemIsVisible(QTreeWidgetItem *item) const;
+    bool isItemVisibleRecursive(QTreeWidgetItem *item) const;
 
     /**
      * @brief Returns the height occuped in the view by 'item' and its
