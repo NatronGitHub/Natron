@@ -211,8 +211,17 @@ struct ItemData
 
 struct TrackDatas
 {
-    std::vector<ItemData> items;
+    void addItem(TableItem* item_, const KnobIPtr& knob_, int dimension_) {
+        // avoid copying around weak pointers
+        items.resize(items.size() + 1);
+        ItemData& back = items.back();
+        back.item = item_;
+        back.knob = knob_;
+        back.dimension = dimension_;
+    }
+
     boost::weak_ptr<TrackMarker> marker;
+    std::vector<ItemData> items;
 };
 
 typedef std::vector< TrackDatas> TrackItems;
@@ -593,7 +602,6 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
 {
     ///Enabled
     {
-        ItemData d;
         QWidget *checkboxContainer = new QWidget(0);
         QHBoxLayout* checkboxLayout = new QHBoxLayout(checkboxContainer);
         AnimatedCheckBox* checkbox = new AnimatedCheckBox(checkboxContainer);
@@ -607,32 +615,26 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
         newItem->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-        d.item = newItem;
-        d.dimension = -1;
         view->setCellWidget(row, COL_ENABLED, checkboxContainer);
         view->setItem(row, COL_ENABLED, newItem);
         view->resizeColumnToContents(COL_ENABLED);
-        data.items.push_back(d);
+        data.addItem(newItem, KnobIPtr(), -1);
     }
 
     ///Label
     {
-        ItemData d;
         TableItem* newItem = new TableItem;
         newItem->setToolTip( labelToolTipFromScriptName(marker) );
         newItem->setText( QString::fromUtf8( marker.getLabel().c_str() ) );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_LABEL);
-        d.item = newItem;
-        d.dimension = -1;
         view->setItem(row, COL_LABEL, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, KnobIPtr(), -1);
     }
 
     ///Motion-model
     {
         EffectInstancePtr trackerEffect = node.lock()->getNode()->getEffectInstance();
-        ItemData d;
         KnobChoicePtr motionModel = marker.getMotionModelKnob();
         ComboBox* cb = new ComboBox;
         cb->setFocusPolicy(Qt::NoFocus);
@@ -665,71 +667,52 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         newItem->setToolTip( tooltipFromKnob(motionModel) );
         newItem->setText( QString::fromUtf8( marker.getScriptName_mt_safe().c_str() ) );
         view->resizeColumnToContents(COL_MOTION_MODEL);
-        d.item = newItem;
-        d.dimension = 0;
-        d.knob = motionModel;
         view->setItem(row, COL_MOTION_MODEL, newItem);
         view->setCellWidget(row, COL_MOTION_MODEL, cb);
-        data.items.push_back(d);
+        data.addItem(newItem, motionModel, 0);
     }
 
     //Center X
     KnobDoublePtr center = marker.getCenterKnob();
     {
-        ItemData d;
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(center) );
         newItem->setData( Qt::DisplayRole, center->getValue() );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_CENTER_X);
-        d.item = newItem;
-        d.knob = center;
-        d.dimension = 0;
         view->setItem(row, COL_CENTER_X, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, center, 0);
     }
     //Center Y
     {
-        ItemData d;
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(center) );
         newItem->setData( Qt::DisplayRole, center->getValue(1) );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_CENTER_Y);
-        d.item = newItem;
-        d.knob = center;
-        d.dimension = 1;
         view->setItem(row, COL_CENTER_Y, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, center, 1);
     }
     ///Offset X
     KnobDoublePtr offset = marker.getOffsetKnob();
     {
-        ItemData d;
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(offset) );
         newItem->setData( Qt::DisplayRole, offset->getValue() );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_OFFSET_X);
-        d.item = newItem;
-        d.knob = offset;
-        d.dimension = 0;
         view->setItem(row, COL_OFFSET_X, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, offset, 0);
     }
     ///Offset Y
     {
-        ItemData d;
         TableItem* newItem = new TableItem;
         newItem->setToolTip( tooltipFromKnob(offset) );
         newItem->setData( Qt::DisplayRole, offset->getValue(1) );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_OFFSET_Y);
-        d.item = newItem;
-        d.knob = offset;
-        d.dimension = 1;
         view->setItem(row, COL_OFFSET_Y, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, offset, 1);
     }
 
     ///Correlation
@@ -741,11 +724,8 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         newItem->setData( Qt::DisplayRole, error->getValue() );
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         view->resizeColumnToContents(COL_ERROR);
-        d.item = newItem;
-        d.knob = error;
-        d.dimension = 0;
         view->setItem(row, COL_ERROR, newItem);
-        data.items.push_back(d);
+        data.addItem(newItem, error, 0);
     }
 } // TrackerPanelPrivate::makeTrackRowItems
 
