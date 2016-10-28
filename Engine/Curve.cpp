@@ -1295,21 +1295,21 @@ Curve::setKeyFrameValueAndTime(double time,
 bool
 Curve::moveKeyFrameValueAndTimeInternal(const double time, const double dt, const double dv, KeyFrame* newKey)
 {
-    bool isFirst = false;
-    bool isLast = false;
+    //bool isFirst = false;
+    //bool isLast = false;
     {
         QMutexLocker l(&_imp->_lock);
         KeyFrameSet::iterator it = find(time);
 
         if (_imp->isPeriodic) {
             if (it == _imp->keyFrames.begin()) {
-                isFirst = true;
+                //isFirst = true;
             } else if (it != _imp->keyFrames.end()) {
                 KeyFrameSet::iterator next = it;
                 ++next;
-                if (next == _imp->keyFrames.end()) {
-                    isLast = true;
-                }
+                //if (next == _imp->keyFrames.end()) {
+                //    isLast = true;
+                //}
             }
         }
 
