@@ -485,11 +485,11 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
@@ -589,11 +589,11 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -656,11 +656,11 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -901,11 +901,11 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -967,11 +967,11 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -1042,11 +1042,11 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -1124,11 +1124,11 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -1189,11 +1189,11 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -1238,11 +1238,11 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
@@ -1305,11 +1305,11 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
     Gui* gui = getGui();
     if (!gui) {
-        return;
+        return false;
     }
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
-        return;
+        return false;
     }
     if ( app->isClosing() ) {
         return false;
