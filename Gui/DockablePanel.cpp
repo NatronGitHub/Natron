@@ -414,8 +414,9 @@ DockablePanel::DockablePanel(Gui* gui,
 
 DockablePanel::~DockablePanel()
 {
-    if ( getGui() ) {
-        getGui()->removeVisibleDockablePanel(this);
+    Gui* gui = getGui();
+    if (gui) {
+        gui->removeVisibleDockablePanel(this);
     }
 }
 
@@ -532,13 +533,16 @@ DockablePanel::onKnobsRecreated()
 
     // Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
-        NodeGuiPtr node = isNodePanel->getNode();
 
-        getGui()->getCurveEditor()->removeNode( node );
-        getGui()->getCurveEditor()->addNode(node);
+        Gui* gui = getGui();
+        if (gui) {
+            NodeGuiPtr node = isNodePanel->getNode();
+            getGui()->getCurveEditor()->removeNode( node );
+            getGui()->getCurveEditor()->addNode(node);
 
-        getGui()->removeNodeGuiFromDopeSheetEditor(node);
-        getGui()->addNodeGuiToDopeSheetEditor(node);
+            gui->removeNodeGuiFromDopeSheetEditor(node);
+            gui->addNodeGuiToDopeSheetEditor(node);
+        }
     }
 }
 
@@ -953,12 +957,20 @@ DockablePanel::setClosedInternal(bool c)
 
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange( false, getGui()->getApp()->getTimeLine()->currentFrame() );
-
-
         NodeGuiPtr nodeGui = nodePanel->getNode();
         NodePtr internalNode = nodeGui->getNode();
+
         Gui* gui = getGui();
+        if (internalNode && gui) {
+            GuiAppInstancePtr app = gui->getApp();
+            if (app) {
+                boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                if (timeline) {
+                    internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+                }
+            }
+        }
+
 
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
@@ -993,9 +1005,12 @@ DockablePanel::closePanel()
         hasFocus->clearFocus();
     }
 
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->getViewer()->redraw();
+    Gui* gui = getGui();
+    if (gui) {
+        const std::list<ViewerTab*>& viewers = gui->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->redraw();
+        }
     }
 }
 
@@ -1019,7 +1034,10 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
-    getGui()->buildTabFocusOrderPropertiesBin();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+    }
     update();
 }
 
@@ -1059,7 +1077,11 @@ DockablePanel::floatPanelInWindow(FloatingWidget* window)
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
-    getGui()->buildTabFocusOrderPropertiesBin();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+    }
+
 }
 
 FloatingWidget*
@@ -1203,8 +1225,11 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
         _imp->_overlayButton->setIcon( QIcon(p) );
 
         node->onNodeUIOverlayColorChanged(color.redF(), color.greenF(), color.blueF());
+        Gui* gui = getGui();
+        if (gui) {
+            gui->getApp()->redrawAllViewers();
+        }
 
-        getGui()->getApp()->redrawAllViewers();
     }
 
 }
@@ -1268,8 +1293,10 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
         }
     }
-
-    getGui()->getApp()->redrawAllViewers();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->getApp()->redrawAllViewers();
+    }
 
 }
 
@@ -1297,8 +1324,10 @@ DockablePanel::resetHostOverlayColor()
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
 
-    getGui()->getApp()->redrawAllViewers();
-
+    Gui* gui = getGui();
+    if (gui) {
+        gui->getApp()->redrawAllViewers();
+    }
 }
 
 void
@@ -1407,7 +1436,11 @@ DockablePanel::onManageUserParametersActionTriggered()
 void
 DockablePanel::setKeyOnAllParameters()
 {
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    double time = gui->getApp()->getTimeLine()->currentFrame();
     AddKeysCommand::KeysToAddList keys;
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
@@ -1452,13 +1485,18 @@ DockablePanel::setKeyOnAllParameters()
             }
         }
     }
-    pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), keys) );
+    pushUndoCommand( new AddKeysCommand(gui->getCurveEditor()->getCurveWidget(), keys) );
 }
 
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
     std::map< CurveGuiPtr, std::vector<KeyFrame > > keysToRemove;
+
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
@@ -1466,6 +1504,7 @@ DockablePanel::removeAnimationOnAllParameters()
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
+
 
                 for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
@@ -1478,7 +1517,7 @@ DockablePanel::removeAnimationOnAllParameters()
             }
         }
     }
-    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), keysToRemove) );
+    pushUndoCommand( new RemoveKeysCommand(gui->getCurveEditor()->getCurveWidget(), keysToRemove) );
 }
 
 void

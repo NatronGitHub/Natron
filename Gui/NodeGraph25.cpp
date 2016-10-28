@@ -175,8 +175,7 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(accepted()), this, SLOT(onNodeCreationDialogFinished()) );
-            QObject::connect( nodeCreation, SIGNAL(rejected()), this, SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onNodeCreationDialogFinished(bool)) );
             nodeCreation->show();
 
             takeClickFocus();
@@ -190,38 +189,33 @@ NodeGraph::event(QEvent* e)
 }
 
 void
-NodeGraph::onNodeCreationDialogFinished()
+NodeGraph::onNodeCreationDialogFinished(bool accepted)
 {
     NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>( sender() );
 
     if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        QString presetName;
-        PluginPtr plugin = dialog->getPlugin(&presetName);
 
-        dialog->deleteLater();
+        if (accepted) {
 
-        switch (ret) {
-            case QDialog::Accepted: {
-                if (plugin) {
-                    std::string pluginID = plugin->getPluginID();
-                    _imp->_lastPluginCreatedID = QString::fromUtf8(pluginID.c_str());
+            QString presetName;
+            PluginPtr plugin = dialog->getPlugin(&presetName);
+            if (plugin) {
+                std::string pluginID = plugin->getPluginID();
+                _imp->_lastPluginCreatedID = QString::fromUtf8(pluginID.c_str());
 
-                    QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID, getGroup() ));
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
-                    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, plugin->getMajorVersion(), 0);
-                    args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetName.toStdString());
-                    getGui()->getApp()->createNode(args);
+                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID, getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                args->setProperty<int>(kCreateNodeArgsPropPluginVersion, plugin->getMajorVersion(), 0);
+                args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetName.toStdString());
+                getGui()->getApp()->createNode(args);
 
-                }
-                break;
             }
-            case QDialog::Rejected:
-            default:
-            break;
         }
+
+        dialog->close();
+
     }
 }
 

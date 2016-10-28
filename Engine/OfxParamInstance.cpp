@@ -95,21 +95,27 @@ getOfxKeyFrames(const KnobIPtr& knob,
     assert(startDim < endDim && startDim >= 0);
     if ( knob->canAnimate() ) {
         for (int i = startDim; i < endDim; ++i) {
-            // Was added for https://github.com/MrKepzie/Natron/issues/690 but cannot figure out what this fixes
-            /*std::list<std::pair<KnobIPtr,int> > dependencies;
-               if (knob->getExpressionDependencies(i, dependencies)) {
-               for (std::list<std::pair<KnobIPtr,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
-               unsigned int tmp;
-               getNumKeys(it->first, tmp);
-               sum += tmp;
-               }
-               } else {*/
 
-            CurvePtr curve = knob->getCurve(ViewIdx(0), i);
-            if (curve) {
-                KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = dimKeys.begin(); it != dimKeys.end(); ++it) {
-                    keyframes.insert( it->getTime() );
+
+            // Some plug-ins (any of our GeneratorPlugin derivatives) use getNumKeys to figure out
+            // if the knob is animated.
+            // If the knob has an expression, it may be using e.g a random based function and does not necessarily
+            // have a fixed number of keyframes. In that case we return 2 fake keyframes so the plug-in thinks
+            // there's an animation.
+            // If we don't do this, a simple constant node with a random() as expression of the color knob will
+            // make the node return true in the isIdentity action of the GeneratorPlugin (in openfx-supportext)
+            // hence the color will not vary over time.
+            std::string expr = knob->getExpression(0);
+            if (!expr.empty()) {
+                keyframes.insert(0);
+                keyframes.insert(1);
+            } else {
+                CurvePtr curve = knob->getCurve(ViewIdx(0), i);
+                if (curve) {
+                    KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::iterator it = dimKeys.begin(); it != dimKeys.end(); ++it) {
+                        keyframes.insert( it->getTime() );
+                    }
                 }
             }
         }

@@ -113,6 +113,16 @@ public:
 
     PluginPtr getPlugin(QString* presetName) const;
 
+    void finish(bool accepted);
+
+Q_SIGNALS:
+
+    // Do not use the base class accept and reject
+    // because here we do not use a modal dialog.
+    // If we do then some complicated recursion due to the
+    // completelerlineedit can make Qt crash.
+    void dialogFinished(bool accepted);
+
 private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;

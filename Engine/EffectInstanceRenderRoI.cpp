@@ -1714,7 +1714,8 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     // If we reach here, it can be either because the planes are cached or not, either way
     // the planes are NOT a total identity, and they may have some content left to render.
     EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
-    if (!hasSomethingToRender && !planesToRender->isBeingRenderedElsewhere) {
+    *renderAborted = _publicInterface->aborted();
+    if (!renderAborted && (hasSomethingToRender || planesToRender->isBeingRenderedElsewhere) ) {
         *renderAborted = _publicInterface->aborted();
     } else {
 
