@@ -93,11 +93,19 @@ KnobGuiFile::removeSpecificGui()
 void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobFilePtr knob = _knob.lock();
     EffectInstancePtr holderIsEffect = toEffectInstance( knob->getHolder() );
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
-        TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
+        TimeLinePtr timeline = app->getTimeLine();
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)) );
     }
 
@@ -594,12 +602,20 @@ KnobGuiPath::editUserEntry(QStringList& row)
 void
 KnobGuiPath::entryRemoved(const QStringList& row)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobPathPtr knob = _knob.lock();
 
     ///Fix all variables if needed
-    if ( knob && knob->getHolder() && ( knob->getHolder() == getGui()->getApp()->getProject() ) &&
+    if ( knob && knob->getHolder() && ( knob->getHolder() == app->getProject() ) &&
          appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
-        getGui()->getApp()->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(), false);
+        app->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(), false);
     }
 }
 
@@ -608,6 +624,14 @@ KnobGuiPath::tableChanged(int row,
                           int col,
                           std::string* newEncodedValue)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
@@ -630,9 +654,9 @@ KnobGuiPath::tableChanged(int row,
 
                 if ( (*itOld)[0] != (*itNew)[0] ) {
                     ///a name has changed
-                    getGui()->getApp()->getProject()->fixPathName( (*itOld)[0], (*itNew)[0] );
+                    app->getProject()->fixPathName( (*itOld)[0], (*itNew)[0] );
                 } else if ( (*itOld)[1] != (*itNew)[1] ) {
-                    getGui()->getApp()->getProject()->fixRelativeFilePaths( (*itOld)[0], (*itNew)[1], false );
+                    app->getProject()->fixRelativeFilePaths( (*itOld)[0], (*itNew)[1], false );
                 }
             }
         }

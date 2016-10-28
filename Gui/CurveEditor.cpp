@@ -829,6 +829,14 @@ void
 CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,
                                  int)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     NodeGuiPtr node;
 
     for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
@@ -896,8 +904,8 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
         }
-        getGui()->putSettingsPanelFirst( node->getSettingPanel() );
-        getGui()->getApp()->redrawAllViewers();
+        gui->putSettingsPanelFirst( node->getSettingPanel() );
+        app->redrawAllViewers();
     }
 } // CurveEditor::onItemDoubleClicked
 
@@ -1594,6 +1602,14 @@ CurveEditor::getSelectedCurve() const
 void
 CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobCurveGuiPtr knobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(curve);
 
     if (curve && !knobCurve) {
@@ -1623,7 +1639,7 @@ CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
                 std::string expr = knob->getExpression( knobCurve->getDimension() );
                 if ( !expr.empty() ) {
                     _imp->knobLineEdit->setText( QString::fromUtf8( expr.c_str() ) );
-                    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension() );
+                    double v = knob->getValueAtWithExpression( app->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension() );
                     _imp->resultLabel->setText( QString::fromUtf8("= ") + QString::number(v) );
                 } else {
                     _imp->knobLineEdit->clear();
@@ -1647,6 +1663,14 @@ CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
 void
 CurveEditor::refreshCurrentExpression()
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobCurveGuiPtr curve = _imp->selectedKnobCurve.lock();
 
     if (!curve) {
@@ -1654,7 +1678,7 @@ CurveEditor::refreshCurrentExpression()
     }
     KnobIPtr knob = curve->getInternalKnob();
     std::string expr = knob->getExpression( curve->getDimension() );
-    double v = knob->getValueAtWithExpression( getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), curve->getDimension() );
+    double v = knob->getValueAtWithExpression( app->getTimeLine()->currentFrame(), ViewIdx(0), curve->getDimension() );
     _imp->knobLineEdit->setText( QString::fromUtf8( expr.c_str() ) );
     _imp->resultLabel->setText( QString::fromUtf8("= ") + QString::number(v) );
 }

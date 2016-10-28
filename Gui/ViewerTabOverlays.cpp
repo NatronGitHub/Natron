@@ -80,13 +80,17 @@ ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    if (!getGui()) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
         return;
     }
 
-
     NodesList nodesWithPanelOpened;
-    std::list<DockablePanelI*> panels = getGui()->getApp()->getOpenedSettingsPanels();
+    std::list<DockablePanelI*> panels = app->getOpenedSettingsPanels();
 
     std::set<ViewerNodePtr> viewerNodesWithPanelOpened;
     for (std::list<DockablePanelI*>::const_iterator it = panels.begin();
@@ -126,19 +130,25 @@ void
 ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
-
-    bool isDrawing = getGui()->getApp()->isDuringPainting();
-
-    if ( !getGui() ||
-         !getGui()->getApp() ||
-         !_imp->viewer ||
-         getGui()->getApp()->isClosing() ||
-         isFileDialogViewer() ||
-         (getGui()->isGUIFrozen() && !isDrawing) ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
         return;
     }
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+    bool isDrawing = app->isDuringPainting();
+
+    if ( !_imp->viewer ||
+         app->isClosing() ||
+         isFileDialogViewer() ||
+         (gui->isGUIFrozen() && !isDrawing) ) {
+        return;
+    }
+
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -222,7 +232,15 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     }
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return false;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return false;
+    }
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 
@@ -305,11 +323,19 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  double pressure,
                                  double timestamp)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return false;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return false;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -347,10 +373,10 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         }
     }
 
-    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
-        getGui()->getApp()->redrawAllViewers();
+    if (app->getOverlayRedrawRequestsCount() > 0) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    app->clearOverlayRedrawRequests();
 
     return false;
 }
@@ -360,7 +386,15 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                                         const QPointF & viewportPos,
                                         const QPointF & pos)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return false;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return false;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
 
@@ -377,7 +411,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
         QPointF transformViewportPos;
         QPointF transformPos;
-        double time = getGui()->getApp()->getTimeLine()->currentFrame();
+        double time = app->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
         double transformedTime;
@@ -449,6 +483,14 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             double pressure,
                                             double timestamp)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
         return false;
@@ -456,7 +498,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -545,13 +587,21 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    double pressure,
                                    double timestamp)
 {
-    bool didSomething = false;
-
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
+    bool didSomething = false;
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -588,10 +638,10 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
 
-    if ( !didSomething && (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) ) {
-        getGui()->getApp()->redrawAllViewers();
+    if ( !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    app->clearOverlayRedrawRequests();
 
 
     return didSomething;
@@ -604,13 +654,20 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                double pressure,
                                double timestamp)
 {
-    bool didSomething = false;
-
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
+    bool didSomething = false;
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -637,7 +694,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     NodesList nodes;
     getNodesEntitledForOverlays(nodes);
 
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -708,14 +765,14 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     }
 
 
-    if ( !mustTriggerRender && !didSomething && (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) ) {
-        getGui()->getApp()->redrawAllViewers();
+    if ( !mustTriggerRender && !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    app->clearOverlayRedrawRequests();
 
     if (mustTriggerRender) {
         //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
-        getGui()->getApp()->renderAllViewers(true);
+        app->renderAllViewers(true);
     }
 
 
@@ -842,12 +899,23 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
+        return false;
+    }
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
         return false;
     }
 
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -897,13 +965,18 @@ bool
 ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
-    bool didSomething = false;
-    GuiAppInstancePtr app = getGui()->getApp();
-
-    if ( !app  || app->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
-
+    bool didSomething = false;
 
     /*
        Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
@@ -967,16 +1040,22 @@ bool
 ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
-    bool didSomething = false;
-    GuiAppInstancePtr app = getGui()->getApp();
-
-    if ( !app || app->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
+    bool didSomething = false;
 
     _imp->lastOverlayNode.reset();
 
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
     getNodesEntitledForOverlays(nodes);
@@ -1043,13 +1122,24 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
+        return false;
+    }
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
         return false;
     }
 
     ViewIdx view = getInternalNode()->getCurrentView();
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
@@ -1097,7 +1187,15 @@ bool
 ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
                                    QKeyEvent* e)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
 
@@ -1127,11 +1225,10 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
         }
     }
 
-    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
-        getGui()->getApp()->redrawAllViewers();
+    if (app->getOverlayRedrawRequestsCount() > 0) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
-
+    app->clearOverlayRedrawRequests();
 
     return false;
 }
@@ -1139,11 +1236,19 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
 bool
 ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 {
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
         return false;
     }
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -1154,7 +1259,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     }
 
 
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
@@ -1187,10 +1292,10 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         }
     }
 
-    if ( !ret && (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) ) {
-        getGui()->getApp()->redrawAllViewers();
+    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusGained
@@ -1198,11 +1303,22 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
-    if ( !getInternalNode() || !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isClosing() ) {
+        return false;
+    }
+    if ( !getInternalNode() ) {
         return false;
     }
 
-    if ( getGui()->getApp()->isShowingDialog() ) {
+    if ( app->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
            and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
@@ -1213,7 +1329,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     }
 
 
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
@@ -1246,10 +1362,10 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     }
 
 
-    if ( !ret && (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) ) {
-        getGui()->getApp()->redrawAllViewers();
+    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost

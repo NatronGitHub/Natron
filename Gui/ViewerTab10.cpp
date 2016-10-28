@@ -83,10 +83,11 @@ ViewerTab::updateZoomComboBox(int value)
 void
 ViewerTab::abortViewersAndRefresh()
 {
-    if ( !getGui() ) {
+    Gui* gui = getGui();
+    if (!gui) {
         return;
     }
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    const std::list<ViewerTab*> & activeNodes = gui->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerNodePtr viewer = (*it)->getInternalNode();
         if (viewer) {
@@ -141,17 +142,18 @@ void
 ViewerTab::onTimeLineTimeChanged(SequenceTime time,
                                  int reason)
 {
-    if ( !getGui() ) {
+    Gui* gui = getGui();
+    if (!gui) {
         return;
     }
-
     ViewerNodePtr node = _imp->viewerNode.lock();
     ViewerInstancePtr viewerNode = node->getInternalViewerNode();
     if ((TimelineChangeReasonEnum)reason != eTimelineChangeReasonPlaybackSeek) {
         node->getCurrentFrameKnob()->setValueFromPlugin(time, ViewSpec::current(), 0);
     }
 
-    if ( _imp->timeLineGui->getTimeline() != getGui()->getApp()->getTimeLine() ) {
+    GuiAppInstancePtr app = gui->getApp();
+    if ( app &&  _imp->timeLineGui->getTimeline() != app->getTimeLine() ) {
         viewerNode->renderCurrentFrame(true);
     }
 }
@@ -159,7 +161,8 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
 
 ViewerTab::~ViewerTab()
 {
-    if ( getGui() ) {
+    Gui* gui = getGui();
+    if (gui) {
         NodeGraph* graph = 0;
         ViewerNodePtr internalNode = getInternalNode();
 
@@ -175,15 +178,16 @@ ViewerTab::~ViewerTab()
                         assert(graph);
                     }
                 } else {
-                    graph = getGui()->getNodeGraph();
+                    graph = gui->getNodeGraph();
                 }
             }
             internalNode->invalidateUiContext();
         } else {
-            graph = getGui()->getNodeGraph();
+            graph = gui->getNodeGraph();
         }
         assert(graph);
-        if ( getGui()->getApp() && !getGui()->getApp()->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
+        GuiAppInstancePtr app = gui->getApp();
+        if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
     }
@@ -212,8 +216,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         return;
     }
     //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
-    if ( getGui() ) {
-        getGui()->setActiveViewer(this);
+    Gui* gui = getGui();
+    if (gui) {
+        gui->setActiveViewer(this);
     }
 
     bool accept = true;
@@ -285,7 +290,8 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( !getGui() ) {
+    Gui* gui = getGui();
+    if (!gui) {
         return QWidget::keyPressEvent(e);
     }
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
@@ -302,13 +308,17 @@ ViewerTab::eventFilter(QObject *target,
                        QEvent* e)
 {
     if (e->type() == QEvent::MouseButtonPress) {
-        if ( getGui() && getGui()->getApp() ) {
-            ViewerNodePtr viewerNode = _imp->viewerNode.lock();
-            if (viewerNode) {
-                NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                getGui()->selectNode(gui);
+        Gui* gui = getGui();
+        if (gui) {
+            GuiAppInstancePtr app = gui->getApp();
+            if (app) {
+                ViewerNodePtr viewerNode = _imp->viewerNode.lock();
+                if (viewerNode) {
+                    NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
+                    assert(gui_i);
+                    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    gui->selectNode(gui);
+                }
             }
         }
     }

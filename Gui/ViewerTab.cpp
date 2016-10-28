@@ -117,10 +117,12 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     // Viewer
     _imp->viewer = new ViewerGL(this);
 
+    GuiAppInstancePtr app = gui->getApp();
+
     // Init viewer to project format
     {
         Format projectFormat;
-        getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
+        app->getProject()->getProjectDefaultFormat(&projectFormat);
 
         RectD canonicalFormat = projectFormat.toCanonicalFormat();
         for (int i = 0; i < 2; ++i) {
@@ -146,11 +148,11 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     _imp->viewerLayout->addWidget(_imp->viewerSubContainer);
     _imp->mainLayout->addWidget(_imp->viewerContainer);
 
-    TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
+    TimeLinePtr timeline = app->getTimeLine();
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
-    QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );
+    QObject::connect( app->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
     if (!node->isTimelineVisible()) {
@@ -166,7 +168,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     rightBound = node->getPlaybackOutPointKnob()->getValue();
 
     double projectLeft, projectRight;
-    gui->getApp()->getFrameRange(&projectLeft, &projectRight);
+    app->getFrameRange(&projectLeft, &projectRight);
 
     _imp->timeLineGui->setBoundaries(leftBound, rightBound);
     onTimelineBoundariesChanged(leftBound, rightBound);
@@ -323,7 +325,15 @@ void
 ViewerTab::setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex)
 {
     std::string formatName, infoBarName;
-    if (!getGui()->getApp()->getProject()->getFormatNameFromRect(rect, par, &formatName)) {
+    Gui* gui = gui->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    if (!app->getProject()->getFormatNameFromRect(rect, par, &formatName)) {
         formatName = makeUpFormatName(rect, par);
         infoBarName = formatName;
     } else {
