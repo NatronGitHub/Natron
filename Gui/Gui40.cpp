@@ -399,16 +399,11 @@ Gui::getNodeGraph() const
     return _imp->_nodeGraphArea;
 }
 
-CurveEditor*
-Gui::getCurveEditor() const
-{
-    return _imp->_curveEditor;
-}
 
 AnimationModuleEditor *
 Gui::getAnimationModuleEditor() const
 {
-    return _imp->_AnimationModuleEditor;
+    return _imp->_animationModule;
 }
 
 ScriptEditor*
@@ -822,8 +817,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 
     assert( QThread::currentThread() == qApp->thread() );
     if ( (reason == eTimelineChangeReasonUserSeek) ||
-         ( reason == eTimelineChangeReasonAnimationModuleEditorSeek) ||
-         ( reason == eTimelineChangeReasonCurveEditorSeek) ) {
+         ( reason == eTimelineChangeReasonAnimationModuleSeek) ) {
         if ( getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }

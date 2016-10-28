@@ -213,9 +213,9 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 }
 
 void
-KnobGuiGroup::updateGUI(int /*dimension*/)
+KnobGuiGroup::updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/)
 {
-    bool b = _knob.lock()->getValue(0);
+    bool b = _knob.lock()->getValue();
 
     setCheckedInternal(b, false);
     if (_button) {

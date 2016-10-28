@@ -219,14 +219,14 @@ NodeViewerContext::createGui()
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
                 KnobGroupPtr isGroup = toKnobGroup( pageChildren[i] );
                 if (isGroup) {
-                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
+                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
                     KnobsVec toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
                         KnobButtonPtr isButton = toKnobButton( toolButtonChildren[j] );
                         if (isButton) {
-                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
+                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum) ));
                             const std::string& roleShortcutID = isGroup->getName();
                             QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
                             if ( act && createdToolButton && isButton->getValue() ) {

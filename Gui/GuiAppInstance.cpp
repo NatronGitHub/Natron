@@ -111,7 +111,8 @@ struct RotoPaintData
 struct KnobDnDData
 {
     KnobIWPtr source;
-    int sourceDimension;
+    DimSpec sourceDimension;
+    ViewIdx sourceView;
     QDrag* drag;
 };
 
@@ -1317,22 +1318,26 @@ GuiAppInstance::goToNextKeyframe()
 void
 GuiAppInstance::setKnobDnDData(QDrag* drag,
                                const KnobIPtr& knob,
-                               int dimension)
+                               DimSpec dimension,
+                               ViewIdx view)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->knobDnd.source = knob;
     _imp->knobDnd.sourceDimension = dimension;
+    _imp->knobDnd.sourceView = view;
     _imp->knobDnd.drag = drag;
 }
 
 void
 GuiAppInstance::getKnobDnDData(QDrag** drag,
                                KnobIPtr* knob,
-                               int* dimension) const
+                               DimSpec* dimension,
+                               ViewIdx* view) const
 {
     assert( QThread::currentThread() == qApp->thread() );
     *knob = _imp->knobDnd.source.lock();
     *dimension = _imp->knobDnd.sourceDimension;
+    *view = _imp->knobDnd.sourceView;
     *drag = _imp->knobDnd.drag;
 }
 

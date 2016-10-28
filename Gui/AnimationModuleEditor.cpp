@@ -257,6 +257,12 @@ AnimationModuleEditor::getTimelineCurrentTime() const
     return getGui()->getApp()->getTimeLine()->currentFrame();
 }
 
+AnimationModulePtr
+AnimationModuleEditor::getModel() const
+{
+    return _imp->model;
+}
+
 DopeSheetView*
 AnimationModuleEditor::getDopesheetView() const
 {
@@ -353,7 +359,15 @@ AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportDat
 void
 AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
 {
-    std::list<CurveGuiPtr> curves = _imp->getSelectedCurves();
+    const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->model->getSelectionModel()->getCurrentKeyFramesSelection();
+    std::list<CurveGuiPtr> curves;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
+        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        if (guiCurve) {
+            curves.push_back(guiCurve);
+        }
+    }
+
     if (curves.empty() || curves.size() > 1) {
         throw std::invalid_argument("Cannot set expression on multiple items");
     }

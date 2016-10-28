@@ -35,6 +35,7 @@
 #endif
 
 #include "Engine/AppInstance.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/GuiFwd.h"
@@ -188,8 +189,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
-    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewIdx view);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewIdx* view) const;
 
     virtual bool checkAllReadersModificationDate(bool errorAndWarn) OVERRIDE FINAL;
 

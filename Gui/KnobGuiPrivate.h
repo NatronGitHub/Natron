@@ -75,7 +75,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/ComboBox.h"
 #include "Gui/ClickableLabel.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DockablePanel.h"
@@ -119,7 +118,6 @@ struct KnobGuiPrivate
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
-    std::vector< boost::shared_ptr<Curve> > guiCurves;
     bool guiRemoved;
 
     // True if this KnobGui is used in the viewer

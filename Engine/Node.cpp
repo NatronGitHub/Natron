@@ -7222,7 +7222,7 @@ Node::onAllKnobsSlaved(bool isSlave,
 void
 Node::onKnobSlaved(const KnobIPtr& slave,
                    const KnobIPtr& master,
-                   DimIdx dimension,
+                   DimIdx /*dimension*/,
                    ViewIdx /*view*/,
                    bool isSlave)
 {
@@ -7252,7 +7252,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
         QMutexLocker l(&_imp->masterNodeMutex);
         KnobLinkList::iterator found = _imp->nodeLinks.end();
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->slave.lock() == slave) {
+            if (it->slaveKnob.lock() == slave) {
                 found = it;
                 break;
             }
@@ -7266,9 +7266,8 @@ Node::onKnobSlaved(const KnobIPtr& slave,
                 ///Add a new link
                 KnobLink link;
                 link.masterNode = parentNode;
-                link.slave = slave;
-                link.master = master;
-                link.dimension = dimension;
+                link.slaveKnob = slave;
+                link.masterKnob = master;
                 _imp->nodeLinks.push_back(link);
                 changed = true;
             }
@@ -7289,7 +7288,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
 } // onKnobSlaved
 
 void
-Node::getKnobsLinks(std::list<Node::KnobLink> & links) const
+Node::getKnobsLinks(std::list<KnobLink> & links) const
 {
     QMutexLocker l(&_imp->masterNodeMutex);
 

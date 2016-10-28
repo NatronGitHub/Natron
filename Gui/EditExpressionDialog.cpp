@@ -67,7 +67,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DockablePanel.h"
@@ -93,19 +92,27 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER;
 
 EditExpressionDialog::EditExpressionDialog(Gui* gui,
-                                           int dimension,
+                                           DimSpec dimension,
+                                           ViewIdx view,
                                            const KnobGuiPtr& knob,
                                            QWidget* parent)
     : EditScriptDialog(gui, knob, parent)
     , _dimension(dimension)
+    , _view(view)
     , _knob(knob)
 {
 }
 
-int
+DimSpec
 EditExpressionDialog::getDimension() const
 {
     return _dimension;
+}
+
+ViewIdx
+EditExpressionDialog::getView() const
+{
+    return _view;
 }
 
 void
@@ -115,9 +122,9 @@ EditExpressionDialog::setTitle()
     QString title( tr("Set expression on ") );
 
     title.append( QString::fromUtf8( k->getName().c_str() ) );
-    if ( (_dimension != -1) && (k->getDimension() > 1) ) {
+    if ( !_dimension.isAll() && (k->getNDimensions() > 1) ) {
         title.append( QLatin1Char('.') );
-        title.append( QString::fromUtf8( k->getDimensionName(_dimension).c_str() ) );
+        title.append( QString::fromUtf8( k->getDimensionName(DimIdx(_dimension)).c_str() ) );
     }
     setWindowTitle(title);
 }
@@ -125,7 +132,7 @@ EditExpressionDialog::setTitle()
 bool
 EditExpressionDialog::hasRetVariable() const
 {
-    return _knob->getKnob()->isExpressionUsingRetVariable(_dimension == -1 ? 0 : _dimension);
+    return _knob->getKnob()->isExpressionUsingRetVariable(_view, _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension));
 }
 
 QString
@@ -134,7 +141,7 @@ EditExpressionDialog::compileExpression(const QString& expr)
     std::string exprResult;
 
     try {
-        _knob->getKnob()->validateExpression(expr.toStdString(), _dimension == -1 ? 0 : _dimension, isUseRetButtonChecked()
+        _knob->getKnob()->validateExpression(expr.toStdString(), _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension), _view, isUseRetButtonChecked()
                                              , &exprResult);
     } catch (const std::exception& e) {
         QString err = QString( tr("ERROR") + QLatin1String(": %1") ).arg( QString::fromUtf8( e.what() ) );
@@ -172,6 +179,7 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString, QString>
     variables.push_back( std::make_pair( QString::fromUtf8("thisParam"), tr("the current param being edited") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("dimension"), tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("frame"), tr("the current time on the timeline or the time passed to the get function") ) );
+    variables.push_back( std::make_pair( QString::fromUtf8("view"), tr("the view name on which the expression is run") ) );
 }
 
 NATRON_NAMESPACE_EXIT;

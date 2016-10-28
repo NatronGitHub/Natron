@@ -138,11 +138,6 @@ public:
         Q_EMIT frozenChanged(f);
     }
 
-    void s_redrawGuiCurve(ViewSetSpec view,
-                          DimSpec dimension)
-    {
-        Q_EMIT redrawGuiCurve(view, dimension );
-    }
 
     void s_minMaxChanged(DimSpec index)
     {
@@ -242,9 +237,6 @@ Q_SIGNALS:
 
     // Emitted when interpolation on a key is changed
     void keyFrameInterpolationChanged(double time, ViewIdx view, DimIdx dimension);
-
-    // Emitted when the GUI should redraw a curve
-    void redrawGuiCurve(ViewSetSpec view, DimSpec dimension);
 
     // Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(DimIdx dimension, ViewIdx, bool slaved);
@@ -1001,12 +993,12 @@ public:
     /**
      * @brief Enables/disables user interaction with the given dimension.
      **/
-    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all()) = 0;
+    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) = 0;
 
     /**
      * @brief Is the dimension enabled ?
      **/
-    virtual bool isEnabled(DimIdx dimension = DimIdx(0)) const = 0;
+    virtual bool isEnabled(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec(0)) const = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
@@ -1347,6 +1339,7 @@ public:
      **/
     virtual void splitView(ViewIdx view) = 0;
     virtual void unSplitView(ViewIdx view) = 0;
+    virtual ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const = 0;
 };
 
 
@@ -1601,8 +1594,8 @@ public:
     virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all()) OVERRIDE FINAL;
-    virtual bool isEnabled(DimIdx dimension = DimIdx(0)) const OVERRIDE FINAL;
+    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) OVERRIDE FINAL;
+    virtual bool isEnabled(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec(0)) const OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1754,9 +1747,10 @@ public:
 
     virtual void unSplitView(ViewIdx view) OVERRIDE;
 
+    virtual ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 protected:
 
-    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
 
     virtual void copyValuesFromCurve(DimSpec /*dim*/, ViewSetSpec /*view*/) {}
 

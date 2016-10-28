@@ -131,7 +131,7 @@ class DopeSheetViewPrivate : public AnimationModuleViewPrivateBase
 
 public:
 
-    DopeSheetViewPrivate(Gui* gui, AnimationModuleBasePtr& model, DopeSheetView *publicInterface);
+    DopeSheetViewPrivate(Gui* gui, const AnimationModuleBasePtr& model, DopeSheetView *publicInterface);
 
     virtual ~DopeSheetViewPrivate()
     {
@@ -232,7 +232,7 @@ public:
 
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(Gui* gui, AnimationModuleBasePtr& model, DopeSheetView *publicInterface)
+DopeSheetViewPrivate::DopeSheetViewPrivate(Gui* gui, const AnimationModuleBasePtr& model, DopeSheetView *publicInterface)
 : AnimationModuleViewPrivateBase(gui, publicInterface, model)
 , _widget(0)
 , treeView(0)

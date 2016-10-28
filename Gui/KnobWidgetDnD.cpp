@@ -62,7 +62,8 @@ struct KnobWidgetDnDPrivate
 
 public:
     KnobGuiWPtr knob;
-    int dimension;
+    DimSpec dimension;
+    ViewIdx view;
     QPoint dragPos;
     bool dragging;
     QWidget* widget;
@@ -70,14 +71,16 @@ public:
 
 
     KnobWidgetDnDPrivate(const KnobGuiPtr& knob,
-                         int dimension,
+                         DimSpec dimension,
+                         ViewIdx view,
                          QWidget* widget)
-        : knob(knob)
-        , dimension(dimension)
-        , dragPos()
-        , dragging(false)
-        , widget(widget)
-        , userInputSinceFocusIn(false)
+    : knob(knob)
+    , dimension(dimension)
+    , view(view)
+    , dragPos()
+    , dragging(false)
+    , widget(widget)
+    , userInputSinceFocusIn(false)
     {
         assert(widget);
     }
@@ -91,9 +94,10 @@ public:
 };
 
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
-                             int dimension,
+                             DimSpec dimension,
+                             ViewIdx view,
                              QWidget* widget)
-    : _imp( new KnobWidgetDnDPrivate(knob, dimension, widget) )
+    : _imp( new KnobWidgetDnDPrivate(knob, dimension, view, widget) )
 {
     widget->setMouseTracking(true);
     widget->setAcceptDrops(true);
@@ -121,17 +125,19 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     if (!internalKnob) {
         return false;
     }
-    int dragDim = _imp->dimension;
+    DimSpec dragDim = _imp->dimension;
     if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
-        dragDim = -1;
+        dragDim = DimSpec::all();
     }
 
     if (guiKnob->getGui()) {
         guiKnob->getGui()->setCurrentKnobWidgetFocus(shared_from_this());
     }
 
-    dragDim = dragDim == -1 ? 0 : dragDim;
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim) ) ) {
+    if (dragDim.isAll()) {
+        dragDim = DimSpec(0);
+    }
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(DimIdx(dragDim), _imp->view) || internalKnob->isSlave(DimIdx(dragDim), _imp->view) ) ) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
 
@@ -218,12 +224,12 @@ KnobWidgetDnD::startDrag()
         return;
     }
 
-    int dragDim = _imp->dimension;
+    DimSpec dragDim = _imp->dimension;
     if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
-        dragDim = -1;
+        dragDim = DimSpec::all();
     }
 
-    guiKnob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim);
+    guiKnob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim, _imp->view);
 
     QFont font = _imp->widget->font();
     font.setBold(true);
@@ -248,9 +254,9 @@ KnobWidgetDnD::startDrag()
 
 
     if (internalKnob->getNDimensions() > 1) {
-        if (dragDim != -1) {
+        if (!dragDim.isAll()) {
             knobLine += QLatin1Char('.');
-            knobLine += QString::fromUtf8( internalKnob->getDimensionName(dragDim).c_str() );
+            knobLine += QString::fromUtf8( internalKnob->getDimensionName(DimIdx(dragDim)).c_str() );
         } else {
             if (!isExprMult) {
                 knobLine += QLatin1Char(' ');
@@ -264,7 +270,7 @@ KnobWidgetDnD::startDrag()
     }
 
     QString textThirdLine;
-    if (dragDim == -1) {
+    if (dragDim.isAll()) {
         textThirdLine = tr("Drag it to the label of another parameter of the same type");
     } else {
         textThirdLine = tr("Drag it to a dimension of another parameter of the same type");
@@ -328,20 +334,21 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     KnobGuiPtr guiKnob = knob.lock();
     KnobIPtr thisKnob = guiKnob->getKnob();
 
-    bool isEnabled = dimension == -1 ? thisKnob->isEnabled(0) : thisKnob->isEnabled(dimension);
+    bool isEnabled = dimension.isAll() ? thisKnob->isEnabled(DimIdx(0), view) : thisKnob->isEnabled(DimIdx(dimension), view);
     if (!isEnabled) {
         return false;
     }
-    int srcDim;
+    DimSpec srcDim;
+    ViewIdx srcView;
     QDrag* drag;
-    guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
+    guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim, &srcView);
 
 
     bool ret = true;
     if (source) {
-        int targetDim = dimension;
+        DimSpec targetDim = dimension;
         if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
-            targetDim = -1;
+            targetDim = DimSpec::all();
         }
 
         if ( !KnobI::areTypesCompatibleForSlave( source, thisKnob ) ) {
@@ -351,14 +358,14 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
             ret = false;
         }
 
-        if ( ret && (srcDim != -1) && (targetDim == -1) ) {
+        if ( ret && !srcDim.isAll() && targetDim.isAll() ) {
             if (warn) {
                 Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
             }
             ret = false;
         }
 
-        if ( ret && ( (targetDim == -1) || (srcDim == -1) ) && ( source->getNDimensions() != thisKnob->getNDimensions() ) ) {
+        if ( ret && ( targetDim.isAll() || srcDim.isAll() ) && ( source->getNDimensions() != thisKnob->getNDimensions() ) ) {
             if (warn) {
                 Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
             }
@@ -387,14 +394,15 @@ KnobWidgetDnD::drop(QDropEvent* e)
         KnobGuiPtr guiKnob = _imp->getKnob();
         KnobIPtr source;
         KnobIPtr thisKnob = guiKnob->getKnob();
-        int srcDim;
+        DimSpec srcDim;
+        ViewIdx srcView;
         QDrag* drag;
-        guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
-        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), -1);
+        guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim, &srcView);
+        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), DimSpec::all(), ViewIdx(0));
         if ( source && (source != thisKnob) ) {
-            int targetDim = _imp->dimension;
+            DimSpec targetDim = _imp->dimension;
             if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
-                targetDim = -1;
+                targetDim = DimSpec::all();
             }
 
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
@@ -464,7 +472,7 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
     if (!knob) {
         return;
     }
-    bool enabled = _imp->dimension == -1 ? knob->getKnob()->isEnabled(0) : knob->getKnob()->isEnabled(_imp->dimension);
+    bool enabled = _imp->dimension.isAll() ? knob->getKnob()->isEnabled(DimIdx(0), _imp->view) : knob->getKnob()->isEnabled(DimIdx(_imp->dimension), _imp->view);
 
     if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && enabled) {
         _imp->widget->setFocus();

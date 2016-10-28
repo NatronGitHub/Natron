@@ -172,7 +172,12 @@ AnimationModuleBase::moveSelectedKeysAndNodes(double dt, double dv)
     }
 
 
-    pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), selectedNodes, selectedTableItems, dt, dv));
+    std::vector<NodeAnimPtr> nodesToWarp;
+    nodesToWarp.insert(nodesToWarp.end(), selectedNodes.begin(), selectedNodes.end());
+    std::vector<TableItemAnimPtr> tableItemsToWarp;
+    tableItemsToWarp.insert(tableItemsToWarp.end(), selectedTableItems.begin(), selectedTableItems.end());
+
+    pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), nodesToWarp, tableItemsToWarp, dt, dv));
 
 } // AnimationModuleBase::moveSelectedKeysAndNodes
 

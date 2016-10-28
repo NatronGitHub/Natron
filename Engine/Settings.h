@@ -589,12 +589,12 @@ private:
     KnobColorPtr _curveEditorScaleColor;
 
     // Appearance/Dope Sheet
-    KnobPagePtr _AnimationModuleEditorColorsTab;
-    KnobColorPtr _AnimationModuleEditorBackgroundColor;
-    KnobColorPtr _AnimationModuleEditorRootSectionBackgroundColor;
-    KnobColorPtr _AnimationModuleEditorKnobSectionBackgroundColor;
-    KnobColorPtr _AnimationModuleEditorScaleColor;
-    KnobColorPtr _AnimationModuleEditorGridColor;
+    KnobPagePtr _dopesheetColorsTab;
+    KnobColorPtr _dopesheetBackgroundColor;
+    KnobColorPtr _dopesheetRootSectionBackgroundColor;
+    KnobColorPtr _dopesheetKnobSectionBackgroundColor;
+    KnobColorPtr _dopesheetScaleColor;
+    KnobColorPtr _dopesheetGridColor;
 
     // Appearance/Script Editor
     KnobPagePtr _scriptEditorColorsTab;

@@ -286,11 +286,9 @@ KnobHelper::populate()
         _imp->IsPersistent = false;
     }
     for (int i = 0; i < _imp->dimension; ++i) {
-        _imp->enabled[i] = true;
         if ( canAnimate() ) {
             _imp->curves[i][ViewIdx(0)].reset( new Curve(shared_from_this(), DimIdx(i), ViewIdx(0)) );
         }
-        _imp->animationLevel[i][ViewIdx(0)] = eAnimationLevelNone;
 
 
         if (!isColor) {
@@ -424,9 +422,16 @@ KnobHelper::splitView(ViewIdx view)
         }
         {
             QMutexLocker k(&_imp->animationLevelMutex);
-            AnimationLevelEnum mainView = _imp->animationLevel[i][ViewIdx(0)];
-            AnimationLevelEnum viewAnim = _imp->animationLevel[i][view];
-            viewAnim = mainView;
+            _imp->animationLevel[i][view] = _imp->animationLevel[i][ViewIdx(0)];
+
+        }
+        {
+            QMutexLocker k(&_imp->hasModificationsMutex);
+            _imp->hasModifications[i][view] = _imp->hasModifications[i][ViewIdx(0)];
+        }
+        {
+            QMutexLocker k(&_imp->stateMutex);
+            _imp->enabled[i][view] = _imp->enabled[i][ViewIdx(0)];
         }
     }
 
@@ -440,6 +445,7 @@ KnobHelper::getViewIdxFromGetSpec(ViewGetSpec view) const
         QMutexLocker k(&_imp->splitViewMutex);
         std::list<ViewIdx>::const_iterator foundView = std::find(_imp->splitViews.begin(), _imp->splitViews.end(), ViewIdx(view.value()));
         if (foundView == _imp->splitViews.end()) {
+            // If the view does not exist, set the main view
             return ViewIdx(0);
         }
         return ViewIdx(view);
@@ -460,6 +466,9 @@ KnobHelper::getViewIdxFromGetSpec(ViewGetSpec view) const
 void
 KnobHelper::unSplitView(ViewIdx view)
 {
+    if (view == 0) {
+        return;
+    }
     bool viewFound = false;
     {
         QMutexLocker k(&_imp->splitViewMutex);
@@ -499,6 +508,20 @@ KnobHelper::unSplitView(ViewIdx view)
             PerViewAnimLevelMap::iterator foundView = _imp->animationLevel[i].find(view);
             if (foundView != _imp->animationLevel[i].end()) {
                 _imp->animationLevel[i].erase(foundView);
+            }
+        }
+        {
+            QMutexLocker k(&_imp->hasModificationsMutex);
+            PerViewHasModificationMap::iterator foundView = _imp->hasModifications[i].find(view);
+            if (foundView != _imp->hasModifications[i].end()) {
+                _imp->hasModifications[i].erase(foundView);
+            }
+        }
+        {
+            QMutexLocker k(&_imp->stateMutex);
+            PerViewEnabledMap::iterator foundView = _imp->enabled[i].find(view);
+            if (foundView != _imp->enabled[i].end()) {
+                _imp->enabled[i].erase(foundView);
             }
         }
     }
@@ -891,17 +914,36 @@ KnobHelper::getInViewerContextSecret() const
 }
 
 void
-KnobHelper::setEnabled(bool b,
-                       DimSpec dimension)
+KnobHelper::setEnabled(bool b, DimSpec dimension, ViewSetSpec view)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
         if (dimension.isAll()) {
-            for (std::size_t i = 0; i < _imp->enabled.size(); ++i) {
-                _imp->enabled[i] = b;
+            if (view.isAll()) {
+                std::list<ViewIdx> views = getViewsList();
+                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                    for (int i = 0; i < _imp->dimension; ++i) {
+                        _imp->enabled[i][*it] = b;
+                    }
+                }
+            } else {
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                for (int i = 0; i < _imp->dimension; ++i) {
+                    _imp->enabled[i][view_i] = b;
+                }
             }
+
         } else {
-            _imp->enabled[dimension] = b;
+            if (view.isAll()) {
+                std::list<ViewIdx> views = getViewsList();
+                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                    _imp->enabled[dimension][*it] = b;
+                }
+            } else {
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                _imp->enabled[dimension][view_i] = b;
+
+            }
         }
     }
     _signalSlotHandler->s_enabledChanged();
@@ -1178,14 +1220,18 @@ KnobHelper::setIsFrozen(bool frozen)
 }
 
 bool
-KnobHelper::isEnabled(DimIdx dimension) const
+KnobHelper::isEnabled(DimIdx dimension, ViewGetSpec view) const
 {
     if (dimension < 0 || dimension >= getNDimensions()) {
         throw std::invalid_argument("KnobHelper::isEnabled: dimension out of range");
     }
     QMutexLocker k(&_imp->stateMutex);
-
-    return _imp->enabled[dimension];
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    PerViewEnabledMap::const_iterator foundView = _imp->enabled[dimension].find(view_i);
+    if (foundView == _imp->enabled[dimension].end()) {
+        return false;
+    }
+    return foundView->second;
 }
 
 

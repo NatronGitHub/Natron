@@ -46,7 +46,6 @@
 #include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"

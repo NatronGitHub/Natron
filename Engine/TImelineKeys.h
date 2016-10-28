@@ -37,9 +37,9 @@ struct TimeLineKey
     int frame;
     bool isUserKey;
 
-    explicit TimeLineKey(SequenceTime t,
+    explicit TimeLineKey(int frame,
                          bool isUserKey = false)
-        : frame(t)
+        : frame(frame)
         , isUserKey(isUserKey)
     {
     }

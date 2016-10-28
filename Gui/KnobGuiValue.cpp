@@ -760,7 +760,7 @@ KnobGuiValue::onDecimalsChanged(const int deci,
 }
 
 void
-KnobGuiValue::updateGUI(const int dimension)
+KnobGuiValue::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     KnobIPtr knob = _imp->getKnob();
     const int knobDim = (int)_imp->spinBoxes.size();
@@ -1361,7 +1361,7 @@ KnobGuiInt::onKeybindRecorderEditingFinished()
 }
 
 void
-KnobGuiInt::updateGUI(int dimension)
+KnobGuiInt::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     if (!_shortcutRecorder) {
         KnobGuiValue::updateGUI(dimension);

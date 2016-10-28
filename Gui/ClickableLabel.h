@@ -136,10 +136,12 @@ public:
 
     KnobClickableLabel(const QPixmap& icon,
                        const KnobGuiPtr& knob,
+                       ViewIdx view,
                        QWidget* parent = 0);
 
     KnobClickableLabel(const QString& text,
                        const KnobGuiPtr& knob,
+                       ViewIdx view,
                        QWidget* parent = 0);
 
     virtual ~KnobClickableLabel();

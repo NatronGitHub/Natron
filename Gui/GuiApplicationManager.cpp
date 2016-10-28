@@ -1086,21 +1086,25 @@ GuiApplicationManager::hideSplashScreen()
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
                                         const KnobIPtr& serialization,
-                                        int dimension)
+                                        DimSpec dimension,
+                                        ViewIdx view)
 {
     _imp->_knobsClipBoard->serialization = serialization;
     _imp->_knobsClipBoard->type = type;
     _imp->_knobsClipBoard->dimension = dimension;
+    _imp->_knobsClipBoard->view = view;
 }
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
                                         KnobIPtr *serialization,
-                                        int* dimension) const
+                                        DimSpec* dimension,
+                                        ViewIdx *view) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;
     *type = _imp->_knobsClipBoard->type;
     *dimension = _imp->_knobsClipBoard->dimension;
+    *view = _imp->_knobsClipBoard->view;
 }
 
 void

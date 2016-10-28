@@ -87,7 +87,14 @@ public:
 
 public Q_SLOTS:
 
+    void onKnobSignalReceivedInDirectConnection();
+
     void refreshKnobVisibility();
+
+
+Q_SIGNALS:
+
+    void concatenateSignal();
 
 private:
 

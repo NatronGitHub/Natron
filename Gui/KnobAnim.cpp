@@ -58,6 +58,7 @@ public:
     , parentItem(0)
     , knobGui()
     , knob()
+    , nRefreshRequestsPending(0)
     {
 
     }
@@ -78,6 +79,9 @@ public:
 
     KnobGuiWPtr knobGui;
     KnobIWPtr knob;
+
+    // To avoid refreshing knob visibility too much from knob signals
+    int nRefreshRequestsPending;
 };
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -131,7 +135,11 @@ KnobAnim::KnobAnim(const AnimationModulePtr& model,
     KnobIPtr knob = knobGui->getKnob();
     _imp->knob = knob;
     _imp->parentItem = parentItem;
-    QObject::connect( knobGui.get(), SIGNAL(mustRefreshAnimVisibility()), this, SLOT(refreshKnobVisibility()) );
+    
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(redrawGuiCurve(ViewSetSpec,DimSpec)), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(secretChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(enabledChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
+    QObject::connect( this, SIGNAL(concatenateSignal()), this, SLOT(refreshKnobVisibility()), Qt::QueuedConnection);
 
 
 }
@@ -266,7 +274,7 @@ static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& k
     }
     bool curveIsAnimated = curve->isAnimated();
     QTreeWidgetItem *dimItem = self->getTreeItem(dim, view);
-    dimItem->setHidden(!curveIsAnimated);
+    dimItem->setHidden(!curveIsAnimated && knob->isEnabled(dim, view));
     dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
     return curveIsAnimated;
 }
@@ -287,21 +295,22 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
             return;
         }
         bool showItem = false;
-        std::list<ViewIdx> views = knob->getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            bool hasDimVisible = false;
-            for (int i = 0; i < knob->getNDimensions(); ++i) {
-                hasDimVisible |= refreshDimViewVisibility(DimIdx(i), *it, knob, this);
-            }
-            // If there's a view item, refresh its visibility
-            PerViewItemMap::const_iterator foundViewItem = _imp->viewItems.find(*it);
-            if (foundViewItem != _imp->viewItems.end()) {
-                foundViewItem->second->setHidden(!hasDimVisible);
-            }
+        if (!knob->getIsSecret()) {
+            std::list<ViewIdx> views = knob->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                bool hasDimVisible = false;
+                for (int i = 0; i < knob->getNDimensions(); ++i) {
+                    hasDimVisible |= refreshDimViewVisibility(DimIdx(i), *it, knob, this);
+                }
+                // If there's a view item, refresh its visibility
+                PerViewItemMap::const_iterator foundViewItem = _imp->viewItems.find(*it);
+                if (foundViewItem != _imp->viewItems.end()) {
+                    foundViewItem->second->setHidden(!hasDimVisible);
+                }
 
-            showItem |= hasDimVisible;
+                showItem |= hasDimVisible;
+            }
         }
-
         _imp->rootItem->setHidden(!showItem);
         _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
     }
@@ -310,6 +319,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 void
 KnobAnim::refreshKnobVisibility()
 {
+    _imp->nRefreshRequestsPending = 0;
     refreshVisibilityConditional(true);
 }
 
@@ -441,6 +451,14 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
     
 }
 
+void
+KnobAnim::onKnobSignalReceivedInDirectConnection()
+{
+    ++_imp->nRefreshRequestsPending;
+    if (_imp->nRefreshRequestsPending == 1) {
+        Q_EMIT concatenateSignal();
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

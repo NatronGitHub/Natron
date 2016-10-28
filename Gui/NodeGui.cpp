@@ -74,7 +74,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"
@@ -408,7 +407,6 @@ NodeGui::ensurePanelCreated()
         _graph->getGui()->setNodeViewerInterface(thisShared);
     }
 
-    gui->addNodeGuiToCurveEditor(thisShared);
     gui->addNodeGuiToAnimationModuleEditor(thisShared);
 
     //Ensure panel for all children if multi-instance
@@ -959,7 +957,7 @@ NodeGui::refreshPositionEnd(double x,
     NodePtr node = getNode();
     if (node) {
         node->onNodeUIPositionChanged(x,y);
-        const NodesWList & outputs = node->getGuiOutputs();
+        const NodesWList & outputs = node->getOutputs();
 
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             NodePtr output = it->lock();
@@ -1067,7 +1065,7 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const NodesWList & outputs = getNode()->getGuiOutputs();
+                const NodesWList & outputs = getNode()->getOutputs();
                 for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     NodePtr output = it->lock();
                     if (!output) {
@@ -1175,7 +1173,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr > & nodeInputs = getNode()->getGuiInputs();
+    const std::vector<NodeWPtr > & nodeInputs = getNode()->getInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1375,7 +1373,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr >& inputs = node->getInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1670,7 +1668,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr > & inputs = getNode()->getGuiInputs();
+    const std::vector<NodeWPtr > & inputs = getNode()->getInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;
@@ -1802,7 +1800,7 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const NodesWList & outputs = node->getGuiOutputs();
+    const NodesWList & outputs = node->getOutputs();
     for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         NodePtr output = it->lock();
         if (output) {
@@ -1931,7 +1929,6 @@ NodeGui::deactivate(bool triggerRender)
     if (_graph) {
         _graph->moveToTrash( shared_from_this() );
         if ( _graph->getGui() ) {
-            _graph->getGui()->getCurveEditor()->removeNode( shared_from_this() );
             _graph->getGui()->getAnimationModuleEditor()->removeNode( shared_from_this() );
         }
     }
@@ -2153,7 +2150,7 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const NodesWList & outputs = getNode()->getGuiOutputs();
+        const NodesWList & outputs = getNode()->getOutputs();
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             NodePtr output = it->lock();
             if (!output) {
@@ -2268,34 +2265,44 @@ NodeGui::onKnobExpressionChanged(const KnobGui* knob)
 {
     KnobIPtr internalKnob = knob->getKnob();
 
+    // Find the knob
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        int totalLinks = 0;
-        int totalInvalid = 0;
-        bool isCurrentLink = false;
 
         for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
             KnobIPtr slave = it2->slave.lock();
-            if (slave == internalKnob) {
-                isCurrentLink = true;
+            if (slave != internalKnob) {
+                continue;
             }
+
+            // Ok found, now refresh the valid flag
+
             int ndims = slave->getNDimensions();
-            int invalid = 0;
-            for (int i = 0; i < ndims; ++i) {
-                if ( !slave->getExpression(i).empty() && !slave->isExpressionValid(i, 0) ) {
-                    ++invalid;
+            std::list<ViewIdx> views = slave->getViewsList();
+
+            int invalid = false;
+            for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
+                for (int i = 0; i < ndims; ++i) {
+                    if ( !slave->getExpression(DimIdx(i), *it3).empty() && !slave->isExpressionValid(DimIdx(i), *it3, 0) ) {
+                        invalid = true;
+                        break;
+                    }
                 }
             }
-            totalLinks += it2->dimensions.size();
-            totalInvalid += invalid;
-
             it2->linkInValid = invalid;
-        }
-        if (isCurrentLink) {
-            if (totalLinks > 0) {
-                it->second.arrow->setVisible(totalLinks > totalInvalid);
+
+            // Now cycle through all links against the node, if there are all invalids, hide the link
+            bool hasAtLeastOneLinkValid = false;
+            for (std::list<LinkedKnob>::iterator it3 = it->second.knobs.begin(); it3 != it->second.knobs.end(); ++it3) {
+                if (!it3->linkInValid) {
+                    hasAtLeastOneLinkValid = true;
+                    break;
+                }
             }
-            break;
+            it->second.arrow->setVisible(hasAtLeastOneLinkValid);
+
+            return;
         }
+
     }
 }
 
@@ -2342,7 +2349,7 @@ NodeGui::onKnobsLinksChanged()
 
     int nbVisibleLinks = 0;
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
-        if (it->master.lock()->getIsSecret() || it->slave.lock()->getIsSecret()) {
+        if (it->masterKnob.lock()->getIsSecret() || it->slaveKnob.lock()->getIsSecret()) {
             continue;
         }
 
@@ -2355,7 +2362,7 @@ NodeGui::onKnobsLinksChanged()
             std::list<LinkedKnob>::iterator found = foundGuiLink->second.knobs.end();
 
             for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                if ( ( it2->slave.lock() == it->slave.lock() ) && ( it2->master.lock() == it->master.lock() ) ) {
+                if ( ( it2->slave.lock() == it->slaveKnob.lock() ) && ( it2->slave.lock() == it->masterKnob.lock() ) ) {
                     found = it2;
                     break;
                 }
@@ -2363,18 +2370,15 @@ NodeGui::onKnobsLinksChanged()
             if ( found == foundGuiLink->second.knobs.end() ) {
                 ///There's no link for this knob, add info to the tooltip of the link arrow
                 LinkedKnob k;
-                k.slave = it->slave;
-                k.master = it->master;
-                k.dimensions.insert(it->dimension);
-                k.linkInValid = 0;
+                k.slave = it->slaveKnob;
+                k.master = it->masterKnob;
+                k.linkInValid = false;
                 foundGuiLink->second.knobs.push_back(k);
                 QString fullToolTip;
                 for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
                     QString tt = makeLinkString( masterNode, it2->master.lock(), node, it2->slave.lock() );
                     fullToolTip.append(tt);
                 }
-            } else {
-                found->dimensions.insert(it->dimension);
             }
         } else {
             ///There's no link to the master node yet
@@ -2388,7 +2392,7 @@ NodeGui::onKnobsLinksChanged()
                 arrow->setColor( QColor(143, 201, 103) );
                 arrow->setArrowHeadColor( QColor(200, 255, 200) );
 
-                QString tt = makeLinkString( masterNode, it->master.lock(), node, it->slave.lock() );
+                QString tt = makeLinkString( masterNode, it->masterKnob.lock(), node, it->slaveKnob.lock() );
                 arrow->setToolTip(tt);
                 if ( !getDagGui()->areKnobLinksVisible() ) {
                     arrow->setVisible(false);
@@ -2396,10 +2400,9 @@ NodeGui::onKnobsLinksChanged()
                 LinkedDim& guilink = _knobsLinks[it->masterNode];
                 guilink.arrow = arrow;
                 LinkedKnob k;
-                k.slave = it->slave;
-                k.master = it->master;
-                k.dimensions.insert(it->dimension);
-                k.linkInValid = 0;
+                k.slave = it->slaveKnob;
+                k.master = it->masterKnob;
+                k.linkInValid = false;
                 guilink.knobs.push_back(k);
             }
         }
@@ -2420,7 +2423,7 @@ void
 NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
-        if ( getNode()->getGuiOutputs().empty() ) {
+        if ( getNode()->getOutputs().empty() ) {
             if ( !_outputEdge->isVisible() ) {
                 _outputEdge->setActive(true);
                 _outputEdge->show();
@@ -2458,10 +2461,7 @@ NodeGui::destroyGui()
     guiObj->removeNodeViewerInterface(thisShared, true);
 
 
-    //Remove from curve editor
-    guiObj->getCurveEditor()->removeNode( shared_from_this() );
-
-    //Remove from dope sheet
+    //Remove from animation module
     guiObj->getAnimationModuleEditor()->removeNode( shared_from_this() );
 
 
@@ -2719,7 +2719,7 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const NodesWList & outputs = getNode()->getGuiOutputs();
+    const NodesWList & outputs = getNode()->getOutputs();
     for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         NodePtr output = it->lock();
         if (output) {
@@ -3525,13 +3525,7 @@ NodeGui::refreshAnimationIcon()
     bool hasAnimation = false;
     const KnobsVec& knobs = getNode()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end() ;++it) {
-        int nDims = (*it)->getNDimensions();
-        for (int i = 0; i < nDims; ++i) {
-            if ((*it)->getKeyFramesCount(ViewIdx(0), i) > 0) {
-                hasAnimation = true;
-                break;
-            }
-        }
+        hasAnimation |= (*it)->hasAnimation();
         if (hasAnimation) {
             break;
         }
@@ -3780,7 +3774,7 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
             dialog->move( QCursor::pos() );
             dialog->exec();
             // Notify dialog closed
-            group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+            group->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
         }
         _activeNodeCustomModalDialog.reset();
     } else {

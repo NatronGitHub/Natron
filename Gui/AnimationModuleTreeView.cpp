@@ -307,7 +307,6 @@ public:
     : publicInterface(publicInterface)
     , model()
     , gui(0)
-    , _canResizeOtherWidget(true)
     {}
 
 
@@ -336,7 +335,6 @@ public:
     AnimationModuleTreeView *publicInterface;
     AnimationModuleWPtr model;
     Gui *gui;
-    bool _canResizeOtherWidget;
 };
 
 
@@ -552,10 +550,6 @@ AnimationModuleTreeView::getHeightForItemAndChildren(QTreeWidgetItem *item) cons
     return (bottom - top) + 1;
 }
 
-static void addTableItemKeyframesRecursive()
-{
-    
-}
 
 AnimationModuleTreeView::AnimationModuleTreeView(const AnimationModulePtr& model,
                                                  Gui *gui,
@@ -598,22 +592,6 @@ AnimationModuleTreeView::getModel() const
     return _imp->model.lock();
 }
 
-void
-AnimationModuleTreeView::setCanResizeOtherWidget(bool canResize)
-{
-    _imp->_canResizeOtherWidget = canResize;
-}
-
-
-void
-AnimationModuleTreeView::resizeEvent(QResizeEvent* e)
-{
-    QTreeWidget::resizeEvent(e);
-
-    if ( _imp->_canResizeOtherWidget && _imp->gui->isTripleSyncEnabled() ) {
-        _imp->gui->setCurveEditorTreeWidth( e->size().width() );
-    }
-}
 
 static bool isItemVisibleRecursiveInternal(QTreeWidgetItem* item, bool checkExpand)
 {

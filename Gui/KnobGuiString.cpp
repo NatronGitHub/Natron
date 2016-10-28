@@ -676,7 +676,7 @@ KnobGuiString::italicChanged(bool toggled)
 
 
 void
-KnobGuiString::updateGUI(int /*dimension*/)
+KnobGuiString::updateGUI(DimSpec /*dimension*/, ViewSetSpec view)
 {
     KnobStringPtr knob = _knob.lock();
     std::string value = knob->getValue(0);

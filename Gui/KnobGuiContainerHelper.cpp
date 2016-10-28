@@ -1120,14 +1120,14 @@ KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         KnobPagePtr page = it->second->pageKnob.lock();
         if (it->second == curPage) {
-            if ( !page->isEnabled(0) ) {
-                page->setEnabled(0, true);
-                page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+            if ( !page->isEnabled() ) {
+                page->setEnabled(true);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         } else {
-            if ( page->isEnabled(0) ) {
-                page->setEnabled(0, false);
-                page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+            if ( page->isEnabled() ) {
+                page->setEnabled(false);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         }
     }

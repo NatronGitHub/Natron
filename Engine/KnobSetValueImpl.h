@@ -114,27 +114,31 @@ Knob<T>::setValue(const T & v,
     bool hasChanged = forceHandlerEvenIfNoChange;
 
     int nDims = getNDimensions();
-    std::list<ViewIdx> availableView = getViewsList();
 
     {
         QMutexLocker l(&_valueMutex);
         if (dimension.isAll()) {
-            for (int i = 0; i < nDims; ++i) {
-                if (view.isAll()) {
+
+            if (view.isAll()) {
+                std::list<ViewIdx> availableView = getViewsList();
+                for (int i = 0; i < nDims; ++i) {
                     for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
                         if (checkIfValueChanged(v, DimIdx(i), *it)) {
                             hasChanged = true;
                             _values[i][*it] = v;
                         }
                     }
-                } else {
-                    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                }
+            } else {
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                for (int i = 0; i < nDims; ++i) {
                     if (checkIfValueChanged(v, DimIdx(i), view_i)) {
                         hasChanged = true;
                         _values[i][view_i] = v;
                     }
                 }
             }
+
         } else {
             // Check for a valid dimension
             if ( (dimension < 0) || ( dimension >= (int)_values.size() ) ) {
@@ -142,6 +146,7 @@ Knob<T>::setValue(const T & v,
             }
 
             if (view.isAll()) {
+                std::list<ViewIdx> availableView = getViewsList();
                 for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
                     if (checkIfValueChanged(v, DimIdx(dimension), *it)) {
                         hasChanged = true;
@@ -314,21 +319,27 @@ Knob<T>::setValueAtTime(double time,
     ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
     int nDims = getNDimensions();
-    std::list<ViewIdx> availableView = getViewsList();
 
     if (dimension.isAll()) {
-        for (int i = 0; i < nDims; ++i) {
-            if (view.isAll()) {
+        if (view.isAll()) {
+            std::list<ViewIdx> availableView = getViewsList();
+            for (int i = 0; i < nDims; ++i) {
+
                 for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
                     setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
                 }
-            } else {
+            }
+        } else {
+            for (int i = 0; i < nDims; ++i) {
+
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
                 setValueOnCurveInternal(time, v, DimIdx(i), view_i, newKey, &ret);
             }
         }
+
     } else {
         if (view.isAll()) {
+            std::list<ViewIdx> availableView = getViewsList();
             for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
                 setValueOnCurveInternal(time, v, DimIdx(dimension), *it, newKey, &ret);
             }

@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidgetDialogs.h"
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/Gui.h"

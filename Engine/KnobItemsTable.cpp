@@ -1740,6 +1740,9 @@ KnobTableItem::splitView(ViewIdx view)
 void
 KnobTableItem::unSplitView(ViewIdx view)
 {
+    if (view == 0) {
+        return;
+    }
     {
         QMutexLocker k(&_imp->lock);
         PerViewAnimationCurveMap::iterator foundView = _imp->animationCurves.find(view);

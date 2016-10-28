@@ -2834,7 +2834,7 @@ RotoPaint::refreshRotoPaintTree()
     // Default to noop node as bottom of the tree
     NodePtr premultNode = rotoPaintEffect->getPremultNode();
     NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
-    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode(false);
+    NodePtr treeOutputNode = rotoPaintEffect->getOutputNode();
     if (!premultNode || !noOpNode || !treeOutputNode) {
         return;
     }

@@ -33,6 +33,8 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <QCoreApplication>
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
@@ -45,6 +47,10 @@ struct HostOverlayPrivate;
 
 class DefaultInteractI
 {
+
+
+    Q_DECLARE_TR_FUNCTIONS(HostOverlay)
+
 protected:
 
     HostOverlay* _overlay;
@@ -138,6 +144,7 @@ protected:
 class HostOverlay
     : public NatronOverlayInteractSupport
 {
+        Q_DECLARE_TR_FUNCTIONS(HostOverlay)
 public:
 
     HostOverlay(const NodeGuiPtr& node);

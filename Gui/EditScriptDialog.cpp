@@ -69,7 +69,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"
@@ -214,8 +213,8 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onAcceptedPressed()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(onRejectedPressed()) );
 
     if ( !initialScript.isEmpty() ) {
         compileAndSetResult(initialScript);
@@ -344,9 +343,9 @@ void
 EditScriptDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        accept();
+        Q_EMIT dialogFinished(true);
     } else if (e->key() == Qt::Key_Escape) {
-        reject();
+        Q_EMIT dialogFinished(false);
     } else {
         QDialog::keyPressEvent(e);
     }

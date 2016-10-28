@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/AppManager.h" // appPTR
 
+#include "Gui/AnimationModuleBase.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/LineEdit.h" // LineEdit
 #include "Gui/SpinBox.h" // SpinBox
@@ -49,6 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h" // SequenceFileDialog
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h" // Label
+#include "Gui/AnimationModuleUndoRedo.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -320,7 +322,7 @@ ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr >* columns) c
 struct EditKeyFrameDialogPrivate
 {
     CurveWidget* curveWidget;
-    KeyPtr key;
+    AnimItemDimViewKeyFrame key;
     double originalX, originalY;
     QVBoxLayout* mainLayout;
     QWidget* boxContainer;
@@ -334,11 +336,11 @@ struct EditKeyFrameDialogPrivate
 
     EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,
                               CurveWidget* curveWidget,
-                              const KeyPtr& key)
+                              const AnimItemDimViewKeyFrame& key)
         : curveWidget(curveWidget)
         , key(key)
-        , originalX( key->key.getTime() )
-        , originalY( key->key.getValue() )
+        , originalX( key.key.key.getTime() )
+        , originalY( key.key.key.getValue() )
         , mainLayout(0)
         , boxContainer(0)
         , boxLayout(0)
@@ -350,16 +352,16 @@ struct EditKeyFrameDialogPrivate
         , mode(mode)
     {
         if (mode == EditKeyFrameDialog::eEditModeLeftDerivative) {
-            originalX = key->key.getLeftDerivative();
+            originalX = key.key.key.getLeftDerivative();
         } else if (mode == EditKeyFrameDialog::eEditModeRightDerivative) {
-            originalX = key->key.getRightDerivative();
+            originalX = key.key.key.getRightDerivative();
         }
     }
 };
 
 EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
                                        CurveWidget* curveWidget,
-                                       const KeyPtr& key,
+                                       const AnimItemDimViewKeyFrame& key,
                                        QWidget* parent)
     : QDialog(parent)
     , _imp( new EditKeyFrameDialogPrivate(mode, curveWidget, key) )
@@ -408,8 +410,10 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
         _imp->yLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
 
-        bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers();
-        bool clampedToBool = key->curve->areKeyFramesValuesClampedToBooleans();
+        CurveGuiPtr curve = key.id.item->getCurveGui(key.id.dim, key.id.view);
+        assert(curve);
+        bool clampedToInt = curve->areKeyFramesValuesClampedToIntegers();
+        bool clampedToBool = curve->areKeyFramesValuesClampedToBooleans();
         SpinBox::SpinBoxTypeEnum yType = (clampedToBool || clampedToInt) ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
 
         _imp->ySpinbox = new SpinBox(_imp->boxContainer, yType);
@@ -418,7 +422,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
             _imp->ySpinbox->setMinimum(0);
             _imp->ySpinbox->setMaximum(1);
         } else {
-            Curve::YRange range = key->curve->getCurveYRange();
+            Curve::YRange range = curve->getCurveYRange();
             _imp->ySpinbox->setMinimum(range.min);
             _imp->ySpinbox->setMaximum(range.max);
         }
@@ -437,21 +441,26 @@ EditKeyFrameDialog::~EditKeyFrameDialog()
 }
 
 void
-EditKeyFrameDialog::moveKeyTo(double newX,
-                              double newY)
+EditKeyFrameDialog::moveKeyTo(double newX, double newY)
 {
-    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
-    std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
 
-    keys.resize(1);
-    keys[0].key = _imp->key;
-    keys[0].prevIsSelected = false;
-    keys[0].nextIsSelected = false;
-    double curY = _imp->key->key.getValue();
-    double curX = _imp->key->key.getTime();
+    CurvePtr curve = _imp->key.id.item->getCurve(_imp->key.id.dim, _imp->key.id.view);
+    if (!curve) {
+        return;
+    }
+
+    AnimItemDimViewKeyFramesMap keysToMove;
+    KeyFrameWithStringSet& keys = keysToMove[_imp->key.id];
+    KeyFrameWithString k;
+    k = _imp->key.key;
+    keys.insert(k);
+
+    double curY = k.key.getValue();
+    double curX = k.key.getTime();
 
     if (_imp->mode == eEditModeKeyframePosition) {
-        ///Check that another keyframe doesn't have this time
+        // Check that another keyframe doesn't have this time
 
         int expectedEqualKeys = 0;
         if (newX == curX) {
@@ -459,7 +468,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,
         }
 
         int curEqualKeys = 0;
-        KeyFrameSet set = _imp->key->curve->getKeyFrames();
+        KeyFrameSet set = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);
@@ -469,9 +478,12 @@ EditKeyFrameDialog::moveKeyTo(double newX,
                 ++curEqualKeys;
             }
         }
+
+        std::vector<NodeAnimPtr > nodesToMove;
+        std::vector<TableItemAnimPtr> tableItemsToMove;
+        model->pushUndoCommand( new WarpKeysCommand(keysToMove, model, nodesToMove, tableItemsToMove, newX - curX, newY - curY) );
     }
 
-    _imp->curveWidget->pushUndoCommand( new MoveKeysCommand(_imp->curveWidget, keysToMove, newX - curX, newY - curY, true) );
 }
 
 void
@@ -484,14 +496,15 @@ EditKeyFrameDialog::moveDerivativeTo(double d)
     } else {
         deriv = MoveTangentCommand::eSelectedTangentRight;
     }
-    _imp->curveWidget->pushUndoCommand( new MoveTangentCommand(_imp->curveWidget, deriv, _imp->key, d) );
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
+    model->pushUndoCommand( new MoveTangentCommand(_imp->key.id.item->getModel(), deriv, _imp->key.id.item, _imp->key.id.dim, _imp->key.id.view, _imp->key.key.key, d) );
 }
 
 void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
     if (_imp->mode == eEditModeKeyframePosition) {
-        moveKeyTo( d, _imp->key->key.getValue() );
+        moveKeyTo( d, _imp->key.key.key.getValue() );
     } else {
         moveDerivativeTo(d);
     }
@@ -500,7 +513,7 @@ EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 void
 EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
 {
-    moveKeyTo(_imp->key->key.getTime(), d);
+    moveKeyTo(_imp->key.key.key.getTime(), d);
 }
 
 void

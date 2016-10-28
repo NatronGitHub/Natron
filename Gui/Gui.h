@@ -211,7 +211,7 @@ public:
     static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
-    void setCurveEditorOnTop();
+    void setAnimationEditorOnTop();
 
     ///Make the layout of the application as it is the first time Natron is opened
     void createDefaultLayout1();

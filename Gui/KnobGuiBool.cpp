@@ -235,7 +235,7 @@ KnobGuiBool::removeSpecificGui()
 }
 
 void
-KnobGuiBool::updateGUI(int /*dimension*/)
+KnobGuiBool::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     bool checked = _knob.lock()->getValue(0);
     if (_checkBox->isChecked() == checked) {

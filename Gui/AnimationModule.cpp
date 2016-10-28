@@ -122,7 +122,8 @@ public:
 AnimationModule::AnimationModule(Gui *gui,
                                  AnimationModuleEditor* editor,
                                  const TimeLinePtr &timeline)
-: _imp( new AnimationModulePrivate(editor, this) )
+: AnimationModuleBase(gui)
+, _imp( new AnimationModulePrivate(editor, this) )
 {
     _imp->timeline = timeline;
 

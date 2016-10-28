@@ -36,9 +36,17 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/Plugin.h"
 #include "Engine/Node.h"
+#include "Engine/StringAnimationManager.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/ActionShortcuts.h"
+#include "Gui/AnimationModuleUndoRedo.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleTreeView.h"
+#include "Gui/AnimationModule.h"
+#include "Gui/KnobAnim.h"
+#include "Gui/NodeAnim.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
@@ -95,7 +103,10 @@ KnobGui::onUnlinkActionTriggered()
     if (!action) {
         return;
     }
-    int dim = action->data().toInt();
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(action, &view, &dimension);
+
     KnobIPtr thisKnob = getKnob();
     int dims = thisKnob->getNDimensions();
     KnobIPtr aliasMaster = thisKnob->getAliasMaster();
@@ -104,10 +115,8 @@ KnobGui::onUnlinkActionTriggered()
     } else {
         thisKnob->beginChanges();
         for (int i = 0; i < dims; ++i) {
-            if ( (dim == -1) || (i == dim) ) {
-                std::pair<int, KnobIPtr > other = thisKnob->getMaster(i);
-                thisKnob->unSlave(i);
-                onKnobSlavedChanged(i, false);
+            if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
+                thisKnob->unSlave(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
             }
         }
         thisKnob->endChanges();
@@ -120,13 +129,16 @@ KnobGui::onSetExprActionTriggered()
 {
     QAction* action = qobject_cast<QAction*>( sender() );
 
-    assert(action);
+    if (!action) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(action, &view, &dimension);
 
-    int dim = action->data().toInt();
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dim, shared_from_this(), _imp->field);
-    dialog->create(QString::fromUtf8( getKnob()->getExpression(dim == -1 ? 0 : dim).c_str() ), true);
-    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditExprDialogFinished()) );
-    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditExprDialogFinished()) );
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimension, view, shared_from_this(), _imp->field);
+    dialog->create(QString::fromUtf8( getKnob()->getExpression(dimension.isAll() ? DimIdx(0) : DimIdx(dimension), view).c_str() ), true);
+    QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditExprDialogFinished(bool)) );
 
     dialog->show();
 }
@@ -135,37 +147,35 @@ void
 KnobGui::onClearExprActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
-    assert(act);
-    int dim = act->data().toInt();
-    pushUndoCommand( new SetExpressionCommand(getKnob(), false, dim, "") );
+    if (!act) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    pushUndoCommand( new SetExpressionCommand(getKnob(), false, dimension, view, "") );
 }
 
 void
-KnobGui::onEditExprDialogFinished()
+KnobGui::onEditExprDialogFinished(bool accepted)
 {
     EditExpressionDialog* dialog = dynamic_cast<EditExpressionDialog*>( sender() );
 
     if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
 
-        switch (ret) {
-        case QDialog::Accepted: {
+        if (accepted) {
+
             bool hasRetVar;
             QString expr = dialog->getExpression(&hasRetVar);
             std::string stdExpr = expr.toStdString();
-            int dim = dialog->getNDimensions();
-            std::string existingExpr = getKnob()->getExpression(dim);
-            if (existingExpr != stdExpr) {
-                pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, stdExpr) );
-            }
-            break;
-        }
-        case QDialog::Rejected:
-            break;
+            DimSpec dim = dialog->getDimension();
+            ViewIdx view = dialog->getView();
+
+            pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, view, stdExpr) );
+
         }
 
-        dialog->deleteLater();
+        dialog->close();
     }
 }
 
@@ -254,160 +264,328 @@ KnobGui::onShowInCurveEditorActionTriggered()
     KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
-    getGui()->setCurveEditorOnTop();
-    std::vector<CurvePtr > curves;
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        CurvePtr c = getCurve(ViewIdx(0), i);
-        if ( c->isAnimated() ) {
-            curves.push_back(c);
+    getGui()->setAnimationEditorOnTop();
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+
+    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+    if (isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == knob) {
+            knobAnim = *it;
+            break;
         }
     }
+
+    if (!knobAnim) {
+        return;
+    }
+
+
+    std::vector<CurveGuiPtr> curves;
+    int nDims = knob->getNDimensions();
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+            CurveGuiPtr curve = knobAnim->getCurveGui(DimIdx(i), *it);
+            if ( curve->getInternalCurve()->isAnimated() ) {
+                curves.push_back(curve);
+            }
+        }
+    }
+
     if ( !curves.empty() ) {
-        getGui()->getCurveEditor()->centerOn(curves);
+        AnimItemDimViewKeyFramesMap keys;
+        std::vector<TableItemAnimPtr> tableItems;
+        std::vector<NodeAnimPtr> nodes;
+        model->getSelectionModel()->makeSelection(keys, tableItems, nodes, (AnimationModuleSelectionModel::SelectionTypeAdd | AnimationModuleSelectionModel::SelectionTypeClear));
+        getGui()->getAnimationModuleEditor()->getCurveWidget()->centerOnCurves(curves, false);
     }
 }
 
 void
 KnobGui::onRemoveAnimationActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>( sender() );
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
 
-    assert(action);
-    int dim = action->data().toInt();
-    KnobIPtr knob = getKnob();
-    std::map<CurveGuiPtr, std::vector<KeyFrame > > toRemove;
-    KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        if ( (dim == -1) || (dim == i) ) {
-            std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
-                std::vector<KeyFrame > vect;
-                for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                    vect.push_back(*it2);
-                }
-                toRemove.insert( std::make_pair(*it, vect) );
-            }
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    if (isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == internalKnob) {
+            knobAnim = *it;
+            break;
         }
     }
-    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                           toRemove) );
-    //refresh the gui so it doesn't indicate the parameter is animated anymore
-    updateGUI(dim);
+
+    if (!knobAnim) {
+        return;
+    }
+
+
+    int nDims = internalKnob->getNDimensions();
+
+    AnimItemDimViewKeyFramesMap keysToRemove;
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension == i || dimension.isAll()) {
+            AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+            KeyFrameWithStringSet& keys = keysToRemove[id];
+            knobAnim->getKeyframes(DimIdx(i), view, &keys);
+        }
+    }
+
+    pushUndoCommand( new RemoveKeysCommand(keysToRemove, model) );
+   
 }
 
 void
-KnobGui::setInterpolationForDimensions(QAction* action,
-                                       KeyframeTypeEnum interp)
+KnobGui::onInterpolationActionTriggered()
 {
+    QAction* action = qobject_cast<QAction*>(sender());
     if (!action) {
         return;
     }
-    int dimension = action->data().toInt();
-    KnobIPtr knob = getKnob();
-    knob->beginChanges();
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        if ( (dimension == -1) || (dimension == i) ) {
-            CurvePtr curve = knob->getCurve(ViewSpec::current(), i);
-            if (!curve) {
-                continue;
-            }
-            KeyFrameSet keysSet = curve->getKeyFrames_mt_safe();
-            std::list<double> keysList;
-            for (KeyFrameSet::iterator it = keysSet.begin(); it!=keysSet.end(); ++it) {
-                keysList.push_back(it->getTime());
-            }
-            knob->setInterpolationAtTimes(eCurveChangeReasonInternal, ViewSpec::all(), i, keysList, interp, 0);
+    QList<QVariant> actionData = action->data().toList();
+    if (actionData.size() != 3) {
+        return;
+    }
+    QList<QVariant>::iterator it = actionData.begin();
+    DimSpec dimension = DimSpec(it->toInt());
+    ++it;
+    ViewIdx view = ViewIdx(it->toInt());
+    ++it;
+    KeyframeTypeEnum interp = (KeyframeTypeEnum)it->toInt();
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    if (isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == internalKnob) {
+            knobAnim = *it;
+            break;
         }
     }
-    knob->endChanges();
+
+    AnimItemDimViewKeyFramesMap keysToSet;
+
+    int nDims = internalKnob->getNDimensions();
+
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() ||  dimension == i) {
+            AnimItemDimViewIndexID id(knobAnim, view,  DimIdx(i));
+            KeyFrameWithStringSet& keys = keysToSet[id];
+            knobAnim->getKeyframes(DimIdx(i), view, &keys);
+        }
+    }
+
+    pushUndoCommand(new SetKeysInterpolationCommand(keysToSet, model, interp));
 }
 
-void
-KnobGui::onConstantInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeConstant);
-}
-
-void
-KnobGui::onLinearInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeLinear);
-}
-
-void
-KnobGui::onSmoothInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeSmooth);
-}
-
-void
-KnobGui::onCatmullromInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeCatmullRom);
-}
-
-void
-KnobGui::onCubicInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeCubic);
-}
-
-void
-KnobGui::onHorizontalInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeHorizontal);
-}
 
 
 void
 KnobGui::onSetKeyActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>( sender() );
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
 
-    assert(action);
-    int dim = action->data().toInt();
-    KnobIPtr knob = getKnob();
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    if (isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
 
-    assert( knob->getHolder()->getApp() );
-    //get the current time on the global timeline
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    AddKeysCommand::KeysToAddList toAdd;
-    KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        if ( (dim == -1) || (i == dim) ) {
-            std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                AddKeysCommand::KeyToAdd keyToAdd;
-                KeyFrame kf;
-                kf.setTime(time);
-                KnobIntBasePtr isInt = toKnobIntBase(knob);
-                KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-                AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-                KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-
-                if (isInt) {
-                    kf.setValue( isInt->getValue(i) );
-                } else if (isBool) {
-                    kf.setValue( isBool->getValue(i) );
-                } else if (isDouble) {
-                    kf.setValue( isDouble->getValue(i) );
-                } else if (isString) {
-                    std::string v = isString->getValue(i);
-                    double dv;
-                    isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
-                    kf.setValue(dv);
-                }
-
-                keyToAdd.keyframes.push_back(kf);
-                keyToAdd.curveUI = *it;
-                keyToAdd.knobUI = thisShared;
-                keyToAdd.dimension = i;
-                toAdd.push_back(keyToAdd);
-            }
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == internalKnob) {
+            knobAnim = *it;
+            break;
         }
     }
-    pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), toAdd) );
+
+    if (!knobAnim) {
+        return;
+    }
+
+
+    KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
+    AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
+
+    int nDims = internalKnob->getNDimensions();
+
+    double time = internalKnob->getCurrentTime();
+    AnimItemDimViewKeyFramesMap keysToAdd;
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension == i || dimension.isAll()) {
+            AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+            KeyFrameWithStringSet& keys = keysToAdd[id];
+
+            KeyFrameWithString kf;
+            kf.key.setTime(time);
+            if (isInt) {
+                kf.key.setValue( isInt->getValue(DimIdx(i), view) );
+            } else if (isBool) {
+                kf.key.setValue( isBool->getValue(DimIdx(i), view) );
+            } else if (isDouble) {
+                kf.key.setValue( isDouble->getValue(DimIdx(i), view) );
+            } else if (isString) {
+                std::string v = isString->getValue(DimIdx(i), view);
+                double dv;
+                isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
+                kf.string = v;
+                kf.key.setValue(dv);
+            }
+            keys.insert(kf);
+
+        }
+    }
+    if (!keysToAdd.empty()) {
+        pushUndoCommand( new AddKeysCommand(keysToAdd, model, false/*replaceAnimation*/));
+    }
+}
+
+void
+KnobGui::onRemoveKeyActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    if (isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == internalKnob) {
+            knobAnim = *it;
+            break;
+        }
+    }
+
+    if (!knobAnim) {
+        return;
+    }
+
+
+    AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+
+
+    int nDims = internalKnob->getNDimensions();
+
+    double time = internalKnob->getCurrentTime();
+    AnimItemDimViewKeyFramesMap keysToRemove;
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension == i || dimension.isAll()) {
+
+            CurvePtr curve = knobAnim->getCurve(DimIdx(i), view);
+            if (!curve) {
+                continue;
+            }
+
+            KeyFrameWithString kf;
+            if (curve->getKeyFrameWithTime(time, &kf.key)) {
+                if (isString) {
+                    isString->getStringAnimation()->stringFromInterpolatedIndex(time, view, &kf.string);
+                }
+
+                AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+                KeyFrameWithStringSet& keys = keysToRemove[id];
+                keys.insert(kf);
+            }
+
+        }
+    }
+    if (!keysToRemove.empty()) {
+        pushUndoCommand( new RemoveKeysCommand(keysToRemove, model));
+    }
 }
 
 QString
@@ -417,7 +595,7 @@ KnobGui::getScriptNameHtml() const
 }
 
 QString
-KnobGui::toolTip(QWidget* w) const
+KnobGui::toolTip(QWidget* w, ViewIdx view) const
 {
     KnobIPtr knob = getKnob();
     KnobChoicePtr isChoice = toKnobChoice(knob);
@@ -444,7 +622,7 @@ KnobGui::toolTip(QWidget* w) const
     std::vector<std::string> expressions;
     bool exprAllSame = true;
     for (int i = 0; i < knob->getNDimensions(); ++i) {
-        expressions.push_back( knob->getExpression(i) );
+        expressions.push_back( knob->getExpression(DimIdx(i), view) );
         if ( (i > 0) && (expressions[i] != expressions[0]) ) {
             exprAllSame = false;
         }
@@ -461,7 +639,7 @@ KnobGui::toolTip(QWidget* w) const
         }
     } else {
         for (int i = 0; i < knob->getNDimensions(); ++i) {
-            std::string dimName = knob->getDimensionName(i);
+            std::string dimName = knob->getDimensionName(DimIdx(i));
             QString toAppend;
             if (isMarkdown) {
                 toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
@@ -566,39 +744,7 @@ KnobGui::hasToolTip() const
     return true; //!getKnob()->getHintToolTip().empty();
 }
 
-void
-KnobGui::onRemoveKeyActionTriggered()
-{
-    QAction* action = qobject_cast<QAction*>( sender() );
 
-    assert(action);
-    int dim = action->data().toInt();
-    KnobIPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-    //get the current time on the global timeline
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    std::map<CurveGuiPtr, std::vector<KeyFrame > > toRemove;
-    KnobGuiPtr thisShared = shared_from_this();
-
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        if ( (dim == -1) || (i == dim) ) {
-            std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<CurveGuiPtr >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                KeyFrame kf;
-                bool foundKey = knob->getCurve(ViewIdx(0), i)->getKeyFrameWithTime(time, &kf);
-
-                if (foundKey) {
-                    std::vector<KeyFrame > vect;
-                    vect.push_back(kf);
-                    toRemove.insert( std::make_pair(*it, vect) );
-                }
-            }
-        }
-    }
-    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                           toRemove) );
-}
 
 int
 KnobGui::getKnobsCountOnSameLine() const

@@ -312,6 +312,8 @@ public:
 class TransformInteract
     : public DefaultInteractI
 {
+
+
     enum DrawStateEnum
     {
         eInActive = 0, //< nothing happening
@@ -454,8 +456,8 @@ public:
         KnobDoublePtr knob = _translate.lock();
 
         assert(knob);
-        *tx = knob->getValueAtTime(time, 0);
-        *ty = knob->getValueAtTime(time, 1);
+        *tx = knob->getValueAtTime(time, DimIdx(0));
+        *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
     void getCenter(double time,
@@ -465,8 +467,8 @@ public:
         KnobDoublePtr knob = _center.lock();
 
         assert(knob);
-        *cx = knob->getValueAtTime(time, 0);
-        *cy = knob->getValueAtTime(time, 1);
+        *cx = knob->getValueAtTime(time, DimIdx(0));
+        *cy = knob->getValueAtTime(time, DimIdx(1));
     }
 
     void getScale(double time,
@@ -476,8 +478,8 @@ public:
         KnobDoublePtr knob = _scale.lock();
 
         assert(knob);
-        *sx = knob->getValueAtTime(time, 0);
-        *sy = knob->getValueAtTime(time, 1);
+        *sx = knob->getValueAtTime(time, DimIdx(0));
+        *sy = knob->getValueAtTime(time, DimIdx(1));
     }
 
     void getRotate(double time,
@@ -486,7 +488,7 @@ public:
         KnobDoublePtr knob = _rotate.lock();
 
         assert(knob);
-        *rot = knob->getValueAtTime(time, 0);
+        *rot = knob->getValueAtTime(time, DimIdx(0));
     }
 
     void getSkewX(double time,
@@ -495,7 +497,7 @@ public:
         KnobDoublePtr knob = _skewX.lock();
 
         assert(knob);
-        *x = knob->getValueAtTime(time, 0);
+        *x = knob->getValueAtTime(time, DimIdx(0));
     }
 
     void getSkewY(double time,
@@ -504,7 +506,7 @@ public:
         KnobDoublePtr knob = _skewY.lock();
 
         assert(knob);
-        *y = knob->getValueAtTime(time, 0);
+        *y = knob->getValueAtTime(time, DimIdx(0));
     }
 
     void getSkewOrder(double time,
@@ -513,7 +515,7 @@ public:
         KnobChoicePtr knob = _skewOrder.lock();
 
         assert(knob);
-        *order = knob->getValueAtTime(time, 0);
+        *order = knob->getValueAtTime(time, DimIdx(0));
     }
 
     void getScaleUniform(double time,
@@ -522,7 +524,7 @@ public:
         KnobBoolPtr knob = _scaleUniform.lock();
 
         assert(knob);
-        *uniform = knob->getValueAtTime(time, 0);
+        *uniform = knob->getValueAtTime(time, DimIdx(0));
     }
 
     bool getInvert(double time) const
@@ -698,8 +700,8 @@ public:
         KnobDoublePtr knob = _from[index].lock();
 
         assert(knob);
-        *tx = knob->getValueAtTime(time, 0);
-        *ty = knob->getValueAtTime(time, 1);
+        *tx = knob->getValueAtTime(time, DimIdx(0));
+        *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
     void getTo(double time,
@@ -710,8 +712,8 @@ public:
         KnobDoublePtr knob = _to[index].lock();
 
         assert(knob);
-        *tx = knob->getValueAtTime(time, 0);
-        *ty = knob->getValueAtTime(time, 1);
+        *tx = knob->getValueAtTime(time, DimIdx(0));
+        *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
     bool getEnabled(double time,
@@ -946,9 +948,9 @@ PositionInteract::draw(double time,
     } else {
         double p[2];
         for (int i = 0; i < 2; ++i) {
-            p[i] = knob->getValueAtTime(time, i);
-            if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                p[i] = knob->denormalize(i, time, p[i]);
+            p[i] = knob->getValueAtTime(time, DimIdx(i));
+            if (knob->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
+                p[i] = knob->denormalize(DimIdx(i), time, p[i]);
             }
         }
         pos.setX(p[0]);
@@ -1609,7 +1611,7 @@ HostOverlay::draw(double time,
 bool
 PositionInteract::penMotion(double time,
                             const RenderScale& /*renderScale*/,
-                            ViewIdx /*view*/,
+                            ViewIdx view,
                             const OfxPointD& pscale,
                             const QPointF& lastPenPos,
                             const QPointF &penPos,
@@ -1630,9 +1632,9 @@ PositionInteract::penMotion(double time,
     } else {
         double p[2];
         for (int i = 0; i < 2; ++i) {
-            p[i] = knob->getValueAtTime(time, i);
-            if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                p[i] = knob->denormalize(i, time, p[i]);
+            p[i] = knob->getValueAtTime(time, DimIdx(i));
+            if (knob->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
+                p[i] = knob->denormalize(DimIdx(i), time, p[i]);
             }
         }
         pos.setX(p[0]);
@@ -1671,16 +1673,17 @@ PositionInteract::penMotion(double time,
     didSomething = (_state == ePositionInteractStatePoised) || (_state == ePositionInteractStatePicked);
 
     if ( (_state != ePositionInteractStateInactive) && _interactiveDrag && valuesChanged ) {
-        double p[2];
+        std::vector<double> p(2);
         p[0] = fround(lastPenPos.x(), pscale.x);
         p[1] = fround(lastPenPos.y(), pscale.y);
         for (int i = 0; i < 2; ++i) {
-            if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                p[i] = knob->normalize(i, time, p[i]);
+            if (knob->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
+                p[i] = knob->normalize(DimIdx(i), time, p[i]);
             }
         }
 
-        knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+
+        knob->setValueAcrossDimensions(p, DimIdx(0), ViewSetSpec(view), eValueChangedReasonNatronGuiEdited);
     }
 
     return (didSomething || valuesChanged);
@@ -1788,7 +1791,7 @@ rectFromCenterPoint(const OfxPointD& center,
 bool
 TransformInteract::penMotion(double time,
                              const RenderScale& /*renderScale*/,
-                             ViewIdx /*view*/,
+                             ViewIdx view,
                              const OfxPointD& pscale,
                              const QPointF& lastPenPos,
                              const QPointF &penPosParam,
@@ -1912,10 +1915,10 @@ TransformInteract::penMotion(double time,
     KnobDoublePtr scaleKnob = _scale.lock();
     assert(scaleKnob);
 
-    minX = scaleKnob->getMinimum(0);
-    minY = scaleKnob->getMinimum(1);
-    maxX = scaleKnob->getMaximum(0);
-    maxY = scaleKnob->getMaximum(1);
+    minX = scaleKnob->getMinimum(DimIdx(0));
+    minY = scaleKnob->getMinimum(DimIdx(1));
+    maxX = scaleKnob->getMaximum(DimIdx(0));
+    maxY = scaleKnob->getMaximum(DimIdx(1));
 
     if (_mouseState == TransformInteract::eReleased) {
         // we are not axis-aligned
@@ -2119,31 +2122,39 @@ TransformInteract::penMotion(double time,
     if ( (_mouseState != TransformInteract::eReleased) && _interactiveDrag && valuesChanged ) {
         // no need to redraw overlay since it is slave to the paramaters
         EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
-        holder->beginMultipleEdits(tr("Modify transform handle"));
-        KeyFrame k;
+        holder->beginMultipleEdits(tr("Modify transform handle").toStdString());
         if (centerChanged) {
             KnobDoublePtr knob = _center.lock();
-            knob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            std::vector<double> val(2);
+            val[0] = center.x;
+            val[1] = center.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         if (translateChanged) {
             KnobDoublePtr knob = _translate.lock();
-            knob->setValues(translate.x, translate.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            std::vector<double> val(2);
+            val[0] = translate.x;
+            val[1] = translate.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         if (scaleChanged) {
             KnobDoublePtr knob = _scale.lock();
-            knob->setValues(scale.x, scale.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            std::vector<double> val(2);
+            val[0] = scale.x;
+            val[1] = scale.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         if (rotateChanged) {
             KnobDoublePtr knob = _rotate.lock();
-            knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+            knob->setValue(rotate, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
         if (skewXChanged) {
             KnobDoublePtr knob = _skewX.lock();
-            knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+            knob->setValue(skewX, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
         if (skewYChanged) {
             KnobDoublePtr knob = _skewY.lock();
-            knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+            knob->setValue(skewY, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
         holder->endMultipleEdits();
     } else if (didSomething || valuesChanged) {
@@ -2156,7 +2167,7 @@ TransformInteract::penMotion(double time,
 bool
 CornerPinInteract::penMotion(double time,
                              const RenderScale& /*renderScale*/,
-                             ViewIdx /*view*/,
+                             ViewIdx view,
                              const OfxPointD& pscale,
                              const QPointF& lastPenPos,
                              const QPointF &penPos,
@@ -2249,11 +2260,17 @@ CornerPinInteract::penMotion(double time,
         if (_useFromDrag) {
             KnobDoublePtr knob = _from[_dragging].lock();
             assert(knob);
-            knob->setValues(from[_dragging].x, from[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = from[_dragging].x;
+            val[1] = from[_dragging].y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         } else {
             KnobDoublePtr knob = _to[_dragging].lock();
             assert(knob);
-            knob->setValues(to[_dragging].x, to[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = to[_dragging].x;
+            val[1] = to[_dragging].y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
     }
 
@@ -2306,16 +2323,16 @@ PositionInteract::penUp(double time,
     if (_state == ePositionInteractStatePicked) {
         if (!_interactiveDrag) {
             KnobDoublePtr knob = _param.lock();
-            double p[2];
+             std::vector<double> p(2);
             p[0] = fround(lastPenPos.x(), pscale.x);
             p[1] = fround(lastPenPos.y(), pscale.y);
             for (int i = 0; i < 2; ++i) {
-                if (knob->getValueIsNormalized(i) != eValueIsNormalizedNone) {
-                    p[i] = knob->normalize(i, time, p[i]);
+                if (knob->getValueIsNormalized(DimIdx(i)) != eValueIsNormalizedNone) {
+                    p[i] = knob->normalize(DimIdx(i), time, p[i]);
                 }
             }
 
-            knob->setValues(p[0], p[1], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(p, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
 
         _state = ePositionInteractStateInactive;
@@ -2330,7 +2347,7 @@ PositionInteract::penUp(double time,
 bool
 TransformInteract::penUp(double /*time*/,
                          const RenderScale& /*renderScale*/,
-                         ViewIdx /*view*/,
+                         ViewIdx view,
                          const OfxPointD& /*pscale*/,
                          const QPointF& /*lastPenPos*/,
                          const QPointF & /*penPos*/,
@@ -2347,34 +2364,41 @@ TransformInteract::penUp(double /*time*/,
            see Knob::setValue
          */
         EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
-        holder->holder->beginMultipleEdits(tr("Modify transform handle"));
+        holder->beginMultipleEdits(tr("Modify transform handle").toStdString());
         {
             KnobDoublePtr knob = _center.lock();
-            knob->setValues(_centerDrag.x, _centerDrag.y, ViewSpec::all(),  eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = _centerDrag.x;
+            val[1] = _centerDrag.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         {
             KnobDoublePtr knob = _translate.lock();
-            knob->setValues(_translateDrag.x, _translateDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = _translateDrag.x;
+            val[1] = _translateDrag.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         {
             KnobDoublePtr knob = _scale.lock();
-            knob->setValues(_scaleParamDrag.x, _scaleParamDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = _scaleParamDrag.x;
+            val[1] = _scaleParamDrag.y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
         {
             KnobDoublePtr knob = _rotate.lock();
-            KeyFrame k;
-            knob->setValue(_rotateDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(_rotateDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
         {
             KnobDoublePtr knob = _skewX.lock();
-            KeyFrame k;
-            knob->setValue(_skewXDrag, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(_skewXDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
         {
             KnobDoublePtr knob = _skewY.lock();
-            KeyFrame k;
-            knob->setValue(_skewYDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(_skewYDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
         }
+
         holder->endMultipleEdits();
     } else if (_mouseState != TransformInteract::eReleased) {
         requestRedraw();
@@ -2388,7 +2412,7 @@ TransformInteract::penUp(double /*time*/,
 bool
 CornerPinInteract::penUp(double /*time*/,
                          const RenderScale& /*renderScale*/,
-                         ViewIdx /*view*/,
+                         ViewIdx view,
                          const OfxPointD& /*pscale*/,
                          const QPointF& /*lastPenPos*/,
                          const QPointF & /*penPos*/,
@@ -2410,11 +2434,17 @@ CornerPinInteract::penUp(double /*time*/,
         if (_useFromDrag) {
             KnobDoublePtr knob = _from[_dragging].lock();
             assert(knob);
-            knob->setValues(_fromDrag[_dragging].x, _fromDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = _fromDrag[_dragging].x;
+            val[1] = _fromDrag[_dragging].y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         } else {
             KnobDoublePtr knob = _to[_dragging].lock();
             assert(knob);
-            knob->setValues(_toDrag[_dragging].x, _toDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
+            std::vector<double> val(2);
+            val[0] = _toDrag[_dragging].x;
+            val[1] = _toDrag[_dragging].y;
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
     }
     _dragging = -1;

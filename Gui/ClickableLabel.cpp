@@ -158,20 +158,22 @@ ClickableLabel::setSunken(bool s)
 
 KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
+                                       ViewIdx view,
                                        QWidget* parent )
     : ClickableLabel(icon, parent)
-, _dnd(KnobWidgetDnD::create(knob, -1, this) )
+, _dnd(KnobWidgetDnD::create(knob, DimSpec::all(), view, this) )
 {
-    knob->enableRightClickMenu(this, -1);
+    knob->enableRightClickMenu(this, DimSpec::all(), view);
 }
 
 KnobClickableLabel::KnobClickableLabel(const QString& text,
                                        const KnobGuiPtr& knob,
+                                       ViewIdx view,
                                        QWidget* parent)
     : ClickableLabel(text, parent)
-    , _dnd( KnobWidgetDnD::create(knob, -1, this) )
+, _dnd( KnobWidgetDnD::create(knob, DimSpec::all(), view,this) )
 {
-    knob->enableRightClickMenu(this, -1);
+    knob->enableRightClickMenu(this, DimSpec::all(), view);
 }
 
 KnobClickableLabel::~KnobClickableLabel()

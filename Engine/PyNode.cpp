@@ -1274,7 +1274,6 @@ Effect::getRegionOfDefinition(double time, const QString& view) const
         return rod;
     }
     const std::vector<std::string>& projectViews = effect->getApp()->getProject()->getProjectViewNames();
-    int i = 0;
     bool foundView = false;
     ViewIdx foundViewIdx;
     std::string stdViewName = view.toStdString();

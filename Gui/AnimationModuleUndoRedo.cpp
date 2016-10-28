@@ -33,10 +33,10 @@
 
 #include "Gui/AnimationModuleBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeAnim.h"
+#include "Gui/NodeGui.h"
 #include "Gui/TableItemAnim.h"
 #include "Gui/CurveWidget.h"
 

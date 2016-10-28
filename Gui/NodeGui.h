@@ -622,16 +622,13 @@ private:
         KnobIWPtr slave;
 
         // Is this link valid (counter for all dimensions)
-        int linkInValid;
+        bool linkInValid;
 
-        // The dimensions of the slave linked to the master
-        std::set<int> dimensions;
 
         LinkedKnob()
             : master()
             , slave()
             , linkInValid(false)
-            , dimensions()
         {
         }
     };

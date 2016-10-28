@@ -40,7 +40,6 @@
 #include "Engine/StringAnimationManager.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModule.h"

@@ -212,7 +212,7 @@ KnobGuiButton::_show()
 }
 
 void
-KnobGuiButton::updateGUI(int /*dimension*/)
+KnobGuiButton::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     KnobButtonPtr k = _knob.lock();
 

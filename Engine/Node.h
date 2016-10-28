@@ -1082,15 +1082,11 @@ public:
 
     struct KnobLink
     {
-        ///The knob being slaved
-        KnobIWPtr slave;
-        KnobIWPtr master;
+        KnobIWPtr masterKnob;
+        KnobIWPtr slaveKnob;
 
-        ///The master node to which the knob is slaved to
+        // The master node to which the knob is slaved to
         NodeWPtr masterNode;
-
-        ///The dimension being slaved, -1 if irrelevant
-        int dimension;
     };
 
     void getKnobsLinks(std::list<KnobLink> & links) const;

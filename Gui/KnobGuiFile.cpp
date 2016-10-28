@@ -205,7 +205,7 @@ KnobGuiFile::updateLastOpened(const QString &str)
 }
 
 void
-KnobGuiFile::updateGUI(int /*dimension*/)
+KnobGuiFile::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     KnobFilePtr knob = _knob.lock();
 
@@ -674,7 +674,7 @@ KnobGuiPath::updateLastOpened(const QString &str)
 }
 
 void
-KnobGuiPath::updateGUI(int dimension)
+KnobGuiPath::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     KnobPathPtr knob = _knob.lock();
 

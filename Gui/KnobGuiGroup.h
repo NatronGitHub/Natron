@@ -94,7 +94,7 @@ private:
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;
     virtual void setEnabled()  OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }

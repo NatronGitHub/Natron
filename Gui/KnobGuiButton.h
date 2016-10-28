@@ -96,7 +96,7 @@ private:
     {
     }
 
-    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
 
 private:
     Button *_button;

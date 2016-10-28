@@ -69,7 +69,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"

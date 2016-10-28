@@ -95,6 +95,9 @@ typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
 typedef std::map<ViewIdx, bool> PerViewHasModificationMap;
 typedef std::vector<PerViewHasModificationMap> PerDimensionModificationMap;
 
+typedef std::map<ViewIdx, bool> PerViewEnabledMap;
+typedef std::vector<PerViewEnabledMap> PerDimensionEnabledMap;
+
 struct KnobHelperPrivate
 {
     // Ptr to the public class, can not be a smart ptr
@@ -162,7 +165,7 @@ struct KnobHelperPrivate
     bool inViewerContextSecret;
 
     // For each dimension tells whether the knob is enabled
-    std::vector<bool> enabled;
+    PerDimensionEnabledMap enabled;
 
     // True if this knob can use the undo/redo stack
     bool CanUndo;
@@ -359,7 +362,7 @@ struct KnobHelperPrivate
         expressions.resize(dimension);
         dimensionNames.resize(dimension);
         for (int i = 0; i < nDims; ++i) {
-            enabled[i] = true;
+            enabled[i][ViewIdx(0)] = true;
             curves[i][ViewIdx(0)] = CurvePtr();
             masters[i][ViewIdx(0)] = MasterKnobLink();
             animationLevel[i][ViewIdx(0)] = eAnimationLevelNone;

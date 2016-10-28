@@ -44,7 +44,6 @@
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
@@ -112,8 +111,7 @@ Gui::setupUi()
     _imp->_mainLayout->addWidget(_imp->_leftRightSplitter);
 
     _imp->createNodeGraphGui();
-    _imp->createCurveEditorGui();
-    _imp->createDopeSheetGui();
+    _imp->createAnimationModuleGui();
     _imp->createScriptEditorGui();
     _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.

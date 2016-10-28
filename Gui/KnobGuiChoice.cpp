@@ -559,7 +559,7 @@ KnobGuiChoice::updateToolTip()
 }
 
 void
-KnobGuiChoice::updateGUI(int /*dimension*/)
+KnobGuiChoice::updateGUI(DimSpec dimension, ViewSetSpec view)
 {
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///change the internal value of the knob again...

@@ -57,7 +57,6 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"

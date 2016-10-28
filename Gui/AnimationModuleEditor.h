@@ -131,6 +131,8 @@ public:
 
     AnimationModuleTreeView* getTreeView() const;
 
+    AnimationModulePtr getModel() const;
+
     void onInputEventCalled();
 
     virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;

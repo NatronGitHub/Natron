@@ -36,6 +36,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 
 #include "Gui/KnobGuiPrivate.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModule.h"
+#include "Gui/NodeAnim.h"
+#include "Gui/KnobAnim.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiApplicationManager.h"
@@ -45,23 +49,15 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-
 void
-KnobGui::onInternalValueChanged(ViewSpec view,
-                                DimIdx dimension,
-                                ValueChangedReasonEnum /*reason*/)
+KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec view ,DimSpec dimension ,ValueChangedReasonEnum reason)
 {
 #pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
     if (_imp->guiRemoved) {
         return;
     }
     if (_imp->widgetCreated) {
-        updateGuiInternal(dimension);
-
-        // If the knob has an expression, also redrawn the curve editor
-        if ( !getKnob()->getExpression(dimension).empty() ) {
-            onRedrawGuiCurve(eCurveChangeReasonInternal, view, dimension);
-        }
+        updateGuiInternal(dimension, view);
     }
 }
 
@@ -69,102 +65,111 @@ KnobGui::onInternalValueChanged(ViewSpec view,
 void
 KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            const std::list<double>& keysRemoved,
-                                           ViewSpec view,
-                                           int dimension,
-                                           CurveChangeReason reason)
+                                           ViewIdx view,
+                                           DimIdx dimension)
 {
-#pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
-    KnobIPtr knob = getKnob();
-    if (!knob) {
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
         return;
     }
-    KnobHolderPtr holder = knob->getHolder();
-    if (!holder) {
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
         return;
     }
-    AppInstancePtr app = holder->getApp();
-    if (!app) {
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    if (isEffect) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(holder);
-    if (!isEffect) {
-        return;
-    }
-    NodePtr node = isEffect->getNode();
-    if (!node || !node->isActivated()) {
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
         return;
     }
 
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
-    if (!nodeUi) {
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == internalKnob) {
+            knobAnim = *it;
+            break;
+        }
+    }
+
+    if (!knobAnim) {
         return;
     }
 
-    nodeUi->onKnobKeyFramesChanged(knob, keysAdded, keysRemoved);
 
+    node->getNodeGui()->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
 
-    onRedrawGuiCurve(reason, view, dimension);
+    // Refresh the knob anim visibility in a queued connection
+    knobAnim->onKnobSignalReceivedInDirectConnection();
+
 
 }
 
 
 void
-KnobGui::copyAnimationToClipboard(int dimension) const
+KnobGui::copyAnimationToClipboard(DimSpec dimension, ViewIdx view) const
 {
-    copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension);
+    copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension, view);
 }
 
 void
 KnobGui::onCopyAnimationActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
     if (!act) {
         return;
     }
-    int dim = act->data().toInt();
-    copyAnimationToClipboard(dim);
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    copyAnimationToClipboard(dimension, view);
 }
 
 void
-KnobGui::copyValuesToClipboard(int dimension ) const
+KnobGui::copyValuesToClipboard(DimSpec dimension, ViewIdx view ) const
 {
-    copyToClipBoard(eKnobClipBoardTypeCopyValue, dimension);
+    copyToClipBoard(eKnobClipBoardTypeCopyValue, dimension, view);
 }
 
 void
 KnobGui::onCopyValuesActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
     if (!act) {
         return;
     }
-    int dim = act->data().toInt();
-    copyValuesToClipboard(dim);
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    copyValuesToClipboard(dimension, view);
 }
 
 void
-KnobGui::copyLinkToClipboard(int dimension) const
+KnobGui::copyLinkToClipboard(DimSpec dimension, ViewIdx view) const
 {
-    copyToClipBoard(eKnobClipBoardTypeCopyLink, dimension);
+    copyToClipBoard(eKnobClipBoardTypeCopyLink, dimension, view);
 }
 
 void
 KnobGui::onCopyLinksActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
     if (!act) {
         return;
     }
-    int dim = act->data().toInt();
-    copyLinkToClipboard(dim);
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    copyLinkToClipboard(dimension, view);
 }
 
 void
 KnobGui::copyToClipBoard(KnobClipBoardType type,
-                         int dimension) const
+                         DimSpec dimension,
+                         ViewIdx view) const
 {
     KnobIPtr knob = getKnob();
 
@@ -172,11 +177,11 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
         return;
     }
 
-    appPTR->setKnobClipBoard(type, knob, dimension);
+    appPTR->setKnobClipBoard(type, knob, dimension, view);
 }
 
 void
-KnobGui::pasteClipBoard(int targetDimension)
+KnobGui::pasteClipBoard(DimSpec targetDimension, ViewIdx view)
 {
     KnobIPtr knob = getKnob();
 
@@ -185,16 +190,17 @@ KnobGui::pasteClipBoard(int targetDimension)
     }
 
     //the dimension from which it was copied from
-    int cbDim;
+    DimSpec cbDim;
+    ViewIdx cbView;
     KnobClipBoardType type;
     KnobIPtr fromKnob;
-    appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
+    appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim, &cbView);
     if (!fromKnob) {
         return;
     }
 
     if ( (targetDimension == 0) && !getAllDimensionsVisible() ) {
-        targetDimension = -1;
+        targetDimension = DimSpec::all();
     }
 
     if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
@@ -209,42 +215,37 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
 
-    if ( (cbDim != -1) && (targetDimension == -1) ) {
+    if ( !cbDim.isAll() && targetDimension.isAll() ) {
         Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
 
         return;
     }
 
-    if ( ( (targetDimension == -1) || (cbDim == -1) ) && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
+    if ( ( targetDimension.isAll() || cbDim.isAll()) && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
         Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
 
         return;
     }
 
-    pushUndoCommand( new PasteKnobClipBoardUndoCommand(shared_from_this(), type, cbDim, targetDimension, fromKnob) );
+    pushUndoCommand( new PasteKnobClipBoardUndoCommand(knob, type, cbDim, targetDimension, cbView, ViewSetSpec(view), fromKnob) );
 } // pasteClipBoard
 
 void
 KnobGui::onPasteActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
     if (!act) {
         return;
     }
-
-    pasteClipBoard( act->data().toInt() );
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    pasteClipBoard(dimension, view);
 }
 
-void
-KnobGui::onKnobSlavedChanged(int dimension,
-                             bool /*b*/)
-{
-    onRedrawGuiCurve(eCurveChangeReasonInternal, ViewSpec::all(), dimension);
-}
 
 void
-KnobGui::linkTo(int dimension)
+KnobGui::linkTo(DimSpec dimension, ViewIdx view)
 {
     KnobIPtr thisKnob = getKnob();
 
@@ -256,8 +257,8 @@ KnobGui::linkTo(int dimension)
 
 
     for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
-        if ( (i == dimension) || (dimension == -1) ) {
-            std::string expr = thisKnob->getExpression(dimension);
+        if ( (i == dimension) || (dimension.isAll()) ) {
+            std::string expr = thisKnob->getExpression(DimIdx(i), view);
             if ( !expr.empty() ) {
                 Dialogs::errorDialog( tr("Param Link").toStdString(), tr("This parameter already has an expression set, edit or clear it.").toStdString() );
 
@@ -279,15 +280,19 @@ KnobGui::linkTo(int dimension)
 
 
             for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
-                std::pair<int, KnobIPtr > existingLink = thisKnob->getMaster(i);
-                if (existingLink.second) {
-                    Dialogs::errorDialog( tr("Param Link").toStdString(),
-                                          tr("Cannot link %1 because the knob is already linked to %2.")
-                                          .arg( QString::fromUtf8( thisKnob->getLabel().c_str() ) )
-                                          .arg( QString::fromUtf8( existingLink.second->getLabel().c_str() ) )
-                                          .toStdString() );
+                if ( (i == dimension) || (dimension.isAll()) ) {
+                    MasterKnobLink linkData;
+                    if (thisKnob->getMaster(DimIdx(i), view, &linkData)) {
 
-                    return;
+                        KnobIPtr masterKnob = linkData.masterKnob.lock();
+                        Dialogs::errorDialog( tr("Param Link").toStdString(),
+                                             tr("Cannot link %1 because the knob is already linked to %2.")
+                                             .arg( QString::fromUtf8( thisKnob->getLabel().c_str() ) )
+                                             .arg( QString::fromUtf8( masterKnob->getLabel().c_str() ) )
+                                             .toStdString() );
+
+                        return;
+                    }
                 }
             }
 
@@ -309,15 +314,7 @@ KnobGui::linkTo(int dimension)
                 expr << "[dimension]";
             }
 
-            thisKnob->beginChanges();
-            for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
-                if ( (i == dimension) || (dimension == -1) ) {
-                    thisKnob->setExpression(i, expr.str(), false, false);
-                }
-            }
-            thisKnob->endChanges();
-
-
+            thisKnob->setExpression(dimension, view, expr.str(), false, false);
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
@@ -326,25 +323,34 @@ KnobGui::linkTo(int dimension)
 void
 KnobGui::onLinkToActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>( sender() );
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
 
-    assert(action);
 
-    linkTo( action->data().toInt() );
+    linkTo(dimension, view);
 }
 
 void
 KnobGui::onResetDefaultValuesActionTriggered()
 {
-    QAction *action = qobject_cast<QAction *>( sender() );
-
-    if (action) {
-        resetDefault( action->data().toInt() );
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
     }
+    ViewIdx view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    resetDefault(dimension, view);
 }
 
 void
-KnobGui::resetDefault(int dimension)
+KnobGui::resetDefault(DimSpec dimension, ViewIdx view)
 {
     KnobIPtr knob = getKnob();
     KnobButtonPtr isBtn = toKnobButton(knob);
@@ -355,22 +361,24 @@ KnobGui::resetDefault(int dimension)
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobIPtr > knobs;
         knobs.push_back(knob);
-        pushUndoCommand( new RestoreDefaultsCommand(false, knobs, dimension) );
+        pushUndoCommand( new RestoreDefaultsCommand(false, knobs, dimension, view) );
     }
 }
 
 void
 KnobGui::setReadOnly_(bool readOnly,
-                      int dimension)
+                      DimSpec dimension, ViewIdx view)
 {
     if (!_imp->customInteract) {
-        setReadOnly(readOnly, dimension);
+        setReadOnly(readOnly, dimension, view);
     }
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
     bool hasDimensionEnabled = false;
     for (int i = 0; i < getKnob()->getNDimensions(); ++i) {
-        if ( getKnob()->isEnabled(i) ) {
-            hasDimensionEnabled = true;
+        if (dimension.isAll() || i == dimension) {
+            if ( getKnob()->isEnabled(DimIdx(i)) ) {
+                hasDimensionEnabled = true;
+            }
         }
     }
     if (_imp->descriptionLabel) {
@@ -571,26 +579,46 @@ KnobGui::setKnobGuiPointer()
 
 
 void
-KnobGui::onAnimationLevelChanged(ViewIdx /*idx*/,
-                                 int dimension)
+KnobGui::onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension)
 {
-    if (!_imp->customInteract) {
-        KnobIPtr knob = getKnob();
-        int dim = knob->getNDimensions();
-        for (int i = 0; i < dim; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                reflectAnimationLevel( i, knob->getAnimationLevel(i) );
+    if (_imp->customInteract) {
+        return;
+    }
+    KnobIPtr knob = getKnob();
+    int nDim = knob->getNDimensions();
+    if (dimension.isAll()) {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = knob->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                for (int i = 0; i < nDim; ++i) {
+                    reflectAnimationLevel(DimIdx(i), *it, knob->getAnimationLevel(DimIdx(i), *it) );
+                }
             }
+        } else {
+            ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
+            for (int i = 0; i < nDim; ++i) {
+                reflectAnimationLevel(DimIdx(i), view_i, knob->getAnimationLevel(DimIdx(i), view_i) );
+            }
+        }
+    } else {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = knob->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                reflectAnimationLevel(DimIdx(dimension), *it, knob->getAnimationLevel(DimIdx(dimension), *it) );
+            }
+        } else {
+            ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
+            reflectAnimationLevel(DimIdx(dimension), view_i, knob->getAnimationLevel(DimIdx(dimension), view_i) );
         }
     }
 }
 
 void
-KnobGui::onAppendParamEditChanged(int reason,
-                                  int setValueRetCode,
-                                  const Variant & v,
-                                  ViewSpec view,
-                                  int dimension,
+KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
+                                  ValueChangedReturnCodeEnum setValueRetCode,
+                                  Variant v,
+                                  ViewSetSpec view,
+                                  DimSpec dim,
                                   double time,
                                   bool setKeyFrame)
 {
@@ -604,7 +632,7 @@ KnobGui::onAppendParamEditChanged(int reason,
     }
     bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
     QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(shared_from_this(), commandName, (ValueChangedReasonEnum)reason, (ValueChangedReturnCodeEnum)setValueRetCode, createNewCommand, setKeyFrame, v, dimension, time, view) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, v, dim, time, view) );
 }
 
 void
@@ -616,15 +644,13 @@ KnobGui::onFrozenChanged(bool frozen)
     if ( isBtn && !isBtn->isRenderButton() ) {
         return;
     }
-    int dims = knob->getNDimensions();
-
-    for (int i = 0; i < dims; ++i) {
-        ///Do not unset read only if the knob is slaved in this dimension because we are still using it.
-        if ( !frozen && knob->isSlave(i) ) {
-            continue;
-        }
-        if ( knob->isEnabled(i) ) {
-            setReadOnly_(frozen, i);
+    int nDim = knob->getNDimensions();
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        for (int i = 0; i < nDim; ++i) {
+            if ( frozen || (!knob->isSlave(DimIdx(i), *it) && knob->isEnabled(DimIdx(i), *it)) ) {
+                setReadOnly_(frozen, DimIdx(i), *it);
+            }
         }
     }
 }
@@ -633,36 +659,6 @@ bool
 KnobGui::isGuiFrozenForPlayback() const
 {
     return getGui() ? getGui()->isGUIFrozen() : false;
-}
-
-CurvePtr
-KnobGui::getCurve(ViewSpec /*view*/,
-                  int dimension) const
-{
-    return _imp->guiCurves[dimension];
-}
-
-void
-KnobGui::onRedrawGuiCurve(CurveChangeReason reason,
-                          ViewSpec /*view*/,
-                          int /*dimension*/)
-{
-    mustRefreshAnimVisibility
-
-    CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
-
-    switch (curveChangeReason) {
-    case eCurveChangeReasonCurveEditor:
-        Q_EMIT mustRefreshDopeSheet();
-        break;
-    case eCurveChangeReasonDopeSheet:
-        Q_EMIT mustRefreshCurveEditor();
-        break;
-    case eCurveChangeReasonInternal:
-        Q_EMIT mustRefreshDopeSheet();
-        Q_EMIT mustRefreshCurveEditor();
-        break;
-    }
 }
 
 void
@@ -700,16 +696,16 @@ KnobGui::refreshKnobWarningIndicatorVisibility()
 }
 
 void
-KnobGui::onExprChanged(int dimension)
+KnobGui::onExprChanged(DimIdx dimension,ViewIdx view)
 {
     if (_imp->guiRemoved || _imp->customInteract) {
         return;
     }
     KnobIPtr knob = getKnob();
-    std::string exp = knob->getExpression(dimension);
-    reflectExpressionState( dimension, !exp.empty() );
+    std::string exp = knob->getExpression(dimension, view);
+    reflectExpressionState( dimension, view, !exp.empty() );
     if ( exp.empty() ) {
-        reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension) );
+        reflectAnimationLevel( dimension, view, knob->getAnimationLevel(dimension, view) );
     } else {
         NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
         if (isNodeSettings) {
@@ -725,12 +721,12 @@ KnobGui::onExprChanged(int dimension)
             int dims = knob->getNDimensions();
             for (int i = 0; i < dims; ++i) {
                 std::string err;
-                if ( !knob->isExpressionValid(i, &err) ) {
+                if ( !knob->isExpressionValid(DimIdx(i), view, &err) ) {
                     invalid = true;
                 }
                 if ( (dims > 1) && invalid ) {
                     fullErrToolTip += QString::fromUtf8("<p><b>");
-                    fullErrToolTip += QString::fromUtf8( knob->getDimensionName(i).c_str() );
+                    fullErrToolTip += QString::fromUtf8( knob->getDimensionName(DimIdx(i)).c_str() );
                     fullErrToolTip += QString::fromUtf8("</b></p>");
                 }
                 if ( !err.empty() ) {
@@ -751,14 +747,14 @@ KnobGui::onExprChanged(int dimension)
         }
     }
     onHelpChanged();
-    updateGUI(dimension);
+    updateGUI(dimension, view);
 } // KnobGui::onExprChanged
 
 void
 KnobGui::onHelpChanged()
 {
     if (_imp->descriptionLabel) {
-        toolTip(_imp->descriptionLabel);
+        toolTip(_imp->descriptionLabel, ViewIdx(0));
     }
     updateToolTip();
 }

@@ -52,8 +52,7 @@ enum TimelineChangeReasonEnum
 {
     eTimelineChangeReasonUserSeek = 0,
     eTimelineChangeReasonPlaybackSeek = 1,
-    eTimelineChangeReasonCurveEditorSeek = 2,
-    eTimelineChangeReasonDopeSheetEditorSeek = 3,
+    eTimelineChangeReasonAnimationModuleSeek = 2,
     eTimelineChangeReasonOtherSeek
 };
 

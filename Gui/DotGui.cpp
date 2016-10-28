@@ -59,7 +59,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"

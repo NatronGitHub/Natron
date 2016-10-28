@@ -1241,7 +1241,7 @@ NodeGroup::getInputLabel(int inputNb) const
 double
 NodeGroup::getCurrentTime() const
 {
-    NodePtr node = getOutputNodeInput(false);
+    NodePtr node = getOutputNodeInput();
 
     if (node) {
         EffectInstancePtr effect = node->getEffectInstance();
@@ -1257,7 +1257,7 @@ NodeGroup::getCurrentTime() const
 ViewIdx
 NodeGroup::getCurrentView() const
 {
-    NodePtr node = getOutputNodeInput(false);
+    NodePtr node = getOutputNodeInput();
 
     if (node) {
         EffectInstancePtr effect = node->getEffectInstance();

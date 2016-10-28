@@ -45,7 +45,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Global/StrUtils.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR

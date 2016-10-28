@@ -2463,7 +2463,7 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
     assert(internalNodeToConnect);
 
     std::vector<NodePtr> inputNodes;
-    getInputs(&inputNodes, false);
+    getInputs(&inputNodes);
     if (groupInputIndex >= (int)inputNodes.size() || groupInputIndex < 0) {
         // Invalid input index
         return;
@@ -4108,7 +4108,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     assert(internalInputIdx == 0 || internalInputIdx == 1);
 
     std::vector<NodePtr> groupInputNodes;
-    getInputs(&groupInputNodes, false);
+    getInputs(&groupInputNodes);
 
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
     std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();

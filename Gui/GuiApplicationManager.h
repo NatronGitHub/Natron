@@ -36,6 +36,7 @@
 #endif
 
 #include "Engine/AppManager.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Variant.h"
 #include "Engine/EngineFwd.h"
 
@@ -101,12 +102,14 @@ public:
 
     void setKnobClipBoard(KnobClipBoardType type,
                           const KnobIPtr& serialization,
-                          int dimension);
+                          DimSpec dimension,
+                          ViewIdx view);
 
 
     void getKnobClipBoard(KnobClipBoardType *type,
                           KnobIPtr* serialization,
-                          int *dimension) const;
+                          DimSpec *dimension,
+                          ViewIdx *view) const;
 
 
     void updateAllRecentFileMenus();

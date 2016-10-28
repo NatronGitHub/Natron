@@ -220,7 +220,7 @@ KnobGuiParametric::setEnabled()
 }
 
 void
-KnobGuiParametric::updateGUI(int /*dimension*/)
+KnobGuiParametric::updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/)
 {
     _curveWidget->update();
 }

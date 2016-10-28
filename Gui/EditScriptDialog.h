@@ -74,6 +74,19 @@ public Q_SLOTS:
     void onTextEditChanged();
     void onHelpRequested();
 
+    void onAcceptedPressed()
+    {
+        Q_EMIT dialogFinished(true);
+    }
+    void onRejectedPressed()
+    {
+        Q_EMIT dialogFinished(false);
+    }
+
+Q_SIGNALS:
+
+    void dialogFinished(bool accepted);
+
 protected:
 
     virtual void setTitle() = 0;

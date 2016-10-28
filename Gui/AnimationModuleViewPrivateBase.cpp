@@ -978,7 +978,7 @@ AnimationModuleViewPrivateBase::moveCurrentFrameIndicator(int frame)
     _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
 
     _gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonDopeSheetEditorSeek);
+    timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
 }
 
 NATRON_NAMESPACE_EXIT;

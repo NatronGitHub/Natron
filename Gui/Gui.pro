@@ -98,7 +98,6 @@ SOURCES += \
     ClickableLabel.cpp \
     ColoredFrame.cpp \
     ComboBox.cpp \
-    CurveEditor.cpp \
     CurveGui.cpp \
     CurveWidget.cpp \
     CurveWidgetDialogs.cpp \
@@ -254,7 +253,6 @@ HEADERS += \
     ClickableLabel.h \
     ColoredFrame.h \
     ComboBox.h \
-    CurveEditor.h \
     CurveGui.h \
     CurveWidget.h \
     CurveWidgetDialogs.h \

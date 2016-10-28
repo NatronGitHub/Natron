@@ -1147,7 +1147,15 @@ KnobHelper::executeExpression(double time,
     PyObject* globalDict = PyModule_GetDict(mainModule);
     std::stringstream ss;
 
-    ss << expr << '(' << time << ", " <<  view << ")\n";
+    std::string viewName;
+    if (getHolder() && getHolder()->getApp()) {
+        viewName = getHolder()->getApp()->getProject()->getViewName(view);
+    }
+    if (viewName.empty()) {
+        viewName = "Main";
+    }
+
+    ss << expr << '(' << time << ", " << viewName << ")\n";
     std::string script = ss.str();
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);

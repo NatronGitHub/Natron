@@ -28,11 +28,12 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QUndoCommand>
+
 #include <boost/weak_ptr.hpp>
 
 #include "Engine/KnobTypes.h"
-#include "Engine/TrackMarker.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
@@ -41,6 +42,9 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
+
+#define KNOB_RIGHT_CLICK_VIEW_PROPERTY "knobViewProperty"
+#define KNOB_RIGHT_CLICK_DIM_PROPERTY "knobDimProperty"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -77,32 +81,22 @@ KnobGui::initialize()
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
-        QObject::connect( handler, SIGNAL(redrawGuiCurve(CurveChangeReason,ViewIdx,int)), this, SLOT(onRedrawGuiCurve(CurveChangeReason,ViewIdx,int)) );
-        QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewIdx,DimIdx,ValueChangedReasonEnum)), this, SLOT(onInternalValueChanged(ViewIdx,DimIdx,ValueChangedReasonEnum)) );
-        QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,int,CurveChangeReason)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewIdx,int,CurveChangeReason)));
+        QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onInternalValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
+        QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,DimIdx)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewIdx,DimIdx)));
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
-        QObject::connect( handler, SIGNAL(knobSlaved(int,bool)), this, SLOT(onKnobSlavedChanged(int,bool)) );
         QObject::connect( handler, SIGNAL(dirty(bool)), this, SLOT(onSetDirty(bool)) );
-        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewIdx,int)), this, SLOT(onAnimationLevelChanged(ViewIdx,int)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(int,int,Variant,ViewSpec,int,double,bool)), this,
-                          SLOT(onAppendParamEditChanged(int,int,Variant,ViewSpec,int,double,bool)) );
+        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSetSpec,DimSpec)), this, SLOT(onAnimationLevelChanged(ViewSetSpec,DimSpec)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,Variant,ViewSetSpec,DimSpec,double,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,Variant,ViewSetSpec,DimSpec,double,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
-        QObject::connect( handler, SIGNAL(expressionChanged(int)), this, SLOT(onExprChanged(int)) );
+        QObject::connect( handler, SIGNAL(expressionChanged(DimIdx,ViewIdx)), this, SLOT(onExprChanged(DimIdx,ViewIdx)) );
         QObject::connect( handler, SIGNAL(hasModificationsChanged()), this, SLOT(onHasModificationsChanged()) );
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
         QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
     }
-    if (!_imp->isInViewerUIKnob) {
-        _imp->guiCurves.resize( knob->getNDimensions() );
-        if ( knob->canAnimate() ) {
-            for (int i = 0; i < knob->getNDimensions(); ++i) {
-                _imp->guiCurves[i].reset( new Curve( *( knob->getCurve(ViewIdx(0), i) ) ) );
-            }
-        }
-    }
+
 }
 
 KnobGuiContainerI*
@@ -225,7 +219,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
     
     
     if (label) {
-        toolTip(label);
+        toolTip(label, ViewIdx(0));
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
@@ -256,10 +250,10 @@ KnobGui::createGUI(QWidget* fieldContainer,
 } // KnobGui::createGUI
 
 void
-KnobGui::updateGuiInternal(int dimension)
+KnobGui::updateGuiInternal(DimSpec dimension, ViewSetSpec view)
 {
     if (!_imp->customInteract) {
-        updateGUI(dimension);
+        updateGUI(dimension, view);
     } else {
         _imp->customInteract->update();
     }
@@ -271,15 +265,16 @@ KnobGui::onRightClickClicked(const QPoint & pos)
     QWidget *widget = qobject_cast<QWidget *>( sender() );
 
     if (widget) {
-        QString objName = widget->objectName();
-        objName = objName.remove( QString::fromUtf8("dim-") );
-        showRightClickMenuForDimension( pos, objName.toInt() );
+        ViewIdx view(widget->property(KNOB_RIGHT_CLICK_VIEW_PROPERTY).toInt());
+        DimSpec dim(widget->property(KNOB_RIGHT_CLICK_DIM_PROPERTY).toInt());
+        showRightClickMenuForDimension(pos, dim, view);
     }
 }
 
 void
 KnobGui::enableRightClickMenu(QWidget* widget,
-                              int dimension)
+                              DimSpec dimension,
+                              ViewIdx view)
 {
     KnobIPtr knob = getKnob();
     if (!knob) {
@@ -290,11 +285,10 @@ KnobGui::enableRightClickMenu(QWidget* widget,
     if (sep || grp) {
         return;
     }
-    QString name = QString::fromUtf8("dim-");
 
-    name.append( QString::number(dimension) );
+    widget->setProperty(KNOB_RIGHT_CLICK_DIM_PROPERTY, QVariant(dimension));
+    widget->setProperty(KNOB_RIGHT_CLICK_VIEW_PROPERTY, QVariant(view));
     widget->setContextMenuPolicy(Qt::CustomContextMenu);
-    widget->setObjectName(name);
     QObject::connect( widget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(onRightClickClicked(QPoint)) );
 }
 
@@ -324,7 +318,7 @@ KnobGui::getDescriptionLabel() const
 
 void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
-                                        int dimension)
+                                        DimSpec dimension, ViewIdx view)
 {
     KnobIPtr knob = getKnob();
     bool isViewerKnob = isViewerUIKnob();
@@ -332,20 +326,20 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
         return;
     }
 
-    createAnimationMenu(_imp->copyRightClickMenu, dimension);
+    createAnimationMenu(_imp->copyRightClickMenu, dimension, view);
     addRightClickMenuEntries(_imp->copyRightClickMenu);
     _imp->copyRightClickMenu->exec( QCursor::pos() );
 } // showRightClickMenuForDimension
 
 Menu*
 KnobGui::createInterpolationMenu(QMenu* menu,
-                                 int dimension,
+                                 DimSpec dimension, ViewIdx view,
                                  bool isEnabled)
 {
     Menu* interpolationMenu = new Menu(menu);
     QString title;
 
-    if (dimension == -1) {
+    if (dimension.isAll()) {
         title = tr("Interpolation (all dimensions)");
     } else {
         title = tr("Interpolation");
@@ -355,47 +349,76 @@ KnobGui::createInterpolationMenu(QMenu* menu,
         interpolationMenu->menuAction()->setEnabled(false);
     }
 
-    QAction* constantInterpAction = new QAction(tr("Constant"), interpolationMenu);
-    constantInterpAction->setData( QVariant(dimension) );
-    QObject::connect( constantInterpAction, SIGNAL(triggered()), this, SLOT(onConstantInterpActionTriggered()) );
-    interpolationMenu->addAction(constantInterpAction);
+    QList<QVariant> actionData;
+    actionData.push_back((int)dimension);
+    actionData.push_back((int)view);
 
-    QAction* linearInterpAction = new QAction(tr("Linear"), interpolationMenu);
-    linearInterpAction->setData( QVariant(dimension) );
-    QObject::connect( linearInterpAction, SIGNAL(triggered()), this, SLOT(onLinearInterpActionTriggered()) );
-    interpolationMenu->addAction(linearInterpAction);
+    {
+        QAction* constantInterpAction = new QAction(tr("Constant"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeConstant);
+        constantInterpAction->setData( QVariant(actionData) );
+        QObject::connect( constantInterpAction, SIGNAL(triggered()), this, SLOT(onConstantInterpActionTriggered()) );
+        interpolationMenu->addAction(constantInterpAction);
+    }
 
-    QAction* smoothInterpAction = new QAction(tr("Smooth"), interpolationMenu);
-    smoothInterpAction->setData( QVariant(dimension) );
-    QObject::connect( smoothInterpAction, SIGNAL(triggered()), this, SLOT(onSmoothInterpActionTriggered()) );
-    interpolationMenu->addAction(smoothInterpAction);
-
-    QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"), interpolationMenu);
-    catmullRomInterpAction->setData( QVariant(dimension) );
-    QObject::connect( catmullRomInterpAction, SIGNAL(triggered()), this, SLOT(onCatmullromInterpActionTriggered()) );
-    interpolationMenu->addAction(catmullRomInterpAction);
-
-    QAction* cubicInterpAction = new QAction(tr("Cubic"), interpolationMenu);
-    cubicInterpAction->setData( QVariant(dimension) );
-    QObject::connect( cubicInterpAction, SIGNAL(triggered()), this, SLOT(onCubicInterpActionTriggered()) );
-    interpolationMenu->addAction(cubicInterpAction);
-
-    QAction* horizInterpAction = new QAction(tr("Horizontal"), interpolationMenu);
-    horizInterpAction->setData( QVariant(dimension) );
-    QObject::connect( horizInterpAction, SIGNAL(triggered()), this, SLOT(onHorizontalInterpActionTriggered()) );
-    interpolationMenu->addAction(horizInterpAction);
-
+    {
+        QAction* linearInterpAction = new QAction(tr("Linear"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeLinear);
+        linearInterpAction->setData( QVariant(actionData) );
+        QObject::connect( linearInterpAction, SIGNAL(triggered()), this, SLOT(onLinearInterpActionTriggered()) );
+        interpolationMenu->addAction(linearInterpAction);
+    }
+    {
+        QAction* smoothInterpAction = new QAction(tr("Smooth"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeSmooth);
+        smoothInterpAction->setData( QVariant(actionData) );
+        QObject::connect( smoothInterpAction, SIGNAL(triggered()), this, SLOT(onSmoothInterpActionTriggered()) );
+        interpolationMenu->addAction(smoothInterpAction);
+    }
+    {
+        QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeCatmullRom);
+        catmullRomInterpAction->setData( QVariant(actionData) );
+        QObject::connect( catmullRomInterpAction, SIGNAL(triggered()), this, SLOT(onCatmullromInterpActionTriggered()) );
+        interpolationMenu->addAction(catmullRomInterpAction);
+    }
+    {
+        QAction* cubicInterpAction = new QAction(tr("Cubic"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeCubic);
+        cubicInterpAction->setData( QVariant(actionData) );
+        QObject::connect( cubicInterpAction, SIGNAL(triggered()), this, SLOT(onCubicInterpActionTriggered()) );
+        interpolationMenu->addAction(cubicInterpAction);
+    }
+    {
+        QAction* horizInterpAction = new QAction(tr("Horizontal"), interpolationMenu);
+        actionData.push_back((int)eKeyframeTypeHorizontal);
+        horizInterpAction->setData( QVariant(actionData) );
+        QObject::connect( horizInterpAction, SIGNAL(triggered()), this, SLOT(onHorizontalInterpActionTriggered()) );
+        interpolationMenu->addAction(horizInterpAction);
+    }
     menu->addAction( interpolationMenu->menuAction() );
-
+    
     return interpolationMenu;
 }
 
 void
-KnobGui::createAnimationMenu(QMenu* menu,
-                             int dimension)
+KnobGui::getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec* dimension)
+{
+    QList<QVariant> actionData = action->data().toList();
+    if (actionData.size() != 2) {
+        return;
+    }
+    QList<QVariant>::iterator it = actionData.begin();
+    *dimension = DimSpec(it->toInt());
+    ++it;
+    *view = ViewIdx(it->toInt());
+}
+
+void
+KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 {
     if ( (dimension == 0) && !getAllDimensionsVisible() ) {
-        dimension = -1;
+        dimension = DimSpec::all();
     }
 
     KnobIPtr knob = getKnob();
@@ -406,13 +429,13 @@ KnobGui::createAnimationMenu(QMenu* menu,
     int nDims = knob->getNDimensions();
 
 
-    if (dimension == -1 && nDims == 1) {
-        dimension = 0;
+    if (dimension.isAll() && nDims == 1) {
+        dimension = DimSpec(0);
     }
 
 
     for (int i = 0; i < nDims; ++i) {
-        AnimationLevelEnum lvl = knob->getAnimationLevel(i);
+        AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), view);
         if (lvl != eAnimationLevelOnKeyframe) {
             hasAllKeyframesAtTime = false;
         } else if ( dimension == i && (lvl == eAnimationLevelOnKeyframe) ) {
@@ -427,14 +450,14 @@ KnobGui::createAnimationMenu(QMenu* menu,
     bool dimensionIsSlaved = false;
     bool hasDimensionDisabled = false;
     for (int i = 0; i < nDims; ++i) {
-        if ( knob->isSlave(i) ) {
+        if ( knob->isSlave(DimIdx(i), view) ) {
             hasDimensionSlaved = true;
 
             if (i == dimension) {
                 dimensionIsSlaved = true;
             }
         }
-        if (knob->getKeyFramesCount(ViewIdx(0), i) > 0) {
+        if (knob->getKeyFramesCount(view, DimIdx(i)) > 0) {
             hasAnimation = true;
             if (dimension == i) {
                 dimensionHasAnimation = true;
@@ -444,13 +467,15 @@ KnobGui::createAnimationMenu(QMenu* menu,
         if (hasDimensionSlaved && hasAnimation) {
             break;
         }
-        if ( !knob->isEnabled(i) ) {
+        if ( !knob->isEnabled(DimIdx(i), view) ) {
             hasDimensionDisabled = true;
-            if (dimension == i) {
+            if (dimension == DimIdx(i)) {
                 isDimensionEnabled = false;
             }
         }
     }
+
+
 
     bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp();
 
@@ -458,7 +483,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
         ///Multi-dim actions
         if (!hasAllKeyframesAtTime) {
             QAction* setKeyAction = new QAction(tr("Set Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
-            setKeyAction->setData(-1);
+            QList<QVariant> actionData;
+            actionData.push_back((int)DimSpec::all());
+            actionData.push_back((int)view);
+            setKeyAction->setData(actionData);
             QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
             menu->addAction(setKeyAction);
             if (hasDimensionDisabled) {
@@ -466,7 +494,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
             }
         } else {
             QAction* removeKeyAction = new QAction(tr("Remove Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
-            removeKeyAction->setData(-1);
+            QList<QVariant> actionData;
+            actionData.push_back((int)DimSpec::all());
+            actionData.push_back((int)view);
+            removeKeyAction->setData(actionData);
             QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
             menu->addAction(removeKeyAction);
             if (hasDimensionDisabled) {
@@ -476,7 +507,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
         if (hasAnimation) {
             QAction* removeAnyAnimationAction = new QAction(tr("Remove animation") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
-            removeAnyAnimationAction->setData(-1);
+            QList<QVariant> actionData;
+            actionData.push_back((int)DimSpec::all());
+            actionData.push_back((int)view);
+            removeAnyAnimationAction->setData(actionData);
             QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
             if (hasDimensionDisabled) {
                 removeAnyAnimationAction->setEnabled(false);
@@ -492,7 +526,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
             ///Single dim action
             if (!dimensionHasKeyframeAtTime) {
                 QAction* setKeyAction = new QAction(tr("Set Key"), menu);
-                setKeyAction->setData(dimension);
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                setKeyAction->setData(actionData);
                 QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
                 menu->addAction(setKeyAction);
                 if (!isDimensionEnabled) {
@@ -500,7 +537,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 }
             } else {
                 QAction* removeKeyAction = new QAction(tr("Remove Key"), menu);
-                removeKeyAction->setData(dimension);
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                removeKeyAction->setData(actionData);
                 QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
                 menu->addAction(removeKeyAction);
                 if (!isDimensionEnabled) {
@@ -510,7 +550,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
             if (dimensionHasAnimation) {
                 QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"), menu);
-                removeAnyAnimationAction->setData(dimension);
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                removeAnyAnimationAction->setData(actionData);
                 QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
                 menu->addAction(removeAnyAnimationAction);
                 if (!isDimensionEnabled) {
@@ -524,7 +567,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
 
     if (hasAnimation && isAppKnob) {
-        QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"), menu);
+        QAction* showInCurveEditorAction = new QAction(tr("Show in Animation Editor"), menu);
         QObject::connect( showInCurveEditorAction, SIGNAL(triggered()), this, SLOT(onShowInCurveEditorActionTriggered()) );
         menu->addAction(showInCurveEditorAction);
         if (hasDimensionDisabled) {
@@ -532,12 +575,12 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
 
         if ( (knob->getNDimensions() > 1) && !hasDimensionSlaved ) {
-            Menu* interpMenu = createInterpolationMenu(menu, -1, !hasDimensionDisabled);
+            Menu* interpMenu = createInterpolationMenu(menu, DimSpec::all(), view, !hasDimensionDisabled);
             Q_UNUSED(interpMenu);
         }
         if (dimensionHasAnimation && !dimensionIsSlaved) {
-            if ( (dimension != -1) || (knob->getNDimensions() == 1) ) {
-                Menu* interpMenu = createInterpolationMenu(menu, dimension != -1 ? dimension : 0, isDimensionEnabled);
+            if ( !dimension.isAll() || (knob->getNDimensions() == 1) ) {
+                Menu* interpMenu = createInterpolationMenu(menu, !dimension.isAll() ? dimension : DimSpec(0), view, isDimensionEnabled);
                 Q_UNUSED(interpMenu);
             }
         }
@@ -548,24 +591,34 @@ KnobGui::createAnimationMenu(QMenu* menu,
         Menu* copyMenu = new Menu(menu);
         copyMenu->setTitle( tr("Copy") );
 
-        if (dimension != -1 || nDims == 1) {
+        if (!dimension.isAll() || nDims == 1) {
             if (hasAnimation && isAppKnob) {
                 QAction* copyAnimationAction = new QAction(tr("Copy Animation"), copyMenu);
-                copyAnimationAction->setData(dimension);
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                copyAnimationAction->setData(actionData);
                 QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
                 copyMenu->addAction(copyAnimationAction);
             }
 
 
-            QAction* copyValuesAction = new QAction(tr("Copy Value"), copyMenu);
-            copyValuesAction->setData( QVariant(dimension) );
-            copyMenu->addAction(copyValuesAction);
-            QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
-
+            {
+                QAction* copyValuesAction = new QAction(tr("Copy Value"), copyMenu);
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                copyValuesAction->setData(actionData);
+                copyMenu->addAction(copyValuesAction);
+                QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
+            }
 
             if (isAppKnob) {
                 QAction* copyLinkAction = new QAction(tr("Copy Link"), copyMenu);
-                copyLinkAction->setData( QVariant(dimension) );
+                QList<QVariant> actionData;
+                actionData.push_back((int)dimension);
+                actionData.push_back((int)view);
+                copyLinkAction->setData(actionData);
                 copyMenu->addAction(copyLinkAction);
                 QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
             }
@@ -577,7 +630,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 title += QLatin1Char(' ');
                 title += tr("(all dimensions)");
                 QAction* copyAnimationAction = new QAction(title, copyMenu);
-                copyAnimationAction->setData(-1);
+                QList<QVariant> actionData;
+                actionData.push_back((int)DimSpec::all());
+                actionData.push_back((int)view);
+                copyAnimationAction->setData(actionData);
                 QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
                 copyMenu->addAction(copyAnimationAction);
             }
@@ -586,7 +642,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 title += QLatin1Char(' ');
                 title += tr("(all dimensions)");
                 QAction* copyValuesAction = new QAction(title, copyMenu);
-                copyValuesAction->setData(-1);
+                QList<QVariant> actionData;
+                actionData.push_back((int)DimSpec::all());
+                actionData.push_back((int)view);
+                copyValuesAction->setData(actionData);
                 copyMenu->addAction(copyValuesAction);
                 QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
             }
@@ -596,7 +655,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 title += QLatin1Char(' ');
                 title += tr("(all dimensions)");
                 QAction* copyLinkAction = new QAction(title, copyMenu);
-                copyLinkAction->setData(-1);
+                QList<QVariant> actionData;
+                actionData.push_back((int)DimSpec::all());
+                actionData.push_back((int)view);
+                copyLinkAction->setData(actionData);
                 copyMenu->addAction(copyLinkAction);
                 QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
             }
@@ -611,7 +673,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     KnobClipBoardType type;
 
     //cbDim is ignored for now
-    int cbDim;
+    DimSpec cbDim;
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
 
 
@@ -627,16 +689,19 @@ KnobGui::createAnimationMenu(QMenu* menu,
             }
 
             bool ignorePaste = (!knob->isAnimationEnabled() && type == eKnobClipBoardTypeCopyAnim) ||
-                               ( (dimension == -1 || cbDim == -1) && knob->getNDimensions() != fromKnob->getNDimensions() );
+                               ( (dimension.isAll() || cbDim.isAll()) && knob->getNDimensions() != fromKnob->getNDimensions() );
             if (!ignorePaste) {
-                if ( (cbDim == -1) && ( fromKnob->getNDimensions() == knob->getNDimensions() ) && !hasDimensionSlaved ) {
+                if ( cbDim.isAll() && ( fromKnob->getNDimensions() == knob->getNDimensions() ) && !hasDimensionSlaved ) {
                     QString title = titlebase;
                     if (knob->getNDimensions() > 1) {
                         title += QLatin1Char(' ');
                         title += tr("(all dimensions)");
                     }
                     QAction* pasteAction = new QAction(title, menu);
-                    pasteAction->setData(-1);
+                    QList<QVariant> actionData;
+                    actionData.push_back((int)DimSpec::all());
+                    actionData.push_back((int)view);
+                    pasteAction->setData(actionData);
                     QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
                     if (hasDimensionDisabled) {
@@ -644,12 +709,15 @@ KnobGui::createAnimationMenu(QMenu* menu,
                     }
                 }
 
-                if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
+                if ( ( !dimension.isAll() || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
                     QAction* pasteAction = new QAction(titlebase, menu);
-                    pasteAction->setData(dimension != -1 ? dimension : 0);
+                    QList<QVariant> actionData;
+                    actionData.push_back(dimension.isAll() ? 0 : (int)dimension);
+                    actionData.push_back((int)view);
+                    pasteAction->setData(actionData);
                     QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
-                    if ((dimension != -1 && !isDimensionEnabled) || (dimension == -1 && hasDimensionDisabled)) {
+                    if ((!dimension.isAll() && !isDimensionEnabled) || (dimension.isAll() && hasDimensionDisabled)) {
                         pasteAction->setEnabled(false);
                     }
                 }
@@ -659,7 +727,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
     if ( (knob->getNDimensions() > 1) && !hasDimensionSlaved ) {
         QAction* resetDefaultAction = new QAction(tr("Reset to default") + QLatin1Char(' ') + tr("(all dimensions)"), _imp->copyRightClickMenu);
-        resetDefaultAction->setData( QVariant(-1) );
+        QList<QVariant> actionData;
+        actionData.push_back((int)DimSpec::all());
+        actionData.push_back((int)view);
+        resetDefaultAction->setData(actionData);
         QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
         if (hasDimensionDisabled) {
@@ -668,7 +739,10 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
     if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
         QAction* resetDefaultAction = new QAction(tr("Reset to default"), _imp->copyRightClickMenu);
-        resetDefaultAction->setData( QVariant(dimension) );
+        QList<QVariant> actionData;
+        actionData.push_back((int)dimension);
+        actionData.push_back((int)view);
+        resetDefaultAction->setData(actionData);
         QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
         if (!isDimensionEnabled) {
@@ -684,26 +758,33 @@ KnobGui::createAnimationMenu(QMenu* menu,
     bool dimensionHasExpression = false;
     bool hasExpression = false;
     for (int i = 0; i < knob->getNDimensions(); ++i) {
-        std::string dimExpr = knob->getExpression(i);
+        std::string dimExpr = knob->getExpression(DimIdx(i), view);
         if (i == dimension) {
             dimensionHasExpression = !dimExpr.empty();
         }
         hasExpression |= !dimExpr.empty();
     }
     if ( (knob->getNDimensions() > 1) && !hasDimensionSlaved && isAppKnob ) {
-        QAction* setExprsAction = new QAction( ( hasExpression ? tr("Edit expression") :
-                                                 tr("Set expression") ) + QLatin1Char(' ') + tr("(all dimensions)"), menu );
-        setExprsAction->setData(-1);
-        QObject::connect( setExprsAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
-        if (hasDimensionDisabled) {
-            setExprsAction->setEnabled(false);
+        {
+            QAction* setExprsAction = new QAction( ( hasExpression ? tr("Edit expression") :
+                                                    tr("Set expression") ) + QLatin1Char(' ') + tr("(all dimensions)"), menu );
+            QList<QVariant> actionData;
+            actionData.push_back((int)DimSpec::all());
+            actionData.push_back((int)view);
+            setExprsAction->setData(actionData);
+            QObject::connect( setExprsAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
+            if (hasDimensionDisabled) {
+                setExprsAction->setEnabled(false);
+            }
+            menu->addAction(setExprsAction);
         }
-        menu->addAction(setExprsAction);
-
         if (hasExpression) {
             QAction* clearExprAction = new QAction(tr("Clear expression") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
-            clearExprAction->setData(-1);
+            QList<QVariant> actionData;
+            actionData.push_back((int)DimSpec::all());
+            actionData.push_back((int)view);
+            clearExprAction->setData(actionData);
             if (!isDimensionEnabled) {
                 clearExprAction->setEnabled(false);
             }
@@ -711,18 +792,25 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
     }
     if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
-        QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
-        QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
-        setExprAction->setData(dimension);
-        if (!isDimensionEnabled) {
-            setExprAction->setEnabled(false);
+        {
+            QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
+            QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
+            QList<QVariant> actionData;
+            actionData.push_back((int)dimension);
+            actionData.push_back((int)view);
+            setExprAction->setData(actionData);
+            if (!isDimensionEnabled) {
+                setExprAction->setEnabled(false);
+            }
+            menu->addAction(setExprAction);
         }
-        menu->addAction(setExprAction);
-
         if (dimensionHasExpression) {
             QAction* clearExprAction = new QAction(tr("Clear expression"), menu);
             QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
-            clearExprAction->setData(dimension);
+            QList<QVariant> actionData;
+            actionData.push_back((int)dimension);
+            actionData.push_back((int)view);
+            clearExprAction->setData(actionData);
             if (!isDimensionEnabled) {
                 clearExprAction->setEnabled(false);
             }
@@ -742,31 +830,31 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
 
 
-    if ( isAppKnob && ( ( hasDimensionSlaved && (dimension == -1) ) || dimensionIsSlaved ) ) {
+    if ( isAppKnob && ( ( hasDimensionSlaved && dimension.isAll() ) || dimensionIsSlaved ) ) {
         menu->addSeparator();
 
         KnobIPtr aliasMaster = knob->getAliasMaster();
         std::string knobName;
 
-        if ( aliasMaster || ((dimension != -1 || knob->getNDimensions() == 1) && dimensionIsSlaved) ) {
+        if ( aliasMaster || ((!dimension.isAll()|| knob->getNDimensions() == 1) && dimensionIsSlaved) ) {
 
             KnobIPtr masterKnob;
-            std::pair<int, KnobIPtr > master;
+            MasterKnobLink linkData;
             if (aliasMaster) {
                 masterKnob = aliasMaster;
             } else {
-                master = knob->getMaster(dimension);
-                masterKnob = master.second;
+                (void)knob->getMaster(DimIdx(dimension), view, &linkData);
+                masterKnob = linkData.masterKnob.lock();
             }
 
             KnobHolderPtr masterHolder = masterKnob->getHolder();
             if (masterHolder) {
-                TrackMarkerPtr isMarker = toTrackMarker(masterHolder);
+                KnobTableItemPtr isTableItem = toKnobTableItem(masterHolder);
                 EffectInstancePtr isEffect = toEffectInstance(masterHolder);
-                if (isMarker) {
-                    knobName.append( isMarker->getContext()->getNode()->getScriptName() );
+                if (isTableItem) {
+                    knobName.append( isTableItem->getModel()->getNode()->getScriptName() );
                     knobName += '.';
-                    knobName += isMarker->getScriptName_mt_safe();
+                    knobName += isTableItem->getFullyQualifiedName();
                 } else if (isEffect) {
                     knobName += isEffect->getScriptName_mt_safe();
                 }
@@ -778,7 +866,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             knobName.append( masterKnob->getName() );
             if ( !aliasMaster && (masterKnob->getNDimensions() > 1) ) {
                 knobName.append(".");
-                knobName.append( masterKnob->getDimensionName(master.first) );
+                knobName.append( masterKnob->getDimensionName(linkData.masterDimension) );
             }
         }
         QString actionText;
@@ -825,18 +913,22 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
     KnobIPtr knob = getKnob();
 
     if (!makeAlias) {
+        std::list<ViewIdx> views = knob->getViewsList();
         for (int i = 0; i < knob->getNDimensions(); ++i) {
-            std::string expr = knob->getExpression(i);
-            if ( !expr.empty() ) {
-                StandardButtonEnum rep = Dialogs::questionDialog( tr("Expression").toStdString(), tr("This operation will create "
-                                                                                                     "an expression link between this parameter and the new parameter on the group"
-                                                                                                     " which will wipe the current expression(s).\n"
-                                                                                                     "Continue anyway?").toStdString(), false,
-                                                                  StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
-                if (rep != eStandardButtonYes) {
-                    return KnobIPtr();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                std::string expr = knob->getExpression(DimIdx(i), *it);
+                if ( !expr.empty() ) {
+                    StandardButtonEnum rep = Dialogs::questionDialog( tr("Expression").toStdString(), tr("This operation will create "
+                                                                                                         "an expression link between this parameter and the new parameter on the group"
+                                                                                                         " which will wipe the current expression(s).\n"
+                                                                                                         "Continue anyway?").toStdString(), false,
+                                                                     StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
+                    if (rep != eStandardButtonYes) {
+                        return KnobIPtr();
+                    }
                 }
             }
+
         }
     }
 

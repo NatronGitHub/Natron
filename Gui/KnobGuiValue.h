@@ -165,7 +165,7 @@ protected:
     virtual bool shouldAddStretch() const OVERRIDE ;
     virtual void setEnabled() OVERRIDE ;
     virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE ;
-    virtual void updateGUI(int dimension) OVERRIDE ;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE ;
     virtual void setDirty(bool dirty) OVERRIDE ;
     virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE ;
     virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE ;
@@ -258,7 +258,7 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
-    virtual void updateGUI(int dimension) OVERRIDE FINAL ;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL ;
 
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;

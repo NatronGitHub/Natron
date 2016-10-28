@@ -59,7 +59,8 @@ NATRON_NAMESPACE_ENTER;
 struct KnobsClipBoard
 {
     KnobClipBoardType type;
-    int dimension;
+    DimSpec dimension;
+    ViewIdx view;
     KnobIPtr serialization;
 };
 

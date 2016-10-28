@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Global/Enums.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
@@ -145,13 +146,13 @@ public:
     QString getScriptNameHtml() const;
 
     // Apply the tooltip on the widget if non-null, otherwise return it
-    QString toolTip(QWidget* w) const;
+    QString toolTip(QWidget* w, ViewIdx view) const;
 
     bool hasToolTip() const;
 
     Gui* getGui() const;
 
-    void enableRightClickMenu(QWidget* widget, int dimension);
+    void enableRightClickMenu(QWidget* widget, DimSpec dimension, ViewIdx view);
 
     virtual bool shouldCreateLabel() const;
     virtual bool isLabelOnSameColumn() const;
@@ -169,7 +170,7 @@ public:
     bool isOnNewLine() const;
 
     ////calls setReadOnly and also set the label black
-    void setReadOnly_(bool readOnly, int dimension);
+    void setReadOnly_(bool readOnly, DimSpec dimension, ViewIdx view);
 
     int getKnobsCountOnSameLine() const;
 
@@ -209,9 +210,9 @@ public:
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
-    virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
+    virtual void copyAnimationToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
+    virtual void copyValuesToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
+    virtual void copyLinkToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -247,8 +248,6 @@ public Q_SLOTS:
 
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(ViewSetSpec view, DimSpec dimension);
-
     void onDimensionNameChanged(int dimension);
 
     void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
@@ -259,7 +258,7 @@ public Q_SLOTS:
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(ViewIdx view, DimIdx dimension, ValueChangedReasonEnum reason);
+    void onMustRefreshGuiActionTriggered(ViewSetSpec view ,DimSpec dimension ,ValueChangedReasonEnum reason);
 
     void setSecret();
 
@@ -267,7 +266,7 @@ public Q_SLOTS:
 
     void onRightClickClicked(const QPoint & pos);
 
-    void showRightClickMenuForDimension(const QPoint & pos, int dimension);
+    void showRightClickMenuForDimension(const QPoint & pos, DimSpec dimension, ViewIdx view);
 
     void setEnabledSlot();
 
@@ -284,17 +283,7 @@ public Q_SLOTS:
 
     void onRemoveAnimationActionTriggered();
 
-    void onConstantInterpActionTriggered();
-
-    void onLinearInterpActionTriggered();
-
-    void onSmoothInterpActionTriggered();
-
-    void onCatmullromInterpActionTriggered();
-
-    void onCubicInterpActionTriggered();
-
-    void onHorizontalInterpActionTriggered();
+    void onInterpolationActionTriggered();
 
     void onCopyValuesActionTriggered();
 
@@ -305,20 +294,24 @@ public Q_SLOTS:
     void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo(int dimension);
+    void linkTo(DimSpec dimension, ViewIdx view);
 
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.
-    void resetDefault(int dimension);
-
-    void onKnobSlavedChanged(int dimension, bool b);
+    void resetDefault(DimSpec dimension, ViewIdx view);
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(ViewIdx view, int dim);
+    void onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
 
-    void onAppendParamEditChanged(int reason, int setValueRetCode, const Variant & v, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
+    void onAppendParamEditChanged(ValueChangedReasonEnum reason,
+                              ValueChangedReturnCodeEnum setValueRetCode,
+                              Variant v,
+                              ViewSetSpec view,
+                              DimSpec dim,
+                              double time,
+                              bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 
@@ -326,9 +319,9 @@ public Q_SLOTS:
 
     void onClearExprActionTriggered();
 
-    void onEditExprDialogFinished();
+    void onEditExprDialogFinished(bool accepted);
 
-    void onExprChanged(int dimension);
+    void onExprChanged(DimIdx dimension, ViewIdx view);
 
     void onHelpChanged();
 
@@ -340,8 +333,6 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    void mustRefreshAnimVisibility();
-
     // Emitted when the description label is clicked
     void labelClicked(bool);
 
@@ -351,27 +342,28 @@ protected:
      * @brief Called when the internal value held by the knob is changed, you must implement
      * it to update the interface to reflect the new value. You can query the new value
      * by calling knob->getValue()
-     * The dimension is either -1 indicating that all dimensions should be updated or the dimension index.
      **/
-    virtual void updateGUI(int dimension) = 0;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) = 0;
     virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
 
     virtual void reflectModificationsState() {}
 
 private:
 
+    static void getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec* dimension);
+
     void refreshKnobWarningIndicatorVisibility();
 
-    void updateGuiInternal(int dimension);
+    void updateGuiInternal(DimSpec dimension, ViewSetSpec view);
 
-    void copyToClipBoard(KnobClipBoardType type, int dimension) const;
+    void copyToClipBoard(KnobClipBoardType type, DimSpec dimension, ViewIdx view) const;
 
-    void pasteClipBoard(int targetDimension);
+    void pasteClipBoard(DimSpec dimension, ViewIdx view);
 
     virtual void _hide() = 0;
     virtual void _show() = 0;
     virtual void setEnabled() = 0;
-    virtual void setReadOnly(bool readOnly, int dimension) = 0;
+    virtual void setReadOnly(bool readOnly, DimSpec dimension, ViewIdx view) = 0;
     virtual void setDirty(bool dirty) = 0;
     virtual void onLabelChangedInternal() {}
 
@@ -386,20 +378,19 @@ private:
     /*Called right away after updateGUI(). Depending in the animation level
        the widget for the knob could display its gui a bit differently.
      */
-    virtual void reflectAnimationLevel(int /*dimension*/,
-                                       AnimationLevelEnum /*level*/)
+    virtual void reflectAnimationLevel(DimIdx /*dimension*/, ViewIdx /*view*/, AnimationLevelEnum /*level*/)
     {
     }
 
-    virtual void reflectExpressionState(int /*dimension*/,
+    virtual void reflectExpressionState(DimIdx /*dimension*/,
+                                        ViewIdx /*view*/,
                                         bool /*hasExpr*/) {}
 
     virtual void updateToolTip() {}
 
-    void createAnimationMenu(QMenu* menu, int dimension);
-    Menu* createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled);
+    void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view);
+    Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewIdx view, bool isEnabled);
 
-    void setInterpolationForDimensions(QAction* action, KeyframeTypeEnum interp);
 
 private:
 

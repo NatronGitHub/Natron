@@ -47,7 +47,7 @@
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
-#include "Gui/CurveEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -626,7 +626,7 @@ Gui::showView9()
 }
 
 void
-Gui::setCurveEditorOnTop()
+Gui::setAnimationEditorOnTop()
 {
     std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
     for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
@@ -636,7 +636,7 @@ Gui::setCurveEditorOnTop()
             continue;
         }
         for (int i = 0; i < cur->count(); ++i) {
-            if (cur->tabAt(i) == _imp->_curveEditor) {
+            if (cur->tabAt(i) == _imp->_animationModule) {
                 cur->setCurrentIndex(i);
                 break;
             }

@@ -242,7 +242,7 @@ public:
     SetKeysInterpolationCommand(const AnimItemDimViewKeyFramesMap & keys,
                                 const AnimationModuleBasePtr& model,
                                 KeyframeTypeEnum newInterpolation,
-                                QUndoCommand *parent);
+                                QUndoCommand *parent = 0);
 
     virtual ~SetKeysInterpolationCommand() OVERRIDE
     {

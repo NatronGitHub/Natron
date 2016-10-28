@@ -83,7 +83,7 @@ protected:
     virtual void _show() OVERRIDE;
     virtual void setEnabled() OVERRIDE;
     virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE;
-    virtual void updateGUI(int dimension) OVERRIDE;
+    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE;
     virtual void reflectAnimationLevel(int /*dimension*/,
                                        AnimationLevelEnum /*level*/) OVERRIDE
     {
