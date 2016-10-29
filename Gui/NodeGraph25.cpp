@@ -364,42 +364,41 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         qApp->sendEvent(parentWidget(), e);
         return;
     } else {
-        bool intercepted = false;
+        accept = false;
 
-        if ( modifiers.testFlag(Qt::ControlModifier) && ( (key == Qt::Key_Up) || (key == Qt::Key_Down) ) ) {
-            ///These shortcuts pans the graphics view but we don't want it
-            intercepted = true;
-        }
+        /// Search for a node which has a shortcut bound
+        const PluginsMap & allPlugins = appPTR->getPluginsList();
+        bool shortcutFound = false;
+        for (PluginsMap::const_iterator it = allPlugins.begin();
+             !shortcutFound && it != allPlugins.end();
+             ++it) {
+            assert( !it->second.empty() );
+            PluginPtr plugin = *it->second.rbegin();
 
-        if (!intercepted) {
-            /// Search for a node which has a shortcut bound
-            const PluginsMap & allPlugins = appPTR->getPluginsList();
-            for (PluginsMap::const_iterator it = allPlugins.begin(); it != allPlugins.end(); ++it) {
-                assert( !it->second.empty() );
-                PluginPtr plugin = *it->second.rbegin();
+            QString group = QString::fromUtf8(kShortcutGroupNodes);
+            std::vector<std::string> groupingSplit = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
+                group.push_back( QLatin1Char('/') );
+                group.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
+            }
+            if ( isKeybind(group.toStdString(), plugin->getPluginID(), modifiers, key) ) {
+                QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                CreateNodeArgsPtr args(CreateNodeArgs::create( plugin->getPluginID(), getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                getGui()->getApp()->createNode(args);
 
-                QString group = QString::fromUtf8(kShortcutGroupNodes);
-                std::vector<std::string> groupingSplit = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-                for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
-                    group.push_back( QLatin1Char('/') );
-                    group.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
-                }
-                if ( isKeybind(group.toStdString(), plugin->getPluginID(), modifiers, key) ) {
-                    QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    CreateNodeArgsPtr args(CreateNodeArgs::create( plugin->getPluginID(), getGroup() ));
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
-                    getGui()->getApp()->createNode(args);
-
-                    intercepted = true;
-                    break;
-                }
+                accept = true;
+                shortcutFound = true;
+            } else {
 
                 // Also check for presets shortcuts
-                bool mustBreak = false;
                 const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin(); it2 != presets.end(); ++it2) {
 
+                bool presetShortcutFound = false;
+                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin();
+                     !presetShortcutFound && it2 != presets.end();
+                     ++it2) {
                     std::string shortcutKey = plugin->getPluginID();
                     shortcutKey += "_preset_";
                     shortcutKey += it2->presetLabel.toStdString();
@@ -412,21 +411,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         args->setProperty<std::string>(kCreateNodeArgsPropPreset, it2->presetLabel.toStdString());
                         getGui()->getApp()->createNode(args);
 
-                        intercepted = true;
-                        mustBreak = true;
-                        break;
+                        accept = true;
+                        shortcutFound = true;
+                        presetShortcutFound = true;
                     }
                 }
-                if (mustBreak) {
-                    break;
-                }
-
             }
-        }
-
-
-        if (!intercepted) {
-            accept = false;
         }
     }
     if (accept) {

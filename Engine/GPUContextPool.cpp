@@ -166,11 +166,7 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 OSGLContextPtr
 GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
 {
-
-#ifndef HAVE_OSMESA
-    return OSGLContextPtr();
-#endif
-    
+#ifdef HAVE_OSMESA
     QMutexLocker k(&_imp->contextPoolMutex);
 
     if (retrieveLastContext) {
@@ -239,6 +235,10 @@ GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
     
     return newContext;
 
+#else // !HAVE_OSMESA
+
+    return OSGLContextPtr();
+#endif
 }
 
 void

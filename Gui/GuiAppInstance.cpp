@@ -1031,7 +1031,9 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
             assert(graph_i);
             graph = dynamic_cast<NodeGraph*>(graph_i);
         }
-        graph->setNodeToDefaultPosition(nodeGui, graph->getSelectedNodes(), args);
+        if (graph) {
+            graph->setNodeToDefaultPosition(nodeGui, graph->getSelectedNodes(), args);
+        }
     }
     AppInstance::onGroupCreationFinished(node, args);
 

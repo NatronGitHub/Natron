@@ -68,8 +68,11 @@ enum RampTypeEnum
 
 class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
 {
-    unsigned int _iboID, _vboVerticesID, _vboColorsID;
-    unsigned int _vboHardnessID, _vboTexID;
+    unsigned int _iboID;
+    unsigned int _vboVerticesID;
+    unsigned int _vboColorsID;
+    unsigned int _vboHardnessID;
+    unsigned int _vboTexID;
 
     std::vector<GLShaderBasePtr> _featherRampShader;
     std::vector<GLShaderBasePtr> _strokeDotShader;

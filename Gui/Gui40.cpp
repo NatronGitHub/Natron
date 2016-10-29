@@ -624,7 +624,9 @@ Gui::ensureScriptEditorVisible()
             pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
-        pane->moveScriptEditorHere();
+        if (pane) {
+            pane->moveScriptEditorHere();
+        }
     }
 }
 
@@ -647,6 +649,9 @@ Gui::ensureProgressPanelVisible()
             pane = dynamic_cast<TabWidget*>(tabs.front());
         }
         assert(pane);
+        if (!pane) {
+            return NULL;
+        }
         PanelWidget* ret = pane->currentWidget();
         pane->moveProgressPanelHere();
         return ret;

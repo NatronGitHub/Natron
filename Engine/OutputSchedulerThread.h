@@ -83,6 +83,7 @@ public:
     ViewerCurrentFrameRequestSchedulerStartArgs()
         : GenericThreadStartArgs()
         , age(0)
+        , useSingleThread(false)
     {
     }
 

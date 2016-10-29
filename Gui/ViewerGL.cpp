@@ -1910,26 +1910,27 @@ ViewerGL::updateColorPicker(int textureIndex,
 
     ViewerNodePtr viewerNode = getInternalNode();
     QPointF imgPosCanonical;
+    bool imgPosCanonicalSet = false;
     if (!xInitialized || !yInitialized) {
-        if ( !viewerNode->isViewersSynchroEnabled() ) {
-            pos = mapFromGlobal( QCursor::pos() );
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
-        } else {
+        if ( viewerNode->isViewersSynchroEnabled() ) {
             NodePtr masterViewerNode = getViewerTab()->getGui()->getApp()->getMasterSyncViewer();
             if (masterViewerNode) {
                 ViewerNodePtr viewerNode = toViewerNode(masterViewerNode->getEffectInstance());
                 ViewerGL* viewerUIContext = dynamic_cast<ViewerGL*>(viewerNode->getUiContext());
                 assert(viewerUIContext);
-                pos = viewerUIContext->mapFromGlobal( QCursor::pos() );
-                imgPosCanonical = viewerUIContext->toZoomCoordinates(pos);
-            } else {
-                pos = mapFromGlobal( QCursor::pos() );
-                QMutexLocker l(&_imp->zoomCtxMutex);
-                imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
+                if (viewerUIContext) {
+                    pos = viewerUIContext->mapFromGlobal( QCursor::pos() );
+                    xInitialized = yInitialized = true;
+                    imgPosCanonical = viewerUIContext->toZoomCoordinates(pos);
+                    imgPosCanonicalSet = true;
+                }
             }
         }
-    } else {
+    }
+    if (!xInitialized || !yInitialized) {
+        pos = mapFromGlobal( QCursor::pos() );
+    }
+    if (!imgPosCanonicalSet) {
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
     }

@@ -1404,10 +1404,6 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 knob = AppManager::createKnob<KnobSeparator>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isParametric) {
                 knob = AppManager::createKnob<KnobParametric>(_imp->effect, serialization->_label, serialization->_dimension, false);
-            } else if (isChoice) {
-                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
-            } else if (isChoice) {
-                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
             }
             if (!found && _imp->isLoadingPreset) {
                 _imp->presetKnobs.push_back(knob);
@@ -3518,7 +3514,9 @@ Node::createPyPlugExportGroup()
         param->setDefaultValue(false);
         param->setIsPersistent(false);
         param->setAsDialog(true);
-        mainPage->addKnob(param);
+        if (mainPage) {
+            mainPage->addKnob(param);
+        }
         _imp->pyPlugExportDialog = param;
     }
 

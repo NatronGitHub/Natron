@@ -681,6 +681,9 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 {
     OpenGLViewerI* uiContext = getUiContext();
     assert(uiContext);
+    if (!uiContext) {
+        return;
+    }
     ViewerNodePtr viewerNode = getViewerNodeGroup();
 
     {
@@ -818,7 +821,9 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     OpenGLViewerI* uiContext = getUiContext();
     assert(uiContext);
-
+    if (!uiContext) {
+        return;
+    }
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;
     if (!outArgs->useViewerCache) {
@@ -2728,7 +2733,9 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
             texRect.set(it->rectRounded);
     
             assert(params->roi.contains(texRect));
-            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, params->roiNotRoundedToTileSize, texRect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
+            if (uiContext) {
+                uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, params->roiNotRoundedToTileSize, texRect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
+            }
             isFirstTile = false;
         }
 
@@ -2854,8 +2861,9 @@ ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
     node->refreshFps();
     node->refreshViewsKnobVisibility();
     refreshLayerAndAlphaChannelComboBox();
-    if (getUiContext()) {
-        getUiContext()->refreshFormatFromMetadata();
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->refreshFormatFromMetadata();
     }
 }
 
