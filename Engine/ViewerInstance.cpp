@@ -822,7 +822,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     OpenGLViewerI* uiContext = getUiContext();
     assert(uiContext);
     if (!uiContext) {
-        return;
+        return eViewerRenderRetCodeFail;
     }
     outArgs->params->tiles.clear();
     outArgs->params->nbCachedTile = 0;

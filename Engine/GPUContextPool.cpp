@@ -237,6 +237,8 @@ GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
 
 #else // !HAVE_OSMESA
 
+    Q_UNUSED(retrieveLastContext);
+    
     return OSGLContextPtr();
 #endif
 }
