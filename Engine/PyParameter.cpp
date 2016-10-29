@@ -2188,7 +2188,7 @@ PathParam::~PathParam()
 void
 PathParam::setAsMultiPathTable()
 {
-    KnobOutputFilePtr knob = _sKnob.lock();
+    KnobPathPtr knob = _sKnob.lock();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
