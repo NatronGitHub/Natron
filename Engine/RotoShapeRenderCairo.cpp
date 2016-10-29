@@ -1981,6 +1981,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 dotPatterns[i] = (cairo_pattern_t*)0;
             }
         }
+#pragma message WARN("BUG: isStroke is NULL in the following call if shape is an open bezier")
         RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, time, mipmapLevel, distToNextOut, lastCenterPointOut);
 
         if (isDuringPainting) {
