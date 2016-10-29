@@ -98,10 +98,12 @@ Param::getLabel() const
 void
 Param::setLabel(const QString& label)
 {
-    if ( !getInternalKnob()->isUserKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return;
     }
-    getInternalKnob()->setLabel(label);
+    knob->setLabel(label);
 }
 
 QString
