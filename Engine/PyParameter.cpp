@@ -48,7 +48,12 @@ Param::~Param()
 Param*
 Param::getParent() const
 {
-    KnobIPtr parent = getInternalKnob()->getParentKnob();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    KnobIPtr parent = knob->getParentKnob();
 
     if (parent) {
         return new Param(parent);
@@ -60,19 +65,34 @@ Param::getParent() const
 int
 Param::getNumDimensions() const
 {
-    return getInternalKnob()->getDimension();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getDimension();
 }
 
 QString
 Param::getScriptName() const
 {
-    return QString::fromUtf8( getInternalKnob()->getName().c_str() );
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8( knob->getName().c_str() );
 }
 
 QString
 Param::getLabel() const
 {
-    return QString::fromUtf8( getInternalKnob()->getLabel().c_str() );
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8( knob->getLabel().c_str() );
 }
 
 void
@@ -87,105 +107,167 @@ Param::setLabel(const QString& label)
 QString
 Param::getTypeName() const
 {
-    return QString::fromUtf8( getInternalKnob()->typeName().c_str() );
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8( knob->typeName().c_str() );
 }
 
 QString
 Param::getHelp() const
 {
-    return QString::fromUtf8( getInternalKnob()->getHintToolTip().c_str() );
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return QString();
+    }
+    return QString::fromUtf8( knob->getHintToolTip().c_str() );
 }
 
 void
 Param::setHelp(const QString& help)
 {
-    if ( !getInternalKnob()->isUserKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    getInternalKnob()->setHintToolTip( help.toStdString() );
+    knob->setHintToolTip( help.toStdString() );
 }
 
 bool
 Param::getIsVisible() const
 {
-    return !getInternalKnob()->getIsSecret();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getIsSecret();
 }
 
 void
 Param::setVisible(bool visible)
 {
-    getInternalKnob()->setSecret(!visible);
-}
+    KnobIPtr knob = getInternalKnob();
 
+    if (!knob) {
+        return;
+    }
+    knob->setSecret(!visible);
+}
 
 bool
 Param::getIsEnabled(int dimension) const
 {
-    return getInternalKnob()->isEnabled(dimension);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->isEnabled(dimension);
 }
 
 void
 Param::setEnabled(bool enabled,
                   int dimension)
 {
-    getInternalKnob()->setEnabled(dimension, enabled);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->setEnabled(dimension, enabled);
 }
 
 bool
 Param::getIsPersistent() const
 {
-    return getInternalKnob()->getIsPersistent();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getIsPersistent();
 }
 
 void
 Param::setPersistent(bool persistent)
 {
-    if ( !getInternalKnob()->isUserKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    getInternalKnob()->setIsPersistent(persistent);
+    knob->setIsPersistent(persistent);
 }
 
 bool
 Param::getEvaluateOnChange() const
 {
-    return getInternalKnob()->getEvaluateOnChange();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getEvaluateOnChange();
 }
 
 void
 Param::setEvaluateOnChange(bool eval)
 {
-    if ( !getInternalKnob()->isUserKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    getInternalKnob()->setEvaluateOnChange(eval);
+    knob->setEvaluateOnChange(eval);
 }
 
 bool
 Param::getCanAnimate() const
 {
-    return getInternalKnob()->canAnimate();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->canAnimate();
 }
 
 bool
 Param::getIsAnimationEnabled() const
 {
-    return getInternalKnob()->isAnimationEnabled();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->isAnimationEnabled();
 }
 
 void
 Param::setAnimationEnabled(bool e)
 {
-    if ( !getInternalKnob()->isUserKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    getInternalKnob()->setAnimationEnabled(e);
+    knob->setAnimationEnabled(e);
 }
 
 bool
 Param::getAddNewLine()
 {
-    return getInternalKnob()->isNewLineActivated();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->isNewLineActivated();
 }
 
 void
@@ -396,53 +478,58 @@ double
 Param::random(double min,
               double max) const
 {
-    if ( !getInternalKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return 0;
     }
-
-    return getInternalKnob()->random(min, max);
+    return knob->random(min, max);
 }
 
 double
 Param::random(unsigned int seed) const
 {
-    if ( !getInternalKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return 0;
     }
-
-    return getInternalKnob()->random(seed);
+    return knob->random(seed);
 }
 
 int
 Param::randomInt(int min,
                  int max)
 {
-    if ( !getInternalKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return 0;
     }
-
-    return getInternalKnob()->randomInt(min, max);
+    return knob->randomInt(min, max);
 }
 
 int
 Param::randomInt(unsigned int seed) const
 {
-    if ( !getInternalKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return 0;
     }
-
-    return getInternalKnob()->randomInt(seed);
+    return knob->randomInt(seed);
 }
 
 double
 Param::curve(double time,
              int dimension) const
 {
-    if ( !getInternalKnob() ) {
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
         return 0.;
     }
-
-    return getInternalKnob()->getRawCurveValueAt(time, ViewSpec::current(), dimension);
+    return knob->getRawCurveValueAt(time, ViewSpec::current(), dimension);
 }
 
 bool
@@ -479,20 +566,35 @@ AnimatedParam::~AnimatedParam()
 bool
 AnimatedParam::getIsAnimated(int dimension) const
 {
-    return getInternalKnob()->isAnimated( dimension, ViewSpec::current() );
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->isAnimated( dimension, ViewSpec::current() );
 }
 
 int
 AnimatedParam::getNumKeys(int dimension) const
 {
-    return getInternalKnob()->getKeyFramesCount(ViewSpec::current(), dimension);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getKeyFramesCount(ViewSpec::current(), dimension);
 }
 
 int
 AnimatedParam::getKeyIndex(double time,
                            int dimension) const
 {
-    return getInternalKnob()->getKeyFrameIndex(ViewSpec::current(), dimension, time);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getKeyFrameIndex(ViewSpec::current(), dimension, time);
 }
 
 bool
@@ -500,27 +602,48 @@ AnimatedParam::getKeyTime(int index,
                           int dimension,
                           double* time) const
 {
-    return getInternalKnob()->getKeyFrameTime(ViewSpec::current(), index, dimension, time);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        *time = 0.;
+        return false;
+    }
+    return knob->getKeyFrameTime(ViewSpec::current(), index, dimension, time);
 }
 
 void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
 }
 
 void
 AnimatedParam::removeAnimation(int dimension)
 {
-    getInternalKnob()->removeAnimation(ViewSpec::all(), dimension);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return;
+    }
+    knob->removeAnimation(ViewSpec::all(), dimension);
 }
 
 double
 AnimatedParam::getDerivativeAtTime(double time,
                                    int dimension) const
 {
-    return getInternalKnob()->getDerivativeAtTime(time, ViewSpec::current(), dimension);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDerivativeAtTime(time, ViewSpec::current(), dimension);
 }
 
 double
@@ -528,13 +651,23 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
                                           double time2,
                                           int dimension) const
 {
-    return getInternalKnob()->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), dimension);
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), dimension);
 }
 
 int
 AnimatedParam::getCurrentTime() const
 {
-    return getInternalKnob()->getCurrentTime();
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return 0;
+    }
+    return knob->getCurrentTime();
 }
 
 bool
@@ -617,6 +750,9 @@ int
 IntParam::get() const
 {
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
 
     return knob->getValue();
 }
@@ -624,8 +760,11 @@ IntParam::get() const
 Int2DTuple
 Int2DParam::get() const
 {
-    Int2DTuple ret;
+    Int2DTuple ret = {0, 0};
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValue(0);
     ret.y = knob->getValue(1);
@@ -637,7 +776,10 @@ Int3DTuple
 Int3DParam::get() const
 {
     KnobIntPtr knob = _intKnob.lock();
-    Int3DTuple ret;
+    Int3DTuple ret = {0, 0, 0};
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValue(0);
     ret.y = knob->getValue(1);
@@ -650,6 +792,9 @@ int
 IntParam::get(double frame) const
 {
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
 
     return knob->getValueAtTime(frame, 0);
 }
@@ -657,8 +802,11 @@ IntParam::get(double frame) const
 Int2DTuple
 Int2DParam::get(double frame) const
 {
-    Int2DTuple ret;
+    Int2DTuple ret = {0, 0};
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValueAtTime(frame, 0);
     ret.y = knob->getValueAtTime(frame, 1);
@@ -669,8 +817,11 @@ Int2DParam::get(double frame) const
 Int3DTuple
 Int3DParam::get(double frame) const
 {
-    Int3DTuple ret;
+    Int3DTuple ret = {0, 0, 0};
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValueAtTime(frame, 0);
     ret.y = knob->getValueAtTime(frame, 1);
@@ -682,7 +833,11 @@ Int3DParam::get(double frame) const
 void
 IntParam::set(int x)
 {
-    _intKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(x, ViewSpec::current(), 0);
 }
 
 void
@@ -690,7 +845,9 @@ Int2DParam::set(int x,
                 int y)
 {
     KnobIntPtr knob = _intKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->beginChanges();
     knob->setValue(x, ViewSpec::current(), 0);
     knob->setValue(y, ViewSpec::current(), 1);
@@ -703,6 +860,9 @@ Int3DParam::set(int x,
                 int z)
 {
     KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
 
     knob->beginChanges();
     knob->setValue(x, ViewSpec::current(), 0);
@@ -715,7 +875,11 @@ void
 IntParam::set(int x,
               double frame)
 {
-    _intKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
 void
@@ -724,7 +888,9 @@ Int2DParam::set(int x,
                 double frame)
 {
     KnobIntPtr knob = _intKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -735,28 +901,42 @@ Int3DParam::set(int x,
                 double frame)
 {
     KnobIntPtr knob = _intKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
 int
 IntParam::getValue(int dimension) const
 {
-    return _intKnob.lock()->getValue(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValue(dimension);
 }
 
 void
 IntParam::setValue(int value,
                    int dimension)
 {
-    _intKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(value, ViewSpec::current(), dimension);
 }
 
 int
 IntParam::getValueAtTime(double time,
                          int dimension) const
 {
-    return _intKnob.lock()->getValueAtTime(time, dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValueAtTime(time, dimension);
 }
 
 void
@@ -764,85 +944,126 @@ IntParam::setValueAtTime(int value,
                          double time,
                          int dimension)
 {
-    _intKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
 void
 IntParam::setDefaultValue(int value,
                           int dimension)
 {
-    _intKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(value, dimension);
 }
 
 int
 IntParam::getDefaultValue(int dimension) const
 {
-    return _intKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getDefaultValues_mt_safe()[dimension];
 }
 
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    _intKnob.lock()->resetToDefaultValue(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->resetToDefaultValue(dimension);
 }
 
 void
 IntParam::setMinimum(int minimum,
                      int dimension)
 {
-    _intKnob.lock()->setMinimum(minimum, dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(minimum, dimension);
 }
 
 int
 IntParam::getMinimum(int dimension) const
 {
-    return _intKnob.lock()->getMinimum(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getMinimum(dimension);
 }
 
 void
 IntParam::setMaximum(int maximum,
                      int dimension)
 {
-    if ( !_intKnob.lock()->isUserKnob() ) {
+    KnobIntPtr knob = _intKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _intKnob.lock()->setMaximum(maximum, dimension);
+    knob->setMaximum(maximum, dimension);
 }
 
 int
 IntParam::getMaximum(int dimension) const
 {
-    return _intKnob.lock()->getMaximum(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getMaximum(dimension);
 }
 
 void
 IntParam::setDisplayMinimum(int minimum,
                             int dimension)
 {
-    if ( !_intKnob.lock()->isUserKnob() ) {
+    KnobIntPtr knob = _intKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-
-    return _intKnob.lock()->setDisplayMinimum(minimum, dimension);
+    knob->setDisplayMinimum(minimum, dimension);
 }
 
 int
 IntParam::getDisplayMinimum(int dimension) const
 {
-    return _intKnob.lock()->getDisplayMinimum(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getDisplayMinimum(dimension);
 }
 
 void
 IntParam::setDisplayMaximum(int maximum,
                             int dimension)
 {
-    _intKnob.lock()->setDisplayMaximum(maximum, dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMaximum(maximum, dimension);
 }
 
 int
 IntParam::getDisplayMaximum(int dimension) const
 {
-    return _intKnob.lock()->getDisplayMaximum(dimension);
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getDisplayMaximum(dimension);
 }
 
 int
@@ -852,7 +1073,11 @@ IntParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _intKnob.lock()->getValue();
+    KnobIntPtr knob = _intKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValue();
 }
 
 //////////// DoubleParam
@@ -870,14 +1095,21 @@ DoubleParam::~DoubleParam()
 double
 DoubleParam::get() const
 {
-    return _doubleKnob.lock()->getValue(0);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValue(0);
 }
 
 Double2DTuple
 Double2DParam::get() const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double2DTuple ret;
+    Double2DTuple ret = {0., 0.};
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValue(0);
     ret.y = knob->getValue(1);
@@ -889,7 +1121,10 @@ Double3DTuple
 Double3DParam::get() const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double3DTuple ret;
+    Double3DTuple ret = {0., 0., 0.};
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValue(0);
     ret.y = knob->getValue(1);
@@ -901,14 +1136,21 @@ Double3DParam::get() const
 double
 DoubleParam::get(double frame) const
 {
-    return _doubleKnob.lock()->getValueAtTime(frame, 0);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValueAtTime(frame, 0);
 }
 
 Double2DTuple
 Double2DParam::get(double frame) const
 {
-    Double2DTuple ret;
+    Double2DTuple ret = {0., 0.};
     KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValueAtTime(frame, 0);
     ret.y = knob->getValueAtTime(frame, 1);
@@ -920,7 +1162,10 @@ Double3DTuple
 Double3DParam::get(double frame) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double3DTuple ret;
+    Double3DTuple ret = {0., 0., 0.};
+    if (!knob) {
+        return ret;
+    }
 
     ret.x = knob->getValueAtTime(frame, 0);
     ret.y = knob->getValueAtTime(frame, 1);
@@ -932,7 +1177,11 @@ Double3DParam::get(double frame) const
 void
 DoubleParam::set(double x)
 {
-    _doubleKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(x, ViewSpec::current(), 0);
 }
 
 void
@@ -940,6 +1189,9 @@ Double2DParam::set(double x,
                    double y)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
 
     knob->setValues(x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
@@ -950,6 +1202,9 @@ Double3DParam::set(double x,
                    double z)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
 
     knob->setValues(x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
@@ -958,7 +1213,11 @@ void
 DoubleParam::set(double x,
                  double frame)
 {
-    _doubleKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
 void
@@ -967,6 +1226,9 @@ Double2DParam::set(double x,
                    double frame)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
 
     knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
@@ -974,10 +1236,11 @@ Double2DParam::set(double x,
 void
 Double2DParam::setUsePointInteract(bool use)
 {
-    if ( !_doubleKnob.lock() ) {
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
         return;
     }
-    _doubleKnob.lock()->setHasHostOverlayHandle(use);
+    return knob->setHasHostOverlayHandle(use);
 }
 
 void
@@ -987,6 +1250,9 @@ Double3DParam::set(double x,
                    double frame)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
 
     knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
@@ -994,21 +1260,33 @@ Double3DParam::set(double x,
 double
 DoubleParam::getValue(int dimension) const
 {
-    return _doubleKnob.lock()->getValue(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValue(dimension);
 }
 
 void
 DoubleParam::setValue(double value,
                       int dimension)
 {
-    _doubleKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(value, ViewSpec::current(), dimension);
 }
 
 double
 DoubleParam::getValueAtTime(double time,
                             int dimension) const
 {
-    return _doubleKnob.lock()->getValueAtTime(time, dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValueAtTime(time, dimension);
 }
 
 void
@@ -1016,84 +1294,126 @@ DoubleParam::setValueAtTime(double value,
                             double time,
                             int dimension)
 {
-    _doubleKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
 void
 DoubleParam::setDefaultValue(double value,
                              int dimension)
 {
-    _doubleKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setDefaultValueWithoutApplying(value, dimension);
 }
 
 double
 DoubleParam::getDefaultValue(int dimension) const
 {
-    return _doubleKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDefaultValues_mt_safe()[dimension];
 }
 
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    _doubleKnob.lock()->resetToDefaultValue(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->resetToDefaultValue(dimension);
 }
 
 void
 DoubleParam::setMinimum(double minimum,
                         int dimension)
 {
-    _doubleKnob.lock()->setMinimum(minimum, dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(minimum, dimension);
 }
 
 double
 DoubleParam::getMinimum(int dimension) const
 {
-    return _doubleKnob.lock()->getMinimum(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMinimum(dimension);
 }
 
 void
 DoubleParam::setMaximum(double maximum,
                         int dimension)
 {
-    if ( !_doubleKnob.lock()->isUserKnob() ) {
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _doubleKnob.lock()->setMaximum(maximum, dimension);
+    knob->setMaximum(maximum, dimension);
 }
 
 double
 DoubleParam::getMaximum(int dimension) const
 {
-    return _doubleKnob.lock()->getMaximum(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMaximum(dimension);
 }
 
 void
 DoubleParam::setDisplayMinimum(double minimum,
                                int dimension)
 {
-    if ( !_doubleKnob.lock()->isUserKnob() ) {
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _doubleKnob.lock()->setDisplayMinimum(minimum, dimension);
+    knob->setDisplayMinimum(minimum, dimension);
 }
 
 double
 DoubleParam::getDisplayMinimum(int dimension) const
 {
-    return _doubleKnob.lock()->getDisplayMinimum(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMinimum(dimension);
 }
 
 void
 DoubleParam::setDisplayMaximum(double maximum,
                                int dimension)
 {
-    _doubleKnob.lock()->setDisplayMaximum(maximum, dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setDisplayMaximum(maximum, dimension);
 }
 
 double
 DoubleParam::getDisplayMaximum(int dimension) const
 {
-    return _doubleKnob.lock()->getDisplayMaximum(dimension);
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMaximum(dimension);
 }
 
 double
@@ -1103,7 +1423,11 @@ DoubleParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _doubleKnob.lock()->getValue();
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValue();
 }
 
 ////////ColorParam
@@ -1121,9 +1445,11 @@ ColorParam::~ColorParam()
 ColorTuple
 ColorParam::get() const
 {
-    ColorTuple ret;
+    ColorTuple ret = {0., 0., 0., 0.};
     KnobColorPtr knob = _colorKnob.lock();
-
+    if (!knob) {
+        return ret;
+    }
     ret.r = knob->getValue(0);
     ret.g = knob->getValue(1);
     ret.b = knob->getValue(2);
@@ -1135,9 +1461,11 @@ ColorParam::get() const
 ColorTuple
 ColorParam::get(double frame) const
 {
-    ColorTuple ret;
+    ColorTuple ret = {0., 0., 0., 0.};
     KnobColorPtr knob = _colorKnob.lock();
-
+    if (!knob) {
+        return ret;
+    }
     ret.r = knob->getValueAtTime(frame, 0);
     ret.g = knob->getValueAtTime(frame, 1);
     ret.b = knob->getValueAtTime(frame, 2);
@@ -1153,7 +1481,9 @@ ColorParam::set(double r,
                 double a)
 {
     KnobColorPtr knob = _colorKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->beginChanges();
     knob->setValue(r, ViewSpec::current(), 0);
     knob->setValue(g, ViewSpec::current(), 1);
@@ -1172,7 +1502,9 @@ ColorParam::set(double r,
                 double frame)
 {
     KnobColorPtr knob = _colorKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->beginChanges();
     knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
     knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
@@ -1187,21 +1519,33 @@ ColorParam::set(double r,
 double
 ColorParam::getValue(int dimension) const
 {
-    return _colorKnob.lock()->getValue(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValue(dimension);
 }
 
 void
 ColorParam::setValue(double value,
                      int dimension)
 {
-    _colorKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(value, ViewSpec::current(), dimension);
 }
 
 double
 ColorParam::getValueAtTime(double time,
                            int dimension) const
 {
-    return _colorKnob.lock()->getValueAtTime(time, dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValueAtTime(time, dimension);
 }
 
 void
@@ -1209,84 +1553,126 @@ ColorParam::setValueAtTime(double value,
                            double time,
                            int dimension)
 {
-    _colorKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
 void
 ColorParam::setDefaultValue(double value,
                             int dimension)
 {
-    _colorKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(value, dimension);
 }
 
 double
 ColorParam::getDefaultValue(int dimension) const
 {
-    return _colorKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDefaultValues_mt_safe()[dimension];
 }
 
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValue(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->resetToDefaultValue(dimension);
 }
 
 void
 ColorParam::setMinimum(double minimum,
                        int dimension)
 {
-    _colorKnob.lock()->setMinimum(minimum, dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(minimum, dimension);
 }
 
 double
 ColorParam::getMinimum(int dimension) const
 {
-    return _colorKnob.lock()->getMinimum(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMinimum(dimension);
 }
 
 void
 ColorParam::setMaximum(double maximum,
                        int dimension)
 {
-    if ( !_colorKnob.lock()->isUserKnob() ) {
+    KnobColorPtr knob = _colorKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _colorKnob.lock()->setMaximum(maximum, dimension);
+    knob->setMaximum(maximum, dimension);
 }
 
 double
 ColorParam::getMaximum(int dimension) const
 {
-    return _colorKnob.lock()->getMaximum(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMaximum(dimension);
 }
 
 void
 ColorParam::setDisplayMinimum(double minimum,
                               int dimension)
 {
-    if ( !_colorKnob.lock()->isUserKnob() ) {
+    KnobColorPtr knob = _colorKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _colorKnob.lock()->setDisplayMinimum(minimum, dimension);
+    knob->setDisplayMinimum(minimum, dimension);
 }
 
 double
 ColorParam::getDisplayMinimum(int dimension) const
 {
-    return _colorKnob.lock()->getDisplayMinimum(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMinimum(dimension);
 }
 
 void
 ColorParam::setDisplayMaximum(double maximum,
                               int dimension)
 {
-    _colorKnob.lock()->setDisplayMaximum(maximum, dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMaximum(maximum, dimension);
 }
 
 double
 ColorParam::getDisplayMaximum(int dimension) const
 {
-    return _colorKnob.lock()->getDisplayMaximum(dimension);
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMaximum(dimension);
 }
 
 double
@@ -1296,7 +1682,11 @@ ColorParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _colorKnob.lock()->getValue();
+    KnobColorPtr knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->getValue();
 }
 
 //////////////// ChoiceParam
@@ -1680,7 +2070,7 @@ StringParam::setType(StringParam::TypeEnum type)
 {
     KnobStringPtr knob = _sKnob.lock();
 
-    if ( !knob->isUserKnob() ) {
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
     switch (type) {
@@ -1721,7 +2111,7 @@ FileParam::setSequenceEnabled(bool enabled)
 {
     KnobFilePtr k = _sKnob.lock();
 
-    if ( !k->isUserKnob() ) {
+    if ( !k || !k->isUserKnob() ) {
         return;
     }
     if (enabled) {
@@ -1798,7 +2188,9 @@ PathParam::~PathParam()
 void
 PathParam::setAsMultiPathTable()
 {
-    if ( !_sKnob.lock()->isUserKnob() ) {
+    KnobOutputFilePtr knob = _sKnob.lock();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
     _sKnob.lock()->setMultiPath(true);
@@ -1868,31 +2260,49 @@ GroupParam::~GroupParam()
 void
 GroupParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
+    if (!param) {
         return;
     }
-    _groupKnob.lock()->addKnob( param->getInternalKnob() );
+    KnobIPtr knob = param->getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
+        return;
+    }
+    KnobGroupPtr group = _groupKnob.lock();
+    if (!group) {
+        return;
+    }
+    group->addKnob(knob);
 }
 
 void
 GroupParam::setAsTab()
 {
-    if ( !_groupKnob.lock()->isUserKnob() ) {
+    KnobGroupPtr group = _groupKnob.lock();
+    if ( !group || !group->isUserKnob() ) {
         return;
     }
-    _groupKnob.lock()->setAsTab();
+    group->setAsTab();
 }
 
 void
 GroupParam::setOpened(bool opened)
 {
-    _groupKnob.lock()->setValue(opened, ViewSpec::current(), 0);
+    KnobGroupPtr group = _groupKnob.lock();
+    if (!group) {
+        return;
+    }
+    group->setValue(opened, ViewSpec::current(), 0);
 }
 
 bool
 GroupParam::getIsOpened() const
 {
-    return _groupKnob.lock()->getValue();
+    KnobGroupPtr group = _groupKnob.lock();
+    if (!group) {
+        return false;
+    }
+    return group->getValue();
 }
 
 //////////////////////PageParam
@@ -1910,7 +2320,12 @@ PageParam::~PageParam()
 void
 PageParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
+    if (!param) {
+        return;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
     _pageKnob.lock()->addKnob( param->getInternalKnob() );
@@ -1933,14 +2348,22 @@ ParametricParam::setCurveColor(int dimension,
                                double g,
                                double b)
 {
-    _parametricKnob.lock()->setCurveColor(dimension, r, g, b);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return;
+    }
+    param->setCurveColor(dimension, r, g, b);
 }
 
 void
 ParametricParam::getCurveColor(int dimension,
                                ColorTuple& ret) const
 {
-    _parametricKnob.lock()->getCurveColor(dimension, &ret.r, &ret.g, &ret.b);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return;
+    }
+    param->getCurveColor(dimension, &ret.r, &ret.g, &ret.b);
     ret.a = 1.;
 }
 
@@ -1948,28 +2371,40 @@ StatusEnum
 ParametricParam::addControlPoint(int dimension,
                                  double key,
                                  double value,
-                                 NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
+                                 KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, interpolation);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, interpolation);
 }
 
-NATRON_NAMESPACE::StatusEnum
+StatusEnum
 ParametricParam::addControlPoint(int dimension,
                                  double key,
                                  double value,
                                  double leftDerivative,
                                  double rightDerivative,
-                                 NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
+                                 KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, leftDerivative, rightDerivative, interpolation);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, leftDerivative, rightDerivative, interpolation);
 }
 
 double
 ParametricParam::getValue(int dimension,
                           double parametricPosition) const
 {
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return 0.;
+    }
     double ret;
-    StatusEnum stat =  _parametricKnob.lock()->getValue(dimension, parametricPosition, &ret);
+    StatusEnum stat = param->getValue(dimension, parametricPosition, &ret);
 
     if (stat == eStatusFailed) {
         ret =  0.;
@@ -1981,8 +2416,12 @@ ParametricParam::getValue(int dimension,
 int
 ParametricParam::getNControlPoints(int dimension) const
 {
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return 0;
+    }
     int ret;
-    StatusEnum stat =  _parametricKnob.lock()->getNControlPoints(dimension, &ret);
+    StatusEnum stat = param->getNControlPoints(dimension, &ret);
 
     if (stat == eStatusFailed) {
         ret = 0;
@@ -1999,7 +2438,11 @@ ParametricParam::getNthControlPoint(int dimension,
                                     double *leftDerivative,
                                     double *rightDerivative) const
 {
-    return _parametricKnob.lock()->getNthControlPoint(dimension, nthCtl, key, value, leftDerivative, rightDerivative);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->getNthControlPoint(dimension, nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 StatusEnum
@@ -2010,34 +2453,54 @@ ParametricParam::setNthControlPoint(int dimension,
                                     double leftDerivative,
                                     double rightDerivative)
 {
-    return _parametricKnob.lock()->setNthControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl, key, value, leftDerivative, rightDerivative);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->setNthControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
-NATRON_NAMESPACE::StatusEnum
+StatusEnum
 ParametricParam::setNthControlPointInterpolation(int dimension,
                                                  int nThCtl,
                                                  KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, dimension, nThCtl, interpolation);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, dimension, nThCtl, interpolation);
 }
 
 StatusEnum
 ParametricParam::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
-    return _parametricKnob.lock()->deleteControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->deleteControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl);
 }
 
 StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
-    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return eStatusFailed;
+    }
+    return param->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
 }
 
 void
 ParametricParam::setDefaultCurvesFromCurrentCurves()
 {
-    _parametricKnob.lock()->setDefaultCurvesFromCurves();
+    KnobParametricPtr param = _parametricKnob.lock();
+    if (!param) {
+        return;
+    }
+    param->setDefaultCurvesFromCurves();
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;
