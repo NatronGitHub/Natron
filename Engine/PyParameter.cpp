@@ -721,8 +721,12 @@ AnimatedParam::setExpression(const QString& expr,
                              bool hasRetVariable,
                              int dimension)
 {
+    KnobIPtr thisKnob = _knob.lock();
+    if (!thisKnob) {
+        return false;
+    }
     try {
-        _knob.lock()->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+        thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
     } catch (...) {
         return false;
     }
@@ -734,9 +738,13 @@ QString
 AnimatedParam::getExpression(int dimension,
                              bool* hasRetVariable) const
 {
-    QString ret = QString::fromUtf8( _knob.lock()->getExpression(dimension).c_str() );
+    KnobIPtr thisKnob = _knob.lock();
+    if (!thisKnob) {
+        return QString();
+    }
+    QString ret = QString::fromUtf8( thisKnob->getExpression(dimension).c_str() );
 
-    *hasRetVariable = _knob.lock()->isExpressionUsingRetVariable(dimension);
+    *hasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
 
     return ret;
 }
@@ -1691,7 +1699,7 @@ ColorParam::addAsDependencyOf(int fromExprDimension,
 
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return;
+        return 0.;
     }
     return knob->getValue();
 }
@@ -1710,40 +1718,56 @@ ChoiceParam::~ChoiceParam()
 int
 ChoiceParam::get() const
 {
-    return _choiceKnob.lock()->getValue(0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValue(0);
 }
 
 int
 ChoiceParam::get(double frame) const
 {
-    return _choiceKnob.lock()->getValueAtTime(frame, 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValueAtTime(frame, 0);
 }
 
 void
 ChoiceParam::set(int x)
 {
-    _choiceKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(x, ViewSpec::current(), 0);
 }
 
 void
 ChoiceParam::set(int x,
                  double frame)
 {
-    _choiceKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
 void
 ChoiceParam::set(const QString& label)
 {
-    KnobChoicePtr k = _choiceKnob.lock();
-    if (!k) {
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
         return;
     }
     try {
-        KnobHelper::ValueChangedReturnCodeEnum s = k->setValueFromLabel(label.toStdString(), 0);
+        KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), 0);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
-        KnobHolderPtr holder =  k->getHolder();
+        KnobHolderPtr holder =  knob->getHolder();
         AppInstancePtr app;
         if (holder) {
             app = holder->getApp();
@@ -1754,56 +1778,87 @@ ChoiceParam::set(const QString& label)
             std::cerr << e.what() << std::endl;
         }
     }
-
 }
 
 int
 ChoiceParam::getValue() const
 {
-    return _choiceKnob.lock()->getValue(0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValue(0);
 }
 
 void
 ChoiceParam::setValue(int value)
 {
-    _choiceKnob.lock()->setValue(value, ViewSpec::current(), 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(value, ViewSpec::current(), 0);
 }
 
 int
 ChoiceParam::getValueAtTime(double time) const
 {
-    return _choiceKnob.lock()->getValueAtTime(time, 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValueAtTime(time, 0);
 }
 
 void
 ChoiceParam::setValueAtTime(int value,
                             double time)
 {
-    _choiceKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(time, value, ViewSpec::current(), 0);
 }
 
 void
 ChoiceParam::setDefaultValue(int value)
 {
-    _choiceKnob.lock()->setDefaultValueWithoutApplying(value, 0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(value, 0);
 }
 
 void
 ChoiceParam::setDefaultValue(const QString& value)
 {
-    _choiceKnob.lock()->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
 }
 
 int
 ChoiceParam::getDefaultValue() const
 {
-    return _choiceKnob.lock()->getDefaultValues_mt_safe()[0];
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getDefaultValues_mt_safe()[0];
 }
 
 void
 ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob.lock()->resetToDefaultValue(0);
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->resetToDefaultValue(0);
 }
 
 void
@@ -1812,7 +1867,7 @@ ChoiceParam::addOption(const QString& option,
 {
     KnobChoicePtr knob = _choiceKnob.lock();
 
-    if ( !knob->isUserKnob() ) {
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
@@ -1825,7 +1880,7 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
 
-    if ( !knob->isUserKnob() ) {
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
 
@@ -1840,7 +1895,11 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 QString
 ChoiceParam::getOption(int index) const
 {
-    std::vector<std::string> entries =  _choiceKnob.lock()->getEntries_mt_safe();
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         return QString();
@@ -1852,14 +1911,22 @@ ChoiceParam::getOption(int index) const
 int
 ChoiceParam::getNumOptions() const
 {
-    return _choiceKnob.lock()->getNumEntries();
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getNumEntries();
 }
 
 QStringList
 ChoiceParam::getOptions() const
 {
     QStringList ret;
-    std::vector<std::string> entries = _choiceKnob.lock()->getEntries_mt_safe();
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return ret;
+    }
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
 
     for (std::size_t i = 0; i < entries.size(); ++i) {
         ret.push_back( QString::fromUtf8( entries[i].c_str() ) );
@@ -1875,7 +1942,11 @@ ChoiceParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _choiceKnob.lock()->getValue();
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        return 0;
+    }
+    return knob->getValue();
 }
 
 ////////////////BooleanParam
@@ -1894,69 +1965,124 @@ BooleanParam::~BooleanParam()
 bool
 BooleanParam::get() const
 {
-    return _boolKnob.lock()->getValue(0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getValue(0);
 }
 
 bool
 BooleanParam::get(double frame) const
 {
-    return _boolKnob.lock()->getValueAtTime(frame, 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getValueAtTime(frame, 0);
 }
 
 void
 BooleanParam::set(bool x)
 {
-    _boolKnob.lock()->setValue(x, ViewSpec::current(), 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValue(x, ViewSpec::current(), 0);
 }
 
 void
 BooleanParam::set(bool x,
                   double frame)
 {
-    _boolKnob.lock()->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
 bool
 BooleanParam::getValue() const
 {
-    return _boolKnob.lock()->getValue(0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getValue(0);
 }
 
 void
 BooleanParam::setValue(bool value)
 {
-    _boolKnob.lock()->setValue(value, ViewSpec::current(), 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValue(value, ViewSpec::current(), 0);
 }
 
 bool
 BooleanParam::getValueAtTime(double time) const
 {
-    return _boolKnob.lock()->getValueAtTime(time, 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getValueAtTime(time, 0);
 }
 
 void
 BooleanParam::setValueAtTime(bool value,
                              double time)
 {
-    _boolKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValueAtTime(time, value, ViewSpec::current(), 0);
 }
 
 void
 BooleanParam::setDefaultValue(bool value)
 {
-    _boolKnob.lock()->setDefaultValueWithoutApplying(value, 0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setDefaultValueWithoutApplying(value, 0);
 }
 
 bool
 BooleanParam::getDefaultValue() const
 {
-    return _boolKnob.lock()->getDefaultValues_mt_safe()[0];
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getDefaultValues_mt_safe()[0];
 }
 
 void
 BooleanParam::restoreDefaultValue()
 {
-    _boolKnob.lock()->resetToDefaultValue(0);
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->resetToDefaultValue(0);
 }
 
 bool
@@ -1966,7 +2092,12 @@ BooleanParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _boolKnob.lock()->getValue();
+    KnobBoolPtr knob = _boolKnob.lock();
+    if (!knob) {
+        return false;
+    }
+
+    return knob->getValue();
 }
 
 ////////////// StringParamBase
@@ -1985,69 +2116,124 @@ StringParamBase::~StringParamBase()
 QString
 StringParamBase::get() const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getValue(0).c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getValue(0).c_str() );
 }
 
 QString
 StringParamBase::get(double frame) const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getValueAtTime(frame, 0).c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getValueAtTime(frame, 0).c_str() );
 }
 
 void
 StringParamBase::set(const QString& x)
 {
-    _stringKnob.lock()->setValue(x.toStdString(), ViewSpec::current(), 0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValue(x.toStdString(), ViewSpec::current(), 0);
 }
 
 void
 StringParamBase::set(const QString& x,
                      double frame)
 {
-    _stringKnob.lock()->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
 }
 
 QString
 StringParamBase::getValue() const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getValue(0).c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getValue(0).c_str() );
 }
 
 void
 StringParamBase::setValue(const QString& value)
 {
-    _stringKnob.lock()->setValue(value.toStdString(), ViewSpec::current(), 0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValue(value.toStdString(), ViewSpec::current(), 0);
 }
 
 QString
 StringParamBase::getValueAtTime(double time) const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getValueAtTime(time, 0).c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getValueAtTime(time, 0).c_str() );
 }
 
 void
 StringParamBase::setValueAtTime(const QString& value,
                                 double time)
 {
-    _stringKnob.lock()->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
 }
 
 void
 StringParamBase::setDefaultValue(const QString& value)
 {
-    _stringKnob.lock()->setDefaultValueWithoutApplying(value.toStdString(), 0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->setDefaultValueWithoutApplying(value.toStdString(), 0);
 }
 
 QString
 StringParamBase::getDefaultValue() const
 {
-    return QString::fromUtf8( _stringKnob.lock()->getDefaultValues_mt_safe()[0].c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getDefaultValues_mt_safe()[0].c_str() );
 }
 
 void
 StringParamBase::restoreDefaultValue()
 {
-    _stringKnob.lock()->resetToDefaultValue(0);
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    return knob->resetToDefaultValue(0);
 }
 
 QString
@@ -2057,7 +2243,12 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return QString::fromUtf8( _stringKnob.lock()->getValue().c_str() );
+    KnobStringBasePtr knob = _stringKnob.lock();
+    if (!knob) {
+        return QString();
+    }
+
+    return QString::fromUtf8( knob->getValue().c_str() );
 }
 
 ////////////////////StringParam
@@ -2200,7 +2391,7 @@ PathParam::setAsMultiPathTable()
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _sKnob.lock()->setMultiPath(true);
+    knob->setMultiPath(true);
 }
 
 ////////////////////ButtonParam
@@ -2218,26 +2409,45 @@ ButtonParam::~ButtonParam()
 bool
 ButtonParam::isCheckable() const
 {
-    return _buttonKnob.lock()->getIsCheckable();
+    KnobButtonPtr knob = _buttonKnob.lock();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getIsCheckable();
 }
 
 void
 ButtonParam::setDown(bool down)
 {
-    _buttonKnob.lock()->setValue(down);
+    KnobButtonPtr knob = _buttonKnob.lock();
+
+    if (!knob) {
+        return;
+    }
+    knob->setValue(down);
 }
 
 
 bool
 ButtonParam::isDown() const
 {
-    return _buttonKnob.lock()->getValue();
+    KnobButtonPtr knob = _buttonKnob.lock();
+
+    if (!knob) {
+        return false;
+    }
+    return knob->getValue();
 }
 
 void
 ButtonParam::trigger()
 {
-    _buttonKnob.lock()->trigger();
+    KnobButtonPtr knob = _buttonKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->trigger();
 }
 
 ////////////////////SeparatorParam
@@ -2335,7 +2545,12 @@ PageParam::addParam(const Param* param)
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _pageKnob.lock()->addKnob( param->getInternalKnob() );
+    KnobPagePtr pageKnob = _pageKnob.lock();
+
+    if ( !pageKnob ) {
+        return;
+    }
+    pageKnob->addKnob( knob );
 }
 
 ////////////////////ParametricParam
