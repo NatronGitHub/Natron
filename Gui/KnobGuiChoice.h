@@ -125,7 +125,7 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
-    static QPixmap getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
+    static QString getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
 
 public Q_SLOTS:
 
@@ -143,7 +143,7 @@ public Q_SLOTS:
 
 private:
 
-    QPixmap getPixmapFromFilePath(const QString& filePath) const;
+    QString getPixmapPathFromFilePath(const QString& filePath) const;
 
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;

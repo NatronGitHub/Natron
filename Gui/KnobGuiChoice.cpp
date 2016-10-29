@@ -375,37 +375,31 @@ KnobGuiChoice::onRefreshMenuActionTriggered()
     }
 }
 
-QPixmap
-KnobGuiChoice::getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
+QString
+KnobGuiChoice::getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
 {
+    if ( QFile::exists(filePath) ) {
+        return filePath;
+    }
+
     QString customFilePath = filePath;
 
-    if ( !QFile::exists(filePath) ) {
-        EffectInstancePtr instance = toEffectInstance(holder);
-        if (instance) {
-            QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
-            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
-                resourcesPath += QLatin1Char('/');
-            }
-            customFilePath.prepend(resourcesPath);
+    EffectInstancePtr instance = toEffectInstance(holder);
+    if (instance) {
+        QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
+        if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+            resourcesPath += QLatin1Char('/');
         }
+        customFilePath.prepend(resourcesPath);
     }
 
-    if ( !QFile::exists(customFilePath) ) {
-        return false;
-    }
-
-    QPixmap pix(customFilePath);
-    if ( pix.isNull() ) {
-        return false;
-    }
-    return pix;
+    return customFilePath;
 }
 
-QPixmap
-KnobGuiChoice::getPixmapFromFilePath(const QString &filePath) const
+QString
+KnobGuiChoice::getPixmapPathFromFilePath(const QString &filePath) const
 {
-    return getPixmapFromFilePath(_knob.lock()->getHolder(),filePath);
+    return getPixmapPathFromFilePath(_knob.lock()->getHolder(),filePath);
 }
 
 void
@@ -454,7 +448,7 @@ KnobGuiChoice::onEntriesPopulated()
         
         QIcon icon;
         if (!iconFilePath.empty()) {
-            QPixmap pix = getPixmapFromFilePath(QString::fromUtf8(iconFilePath.c_str()));
+            QPixmap pix( getPixmapPathFromFilePath( QString::fromUtf8( iconFilePath.c_str() ) ) );
             if (!pix.isNull()) {
                 pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
                 icon.addPixmap(pix);

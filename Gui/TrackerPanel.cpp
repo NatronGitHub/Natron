@@ -653,7 +653,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
 
             QIcon icon;
             if (!iconFilePath.empty()) {
-                QPixmap pix = KnobGuiChoice::getPixmapFromFilePath(trackerEffect, QString::fromUtf8(iconFilePath.c_str()));
+                QPixmap pix( KnobGuiChoice::getPixmapPathFromFilePath( trackerEffect, QString::fromUtf8( iconFilePath.c_str() ) ) );
                 if (!pix.isNull()) {
                     pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
                     icon.addPixmap(pix);
