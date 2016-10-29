@@ -1328,9 +1328,11 @@ ColorParam::~ColorParam()
 ColorTuple
 ColorParam::get() const
 {
-    ColorTuple ret;
+    ColorTuple ret = {0., 0., 0., 0.};
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
-
+    if (!knob) {
+        return ret;
+    }
     ret.r = knob->getValue(0);
     ret.g = knob->getValue(1);
     ret.b = knob->getValue(2);
@@ -1342,9 +1344,11 @@ ColorParam::get() const
 ColorTuple
 ColorParam::get(double frame) const
 {
-    ColorTuple ret;
+    ColorTuple ret = {0., 0., 0., 0.};
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
-
+    if (!knob) {
+        return ret;
+    }
     ret.r = knob->getValueAtTime(frame, 0);
     ret.g = knob->getValueAtTime(frame, 1);
     ret.b = knob->getValueAtTime(frame, 2);
@@ -1360,7 +1364,9 @@ ColorParam::set(double r,
                 double a)
 {
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->beginChanges();
     knob->setValue(r, ViewSpec::current(), 0);
     knob->setValue(g, ViewSpec::current(), 1);
@@ -1379,7 +1385,9 @@ ColorParam::set(double r,
                 double frame)
 {
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
-
+    if (!knob) {
+        return;
+    }
     knob->beginChanges();
     knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
     knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
@@ -1394,21 +1402,33 @@ ColorParam::set(double r,
 double
 ColorParam::getValue(int dimension) const
 {
-    return _colorKnob.lock()->getValue(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValue(dimension);
 }
 
 void
 ColorParam::setValue(double value,
                      int dimension)
 {
-    _colorKnob.lock()->setValue(value, ViewSpec::current(), dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValue(value, ViewSpec::current(), dimension);
 }
 
 double
 ColorParam::getValueAtTime(double time,
                            int dimension) const
 {
-    return _colorKnob.lock()->getValueAtTime(time, dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getValueAtTime(time, dimension);
 }
 
 void
@@ -1416,84 +1436,126 @@ ColorParam::setValueAtTime(double value,
                            double time,
                            int dimension)
 {
-    _colorKnob.lock()->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
 void
 ColorParam::setDefaultValue(double value,
                             int dimension)
 {
-    _colorKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(value, dimension);
 }
 
 double
 ColorParam::getDefaultValue(int dimension) const
 {
-    return _colorKnob.lock()->getDefaultValues_mt_safe()[dimension];
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDefaultValues_mt_safe()[dimension];
 }
 
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
 ColorParam::setMinimum(double minimum,
                        int dimension)
 {
-    _colorKnob.lock()->setMinimum(minimum, dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setMinimum(minimum, dimension);
 }
 
 double
 ColorParam::getMinimum(int dimension) const
 {
-    return _colorKnob.lock()->getMinimum(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMinimum(dimension);
 }
 
 void
 ColorParam::setMaximum(double maximum,
                        int dimension)
 {
-    if ( !_colorKnob.lock()->isUserKnob() ) {
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _colorKnob.lock()->setMaximum(maximum, dimension);
+    knob->setMaximum(maximum, dimension);
 }
 
 double
 ColorParam::getMaximum(int dimension) const
 {
-    return _colorKnob.lock()->getMaximum(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getMaximum(dimension);
 }
 
 void
 ColorParam::setDisplayMinimum(double minimum,
                               int dimension)
 {
-    if ( !_colorKnob.lock()->isUserKnob() ) {
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    _colorKnob.lock()->setDisplayMinimum(minimum, dimension);
+    knob->setDisplayMinimum(minimum, dimension);
 }
 
 double
 ColorParam::getDisplayMinimum(int dimension) const
 {
-    return _colorKnob.lock()->getDisplayMinimum(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMinimum(dimension);
 }
 
 void
 ColorParam::setDisplayMaximum(double maximum,
                               int dimension)
 {
-    _colorKnob.lock()->setDisplayMaximum(maximum, dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayMaximum(maximum, dimension);
 }
 
 double
 ColorParam::getDisplayMaximum(int dimension) const
 {
-    return _colorKnob.lock()->getDisplayMaximum(dimension);
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return 0.;
+    }
+    return knob->getDisplayMaximum(dimension);
 }
 
 double
@@ -1503,7 +1565,11 @@ ColorParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    return _colorKnob.lock()->getValue();
+    boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->getValue();
 }
 
 //////////////// ChoiceParam
