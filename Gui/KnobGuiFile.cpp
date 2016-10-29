@@ -182,8 +182,8 @@ KnobGuiFile::open_file()
     bool useSequence = type == KnobFile::eKnobFileDialogTypeOpenFileSequences ||
     KnobFile::eKnobFileDialogTypeSaveFileSequences;
 
-    bool existing = type == KnobFile::eKnobFileDialogTypeOpenFile ||
-    KnobFile::eKnobFileDialogTypeOpenFileSequences;
+    bool existing = ( (type == KnobFile::eKnobFileDialogTypeOpenFile) ||
+                     (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) );
 
     std::vector<std::string> filters = knob->getDialogFilters();
     if (filters.empty()) {
