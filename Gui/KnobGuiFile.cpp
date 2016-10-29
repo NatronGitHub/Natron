@@ -179,8 +179,8 @@ KnobGuiFile::open_file()
 
     KnobFile::KnobFileDialogTypeEnum type = knob->getDialogType();
 
-    bool useSequence = type == KnobFile::eKnobFileDialogTypeOpenFileSequences ||
-    KnobFile::eKnobFileDialogTypeSaveFileSequences;
+    bool useSequence = ( (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) ||
+                        (type == KnobFile::eKnobFileDialogTypeSaveFileSequences) );
 
     bool existing = ( (type == KnobFile::eKnobFileDialogTypeOpenFile) ||
                      (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) );
