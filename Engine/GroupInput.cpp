@@ -65,14 +65,14 @@ GroupInput::initializeKnobs()
     optKnob->setAnimationEnabled(false);
     optKnob->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optKnob);
-    optional = optKnob;
+    _optional = optKnob;
 
     KnobBoolPtr maskKnob = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Mask") );
     maskKnob->setHintToolTip( tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
     maskKnob->setAnimationEnabled(false);
     maskKnob->setName(kNatronGroupInputIsMaskParamName);
     page->addKnob(maskKnob);
-    mask = maskKnob;
+    _mask = maskKnob;
 }
 
 bool
@@ -83,16 +83,18 @@ GroupInput::knobChanged(const KnobIPtr& k,
                         bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+    KnobBoolPtr optKnob = _optional.lock();
+    KnobBoolPtr maskKnob = _mask.lock();
 
-    if ( k == optional.lock() ) {
+    if ( k == optKnob ) {
         NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
-    } else if ( k == mask.lock() ) {
-        bool isMask = mask.lock()->getValue();
+    } else if ( k == maskKnob ) {
+        bool isMask = maskKnob->getValue();
         if (isMask) {
-            optional.lock()->setValue(true);
+            optKnob->setValue(true);
         } else {
-            optional.lock()->setValue(false);
+            optKnob->setValue(false);
         }
         NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );

@@ -508,11 +508,12 @@ struct KnobHelperPrivate
 
     bool shouldUseGuiCurve() const
     {
-        if (!holder.lock()) {
+        KnobHolderPtr h = holder.lock();
+        if (!h) {
             return false;
         }
 
-        return !holder.lock()->isSetValueCurrentlyPossible() && gui.lock();
+        return !h->isSetValueCurrentlyPossible() && gui.lock();
     }
 };
 
