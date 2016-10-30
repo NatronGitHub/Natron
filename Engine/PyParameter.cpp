@@ -1653,7 +1653,7 @@ ColorParam::setDisplayMinimum(double minimum,
                               int dimension)
 {
     KnobColorPtr knob = _colorKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if ( !knob || !knob->isUserKnob() ) {
         return;
     }
     knob->setDisplayMinimum(minimum, dimension);
