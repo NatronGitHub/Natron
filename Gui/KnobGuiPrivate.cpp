@@ -30,25 +30,24 @@
 NATRON_NAMESPACE_ENTER;
 
 
-KnobGuiPrivate::KnobGuiPrivate(KnobGuiContainerI* container)
-    : triggerNewLine(true)
-    , spacingBetweenItems(0)
+KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
+    : _publicInterface(publicInterface)
+    , knob(knob)
+    , isOnNewLine(false)
     , widgetCreated(false)
     , container(container)
     , copyRightClickMenu( new MenuWithToolTips( container->getContainerWidget() ) )
-    , fieldLayout(NULL)
     , knobsOnSameLine()
-    , field(NULL)
+    , prevKnob()
+    , spacingBeforePrevKnob(0)
+    , views()
     , labelContainer(NULL)
     , descriptionLabel(NULL)
     , warningIndicator(NULL)
-    , isOnNewLine(false)
     , customInteract(NULL)
-    , guiCurves()
     , guiRemoved(false)
-    , isInViewerUIKnob(dynamic_cast<NodeViewerContext*>(container) != 0)
+    , layoutType(layoutType)
 {
-    //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
 }
 
 void

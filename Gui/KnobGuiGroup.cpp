@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
+#include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
@@ -86,15 +87,14 @@ using std::make_pair;
 
 //=============================GROUP_KNOB_GUI===================================
 
-KnobGuiGroup::KnobGuiGroup(KnobIPtr knob,
-                           KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _checked(false)
     , _button(0)
     , _children()
     , _childrenToEnable()
     , _tabGroup(0)
-    , _knob( toKnobGroup(knob) )
+    , _knob( toKnobGroup(knob->getKnob()) )
 {
 }
 
@@ -109,7 +109,7 @@ KnobGuiGroup::getOrCreateTabWidget()
         return _tabGroup;
     }
 
-    _tabGroup = new TabGroup( getContainer()->getContainerWidget() );
+    _tabGroup = new TabGroup( getKnobGui()->getContainer()->getContainerWidget() );
 
     return _tabGroup;
 }
@@ -136,17 +136,18 @@ KnobGuiGroup::addKnob(const KnobGuiPtr& child)
 bool
 KnobGuiGroup::isChecked() const
 {
-    return hasWidgetBeenCreated() ? _button->isChecked() : true;
+    return getKnobGui()->hasWidgetBeenCreated() ? _button->isChecked() : true;
 }
 
 void
 KnobGuiGroup::createWidget(QHBoxLayout* layout)
 {
     _button = new GroupBoxLabel( layout->parentWidget() );
-    if ( hasToolTip() ) {
-        toolTip(_button);
+    KnobGuiPtr knobUI = getKnobGui();
+    if ( knobUI->hasToolTip() ) {
+        knobUI->toolTip(_button, getView());
     }
-    _checked = _knob.lock()->getValue();
+    _checked = _knob.lock()->getValue(DimIdx(0), getView());
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
@@ -165,14 +166,10 @@ KnobGuiGroup::setCheckedInternal(bool checked,
     if (userRequested) {
         KnobGroupPtr knob = _knob.lock();
         if (knob) {
-            knob->setValue(checked, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+            knob->setValue(checked);
         }
     }
 
-    ///get the current index of the group knob in the layout, and reinsert
-    ///the children back with an offset relative to the group.
-    int realIndexInLayout = getActualIndexInLayout();
-    int startChildIndex = realIndexInLayout + 1;
     //getGui()->getPropertiesBin()->setUpdatesEnabled(false);
     for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         KnobGuiPtr knob = it->lock();
@@ -182,10 +179,7 @@ KnobGuiGroup::setCheckedInternal(bool checked,
         if (!checked) {
             knob->hide();
         } else if ( !knob->getKnob()->getIsSecret() ) {
-            knob->show(startChildIndex);
-            if ( knob->getKnob()->isNewLineActivated() ) {
-                ++startChildIndex;
-            }
+            knob->show();
         }
     }
     if (_tabGroup) {
@@ -213,7 +207,7 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 }
 
 void
-KnobGuiGroup::updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/)
+KnobGuiGroup::updateGUI(DimSpec /*dimension*/)
 {
     bool b = _knob.lock()->getValue();
 
@@ -227,44 +221,24 @@ KnobGuiGroup::updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/)
 }
 
 void
-KnobGuiGroup::_hide()
+KnobGuiGroup::setWidgetsVisible(bool visible)
 {
     if (_button) {
-        _button->hide();
+        _button->setVisible(visible);
     }
     for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         KnobGuiPtr k = it->lock();
         if (!k) {
             continue;
         }
-        k->hide();
-    }
-    if (_tabGroup) {
-        _tabGroup->hide();
-    }
-}
-
-void
-KnobGuiGroup::_show()
-{
-//    if ( _knob->getIsSecret() ) {
-//        return;
-//    }
-    if (_button) {
-        _button->show();
-    }
-
-    if (_checked) {
-        for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
-            KnobGuiPtr k = it->lock();
-            if (!k) {
-                continue;
-            }
+        if (visible) {
             k->show();
+        } else {
+            k->hide();
         }
     }
     if (_tabGroup) {
-        _tabGroup->show();
+        _tabGroup->setVisible(visible);
     }
 }
 
@@ -272,7 +246,7 @@ void
 KnobGuiGroup::setEnabled()
 {
     KnobGroupPtr knob = _knob.lock();
-    bool enabled = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool enabled = knob->isEnabled(DimIdx(0));
 
     if (_button) {
         _button->setEnabled(enabled);
@@ -287,7 +261,7 @@ KnobGuiGroup::setEnabled()
                 if (!k) {
                     continue;
                 }
-                k->getKnob()->setEnabled(_childrenToEnable[i].second[j], true);
+                k->getKnob()->setEnabled(_childrenToEnable[i].second[j], DimSpec::all(), ViewSetSpec::all());
             }
         }
     } else {
@@ -298,9 +272,9 @@ KnobGuiGroup::setEnabled()
                 continue;
             }
             std::vector<int> dimensions;
-            for (int j = 0; j < k->getKnob()->getDimension(); ++j) {
-                if ( k->getKnob()->isEnabled(j) ) {
-                    k->getKnob()->setEnabled(j, false);
+            for (int j = 0; j < k->getKnob()->getNDimensions(); ++j) {
+                if ( k->getKnob()->isEnabled(DimIdx(j)) ) {
+                    k->getKnob()->setEnabled(false, DimIdx(j), ViewSetSpec::all());
                     dimensions.push_back(j);
                 }
             }
@@ -309,11 +283,7 @@ KnobGuiGroup::setEnabled()
     }
 }
 
-KnobIPtr
-KnobGuiGroup::getKnob() const
-{
-    return _knob.lock();
-}
+
 
 NATRON_NAMESPACE_EXIT;
 

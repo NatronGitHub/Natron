@@ -39,7 +39,7 @@ class KnobAnim : public QObject, public AnimItemBase
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    KnobAnim(const AnimationModulePtr& model,
+    KnobAnim(const AnimationModuleBasePtr& model,
              const KnobsHolderAnimBasePtr& holder,
              QTreeWidgetItem *parentItem,
              const KnobGuiPtr& knobGui);
@@ -47,7 +47,7 @@ class KnobAnim : public QObject, public AnimItemBase
 public:
 
 
-    static KnobAnimPtr create(const AnimationModulePtr& model,
+    static KnobAnimPtr create(const AnimationModuleBasePtr& model,
                               const KnobsHolderAnimBasePtr& holder,
                               QTreeWidgetItem *parentItem,
                               const KnobGuiPtr& knobGui)

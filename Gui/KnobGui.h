@@ -83,17 +83,36 @@ public:
         eKnobWarningChoiceMenuOutOfDate
     };
 
-public:
-    // TODO: enable_shared_from_this
+    enum KnobLayoutTypeEnum
+    {
+        // The knob widgets will be used in a paged layout such as the property panel
+        eKnobLayoutTypePage,
+
+        // The knob widgets will be used in an horizontal layout such as the viewer top toolbar
+        eKnobLayoutTypeViewerUI,
+
+        // The knob widgets will be used in a table such as the RotoPaint items table. Ideally,
+        // there should be a single widget so the table is not cluttered
+        eKnobLayoutTypeTableItemWidget
+    };
+private:
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    KnobGui(const KnobIPtr& knob,
-            KnobGuiContainerI* container);
-
-public:
-    virtual ~KnobGui() OVERRIDE;
+    KnobGui(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     void initialize();
+
+
+public:
+
+    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
+    {
+        KnobGuiPtr ret(new KnobGui(knob,layoutType,container));
+        ret->initialize();
+    }
+
+    virtual ~KnobGui() OVERRIDE;
 
     KnobGuiContainerI* getContainer();
 
@@ -101,26 +120,9 @@ public:
 
     void setGuiRemoved();
 
-protected:
-    /**
-     * @brief Override this to delete all user interface created for this knob
-     **/
-    virtual void removeSpecificGui() = 0;
+    KnobIPtr getKnob() const;
 
-public:
-
-    /**
-     * @brief This function must return a pointer to the internal knob.
-     * This is virtual as it is easier to hold the knob in the derived class
-     * avoiding many dynamic_cast in the deriving class.
-     **/
-    virtual KnobIPtr getKnob() const = 0;
-
-    bool isViewerUIKnob() const;
-
-    bool triggerNewLine() const;
-
-    void turnOffNewLine();
+    KnobLayoutTypeEnum getLayoutType() const;
 
     /*Set the spacing between items in the layout*/
     void setSpacingBetweenItems(int spacing);
@@ -129,16 +131,8 @@ public:
 
     bool hasWidgetBeenCreated() const;
 
-    void createGUI(QWidget* fieldContainer,
-                   QWidget* labelContainer,
-                   KnobClickableLabel* label,
-                   Label* warningIndicator,
-                   QHBoxLayout* layout,
-                   bool isOnNewLine,
-                   int lastKnobSpacing,
-                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
+    void createGUI(QWidget* parentWidget);
 
-    virtual bool shouldAddStretch() const { return true; }
 
     void pushUndoCommand(QUndoCommand* cmd);
     const QUndoCommand* getLastUndoCommand() const;
@@ -152,20 +146,20 @@ public:
 
     Gui* getGui() const;
 
-    void enableRightClickMenu(QWidget* widget, DimSpec dimension, ViewIdx view);
 
-    virtual bool shouldCreateLabel() const;
-    virtual bool isLabelOnSameColumn() const;
-    virtual bool isLabelBold() const;
-    virtual std::string getDescriptionLabel() const;
-    QWidget* getFieldContainer() const;
+    QWidget* getFieldContainer(ViewIdx view) const;
+    QWidget* getLabelContainer(ViewIdx view) const;
+
+    KnobGuiWidgetsPtr getWidgetsForView(ViewIdx view);
+
+    bool isLabelOnSameColumn() const;
 
     /**
      * @brief Returns the row index of the knob in the layout.
      * The knob MUST be in the layout for this function to work,
      * that is, it must be visible.
      **/
-    int getActualIndexInLayout() const;
+   // int getActualIndexInLayout() const;
 
     bool isOnNewLine() const;
 
@@ -174,8 +168,8 @@ public:
 
     int getKnobsCountOnSameLine() const;
 
-
     virtual RectD getViewportRect() const OVERRIDE FINAL;
+
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     /**
      * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
@@ -226,19 +220,7 @@ public:
                                   int indexInParent);
 
 
-    static bool shouldSliderBeVisible(int sliderMin,
-                                      int sliderMax)
-    {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
-    }
-
-    static bool shouldSliderBeVisible(double sliderMin,
-                                      double sliderMax)
-    {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
-    }
-
-    virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
+    bool getAllDimensionsVisible(ViewIdx view) const;
 
     void setWarningValue(KnobWarningEnum warn, const QString& value);
 
@@ -272,8 +254,7 @@ public Q_SLOTS:
 
     void hide();
 
-    ///if index is != -1 then it will reinsert the knob at this index in the layout
-    void show(int index = -1);
+    void show();
 
     void onSetKeyActionTriggered();
 
@@ -331,24 +312,16 @@ public Q_SLOTS:
 
     void onCreateAliasOnGroupActionTriggered();
 
+    void onMultiViewUnfoldClicked(bool expanded);
+
 Q_SIGNALS:
 
     // Emitted when the description label is clicked
     void labelClicked(bool);
 
-protected:
-
-    /**
-     * @brief Called when the internal value held by the knob is changed, you must implement
-     * it to update the interface to reflect the new value. You can query the new value
-     * by calling knob->getValue()
-     **/
-    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) = 0;
-    virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
-
-    virtual void reflectModificationsState() {}
-
 private:
+
+    void createViewWidgets(QWidget* parentWidget, ViewIdx view);
 
     static void getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec* dimension);
 
@@ -360,33 +333,7 @@ private:
 
     void pasteClipBoard(DimSpec dimension, ViewIdx view);
 
-    virtual void _hide() = 0;
-    virtual void _show() = 0;
-    virtual void setEnabled() = 0;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension, ViewIdx view) = 0;
-    virtual void setDirty(bool dirty) = 0;
-    virtual void onLabelChangedInternal() {}
 
-    virtual void refreshDimensionName(int /*dim*/) {}
-
-    /**
-     * @brief Must fill the horizontal layout with all the widgets composing the knob.
-     **/
-    virtual void createWidget(QHBoxLayout* layout) = 0;
-
-
-    /*Called right away after updateGUI(). Depending in the animation level
-       the widget for the knob could display its gui a bit differently.
-     */
-    virtual void reflectAnimationLevel(DimIdx /*dimension*/, ViewIdx /*view*/, AnimationLevelEnum /*level*/)
-    {
-    }
-
-    virtual void reflectExpressionState(DimIdx /*dimension*/,
-                                        ViewIdx /*view*/,
-                                        bool /*hasExpr*/) {}
-
-    virtual void updateToolTip() {}
 
     void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view);
     Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewIdx view, bool isEnabled);

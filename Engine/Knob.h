@@ -387,7 +387,7 @@ public:
     virtual void populate() = 0;
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) = 0;
     virtual KnobGuiIPtr getKnobGuiPointer() const = 0;
-    virtual bool getAllDimensionVisible() const = 0;
+    virtual bool getAllDimensionVisible(ViewIdx view) const = 0;
     static bool areTypesCompatibleForSlave(const KnobIPtr& lhs, const KnobIPtr& rhs);
 
     /**
@@ -395,12 +395,6 @@ public:
      **/
     virtual bool isDeclaredByPlugin() const = 0;
     virtual void setDeclaredByPlugin(bool b) = 0;
-
-    /**
-     * @brief Must flag that the knob was dynamically created to warn the gui it should handle it correctly
-     **/
-    virtual void setDynamicallyCreated() = 0;
-    virtual bool isDynamicallyCreated() const = 0;
 
     /**
      * @brief A user knob is a knob created by the user by the gui
@@ -1191,11 +1185,6 @@ public:
     virtual void* getOfxParamHandle() const = 0;
 
     /**
-     * @brief If this knob has a gui view, then the gui view should set the animation of this knob on the application's knob clipboard.
-     **/
-    virtual void copyAnimationToClipboard() const = 0;
-
-    /**
      * @brief Returns the current time if attached to a timeline or the time being rendered
      **/
     virtual double getCurrentTime() const = 0;
@@ -1340,6 +1329,11 @@ public:
     virtual void splitView(ViewIdx view) = 0;
     virtual void unSplitView(ViewIdx view) = 0;
     virtual ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const = 0;
+
+    /**
+     * @brief Returns true if this knob supports multi-view
+     **/
+    virtual bool canSplitViews() const = 0;
 };
 
 
@@ -1390,14 +1384,12 @@ public:
 
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getAllDimensionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getAllDimensionVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
     virtual bool isDeclaredByPlugin() const OVERRIDE FINAL;
     virtual void setDeclaredByPlugin(bool b) OVERRIDE FINAL;
-    virtual void setDynamicallyCreated() OVERRIDE FINAL;
-    virtual bool isDynamicallyCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAsUserKnob(bool b) OVERRIDE FINAL;
     virtual bool isUserKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -1643,7 +1635,6 @@ public:
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setMastersPersistenceIgnore(bool ignored) OVERRIDE FINAL;
-    virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;

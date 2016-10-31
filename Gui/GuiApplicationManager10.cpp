@@ -146,11 +146,10 @@ GuiApplicationManager::makeNewInstance(int appID) const
     return GuiAppInstance::create(appID);
 }
 
-KnobGui*
-GuiApplicationManager::createGuiForKnob(KnobIPtr knob,
-                                        KnobGuiContainerI *container) const
+KnobGuiWidgets*
+GuiApplicationManager::createGuiForKnob(const KnobGuiPtr& knob, ViewIdx) const
 {
-    return _imp->_knobGuiFactory->createGuiForKnob(knob, container);
+    return _imp->_knobGuiFactory->createGuiForKnob(knob, view);
 }
 
 void

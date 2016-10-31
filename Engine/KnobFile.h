@@ -94,6 +94,11 @@ public:
         return false;
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     static const std::string & typeNameStatic();
 
     void setDialogType(KnobFileDialogTypeEnum type) {
@@ -182,6 +187,7 @@ public:
     {
         return KnobPathPtr(new KnobPath(holder, label.toStdString(), dimension, declaredByPlugin));
     }
+
 
     static const std::string & typeNameStatic();
 

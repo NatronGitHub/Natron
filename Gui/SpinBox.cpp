@@ -978,11 +978,13 @@ SpinBox::setUseLineColor(bool use,
 KnobSpinBox::KnobSpinBox(QWidget* parent,
                          SpinBoxTypeEnum type,
                          const KnobGuiPtr& knob,
-                         int dimension)
+                         DimIdx dimension,
+                         ViewIdx view)
     : SpinBox(parent, type)
     , knob(knob)
     , dimension(dimension)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , view(view)
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
 }
 

@@ -136,7 +136,7 @@ KnobGui::onSetExprActionTriggered()
     DimSpec dimension;
     getDimViewFromActionData(action, &view, &dimension);
 
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimension, view, shared_from_this(), _imp->field);
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimension, view, shared_from_this(), _imp->container->getContainerWidget());
     dialog->create(QString::fromUtf8( getKnob()->getExpression(dimension.isAll() ? DimIdx(0) : DimIdx(dimension), view).c_str() ), true);
     QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditExprDialogFinished(bool)) );
 
@@ -669,7 +669,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
     }
 
     bool setToolTip = false;
-    if (!tt.isEmpty() && isViewerUIKnob()) {
+    if (!tt.isEmpty() && getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
         std::list<std::string> additionalShortcuts = knob->getInViewerContextAdditionalShortcuts();
         EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
         if (isEffect) {
@@ -756,7 +756,12 @@ void
 KnobGui::hide()
 {
     if (!_imp->customInteract) {
-        _hide();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.widgets) {
+                it->second.widgets->setWidgetsVisible(false);
+            }
+        }
+
     } else {
         _imp->customInteract->hide();
     }
@@ -773,9 +778,6 @@ KnobGui::hide()
             }
             parent = parent->getParentKnob();
         }
-        if (isSecret) {
-            getGui()->getCurveEditor()->hideCurves( shared_from_this() );
-        }
     }
 
     ////In order to remove the row of the layout we have to make sure ALL the knobs on the row
@@ -789,15 +791,20 @@ KnobGui::hide()
     }
 
     if (shouldRemoveWidget) {
-        if (_imp->field) {
-            _imp->field->hide();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.field) {
+                it->second.field->hide();
+            }
         }
+
         if (_imp->container) {
             _imp->container->refreshTabWidgetMaxHeight();
         }
     } else {
-        if ( _imp->field && !_imp->field->isVisible() ) {
-            _imp->field->show();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.field && !it->second.field->isVisible()) {
+                it->second.field->show();
+            }
         }
     }
     if (_imp->labelContainer) {
@@ -808,39 +815,31 @@ KnobGui::hide()
 } // KnobGui::hide
 
 void
-KnobGui::show(int /*index*/)
+KnobGui::show()
 {
     if ( !getGui() ) {
         return;
     }
     if (!_imp->customInteract) {
-        _show();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.widgets) {
+                bool showWidget = it->first == !_imp->viewUnfoldArrow || ViewIdx(0) || _imp->viewUnfoldArrow->isChecked();
+                it->second.widgets->setWidgetsVisible(showWidget);
+            }
+        }
     } else {
         _imp->customInteract->show();
-    }
-
-    //also show the curve from the curve editor if there's any
-    KnobIPtr knob = getKnob();
-    if (!knob) {
-        return;
-    }
-    KnobHolderPtr holder = knob->getHolder();
-    EffectInstancePtr isEffect = toEffectInstance(holder);
-
-    if (isEffect) {
-        getGui()->getCurveEditor()->showCurves( shared_from_this() );
-
-    }
+    }    
     
-    
-    //if (_imp->isOnNewLine) {
-    if (_imp->field) {
-        _imp->field->show();
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.field && !it->second.field->isVisible()) {
+            it->second.field->show();
+        }
     }
     if (_imp->container) {
         _imp->container->refreshTabWidgetMaxHeight();
     }
-    //}
+
 
     if (_imp->labelContainer) {
         _imp->labelContainer->show();
@@ -849,6 +848,23 @@ KnobGui::show(int /*index*/)
     }
 }
 
+void
+KnobGui::onMultiViewUnfoldClicked(bool expanded)
+{
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            if (expanded) {
+                it->second.widgets->setWidgetsVisible(true);
+            } else {
+                bool showWidget = it->first == !_imp->viewUnfoldArrow || ViewIdx(0);
+                it->second.widgets->setWidgetsVisible(showWidget);
+            }
+
+        }
+    }
+}
+
+#if 0
 int
 KnobGui::getActualIndexInLayout() const
 {
@@ -881,6 +897,7 @@ KnobGui::getActualIndexInLayout() const
 
     return -1;
 }
+#endif
 
 bool
 KnobGui::isOnNewLine() const
@@ -895,28 +912,17 @@ KnobGui::setEnabledSlot()
         return;
     }
     if (!_imp->customInteract) {
-        setEnabled();
-    }
-    KnobIPtr knob = getKnob();
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
-    }
-    KnobGuiPtr thisShared = shared_from_this();
-    if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        for (int i = 0; i < knob->getNDimensions(); ++i) {
-            if ( !knob->isEnabled(i) ) {
-                getGui()->getCurveEditor()->hideCurve(thisShared, i);
-            } else {
-                getGui()->getCurveEditor()->showCurve(thisShared, i);
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.widgets) {
+                it->second.widgets->setEnabled();
             }
         }
     }
+    KnobIPtr knob = getKnob();
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setReadOnly( !knob->isEnabled(DimIdx(0)) );
+    }
 }
 
-QWidget*
-KnobGui::getFieldContainer() const
-{
-    return _imp->field;
-}
 
 NATRON_NAMESPACE_EXIT;

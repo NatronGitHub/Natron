@@ -219,9 +219,6 @@ struct KnobHelperPrivate
     // Was the knob declared by a plug-in or added by Natron?
     bool declaredByPlugin;
 
-    // True if the knob was dynamically created by the user (either via python or via the gui)
-    bool dynamicallyCreated;
-
     // True if it was created by the user and should be put into the "User" page
     bool userKnob;
 
@@ -326,7 +323,6 @@ struct KnobHelperPrivate
     , animationLevelMutex()
     , animationLevel()
     , declaredByPlugin(declaredByPlugin_)
-    , dynamicallyCreated(false)
     , userKnob(false)
     , customInteract()
     , gui()

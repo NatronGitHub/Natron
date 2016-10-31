@@ -470,10 +470,11 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     if ( !formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
         return;
     }
-    int cbDim;
+    DimSpec cbDim;
+    ViewIdx cbView;
     KnobIPtr fromKnob;
     QDrag* drag;
-    _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
+    _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim, &cbView);
 
     if (!fromKnob) {
         return;
@@ -506,7 +507,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     toAppend.append( QString::fromUtf8(".get()") );
     if (fromKnob->getNDimensions() > 1) {
         toAppend.append( QLatin1Char('[') );
-        if ( (cbDim == -1) || ( (cbDim == 0) && !fromKnob->getAllDimensionVisible() ) ) {
+        if ( cbDim.isAll() || ( (cbDim == 0) && !fromKnob->getAllDimensionVisible(cbView) ) ) {
             toAppend.append( QString::fromUtf8("dimension") );
         } else {
             toAppend.append( QString::number(cbDim) );

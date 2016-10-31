@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -53,21 +53,20 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class KnobGuiGroup
-    : public KnobGui
+: QObject
+, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiGroup(knob, container);
+        return new KnobGuiGroup(knob, view);
     }
 
-    KnobGuiGroup(KnobIPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiGroup() OVERRIDE;
 
@@ -78,7 +77,6 @@ public:
     const std::list<KnobGuiWPtr>& getChildren() const { return _children; }
 
     bool isChecked() const;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     TabGroup* getOrCreateTabWidget();
 
     void removeTabWidget();
@@ -91,17 +89,16 @@ private:
     void setCheckedInternal(bool checked, bool userRequested);
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled()  OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void setReadOnly(bool /*readOnly*/,
-                             int /*dimension*/) OVERRIDE FINAL
+                             DimSpec /*dimension*/) OVERRIDE FINAL
     {
     }
 

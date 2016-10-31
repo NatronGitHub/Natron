@@ -280,9 +280,9 @@ public:
 
     void setColorPickersColor(double r, double g, double b, double a);
 
-    void registerNewColorPicker(KnobColorPtr knob);
+    void registerNewColorPicker(KnobColorPtr knob, ViewIdx view);
 
-    void removeColorPicker(KnobColorPtr knob);
+    void removeColorPicker(KnobColorPtr knob, ViewIdx view);
 
     void clearColorPickers();
 

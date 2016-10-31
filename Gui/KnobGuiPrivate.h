@@ -82,7 +82,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GroupBoxLabel.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/LineEdit.h"
 #include "Gui/LinkToKnobDialog.h"
 #include "Gui/Menu.h"
@@ -102,30 +104,82 @@ NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiPrivate
 {
-    bool triggerNewLine;
-    int spacingBetweenItems;
-    bool widgetCreated;
-    KnobGuiContainerI*  container;
-    QMenu* copyRightClickMenu;
-    QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
-    ////A vector of all other knobs on the same line.
-    std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
-    QWidget* field;
+    KnobGui* _publicInterface;
+
+    // The internal knob
+    KnobIWPtr knob;
+
+    // Whether we place the knob on a new line in a vertical layout
+    bool isOnNewLine;
+
+    // True when createGui has been called already
+    bool widgetCreated;
+
+    // Pointer to the widgets containing this knob
+    KnobGuiContainerI*  container;
+
+    // Right click menu
+    QMenu* copyRightClickMenu;
+
+    // A vector of all other knobs on the same line.
+    std::vector<KnobIWPtr> knobsOnSameLine;
+
+    // A pointer to the previous knob on the row
+    KnobIWPtr prevKnob;
+
+    // The spacing in px to use before the previous knob
+    int spacingBeforePrevKnob;
+
+    struct ViewWidgets
+    {
+        // A pointer to the widget containing all widgets for a given view
+        QWidget* field;
+
+        // the layout of the field widget
+        QHBoxLayout* fieldLayout;
+
+        // The view label
+        KnobClickableLabel* viewLabel;
+
+        // The implementation of the knob gui
+        KnobGuiWidgetsPtr widgets;
+
+    };
+
+    typedef std::map<ViewIdx, ViewWidgets> PerViewWidgetsMap;
+
+    PerViewWidgetsMap views;
+
+    // A container the label
     QWidget* labelContainer;
+
+    // If multi-view, an arrow to unfold views
+    GroupBoxLabel* viewUnfoldArrow;
+
+    // The label
     KnobClickableLabel* descriptionLabel;
+
+    // A warning indicator
     Label* warningIndicator;
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
-    bool isOnNewLine;
+
+    // If the UI of the knob is handled by a custom interact, this is a pointer to it
     CustomParamInteract* customInteract;
+
+    // True when the gui is no longer valid
     bool guiRemoved;
 
     // True if this KnobGui is used in the viewer
-    bool isInViewerUIKnob;
+    KnobGui::KnobLayoutTypeEnum layoutType;
 
-    KnobGuiPrivate(KnobGuiContainerI* container);
+    KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
+
+    void refreshIsOnNewLineFlag();
+
+    void createLabel(QWidget* parentWidget);
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -121,7 +121,7 @@ createKnobNameItem(const AnimItemBasePtr& anim,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-KnobAnim::KnobAnim(const AnimationModulePtr& model,
+KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
                    const KnobsHolderAnimBasePtr& holder,
                    QTreeWidgetItem *parentItem,
                    const KnobGuiPtr& knobGui)
@@ -284,7 +284,10 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 {
 
     if (refreshHolder) {
-        _imp->holder.lock()->refreshVisibility();
+        KnobsHolderAnimBasePtr holder = getHolder();
+        if (holder) {
+            holder->refreshVisibility();
+        }
     } else {
         KnobGuiPtr knobGui = _imp->knobGui.lock();
         if (!knobGui) {

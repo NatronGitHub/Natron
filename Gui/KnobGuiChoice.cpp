@@ -73,6 +73,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobGui.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
@@ -91,10 +92,11 @@ using std::make_pair;
 
 //=============================CHOICE_KNOB_GUI===================================
 KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
-                           int dimension,
+                           DimSpec dimension,
+                           ViewIdx view,
                            QWidget* parent)
     : ComboBox(parent)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
 }
 
@@ -253,12 +255,11 @@ ChannelsComboBox::paintEvent(QPaintEvent* event)
     }
 }
 
-KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
-                             KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiChoice::KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _comboBox(0)
 {
-    KnobChoicePtr k = toKnobChoice(knob);
+    KnobChoicePtr k = toKnobChoice(knob->getKnob());
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
@@ -280,10 +281,11 @@ void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     KnobChoicePtr knob = _knob.lock();
+    KnobGuiPtr knobUI = getKnobGui();
     if (knob->isDisplayChannelsKnob()) {
-        _comboBox = new ChannelsComboBox( shared_from_this(), 0, layout->parentWidget() );
+        _comboBox = new ChannelsComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
     } else {
-        _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
+        _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
     }
 
 
@@ -300,7 +302,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
     ///set the copy/link actions in the right click menu
-    enableRightClickMenu(_comboBox, 0);
+    knobUI->enableRightClickMenu(_comboBox, DimIdx(0), getView());
 
     layout->addWidget(_comboBox);
 }
@@ -308,8 +310,10 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
-    setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), _knob.lock()->getValue(0), i, 0, false, 0) );
+    KnobGuiPtr knobUI = getKnobGui();
+    knobUI->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+    KnobChoicePtr knob = _knob.lock();
+    knobUI->pushUndoCommand( new KnobUndoCommand<int>(knob, knob->getValue(DimIdx(0), getView()), i, DimIdx(0), getView()));
 }
 
 void
@@ -335,12 +339,12 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
         _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
     }
     if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
 }
@@ -351,30 +355,7 @@ KnobGuiChoice::onEntriesReset()
     onEntriesPopulated();
 }
 
-void
-KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
-{
-    KnobChoicePtr knob = _knob.lock();
 
-    if (!knob) {
-        return;
-    }
-
-    QAction* refreshMenuAction = new QAction(tr("Refresh Menu"), menu);
-    QObject::connect( refreshMenuAction, SIGNAL(triggered()), this, SLOT(onRefreshMenuActionTriggered()) );
-    refreshMenuAction->setToolTip( tr("Synchronize the menu with the actual state of the parameter") );
-    menu->addAction(refreshMenuAction);
-}
-
-void
-KnobGuiChoice::onRefreshMenuActionTriggered()
-{
-    KnobChoicePtr knob = _knob.lock();
-
-    if (knob) {
-        knob->refreshMenu();
-    }
-}
 
 QPixmap
 KnobGuiChoice::getPixmapFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
@@ -506,20 +487,20 @@ KnobGuiChoice::onEntriesPopulated()
 
 
     if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
-}
+} // onEntriesPopulated
 
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getGui() );
+    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getKnobGui()->getGui() );
 
     if ( dialog.exec() ) {
         ImageComponents comps = dialog.getComponents();
@@ -543,23 +524,23 @@ KnobGuiChoice::onItemNewSelected()
 }
 
 void
-KnobGuiChoice::reflectExpressionState(int /*dimension*/,
+KnobGuiChoice::reflectExpressionState(DimIdx /*dimension*/,
                                       bool hasExpr)
 {
     _comboBox->setAnimation(3);
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
     _comboBox->setEnabled_natron(!hasExpr && isEnabled);
 }
 
 void
 KnobGuiChoice::updateToolTip()
 {
-    toolTip(_comboBox);
+    getKnobGui()->toolTip(_comboBox, getView());
 
 }
 
 void
-KnobGuiChoice::updateGUI(DimSpec dimension, ViewSetSpec view)
+KnobGuiChoice::updateGUI(DimSpec /*dimension*/)
 {
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///change the internal value of the knob again...
@@ -569,12 +550,12 @@ KnobGuiChoice::updateGUI(DimSpec dimension, ViewSetSpec view)
     std::string activeEntry = knob->getActiveEntryText();
 
     if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
             QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
     if ( _comboBox->isCascading() || activeEntry.empty() ) {
@@ -585,7 +566,7 @@ KnobGuiChoice::updateGUI(DimSpec dimension, ViewSetSpec view)
 }
 
 void
-KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
+KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     int value;
@@ -610,29 +591,23 @@ KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
-KnobGuiChoice::_hide()
+KnobGuiChoice::setWidgetsVisible(bool visible)
 {
-    _comboBox->hide();
-}
-
-void
-KnobGuiChoice::_show()
-{
-    _comboBox->show();
+    _comboBox->setVisible(visible);
 }
 
 void
 KnobGuiChoice::setEnabled()
 {
     KnobChoicePtr knob = _knob.lock();
-    bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(DimIdx(0), getView()) && knob->getExpression(DimIdx(0), getView()).empty();
 
     _comboBox->setEnabled_natron(b);
 }
 
 void
 KnobGuiChoice::setReadOnly(bool readOnly,
-                           int /*dimension*/)
+                           DimSpec /*dimension*/)
 {
     _comboBox->setEnabled_natron(!readOnly);
 }
@@ -643,11 +618,6 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-KnobIPtr
-KnobGuiChoice::getKnob() const
-{
-    return _knob.lock();
-}
 
 void
 KnobGuiChoice::reflectModificationsState()

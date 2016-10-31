@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -53,37 +53,33 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class KnobGuiSeparator
-    : public KnobGui
+    : public KnobGuiWidgets
 {
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
         return new KnobGuiSeparator(knob, container);
     }
 
-    KnobGuiSeparator(KnobIPtr knob,
-                     KnobGuiContainerI *container);
+    KnobGuiSeparator(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual bool isLabelOnSameColumn() const OVERRIDE FINAL;
     virtual bool isLabelBold() const OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL
     {
     }
 
     virtual void setReadOnly(bool /*readOnly*/,
-                             int /*dimension*/) OVERRIDE FINAL
+                             DimSpec /*dimension*/) OVERRIDE FINAL
     {
     }
 
@@ -91,7 +87,7 @@ private:
     {
     }
 
-    virtual void updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/) OVERRIDE FINAL
+    virtual void updateGUI(DimSpec /*dimension*/) OVERRIDE FINAL
     {
     }
 

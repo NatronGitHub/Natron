@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/AnimationModuleBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -55,29 +55,29 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class KnobGuiParametric
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets, public OverlaySupport, public AnimationModuleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiParametric(knob, container);
+        return new KnobGuiParametric(knob, view);
     }
 
-    KnobGuiParametric(KnobIPtr knob,
-                      KnobGuiContainerI *container);
+    KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view);
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool shouldCreateLabel() const OVERRIDE
+    virtual bool mustCreateLabelWidget() const OVERRIDE
     {
         return false;
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+
+
+    // Overriden from OverlaySupport
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
@@ -87,44 +87,53 @@ public:
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
 
+    // Overriden from AnimationModuleBase
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const OVERRIDE FINAL;
+    virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
+    virtual CurveWidget* getCurveWidget() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 public Q_SLOTS:
 
 
-    void onCurveChanged(int dimension);
+    void onCurveChanged(DimSpec dimension);
 
     void onItemsSelectionChanged();
 
     void resetSelectedCurves();
 
-    void onColorChanged(int dimension);
+    void onColorChanged(DimSpec dimension);
 
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }
 
     virtual void setReadOnly(bool /*readOnly*/,
-                             int /*dimension*/) OVERRIDE FINAL
+                             DimSpec /*dimension*/) OVERRIDE FINAL
     {
     }
 
-    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+    virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;
 
 private:
     // TODO: PIMPL
     QWidget* treeColumn;
     CurveWidget* _curveWidget;
     QTreeWidget* _tree;
+    AnimationModuleSelectionModelPtr _selectionModel;
+    KnobAnimPtr _animRoot;
     Button* _resetButton;
     struct CurveDescriptor
     {
-        KnobCurveGuiPtr curve;
+        CurveGuiPtr curve;
         QTreeWidgetItem* treeItem;
     };
 

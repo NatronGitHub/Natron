@@ -142,6 +142,7 @@ SOURCES += \
     KnobGuiFactory.cpp \
     KnobGuiPrivate.cpp \
     KnobGuiFile.cpp \
+    KnobGuiWidgets.cpp \
     FileTypeMainWindow_win.cpp \
     KnobGuiButton.cpp \
     KnobGuiBool.cpp \
@@ -301,6 +302,7 @@ HEADERS += \
     KnobGuiTable.h \
     KnobGuiParametric.h \
     KnobGuiValue.h \
+    KnobGuiWidgets.h \
     KnobUndoCommand.h \
     KnobWidgetDnD.h \
     Label.h \

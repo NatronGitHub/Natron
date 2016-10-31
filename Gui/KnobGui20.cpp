@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 void
-KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec view ,DimSpec dimension ,ValueChangedReasonEnum reason)
+KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum /*reason*/)
 {
 #pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
     if (_imp->guiRemoved) {
@@ -65,8 +65,8 @@ KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec view ,DimSpec dimension ,Va
 void
 KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            const std::list<double>& keysRemoved,
-                                           ViewIdx view,
-                                           DimIdx dimension)
+                                           ViewIdx /*view*/,
+                                           DimIdx /*dimension*/)
 {
     AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
     if (!model) {
@@ -387,24 +387,12 @@ KnobGui::setReadOnly_(bool readOnly,
 }
 
 bool
-KnobGui::triggerNewLine() const
-{
-    return _imp->triggerNewLine;
-}
-
-bool
 KnobGui::isViewerUIKnob() const
 {
     return _imp->isInViewerUIKnob;
 }
 
-void
-KnobGui::turnOffNewLine()
-{
-    _imp->triggerNewLine = false;
-}
 
-/*Set the spacing between items in the layout*/
 void
 KnobGui::setSpacingBetweenItems(int spacing)
 {
@@ -696,7 +684,7 @@ KnobGui::refreshKnobWarningIndicatorVisibility()
 }
 
 void
-KnobGui::onExprChanged(DimIdx dimension,ViewIdx view)
+KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 {
     if (_imp->guiRemoved || _imp->customInteract) {
         return;
@@ -769,7 +757,9 @@ KnobGui::onHasModificationsChanged()
         bool hasModif = getKnob()->hasModifications();
         _imp->descriptionLabel->setAltered(!hasModif);
     }
-    reflectModificationsState();
+    if (!_imp->customInteract) {
+        reflectModificationsState();
+    }
 }
 
 void

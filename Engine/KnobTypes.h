@@ -119,7 +119,13 @@ public:
         return true;
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return !isShortcutKnob();
+    }
+
     void disableSlider();
+
 
     bool isSliderDisabled() const;
 
@@ -169,7 +175,7 @@ public:
 Q_SIGNALS:
 
 
-    void incrementChanged(double incr, int index = 0);
+    void incrementChanged(double incr, DimIdx index);
 
 private:
 
@@ -243,6 +249,11 @@ public:
         return true;
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -301,6 +312,11 @@ public:
     }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return true;
     }
@@ -419,9 +435,9 @@ public:
 
 Q_SIGNALS:
 
-    void incrementChanged(double incr, int index = 0);
+    void incrementChanged(double incr, DimIdx index);
 
-    void decimalsChanged(int deci, int index = 0);
+    void decimalsChanged(int deci, DimIdx index);
 
 private:
 
@@ -494,6 +510,11 @@ public:
                                 bool declaredByPlugin = true)
     {
         return KnobButtonPtr(new KnobButton(holder, label.toStdString(), dimension, declaredByPlugin));
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return false;
     }
 
     static const std::string & typeNameStatic();
@@ -628,6 +649,11 @@ public:
     }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return true;
     }
@@ -855,6 +881,11 @@ public:
         return KnobSeparatorPtr(new KnobSeparator(holder, label.toStdString(), dimension, declaredByPlugin));
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     static const std::string & typeNameStatic();
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -925,16 +956,16 @@ public:
 
     static const std::string & typeNameStatic();
 
-    bool areAllDimensionsEnabled() const;
+    bool areAllDimensionsEnabled(ViewGetSpec view) const;
 
-    void activateAllDimensions()
+    void activateAllDimensions(ViewSetSpec view)
     {
-        Q_EMIT mustActivateAllDimensions();
+        Q_EMIT mustActivateAllDimensions(view);
     }
 
-    void setPickingEnabled(bool enabled)
+    void setPickingEnabled(ViewSetSpec view, bool enabled)
     {
-        Q_EMIT pickingEnabled(enabled);
+        Q_EMIT pickingEnabled(view, enabled);
     }
 
     /**
@@ -948,6 +979,11 @@ public:
         return true;
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
     {
         return true;
@@ -955,17 +991,17 @@ public:
 
 public Q_SLOTS:
 
-    void onDimensionSwitchToggled(bool b);
+    void onDimensionSwitchToggled(ViewSetSpec view, bool b);
 
 Q_SIGNALS:
 
-    void pickingEnabled(bool);
+    void pickingEnabled(ViewSetSpec,bool);
 
     void minMaxChanged(double mini, double maxi, int index = 0);
 
     void displayMinMaxChanged(double mini, double maxi, int index = 0);
 
-    void mustActivateAllDimensions();
+    void mustActivateAllDimensions(ViewSetSpec view);
 
 private:
 
@@ -974,7 +1010,7 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
-    bool _allDimensionsEnabled;
+    std::map<ViewIdx, bool> _allDimensionsEnabled;
     bool _simplifiedMode;
     static const std::string _typeNameStr;
 };
@@ -1038,6 +1074,11 @@ public:
     void setAsMultiLine()
     {
         _multiLine = true;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return true;
     }
 
     void setUsesRichText(bool useRichText)
@@ -1250,6 +1291,11 @@ public:
         return false;
     }
 
+    virtual bool canSplitViews() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void addKnob(const KnobIPtr& k);
     void removeKnob(const KnobIPtr& k);
 
@@ -1324,6 +1370,11 @@ public:
     }
 
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return false;
     }
@@ -1411,6 +1462,11 @@ public:
     }
 
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return false;
     }
@@ -1553,6 +1609,11 @@ public:
     virtual ~KnobTable();
 
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
+    {
+        return false;
+    }
+
+    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return false;
     }

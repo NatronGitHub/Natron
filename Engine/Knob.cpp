@@ -208,10 +208,10 @@ KnobHelper::getKnobGuiPointer() const
 }
 
 bool
-KnobHelper::getAllDimensionVisible() const
+KnobHelper::getAllDimensionVisible(ViewIdx view) const
 {
     if ( getKnobGuiPointer() ) {
-        return getKnobGuiPointer()->getAllDimensionsVisible();
+        return getKnobGuiPointer()->getAllDimensionsVisible(view);
     }
 
     return true;
@@ -239,22 +239,9 @@ KnobHelper::isDeclaredByPlugin() const
 }
 
 void
-KnobHelper::setDynamicallyCreated()
-{
-    _imp->dynamicallyCreated = true;
-}
-
-bool
-KnobHelper::isDynamicallyCreated() const
-{
-    return _imp->dynamicallyCreated;
-}
-
-void
 KnobHelper::setAsUserKnob(bool b)
 {
     _imp->userKnob = b;
-    _imp->dynamicallyCreated = b;
 }
 
 bool
@@ -385,6 +372,9 @@ KnobHelper::getViewsList() const
 void
 KnobHelper::splitView(ViewIdx view)
 {
+    if (!canSplitViews() || !isAnimationEnabled()) {
+        return;
+    }
     {
         QMutexLocker k(&_imp->splitViewMutex);
         for (std::list<ViewIdx>::iterator it = _imp->splitViews.begin(); it!=_imp->splitViews.end(); ++it) {
@@ -467,6 +457,9 @@ void
 KnobHelper::unSplitView(ViewIdx view)
 {
     if (view == 0) {
+        return;
+    }
+    if (!canSplitViews() || !isAnimationEnabled()) {
         return;
     }
     bool viewFound = false;
@@ -1565,15 +1558,6 @@ KnobHelper::setMastersPersistenceIgnore(bool ignored)
     _imp->ignoreMasterPersistence = ignored;
 }
 
-void
-KnobHelper::copyAnimationToClipboard() const
-{
-    KnobGuiIPtr hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        hasGui->copyAnimationToClipboard(-1);
-    }
-}
 
 bool
 KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView)

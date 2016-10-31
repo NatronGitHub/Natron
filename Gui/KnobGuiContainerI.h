@@ -69,6 +69,8 @@ public:
      **/
     virtual void refreshPageVisibility(const KnobPagePtr& /*page*/) {}
 
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const = 0;
+
 protected:
 
     void setContainerWidget(QWidget* widget)

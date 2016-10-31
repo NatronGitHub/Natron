@@ -93,6 +93,7 @@ Q_SIGNALS:
 
 private:
 
+
     virtual void enterEvent(QEvent*) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
@@ -114,14 +115,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knobUI, ViewIdx view)
     {
-        return new KnobGuiColor(knob, container);
+        return new KnobGuiColor(knobUI, view);
     }
 
-    KnobGuiColor(KnobIPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view);
 
     virtual ~KnobGuiColor() {}
 
@@ -129,11 +128,11 @@ public Q_SLOTS:
 
     void showColorDialog();
 
-    void setPickingEnabled(bool enabled);
+    void onInternalKnobPickingEnabled(ViewSetSpec view, bool enabled);
 
-    void onPickingEnabled(bool enabled);
+    void onColorLabelPickingEnabled(bool enabled);
 
-    void onMustShowAllDimension();
+    void onMustShowAllDimension(ViewSetSpec view);
 
     void onDialogCurrentColorChanged(const QColor & color);
 
@@ -143,6 +142,8 @@ Q_SIGNALS:
     void dimensionSwitchToggled(bool b);
 
 private:
+
+    void setPickingEnabledInternal(bool enabled);
 
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -171,8 +172,7 @@ private:
 
     void updateLabel(double r, double g, double b, double a);
 
-    virtual void _show() OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
     virtual void onDimensionsFolded() OVERRIDE FINAL;
     virtual void onDimensionsExpanded() OVERRIDE FINAL;

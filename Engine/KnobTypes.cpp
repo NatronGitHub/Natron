@@ -1189,15 +1189,29 @@ KnobColor::KnobColor(const KnobHolderPtr& holder,
 }
 
 void
-KnobColor::onDimensionSwitchToggled(bool b)
+KnobColor::onDimensionSwitchToggled(ViewSetSpec view, bool b)
 {
-    _allDimensionsEnabled = b;
+    if (view.isAll()) {
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!= views.end(); ++it) {
+            _allDimensionsEnabled[*it] = b;
+        }
+    } else {
+        ViewIdx view_i = getViewIdxFromGetSpec(view);
+        _allDimensionsEnabled[view_i] = b;
+    }
+
 }
 
 bool
-KnobColor::areAllDimensionsEnabled() const
+KnobColor::areAllDimensionsEnabled(ViewGetSpec view) const
 {
-    return _allDimensionsEnabled;
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    std::map<ViewIdx, bool>::const_iterator found = _allDimensionsEnabled.find(view_i);
+    if (found == _allDimensionsEnabled.end()) {
+        return false;
+    }
+    return found->second;
 }
 
 bool

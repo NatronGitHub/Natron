@@ -32,6 +32,8 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
+#include <set>
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -74,9 +76,9 @@ public:
 
     void load(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization);
 
-    void registerNewColorPicker(KnobColorPtr knob);
+    void registerNewColorPicker(KnobColorPtr knob, ViewIdx view);
 
-    void removeColorPicker(KnobColorPtr knob);
+    void removeColorPicker(KnobColorPtr knob, ViewIdx view);
 
     void clearColorPickers();
 
@@ -85,7 +87,7 @@ public:
         return !_colorPickersEnabled.empty();
     }
 
-    void setPickersColor(double r, double g, double b, double a);
+    void setPickersColor(ViewIdx view, double r, double g, double b, double a);
 
     /**
      * @brief Retur
@@ -111,7 +113,44 @@ private:
     boost::weak_ptr<Project> _project;
     DockablePanel* _panel;
     bool _created;
-    std::vector<KnobColorPtr > _colorPickersEnabled;
+
+    struct PickerKnob
+    {
+        KnobColorPtr knob;
+        ViewIdx view;
+
+        PickerKnob(const KnobColorPtr& knob, ViewIdx view)
+        : knob(knob)
+        , view(view)
+        {
+
+        }
+
+        PickerKnob()
+        : knob()
+        , view()
+        {
+
+        }
+    };
+
+    struct PickerKnobCompare
+    {
+        bool operator()(const PickerKnob& lhs, const PickerKnob &rhs) const
+        {
+            if (lhs.view < rhs.view) {
+                return true;
+            } else if (lhs.view > rhs.view) {
+                return false;
+            } else {
+                return lhs.knob < rhs.knob;
+            }
+        }
+    };
+
+    typedef std::set<PickerKnob, PickerKnobCompare> PickerKnobSet;
+
+    PickerKnobSet _colorPickersEnabled;
 };
 
 

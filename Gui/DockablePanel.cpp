@@ -902,7 +902,7 @@ DockablePanel::setClosedInternal(bool closed)
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>( it->second.get() );
         if (ck) {
-            ck->setPickingEnabled(false);
+            ck->setPickingEnabled(ViewSetSpec::all(), false);
         }
     }
 

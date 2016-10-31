@@ -424,23 +424,27 @@ void
 ProjectGui::clearColorPickers()
 {
     while ( !_colorPickersEnabled.empty() ) {
-        _colorPickersEnabled.front()->setPickingEnabled(false);
+        PickerKnobSet::iterator it = _colorPickersEnabled.begin();
+        it->knob->setPickingEnabled(it->view, false);
     }
 
     _colorPickersEnabled.clear();
 }
 
 void
-ProjectGui::registerNewColorPicker(KnobColorPtr knob)
+ProjectGui::registerNewColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     clearColorPickers();
-    _colorPickersEnabled.push_back(knob);
+
+    PickerKnob p(knob,view);
+    _colorPickersEnabled.insert(p);
 }
 
 void
-ProjectGui::removeColorPicker(KnobColorPtr knob)
+ProjectGui::removeColorPicker(KnobColorPtr knob, ViewIdx view)
 {
-    std::vector<KnobColorPtr >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
+    PickerKnob p(knob,view);
+    PickerKnobSet::iterator found = _colorPickersEnabled.find(p);
 
     if ( found != _colorPickersEnabled.end() ) {
         _colorPickersEnabled.erase(found);
@@ -448,7 +452,8 @@ ProjectGui::removeColorPicker(KnobColorPtr knob)
 }
 
 void
-ProjectGui::setPickersColor(double r,
+ProjectGui::setPickersColor(ViewIdx view,
+                            double r,
                             double g,
                             double b,
                             double a)
@@ -458,14 +463,25 @@ ProjectGui::setPickersColor(double r,
     }
     KnobColorPtr first = _colorPickersEnabled.front();
 
-    for (U32 i = 0; i < _colorPickersEnabled.size(); ++i) {
-        if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {
-            _colorPickersEnabled[i]->activateAllDimensions();
+
+
+    for (PickerKnobSet::iterator it = _colorPickersEnabled.begin(); it != _colorPickersEnabled.end(); ++it) {
+        if ( !it->knob->areAllDimensionsEnabled() ) {
+            _colorPickersEnabled[i]->activateAllDimensions(view);
         }
         if (_colorPickersEnabled[i]->getNDimensions() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            std::vector<double> values(3);
+            values[0] = r;
+            values[1] = g;
+            values[2] = b;
+            _colorPickersEnabled[i]->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b, a, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
+            std::vector<double> values(4);
+            values[0] = r;
+            values[1] = g;
+            values[2] = b;
+            values[3] = a;
+            _colorPickersEnabled[i]->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
     }
 }

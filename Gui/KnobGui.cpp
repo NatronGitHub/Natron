@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include <QUndoCommand>
+#include <QMessageBox>
 
 #include <boost/weak_ptr.hpp>
 
@@ -39,29 +40,34 @@
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/KnobGuiFactory.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
-
-#define KNOB_RIGHT_CLICK_VIEW_PROPERTY "knobViewProperty"
-#define KNOB_RIGHT_CLICK_DIM_PROPERTY "knobDimProperty"
 
 
 NATRON_NAMESPACE_ENTER;
 
 
 /////////////// KnobGui
-KnobGui::KnobGui(const KnobIPtr& /*knob*/,
+KnobGui::KnobGui(const KnobIPtr& knob,
+                 KnobLayoutTypeEnum layoutType,
                  KnobGuiContainerI* container)
     : QObject()
     , KnobGuiI()
     , boost::enable_shared_from_this<KnobGui>()
-    , _imp( new KnobGuiPrivate(container) )
+    , _imp( new KnobGuiPrivate(this, knob, layoutType, container) )
 {
 }
 
 KnobGui::~KnobGui()
 {
+}
+
+KnobIPtr
+KnobGui::getKnob() const
+{
+    return _imp->knob.lock();
 }
 
 void
@@ -123,17 +129,21 @@ KnobGui::removeGui()
                 _imp->labelContainer = 0;
             }
         }
-        if (_imp->field) {
-            _imp->field->deleteLater();
-            _imp->field = 0;
-        }
     } else {
         if (_imp->descriptionLabel) {
             _imp->descriptionLabel->deleteLater();
             _imp->descriptionLabel = 0;
         }
     }
-    removeSpecificGui();
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (_imp->knobsOnSameLine.empty() && _imp->isOnNewLine && it->second.field) {
+            it->second.field->deleteLater();
+            it->second.field = 0;
+        }
+        if (it->second.widgets) {
+            it->second.widgets->removeSpecificGui();
+        }
+    }
     _imp->guiRemoved = true;
 }
 
@@ -166,36 +176,300 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
     }
 }
 
+/**
+ * @brief Given a knob "ref" within a vector of knobs, returns a vector
+ * of all knobs that should be on the same horizontal line as this knob.
+ **/
+static void
+findKnobsOnSameLine(const KnobsVec& knobs,
+                    const KnobIPtr& ref,
+                    std::vector<KnobIWPtr>& knobsOnSameLine,
+                    KnobIPtr* prevKnob)
+{
+    int idx = -1;
+
+    for (U32 k = 0; k < knobs.size(); ++k) {
+        if (knobs[k] == ref) {
+            idx = k;
+            if (k > 0) {
+                *prevKnob = knobs[k - 1];
+            }
+            break;
+        }
+    }
+    assert(idx != -1);
+    if (idx < 0) {
+        return;
+    }
+    ///find all knobs backward that are on the same line.
+    int k = idx - 1;
+    KnobIPtr parent = ref->getParentKnob();
+
+    while ( k >= 0 && !knobs[k]->isNewLineActivated() ) {
+        if (parent) {
+            assert(knobs[k]->getParentKnob() == parent);
+            knobsOnSameLine.push_back(knobs[k]);
+        } else {
+            if ( !knobs[k]->getParentKnob() &&
+                !toKnobPage( knobs[k] ) &&
+                !toKnobGroup( knobs[k] ) ) {
+                knobsOnSameLine.push_back(knobs[k]);
+            }
+        }
+        --k;
+    }
+
+    ///find all knobs forward that are on the same line.
+    k = idx;
+    while ( k < (int)(knobs.size() - 1) && !knobs[k]->isNewLineActivated() ) {
+        if (parent) {
+            assert(knobs[k + 1]->getParentKnob() == parent);
+            knobsOnSameLine.push_back(knobs[k + 1]);
+        } else {
+            if ( !knobs[k + 1]->getParentKnob() &&
+                !toKnobPage( knobs[k + 1] ) &&
+                !toKnobGroup( knobs[k + 1] ) ) {
+                knobsOnSameLine.push_back(knobs[k + 1]);
+            }
+        }
+        ++k;
+    }
+} // findKnobsOnSameLine
+
 void
-KnobGui::createGUI(QWidget* fieldContainer,
-                   QWidget* labelContainer,
-                   KnobClickableLabel* label,
-                   Label* warningIndicator,
-                   QHBoxLayout* layout,
-                   bool isOnNewLine,
-                   int lastKnobSpacing,
-                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
+KnobGuiPrivate::refreshIsOnNewLineFlag()
+{
+    KnobIPtr  k = knob.lock();
+    // Find all knobs on the same layout line
+    KnobIPtr parentKnob = k->getParentKnob();
+    KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
+    KnobIPtr prevKnobOnLine;
+    if (isParentGroup) {
+        // If the parent knob is a group, knobs on the same line have to be found in the children
+        // of the parent
+        KnobsVec groupsiblings = isParentGroup->getChildren();
+        findKnobsOnSameLine(groupsiblings, k, knobsOnSameLine, &prevKnobOnLine);
+    } else {
+        // Parent is a page, find the siblings in the children of the page
+        KnobPagePtr isParentPage = toKnobPage(parentKnob);
+        if (isParentPage) {
+            KnobsVec pagesiblings = isParentPage->getChildren();
+            findKnobsOnSameLine(pagesiblings, k, knobsOnSameLine, &prevKnobOnLine);
+        }
+    }
+    prevKnob = prevKnobOnLine;
+
+
+    isOnNewLine = !prevKnobOnLine || prevKnobOnLine->isNewLineActivated() || k->getViewsList().size() > 1;
+} // refreshIsOnNewLineFlag
+
+bool
+KnobGui::isLabelOnSameColumn() const
+{
+    // If createGui has not been called yet, return false
+    if (_imp->views.empty()) {
+        return false;
+    }
+    KnobGuiWidgetsPtr widgets = _imp->views.begin()->second.widgets;
+    if (!widgets) {
+        return false;
+    }
+    return widgets->isLabelOnSameColumn();
+
+}
+
+QWidget*
+KnobGui::getFieldContainer(ViewIdx view) const
+{
+    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+    if (foundView == _imp->views.end()) {
+        return 0;
+    }
+    return foundView->second.field;
+}
+
+QWidget*
+KnobGui::getLabelContainer(ViewIdx view) const
+{
+    if (view == ViewIdx(0)) {
+        return _imp->labelContainer;
+    }
+    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+    if (foundView == _imp->views.end()) {
+        return 0;
+    }
+    return foundView->second.viewLabel;
+}
+
+
+KnobGuiWidgetsPtr
+KnobGui::getWidgetsForView(ViewIdx view)
+{
+    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+    if (foundView == _imp->views.end()) {
+        return KnobGuiWidgetsPtr();
+    }
+    return foundView->second.widgets;
+}
+
+void
+KnobGui::createViewWidgets(QWidget* parentWidget, ViewIdx view)
+{
+    KnobGuiPtr thisShared = shared_from_this();
+
+    KnobGuiPrivate::ViewWidgets& viewWidgets = _imp->views[view];
+
+    if (_imp->isOnNewLine) {
+        // Create a new container and layout
+        viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(parentWidget);
+        viewWidgets.fieldLayout = new QHBoxLayout(viewWidgets.field);
+        viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
+        viewWidgets.fieldLayout->setSpacing( TO_DPIY(2) );
+        viewWidgets.fieldLayout->setAlignment(Qt::AlignLeft);
+    } else {
+        KnobIPtr prevKnob = _imp->prevKnob.lock();
+        assert(prevKnob);
+        KnobGuiPtr prevKnobGui = _imp->container->getKnobGui(prevKnob);
+        assert(prevKnobGui);
+
+        // Otherwise re-use the last row widget and layout
+        viewWidgets.field = prevKnobGui->getFieldContainer(ViewIdx(0));
+        viewWidgets.fieldLayout = dynamic_cast<QHBoxLayout*>( viewWidgets.field->layout() );
+    }
+
+
+    KnobIPtr knob = _imp->knob.lock();
+
+    // Create custom interact if any. For parametric knobs, the interact is used to draw below the curves
+    // not to replace entirely the widget
+    KnobParametricPtr isParametric = toKnobParametric(knob);
+    OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
+    if (customInteract && !isParametric) {
+        _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
+        viewWidgets.fieldLayout->addWidget(_imp->customInteract);
+    } else {
+        KnobGuiWidgetsPtr widgets(appPTR->createGuiForKnob(thisShared, view));
+        widgets->createWidget(viewWidgets.fieldLayout);
+        widgets->updateToolTip();
+
+        if ( knob->isNewLineActivated() && widgets->shouldAddStretch() ) {
+            viewWidgets.fieldLayout->addStretch();
+        }
+    }
+
+    
+
+} // createViewWidgets
+
+void
+KnobGuiPrivate::createLabel(QWidget* parentWidget)
+{
+
+    assert(!views.empty());
+    KnobGuiWidgetsPtr firstViewWidgets = views.begin()->second.widgets;
+
+    KnobIPtr k = knob.lock();
+    std::string labelText,labelIconFilePath;
+    if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+        labelText = k->getInViewerContextLabel();
+        labelIconFilePath = k->getInViewerContextIconFilePath(false);
+    } else {
+        if (!views.empty()) {
+            // Use a label based on the implementation
+            labelText = firstViewWidgets->getDescriptionLabel();
+        }
+        labelIconFilePath = k->getIconLabel();
+    }
+
+    QHBoxLayout* labelLayout = 0;
+    if (isOnNewLine) {
+        labelContainer = new QWidget(parentWidget);
+        labelLayout = new QHBoxLayout(labelContainer);
+        double verticalMargin = layoutType == KnobGui::eKnobLayoutTypePage ? TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) : 0;
+        labelLayout->setContentsMargins(TO_DPIX(3), 0, 0, verticalMargin);
+        labelLayout->setSpacing( TO_DPIY(2) );
+    }
+
+    KnobGuiPtr thisShared = _publicInterface->shared_from_this();
+
+#pragma message WARN("Pass ViewSetSpec::all() instead of ViewIdx(0) here")
+    descriptionLabel = new KnobClickableLabel(QString(), thisShared, ViewIdx(0), parentWidget);
+    KnobGuiContainerHelper::setLabelFromTextAndIcon(descriptionLabel, QString::fromUtf8(labelText.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), firstViewWidgets->isLabelBold());
+
+    // Make a warning indicator
+    warningIndicator = new Label(parentWidget);
+    warningIndicator->setVisible(false);
+
+
+    QFontMetrics fm(descriptionLabel->font(), 0);
+    int pixSize = fm.height();
+    QPixmap stdErrorPix;
+    stdErrorPix = KnobGuiContainerHelper::getStandardIcon(QMessageBox::Critical, pixSize, descriptionLabel);
+    warningIndicator->setPixmap(stdErrorPix);
+
+
+    QObject::connect( descriptionLabel, SIGNAL(clicked(bool)), _publicInterface, SIGNAL(labelClicked(bool)) );
+
+
+    // if multi-view, create an arrow to show/hide all dimensions
+    if (views.size() > 1) {
+        viewUnfoldArrow = new GroupBoxLabel(parentWidget);
+        viewUnfoldArrow->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+        viewUnfoldArrow->setChecked(true);
+        QObject::connect( viewUnfoldArrow, SIGNAL(checked(bool)), _publicInterface, SLOT(onMultiViewUnfoldClicked(bool)) );
+    }
+
+
+    if (isOnNewLine) {
+        labelLayout->addWidget(warningIndicator);
+        labelLayout->addWidget(descriptionLabel);
+        if (viewUnfoldArrow) {
+            labelLayout->addWidget(viewUnfoldArrow);
+        }
+    }
+
+} // createLabel
+
+
+void
+KnobGui::createGUI(QWidget* parentWidget)
 {
     _imp->guiRemoved = false;
     KnobIPtr knob = getKnob();
 
-    _imp->fieldLayout = layout;
-    for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-        _imp->knobsOnSameLine.push_back(*it);
+    // Set the isOnNewLineFlag for page layout
+    if (_imp->layoutType == eKnobLayoutTypePage) {
+        _imp->refreshIsOnNewLineFlag();
     }
-    _imp->field = fieldContainer;
-    _imp->labelContainer = labelContainer;
-    _imp->descriptionLabel = label;
-    _imp->warningIndicator = warningIndicator;
-    _imp->isOnNewLine = isOnNewLine;
-    if (!isOnNewLine) {
-        //layout->addStretch();
+
+    // Parmetric knobs use the customInteract to actually draw something on top of the background
+
+    // Create row widgets for each view
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
+        createViewWidgets(parentWidget, *it);
+    }
+
+
+    assert(!_imp->views.empty());
+    KnobGuiWidgetsPtr firstViewWidgets = _imp->views.begin()->second.widgets;
+
+    // Create the label if needed
+    if (firstViewWidgets->mustCreateLabelWidget()) {
+        _imp->createLabel(parentWidget);
+    }
+
+    
+    // If not on a new line, add to the previous knob layout the current knob
+    if (!_imp->isOnNewLine) {
+        QHBoxLayout* prevKnobLayout = _imp->views.begin()->second.fieldLayout;
+
         int spacing;
         bool isViewerParam = _imp->container->isInViewerUIKnob();
         if (isViewerParam) {
             spacing = _imp->container->getItemsSpacingOnSameLine();
         } else {
-            spacing = lastKnobSpacing;//knob->getSpacingBetweenitems();
+            spacing = _imp->spacingBeforePrevKnob;//knob->getSpacingBetweenitems();
             // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
             // The minimum allowed spacing should be 1px
             if (spacing == 0) {
@@ -203,57 +477,61 @@ KnobGui::createGUI(QWidget* fieldContainer,
             }
         }
         if (spacing > 0) {
-            layout->addSpacing( TO_DPIX(spacing) );
+            prevKnobLayout->addSpacing( TO_DPIX(spacing) );
         }
-        if (labelContainer) {
-            layout->addWidget(labelContainer);
+        if (_imp->labelContainer) {
+            prevKnobLayout->addWidget(_imp->labelContainer);
         } else {
             if (_imp->warningIndicator) {
-                layout->addWidget(_imp->warningIndicator);
+                prevKnobLayout->addWidget(_imp->warningIndicator);
             }
-            if (label) {
-                layout->addWidget(label);
+            if (_imp->descriptionLabel) {
+                prevKnobLayout->addWidget(_imp->descriptionLabel);
             }
         }
     }
     
     
-    if (label) {
-        toolTip(label, ViewIdx(0));
-    }
-
-    // Parmetric knobs use the customInteract to actually draw something on top of the background
-    KnobParametricPtr isParametric = toKnobParametric(knob);
-    OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
-    if (customInteract && !isParametric) {
-        _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
-        layout->addWidget(_imp->customInteract);
-    } else {
-        createWidget(layout);
-        onHasModificationsChanged();
-        updateToolTip();
+    if (_imp->descriptionLabel) {
+        toolTip(_imp->descriptionLabel, ViewIdx(0));
     }
 
 
     _imp->widgetCreated = true;
 
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        onExprChanged(i);
 
-        /*updateGuiInternal(i);
-           std::string exp = knob->getExpression(i);
-           reflectExpressionState(i,!exp.empty());
-           if (exp.empty()) {
-            onAnimationLevelChanged(ViewSpec::all(), i);
-           }*/
+    // Refresh modifications state
+    onHasModificationsChanged();
+
+    
+    // Refresh animation and expression state on all views
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+            onExprChanged(DimIdx(i), it->first);
+        }
     }
+
+    // Refresh secretness
+    setSecret();
+
 } // KnobGui::createGUI
 
 void
 KnobGui::updateGuiInternal(DimSpec dimension, ViewSetSpec view)
 {
     if (!_imp->customInteract) {
-        updateGUI(dimension, view);
+        if (view.isAll()) {
+            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+                it->second.widgets->updateGUI(dimension);
+            }
+
+        } else {
+            ViewIdx view_i = getKnob()->getViewIdxFromGetSpec(ViewGetSpec(view));
+            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
+            if (foundView != _imp->views.end()) {
+                foundView->second.widgets->updateGUI(dimension);
+            }
+        }
     } else {
         _imp->customInteract->update();
     }
@@ -272,62 +550,22 @@ KnobGui::onRightClickClicked(const QPoint & pos)
 }
 
 void
-KnobGui::enableRightClickMenu(QWidget* widget,
-                              DimSpec dimension,
-                              ViewIdx view)
-{
-    KnobIPtr knob = getKnob();
-    if (!knob) {
-        return;
-    }
-    KnobSeparatorPtr sep = toKnobSeparator(knob);
-    KnobGroupPtr grp = toKnobGroup(knob);
-    if (sep || grp) {
-        return;
-    }
-
-    widget->setProperty(KNOB_RIGHT_CLICK_DIM_PROPERTY, QVariant(dimension));
-    widget->setProperty(KNOB_RIGHT_CLICK_VIEW_PROPERTY, QVariant(view));
-    widget->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect( widget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(onRightClickClicked(QPoint)) );
-}
-
-bool
-KnobGui::shouldCreateLabel() const
-{
-    return true;
-}
-
-bool
-KnobGui::isLabelOnSameColumn() const
-{
-    return false;
-}
-
-bool
-KnobGui::isLabelBold() const
-{
-    return false;
-}
-
-std::string
-KnobGui::getDescriptionLabel() const
-{
-    return getKnob()->getLabel();
-}
-
-void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         DimSpec dimension, ViewIdx view)
 {
     KnobIPtr knob = getKnob();
-    bool isViewerKnob = isViewerUIKnob();
+    bool isViewerKnob = _imp->layoutType == KnobGui::eKnobLayoutTypeViewerUI;
     if ( (!isViewerKnob && knob->getIsSecret()) || (isViewerKnob && knob->getInViewerContextSecret()) ) {
         return;
     }
 
     createAnimationMenu(_imp->copyRightClickMenu, dimension, view);
-    addRightClickMenuEntries(_imp->copyRightClickMenu);
+    if (!_imp->views.empty()) {
+        KnobGuiWidgetsPtr widgets = _imp->views.begin()->second.widgets;
+        if (widgets) {
+            widgets->addRightClickMenuEntries(_imp->copyRightClickMenu);
+        }
+    }
     _imp->copyRightClickMenu->exec( QCursor::pos() );
 } // showRightClickMenuForDimension
 
@@ -414,10 +652,20 @@ KnobGui::getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec*
     *view = ViewIdx(it->toInt());
 }
 
+bool
+KnobGui::getAllDimensionsVisible(ViewIdx view) const
+{
+    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+    if (foundView == _imp->views.end()) {
+        return false;
+    }
+    return foundView->second.widgets ? foundView->second.widgets->getAllDimensionsVisible() : false;
+}
+
 void
 KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 {
-    if ( (dimension == 0) && !getAllDimensionsVisible() ) {
+    if ( (dimension == 0) && !getAllDimensionsVisible(view) ) {
         dimension = DimSpec::all();
     }
 
@@ -674,7 +922,8 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 
     //cbDim is ignored for now
     DimSpec cbDim;
-    appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
+    ViewIdx cbView;
+    appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim, &cbView);
 
 
     if (fromKnob && (fromKnob != knob) && isAppKnob) {

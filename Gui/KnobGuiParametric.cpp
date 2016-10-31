@@ -60,15 +60,19 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Engine/OfxOverlayInteract.h"
 
+#include "Gui/AnimationModule.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
+#include "Gui/CurveWidget.h"
+#include "Gui/KnobGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/KnobAnim.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
@@ -86,17 +90,18 @@ using std::make_pair;
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
-                                     KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiParametric::KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
+    , OverlaySupport()
+    , AnimationModuleBase(knob->getGui())
     , treeColumn(NULL)
     , _curveWidget(NULL)
     , _tree(NULL)
     , _resetButton(NULL)
     , _curves()
 {
-    _knob = toKnobParametric(knob);
-    QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );
+    _knob = toKnobParametric(knob->getKnob());
+    QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(DimSpec)), this, SLOT(onColorChanged(DimSpec)) );
 }
 
 KnobGuiParametric::~KnobGuiParametric()
@@ -114,10 +119,11 @@ void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     KnobParametricPtr knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
+    QObject::connect( knob.get(), SIGNAL(curveChanged(DimSpec)), this, SLOT(onCurveChanged(DimSpec)) );
     OfxParamOverlayInteractPtr interact = knob->getCustomInteract();
 
-    //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    KnobGuiPtr knobUI = getKnobGui();
+
     treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
@@ -126,8 +132,8 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     _tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();
-    if ( hasToolTip() ) {
-        toolTip(_tree);
+    if ( knobUI->hasToolTip() ) {
+        knobUI->toolTip(_tree, getView());
     }
     treeColumnLayout->addWidget(_tree);
 
@@ -138,107 +144,135 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(), this, TimeLinePtr(), layout->parentWidget() );
+    AnimationModuleBasePtr thisShared = shared_from_this();
+    _selectionModel.reset(new AnimationModuleSelectionModel(thisShared));
+    _curveWidget = new CurveWidget(layout->parentWidget());
+
+    _animRoot = KnobAnim::create(thisShared, KnobsHolderAnimBasePtr(), 0 /*parentTreeItem*/, knobUI);
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if (interact) {
         _curveWidget->setCustomInteract(interact);
     }
-    if ( hasToolTip() ) {
-        toolTip(_curveWidget);
+    if ( knobUI->hasToolTip() ) {
+        knobUI->toolTip(_curveWidget, getView());
     }
     layout->addWidget(_curveWidget);
 
-    KnobGuiPtr thisShared = shared_from_this();
+    ViewIdx view = getView();
     std::vector<CurveGuiPtr > visibleCurves;
     for (int i = 0; i < knob->getNDimensions(); ++i) {
-        QString curveName = QString::fromUtf8( knob->getDimensionName(i).c_str() );
-        KnobCurveGuiPtr curve( new KnobCurveGui(_curveWidget, knob->getParametricCurve(i), thisShared, i, curveName, QColor(255, 255, 255), 1.) );
-        _curveWidget->addCurveAndSetColor(curve);
-        QColor color;
-        double r, g, b;
-        knob->getCurveColor(i, &r, &g, &b);
-        color.setRedF(r);
-        color.setGreenF(g);
-        color.setBlueF(b);
+        QString curveName = QString::fromUtf8( knob->getDimensionName(DimIdx(i)).c_str() );
+        double color[4];
+        knob->getCurveColor(DimIdx(i), &color[0], &color[1], &color[2]);
+        color[3] = 1.;
+        CurveGuiPtr curve = _animRoot->AnimItemBase::getCurveGui(DimIdx(i), view);
+        assert(curve);
         curve->setColor(color);
         QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+        item->setData(0, QT_ROLE_CONTEXT_DIM, QVariant(i));
+        item->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)_animRoot.get()));
         item->setText(0, curveName);
         item->setSelected(true);
         CurveDescriptor desc;
         desc.curve = curve;
         desc.treeItem = item;
         _curves.push_back(desc);
-        if ( curve->isVisible() ) {
-            visibleCurves.push_back(curve);
-        }
+        visibleCurves.push_back(curve);
     }
 
-    _curveWidget->centerOn(visibleCurves, true);
+    _curveWidget->centerOnCurves(visibleCurves, true);
     QObject::connect( _tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
-void
-KnobGuiParametric::onColorChanged(int dimension)
+TimeLinePtr
+KnobGuiParametric::getTimeline() const
 {
-    if ( (dimension < 0) || ( dimension >= (int)_curves.size() ) ) {
-        return;
-    }
-    double r, g, b;
-    _knob.lock()->getCurveColor(dimension, &r, &g, &b);
+    return TimeLinePtr();
+}
 
-    CurveDescriptor& found = _curves[dimension];
-    QColor c;
-    c.setRgbF(r, g, b);
-    found.curve->setColor(c);
+void
+KnobGuiParametric::getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const
+{
+    knobs->push_back(_animRoot);
+}
+
+void
+KnobGuiParametric::refreshSelectionBboxAndUpdateView()
+{
+    _curveWidget->refreshSelectionBboxAndRedraw();
+}
+
+CurveWidget*
+KnobGuiParametric::getCurveWidget() const
+{
+    return _curveWidget;
+}
+
+AnimationModuleSelectionModelPtr
+KnobGuiParametric::getSelectionModel() const
+{
+    return _selectionModel;
+}
+
+bool
+KnobGuiParametric::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* /*isTableItem*/, NodeAnimPtr* /*isNodeItem*/, ViewSetSpec* view, DimSpec* dimension) const
+{
+    if (!treeItem) {
+        return false;
+    }
+    *dimension = DimSpec(treeItem->data(0, QT_ROLE_CONTEXT_DIM).toInt());
+    *view = ViewSetSpec(getView());
+    *type = eAnimatedItemTypeKnobDim;
+    assert(toKnobAnim(((KnobAnim*)treeItem->data(0, QT_ROLE_CONTEXT_ITEM_POINTER).value<void*>())->shared_from_this()) == _animRoot);
+    *isKnob = _animRoot;
+    return true;
+}
+
+void
+KnobGuiParametric::onColorChanged(DimSpec dimension)
+{
+    KnobParametricPtr knob = _knob.lock();
+    for (std::size_t i = 0; i < _curves.size(); ++i) {
+        if (dimension.isAll() || (int)i == dimension) {
+            double color[4];
+            knob->getCurveColor(DimIdx(i), &color[0], &color[1], &color[2]);
+            color[3] = 1.;
+            CurveDescriptor& found = _curves[dimension];
+            found.curve->setColor(color);
+        }
+    }
+
 
     _curveWidget->update();
 }
 
 void
-KnobGuiParametric::_hide()
+KnobGuiParametric::setWidgetsVisible(bool visible)
 {
-    _curveWidget->hide();
-    _tree->hide();
-    _resetButton->hide();
-}
-
-void
-KnobGuiParametric::_show()
-{
-    _curveWidget->show();
-    _tree->show();
-    _resetButton->show();
+    _curveWidget->setVisible(visible);
+    _tree->setVisible(visible);
+    _resetButton->setVisible(visible);
 }
 
 void
 KnobGuiParametric::setEnabled()
 {
     KnobParametricPtr knob = _knob.lock();
-    bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(DimIdx(0), getView())  && !knob->isSlave(DimIdx(0), getView()) && knob->getExpression(DimIdx(0), getView()).empty();
 
     _tree->setEnabled(b);
 }
 
 void
-KnobGuiParametric::updateGUI(DimSpec /*dimension*/, ViewSetSpec /*view*/)
+KnobGuiParametric::updateGUI(DimSpec /*dimension*/)
 {
     _curveWidget->update();
 }
 
 void
-KnobGuiParametric::onCurveChanged(int dimension)
+KnobGuiParametric::onCurveChanged(DimSpec /*dimension*/)
 {
-    if ( (dimension < 0) || ( dimension >= (int)_curves.size() ) ) {
-        return;
-    }
-    CurveDescriptor& found = _curves[dimension];
 
-    // even when there is only one keyframe, there may be tangents!
-    if ( (found.curve->getInternalCurve()->getKeyFramesCount() > 0) && found.treeItem->isSelected() ) {
-        found.curve->setVisible(true);
-    } else {
-        found.curve->setVisible(false);
-    }
     _curveWidget->update();
 }
 
@@ -248,35 +282,23 @@ KnobGuiParametric::onItemsSelectionChanged()
     std::vector<CurveGuiPtr > curves;
 
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
-    for (int i = 0; i < selectedItems.size(); ++i) {
-        for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if ( it->treeItem == selectedItems.at(i) ) {
-                if ( it->curve->getInternalCurve()->isAnimated() ) {
-                    curves.push_back(it->curve);
-                }
+
+    ///find in the _curves map if an item's map the current
+    AnimItemDimViewKeyFramesMap selectedKeys;
+    std::vector<TableItemAnimPtr> tableItems;
+    std::vector<NodeAnimPtr> rangeNodes;
+
+    for (QList<QTreeWidgetItem*>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
+        for (CurveGuis::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
+            if ( it2->treeItem == *it ) {
+                curves.push_back(it2->curve);
                 break;
             }
         }
     }
 
-    ///find in the _curves map if an item's map the current
-
-    _curveWidget->showCurvesAndHideOthers(curves);
-    _curveWidget->centerOn(curves, true); //remove this if you don't want the editor to switch to a curve on a selection change
-}
-
-void
-KnobGuiParametric::getSelectedCurves(std::vector<CurveGuiPtr >* selection)
-{
-    QList<QTreeWidgetItem*> selected = _tree->selectedItems();
-    for (int i = 0; i < selected.size(); ++i) {
-        //find the items in the curves
-        for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-            if ( it->treeItem == selected.at(i) ) {
-                selection->push_back(it->curve);
-            }
-        }
-    }
+    _selectionModel->makeSelection(selectedKeys, tableItems, rangeNodes, AnimationModuleSelectionModel::SelectionTypeAdd | AnimationModuleSelectionModel::SelectionTypeClear);
+    _curveWidget->centerOnCurves(curves, true); //remove this if you don't want the editor to switch to a curve on a selection change
 }
 
 void
@@ -288,22 +310,16 @@ KnobGuiParametric::resetSelectedCurves()
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
             if ( it->treeItem == selected.at(i) ) {
-                k->resetToDefaultValue( it->curve->getNDimensions() );
+                k->resetToDefaultValue( it->curve->getDimension() );
                 break;
             }
         }
     }
-    k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
-}
-
-KnobIPtr
-KnobGuiParametric::getKnob() const
-{
-    return _knob.lock();
+    k->evaluateValueChange(DimIdx(0), k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
 void
-KnobGuiParametric::refreshDimensionName(int dim)
+KnobGuiParametric::refreshDimensionName(DimIdx dim)
 {
     if ( (dim < 0) || ( dim >= (int)_curves.size() ) ) {
         return;
@@ -311,7 +327,6 @@ KnobGuiParametric::refreshDimensionName(int dim)
     KnobParametricPtr knob = _knob.lock();
     CurveDescriptor& found = _curves[dim];
     QString name = QString::fromUtf8( knob->getDimensionName(dim).c_str() );
-    found.curve->setName(name);
     found.treeItem->setText(0, name);
     _curveWidget->update();
 }

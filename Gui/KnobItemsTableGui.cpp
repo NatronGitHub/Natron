@@ -213,7 +213,7 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     QWidget* rowContainer = new QWidget;
     QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
     std::vector<KnobIPtr> knobsOnSameLine;
-    ret->createGUI(rowContainer, 0 /*labelContainer*/, 0 /*label*/, 0 /*warningIndicator*/, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
+    ret->createGUI(rowContainer, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
 
     foundItem->columnItems[col].guiKnob = ret;
     

@@ -207,7 +207,7 @@ Gui::setColorPickersColor(double r,
 }
 
 void
-Gui::registerNewColorPicker(KnobColorPtr knob)
+Gui::registerNewColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
@@ -222,7 +222,7 @@ Gui::registerNewColorPicker(KnobColorPtr knob)
 }
 
 void
-Gui::removeColorPicker(KnobColorPtr knob)
+Gui::removeColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);

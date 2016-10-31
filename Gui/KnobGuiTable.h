@@ -32,13 +32,13 @@
 #endif
 
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 
 NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiTablePrivate;
 class KnobGuiTable
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -46,8 +46,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    KnobGuiTable(KnobIPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiTable(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiTable() OVERRIDE;
 
@@ -79,17 +78,16 @@ protected:
     }
 
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE;
-    virtual void _hide() OVERRIDE;
-    virtual void _show() OVERRIDE;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE;
     virtual void setEnabled() OVERRIDE;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE;
-    virtual void updateGUI(DimSpec dimension, ViewSetSpec view) OVERRIDE;
-    virtual void reflectAnimationLevel(int /*dimension*/,
+    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE;
+    virtual void updateGUI(DimSpec dimension) OVERRIDE;
+    virtual void reflectAnimationLevel(DimIdx /*dimension*/,
                                        AnimationLevelEnum /*level*/) OVERRIDE
     {
     }
 
-    virtual void reflectExpressionState(int /*dimension*/,
+    virtual void reflectExpressionState(DimIdx /*dimension*/,
                                         bool /*hasExpr*/) OVERRIDE
     {
     }
@@ -123,19 +121,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiLayers(knob, container);
+        return new KnobGuiLayers(knob, view);
     }
 
-    KnobGuiLayers(KnobIPtr knob,
-                  KnobGuiContainerI *container);
+    KnobGuiLayers(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiLayers() OVERRIDE;
-
-
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 private:
 
