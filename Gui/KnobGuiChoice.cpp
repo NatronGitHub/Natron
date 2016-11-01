@@ -302,7 +302,7 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
     ///set the copy/link actions in the right click menu
-    knobUI->enableRightClickMenu(_comboBox, DimIdx(0), getView());
+    KnobGuiWidgets::enableRightClickMenu(knobUI, _comboBox, DimIdx(0), getView());
 
     layout->addWidget(_comboBox);
 }

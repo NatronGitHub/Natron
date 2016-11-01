@@ -406,7 +406,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
         ///set the copy/link actions in the right click menu
-        knobUI->enableRightClickMenu(_textEdit, DimIdx(0), getView());
+        KnobGuiWidgets::enableRightClickMenu(knobUI, _textEdit, DimIdx(0), getView());
 
         if ( knob->isCustomHTMLText() ) {
             _textEdit->setReadOnlyNatron(true);
@@ -512,7 +512,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         }
 
         ///set the copy/link actions in the right click menu
-        knobUI->enableRightClickMenu(_lineEdit, DimIdx(0), getView());
+        KnobGuiWidgets::enableRightClickMenu(knobUI, _lineEdit, DimIdx(0), getView());
     }
 } // createWidget
 

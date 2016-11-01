@@ -124,10 +124,6 @@ public:
 
     KnobLayoutTypeEnum getLayoutType() const;
 
-    /*Set the spacing between items in the layout*/
-    void setSpacingBetweenItems(int spacing);
-
-    int getSpacingBetweenItems() const;
 
     bool hasWidgetBeenCreated() const;
 
@@ -230,7 +226,7 @@ public Q_SLOTS:
 
     void onUnlinkActionTriggered();
 
-    void onDimensionNameChanged(int dimension);
+    void onDimensionNameChanged(DimIdx dimension);
 
     void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            const std::list<double>& keysRemoved,

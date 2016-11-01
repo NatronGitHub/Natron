@@ -384,6 +384,48 @@ KnobGuiParametric::restoreOpenGLContext()
     _curveWidget->restoreOpenGLContext();
 }
 
+void
+KnobGuiParametric::getCursorPosition(double& x, double& y) const
+{
+    return _curveWidget->getCursorPosition(x, y);
+}
+
+RectD
+KnobGuiParametric::getViewportRect() const
+{
+    return _curveWidget->getViewportRect();
+}
+
+void
+KnobGuiParametric::toCanonicalCoordinates(double *x, double *y) const
+{
+    return _curveWidget->toCanonicalCoordinates(x, y);
+}
+
+void
+KnobGuiParametric::toWidgetCoordinates(double *x, double *y) const
+{
+    return _curveWidget->toWidgetCoordinates(x, y);
+}
+
+void
+KnobGuiParametric::pushUndoCommand(QUndoCommand *cmd)
+{
+    getKnobGui()->pushUndoCommand(cmd);
+}
+
+int
+KnobGuiParametric::getWidgetFontHeight() const
+{
+    return _curveWidget->getWidgetFontHeight();
+}
+
+int
+KnobGuiParametric::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return _curveWidget->getStringWidthForCurrentFont(string);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

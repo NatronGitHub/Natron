@@ -391,9 +391,9 @@ NodeGui::ensurePanelCreated()
                 KnobGuiIPtr extraLabelKnobUI = extraLabelKnob->getKnobGuiPointer();
                 if (extraLabelKnobUI) {
                     KnobGuiPtr knobUi = boost::dynamic_pointer_cast<KnobGui>(extraLabelKnobUI);
-                    KnobGuiString* knobString = dynamic_cast<KnobGuiString*>(knobUi.get());
+                    boost::shared_ptr<KnobGuiString> knobString = boost::dynamic_pointer_cast<KnobGuiString>(knobUi->getWidgetsForView(ViewIdx(0)));
                     if (knobString) {
-                        QObject::connect( knobString, SIGNAL(fontPropertyChanged()), this, SLOT(refreshNodeText()) );
+                        QObject::connect( knobString.get(), SIGNAL(fontPropertyChanged()), this, SLOT(refreshNodeText()) );
 
                     }
                 }

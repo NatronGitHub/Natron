@@ -167,24 +167,6 @@ private:
     static ViewIdx current(); // overload with no implementation
 };
 
-ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
-: i(view_i.value())
-{
-    assert(i >= -2);
-}
-
-ViewSetSpec::ViewSetSpec(const ViewGetSpec& view_get)
-: i(view_get.value())
-{
-    assert(i >= -2);
-}
-
-ViewGetSpec::ViewGetSpec(const ViewIdx& view_i)
-: i(view_i.value())
-{
-    assert(i == -2 || i >= 0);
-}
-
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_ViewIdx_h

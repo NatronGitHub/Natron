@@ -207,7 +207,7 @@ ColorPickerLabel::setColor(const QColor & color)
 KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     : KnobGuiValue(knobUI, view)
     , _knob( toKnobColor(knobUI->getKnob()) )
-    , _useSimplifiedUI( knobUI->isViewerUIKnob() || _knob.lock()->isSimplified() )
+    , _useSimplifiedUI( knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI || _knob.lock()->isSimplified() )
 {
 }
 
@@ -280,7 +280,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
 
     if (_useSimplifiedUI) {
         KnobGuiValue::setWidgetsVisible(false);
-        getKnobGui()->enableRightClickMenu(_colorLabel, DimSpec::all(), getView());
+        KnobGuiWidgets::enableRightClickMenu(getKnobGui(), _colorLabel, DimSpec::all(), getView());
     }
 }
 

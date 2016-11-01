@@ -37,7 +37,8 @@ NATRON_NAMESPACE_ENTER;
 struct NumericKnobValidatorPrivate
 {
     const SpinBox* spinbox;
-    KnobGuiWPtr knobUi;
+    KnobGuiWPtr knobGui;
+    ViewIdx view;
 
     ///Only these knobs have spinboxes
     KnobGuiDoublePtr isDoubleGui;
@@ -47,13 +48,18 @@ struct NumericKnobValidatorPrivate
     KnobIntBasePtr isInt;
 
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
-                                const KnobGuiPtr& knob)
+                                const KnobGuiPtr& knob,
+                                ViewIdx view)
         : spinbox(spinbox)
-        , knobUi(knob)
-        , isDoubleGui( toKnobGuiDouble(knob) )
-        , isColorGui( toKnobGuiColor(knob) )
-        , isIntGui( toKnobGuiInt(knob) )
+        , knobGui(knob)
+        , view(view)
+
     {
+
+        isDoubleGui = toKnobGuiDouble(knob);
+        isColorGui = toKnobGuiColor(knob);
+        isIntGui = toKnobGuiInt(knob);
+
         KnobIPtr internalKnob = knob->getKnob();
 
         isDouble = toKnobDoubleBase(internalKnob);
@@ -63,8 +69,9 @@ struct NumericKnobValidatorPrivate
 };
 
 NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,
-                                           const KnobGuiPtr& knob)
-    : _imp( new NumericKnobValidatorPrivate(spinbox, knob) )
+                                           const KnobGuiPtr& knob,
+                                           ViewIdx view)
+    : _imp( new NumericKnobValidatorPrivate(spinbox, knob, view) )
 {
 }
 
@@ -76,7 +83,7 @@ bool
 NumericKnobValidator::validateInput(const QString& userText,
                                     double* valueToDisplay) const
 {
-    int dimension;
+    DimSpec dimension;
     bool allDimsVisible = true;
 
     if (_imp->isDoubleGui) {
@@ -89,17 +96,9 @@ NumericKnobValidator::validateInput(const QString& userText,
         assert(0);
     }
     if (!allDimsVisible) {
-        dimension = -1;
+        dimension = DimSpec::all();
     } else {
-        if (_imp->isDoubleGui) {
-            dimension = _imp->isDoubleGui->getDimensionForSpinBox(_imp->spinbox);
-        } else if (_imp->isIntGui) {
-            dimension = _imp->isIntGui->getDimensionForSpinBox(_imp->spinbox);
-        } else if (_imp->isColorGui) {
-            dimension = _imp->isColorGui->getDimensionForSpinBox(_imp->spinbox);
-        } else {
-            dimension = 0;
-        }
+        dimension = DimSpec(_imp->spinbox->property(kKnobGuiValueSpinBoxDimensionProperty).toInt());
     }
 
     *valueToDisplay = 0;
@@ -110,23 +109,23 @@ NumericKnobValidator::validateInput(const QString& userText,
         simplifiedUserText.remove(0, 1);
     }
     std::string expr = simplifiedUserText.toStdString();
-    KnobGuiPtr knob = _imp->knobUi.lock();
-
-    if (!expr.empty() && knob) {
+    KnobGuiPtr knobUI = _imp->knobGui.lock();
+    if (!expr.empty() && knobUI) {
         try {
-            knob->getKnob()->validateExpression(expr, 0, false, &ret);
+            knobUI->getKnob()->validateExpression(expr, DimIdx(0), _imp->view, false, &ret);
         } catch (...) {
             return false;
         }
 
         if (isPersistentExpression) {
             //Only set the expression if it starts with '='
-            knob->pushUndoCommand( new SetExpressionCommand(knob->getKnob(),
-                                                            false,
-                                                            dimension,
-                                                            expr) );
+            knobUI->pushUndoCommand( new SetExpressionCommand(knobUI->getKnob(),
+                                                              false,
+                                                              dimension,
+                                                              _imp->view,
+                                                              expr) );
         }
-
+        
 
         bool ok = false;
         *valueToDisplay = QString::fromUtf8( ret.c_str() ).toDouble(&ok);

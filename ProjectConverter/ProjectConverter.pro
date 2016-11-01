@@ -46,6 +46,6 @@ INCLUDEPATH += google-mock
 include(../global.pri)
 
 SOURCES += \
-    ProjectConverter_main.cpp
-
+    ProjectConverter_main.cpp \
+    ../Serialization/SerializationCompat.cpp
 #HEADERS += \

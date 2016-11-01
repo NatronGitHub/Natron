@@ -72,6 +72,8 @@ public:
 
     KnobItemsTablePtr getInternalTable() const;
 
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onComboBoxMinimumSizeChanged(const QSize& size);

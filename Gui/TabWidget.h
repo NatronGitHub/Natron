@@ -291,8 +291,6 @@ public Q_SLOTS:
 
     void moveNodeGraphHere();
 
-    void moveCurveEditorHere();
-
     void moveAnimationModuleEditorHere();
 
     void newHistogramHere();

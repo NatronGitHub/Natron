@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
+#if 0
 #include "TrackerPanel.h"
 
 #include <QApplication>
@@ -2059,4 +2059,7 @@ NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 
+
 #include "moc_TrackerPanel.cpp"
+
+#endif

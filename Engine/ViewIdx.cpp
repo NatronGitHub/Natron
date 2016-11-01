@@ -16,62 +16,35 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GUI_SPINBOXVALIDATOR_H
-#define GUI_SPINBOXVALIDATOR_H
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+#include "ViewIdx.h"
 
-#include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
-#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class SpinBoxValidator
+
+
+ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
+: i(view_i.value())
 {
-public:
+    assert(i >= -2);
+}
 
-    SpinBoxValidator()
-    {
-    }
-
-    virtual ~SpinBoxValidator()
-    {
-    }
-
-    virtual bool validateInput(const QString& userText, double* valueToDisplay) const = 0;
-};
-
-
-struct NumericKnobValidatorPrivate;
-class NumericKnobValidator
-    : public SpinBoxValidator
+ViewSetSpec::ViewSetSpec(const ViewGetSpec& view_get)
+: i(view_get.value())
 {
-public:
+    assert(i >= -2);
+}
 
-    NumericKnobValidator(const SpinBox* spinbox,
-                         const KnobGuiPtr& knob,
-                         ViewIdx view);
+ViewGetSpec::ViewGetSpec(const ViewIdx& view_i)
+: i(view_i.value())
+{
+    assert(i == -2 || i >= 0);
+}
 
-    virtual ~NumericKnobValidator();
-
-    virtual bool validateInput(const QString& userText, double* valueToDisplay) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-private:
-
-    boost::scoped_ptr<NumericKnobValidatorPrivate> _imp;
-};
 
 NATRON_NAMESPACE_EXIT;
-
-#endif // GUI_SPINBOXVALIDATOR_H

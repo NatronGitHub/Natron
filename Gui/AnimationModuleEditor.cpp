@@ -439,3 +439,5 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING
+#include "moc_AnimationModuleEditor.cpp"

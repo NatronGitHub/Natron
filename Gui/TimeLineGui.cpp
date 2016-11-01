@@ -179,7 +179,6 @@ struct TimelineGuiPrivate
     {
         double zoomRight = parent->toTimeLine(parent->width() - 1);
 
-        gui->getCurveEditor()->getCurveWidget()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
         gui->getAnimationModuleEditor()->centerOn(tlZoomCtx.left - 5, zoomRight - 5);
     }
 

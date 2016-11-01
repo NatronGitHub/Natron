@@ -136,7 +136,6 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
     _imp->knob = knob;
     _imp->parentItem = parentItem;
     
-    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(redrawGuiCurve(ViewSetSpec,DimSpec)), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(secretChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(enabledChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
     QObject::connect( this, SIGNAL(concatenateSignal()), this, SLOT(refreshKnobVisibility()), Qt::QueuedConnection);

@@ -96,7 +96,7 @@ bool
 DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
                                       double time,
-                                      ViewSpec view,
+                                      ViewSetSpec view,
                                       bool originatedFromMainThread)
 {
     std::string callback;

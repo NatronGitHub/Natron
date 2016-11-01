@@ -303,12 +303,7 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
                                              QHBoxLayout*& lastRowLayout,
                                              KnobsVec& knobsOnSameLine)
 {
-    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, publicInterface) );
-    if (!ret) {
-        assert(false);
-        return;
-    }
-    ret->initialize();
+    KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeViewerUI, publicInterface);
 
     knobsMapping.insert( std::make_pair(knob, ret) );
 
@@ -317,7 +312,7 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
     if (layoutType == eViewerContextLayoutTypeStretchBefore) {
         lastRowLayout->addStretch();
     }
-    ret->createGUI(lastRowContainer, lastRowLayout, layoutType == eViewerContextLayoutTypeAddNewLine, 0, knobsOnSameLine);
+    ret->createGUI(lastRowContainer);
 
     if (layoutType == eViewerContextLayoutTypeAddNewLine) {
         knobsOnSameLine.clear();
@@ -345,6 +340,12 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
     ret->setSecret();
 
 
+}
+
+QWidget*
+NodeViewerContext::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    return new QWidget(parent);
 }
 
 void
@@ -725,35 +726,35 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
 
                 if (oldIsGroup) {
                     if (oldIsGroup->getValue() != false) {
-                        oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        oldIsGroup->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                     }
                 }
                 
                 if (newIsGroup->getValue() != true) {
-                    newIsGroup->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    newIsGroup->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                 }
 
 
                 // Only change the value of the button if we are in the same group
                 if (oldIsButton && oldIsGroup == newIsGroup) {
                     if (oldIsButton->getValue() != false) {
-                        oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        oldIsButton->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                     }
                 }
                 if (newIsButton->getValue() != true) {
-                    newIsButton->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    newIsButton->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                 }
             }
         }

@@ -57,6 +57,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiFile.h"
+#include "Gui/KnobGui.h"
 #include "Gui/Histogram.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/RenderStatsDialog.h"
@@ -1355,8 +1356,9 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
             if (!fileKnobI) {
                 continue;
             }
-            KnobGuiIPtr knobUi_i = fileKnobI->getKnobGuiPointer();
-            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>( knobUi_i.get() );
+            KnobGuiPtr knobUi_i = boost::dynamic_pointer_cast<KnobGui>(fileKnobI->getKnobGuiPointer());
+
+            boost::shared_ptr<KnobGuiFile> isFileKnob = boost::dynamic_pointer_cast<KnobGuiFile>(knobUi_i->getWidgetsForView(ViewIdx(0)));
 
             if (!isFileKnob) {
                 continue;

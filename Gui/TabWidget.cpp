@@ -431,7 +431,6 @@ TabWidget::createMenu()
     menu.addAction( tr("New viewer"), this, SLOT(addNewViewer()) );
     menu.addAction( tr("New histogram"), this, SLOT(newHistogramHere()) );
     menu.addAction( tr("Node graph here"), this, SLOT(moveNodeGraphHere()) );
-    menu.addAction( tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()) );
     menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveAnimationModuleEditorHere()) );
     menu.addAction( tr("Properties bin here"), this, SLOT(movePropertiesBinHere()) );
     menu.addAction( tr("Script editor here"), this, SLOT(moveScriptEditorHere()) );
@@ -739,13 +738,6 @@ TabWidget::moveNodeGraphHere()
     moveTab(graph, graph);
 }
 
-void
-TabWidget::moveCurveEditorHere()
-{
-    CurveEditor* editor = _imp->gui->getCurveEditor();
-
-    moveTab(editor, editor);
-}
 
 void
 TabWidget::moveAnimationModuleEditorHere()

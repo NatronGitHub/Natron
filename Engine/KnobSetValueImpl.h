@@ -277,6 +277,11 @@ Knob<T>::setValueOnCurveInternal(double time, const T& v, DimIdx dimension, View
         _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
 
     } else if (addKeyRet == eValueChangedReturnCodeKeyframeModified) {
+
+        // At least redraw the curve if we did not add/remove keyframes
+        std::list<double> keysAdded, keysRemoved;
+        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+
         if (*ret == eValueChangedReturnCodeNothingChanged) {
             *ret = eValueChangedReturnCodeKeyframeModified;
         }
@@ -354,12 +359,6 @@ Knob<T>::setValueAtTime(double time,
     if (holder) {
         holder->setHasAnimation(true);
     }
-
-    if (ret == eValueChangedReturnCodeKeyframeModified) {
-        // At least redraw the curve if we did not add/remove keyframes
-        _signalSlotHandler->s_redrawGuiCurve(view, dimension);
-    }
-
 
 
     if (ret != eValueChangedReturnCodeNothingChanged) {

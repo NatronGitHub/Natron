@@ -134,7 +134,7 @@ public:
 
     static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiPath(knob, container);
+        return new KnobGuiPath(knob, view);
     }
 
     KnobGuiPath(const KnobGuiPtr& knob, ViewIdx view);

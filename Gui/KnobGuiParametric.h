@@ -86,6 +86,19 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL
+    {
+        return 0;
+    }
+
+
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void pushUndoCommand(QUndoCommand *cmd) OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
 
     // Overriden from AnimationModuleBase
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;

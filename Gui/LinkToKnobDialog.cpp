@@ -78,6 +78,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/Label.h"
+#include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
 #include "Gui/Menu.h"
@@ -210,7 +211,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
-                    if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
+                    if ( knobs[j]->isSlave(DimIdx(k), ViewIdx(0)) || !knobs[j]->isEnabled(DimIdx(k)) || name.isEmpty() ) {
                         canInsertKnob = false;
                     }
                 }

@@ -214,7 +214,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     _imp->model->setHorizontalHeaderData(headers);
 
     ///set the copy/link actions in the right click menu
-    knobUI->enableRightClickMenu(_imp->table, DimIdx(0), getView());
+    KnobGuiWidgets::enableRightClickMenu(knobUI, _imp->table, DimIdx(0), getView());
 
     QWidget* buttonsContainer = new QWidget(_imp->mainContainer);
     QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
@@ -629,7 +629,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         channels.push_back( splits[i].toStdString() );
     }
     ImageComponents original(row[0].toStdString(), std::string(), channels);;
-    NewLayerDialog dialog( original, getGui() );
+    NewLayerDialog dialog( original, getKnobGui()->getGui() );
     if ( dialog.exec() ) {
         ImageComponents comps = dialog.getComponents();
         if ( comps == ImageComponents::getNoneComponents() ) {

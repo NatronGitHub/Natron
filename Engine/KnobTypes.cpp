@@ -120,7 +120,7 @@ KnobInt::setIncrement(const std::vector<int> &incr)
             qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
             continue;
         }
-        Q_EMIT incrementChanged(_increments[i], i);
+        Q_EMIT incrementChanged(_increments[i], DimIdx(i));
     }
 }
 
@@ -306,7 +306,7 @@ KnobDouble::setIncrement(const std::vector<double> &incr)
     assert( incr.size() == (U32)getNDimensions() );
     _increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
-        Q_EMIT incrementChanged(_increments[i], i);
+        Q_EMIT incrementChanged(_increments[i], DimIdx(i));
     }
 }
 
@@ -316,7 +316,7 @@ KnobDouble::setDecimals(const std::vector<int> &decis)
     assert( decis.size() == (U32)getNDimensions() );
     _decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
-        Q_EMIT decimalsChanged(decis[i], i);
+        Q_EMIT decimalsChanged(decis[i], DimIdx(i));
     }
 }
 
@@ -1181,7 +1181,7 @@ KnobColor::KnobColor(const KnobHolderPtr& holder,
                      int dimension,
                      bool declaredByPlugin)
     : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _allDimensionsEnabled(true)
+    , _allDimensionsEnabled()
     , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
@@ -1197,7 +1197,7 @@ KnobColor::onDimensionSwitchToggled(ViewSetSpec view, bool b)
             _allDimensionsEnabled[*it] = b;
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(view);
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
         _allDimensionsEnabled[view_i] = b;
     }
 

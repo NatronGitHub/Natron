@@ -220,6 +220,7 @@ SOURCES += \
     Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
+    ViewIdx.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \

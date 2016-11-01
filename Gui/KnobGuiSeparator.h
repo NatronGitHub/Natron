@@ -58,7 +58,7 @@ class KnobGuiSeparator
 public:
     static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiSeparator(knob, container);
+        return new KnobGuiSeparator(knob, view);
     }
 
     KnobGuiSeparator(const KnobGuiPtr& knob, ViewIdx view);

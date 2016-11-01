@@ -220,7 +220,7 @@ KnobGuiBool::createWidget(QHBoxLayout* layout)
     QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
 
     ///set the copy/link actions in the right click menu
-    knobUI->enableRightClickMenu(_checkBox, DimIdx(0), getView());
+    KnobGuiWidgets::enableRightClickMenu(knobUI, _checkBox, DimIdx(0), getView());
 
     layout->addWidget(_checkBox);
 }

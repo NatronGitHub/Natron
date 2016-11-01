@@ -86,13 +86,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-
-static bool shouldSliderBeVisible(int sliderMin,
-                                  int sliderMax)
-{
-    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
-}
-
 static bool shouldSliderBeVisible(double sliderMin,
                                   double sliderMax)
 {
@@ -237,6 +230,7 @@ KnobGuiValue::removeSpecificGui()
 void
 KnobGuiValue::createWidget(QHBoxLayout* layout)
 {
+
     connectKnobSignalSlots();
 
     _imp->container = new QWidget( layout->parentWidget() );
@@ -248,7 +242,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     KnobGuiPtr knobUI = getKnobGui();
     
-    if (knobUI->getKnobsCountOnSameLine() > 1 && !knobUI->isViewerUIKnob()) {
+    if (knobUI->getKnobsCountOnSameLine() > 1 && knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeViewerUI) {
         disableSlider();
     }
 
@@ -354,13 +348,14 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         }
 
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), type, knobUI, DimIdx(i), getView());
+        box->setProperty(kKnobGuiValueSpinBoxDimensionProperty, (int)i);
         box->setAlignment(getSpinboxAlignment());
-        NumericKnobValidator* validator = new NumericKnobValidator(box, knobUI);
+        NumericKnobValidator* validator = new NumericKnobValidator(box, knobUI, getView());
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
 
         // Set the copy/link actions in the right click menu of the SpinBox
-        knobUI->enableRightClickMenu(box, DimIdx(i), getView());
+        KnobGuiWidgets::enableRightClickMenu(knobUI, box, DimIdx(i), getView());
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         double min = valueAccordingToType(false, i, mins[i]);
@@ -449,7 +444,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         _imp->slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, value0, knob->getEvaluateOnChange(),
                                                sliderType, knobUI->getGui(), eScaleTypeLinear, layout->parentWidget() );
-        if (knobUI->isViewerUIKnob()) {
+        if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
             // When in horizontal layout, we don't want the slider to grow
             _imp->slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         } else {
@@ -1323,7 +1318,7 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         }
         QObject::connect(_shortcutRecorder, SIGNAL(editingFinished()), this, SLOT(onKeybindRecorderEditingFinished()));
         layout->addWidget(_shortcutRecorder);
-        knobUI->enableRightClickMenu(_shortcutRecorder, DimSpec::all(), getView());
+        KnobGuiWidgets::enableRightClickMenu(knobUI, _shortcutRecorder, DimSpec::all(), getView());
     }
 }
 

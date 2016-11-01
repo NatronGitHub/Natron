@@ -32,7 +32,6 @@
 #include "Gui/AnimationModule.h"
 #include "Gui/KnobItemsTableGui.h"
 
-NATRON_NAMESPACE_ENTER;
 
 #include <map>
 #include <QTreeWidgetItem>
@@ -44,7 +43,11 @@ NATRON_NAMESPACE_ENTER;
 
 #include "Gui/AnimationModule.h"
 #include "Gui/CurveGui.h"
+#include "Gui/KnobGui.h"
+#include "Gui/KnobAnim.h"
 #include "Gui/KnobItemsTableGui.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct ItemCurve
 {
@@ -79,11 +82,10 @@ public:
 };
 
 
-TableItemAnim::TableItemAnim(const AnimationModulePtr& model,
+TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
                              const KnobItemsTableGuiPtr& table,
                              const NodeAnimPtr &parentNode,
-                             const KnobTableItemPtr& item,
-                             QTreeWidgetItem* parentItem)
+                             const KnobTableItemPtr& item)
 : AnimItemBase(model)
 , _imp(new TableItemAnimPrivate())
 {
@@ -128,7 +130,7 @@ TableItemAnim::getTreeItem(DimSpec /*dimension*/, ViewSetSpec view) const
     if (view.isAll()) {
         return 0;
     }
-    PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
+    PerViewItemMap::const_iterator foundView = _imp->animationItems.find(ViewIdx(view));
     if (foundView == _imp->animationItems.end()) {
         return 0;
     }
@@ -146,7 +148,7 @@ TableItemAnim::getCurve(DimIdx dimension, ViewIdx view) const
 }
 
 CurveGuiPtr
-TableItemAnim::getCurveGui(DimIdx dimension, ViewIdx view) const
+TableItemAnim::getCurveGui(DimIdx /*dimension*/, ViewIdx view) const
 {
     PerViewItemMap::const_iterator foundView = _imp->animationItems.find(view);
     if (foundView == _imp->animationItems.end()) {
@@ -232,6 +234,7 @@ TableItemAnim::isRangeDrawingEnabled() const
         return false;
     }
 #pragma message WARN("ToDo")
+    return false;
 }
 
 TableItemAnimPtr
@@ -270,7 +273,7 @@ TableItemAnim::removeItem(const KnobTableItemPtr& item)
 
 
 void
-TableItemAnim::initialize()
+TableItemAnim::initialize(QTreeWidgetItem* parentItem)
 {
     KnobTableItemPtr item = getInternalItem();
     QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
@@ -306,7 +309,7 @@ TableItemAnim::initialize()
             ItemCurve& ic = _imp->animationItems[*it];
             ic.item = animationItem;
             if (curveWidget) {
-                ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it))
+                ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it));
             }
 
             _imp->nameItem->addChild(animationItem);
@@ -314,6 +317,9 @@ TableItemAnim::initialize()
 
     }
 
+    AnimationModuleBasePtr model = getModel();
+    KnobItemsTableGuiPtr table = _imp->table.lock();
+    NodeAnimPtr parentNode = _imp->parentNode.lock();
     std::vector<KnobTableItemPtr> children = item->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
         TableItemAnimPtr child(TableItemAnim::create(model, table, parentNode, children[i], _imp->nameItem));
@@ -329,7 +335,7 @@ TableItemAnim::initializeKnobsAnim()
     KnobTableItemPtr item = _imp->tableItem.lock();
     std::vector<KnobGuiPtr> knobs = _imp->table.lock()->getKnobsForItem(item);
     TableItemAnimPtr thisShared = toTableItemAnim(shared_from_this());
-
+    AnimationModuleBasePtr model = getModel();
 
     for (std::vector<KnobGuiPtr>::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
@@ -346,7 +352,7 @@ TableItemAnim::initializeKnobsAnim()
         }
         assert(knob->getNDimensions() >= 1);
 
-        KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem.get(), knobGui));
+        KnobAnimPtr knobAnimObject(KnobAnim::create(model, thisShared, _imp->nameItem, knobGui));
         _imp->knobs.push_back(knobAnimObject);
 
     } // for all knobs

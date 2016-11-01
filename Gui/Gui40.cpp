@@ -197,13 +197,14 @@ Gui::onProjectNameChanged(const QString & filePath,
 }
 
 void
-Gui::setColorPickersColor(double r,
+Gui::setColorPickersColor(ViewIdx view,
+                          double r,
                           double g,
                           double b,
                           double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(r, g, b, a);
+    _imp->_projectGui->setPickersColor(view, r, g, b, a);
 }
 
 void
@@ -218,14 +219,14 @@ Gui::registerNewColorPicker(KnobColorPtr knob, ViewIdx view)
         }
         internalViewerNode->setPickerEnabled(true);
     }
-    _imp->_projectGui->registerNewColorPicker(knob);
+    _imp->_projectGui->registerNewColorPicker(knob, view);
 }
 
 void
 Gui::removeColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->removeColorPicker(knob);
+    _imp->_projectGui->removeColorPicker(knob, view);
 }
 
 void

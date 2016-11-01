@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if 0
+
 #include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -155,5 +157,5 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
-
+#endif 
 #endif // TRACKERPANEL_H

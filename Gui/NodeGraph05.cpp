@@ -141,7 +141,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
     // If behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     // otherwise fail
     if (behavior == eAutoConnectBehaviorAbove) {
-        const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr > & inputs = selected->getNode()->getInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if ( !inputs[i].lock() ) {
@@ -233,7 +233,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
 
         // Pop it below the selected node
 
-        const NodesWList& outputs = selectedNodeInternal->getGuiOutputs();
+        const NodesWList& outputs = selectedNodeInternal->getOutputs();
         if ( !createdNodeInternal->isOutputNode() || outputs.empty() ) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();

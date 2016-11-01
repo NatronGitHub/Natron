@@ -620,7 +620,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                 } else {
                     KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
                     assert( it != _imp->knobsMap.end() );
-                    KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( it->second.get() );
+
+                    boost::shared_ptr<KnobGuiGroup> parentParentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(it->second->getWidgetsForView(ViewIdx(0)));
                     assert(parentParentGroupGui);
                     parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
                 }
@@ -692,7 +693,9 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
             assert(parentParentIsGroup || parentParentIsPage);
             if (parentParentIsGroup) {
-                KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate(parentParent).get() );
+                KnobGuiPtr parentParentGui = findKnobGuiOrCreate(parentParent);
+                assert(parentParentGui);
+                boost::shared_ptr<KnobGuiGroup> parentParentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentParentGui->getWidgetsForView(ViewIdx(0)));
                 assert(parentParentGroupGui);
                 if (parentParentGroupGui) {
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
@@ -832,7 +835,8 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
             } else if (isParentGroup) {
                 KnobsGuiMapping::iterator found  = _imp->findKnobGui(knob);
                 assert( found != _imp->knobsMap.end() );
-                KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>( found->second.get() );
+
+                boost::shared_ptr<KnobGuiGroup> parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(found->second->getWidgetsForView(ViewIdx(0)));
                 assert(parentGroupGui);
                 if (parentGroupGui) {
                     TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();

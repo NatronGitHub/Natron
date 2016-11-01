@@ -47,12 +47,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Variant.h"
 #include "Engine/CLArgs.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Serialization/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/PreviewThread.h"
+
 
 NATRON_NAMESPACE_ENTER;
 

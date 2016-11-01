@@ -263,7 +263,7 @@ private:
                             if (labelSerialization && !labelSerialization->_values.empty()) {
                                 KnobStringPtr labelKnob = node->getExtraLabelKnob();
                                 if (labelKnob) {
-                                    labelKnob->setValue(labelSerialization->_values[0]._value.isString);
+                                    labelKnob->setValue(labelSerialization->_values.begin()->second[0]._value.isString);
                                 }
                             }
 

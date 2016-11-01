@@ -199,7 +199,7 @@ KnobGui::pasteClipBoard(DimSpec targetDimension, ViewIdx view)
         return;
     }
 
-    if ( (targetDimension == 0) && !getAllDimensionsVisible() ) {
+    if ( (targetDimension == 0) && !getAllDimensionsVisible(view) ) {
         targetDimension = DimSpec::all();
     }
 
@@ -370,7 +370,12 @@ KnobGui::setReadOnly_(bool readOnly,
                       DimSpec dimension, ViewIdx view)
 {
     if (!_imp->customInteract) {
-        setReadOnly(readOnly, dimension, view);
+        KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+        if (foundView != _imp->views.end()) {
+            if (foundView->second.widgets) {
+                foundView->second.widgets->setReadOnly(readOnly, dimension);
+            }
+        }
     }
     ///This code doesn't work since the knob dimensions are still enabled even if readonly
     bool hasDimensionEnabled = false;
@@ -386,24 +391,12 @@ KnobGui::setReadOnly_(bool readOnly,
     }
 }
 
-bool
-KnobGui::isViewerUIKnob() const
+KnobGui::KnobLayoutTypeEnum
+KnobGui::getLayoutType() const
 {
-    return _imp->isInViewerUIKnob;
+    return _imp->layoutType;
 }
 
-
-void
-KnobGui::setSpacingBetweenItems(int spacing)
-{
-    _imp->spacingBetweenItems = spacing;
-}
-
-int
-KnobGui::getSpacingBetweenItems() const
-{
-    return _imp->spacingBetweenItems;
-}
 
 bool
 KnobGui::hasWidgetBeenCreated() const
@@ -415,7 +408,11 @@ void
 KnobGui::onSetDirty(bool d)
 {
     if (!_imp->customInteract) {
-        setDirty(d);
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.widgets) {
+                it->second.widgets->setDirty(d);
+            }
+        }
     }
 }
 
@@ -569,6 +566,7 @@ KnobGui::setKnobGuiPointer()
 void
 KnobGui::onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension)
 {
+#pragma message WARN("Make this a queued connection")
     if (_imp->customInteract) {
         return;
     }
@@ -576,27 +574,35 @@ KnobGui::onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension)
     int nDim = knob->getNDimensions();
     if (dimension.isAll()) {
         if (view.isAll()) {
-            std::list<ViewIdx> views = knob->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
                 for (int i = 0; i < nDim; ++i) {
-                    reflectAnimationLevel(DimIdx(i), *it, knob->getAnimationLevel(DimIdx(i), *it) );
+                    if (it->second.widgets) {
+                        it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first) );
+                    }
                 }
             }
         } else {
             ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-            for (int i = 0; i < nDim; ++i) {
-                reflectAnimationLevel(DimIdx(i), view_i, knob->getAnimationLevel(DimIdx(i), view_i) );
+            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
+            if (foundView != _imp->views.end()) {
+                for (int i = 0; i < nDim; ++i) {
+                    foundView->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), view_i) );
+                }
             }
         }
     } else {
         if (view.isAll()) {
-            std::list<ViewIdx> views = knob->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                reflectAnimationLevel(DimIdx(dimension), *it, knob->getAnimationLevel(DimIdx(dimension), *it) );
+            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+                if (it->second.widgets) {
+                    it->second.widgets->reflectAnimationLevel(DimIdx(dimension), knob->getAnimationLevel(DimIdx(dimension), it->first) );
+                }
             }
         } else {
             ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-            reflectAnimationLevel(DimIdx(dimension), view_i, knob->getAnimationLevel(DimIdx(dimension), view_i) );
+            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
+            if (foundView != _imp->views.end()) {
+                foundView->second.widgets->reflectAnimationLevel(DimIdx(dimension), knob->getAnimationLevel(DimIdx(dimension), view_i) );
+            }
         }
     }
 }
@@ -691,9 +697,14 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     }
     KnobIPtr knob = getKnob();
     std::string exp = knob->getExpression(dimension, view);
-    reflectExpressionState( dimension, view, !exp.empty() );
+
+    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
+    if (foundView == _imp->views.end()) {
+        return;
+    }
+    foundView->second.widgets->reflectExpressionState( dimension, !exp.empty() );
     if ( exp.empty() ) {
-        reflectAnimationLevel( dimension, view, knob->getAnimationLevel(dimension, view) );
+        foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
     } else {
         NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
         if (isNodeSettings) {
@@ -735,7 +746,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
         }
     }
     onHelpChanged();
-    updateGUI(dimension, view);
+    foundView->second.widgets->updateGUI(dimension);
 } // KnobGui::onExprChanged
 
 void
@@ -744,7 +755,11 @@ KnobGui::onHelpChanged()
     if (_imp->descriptionLabel) {
         toolTip(_imp->descriptionLabel, ViewIdx(0));
     }
-    updateToolTip();
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            it->second.widgets->updateToolTip();
+        }
+    }
 }
 
 void
@@ -758,7 +773,11 @@ KnobGui::onHasModificationsChanged()
         _imp->descriptionLabel->setAltered(!hasModif);
     }
     if (!_imp->customInteract) {
-        reflectModificationsState();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->second.widgets) {
+                it->second.widgets->reflectModificationsState();
+            }
+        }
     }
 }
 
@@ -775,23 +794,36 @@ KnobGui::onLabelChanged()
             return;
         }
 
-        std::string descriptionLabel = getDescriptionLabel();
+        std::string descriptionLabel;
+        if (!_imp->views.empty()) {
+            KnobGuiWidgetsPtr firstViewWidget = _imp->views.begin()->second.widgets;
+            if (firstViewWidget) {
+                descriptionLabel = firstViewWidget->getDescriptionLabel();
+            }
+        }
         if (descriptionLabel.empty()) {
             _imp->descriptionLabel->hide();
         } else {
             _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
             _imp->descriptionLabel->show();
         }
-        onLabelChangedInternal();
-    } else {
-        onLabelChangedInternal();
     }
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            it->second.widgets->onLabelChanged();
+        }
+    }
+
 }
 
 void
-KnobGui::onDimensionNameChanged(int dimension)
+KnobGui::onDimensionNameChanged(DimIdx dimension)
 {
-    refreshDimensionName(dimension);
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            it->second.widgets->refreshDimensionName(dimension);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -45,22 +45,21 @@ class TableItemAnim : public QObject, public AnimItemBase, public KnobsHolderAni
 
 
 
-    TableItemAnim(const AnimationModulePtr& model,
+    TableItemAnim(const AnimationModuleBasePtr& model,
                   const KnobItemsTableGuiPtr& table,
                   const NodeAnimPtr &parentNode,
-                  const KnobTableItemPtr& item,
-                  QTreeWidgetItem* parentItem);
+                  const KnobTableItemPtr& item);
 
 public:
 
-    static TableItemAnimPtr create(const AnimationModulePtr& model,
+    static TableItemAnimPtr create(const AnimationModuleBasePtr& model,
                                    const KnobItemsTableGuiPtr& table,
                                    const NodeAnimPtr &parentNode,
                                    const KnobTableItemPtr& item,
                                    QTreeWidgetItem* parentItem)
     {
-        TableItemAnimPtr ret(new TableItemAnim(model, table, parentNode, item, parentItem));
-        ret->initialize();
+        TableItemAnimPtr ret(new TableItemAnim(model, table, parentNode, item));
+        ret->initialize(parentItem);
         return ret;
     }
 
@@ -100,7 +99,7 @@ private:
 
     void insertChild(int index, const TableItemAnimPtr& child);
 
-    void initialize();
+    void initialize(QTreeWidgetItem* parentItem);
 
     TableItemAnimPtr findTableItem(const KnobTableItemPtr& item) const;
 

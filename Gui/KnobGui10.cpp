@@ -209,7 +209,7 @@ KnobGui::setSecret()
     }
 
 
-    KnobGuiGroup* isGrp = dynamic_cast<KnobGuiGroup*>(this);
+    boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(getWidgetsForView(ViewIdx(0)));
     if (isGrp) {
         const std::list<KnobGuiWPtr>& children = isGrp->getChildren();
         for (std::list<KnobGuiWPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -244,10 +244,14 @@ KnobGui::isSecretRecursive() const
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
     while (showit && parentKnob && parentIsGroup) {
-        KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
+        KnobGuiPtr parentKnobGui = _imp->container->getKnobGui(parentKnob);
+        if (!parentKnobGui) {
+            break;
+        }
+        boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
         // check for secretness and visibility of the group
         bool parentSecret = isViewerKnob ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
-        if ( parentSecret || ( parentGui && !parentGui->isChecked() ) ) {
+        if ( parentSecret || ( isGrp && !isGrp->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration

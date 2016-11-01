@@ -900,7 +900,7 @@ DockablePanel::setClosedInternal(bool closed)
     ///Remove any color picker active
     const KnobsGuiMapping& knobs = getKnobsMapping();
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>( it->second.get() );
+        KnobColorPtr ck = toKnobColor(it->first.lock());
         if (ck) {
             ck->setPickingEnabled(ViewSetSpec::all(), false);
         }

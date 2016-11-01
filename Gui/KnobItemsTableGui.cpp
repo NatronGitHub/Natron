@@ -39,6 +39,7 @@
 #include <QMimeData>
 #include <QUndoCommand>
 #include <QClipboard>
+#include <QWidget>
 
 #include "Engine/Utils.h"
 #include "Engine/KnobTypes.h"
@@ -203,17 +204,14 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     foundItem->columnItems[col].guiKnob.reset();
 
     // Create the Knob Gui
-    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, _publicInterface) );
-    if (!ret) {
-        assert(false);
-        return false;
-    }
-    ret->initialize();
+    KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeTableItemWidget, _publicInterface);
 
     QWidget* rowContainer = new QWidget;
     QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(0);
     std::vector<KnobIPtr> knobsOnSameLine;
-    ret->createGUI(rowContainer, rowLayout, true /*isOnnewLine*/, 0 /*lastKnobSpacing*/, knobsOnSameLine);
+    ret->createGUI(rowContainer);
 
     foundItem->columnItems[col].guiKnob = ret;
     
@@ -236,6 +234,12 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     }
     return true;
 } // createItemCustomWidgetAtCol
+
+QWidget*
+KnobItemsTableGui::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    return new QWidget(parent);
+}
 
 void
 KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& item)

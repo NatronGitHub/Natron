@@ -51,6 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+#define kKnobGuiValueSpinBoxDimensionProperty "KnobGuiValueSpinBoxDimensionProperty"
+
 NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiValuePrivate;

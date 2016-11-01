@@ -461,27 +461,27 @@ ProjectGui::setPickersColor(ViewIdx view,
     if ( _colorPickersEnabled.empty() ) {
         return;
     }
-    KnobColorPtr first = _colorPickersEnabled.front();
+    KnobColorPtr first = _colorPickersEnabled.begin()->knob;
 
 
 
     for (PickerKnobSet::iterator it = _colorPickersEnabled.begin(); it != _colorPickersEnabled.end(); ++it) {
-        if ( !it->knob->areAllDimensionsEnabled() ) {
-            _colorPickersEnabled[i]->activateAllDimensions(view);
+        if ( !it->knob->areAllDimensionsEnabled(view) ) {
+            it->knob->activateAllDimensions(view);
         }
-        if (_colorPickersEnabled[i]->getNDimensions() == 3) {
+        if (it->knob->getNDimensions() == 3) {
             std::vector<double> values(3);
             values[0] = r;
             values[1] = g;
             values[2] = b;
-            _colorPickersEnabled[i]->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         } else {
             std::vector<double> values(4);
             values[0] = r;
             values[1] = g;
             values[2] = b;
             values[3] = a;
-            _colorPickersEnabled[i]->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
         }
     }
 }

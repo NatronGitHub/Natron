@@ -126,7 +126,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
         return false;
     }
     DimSpec dragDim = _imp->dimension;
-    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
+    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
         dragDim = DimSpec::all();
     }
 
@@ -225,7 +225,7 @@ KnobWidgetDnD::startDrag()
     }
 
     DimSpec dragDim = _imp->dimension;
-    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
+    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
         dragDim = DimSpec::all();
     }
 
@@ -347,7 +347,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     bool ret = true;
     if (source) {
         DimSpec targetDim = dimension;
-        if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
+        if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible(view) ) {
             targetDim = DimSpec::all();
         }
 
@@ -401,7 +401,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
         guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), DimSpec::all(), ViewIdx(0));
         if ( source && (source != thisKnob) ) {
             DimSpec targetDim = _imp->dimension;
-            if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
+            if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
                 targetDim = DimSpec::all();
             }
 
@@ -440,9 +440,9 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
 
                 expr = ss.str();
-                guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, expr) );
+                guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, _imp->view, expr) );
             } else if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier) ) {
-                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source) );
+                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob->getKnob(), eKnobClipBoardTypeCopyLink, srcDim, targetDim, srcView ,_imp->view, source) );
             }
 
             return true;

@@ -22,6 +22,8 @@
 // This file contains all implementation of old boost serialization involving Engine and Gui classes
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Global/Macros.h"
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
@@ -38,11 +40,15 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
+#include "Serialization/RotoStrokeItemSerialization.h"
+#include "Serialization/BezierSerialization.h"
 #include "Serialization/BezierCPSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/TrackerSerialization.h"
+#include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGroupSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
@@ -58,7 +64,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/RectI.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/ViewIdx.h"
 #include <SequenceParsing.h>
 
 #define kKnobOutputFileTypeName "OutputFile"
@@ -180,6 +186,7 @@ public:
     {
     }
 
+    void convertRotoItemSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
 
 
     template<class Archive>
@@ -207,6 +214,9 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
+    void convertRotoLayerSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
+
+
     std::list <boost::shared_ptr<Compat::RotoItemSerialization> > children;
 
     KnobSerializationList knobs;
@@ -231,8 +241,7 @@ public:
     {
     }
 
-
-
+    void convertRotoDrawableItemSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     
@@ -271,6 +280,9 @@ public:
     void serialize(Archive & ar,
                    const unsigned int version);
 
+
+    void convertBezierSerialization(SERIALIZATION_NAMESPACE::BezierSerialization* outSerialization);
+
     struct ControlPoint
     {
         BezierCPSerialization innerPoint;
@@ -279,15 +291,9 @@ public:
         boost::shared_ptr<BezierCPSerialization> featherPoint;
     };
 
-    struct Shape
-    {
-        std::list<ControlPoint> controlPoints;
-        bool closed;
-    };
+    std::list< ControlPoint > _controlPoints;
 
-    typedef std::map<std::string, Shape> PerViewShapeMap;
-
-    PerViewShapeMap _shapes;
+    bool _closed;
     bool _isOpenBezier;
 };
 
@@ -321,6 +327,9 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
+    void convertStrokeSerialization(SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization* outSerialization);
+
     
 };
 
@@ -351,6 +360,7 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
+    void convertTrackSerialization(SERIALIZATION_NAMESPACE::TrackSerialization* outSerialization);
 
 };
 
@@ -372,6 +382,8 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
+    void convertRotoContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization);
+
     RotoLayerSerialization _baseLayer;
 };
 
@@ -388,10 +400,15 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
 
+    void convertTrackerContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization);
+
     std::list<TrackSerialization> _tracks;
 };
 
 } // namespace Compat
+
+
+
 
 
 SERIALIZATION_NAMESPACE_EXIT;
@@ -1010,17 +1027,19 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         _extraData.reset(new TextExtraData);
     }
 
-    _values.resize(_dimension);
+    KnobSerialization::PerDimensionValueSerializationVec& values = _values["Main"];
+
+    values.resize(_dimension);
     for (std::size_t i = 0; i < _values.size(); ++i) {
-        _values[i]._typeName = _typeName;
-        _values[i]._dimension = i;
-        _values[i]._serialization = this;
-        ar & ::boost::serialization::make_nvp("item", _values[i]);
+        values[i]._typeName = _typeName;
+        values[i]._dimension = i;
+        values[i]._serialization = this;
+        ar & ::boost::serialization::make_nvp("item", values[i]);
     }
 
     // If the knob is a multi-line rich-text knob, parse the font since now font properties are not encoded in the text directly
-    if (isString && _values.size() > 0) {
-        QString str = QString::fromUtf8(_values[0]._value.isString.c_str());
+    if (isString && values.size() > 0) {
+        QString str = QString::fromUtf8(values[0]._value.isString.c_str());
 
         bool italicActivated = false;
         bool boldActivated = false;
@@ -1102,7 +1121,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         data->italicActivated = italicActivated;
 
         str = NATRON_NAMESPACE::KnobString::removeAutoAddedHtmlTags(str);
-        _values[0]._value.isString = str.toStdString();
+        values[0]._value.isString = str.toStdString();
     }
 
     ////restore extra datas
@@ -1151,7 +1170,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         if (isChoice) {
             std::string stringChoice;
             ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
-            _values[0]._value.isString = stringChoice;
+            values[0]._value.isString = stringChoice;
         }
 
 
@@ -1384,16 +1403,21 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         bool hasRotoContext;
         ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
         if (hasRotoContext) {
-            _rotoContext.reset(new Compat::RotoContextSerialization);
-            ar & ::boost::serialization::make_nvp("RotoContext", *_rotoContext);
+            Compat::RotoContextSerialization rotoContext;
+            _tableModel.reset(new KnobItemsTableSerialization);
+            ar & ::boost::serialization::make_nvp("RotoContext", rotoContext);
+            rotoContext.convertRotoContext(_tableModel.get());
         }
 
         if (version >= NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT) {
             bool hasTrackerContext;
             ar & boost::serialization::make_nvp("HasTrackerContext", hasTrackerContext);
             if (hasTrackerContext) {
-                _trackerContext.reset(new Compat::TrackerContextSerialization);
-                ar & boost::serialization::make_nvp("TrackerContext", *_trackerContext);
+
+                Compat::TrackerContextSerialization trackerContext;
+                _tableModel.reset(new KnobItemsTableSerialization);
+                ar & boost::serialization::make_nvp("TrackerContext", trackerContext);
+                trackerContext.convertTrackerContext(_tableModel.get());
             }
         }
     }
