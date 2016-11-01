@@ -47,6 +47,10 @@ TrackerHelper::TrackerHelper(const TrackerParamsProviderPtr &provider)
 
 }
 
+TrackerHelper::~TrackerHelper()
+{
+}
+
 
 bool
 TrackerHelper::isCurrentlyTracking() const

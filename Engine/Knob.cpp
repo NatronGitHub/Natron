@@ -1041,7 +1041,7 @@ KnobHelper::hasAnimation() const
     for (int i = 0; i < getNDimensions(); ++i) {
         const PerViewCurveMap& curvesPerView = _imp->curves[i];
         for (PerViewCurveMap::const_iterator it = curvesPerView.begin(); it!=curvesPerView.end(); ++it) {
-            if (it->second->getKeyFramesCount() > 0) {
+            if (it->second && it->second->getKeyFramesCount() > 0) {
                 return true;
             }
         }

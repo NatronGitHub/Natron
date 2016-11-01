@@ -357,6 +357,7 @@ struct KnobHelperPrivate
         animationLevel.resize(dimension);
         expressions.resize(dimension);
         dimensionNames.resize(dimension);
+        hasModifications.resize(dimension);
         for (int i = 0; i < nDims; ++i) {
             enabled[i][ViewIdx(0)] = true;
             curves[i][ViewIdx(0)] = CurvePtr();

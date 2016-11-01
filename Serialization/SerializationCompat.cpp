@@ -70,7 +70,16 @@ Compat::RotoLayerSerialization::convertRotoLayerSerialization(SERIALIZATION_NAME
 void
 Compat::BezierSerialization::convertBezierSerialization(SERIALIZATION_NAMESPACE::BezierSerialization* outSerialization)
 {
-
+    SERIALIZATION_NAMESPACE::BezierSerialization::Shape& s = outSerialization->_shapes["Main"];
+    outSerialization->_isOpenBezier = _isOpenBezier;
+    s.closed = _closed;
+    for (std::list<ControlPoint>::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
+        SERIALIZATION_NAMESPACE::BezierSerialization::ControlPoint c;
+        c.featherPoint = it->featherPoint;
+        c.innerPoint = it->innerPoint;
+        s.controlPoints.push_back(c);
+    }
+    Compat::RotoDrawableItemSerialization::convertRotoItemSerialization(outSerialization);
 } // convertBezierSerialization
 
 void
@@ -84,24 +93,36 @@ Compat::RotoStrokeItemSerialization::convertStrokeSerialization(SERIALIZATION_NA
         p.y = it->y;
         outSerialization->_subStrokes.push_back(p);
     }
+    Compat::RotoDrawableItemSerialization::convertRotoItemSerialization(outSerialization);
 } // convertStrokeSerialization
 
 void
 Compat::TrackSerialization::convertTrackSerialization(SERIALIZATION_NAMESPACE::TrackSerialization* outSerialization)
 {
-
+    outSerialization->scriptName = _scriptName;
+    outSerialization->label = _label;
+    outSerialization->_isPM = _isPM;
+    outSerialization->_userKeys = _userKeys;
+    outSerialization->knobs = _knobs;
 } // convertTrackSerialization
 
 void
 Compat::RotoContextSerialization::convertRotoContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization)
 {
-
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr layer(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+    _baseLayer.convertRotoItemSerialization(layer.get());
+    outSerialization->items.push_back(layer);
+    
 } // convertRotoContext
 
 void
 Compat::TrackerContextSerialization::convertTrackerContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization)
 {
-
+    for (std::list<Compat::TrackSerialization>::iterator it = _tracks.begin(); it!=_tracks.end(); ++it) {
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::TrackSerialization> s(new SERIALIZATION_NAMESPACE::TrackSerialization);
+        it->convertTrackSerialization(s.get());
+        outSerialization->items.push_back(s);
+    }
 } // convertTrackerContext
 
 //} // namespace Compat
