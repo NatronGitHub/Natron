@@ -4,6 +4,12 @@
 
 # History
 
+## Version 2.1.8
+
+### Plugins
+
+- (beta feature) EdgeDetect: Perform edge detection by computing the image gradient magnitude.
+
 ## Version 2.1.7
 
 - Fix a bug where PyPlugs would not load if the PYTHONPATH environment variable was set
