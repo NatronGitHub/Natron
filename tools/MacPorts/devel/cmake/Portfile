@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 154286 2016-10-26 16:10:56Z michaelld@macports.org $
+# $Id$
 
 PortSystem          1.0
 universal_variant no
@@ -46,6 +46,10 @@ if {${subport} eq ${name}} {
         patch-Modules-noArchCheck.release.diff \
         patch-CMakeFindFrameworks.cmake.release.diff
 
+    # to be removed at next release
+    patchfiles-append \
+        patch-Modules-Platform-Darwin.cmake.diff
+
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
     livecheck.url   [lindex $master_sites 0]
@@ -54,12 +58,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20161025
+    version         20161031
     set dist_branch 3.7
-    set dist_date   20161025
-    set dist_hash   g552121
-    checksums       rmd160 7371708787ced3fbc0be0d667f12d9bf8a6baa49 \
-                    sha256 c008d5f93113f2f5a22871754d044015f89b1795cfa27bdb37ca2d9d6d6ce234
+    set dist_date   20161031
+    set dist_hash   gd3c45a8
+    checksums       rmd160 3174a717d73007f7e5983ae5a0ebb4af1b736d86 \
+                    sha256 753959362678de5134ab67f8d9069e08794c3911146156fa98f1f1931a10576d
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -98,8 +102,6 @@ depends_lib-append  port:curl \
 # CMake 3.2 changed dependency requirements to include jsoncpp.
 # jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
 # use its internal jsoncpp until a better solution comes about.
-
-patchfiles-append   patch-Modules-Platform-Darwin.cmake.diff
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \

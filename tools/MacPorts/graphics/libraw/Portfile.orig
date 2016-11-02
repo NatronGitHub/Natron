@@ -34,7 +34,7 @@ checksums \
 depends_build    port:pkgconfig
 
 depends_lib      port:jasper \
-                 path:lib/libjpeg.dylib:jpeg   \
+                 port:jpeg   \
                  port:lcms2
 
 post-destroot {

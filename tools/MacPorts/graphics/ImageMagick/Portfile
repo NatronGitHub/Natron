@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 154009 2016-10-18 01:58:39Z ryandesign@macports.org $
+# $Id$
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -163,18 +163,14 @@ variant gcc49 description {Compile with GCC/G++ 4.9} {
     # configure with GCC 4.9 for proper OpenMP support
     configure.compiler macports-gcc-4.9
     configure.args-append --enable-openmp
-    # The new version of https://github.com/devernay/macportsGCCfixup
-    # installs the driverdriver as gcc-mp-4.9, no need to do the
-    # following hack!
-    #
-    #if {[variant_isset universal]} {
-    #    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-    #    if {[file tail ${configure.cmd}] != "cmake"} {
-    #        configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
-    #    } else {
-    #        configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-    #    }
-    #}
+    if {[variant_isset universal]} {
+        # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
+        if {[file tail ${configure.cmd}] != "cmake"} {
+            configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
+        } else {
+            configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
+        }
+    }
 }
 
 # OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):

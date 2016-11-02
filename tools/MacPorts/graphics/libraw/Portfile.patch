@@ -1,0 +1,11 @@
+--- Portfile.orig	2016-11-02 17:16:45.000000000 +0100
++++ Portfile	2016-11-02 17:18:00.000000000 +0100
+@@ -34,7 +34,7 @@
+ depends_build    port:pkgconfig
+ 
+ depends_lib      port:jasper \
+-                 port:jpeg   \
++                 path:lib/libjpeg.dylib:jpeg   \
+                  port:lcms2
+ 
+ post-destroot {
