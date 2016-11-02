@@ -728,7 +728,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
 
     _imp->oldClick = e->pos();
     _imp->drawCoordinates = true;
-    bool caught = true;
+    //bool caught = true;
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
 
@@ -775,7 +775,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
             update();
             break;
         default:
-            caught = false;
+            //caught = false;
             break;
     }
  

@@ -175,8 +175,7 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(accepted()), this, SLOT(onNodeCreationDialogFinished()) );
-            QObject::connect( nodeCreation, SIGNAL(rejected()), this, SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onNodeCreationDialogFinished(bool)) );
             nodeCreation->show();
 
             takeClickFocus();
@@ -190,38 +189,33 @@ NodeGraph::event(QEvent* e)
 }
 
 void
-NodeGraph::onNodeCreationDialogFinished()
+NodeGraph::onNodeCreationDialogFinished(bool accepted)
 {
     NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>( sender() );
 
     if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        QString presetName;
-        PluginPtr plugin = dialog->getPlugin(&presetName);
 
-        dialog->deleteLater();
+        if (accepted) {
 
-        switch (ret) {
-            case QDialog::Accepted: {
-                if (plugin) {
-                    std::string pluginID = plugin->getPluginID();
-                    _imp->_lastPluginCreatedID = QString::fromUtf8(pluginID.c_str());
+            QString presetName;
+            PluginPtr plugin = dialog->getPlugin(&presetName);
+            if (plugin) {
+                std::string pluginID = plugin->getPluginID();
+                _imp->_lastPluginCreatedID = QString::fromUtf8(pluginID.c_str());
 
-                    QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID, getGroup() ));
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
-                    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, plugin->getMajorVersion(), 0);
-                    args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetName.toStdString());
-                    getGui()->getApp()->createNode(args);
+                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID, getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                args->setProperty<int>(kCreateNodeArgsPropPluginVersion, plugin->getMajorVersion(), 0);
+                args->setProperty<std::string>(kCreateNodeArgsPropPreset, presetName.toStdString());
+                getGui()->getApp()->createNode(args);
 
-                }
-                break;
             }
-            case QDialog::Rejected:
-            default:
-            break;
         }
+
+        dialog->close();
+
     }
 }
 
@@ -370,42 +364,41 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         qApp->sendEvent(parentWidget(), e);
         return;
     } else {
-        bool intercepted = false;
+        accept = false;
 
-        if ( modifiers.testFlag(Qt::ControlModifier) && ( (key == Qt::Key_Up) || (key == Qt::Key_Down) ) ) {
-            ///These shortcuts pans the graphics view but we don't want it
-            intercepted = true;
-        }
+        /// Search for a node which has a shortcut bound
+        const PluginsMap & allPlugins = appPTR->getPluginsList();
+        bool shortcutFound = false;
+        for (PluginsMap::const_iterator it = allPlugins.begin();
+             !shortcutFound && it != allPlugins.end();
+             ++it) {
+            assert( !it->second.empty() );
+            PluginPtr plugin = *it->second.rbegin();
 
-        if (!intercepted) {
-            /// Search for a node which has a shortcut bound
-            const PluginsMap & allPlugins = appPTR->getPluginsList();
-            for (PluginsMap::const_iterator it = allPlugins.begin(); it != allPlugins.end(); ++it) {
-                assert( !it->second.empty() );
-                PluginPtr plugin = *it->second.rbegin();
+            QString group = QString::fromUtf8(kShortcutGroupNodes);
+            std::vector<std::string> groupingSplit = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
+                group.push_back( QLatin1Char('/') );
+                group.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
+            }
+            if ( isKeybind(group.toStdString(), plugin->getPluginID(), modifiers, key) ) {
+                QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                CreateNodeArgsPtr args(CreateNodeArgs::create( plugin->getPluginID(), getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
+                getGui()->getApp()->createNode(args);
 
-                QString group = QString::fromUtf8(kShortcutGroupNodes);
-                std::vector<std::string> groupingSplit = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-                for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
-                    group.push_back( QLatin1Char('/') );
-                    group.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
-                }
-                if ( isKeybind(group.toStdString(), plugin->getPluginID(), modifiers, key) ) {
-                    QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    CreateNodeArgsPtr args(CreateNodeArgs::create( plugin->getPluginID(), getGroup() ));
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
-                    args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
-                    getGui()->getApp()->createNode(args);
-
-                    intercepted = true;
-                    break;
-                }
+                accept = true;
+                shortcutFound = true;
+            } else {
 
                 // Also check for presets shortcuts
-                bool mustBreak = false;
                 const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin(); it2 != presets.end(); ++it2) {
 
+                bool presetShortcutFound = false;
+                for (std::vector<PluginPresetDescriptor>::const_iterator it2 = presets.begin();
+                     !presetShortcutFound && it2 != presets.end();
+                     ++it2) {
                     std::string shortcutKey = plugin->getPluginID();
                     shortcutKey += "_preset_";
                     shortcutKey += it2->presetLabel.toStdString();
@@ -418,21 +411,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         args->setProperty<std::string>(kCreateNodeArgsPropPreset, it2->presetLabel.toStdString());
                         getGui()->getApp()->createNode(args);
 
-                        intercepted = true;
-                        mustBreak = true;
-                        break;
+                        accept = true;
+                        shortcutFound = true;
+                        presetShortcutFound = true;
                     }
                 }
-                if (mustBreak) {
-                    break;
-                }
-
             }
-        }
-
-
-        if (!intercepted) {
-            accept = false;
         }
     }
     if (accept) {

@@ -473,6 +473,7 @@ NodeGui::getInitialSize(int *w,
 {
     PluginPtr plugin = getNode()->getPlugin();
     if (!plugin) {
+        *w = *h = 0;
         return;
     }
     QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
@@ -3772,7 +3773,8 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
             boost::shared_ptr<GroupKnobDialog> dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
             _activeNodeCustomModalDialog = dialog;
             dialog->move( QCursor::pos() );
-            dialog->exec();
+            QDialog::DialogCode code = (QDialog::DialogCode)dialog->exec();
+            Q_UNUSED(code);
             // Notify dialog closed
             group->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
         }

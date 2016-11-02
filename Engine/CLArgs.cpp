@@ -691,7 +691,10 @@ CLArgsPrivate::parse()
     {
         QStringList::iterator it = hasToken( QString::fromUtf8("version"), QString::fromUtf8("v") );
         if ( it != args.end() ) {
-            QString msg = tr("%1 version %2 at commit %3 on branch %4 built on %4").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ).arg( QString::fromUtf8(GIT_COMMIT) ).arg( QString::fromUtf8(GIT_BRANCH) ).arg( QString::fromUtf8(__DATE__) );
+            QString msg = tr("%1 version %2 at commit %3 on branch %4").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ).arg( QString::fromUtf8(GIT_COMMIT) ).arg( QString::fromUtf8(GIT_BRANCH) );
+#         if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+            msg += tr(" built on %1").arg( QString::fromUtf8(__DATE__) );
+#         endif
             std::cout << msg.toStdString() << std::endl;
             error = 1;
 

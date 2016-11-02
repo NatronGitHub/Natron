@@ -44,8 +44,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    KnobBoolWPtr optional;
-    KnobBoolWPtr mask;
+    KnobBoolWPtr _optional;
+    KnobBoolWPtr _mask;
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153015 2016-09-22 11:34:56Z michaelld@macports.org $
+# $Id: Portfile 153936 2016-10-16 16:28:08Z mcalhoun@macports.org $
 
 PortSystem          1.0
 
@@ -266,6 +266,15 @@ patchfiles-append   \
 
 patchfiles-append   \
     patch-src_gui_dialogs_qfiledialog_mac.mm.diff
+
+# (27) QTKit no longer exists as of macOS 10.12 (Sierra)
+# https://trac.macports.org/ticket/52332
+
+platform darwin {
+    if {${MINOR} >= 12} {
+        patchfiles-append patch-src_gui_kernel_qmime_mac.cpp.diff
+    }
+}
 
 # fix default thread stack size
 patchfiles-append patch-qthread-stacksize.diff

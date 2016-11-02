@@ -1,8 +1,22 @@
 # Bugs
 
-- Windows: If Natron is not installed in Program Files using the installer, Fontconfig does not work properly thus the Text node will not work
+- Windows: If Natron is not installed in Program Files using the installer, the Text node does not work because fontconfig does not initialize properly.
 
 # History
+
+## Version 2.1.8
+
+### Plugins
+
+- (beta feature) EdgeDetect: Perform edge detection by computing the image gradient magnitude.
+
+## Version 2.1.7
+
+- Fix a bug where PyPlugs would not load if the PYTHONPATH environment variable was set
+
+### Plugins
+
+- (beta feature) SlitScan: Per-pixel retiming.
 
 ## Version 2.1.6
 

@@ -62,7 +62,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-//===========================FILE_KNOB_GUI=====================================
 KnobGuiFile::KnobGuiFile(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiWidgets(knob, view)
     , _lineEdit(0)
@@ -92,13 +91,25 @@ KnobGuiFile::removeSpecificGui()
 void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
+    KnobGuiPtr knobUI = getKnobGui();
+    if (!knobUI) {
+        return;
+    }
+    Gui* gui = knobUI->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobFilePtr knob = _knob.lock();
     EffectInstancePtr holderIsEffect = toEffectInstance( knob->getHolder() );
 
-    KnobGuiPtr knobUI = getKnobGui();
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
-        TimeLinePtr timeline = knobUI->getGui()->getApp()->getTimeLine();
+
+        TimeLinePtr timeline = app->getTimeLine();
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)) );
     }
 
@@ -172,11 +183,11 @@ KnobGuiFile::open_file()
 
     KnobFile::KnobFileDialogTypeEnum type = knob->getDialogType();
 
-    bool useSequence = type == KnobFile::eKnobFileDialogTypeOpenFileSequences ||
-    KnobFile::eKnobFileDialogTypeSaveFileSequences;
+    bool useSequence = ( (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) ||
+                        (type == KnobFile::eKnobFileDialogTypeSaveFileSequences) );
 
-    bool existing = type == KnobFile::eKnobFileDialogTypeOpenFile ||
-    KnobFile::eKnobFileDialogTypeOpenFileSequences;
+    bool existing = ( (type == KnobFile::eKnobFileDialogTypeOpenFile) ||
+                     (type == KnobFile::eKnobFileDialogTypeOpenFileSequences) );
 
     std::vector<std::string> filters = knob->getDialogFilters();
     if (filters.empty()) {
@@ -601,13 +612,24 @@ KnobGuiPath::editUserEntry(QStringList& row)
 void
 KnobGuiPath::entryRemoved(const QStringList& row)
 {
+    KnobGuiPtr knobUI = getKnobGui();
+    if (!knobUI) {
+        return;
+    }
+    Gui* gui = knobUI->getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     KnobPathPtr knob = _knob.lock();
 
     ///Fix all variables if needed
-    KnobGuiPtr knobUI = getKnobGui();
-    if ( knob && knob->getHolder() && ( knob->getHolder() == knobUI->getGui()->getApp()->getProject() ) &&
+    if ( knob && knob->getHolder() && ( knob->getHolder() == app->getProject() ) &&
          appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
-        knobUI->getGui()->getApp()->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(), false);
+        app->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(), false);
     }
 }
 
@@ -616,6 +638,18 @@ KnobGuiPath::tableChanged(int row,
                           int col,
                           std::string* newEncodedValue)
 {
+
+    KnobGuiPtr knobUI = getKnobGui();
+    if (!knobUI) {
+        return;
+    }
+    Gui* gui = knobUI->getGui();
+    if (!gui) {
+        return;
+    }    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
     boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( _knob.lock() );
 
     assert(knob);
@@ -636,12 +670,12 @@ KnobGuiPath::tableChanged(int row,
                 std::advance(itNew, row);
 
 
-                KnobGuiPtr knobUI = getKnobGui();
                 if ( (*itOld)[0] != (*itNew)[0] ) {
                     ///a name has changed
-                    knobUI->getGui()->getApp()->getProject()->fixPathName( (*itOld)[0], (*itNew)[0] );
+                    app->getProject()->fixPathName( (*itOld)[0], (*itNew)[0] );
                 } else if ( (*itOld)[1] != (*itNew)[1] ) {
-                    knobUI->getGui()->getApp()->getProject()->fixRelativeFilePaths( (*itOld)[0], (*itNew)[1], false );
+                    app->getProject()->fixRelativeFilePaths( (*itOld)[0], (*itNew)[1], false );
+
                 }
             }
         }

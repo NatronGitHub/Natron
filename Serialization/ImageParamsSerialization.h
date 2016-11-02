@@ -76,13 +76,16 @@ public:
 
     ImageParamsSerialization()
     : NonKeyParamsSerialization()
+    , par(1.)
+    , bitdepth(0)
+    , fielding(0)
+    , premult(0)
+    , mipMapLevel(0)
     {
-
     }
 
     virtual ~ImageParamsSerialization()
     {
-
     }
 
     virtual void encode(YAML::Emitter& em) const OVERRIDE;

@@ -36,13 +36,15 @@ public:
 
     ImageKeySerialization()
     : SerializationObjectBase()
+    , nodeHashKey(0)
+    , time(0.)
+    , view(0)
+    , draft(false)
     {
-
     }
 
     virtual ~ImageKeySerialization()
     {
-
     }
 
     virtual void encode(YAML::Emitter& em) const OVERRIDE;

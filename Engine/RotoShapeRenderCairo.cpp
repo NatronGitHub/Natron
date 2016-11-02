@@ -1988,7 +1988,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
     assert(isStroke || isBezier);
     if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
         std::vector<cairo_pattern_t*> dotPatterns;
-        if (isDuringPainting) {
+        if (isDuringPainting && isStroke) {
             dotPatterns = isStroke->getPatternCache();
         }
         if ( dotPatterns.empty() ) {
@@ -1997,10 +1997,15 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 dotPatterns[i] = (cairo_pattern_t*)0;
             }
         }
+
+#pragma message WARN("BUG: isStroke is NULL in the following call if shape is an open bezier")
         RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, time, view, mipmapLevel, distToNextOut, lastCenterPointOut);
 
+
         if (isDuringPainting) {
-            isStroke->updatePatternCache(dotPatterns);
+            if (isStroke) {
+                isStroke->updatePatternCache(dotPatterns);
+            }
         } else {
             for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
                 if (dotPatterns[i]) {

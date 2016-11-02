@@ -96,22 +96,36 @@ getOfxKeyFrames(const KnobIPtr& knob,
         endDim = knob->getNDimensions();
     }
     assert(startDim < endDim && startDim >= 0);
+    if ( knob->canAnimate() ) {
+        std::list<ViewIdx> views = knob->getViewsList();
+        for (int i = startDim; i < endDim; ++i) {
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
-    std::list<ViewIdx> views = knob->getViewsList();
-    for (int i = startDim; i < endDim; ++i) {
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            CurvePtr curve = knob->getCurve(*it, DimIdx(i));
-            if (curve) {
-                KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it2 = dimKeys.begin(); it2 != dimKeys.end(); ++it2) {
-                    keyframes.insert( it2->getTime() );
+                // Some plug-ins (any of our GeneratorPlugin derivatives) use getNumKeys to figure out
+                // if the knob is animated.
+                // If the knob has an expression, it may be using e.g a random based function and does not necessarily
+                // have a fixed number of keyframes. In that case we return 2 fake keyframes so the plug-in thinks
+                // there's an animation.
+                // If we don't do this, a simple constant node with a random() as expression of the color knob will
+                // make the node return true in the isIdentity action of the GeneratorPlugin (in openfx-supportext)
+                // hence the color will not vary over time.
+                std::string expr = knob->getExpression(DimIdx(i), *it);
+                if (!expr.empty()) {
+                    keyframes.insert(0);
+                    keyframes.insert(1);
+                } else {
+                    CurvePtr curve = knob->getCurve(*it, DimIdx(i));
+                    if (curve) {
+                        KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
+                        for (KeyFrameSet::iterator it2 = dimKeys.begin(); it2 != dimKeys.end(); ++it2) {
+                            keyframes.insert( it2->getTime() );
+                        }
+                    }
                 }
             }
         }
-
-
     }
-
+    
 }
 
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
@@ -124,6 +138,9 @@ getNumKeys(const KnobIPtr& knob,
            int startDim = -1,
            int endDim = -1)
 {
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     OfxKeyFramesSet keyframes;
 
     getOfxKeyFrames(knob, keyframes, startDim, endDim);
@@ -140,6 +157,9 @@ getKeyTime(const KnobIPtr& knob,
            int startDim = -1,
            int endDim = -1)
 {
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     if (nth < 0) {
         return kOfxStatErrBadIndex;
     }
@@ -164,6 +184,9 @@ getKeyIndex(const KnobIPtr& knob,
             int startDim = -1,
             int endDim = -1)
 {
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     OfxKeyFramesSet keyframes;
 
     getOfxKeyFrames(knob, keyframes, startDim, endDim);
@@ -225,6 +248,9 @@ deleteKey(const KnobIPtr& knob,
           int startDim = -1,
           int endDim = -1)
 {
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     if (startDim == -1) {
         startDim = 0;
     }
@@ -247,6 +273,9 @@ deleteAllKeys(const KnobIPtr& knob,
               int startDim = -1,
               int endDim = -1)
 {
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     if (startDim == -1) {
         startDim = 0;
     }
@@ -270,6 +299,12 @@ copyFrom(const KnobIPtr & from,
          int startDim = -1,
          int endDim = -1)
 {
+    if (!from) {
+        return kOfxStatErrBadHandle;
+    }
+    if (!to) {
+        return kOfxStatErrBadHandle;
+    }
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
         to->beginChanges();
@@ -660,6 +695,9 @@ OfxStatus
 OfxIntegerInstance::get(int & v)
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
 
     v = knob->getValue();
 
@@ -671,6 +709,9 @@ OfxIntegerInstance::get(OfxTime time,
                         int & v)
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
 
     v = knob->getValueAtTime(time);
 
@@ -681,6 +722,9 @@ OfxStatus
 OfxIntegerInstance::set(int v)
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
 
     knob->setValue(v, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
@@ -692,6 +736,9 @@ OfxIntegerInstance::set(OfxTime time,
                         int v)
 {
     KnobIntPtr knob = _knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
 
     knob->setValueAtTime(time, v, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
@@ -3413,6 +3460,9 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
     bool richText = mode == kOfxParamStringIsRichTextFormat;
+    KnobFilePtr fileKnob;
+    KnobPathPtr pathKnob;
+    KnobStringPtr stringKnob;
 
     if (mode == kOfxParamStringIsFilePath) {
         int fileIsImage = ( ( node->isReader() ||
@@ -3421,53 +3471,56 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
                              getScriptName() == kOfxImageEffectProxyParamName) );
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
 
-        KnobFilePtr knob = checkIfKnobExistsWithNameOrCreate<KnobFile>(descriptor.getName(), this, 1);
-        _imp->fileKnob = knob;
+        fileKnob = checkIfKnobExistsWithNameOrCreate<KnobFile>(descriptor.getName(), this, 1);
+        _imp->fileKnob = fileKnob;
 
         if (!fileIsOutput) {
-            knob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeOpenFileSequences
+            fileKnob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeOpenFileSequences
                                 : KnobFile::eKnobFileDialogTypeOpenFile);
 
         } else {
-            knob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeSaveFileSequences
+            fileKnob->setDialogType(fileIsImage ? KnobFile::eKnobFileDialogTypeSaveFileSequences
                                 : KnobFile::eKnobFileDialogTypeSaveFile);
         }
         if (!fileIsImage) {
-            knob->setAnimationEnabled(false);
+            fileKnob->setAnimationEnabled(false);
         } else {
             std::vector<std::string> filters;
             appPTR->getSupportedReaderFileFormats(&filters);
-            knob->setDialogFilters(filters);
+            fileKnob->setDialogFilters(filters);
         }
     } else if (mode == kOfxParamStringIsDirectoryPath) {
-        _imp->pathKnob = checkIfKnobExistsWithNameOrCreate<KnobPath>(descriptor.getName(), this, 1);
-        _imp->pathKnob.lock()->setMultiPath(false);
+        pathKnob = checkIfKnobExistsWithNameOrCreate<KnobPath>(descriptor.getName(), this, 1);
+        _imp->pathKnob = pathKnob;
+        pathKnob->setMultiPath(false);
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
-        _imp->stringKnob = checkIfKnobExistsWithNameOrCreate<KnobString>(descriptor.getName(), this, 1);
+        stringKnob = checkIfKnobExistsWithNameOrCreate<KnobString>(descriptor.getName(), this, 1);
+        _imp->stringKnob = stringKnob;
         if (mode == kOfxParamStringIsLabel) {
-            _imp->stringKnob.lock()->setEnabled(false);
-            _imp->stringKnob.lock()->setAsLabel();
-        }
+
+            stringKnob->setEnabled(false);
+            stringKnob->setAsLabel();
+         }
         if ( (mode == kOfxParamStringIsMultiLine) || richText ) {
             ///only QTextArea support rich text anyway
-            _imp->stringKnob.lock()->setUsesRichText(richText);
-            _imp->stringKnob.lock()->setAsMultiLine();
+            stringKnob->setUsesRichText(richText);
+            stringKnob->setAsMultiLine();
         }
     }
     std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault);
     if ( !defaultVal.empty() ) {
-        if ( _imp->fileKnob.lock() ) {
+        if (fileKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobFilePtr k = _imp->fileKnob.lock();
             k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
             k->unblockValueChanges();
-        } else if ( _imp->stringKnob.lock() ) {
+        } else if (stringKnob) {
             KnobStringPtr k = _imp->stringKnob.lock();
             k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
             k->unblockValueChanges();
-        } else if ( _imp->pathKnob.lock() ) {
+        } else if (pathKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobPathPtr k = _imp->pathKnob.lock();
             k->blockValueChanges();
@@ -3634,14 +3687,17 @@ OfxStringInstance::getV(OfxTime time,
 KnobIPtr
 OfxStringInstance::getKnob() const
 {
-    if ( _imp->fileKnob.lock() ) {
-        return _imp->fileKnob.lock();
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        return fileKnob;
     }
-    if ( _imp->stringKnob.lock() ) {
-        return _imp->stringKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    if (stringKnob) {
+        return stringKnob;
     }
-    if ( _imp->pathKnob.lock() ) {
-        return _imp->pathKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        return pathKnob;
     }
 
     return KnobIPtr();
@@ -3652,14 +3708,20 @@ void
 OfxStringInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setEnabled( getEnabled() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob->setEnabled( getEnabled() );
+        return;
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setEnabled( getEnabled() );
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    if (stringKnob) {
+        stringKnob->setEnabled( getEnabled() );
+        return;
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setEnabled( getEnabled() );
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob->setEnabled( getEnabled() );
+        return;
     }
 }
 
@@ -3667,14 +3729,20 @@ void
 OfxStringInstance::setHint()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setHintToolTip(getHint());
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob->setHintToolTip(getHint());
+        return;
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setHintToolTip(getHint());
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    if (stringKnob) {
+        stringKnob->setHintToolTip(getHint());
+        return;
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setHintToolTip(getHint());
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob->setHintToolTip(getHint());
+        return;
     }
 }
 
@@ -3683,14 +3751,21 @@ OfxStringInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
     const std::string& v = _properties.getStringProperty(kOfxParamPropDefault, 0);
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setDefaultValueWithoutApplying(v);
+
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob->setDefaultValueWithoutApplying(v);
+        return;
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setDefaultValueWithoutApplying(v);
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    if (stringKnob) {
+        stringKnob->setDefaultValueWithoutApplying(v);
+        return;
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setDefaultValueWithoutApplying(v);
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob->setDefaultValueWithoutApplying(v);
+        return;
     }
 }
 
@@ -3698,14 +3773,17 @@ void
 OfxStringInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setLabel( getParamLabel(this) );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (fileKnob) {
+        fileKnob->setLabel( getParamLabel(this) );
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setLabel( getParamLabel(this) );
+    if (stringKnob) {
+        stringKnob->setLabel( getParamLabel(this) );
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setLabel( getParamLabel(this) );
+    if (pathKnob) {
+        pathKnob->setLabel( getParamLabel(this) );
     }
 }
 
@@ -3714,14 +3792,17 @@ void
 OfxStringInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setSecret( getSecret() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (fileKnob) {
+        fileKnob->setSecret( getSecret() );
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setSecret( getSecret() );
+    if (stringKnob) {
+        stringKnob->setSecret( getSecret() );
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setSecret( getSecret() );
+    if (pathKnob) {
+        pathKnob->setSecret( getSecret() );
     }
 }
 
@@ -3730,14 +3811,18 @@ void
 OfxStringInstance::setInViewportSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (fileKnob) {
+        fileKnob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    if (stringKnob) {
+        stringKnob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+    if (pathKnob) {
+        pathKnob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
     }
 }
 
@@ -3745,14 +3830,17 @@ void
 OfxStringInstance::setInViewportLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (fileKnob) {
+        fileKnob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    if (stringKnob) {
+        stringKnob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
+    if (pathKnob) {
+        pathKnob->setInViewerContextLabel(QString::fromUtf8(getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str()));
     }
 
 }
@@ -3761,14 +3849,17 @@ void
 OfxStringInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    if ( _imp->fileKnob.lock() ) {
-        _imp->fileKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (fileKnob) {
+        fileKnob->setEvaluateOnChange( getEvaluateOnChange() );
     }
-    if ( _imp->stringKnob.lock() ) {
-        _imp->stringKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    if (stringKnob) {
+        stringKnob->setEvaluateOnChange( getEvaluateOnChange() );
     }
-    if ( _imp->pathKnob.lock() ) {
-        _imp->pathKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+    if (pathKnob) {
+        pathKnob->setEvaluateOnChange( getEvaluateOnChange() );
     }
 }
 
@@ -3777,10 +3868,15 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
     KnobIPtr knob;
 
-    if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
-    } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (stringKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    } else if (fileKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
+    } else if (pathKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(pathKnob);
     } else {
         return nKeys = 0;
     }
@@ -3794,10 +3890,15 @@ OfxStringInstance::getKeyTime(int nth,
 {
     KnobIPtr knob;
 
-    if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
-    } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (stringKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    } else if (fileKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
+    } else if (pathKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(pathKnob);
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -3812,10 +3913,15 @@ OfxStringInstance::getKeyIndex(OfxTime time,
 {
     KnobIPtr knob;
 
-    if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
-    } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (stringKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    } else if (fileKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
+    } else if (pathKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(pathKnob);
     } else {
         return kOfxStatFailed;
     }
@@ -3828,10 +3934,15 @@ OfxStringInstance::deleteKey(OfxTime time)
 {
     KnobIPtr knob;
 
-    if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
-    } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (stringKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    } else if (fileKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
+    } else if (pathKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(pathKnob);
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -3844,10 +3955,15 @@ OfxStringInstance::deleteAllKeys()
 {
     KnobIPtr knob;
 
-    if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
-    } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+    KnobFilePtr fileKnob = _imp->fileKnob.lock();
+    KnobStringPtr stringKnob = _imp->stringKnob.lock();
+    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    if (stringKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    } else if (fileKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
+    } else if (pathKnob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(pathKnob);
     } else {
         return kOfxStatOK;
     }
@@ -3927,6 +4043,9 @@ OfxCustomInstance::get(std::string &str)
 {
     KnobStringPtr knob = _imp->knob.lock();
 
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     str = knob->getValue();
 
     return kOfxStatOK;
@@ -3939,6 +4058,9 @@ OfxCustomInstance::get(OfxTime time,
     assert( KnobString::canAnimateStatic() );
     // it should call _customParamInterpolationV1Entry
     KnobStringPtr knob = _imp->knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     str = knob->getValueAtTime(time);
 
     return kOfxStatOK;
@@ -3948,7 +4070,9 @@ OfxStatus
 OfxCustomInstance::set(const char* str)
 {
     KnobStringPtr knob = _imp->knob.lock();
-
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     knob->setValue(str, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
@@ -3960,6 +4084,9 @@ OfxCustomInstance::set(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
     KnobStringPtr knob = _imp->knob.lock();
+    if (!knob) {
+        return kOfxStatErrBadHandle;
+    }
     knob->setValueAtTime(time, str, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
@@ -4001,6 +4128,7 @@ void
 OfxCustomInstance::setEnabled()
 {
     //DYNAMIC_PROPERTY_CHECK();
+    // Custom params are always disabled
     //_imp->knob.lock()->setEnabled( getEnabled() );
 }
 

@@ -1432,12 +1432,12 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     _imp->oldClick = e->pos();
     _imp->lastMousePosition = e->pos();
     QPointF zoomPos;
-    double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
+    //double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
-        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
+        //zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+        //zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
 
     bool overlaysCaught = false;
@@ -1680,12 +1680,12 @@ ViewerGL::penMotionInternal(int x,
     //    _imp->pickerState = ePickerStateInactive;
     //}
 
-    double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
+    //double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates(x, y);
-        zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
-        zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
+        //zoomScreenPixelWidth = _imp->zoomCtx.screenPixelWidth();
+        //zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
 
     ViewerNodePtr viewerNode = getInternalNode();
@@ -1910,26 +1910,27 @@ ViewerGL::updateColorPicker(int textureIndex,
 
     ViewerNodePtr viewerNode = getInternalNode();
     QPointF imgPosCanonical;
+    bool imgPosCanonicalSet = false;
     if (!xInitialized || !yInitialized) {
-        if ( !viewerNode->isViewersSynchroEnabled() ) {
-            pos = mapFromGlobal( QCursor::pos() );
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
-        } else {
+        if ( viewerNode->isViewersSynchroEnabled() ) {
             NodePtr masterViewerNode = getViewerTab()->getGui()->getApp()->getMasterSyncViewer();
             if (masterViewerNode) {
                 ViewerNodePtr viewerNode = toViewerNode(masterViewerNode->getEffectInstance());
                 ViewerGL* viewerUIContext = dynamic_cast<ViewerGL*>(viewerNode->getUiContext());
                 assert(viewerUIContext);
-                pos = viewerUIContext->mapFromGlobal( QCursor::pos() );
-                imgPosCanonical = viewerUIContext->toZoomCoordinates(pos);
-            } else {
-                pos = mapFromGlobal( QCursor::pos() );
-                QMutexLocker l(&_imp->zoomCtxMutex);
-                imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
+                if (viewerUIContext) {
+                    pos = viewerUIContext->mapFromGlobal( QCursor::pos() );
+                    xInitialized = yInitialized = true;
+                    imgPosCanonical = viewerUIContext->toZoomCoordinates(pos);
+                    imgPosCanonicalSet = true;
+                }
             }
         }
-    } else {
+    }
+    if (!xInitialized || !yInitialized) {
+        pos = mapFromGlobal( QCursor::pos() );
+    }
+    if (!imgPosCanonicalSet) {
         QMutexLocker l(&_imp->zoomCtxMutex);
         imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
     }

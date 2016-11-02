@@ -759,7 +759,7 @@ EffectInstance::getImage(int inputNb,
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstancePtr identityInput;
-    bool duringPaintStroke;
+    //bool duringPaintStroke;
     // Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     // re-computing of the same image many many times
     bool byPassCache = false;
@@ -800,14 +800,14 @@ EffectInstance::getImage(int inputNb,
 
     if ( !tls->frameArgs.empty() ) {
         const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
-        duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
+        //duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
         isAnalysisPass = frameRenderArgs->isAnalysis;
         gpuGlContext = frameRenderArgs->openGLContext.lock();
         cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
         renderInfo = frameRenderArgs->abortInfo.lock();
     } else {
         //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
-        duringPaintStroke = false;
+        //duringPaintStroke = false;
     }
     if (tls->currentRenderArgs.validArgs) {
         //This will only be valid for render pass, not analysis

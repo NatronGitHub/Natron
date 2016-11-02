@@ -376,8 +376,15 @@ ViewerTab::onRenderStatsAvailable(int time,
 void
 ViewerTab::synchronizeOtherViewersProjection()
 {
-    assert( getGui() );
-    getGui()->getApp()->setMasterSyncViewer(getInternalNode()->getNode());
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    GuiAppInstancePtr app = gui->getApp();
+    if (!app) {
+        return;
+    }
+    app->setMasterSyncViewer(getInternalNode()->getNode());
     double left, bottom, factor, par;
     _imp->viewer->getProjection(&left, &bottom, &factor, &par);
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();

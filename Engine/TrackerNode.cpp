@@ -1706,6 +1706,7 @@ TrackerNodePrivate::resetTransformCenter()
             KnobDoublePtr centerKnob = (*it)->getCenterKnob();
             p[0] += centerKnob->getValueAtTime(time, DimIdx(0));
             p[1] += centerKnob->getValueAtTime(time, DimIdx(1));
+
         }
         p[0] /= tracks.size();
         p[1] /= tracks.size();

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 147287 2016-04-01 15:47:32Z cal@macports.org $
+# $Id: Portfile 154244 2016-10-25 09:58:21Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -159,5 +159,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       http://downloads.ghostscript.com/public/
-livecheck.regex     ${name}-(\\d+(?:\\.\\d+)*)
+livecheck.url       http://www.ghostscript.com/Releases.html
+livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"

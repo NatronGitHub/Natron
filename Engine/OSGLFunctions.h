@@ -50,7 +50,7 @@ typedef unsigned __int64 uint64_t;
 #include <inttypes.h>
 #endif
 #endif
-
+#include <string.h> // memset
 
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
@@ -1780,7 +1780,7 @@ class OSGLFunctions
     void load_functions();
 
     // private constructor
-    OSGLFunctions() { load_functions(); }
+    OSGLFunctions() { memset(this, 0, sizeof(*this)); load_functions(); }
 
     PFNGLCULLFACEPROC _glCullFace;
     PFNGLFRONTFACEPROC _glFrontFace;

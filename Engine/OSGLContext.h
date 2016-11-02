@@ -186,7 +186,9 @@ class OSGLContextAttacher
     double _frameTime;
 #endif
     bool _attached;
-    int _width, _height, _rowWidth;
+    int _width;
+    int _height;
+    int _rowWidth;
     void* _buffer;
 
 public:
@@ -209,6 +211,7 @@ public:
     , _attached(false)
     , _width(0)
     , _height(0)
+    , _rowWidth(0)
     , _buffer(0)
     {
         assert(c);

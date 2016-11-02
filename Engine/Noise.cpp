@@ -175,6 +175,7 @@ void CellNoise(const T* in, T* out) {
     while (1) {
         out[dim] = hashReduce<d_in>(index) * (1.0 / 0xffffffffu);
         if (++dim >= d_out) break;
+        // coverity[dead_error_begin]
         for (int k = 0; k < d_in; k++) index[k] += 1000;
     }
 }
@@ -189,6 +190,7 @@ void Noise(const T* in, T* out) {
     while (1) {
         out[i] = noiseHelper<d_in, T, false>(P);
         if (++i >= d_out) break;
+        // coverity[dead_error_begin]
         for (int k = 0; k < d_out; k++) P[k] += (T)1000;
     }
 }
@@ -203,6 +205,7 @@ void PNoise(const T* in, const int* period, T* out) {
     while (1) {
         out[i] = noiseHelper<d_in, T, true>(P, period);
         if (++i >= d_out) break;
+        // coverity[dead_error_begin]
         for (int k = 0; k < d_out; k++) P[k] += (T)1000;
     }
 }

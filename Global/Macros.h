@@ -119,9 +119,20 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME "Natron_File_Dialog_Preview_Provider_Viewer"
 
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
-#define NATRON_VERSION_MAJOR 2
-#define NATRON_VERSION_MINOR 2
-#define NATRON_VERSION_REVISION 0
+
+// The currently maintained Natron versions
+#define NATRON_VERSION_MAJOR_22 2
+#define NATRON_VERSION_MINOR_22 2
+#define NATRON_VERSION_REVISION_22 0
+
+#define NATRON_VERSION_MAJOR_21 2
+#define NATRON_VERSION_MINOR_21 1
+#define NATRON_VERSION_REVISION_21 8
+
+// The Natron version for this branch
+#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_22
+#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_22
+#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_22
 
 
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"

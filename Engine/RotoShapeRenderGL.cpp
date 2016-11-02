@@ -161,9 +161,11 @@ static const char* rotoSmearDot_FragmentShader =
 
 RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 : EffectOpenGLContextData(isGPUContext)
+, _iboID(0)
 , _vboVerticesID(0)
 , _vboColorsID(0)
 , _vboHardnessID(0)
+, _vboTexID(0)
 , _featherRampShader(5)
 , _strokeDotShader(2)
 {
@@ -822,7 +824,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
             }
 
         }
-
+        Q_UNUSED(hasUploadedVertices);
 
         if (glContext->isGPUContext()) {
             GL_GPU::glDisable(GL_BLEND);

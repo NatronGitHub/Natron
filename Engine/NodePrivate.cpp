@@ -228,6 +228,10 @@ NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& select
 {
     NodePtr node;
 
+    assert(_publicInterface);
+    if (!_publicInterface) {
+        return ImageComponents();
+    }
     if (inputNb == -1) {
         node = _publicInterface->shared_from_this();
     } else {
@@ -267,7 +271,7 @@ NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& select
     }
 
 
-    if ( (ret.getNumComponents() == 0) && _publicInterface ) {
+    if (ret.getNumComponents() == 0) {
         std::vector<ImageComponents> projectLayers = _publicInterface->getApp()->getProject()->getProjectDefaultLayers();
         for (std::size_t i = 0; i < projectLayers.size(); ++i) {
             if (projectLayers[i].getLayerName() == mappedLayerName) {

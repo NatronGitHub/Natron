@@ -1259,6 +1259,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 isGroup = true;
             }
         }
+        assert(isPage != isGroup);
         if (isPage) {
             KnobPagePtr page;
             if (!found) {
@@ -1278,7 +1279,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
             }
 
-        } else { //!ispage
+        } else if (isGroup) { //!ispage
             KnobGroupPtr grp;
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(_imp->effect, groupSerialization->_label, 1, false);
@@ -1361,10 +1362,6 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
                 knob = AppManager::createKnob<KnobSeparator>(_imp->effect, serialization->_label, serialization->_dimension, false);
             } else if (isParametric) {
                 knob = AppManager::createKnob<KnobParametric>(_imp->effect, serialization->_label, serialization->_dimension, false);
-            } else if (isChoice) {
-                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
-            } else if (isChoice) {
-                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
             }
             if (!found && _imp->isLoadingPreset) {
                 _imp->presetKnobs.push_back(knob);
@@ -3452,7 +3449,9 @@ Node::createPyPlugExportGroup()
         param->setDefaultValue(false);
         param->setIsPersistent(false);
         param->setAsDialog(true);
-        mainPage->addKnob(param);
+        if (mainPage) {
+            mainPage->addKnob(param);
+        }
         _imp->pyPlugExportDialog = param;
     }
 
@@ -7653,17 +7652,17 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         }
     } else if ( _imp->effect->isWriter() ) {
         KnobFilePtr isFile = toKnobFile(fileKnob);
-        if (isFile && _imp->ofxSubLabelKnob.lock()) {
-            KnobStringBasePtr isString = _imp->ofxSubLabelKnob.lock();
+        KnobStringPtr sublabel = _imp->ofxSubLabelKnob.lock();
+        if (isFile && sublabel) {
 
             std::string pattern = isFile->getValue();
-            if (isString) {
+            if (sublabel) {
                 std::size_t foundSlash = pattern.find_last_of("/");
                 if (foundSlash != std::string::npos) {
                     pattern = pattern.substr(foundSlash + 1);
                 }
 
-                isString->setValue(pattern);
+                sublabel->setValue(pattern);
             }
         }
 
@@ -8681,10 +8680,16 @@ Node::refreshLayersSelectorsVisibility()
 
 
     // Refresh RGBA checkbox visibility
-    if (_imp->enabledChan[0].lock()) {
+    KnobBoolPtr enabledChan[4];
+    bool hasRGBACheckboxes = false;
+    for (int i = 0; i < 4; ++i) {
+        enabledChan[i] = _imp->enabledChan[i].lock();
+        hasRGBACheckboxes |= (bool)enabledChan[i];
+    }
+    if (hasRGBACheckboxes) {
         if (outputIsAll) {
             for (int i = 0; i < 4; ++i) {
-                _imp->enabledChan[i].lock()->setSecret(true);
+                enabledChan[i]->setSecret(true);
             }
         } else {
             refreshEnabledKnobsLabel(mainInputComps, outputComps);
@@ -8696,7 +8701,13 @@ Node::refreshLayersSelectorsVisibility()
 void
 Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps)
 {
-    if (!_imp->enabledChan[0].lock()) {
+    KnobBoolPtr enabledChan[4];
+    bool hasRGBACheckboxes = false;
+    for (int i = 0; i < 4; ++i) {
+        enabledChan[i] = _imp->enabledChan[i].lock();
+        hasRGBACheckboxes |= (bool)enabledChan[i];
+    }
+    if (!hasRGBACheckboxes) {
         return;
     }
 
@@ -8710,11 +8721,9 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
     switch (nOutputComps) {
     case 1: {
         for (int i = 0; i < 3; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(true);
+            enabledChan[i]->setSecret(true);
         }
-        KnobBoolPtr alpha = _imp->enabledChan[3].lock();
-        alpha->setSecret(false);
+        enabledChan[3]->setSecret(false);
         std::string channelName;
         if (inputChannelNames.size() == 1) {
             channelName = inputChannelNames[0];
@@ -8723,22 +8732,20 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
         } else {
             channelName = outputChannelNames[0];
         }
-        alpha->setLabel(channelName);
+        enabledChan[3]->setLabel(channelName);
 
         break;
     }
     case 2: {
         for (int i = 2; i < 4; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(true);
+            enabledChan[i]->setSecret(true);
         }
         for (int i = 0; i < 2; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(false);
+            enabledChan[i]->setSecret(false);
             if ((int)inputChannelNames.size() > i) {
-                enabled->setLabel(inputChannelNames[i]);
+                enabledChan[i]->setLabel(inputChannelNames[i]);
             } else {
-                enabled->setLabel(outputChannelNames[i]);
+                enabledChan[i]->setLabel(outputChannelNames[i]);
             }
 
         }
@@ -8746,28 +8753,25 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
     }
     case 3: {
         for (int i = 3; i < 4; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(true);
+            enabledChan[i]->setSecret(true);
         }
         for (int i = 0; i < 3; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(false);
+            enabledChan[i]->setSecret(false);
             if ((int)inputChannelNames.size() > i) {
-                enabled->setLabel(inputChannelNames[i]);
+                enabledChan[i]->setLabel(inputChannelNames[i]);
             } else {
-                enabled->setLabel(outputChannelNames[i]);
+                enabledChan[i]->setLabel(outputChannelNames[i]);
             }
         }
         break;
     }
     case 4: {
         for (int i = 0; i < 4; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(false);
+            enabledChan[i]->setSecret(false);
             if ((int)inputChannelNames.size() > i) {
-                enabled->setLabel(inputChannelNames[i]);
+                enabledChan[i]->setLabel(inputChannelNames[i]);
             } else {
-                enabled->setLabel(outputChannelNames[i]);
+                enabledChan[i]->setLabel(outputChannelNames[i]);
             }
         }
         break;
@@ -8776,8 +8780,7 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
     case 0:
     default: {
         for (int i = 0; i < 4; ++i) {
-            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
-            enabled->setSecret(true);
+            enabledChan[i]->setSecret(true);
         }
         break;
     }

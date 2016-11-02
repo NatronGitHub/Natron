@@ -2184,7 +2184,9 @@ RotoPanel::pushUndoCommand(QUndoCommand* cmd)
     NodeSettingsPanel* panel = getNode()->getSettingPanel();
 
     assert(panel);
-    panel->pushUndoCommand(cmd);
+    if (panel) {
+        panel->pushUndoCommand(cmd);
+    }
 }
 
 std::string

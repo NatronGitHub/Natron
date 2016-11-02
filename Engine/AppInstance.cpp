@@ -147,6 +147,11 @@ struct RenderQueueItem
     ProcessHandlerPtr process;
 };
 
+class CreateNodeStackItem;
+typedef boost::shared_ptr<CreateNodeStackItem> CreateNodeStackItemPtr;
+typedef boost::weak_ptr<CreateNodeStackItem> CreateNodeStackItemWPtr;
+typedef std::list<CreateNodeStackItemPtr> CreateNodeStackItemPtrList;
+
 class CreateNodeStackItem
 {
 public:
@@ -155,8 +160,8 @@ public:
 
     CreateNodeArgsPtr args;
 
-    boost::weak_ptr<CreateNodeStackItem> parent;
-    std::list<boost::shared_ptr<CreateNodeStackItem> > children;
+    CreateNodeStackItemWPtr parent;
+    CreateNodeStackItemPtrList children;
 
     CreateNodeStackItem()
     : node()
@@ -171,7 +176,7 @@ public:
         if (isPyPlug) {
             return true;
         }
-        boost::shared_ptr<CreateNodeStackItem> p = parent.lock();
+        CreateNodeStackItemPtr p = parent.lock();
         if (p) {
             return p->isWithinPyPlugRecursive();
         }
@@ -184,7 +189,7 @@ public:
         if (args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI)) {
             return true;
         }
-        boost::shared_ptr<CreateNodeStackItem> p = parent.lock();
+        CreateNodeStackItemPtr p = parent.lock();
         if (p) {
             return p->isGuiDisabledRecursive();
         }
@@ -193,8 +198,8 @@ public:
 };
 
 struct CreateNodeStack {
-    std::list<boost::shared_ptr<CreateNodeStackItem> > recursionStack;
-    boost::shared_ptr<CreateNodeStackItem> root;
+    CreateNodeStackItemPtrList recursionStack;
+    CreateNodeStackItemPtr root;
 };
 
 struct AppInstancePrivate
@@ -811,7 +816,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 class AddCreateNode_RAII
 {
     AppInstancePrivate* _imp;
-    boost::shared_ptr<CreateNodeStackItem> _item;
+    CreateNodeStackItemPtr _item;
 
 public:
 
@@ -828,7 +833,7 @@ public:
 
         if (!_imp->createNodeStack.recursionStack.empty()) {
             // There is a parent node being created
-            const boost::shared_ptr<CreateNodeStackItem>& parent = _imp->createNodeStack.recursionStack.back();
+            const CreateNodeStackItemPtr& parent = _imp->createNodeStack.recursionStack.back();
             parent->children.push_back(_item);
             _item->parent  = parent;
         }
@@ -840,8 +845,9 @@ public:
 
         // Check recursively if we should create the node UI or not
         bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
-        if (!argsNoNodeGui && _item->parent.lock()) {
-            argsNoNodeGui |= _item->parent.lock()->isGuiDisabledRecursive();
+        CreateNodeStackItemPtr parent = _item->parent.lock();
+        if (!argsNoNodeGui && parent) {
+            argsNoNodeGui |= parent->isGuiDisabledRecursive();
             if (argsNoNodeGui) {
                 args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             }
@@ -854,7 +860,7 @@ public:
 
     virtual ~AddCreateNode_RAII()
     {
-        std::list<boost::shared_ptr<CreateNodeStackItem> >::iterator found = std::find(_imp->createNodeStack.recursionStack.begin(), _imp->createNodeStack.recursionStack.end(), _item);
+        CreateNodeStackItemPtrList::iterator found = std::find(_imp->createNodeStack.recursionStack.begin(), _imp->createNodeStack.recursionStack.end(), _item);
 
         if ( found != _imp->createNodeStack.recursionStack.end() ) {
             _imp->createNodeStack.recursionStack.erase(found);

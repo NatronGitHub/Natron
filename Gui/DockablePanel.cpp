@@ -414,8 +414,9 @@ DockablePanel::DockablePanel(Gui* gui,
 
 DockablePanel::~DockablePanel()
 {
-    if ( getGui() ) {
-        getGui()->removeVisibleDockablePanel(this);
+    Gui* gui = getGui();
+    if (gui) {
+        gui->removeVisibleDockablePanel(this);
     }
 }
 
@@ -532,10 +533,13 @@ DockablePanel::onKnobsRecreated()
 
     // Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
-        NodeGuiPtr node = isNodePanel->getNode();
 
-        getGui()->removeNodeGuiFromAnimationModuleEditor(node);
-        getGui()->addNodeGuiToAnimationModuleEditor(node);
+        Gui* gui = getGui();
+        NodeGuiPtr node = isNodePanel->getNode();
+        if (gui && node) {
+            getGui()->removeNodeGuiFromAnimationModuleEditor(node);
+            getGui()->addNodeGuiToAnimationModuleEditor(node);
+        }
     }
 }
 
@@ -908,18 +912,28 @@ DockablePanel::setClosedInternal(bool closed)
 
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange( false, getGui()->getApp()->getTimeLine()->currentFrame() );
-
-
         NodeGuiPtr nodeGui = nodePanel->getNode();
         NodePtr internalNode = nodeGui->getNode();
-        Gui* gui = getGui();
 
-        if (!closed) {
-            gui->addNodeGuiToAnimationModuleEditor(nodeGui);
-        } else {
-            gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
+        Gui* gui = getGui();
+        if (gui) {
+            if (!closed) {
+                gui->addNodeGuiToAnimationModuleEditor(nodeGui);
+            } else {
+                gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
+            }
+            if (internalNode) {
+                GuiAppInstancePtr app = gui->getApp();
+                if (app) {
+                    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                    if (timeline) {
+                        internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+                    }
+                }
+            }
         }
+
+
 
     }
 
@@ -938,9 +952,12 @@ DockablePanel::closePanel()
         hasFocus->clearFocus();
     }
 
-    const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->getViewer()->redraw();
+    Gui* gui = getGui();
+    if (gui) {
+        const std::list<ViewerTab*>& viewers = gui->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->redraw();
+        }
     }
 }
 
@@ -964,7 +981,10 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
-    getGui()->buildTabFocusOrderPropertiesBin();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+    }
     update();
 }
 
@@ -1004,14 +1024,21 @@ DockablePanel::floatPanelInWindow(FloatingWidget* window)
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
-    getGui()->buildTabFocusOrderPropertiesBin();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+    }
+
 }
 
 FloatingWidget*
 DockablePanel::floatPanel()
 {
-    FloatingWidget* window = new FloatingWidget(_imp->_gui, _imp->_gui);
-    floatPanelInWindow(window);
+    if (!_imp->_floating) {
+        FloatingWidget* window = new FloatingWidget(_imp->_gui, _imp->_gui);
+        floatPanelInWindow(window);
+        assert(_imp->_floatingWidget == window);
+    }
     return _imp->_floatingWidget;
 }
 
@@ -1148,8 +1175,11 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
         _imp->_overlayButton->setIcon( QIcon(p) );
 
         node->onNodeUIOverlayColorChanged(color.redF(), color.greenF(), color.blueF());
+        Gui* gui = getGui();
+        if (gui) {
+            gui->getApp()->redrawAllViewers();
+        }
 
-        getGui()->getApp()->redrawAllViewers();
     }
 
 }
@@ -1213,8 +1243,10 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
         }
     }
-
-    getGui()->getApp()->redrawAllViewers();
+    Gui* gui = getGui();
+    if (gui) {
+        gui->getApp()->redrawAllViewers();
+    }
 
 }
 
@@ -1242,8 +1274,10 @@ DockablePanel::resetHostOverlayColor()
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon( QIcon(pixOverlay) );
 
-    getGui()->getApp()->redrawAllViewers();
-
+    Gui* gui = getGui();
+    if (gui) {
+        gui->getApp()->redrawAllViewers();
+    }
 }
 
 void
@@ -1361,7 +1395,11 @@ DockablePanel::setKeyOnAllParameters()
     if (!nodeUi) {
         return;
     }
-    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    AnimationModulePtr model = gui->getAnimationModuleEditor()->getModel();
     if (!model) {
         return;
     }
@@ -1374,6 +1412,7 @@ DockablePanel::setKeyOnAllParameters()
 
     AnimItemDimViewKeyFramesMap keys;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
+
 
 
     for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -1412,6 +1451,7 @@ DockablePanel::setKeyOnAllParameters()
 
     }
     pushUndoCommand(new AddKeysCommand(keys, model, false /*replaceAnimation*/));
+
 }
 
 void
@@ -1425,7 +1465,11 @@ DockablePanel::removeAnimationOnAllParameters()
     if (!nodeUi) {
         return;
     }
-    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    Gui* gui = getGui();
+    if (!gui) {
+        return;
+    }
+    AnimationModulePtr model = gui->getAnimationModuleEditor()->getModel();
     if (!model) {
         return;
     }
@@ -1457,6 +1501,7 @@ DockablePanel::removeAnimationOnAllParameters()
                     kf.key = *it3;
                     if (isString) {
                         kf.string = isString->getValueAtTime(it3->getTime(), DimIdx(i), *it2);
+
                     }
 
                     keysToRemove.insert(kf);
@@ -1467,6 +1512,7 @@ DockablePanel::removeAnimationOnAllParameters()
         
     }
     pushUndoCommand(new RemoveKeysCommand(keys, model));
+
 }
 
 void

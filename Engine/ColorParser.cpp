@@ -285,7 +285,7 @@ getHexRGB(const QChar *str, int len, int* r, int *g, int* b)
 {
     if (len > 13)
         return false;
-    char tmp[16];
+    char tmp[16] = {0};
     for(int i = 0; i < len; ++i)
         tmp[i] = str[i].toLatin1();
     tmp[len] = 0;

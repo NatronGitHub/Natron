@@ -305,21 +305,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     }
 
     double tprev, vprev, vprevDerivRight, tnext, vnext, vnextDerivLeft;
-    if (upperIt == keys.begin()) {
-        // We are in a periodic curve: we are in-between the parametric xMin and the first keyframe
-        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
-        // from the widget border to the first/last keyframe
-        assert(isPeriodic);
-        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
-        tprev = last->getTime() - period;
-        //xClamped -= period;
-        vprev = last->getValue();
-        vprevDerivRight = last->getRightDerivative();
-        tnext = upperIt->getTime();
-        vnext = upperIt->getValue();
-        vnextDerivLeft = upperIt->getLeftDerivative();
-
-    } else if (upperIt == keys.end()) {
+    if ( upperIt == keys.end() ) {
         // We are in a periodic curve: we are in-between the last keyframe and the parametric xMax
         // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
         // from the widget border to the first/last keyframe
@@ -333,6 +319,20 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
         //xClamped += period;
         vnext = start->getValue();
         vnextDerivLeft = start->getLeftDerivative();
+
+    } else if ( upperIt == keys.begin() ) {
+        // We are in a periodic curve: we are in-between the parametric xMin and the first keyframe
+        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
+        // from the widget border to the first/last keyframe
+        assert(isPeriodic);
+        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
+        tprev = last->getTime() - period;
+        //xClamped -= period;
+        vprev = last->getValue();
+        vprevDerivRight = last->getRightDerivative();
+        tnext = upperIt->getTime();
+        vnext = upperIt->getValue();
+        vnextDerivLeft = upperIt->getLeftDerivative();
 
     } else {
         // in-between 2 keyframes

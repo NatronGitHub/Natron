@@ -325,14 +325,14 @@ AboutWindow::AboutWindow(QWidget* parent)
             }
         }
 #endif
-        QString gitStr = ( tr("<p>This software was compiled on %3 from the source "
-                                             "code branch %1 at version %2 using %4 targetting %5 for %6.</p>")
+        QString gitStr = ( tr("<p>This software was compiled from the source "
+                                             "code branch %1 at version %2 using %3 targetting %4 for %5.</p>")
                            .arg( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/"GIT_BRANCH "\">"GIT_BRANCH "</a>") ) // %1
                            .arg(argStr) // %2
-                           .arg( QString::fromUtf8(__DATE__) ) // %3
-                           .arg( QString::fromUtf8(BOOST_COMPILER OPENMP_STRING) ) // %4
-                           .arg( QString::fromUtf8(BOOST_ARCH_NAME) ) // %5
-                           .arg(osVer) );// %6
+                           .arg( QString::fromUtf8(BOOST_COMPILER OPENMP_STRING) ) // %3
+                           .arg( QString::fromUtf8(BOOST_ARCH_NAME) ) // %4
+                           .arg(osVer) );// %5
+
         aboutText.append(gitStr);
     }
     if ( !std::string(IO_GIT_COMMIT).empty() ) {
