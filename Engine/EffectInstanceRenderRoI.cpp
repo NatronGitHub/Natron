@@ -1738,7 +1738,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 
     assert(renderAborted);
     *renderAborted = _publicInterface->aborted();
-    if (!*renderAborted && (hasSomethingToRender || planesToRender->isBeingRenderedElsewhere) ) {
+    if (!*renderAborted && !hasSomethingToRender && !planesToRender->isBeingRenderedElsewhere) {
         *renderAborted = _publicInterface->aborted();
     } else {
 
