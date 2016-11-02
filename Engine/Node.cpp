@@ -8408,7 +8408,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             w.useRenderStats = getApp()->isRenderStatsActionChecked();
             std::list<AppInstance::RenderWork> works;
             works.push_back(w);
-            getApp()->startWritersRendering(false, works);
+            getApp()->renderWritersNonBlocking(works);
         }
     } else if (what == _imp->disableNodeKnob.lock()) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );

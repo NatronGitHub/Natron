@@ -187,7 +187,7 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
         w.useRenderStats = false;
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
-        getApp()->startWritersRendering(false, works);
+        getApp()->renderWritersNonBlocking(works);
     } else {
         ret = false;
     }

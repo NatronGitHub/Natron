@@ -153,7 +153,7 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 }
 
 void
-OutputEffectInstance::renderFullSequence(bool isBlocking,
+OutputEffectInstance::renderSequential(bool isBlocking,
                                          bool enableRenderStats,
                                          BlockingBackgroundRender* renderController,
                                          int first,

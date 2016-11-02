@@ -104,7 +104,7 @@ public:
      * @brief Starts rendering of all the sequence available, from start to end.
      * This function is meant to be called for on-disk renderer only (i.e: not viewers).
      **/
-    void renderFullSequence(bool isBlocking, bool enableRenderStats, BlockingBackgroundRender* renderController, int first, int last, int frameStep);
+    void renderSequential(bool isBlocking, bool enableRenderStats, BlockingBackgroundRender* renderController, int first, int last, int frameStep);
 
     void notifyRenderFinished();
 

@@ -232,6 +232,9 @@ public:
     int _creatingTree;
 
     mutable QMutex renderQueueMutex;
+
+    // Used to block the calling threads while there are active renders
+    QWaitCondition activeRendersNotEmptyCond;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
@@ -282,7 +285,7 @@ public:
 
     void getSequenceNameFromWriter(const OutputEffectInstancePtr& writer, QString* sequenceName);
 
-    void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
+    void renderSequentialInternal(const RenderQueueItem& writerWork);
 
     void checkNumberOfNonFloatingPanes();
 
@@ -743,7 +746,7 @@ AppInstance::loadInternal(const CLArgs& cl,
 
         ///launch renders
         if ( !writersWork.empty() ) {
-            startWritersRendering(false, writersWork);
+            renderWritersNonBlocking(writersWork);
         } else {
             std::list<std::string> writers;
             startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
@@ -1555,32 +1558,46 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
     if ( renderers.empty() ) {
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
+    if (doBlockingRender) {
+        renderWritersBlocking(renderers);
+    } else {
+        renderWritersNonBlocking(renderers);
+    }
 
-    startWritersRendering(doBlockingRender, renderers);
 } // AppInstance::startWritersRenderingFromNames
 
 void
-AppInstance::startWritersRendering(bool doBlockingRender,
+AppInstance::renderWritersInternal(bool doBlockingRender,
                                    const std::list<RenderWork>& writers)
 {
     if ( writers.empty() ) {
         return;
     }
 
+    // If queueing is enabled and we have to render multiple writers, render them in order
+    bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
 
+    // If enabled, we launch the render in a separate process launching NatronRenderer
     bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
+
+    // When launching in a separate process, make a temporary save file that we pass to NatronRenderer
     QString savePath;
     if (renderInSeparateProcess) {
-        getProject()->saveProject_imp(QString(), QString::fromUtf8("RENDER_SAVE.ntp"), true, false, &savePath);
+        getProject()->saveProject_imp(QString(), QString(), true /*isAutoSave*/, false /*updateprojectProperties*/, &savePath);
     }
 
+    // For all items to render, create the background process if needed or connect signals to enable the queue
+    // Also notify the GUI that an item was added to the queue
     std::list<RenderQueueItem> itemsToQueue;
     for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
         RenderQueueItem item;
         item.work = *it;
+
+        // Check that the render options are OK
         if ( !_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep) ) {
-            continue;;
+            continue;
         }
+
         _imp->getSequenceNameFromWriter(it->writer, &item.sequenceName);
         item.savePath = savePath;
 
@@ -1600,38 +1617,60 @@ AppInstance::startWritersRendering(bool doBlockingRender,
         }
         itemsToQueue.push_back(item);
     }
+
+    // No valid render, bail out
     if ( itemsToQueue.empty() ) {
         return;
     }
 
-    if (appPTR->isBackground() || doBlockingRender) {
-        //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( itemsToQueue, boost::bind(&AppInstancePrivate::startRenderingFullSequence, _imp.get(), true, _1) );
+    if (!isQueuingEnabled) {
+        // Just launch everything
+        for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it != itemsToQueue.end(); ++it) {
+            _imp->renderSequentialInternal(*it);
+        }
     } else {
-        bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
-        if (isQueuingEnabled) {
-            QMutexLocker k(&_imp->renderQueueMutex);
-            if ( !_imp->activeRenders.empty() ) {
-                _imp->renderQueue.insert( _imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end() );
+        QMutexLocker k(&_imp->renderQueueMutex);
+        if ( !_imp->activeRenders.empty() ) {
+            _imp->renderQueue.insert( _imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end() );
 
-                return;
-            } else {
-                std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
-                const RenderQueueItem& firstWork = *it;
-                ++it;
-                for (; it != itemsToQueue.end(); ++it) {
-                    _imp->renderQueue.push_back(*it);
-                }
-                k.unlock();
-                _imp->startRenderingFullSequence(false, firstWork);
-            }
+            return;
         } else {
-            for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it != itemsToQueue.end(); ++it) {
-                _imp->startRenderingFullSequence(false, *it);
+            std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
+            const RenderQueueItem& firstWork = *it;
+            ++it;
+            for (; it != itemsToQueue.end(); ++it) {
+                _imp->renderQueue.push_back(*it);
             }
+            k.unlock();
+            _imp->renderSequentialInternal(firstWork);
         }
     }
+    if (doBlockingRender) {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        while (!_imp->activeRenders.empty()) {
+            // check every 50ms if the queue is not empty
+            k.unlock();
+            QCoreApplication::processEvents();
+            k.relock();
+            _imp->activeRendersNotEmptyCond.wait(&_imp->renderQueueMutex, 50);
+        }
+    }
+
+
 } // AppInstance::startWritersRendering
+
+void
+AppInstance::renderWritersBlocking(const std::list<RenderWork>& writers)
+{
+    renderWritersInternal(true, writers);
+}
+
+void
+AppInstance::renderWritersNonBlocking(const std::list<RenderWork>& writers)
+{
+    bool blocking = appPTR->isBackground();
+    renderWritersInternal(blocking, writers);
+}
 
 void
 AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& writer,
@@ -1691,31 +1730,34 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
 
     return true;
 }
+#if 0
+void
+AppInstancePrivate::renderSequentialBlockingInternal(const RenderQueueItem& w)
+{
+    BlockingBackgroundRender backgroundRender(w.work.writer);
+
+    // This function doesn't return before rendering is finished
+    backgroundRender.blockingRender(w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
+}
+#endif
 
 void
-AppInstancePrivate::startRenderingFullSequence(bool blocking,
-                                               const RenderQueueItem& w)
+AppInstancePrivate::renderSequentialInternal(const RenderQueueItem& w)
 {
-    if (blocking) {
-        BlockingBackgroundRender backgroundRender(w.work.writer);
-        backgroundRender.blockingRender(w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep); //< doesn't return before rendering is finished
-        return;
-    }
-
-
     {
         QMutexLocker k(&renderQueueMutex);
         activeRenders.push_back(w);
     }
-
-
     if (w.process) {
         w.process->startProcess();
     } else {
-        w.work.writer->renderFullSequence(false, w.work.useRenderStats, NULL, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
+        w.work.writer->renderSequential(false, w.work.useRenderStats, NULL, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
     }
 }
 
+/**
+ * @brief Called when a render started with renderWritersInternal is finished
+ **/
 void
 AppInstance::onQueuedRenderFinished(int /*retCode*/)
 {
@@ -1757,6 +1799,7 @@ AppInstance::startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter
             if (it->work.writer == finishedWriter) {
                 processDying = it->process;
                 _imp->activeRenders.erase(it);
+                _imp->activeRendersNotEmptyCond.wakeAll();
                 break;
             }
         }
@@ -1769,7 +1812,7 @@ AppInstance::startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter
     }
     processDying.reset();
 
-    _imp->startRenderingFullSequence(false, nextWork);
+    _imp->renderSequentialInternal(nextWork);
 }
 
 void

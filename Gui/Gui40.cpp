@@ -743,7 +743,7 @@ Gui::renderSelectedNode()
             }
         }
     }
-    getApp()->startWritersRendering(false, workList);
+    getApp()->renderWritersNonBlocking(workList);
 } // Gui::renderSelectedNode
 
 void

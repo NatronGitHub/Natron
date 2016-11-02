@@ -483,7 +483,6 @@ Project::saveProjectInternal(const QString & path,
                              bool autoSave,
                              bool updateProjectProperties)
 {
-    bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
     QString filePath;
@@ -501,21 +500,19 @@ Project::saveProjectInternal(const QString & path,
         }
         filePath.append( QLatin1Char('/') );
         filePath.append(name);
-        if (!isRenderSave) {
-            filePath.append( QString::fromUtf8(".autosave") );
-        }
-        if (!isRenderSave) {
-            if (appendTimeHash) {
-                Hash64 timeHash;
+        filePath.append( QString::fromUtf8(".autosave") );
 
-                Q_FOREACH(QChar ch, timeStr) {
-                    timeHash.append<unsigned short>( ch.unicode() );
-                }
-                timeHash.computeHash();
-                QString timeHashStr = QString::number( timeHash.value() );
-                filePath.append(QLatin1Char('.') + timeHashStr);
+        if (appendTimeHash) {
+            Hash64 timeHash;
+
+            Q_FOREACH(QChar ch, timeStr) {
+                timeHash.append<unsigned short>( ch.unicode() );
             }
+            timeHash.computeHash();
+            QString timeHashStr = QString::number( timeHash.value() );
+            filePath.append(QLatin1Char('.') + timeHashStr);
         }
+
 
         if (updateProjectProperties) {
             QMutexLocker l(&_imp->projectLock);
@@ -598,11 +595,10 @@ Project::saveProjectInternal(const QString & path,
         //Create the lock file corresponding to the project
         createLockFile();
     } else if (updateProjectProperties) {
-        if (!isRenderSave) {
-            QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
-            QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            Q_EMIT projectNameChanged(projectPath + projectFilename, true);
-        }
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
+
     }
     if (updateProjectProperties) {
         _imp->lastAutoSave = time;
@@ -704,7 +700,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
         QString autosaveSuffix( QString::fromUtf8(".autosave") );
         searchStr.append(autosaveSuffix);
         int suffixPos = entry.indexOf(searchStr);
-        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
+        if (suffixPos == -1) {
             continue;
         }
         QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
@@ -1809,11 +1805,6 @@ Project::clearAutoSavesDir()
     QStringList entries = savesDir.entryList();
 
     Q_FOREACH(const QString &entry, entries) {
-        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
-        /// @see AppInstance::startWritersRendering
-        if ( entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
-            continue;
-        }
 
         QString searchStr( QLatin1Char('.') );
         searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );

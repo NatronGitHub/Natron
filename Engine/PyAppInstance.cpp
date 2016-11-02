@@ -341,7 +341,11 @@ App::renderInternal(bool forceBlocking,
 
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    getInternalApp()->startWritersRendering(forceBlocking, l);
+    if (forceBlocking) {
+        getInternalApp()->renderWritersBlocking(l);
+    } else {
+        getInternalApp()->renderWritersNonBlocking(l);
+    }
 }
 
 void
@@ -385,7 +389,11 @@ App::renderInternal(bool forceBlocking,
 
         l.push_back(w);
     }
-    getInternalApp()->startWritersRendering(forceBlocking, l);
+    if (forceBlocking) {
+        getInternalApp()->renderWritersBlocking(l);
+    } else {
+        getInternalApp()->renderWritersNonBlocking(l);
+    }
 }
 
 void
