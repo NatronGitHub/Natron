@@ -3588,8 +3588,8 @@ KnobHolder::KnobHolder(const KnobHolder& other)
     QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
     QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
                      SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
-    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobIPtr, int, double, ViewSpec, bool) ), this,
-                     SLOT( onDoValueChangeOnMainThread(KnobIPtr, int, double, ViewSpec, bool) ) );
+    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ), this,
+                     SLOT( onDoValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ) );
 }
 
 KnobHolder::~KnobHolder()

@@ -60,8 +60,6 @@ public:
     // cast to int is implicit
     operator int() const
     {
-        assert(i >= 0);
-
         return i;
     }
 
@@ -107,8 +105,6 @@ public:
     // cast to int is implicit
     operator int() const
     {
-        assert(i >= 0);
-
         return i;
     }
 
