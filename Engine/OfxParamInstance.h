@@ -167,8 +167,8 @@ public Q_SLOTS:
     void onHintTooltipChanged();
     void onEnabledChanged();
     void onLabelChanged();
-    void onDisplayMinMaxChanged(double min, double max, int index);
-    void onMinMaxChanged(double min, double max, int index);
+    void onDisplayMinMaxChanged(DimSpec dimension);
+    void onMinMaxChanged(DimSpec dimension);
     void onKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();

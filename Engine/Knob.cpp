@@ -132,6 +132,10 @@ KnobHelper::getHashingStrategy() const
 void
 KnobHelper::deleteKnob()
 {
+    // Prevent any signal 
+    blockGuiRefreshing();
+    blockValueChanges();
+
     KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
@@ -3576,8 +3580,12 @@ KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
     QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
     QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
                       SLOT(onDoEvaluateOnMainThread(bool,bool)) );
-    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,int,double,ViewSpec,bool)), this,
-                      SLOT(onDoValueChangeOnMainThread(KnobIPtr,int,double,ViewSpec,bool)) );
+    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)), this,
+                      SLOT(onDoValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)) );
+
+    QObject::connect( this, SIGNAL(doBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
+    QObject::connect( this, SIGNAL(doEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
+
 }
 
 KnobHolder::KnobHolder(const KnobHolder& other)
@@ -4492,7 +4500,11 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Call getClipPreferences & render
     if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
-        endKnobsValuesChanged_public(firstKnobReason);
+        if (isMT) {
+            endKnobsValuesChanged_public(firstKnobReason);
+        } else {
+            Q_EMIT doEndKnobsValuesChangedActionOnMainThread(firstKnobReason);
+        }
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(hasHadSignificantChange, mustRefreshMetadatas);
         } else {
@@ -4516,6 +4528,18 @@ KnobHolder::onDoValueChangeOnMainThread(const KnobIPtr& knob,
 }
 
 void
+KnobHolder::onDoBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum reason)
+{
+    beginKnobsValuesChanged_public(reason);
+}
+
+void
+KnobHolder::onDoEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum reason)
+{
+    endKnobsValuesChanged_public(reason);
+}
+
+void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
                               DimSpec dimension,
                               double time,
@@ -4526,12 +4550,19 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
     if ( isInitializingKnobs() ) {
         return;
     }
+
+    bool isMT = QThread::currentThread() == qApp->thread();
+
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
         if (_imp->nbChangesDuringEvaluationBlock == 0) {
             // This is the first change, call begin action
-            beginKnobsValuesChanged_public(originalReason);
+            if (isMT) {
+                beginKnobsValuesChanged_public(originalReason);
+            } else {
+                Q_EMIT doBeginKnobsValuesChangedActionOnMainThread(originalReason);
+            }
         }
 
         KnobChange* foundChange = 0;
@@ -4550,7 +4581,7 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
 
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
-        foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
+        foundChange->originatedFromMainThread = isMT;
         foundChange->time = time;
         foundChange->view = view;
         foundChange->knob = knob;

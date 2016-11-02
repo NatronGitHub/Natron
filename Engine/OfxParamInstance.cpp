@@ -372,8 +372,8 @@ OfxParamToKnob::connectDynamicProperties()
     QObject::connect( handler, SIGNAL(evaluateOnChangeChanged(bool)), this, SLOT(onEvaluateOnChangeChanged(bool)) );
     QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(onSecretChanged()) );
     QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(onEnabledChanged()) );
-    QObject::connect( handler, SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
-    QObject::connect( handler, SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
+    QObject::connect( handler, SIGNAL(displayMinMaxChanged(DimSpec)), this, SLOT(onDisplayMinMaxChanged(DimSpec)) );
+    QObject::connect( handler, SIGNAL(minMaxChanged(DimSpec)), this, SLOT(onMinMaxChanged(DimSpec)) );
     QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHintTooltipChanged()) );
     QObject::connect( handler, SIGNAL(inViewerContextLabelChanged()), this, SLOT(onInViewportLabelChanged()) );
     QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onInViewportSecretChanged()) );
@@ -562,38 +562,76 @@ OfxParamToKnob::onInViewportLabelChanged()
 }
 
 void
-OfxParamToKnob::onDisplayMinMaxChanged(double min,
-                                       double max,
-                                       int index)
+OfxParamToKnob::onDisplayMinMaxChanged(DimSpec dimension)
 {
     DYNAMIC_PROPERTY_CHECK();
 
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    if (!isDouble && !isInt) {
+        return;
+    }
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    if ( hasDoubleMinMaxProps() ) {
-        param->getProperties().setDoubleProperty(kOfxParamPropDisplayMin, min, index);
-        param->getProperties().setDoubleProperty(kOfxParamPropDisplayMax, max, index);
-    } else {
-        param->getProperties().setIntProperty(kOfxParamPropDisplayMin, (int)min, index);
-        param->getProperties().setIntProperty(kOfxParamPropDisplayMax, (int)max, index);
+
+    int nDims = knob->getNDimensions();
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() || i == dimension) {
+
+            if ( hasDoubleMinMaxProps() && isDouble) {
+                double min = isDouble->getMinimum(DimIdx(i));
+                double max = isDouble->getMaximum(DimIdx(i));
+                param->getProperties().setDoubleProperty(kOfxParamPropDisplayMin, min, i);
+                param->getProperties().setDoubleProperty(kOfxParamPropDisplayMax, max, i);
+            } else if (isInt) {
+                int min = isInt->getMinimum(DimIdx(i));
+                int max = isInt->getMaximum(DimIdx(i));
+                param->getProperties().setIntProperty(kOfxParamPropDisplayMin, min, i);
+                param->getProperties().setIntProperty(kOfxParamPropDisplayMax, max, i);
+            }
+        }
     }
+
+
 }
 
 void
-OfxParamToKnob::onMinMaxChanged(double min,
-                                double max,
-                                int index)
+OfxParamToKnob::onMinMaxChanged(DimSpec dimension)
 {
     DYNAMIC_PROPERTY_CHECK();
 
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    KnobIntBasePtr isInt = toKnobIntBase(knob);
+    if (!isDouble && !isInt) {
+        return;
+    }
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    if ( hasDoubleMinMaxProps() ) {
-        param->getProperties().setDoubleProperty(kOfxParamPropMin, min, index);
-        param->getProperties().setDoubleProperty(kOfxParamPropMax, max, index);
-    } else {
-        param->getProperties().setIntProperty(kOfxParamPropMin, (int)min, index);
-        param->getProperties().setIntProperty(kOfxParamPropMax, (int)max, index);
+
+    int nDims = knob->getNDimensions();
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() || i == dimension) {
+
+            if ( hasDoubleMinMaxProps() && isDouble) {
+                double min = isDouble->getMinimum(DimIdx(i));
+                double max = isDouble->getMaximum(DimIdx(i));
+                param->getProperties().setDoubleProperty(kOfxParamPropMin, min, i);
+                param->getProperties().setDoubleProperty(kOfxParamPropMax, max, i);
+            } else if (isInt) {
+                int min = isInt->getMinimum(DimIdx(i));
+                int max = isInt->getMaximum(DimIdx(i));
+                param->getProperties().setIntProperty(kOfxParamPropMin, min, i);
+                param->getProperties().setIntProperty(kOfxParamPropMax, max, i);
+            }
+        }
     }
 }
 

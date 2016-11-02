@@ -1988,6 +1988,8 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
 
         const std::string& name = knobs[i]->getName();
 
+        // Prevent onKnobValuechanged from being called
+        knobs[i]->blockValueChanges();
         for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
             std::string dimensionName = knobs[i]->getNDimensions() > 1 ? name + '.' + knobs[i]->getDimensionName(DimIdx(j)) : name;
             QString qDimName = QString::fromUtf8( dimensionName.c_str() );
@@ -2024,6 +2026,7 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
                 }
             }
         }
+        knobs[i]->unblockValueChanges();
     }
 } // Settings::restoreKnobsFromSettings
 

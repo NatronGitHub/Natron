@@ -441,10 +441,10 @@ Curve::setOrAddKeyframe(KeyFrame key)
             ret = eValueChangedReturnCodeKeyframeModified;
         }
         _imp->keyFrames.erase(it.first);
+        it = addKeyFrameNoUpdate(key);
     } else {
         ret = eValueChangedReturnCodeKeyframeAdded;
     }
-    it = addKeyFrameNoUpdate(key);
     assert(it.second);
     it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
 

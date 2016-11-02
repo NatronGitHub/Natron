@@ -148,7 +148,6 @@ Node::Node(const AppInstancePtr& app,
     , _imp( new NodePrivate(this, app, group, plugin) )
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
-    QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
     if (plugin && QString::fromUtf8(plugin->getPluginID().c_str()).startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
@@ -8288,13 +8287,21 @@ Node::setHideInputsKnobValue(bool hidden)
 void
 Node::onRefreshIdentityStateRequestReceived()
 {
+    if ( !_imp->guiPointer.lock() ) {
+        return;
+    }
 
     assert( QThread::currentThread() == qApp->thread() );
-    if ( (_imp->refreshIdentityStateRequestsCount == 0) || !_imp->effect ) {
+    int refreshStateCount;
+    {
+        QMutexLocker k(&_imp->refreshIdentityStateRequestsCountMutex);
+        refreshStateCount = _imp->refreshIdentityStateRequestsCount;
+        _imp->refreshIdentityStateRequestsCount = 0;
+    }
+    if ( (refreshStateCount == 0) || !_imp->effect ) {
         //was already processed
         return;
     }
-    _imp->refreshIdentityStateRequestsCount = 0;
 
     ProjectPtr project = getApp()->getProject();
     if (project->isLoadingProject()) {
@@ -8346,14 +8353,13 @@ Node::onRefreshIdentityStateRequestReceived()
 void
 Node::refreshIdentityState()
 {
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( !_imp->guiPointer.lock() ) {
-        return;
-    }
 
     //Post a new request
-    ++_imp->refreshIdentityStateRequestsCount;
+    {
+        QMutexLocker k(&_imp->refreshIdentityStateRequestsCountMutex);
+        ++_imp->refreshIdentityStateRequestsCount;
+    }
     Q_EMIT refreshIdentityStateRequested();
 }
 

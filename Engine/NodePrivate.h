@@ -339,6 +339,7 @@ public:
     std::vector<std::string> createdViews;
 
     //To concatenate calls to refreshIdentityState, accessed only on main-thread
+    mutable QMutex refreshIdentityStateRequestsCountMutex;
     int refreshIdentityStateRequestsCount;
     int isRefreshingInputRelatedData; // only used by the main thread
     std::map<Node::StreamWarningEnum, QString> streamWarnings;

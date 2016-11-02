@@ -2856,7 +2856,15 @@ public Q_SLOTS:
 
     void onDoValueChangeOnMainThread(const KnobIPtr& knob, ValueChangedReasonEnum reason, double time, ViewSetSpec view, bool originatedFromMT);
 
+    void onDoBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum);
+
+    void onDoEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum);
+
 Q_SIGNALS:
+
+    void doBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum);
+
+    void doEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum);
 
     void doEndChangesOnMainThread();
 

@@ -329,7 +329,7 @@ EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
 
     // If any knob has an expression, we must clear its results and clear its hash cache
     // because the result of the expression might depend on the state of the node
-    const KnobsVec & knobs = getKnobs();
+    KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         for (int i = 0; i < (*it)->getNDimensions(); ++i) {
             std::string expr = (*it)->getExpression(DimIdx(i));
