@@ -536,7 +536,7 @@ KnobGuiValue::onSliderResetToDefaultRequested()
     std::list<KnobIPtr> knobsList;
     knobsList.push_back(knob);
 
-    getKnobGui()->pushUndoCommand( new RestoreDefaultsCommand(false, knobsList, DimSpec::all(), getView()) );
+    getKnobGui()->pushUndoCommand( new RestoreDefaultsCommand(knobsList, DimSpec::all(), getView()) );
 }
 
 bool
@@ -1065,6 +1065,26 @@ void
 KnobGuiValue::setWidgetsVisible(bool visible)
 {
     _imp->container->setVisible(visible);
+}
+
+void
+KnobGuiValue::setWidgetsVisibleInternal(bool visible)
+{
+    for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
+        _imp->spinBoxes[i].first->setVisible(visible);
+        if (_imp->spinBoxes[i].second) {
+            _imp->spinBoxes[i].second->setVisible(visible);
+        }
+    }
+    if (_imp->slider) {
+        _imp->slider->setVisible(visible);
+    }
+    if (_imp->dimensionSwitchButton) {
+        _imp->dimensionSwitchButton->setVisible(visible);
+    }
+    if (_imp->rectangleFormatButton) {
+        _imp->rectangleFormatButton->setVisible(visible);
+    }
 }
 
 void

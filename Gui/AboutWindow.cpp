@@ -482,7 +482,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         if ( !rowsTmp[i].startsWith( QString::fromUtf8("LICENSE-") ) ) {
             continue;
         }
-        TableItemPtr item = TableItem::create();
+        TableItemPtr item = TableItem::create(_model);
         item->setText(0, rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
         item->setFlags(0, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         _model->setRow(i, item);

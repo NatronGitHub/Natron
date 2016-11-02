@@ -1650,6 +1650,8 @@ AppInstance::renderWritersInternal(bool doBlockingRender,
         while (!_imp->activeRenders.empty()) {
             // check every 50ms if the queue is not empty
             k.unlock();
+            // process events so that the onQueuedRenderFinished slot can be called
+            // to clear the activeRenders queue if needed
             QCoreApplication::processEvents();
             k.relock();
             _imp->activeRendersNotEmptyCond.wait(&_imp->renderQueueMutex, 50);

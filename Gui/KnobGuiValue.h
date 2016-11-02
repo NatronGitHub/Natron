@@ -144,6 +144,8 @@ protected:
 
 protected:
 
+    void setWidgetsVisibleInternal(bool visible);
+
     /**
      * @brief Normalized parameters handling. It converts from project format
      * to normailzed coords or from project format to normalized coords.

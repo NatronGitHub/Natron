@@ -203,6 +203,11 @@ ProgressPanel::~ProgressPanel()
 {
 }
 
+TableModelPtr
+ProgressPanel::getModel() const
+{
+    return _imp->model;
+}
 void
 ProgressPanel::onShowProgressPanelTimerTriggered()
 {

@@ -137,10 +137,6 @@ public Q_SLOTS:
     void onDialogCurrentColorChanged(const QColor & color);
 
 
-Q_SIGNALS:
-
-    void dimensionSwitchToggled(bool b);
-
 private:
 
     void setPickingEnabledInternal(bool enabled);

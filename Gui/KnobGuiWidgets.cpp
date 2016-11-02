@@ -90,7 +90,7 @@ void
 KnobGuiWidgets::enableRightClickMenu(const KnobGuiPtr& knob,
                                      QWidget* widget,
                                      DimSpec dimension,
-                                     ViewIdx view)
+                                     ViewSetSpec view)
 {
 
     KnobIPtr internalKnob = knob->getKnob();

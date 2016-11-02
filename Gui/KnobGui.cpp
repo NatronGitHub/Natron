@@ -87,7 +87,7 @@ KnobGui::initialize()
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
-        QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onInternalValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
+        QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onMustRefreshGuiActionTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
         QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,DimIdx)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewIdx,DimIdx)));
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
@@ -182,6 +182,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
  **/
 static void
 findKnobsOnSameLine(const KnobsVec& knobs,
+                    KnobGui::KnobLayoutTypeEnum layoutType,
                     const KnobIPtr& ref,
                     std::vector<KnobIWPtr>& knobsOnSameLine,
                     KnobIPtr* prevKnob)
@@ -204,8 +205,15 @@ findKnobsOnSameLine(const KnobsVec& knobs,
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
     KnobIPtr parent = ref->getParentKnob();
-
-    while ( k >= 0 && !knobs[k]->isNewLineActivated() ) {
+    bool isPreviousNewLineActivated = true;
+    if (k >= 0) {
+        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+            isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
+        } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
+            isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
+        }
+    }
+    while ( k >= 0 && !isPreviousNewLineActivated ) {
         if (parent) {
             assert(knobs[k]->getParentKnob() == parent);
             knobsOnSameLine.push_back(knobs[k]);
@@ -217,11 +225,30 @@ findKnobsOnSameLine(const KnobsVec& knobs,
             }
         }
         --k;
+        if (k >= 0) {
+            if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+                isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
+            } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
+                isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
+            } else {
+                isPreviousNewLineActivated = true;
+            }
+        }
     }
 
     ///find all knobs forward that are on the same line.
     k = idx;
-    while ( k < (int)(knobs.size() - 1) && !knobs[k]->isNewLineActivated() ) {
+    if (k >= 0 &&  k < (int)(knobs.size() - 1)) {
+        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+            isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
+        } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
+            isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
+        } else {
+            isPreviousNewLineActivated = true;
+        }
+
+    }
+    while ( k < (int)(knobs.size() - 1) && !isPreviousNewLineActivated ) {
         if (parent) {
             assert(knobs[k + 1]->getParentKnob() == parent);
             knobsOnSameLine.push_back(knobs[k + 1]);
@@ -233,34 +260,59 @@ findKnobsOnSameLine(const KnobsVec& knobs,
             }
         }
         ++k;
+        if (k >= 0 &&  k < (int)(knobs.size() - 1)) {
+            if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+                isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
+            } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
+                isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
+            } else {
+                isPreviousNewLineActivated = true;
+            }
+        }
     }
-} // findKnobsOnSameLine
+} // findKnobsOnSame
 
 void
 KnobGuiPrivate::refreshIsOnNewLineFlag()
 {
     KnobIPtr  k = knob.lock();
-    // Find all knobs on the same layout line
-    KnobIPtr parentKnob = k->getParentKnob();
-    KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
+
     KnobIPtr prevKnobOnLine;
-    if (isParentGroup) {
-        // If the parent knob is a group, knobs on the same line have to be found in the children
-        // of the parent
-        KnobsVec groupsiblings = isParentGroup->getChildren();
-        findKnobsOnSameLine(groupsiblings, k, knobsOnSameLine, &prevKnobOnLine);
-    } else {
-        // Parent is a page, find the siblings in the children of the page
-        KnobPagePtr isParentPage = toKnobPage(parentKnob);
-        if (isParentPage) {
-            KnobsVec pagesiblings = isParentPage->getChildren();
-            findKnobsOnSameLine(pagesiblings, k, knobsOnSameLine, &prevKnobOnLine);
+    // Find all knobs on the same layout line
+    if (layoutType == KnobGui::eKnobLayoutTypePage) {
+        KnobIPtr parentKnob = k->getParentKnob();
+        KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
+        if (isParentGroup) {
+            // If the parent knob is a group, knobs on the same line have to be found in the children
+            // of the parent
+            KnobsVec groupsiblings = isParentGroup->getChildren();
+            findKnobsOnSameLine(groupsiblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+        } else {
+            // Parent is a page, find the siblings in the children of the page
+            KnobPagePtr isParentPage = toKnobPage(parentKnob);
+            if (isParentPage) {
+                KnobsVec pagesiblings = isParentPage->getChildren();
+                findKnobsOnSameLine(pagesiblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+            }
         }
+    } else if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+        assert(k->getHolder());
+        KnobsVec viewerKnobs = k->getHolder()->getViewerUIKnobs();
+        findKnobsOnSameLine(viewerKnobs, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
     }
+    
+    isOnNewLine = true;
+    bool canStayOnSameLine = prevKnobOnLine;
     prevKnob = prevKnobOnLine;
 
+    if (canStayOnSameLine) {
+        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI && prevKnobOnLine->getInViewerContextLayoutType() != eViewerContextLayoutTypeAddNewLine) {
+            isOnNewLine = false;
+        } else if (layoutType == KnobGui::eKnobLayoutTypePage && !prevKnobOnLine->isNewLineActivated()) {
+            isOnNewLine = false;
+        }
+    }
 
-    isOnNewLine = !prevKnobOnLine || prevKnobOnLine->isNewLineActivated() || k->getViewsList().size() > 1;
 } // refreshIsOnNewLineFlag
 
 bool
@@ -279,26 +331,15 @@ KnobGui::isLabelOnSameColumn() const
 }
 
 QWidget*
-KnobGui::getFieldContainer(ViewIdx view) const
+KnobGui::getFieldContainer() const
 {
-    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
-    if (foundView == _imp->views.end()) {
-        return 0;
-    }
-    return foundView->second.field;
+    return _imp->mainContainer;
 }
 
 QWidget*
-KnobGui::getLabelContainer(ViewIdx view) const
+KnobGui::getLabelContainer() const
 {
-    if (view == ViewIdx(0)) {
-        return _imp->labelContainer;
-    }
-    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
-    if (foundView == _imp->views.end()) {
-        return 0;
-    }
-    return foundView->second.viewLabel;
+    return _imp->labelContainer;
 }
 
 
@@ -313,29 +354,20 @@ KnobGui::getWidgetsForView(ViewIdx view)
 }
 
 void
-KnobGui::createViewWidgets(QWidget* parentWidget, ViewIdx view)
+KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
 {
+
+
     KnobGuiPtr thisShared = shared_from_this();
 
     KnobGuiPrivate::ViewWidgets& viewWidgets = _imp->views[view];
 
-    if (_imp->isOnNewLine) {
-        // Create a new container and layout
-        viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(parentWidget);
-        viewWidgets.fieldLayout = new QHBoxLayout(viewWidgets.field);
-        viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
-        viewWidgets.fieldLayout->setSpacing( TO_DPIY(2) );
-        viewWidgets.fieldLayout->setAlignment(Qt::AlignLeft);
-    } else {
-        KnobIPtr prevKnob = _imp->prevKnob.lock();
-        assert(prevKnob);
-        KnobGuiPtr prevKnobGui = _imp->container->getKnobGui(prevKnob);
-        assert(prevKnobGui);
-
-        // Otherwise re-use the last row widget and layout
-        viewWidgets.field = prevKnobGui->getFieldContainer(ViewIdx(0));
-        viewWidgets.fieldLayout = dynamic_cast<QHBoxLayout*>( viewWidgets.field->layout() );
-    }
+    // Create a new container and layout
+    viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(parentWidget);
+    viewWidgets.fieldLayout = new QHBoxLayout(viewWidgets.field);
+    viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
+    viewWidgets.fieldLayout->setSpacing( TO_DPIY(2) );
+    viewWidgets.fieldLayout->setAlignment(Qt::AlignLeft);
 
 
     KnobIPtr knob = _imp->knob.lock();
@@ -348,27 +380,42 @@ KnobGui::createViewWidgets(QWidget* parentWidget, ViewIdx view)
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
         viewWidgets.fieldLayout->addWidget(_imp->customInteract);
     } else {
-        KnobGuiWidgetsPtr widgets(appPTR->createGuiForKnob(thisShared, view));
-        widgets->createWidget(viewWidgets.fieldLayout);
-        widgets->updateToolTip();
-
-        if ( knob->isNewLineActivated() && widgets->shouldAddStretch() ) {
-            viewWidgets.fieldLayout->addStretch();
-        }
+        viewWidgets.widgets.reset(appPTR->createGuiForKnob(thisShared, view));
     }
 
-    
+    _imp->viewsContainerLayout->addWidget(viewWidgets.field);
 
 } // createViewWidgets
+
+void
+KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it)
+{
+
+    // createViewContainers must have been called before
+    if (it->second.widgets) {
+        KnobIPtr k = knob.lock();
+        it->second.widgets->createWidget(it->second.fieldLayout);
+        it->second.widgets->updateToolTip();
+
+        if ( k->isNewLineActivated() && it->second.widgets->shouldAddStretch() ) {
+            it->second.fieldLayout->addStretch();
+        }
+    }
+}
+
 
 void
 KnobGuiPrivate::createLabel(QWidget* parentWidget)
 {
 
+    // createViewContainers must have been called
     assert(!views.empty());
     KnobGuiWidgetsPtr firstViewWidgets = views.begin()->second.widgets;
+    bool mustCreateLabel = firstViewWidgets->mustCreateLabelWidget();
 
     KnobIPtr k = knob.lock();
+    KnobGuiPtr thisShared = _publicInterface->shared_from_this();
+
     std::string labelText,labelIconFilePath;
     if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
         labelText = k->getInViewerContextLabel();
@@ -381,54 +428,141 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
         labelIconFilePath = k->getIconLabel();
     }
 
-    QHBoxLayout* labelLayout = 0;
-    if (isOnNewLine) {
-        labelContainer = new QWidget(parentWidget);
-        labelLayout = new QHBoxLayout(labelContainer);
-        double verticalMargin = layoutType == KnobGui::eKnobLayoutTypePage ? TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) : 0;
-        labelLayout->setContentsMargins(TO_DPIX(3), 0, 0, verticalMargin);
-        labelLayout->setSpacing( TO_DPIY(2) );
+    labelContainer = new QWidget(parentWidget);
+    QHBoxLayout* labelLayout = new QHBoxLayout(labelContainer);
+    double verticalMargin = layoutType == KnobGui::eKnobLayoutTypePage ? TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) : 0;
+    labelLayout->setContentsMargins(TO_DPIX(3), 0, 0, verticalMargin);
+    labelLayout->setSpacing( TO_DPIY(2) );
+
+    if (mustCreateLabel) {
+
+        descriptionLabel = new KnobClickableLabel(QString(), thisShared, ViewSetSpec::all(), parentWidget);
+        KnobGuiContainerHelper::setLabelFromTextAndIcon(descriptionLabel, QString::fromUtf8(labelText.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), firstViewWidgets->isLabelBold());
+
+        // Make a warning indicator
+        warningIndicator = new Label(parentWidget);
+        warningIndicator->setVisible(false);
+
+
+        QFontMetrics fm(descriptionLabel->font(), 0);
+        int pixSize = fm.height();
+        QPixmap stdErrorPix;
+        stdErrorPix = KnobGuiContainerHelper::getStandardIcon(QMessageBox::Critical, pixSize, descriptionLabel);
+        warningIndicator->setPixmap(stdErrorPix);
+
+
+        QObject::connect( descriptionLabel, SIGNAL(clicked(bool)), _publicInterface, SIGNAL(labelClicked(bool)) );
     }
-
-    KnobGuiPtr thisShared = _publicInterface->shared_from_this();
-
-#pragma message WARN("Pass ViewSetSpec::all() instead of ViewIdx(0) here")
-    descriptionLabel = new KnobClickableLabel(QString(), thisShared, ViewIdx(0), parentWidget);
-    KnobGuiContainerHelper::setLabelFromTextAndIcon(descriptionLabel, QString::fromUtf8(labelText.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), firstViewWidgets->isLabelBold());
-
-    // Make a warning indicator
-    warningIndicator = new Label(parentWidget);
-    warningIndicator->setVisible(false);
-
-
-    QFontMetrics fm(descriptionLabel->font(), 0);
-    int pixSize = fm.height();
-    QPixmap stdErrorPix;
-    stdErrorPix = KnobGuiContainerHelper::getStandardIcon(QMessageBox::Critical, pixSize, descriptionLabel);
-    warningIndicator->setPixmap(stdErrorPix);
-
-
-    QObject::connect( descriptionLabel, SIGNAL(clicked(bool)), _publicInterface, SIGNAL(labelClicked(bool)) );
-
 
     // if multi-view, create an arrow to show/hide all dimensions
     if (views.size() > 1) {
-        viewUnfoldArrow = new GroupBoxLabel(parentWidget);
+        viewUnfoldArrow = new GroupBoxLabel(labelContainer);
         viewUnfoldArrow->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         viewUnfoldArrow->setChecked(true);
         QObject::connect( viewUnfoldArrow, SIGNAL(checked(bool)), _publicInterface, SLOT(onMultiViewUnfoldClicked(bool)) );
-    }
+        labelLayout->addWidget(viewUnfoldArrow);
 
+        assert(k->getHolder() && k->getHolder()->getApp());
+        const std::vector<std::string>& projectViews = k->getHolder()->getApp()->getProject()->getProjectViewNames();
 
-    if (isOnNewLine) {
-        labelLayout->addWidget(warningIndicator);
-        labelLayout->addWidget(descriptionLabel);
-        if (viewUnfoldArrow) {
-            labelLayout->addWidget(viewUnfoldArrow);
+        // Create per-view label
+        for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = views.begin(); it != views.end(); ++it) {
+            if (it->second.field) {
+
+                // Create the view label
+                std::string viewShortName;
+                // Use the first character of the view name as label
+                if (it->first >= 0 && it->first < (int)projectViews.size()) {
+                    if (!projectViews[it->first].empty()) {
+                        viewShortName = projectViews[it->first][0];
+                    }
+                }
+                it->second.viewLabel = new KnobClickableLabel(QString::fromUtf8(viewShortName.c_str()), thisShared, it->first, parentWidget);
+                it->second.fieldLayout->addWidget(it->second.viewLabel);
+                viewsContainerLayout->addWidget(it->second.field);
+            }
         }
     }
 
+
+    if (warningIndicator) {
+        labelLayout->addWidget(warningIndicator);
+    }
+    if (descriptionLabel) {
+        labelLayout->addWidget(descriptionLabel);
+    }
+    if (viewUnfoldArrow) {
+        labelLayout->addWidget(viewUnfoldArrow);
+    }
+
+
 } // createLabel
+
+
+static void
+addVerticalLineSpacer(QBoxLayout* layout)
+{
+    layout->addSpacing( TO_DPIX(5) );
+    QFrame* line = new QFrame( layout->parentWidget() );
+    line->setFrameShape(QFrame::VLine);
+    line->setFrameShadow(QFrame::Raised);
+    QPalette palette;
+    palette.setColor(QPalette::Foreground, Qt::black);
+    line->setPalette(palette);
+    layout->addWidget(line);
+    layout->addSpacing( TO_DPIX(5) );
+}
+
+void
+KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
+{
+    KnobIPtr prev = prevKnob.lock();
+    assert(prev);
+    KnobGuiPtr prevKnobGui = container->getKnobGui(prev);
+    assert(prevKnobGui);
+
+    QHBoxLayout* prevMainLayout = prevKnobGui->_imp->mainLayout;
+    assert(prevMainLayout);
+
+    if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
+        assert(prevKnobGui->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI);
+        switch (prev->getInViewerContextLayoutType()) {
+            case eViewerContextLayoutTypeSeparator:
+                addVerticalLineSpacer(prevMainLayout);
+                break;
+            case eViewerContextLayoutTypeSpacing: {
+                int spacing = TO_DPIX(prev->getInViewerContextItemSpacing());
+                if (spacing > 0) {
+                    prevMainLayout->addSpacing(spacing);
+                }
+            }   break;
+            case eViewerContextLayoutTypeStretchAfter:
+                prevMainLayout->addStretch();
+                break;
+            default:
+                // We cannot be here, this function should not be called if we were
+                // to add a new line in the layout.
+                assert(false);
+                break;
+        }
+    } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
+        int spacing = TO_DPIX(prev->getSpacingBetweenitems());
+        // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
+        // The minimum allowed spacing should be 1px
+        if (spacing == 0) {
+            spacing = TO_DPIX(container->getItemsSpacingOnSameLine());
+        }
+        if (spacing > 0) {
+            prevMainLayout->addSpacing(spacing);
+        }
+    }
+
+    prevMainLayout->addWidget(labelContainer);
+
+    // Separate the label and the actual field by 2 px
+    prevMainLayout->addSpacing(TO_DPIX(2));
+    prevMainLayout->addWidget(mainContainer);
+} // addWidgetsToPreviousKnobLayout
 
 
 void
@@ -437,61 +571,53 @@ KnobGui::createGUI(QWidget* parentWidget)
     _imp->guiRemoved = false;
     KnobIPtr knob = getKnob();
 
-    // Set the isOnNewLineFlag for page layout
-    if (_imp->layoutType == eKnobLayoutTypePage) {
-        _imp->refreshIsOnNewLineFlag();
-    }
+    // Set the isOnNewLineFlag 
+    _imp->refreshIsOnNewLineFlag();
+
+
+    // Create the main container
+    _imp->mainContainer = new QWidget(parentWidget);
+    _imp->mainLayout = new QHBoxLayout(_imp->mainContainer);
+    _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->mainLayout->setSpacing(0);
+
+    // Create the per-view container
+    _imp->viewsContainer = new QWidget(_imp->mainContainer);
+    _imp->viewsContainerLayout = new QVBoxLayout(_imp->viewsContainer);
+    _imp->viewsContainerLayout->setSpacing(TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
+    _imp->viewsContainerLayout->setContentsMargins(0, 0, 0, 0);
+
+
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
 
-    // Create row widgets for each view
+    // Create row widgets container for each view
     std::list<ViewIdx> views = knob->getViewsList();
     for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
-        createViewWidgets(parentWidget, *it);
+        createViewContainers(parentWidget, *it);
     }
 
 
     assert(!_imp->views.empty());
     KnobGuiWidgetsPtr firstViewWidgets = _imp->views.begin()->second.widgets;
 
-    // Create the label if needed
-    if (firstViewWidgets->mustCreateLabelWidget()) {
-        _imp->createLabel(parentWidget);
+    _imp->createLabel(parentWidget);
+
+    _imp->mainLayout->addWidget(_imp->viewsContainer);
+
+
+    // Now create the widgets for each view, they will be appended to the row layout created in createViewContainers
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        _imp->createViewWidgets(it);
     }
 
-    
-    // If not on a new line, add to the previous knob layout the current knob
+
+    // If not on a new line, add to the previous knob layout this knob's label
     if (!_imp->isOnNewLine) {
-        QHBoxLayout* prevKnobLayout = _imp->views.begin()->second.fieldLayout;
-
-        int spacing;
-        bool isViewerParam = _imp->container->isInViewerUIKnob();
-        if (isViewerParam) {
-            spacing = _imp->container->getItemsSpacingOnSameLine();
-        } else {
-            spacing = _imp->spacingBeforePrevKnob;//knob->getSpacingBetweenitems();
-            // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
-            // The minimum allowed spacing should be 1px
-            if (spacing == 0) {
-                spacing = _imp->container->getItemsSpacingOnSameLine();;
-            }
-        }
-        if (spacing > 0) {
-            prevKnobLayout->addSpacing( TO_DPIX(spacing) );
-        }
-        if (_imp->labelContainer) {
-            prevKnobLayout->addWidget(_imp->labelContainer);
-        } else {
-            if (_imp->warningIndicator) {
-                prevKnobLayout->addWidget(_imp->warningIndicator);
-            }
-            if (_imp->descriptionLabel) {
-                prevKnobLayout->addWidget(_imp->descriptionLabel);
-            }
-        }
+        _imp->addWidgetsToPreviousKnobLayout();
     }
-    
-    
+
+
     if (_imp->descriptionLabel) {
         toolTip(_imp->descriptionLabel, ViewIdx(0));
     }
@@ -543,7 +669,7 @@ KnobGui::onRightClickClicked(const QPoint & pos)
     QWidget *widget = qobject_cast<QWidget *>( sender() );
 
     if (widget) {
-        ViewIdx view(widget->property(KNOB_RIGHT_CLICK_VIEW_PROPERTY).toInt());
+        ViewSetSpec view(widget->property(KNOB_RIGHT_CLICK_VIEW_PROPERTY).toInt());
         DimSpec dim(widget->property(KNOB_RIGHT_CLICK_DIM_PROPERTY).toInt());
         showRightClickMenuForDimension(pos, dim, view);
     }
@@ -551,7 +677,7 @@ KnobGui::onRightClickClicked(const QPoint & pos)
 
 void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
-                                        DimSpec dimension, ViewIdx view)
+                                        DimSpec dimension, ViewSetSpec view)
 {
     KnobIPtr knob = getKnob();
     bool isViewerKnob = _imp->layoutType == KnobGui::eKnobLayoutTypeViewerUI;
@@ -571,14 +697,18 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
 Menu*
 KnobGui::createInterpolationMenu(QMenu* menu,
-                                 DimSpec dimension, ViewIdx view,
+                                 DimSpec dimension, ViewSetSpec view,
                                  bool isEnabled)
 {
     Menu* interpolationMenu = new Menu(menu);
     QString title;
 
     if (dimension.isAll()) {
-        title = tr("Interpolation (all dimensions)");
+        if (view.isAll()) {
+            title = tr("Interpolation (all views)");
+        } else {
+            title = tr("Interpolation (all dimensions)");
+        }
     } else {
         title = tr("Interpolation");
     }
@@ -640,7 +770,7 @@ KnobGui::createInterpolationMenu(QMenu* menu,
 }
 
 void
-KnobGui::getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec* dimension)
+KnobGui::getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimSpec* dimension)
 {
     QList<QVariant> actionData = action->data().toList();
     if (actionData.size() != 2) {
@@ -649,7 +779,7 @@ KnobGui::getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec*
     QList<QVariant>::iterator it = actionData.begin();
     *dimension = DimSpec(it->toInt());
     ++it;
-    *view = ViewIdx(it->toInt());
+    *view = ViewSetSpec(it->toInt());
 }
 
 bool
@@ -662,16 +792,25 @@ KnobGui::getAllDimensionsVisible(ViewIdx view) const
     return foundView->second.widgets ? foundView->second.widgets->getAllDimensionsVisible() : false;
 }
 
-void
-KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
+bool
+KnobGui::getAllViewsVisible() const
 {
-    if ( (dimension == 0) && !getAllDimensionsVisible(view) ) {
+    if (!_imp->viewUnfoldArrow) {
+        return true;
+    }
+    return _imp->viewUnfoldArrow->isChecked();
+}
+
+void
+KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view)
+{
+    if ( (dimension == 0) && !view.isAll() && !getAllDimensionsVisible(ViewIdx(view)) ) {
         dimension = DimSpec::all();
     }
 
-    KnobIPtr knob = getKnob();
-    assert( dimension >= -1 && dimension < knob->getNDimensions() );
     menu->clear();
+
+    KnobIPtr knob = getKnob();
     bool dimensionHasKeyframeAtTime = false;
     bool hasAllKeyframesAtTime = true;
     int nDims = knob->getNDimensions();
@@ -682,55 +821,70 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
     }
 
 
-    for (int i = 0; i < nDims; ++i) {
-        AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), view);
-        if (lvl != eAnimationLevelOnKeyframe) {
-            hasAllKeyframesAtTime = false;
-        } else if ( dimension == i && (lvl == eAnimationLevelOnKeyframe) ) {
-            dimensionHasKeyframeAtTime = true;
-        }
-    }
-
     bool hasDimensionSlaved = false;
     bool hasAnimation = false;
     bool dimensionHasAnimation = false;
     bool isDimensionEnabled = true;
     bool dimensionIsSlaved = false;
     bool hasDimensionDisabled = false;
-    for (int i = 0; i < nDims; ++i) {
-        if ( knob->isSlave(DimIdx(i), view) ) {
-            hasDimensionSlaved = true;
 
-            if (i == dimension) {
-                dimensionIsSlaved = true;
-            }
-        }
-        if (knob->getKeyFramesCount(view, DimIdx(i)) > 0) {
-            hasAnimation = true;
-            if (dimension == i) {
-                dimensionHasAnimation = true;
-            }
-        }
+    std::list<ViewIdx> views;
+    if (view.isAll()) {
+        views = getKnob()->getViewsList();
+    } else {
+        views.push_back(ViewIdx(view));
+    }
 
-        if (hasDimensionSlaved && hasAnimation) {
-            break;
-        }
-        if ( !knob->isEnabled(DimIdx(i), view) ) {
-            hasDimensionDisabled = true;
-            if (dimension == DimIdx(i)) {
-                isDimensionEnabled = false;
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+
+            AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), *it);
+            if (lvl != eAnimationLevelOnKeyframe) {
+                hasAllKeyframesAtTime = false;
+            } else if ( dimension == i && (lvl == eAnimationLevelOnKeyframe) ) {
+                dimensionHasKeyframeAtTime = true;
+            }
+
+            if ( knob->isSlave(DimIdx(i), *it) ) {
+                hasDimensionSlaved = true;
+
+                if (i == dimension) {
+                    dimensionIsSlaved = true;
+                }
+            }
+            if (knob->getKeyFramesCount(*it, DimIdx(i)) > 0) {
+                hasAnimation = true;
+                if (dimension == i) {
+                    dimensionHasAnimation = true;
+                }
+            }
+
+            if (hasDimensionSlaved && hasAnimation) {
+                break;
+            }
+            if ( !knob->isEnabled(DimIdx(i), *it) ) {
+                hasDimensionDisabled = true;
+                if (dimension == DimIdx(i)) {
+                    isDimensionEnabled = false;
+                }
             }
         }
     }
 
-
+    bool isAllViewsAction = views.size() > 1;
 
     bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp();
 
-    if ( (knob->getNDimensions() > 1) && knob->isAnimationEnabled() && !hasDimensionSlaved && isAppKnob ) {
+    if ( (knob->getNDimensions() > 1 || views.size() > 1) && knob->isAnimationEnabled() && !hasDimensionSlaved && isAppKnob ) {
         ///Multi-dim actions
         if (!hasAllKeyframesAtTime) {
-            QAction* setKeyAction = new QAction(tr("Set Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
+            QString label;
+            if (isAllViewsAction) {
+                label = tr("Set Key (all views)");
+            } else {
+                label = tr("Set Key (all dimensions)");
+            }
+            QAction* setKeyAction = new QAction(label, menu);
             QList<QVariant> actionData;
             actionData.push_back((int)DimSpec::all());
             actionData.push_back((int)view);
@@ -741,7 +895,13 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
                 setKeyAction->setEnabled(false);
             }
         } else {
-            QAction* removeKeyAction = new QAction(tr("Remove Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
+            QString label;
+            if (isAllViewsAction) {
+                label = tr("Remove Key (all views)");
+            } else {
+                label = tr("Remove Key (all dimensions)");
+            }
+            QAction* removeKeyAction = new QAction(label, menu);
             QList<QVariant> actionData;
             actionData.push_back((int)DimSpec::all());
             actionData.push_back((int)view);
@@ -754,7 +914,13 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
         }
 
         if (hasAnimation) {
-            QAction* removeAnyAnimationAction = new QAction(tr("Remove animation") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
+            QString label;
+            if (isAllViewsAction) {
+                label = tr("Remove Animation (all views)");
+            } else {
+                label = tr("Remove Animation (all dimensions)");
+            }
+            QAction* removeAnyAnimationAction = new QAction(label, menu);
             QList<QVariant> actionData;
             actionData.push_back((int)DimSpec::all());
             actionData.push_back((int)view);
@@ -766,7 +932,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             menu->addAction(removeAnyAnimationAction);
         }
     }
-    if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && knob->isAnimationEnabled() && !dimensionIsSlaved && isAppKnob ) {
+    if ( !isAllViewsAction && ( (!dimension.isAll()) || (knob->getNDimensions() == 1) ) && knob->isAnimationEnabled() && !dimensionIsSlaved && isAppKnob ) {
         if ( !menu->isEmpty() ) {
             menu->addSeparator();
         }
@@ -827,7 +993,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             Q_UNUSED(interpMenu);
         }
         if (dimensionHasAnimation && !dimensionIsSlaved) {
-            if ( !dimension.isAll() || (knob->getNDimensions() == 1) ) {
+            if ( !isAllViewsAction && (!dimension.isAll() || (knob->getNDimensions() == 1)) ) {
                 Menu* interpMenu = createInterpolationMenu(menu, !dimension.isAll() ? dimension : DimSpec(0), view, isDimensionEnabled);
                 Q_UNUSED(interpMenu);
             }
@@ -839,7 +1005,8 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
         Menu* copyMenu = new Menu(menu);
         copyMenu->setTitle( tr("Copy") );
 
-        if (!dimension.isAll() || nDims == 1) {
+        if (!isAllViewsAction && (!dimension.isAll() || nDims == 1)) {
+            assert(!isAllViewsAction);
             if (hasAnimation && isAppKnob) {
                 QAction* copyAnimationAction = new QAction(tr("Copy Animation"), copyMenu);
                 QList<QVariant> actionData;
@@ -874,10 +1041,14 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 
         if (knob->getNDimensions() > 1) {
             if (hasAnimation && isAppKnob) {
-                QString title = tr("Copy Animation");
-                title += QLatin1Char(' ');
-                title += tr("(all dimensions)");
-                QAction* copyAnimationAction = new QAction(title, copyMenu);
+                QString label;
+                if (isAllViewsAction) {
+                    label = tr("Copy Animation (all views)");
+                } else {
+                    label = tr("Copy Animation (all dimensions)");
+                }
+
+                QAction* copyAnimationAction = new QAction(label, copyMenu);
                 QList<QVariant> actionData;
                 actionData.push_back((int)DimSpec::all());
                 actionData.push_back((int)view);
@@ -886,10 +1057,14 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
                 copyMenu->addAction(copyAnimationAction);
             }
             {
-                QString title = tr("Copy Values");
-                title += QLatin1Char(' ');
-                title += tr("(all dimensions)");
-                QAction* copyValuesAction = new QAction(title, copyMenu);
+                QString label;
+                if (isAllViewsAction) {
+                    label = tr("Copy Values (all views)");
+                } else {
+                    label = tr("Copy Values (all dimensions)");
+                }
+
+                QAction* copyValuesAction = new QAction(label, copyMenu);
                 QList<QVariant> actionData;
                 actionData.push_back((int)DimSpec::all());
                 actionData.push_back((int)view);
@@ -899,10 +1074,13 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             }
 
             if (isAppKnob) {
-                QString title = tr("Copy Link");
-                title += QLatin1Char(' ');
-                title += tr("(all dimensions)");
-                QAction* copyLinkAction = new QAction(title, copyMenu);
+                QString label;
+                if (isAllViewsAction) {
+                    label = tr("Copy Link (all views)");
+                } else {
+                    label = tr("Copy Link (all dimensions)");
+                }
+                QAction* copyLinkAction = new QAction(label, copyMenu);
                 QList<QVariant> actionData;
                 actionData.push_back((int)DimSpec::all());
                 actionData.push_back((int)view);
@@ -922,7 +1100,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 
     //cbDim is ignored for now
     DimSpec cbDim;
-    ViewIdx cbView;
+    ViewSetSpec cbView;
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim, &cbView);
 
 
@@ -942,9 +1120,15 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             if (!ignorePaste) {
                 if ( cbDim.isAll() && ( fromKnob->getNDimensions() == knob->getNDimensions() ) && !hasDimensionSlaved ) {
                     QString title = titlebase;
-                    if (knob->getNDimensions() > 1) {
+                    if (isAllViewsAction) {
                         title += QLatin1Char(' ');
-                        title += tr("(all dimensions)");
+                        title += tr("(all views)");
+                    } else {
+                        if (knob->getNDimensions() > 1) {
+                            title += QLatin1Char(' ');
+                            title += tr("(all dimensions)");
+
+                        }
                     }
                     QAction* pasteAction = new QAction(title, menu);
                     QList<QVariant> actionData;
@@ -958,7 +1142,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
                     }
                 }
 
-                if ( ( !dimension.isAll() || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
+                if ( !isAllViewsAction && ( !dimension.isAll() || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
                     QAction* pasteAction = new QAction(titlebase, menu);
                     QList<QVariant> actionData;
                     actionData.push_back(dimension.isAll() ? 0 : (int)dimension);
@@ -975,7 +1159,13 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
     }
 
     if ( (knob->getNDimensions() > 1) && !hasDimensionSlaved ) {
-        QAction* resetDefaultAction = new QAction(tr("Reset to default") + QLatin1Char(' ') + tr("(all dimensions)"), _imp->copyRightClickMenu);
+        QString label;
+        if (isAllViewsAction) {
+            label = tr("Reset to default (all views)");
+        } else {
+            label = tr("Reset to default (all dimensions)");
+        }
+        QAction* resetDefaultAction = new QAction(label, _imp->copyRightClickMenu);
         QList<QVariant> actionData;
         actionData.push_back((int)DimSpec::all());
         actionData.push_back((int)view);
@@ -986,7 +1176,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             resetDefaultAction->setEnabled(false);
         }
     }
-    if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
+    if ( !isAllViewsAction && ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved ) {
         QAction* resetDefaultAction = new QAction(tr("Reset to default"), _imp->copyRightClickMenu);
         QList<QVariant> actionData;
         actionData.push_back((int)dimension);
@@ -1006,17 +1196,34 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
 
     bool dimensionHasExpression = false;
     bool hasExpression = false;
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        std::string dimExpr = knob->getExpression(DimIdx(i), view);
-        if (i == dimension) {
-            dimensionHasExpression = !dimExpr.empty();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+            std::string dimExpr = knob->getExpression(DimIdx(i), *it);
+            if (i == dimension) {
+                dimensionHasExpression = !dimExpr.empty();
+            }
+            hasExpression |= !dimExpr.empty();
         }
-        hasExpression |= !dimExpr.empty();
     }
     if ( (knob->getNDimensions() > 1) && !hasDimensionSlaved && isAppKnob ) {
         {
-            QAction* setExprsAction = new QAction( ( hasExpression ? tr("Edit expression") :
-                                                    tr("Set expression") ) + QLatin1Char(' ') + tr("(all dimensions)"), menu );
+            QString label;
+            if (isAllViewsAction) {
+                if (hasExpression) {
+                    label = tr("Edit Expression (all views)");
+                } else {
+                    label = tr("Set Expression (all views)");
+                }
+
+            } else {
+                if (hasExpression) {
+                    label = tr("Edit Expression (all dimensions)");
+                } else {
+                    label = tr("Set Expression (all dimensions)");
+                }
+            }
+
+            QAction* setExprsAction = new QAction(label, menu );
             QList<QVariant> actionData;
             actionData.push_back((int)DimSpec::all());
             actionData.push_back((int)view);
@@ -1028,7 +1235,14 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             menu->addAction(setExprsAction);
         }
         if (hasExpression) {
-            QAction* clearExprAction = new QAction(tr("Clear expression") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
+            QString label;
+            if (isAllViewsAction) {
+                label = tr("Clear Expression (all views)");
+            } else {
+                label = tr("Clear Expression (all dimensions)");
+            }
+
+            QAction* clearExprAction = new QAction(label, menu);
             QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
             QList<QVariant> actionData;
             actionData.push_back((int)DimSpec::all());
@@ -1040,7 +1254,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
             menu->addAction(clearExprAction);
         }
     }
-    if ( ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
+    if ( !isAllViewsAction && ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
         {
             QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
             QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
@@ -1085,14 +1299,14 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view)
         KnobIPtr aliasMaster = knob->getAliasMaster();
         std::string knobName;
 
-        if ( aliasMaster || ((!dimension.isAll()|| knob->getNDimensions() == 1) && dimensionIsSlaved) ) {
+        if ( aliasMaster || ((!dimension.isAll() || knob->getNDimensions() == 1) && !isAllViewsAction && dimensionIsSlaved) ) {
 
             KnobIPtr masterKnob;
             MasterKnobLink linkData;
             if (aliasMaster) {
                 masterKnob = aliasMaster;
             } else {
-                (void)knob->getMaster(DimIdx(dimension), view, &linkData);
+                (void)knob->getMaster(DimIdx(dimension), views.front(), &linkData);
                 masterKnob = linkData.masterKnob.lock();
             }
 

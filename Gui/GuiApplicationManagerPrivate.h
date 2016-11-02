@@ -63,7 +63,7 @@ struct KnobsClipBoard
 {
     KnobClipBoardType type;
     DimSpec dimension;
-    ViewIdx view;
+    ViewSetSpec view;
     KnobIPtr serialization;
 };
 

@@ -104,10 +104,7 @@ public:
     {
     }
 
-    void createKnobInternal(const KnobIPtr& knob,
-                            QWidget*& lastRowContainer,
-                            QHBoxLayout*& lastRowLayout,
-                            KnobsVec& knobsOnSameLine);
+    KnobGuiPtr createKnobInternal(const KnobIPtr& knob);
 
     void createKnobs(const KnobsVec& knobsUi);
 
@@ -249,19 +246,6 @@ NodeViewerContext::createGui()
     }
 } // NodeViewerContext::createGui
 
-static void
-addSpacer(QBoxLayout* layout)
-{
-    layout->addSpacing( TO_DPIX(5) );
-    QFrame* line = new QFrame( layout->parentWidget() );
-    line->setFrameShape(QFrame::VLine);
-    line->setFrameShadow(QFrame::Raised);
-    QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
-    line->setPalette(palette);
-    layout->addWidget(line);
-    layout->addSpacing( TO_DPIX(5) );
-}
 
 void
 NodeViewerContext::onNodeColorChanged(const QColor& color)
@@ -297,48 +281,23 @@ NodeViewerContext::getItemsSpacingOnSameLine() const
     return 0;
 }
 
-void
-NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
-                                             QWidget*& lastRowContainer,
-                                             QHBoxLayout*& lastRowLayout,
-                                             KnobsVec& knobsOnSameLine)
+KnobGuiPtr
+NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob)
 {
     KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeViewerUI, publicInterface);
 
     knobsMapping.insert( std::make_pair(knob, ret) );
 
-    ViewerContextLayoutTypeEnum layoutType = knob->getInViewerContextLayoutType();
+    ret->createGUI(widgetsContainer);
 
-    if (layoutType == eViewerContextLayoutTypeStretchBefore) {
-        lastRowLayout->addStretch();
+    if (ret->isOnNewLine()) {
+        QWidget* mainContainer = ret->getFieldContainer();
+        widgetsContainerLayout->addWidget(mainContainer);
     }
-    ret->createGUI(lastRowContainer);
-
-    if (layoutType == eViewerContextLayoutTypeAddNewLine) {
-        knobsOnSameLine.clear();
-        lastRowLayout->addStretch();
-        lastRowContainer = new QWidget(widgetsContainer);
-        lastRowLayout = new QHBoxLayout(lastRowContainer);
-        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-        lastRowLayout->setSpacing(0);
-        widgetsContainerLayout->addWidget(lastRowContainer);
-    } else {
-        knobsOnSameLine.push_back(knob);
-        if ( layoutType == eViewerContextLayoutTypeSeparator ) {
-            addSpacer(lastRowLayout);
-        } else if ( layoutType == eViewerContextLayoutTypeStretchAfter ) {
-            lastRowLayout->addStretch();
-        } else if ( layoutType == eViewerContextLayoutTypeSpacing ) {
-            int spacing = knob->getInViewerContextItemSpacing();
-            lastRowLayout->addSpacing( TO_DPIX(spacing) );
-        }
-
-    } // makeNewLine
-
 
     ret->setEnabledSlot();
     ret->setSecret();
-
+    return ret;
 
 }
 
@@ -359,17 +318,9 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
     knobsMapping.clear();
 
     {
-        QWidget* lastRowContainer = new QWidget(widgetsContainer);
-        QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
-        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-        lastRowLayout->setSpacing(0);
-        widgetsContainerLayout->addWidget(lastRowContainer);
-
-        KnobsVec knobsOnSameLine;
         for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
-            createKnobInternal(*it, lastRowContainer, lastRowLayout,  knobsOnSameLine);
+            createKnobInternal(*it);
         }
-
     }
 
     ViewerNodePtr isViewer = thisNode->getNode()->isEffectViewerNode();
@@ -380,13 +331,16 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         KnobsVec playerKnobs = playerPage->getChildren();
         assert(!playerKnobs.empty());
-        playerContainer =  new QWidget(viewerTab);
+        /*playerContainer =  new QWidget(viewerTab);
         playerLayout =  new QHBoxLayout(playerContainer);
         playerLayout->setContentsMargins(0, 0, 0, 0);
-        playerLayout->setSpacing(0);
-        KnobsVec knobsOnSameLine;
+        playerLayout->setSpacing(0);*/
         for (KnobsVec::const_iterator it = playerKnobs.begin(); it != playerKnobs.end(); ++it) {
-            createKnobInternal(*it, playerContainer, playerLayout, knobsOnSameLine);
+            KnobGuiPtr ret = createKnobInternal(*it);
+            if (it == playerKnobs.begin()) {
+                playerContainer = ret->getFieldContainer();
+                playerLayout = dynamic_cast<QHBoxLayout*>(playerContainer->layout());
+            }
         }
 
     }

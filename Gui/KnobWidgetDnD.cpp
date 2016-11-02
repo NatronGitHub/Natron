@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeGroup.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
+#include "Engine/Project.h"
 #include "Engine/Settings.h"
 
 #include "Gui/KnobGui.h"
@@ -63,7 +64,7 @@ struct KnobWidgetDnDPrivate
 public:
     KnobGuiWPtr knob;
     DimSpec dimension;
-    ViewIdx view;
+    ViewSetSpec view;
     QPoint dragPos;
     bool dragging;
     QWidget* widget;
@@ -72,7 +73,7 @@ public:
 
     KnobWidgetDnDPrivate(const KnobGuiPtr& knob,
                          DimSpec dimension,
-                         ViewIdx view,
+                         ViewSetSpec view,
                          QWidget* widget)
     : knob(knob)
     , dimension(dimension)
@@ -95,7 +96,7 @@ public:
 
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
                              DimSpec dimension,
-                             ViewIdx view,
+                             ViewSetSpec view,
                              QWidget* widget)
     : _imp( new KnobWidgetDnDPrivate(knob, dimension, view, widget) )
 {
@@ -126,7 +127,8 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
         return false;
     }
     DimSpec dragDim = _imp->dimension;
-    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
+    ViewSetSpec dragView = _imp->view;
+    if ( (dragDim == 0) && !dragView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(dragView)) ) {
         dragDim = DimSpec::all();
     }
 
@@ -137,7 +139,11 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     if (dragDim.isAll()) {
         dragDim = DimSpec(0);
     }
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(DimIdx(dragDim), _imp->view) || internalKnob->isSlave(DimIdx(dragDim), _imp->view) ) ) {
+
+    if (dragView.isAll()) {
+        dragView = ViewSetSpec(0);
+    }
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(DimIdx(dragDim), ViewIdx(dragView)) || internalKnob->isSlave(DimIdx(dragDim), ViewIdx(dragView)) ) ) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
 
@@ -225,11 +231,12 @@ KnobWidgetDnD::startDrag()
     }
 
     DimSpec dragDim = _imp->dimension;
-    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
+    ViewSetSpec dragView = _imp->view;
+    if ( (dragDim == 0) && !dragView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(dragView)) ) {
         dragDim = DimSpec::all();
     }
 
-    guiKnob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim, _imp->view);
+    guiKnob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim, dragView);
 
     QFont font = _imp->widget->font();
     font.setBold(true);
@@ -334,12 +341,12 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     KnobGuiPtr guiKnob = knob.lock();
     KnobIPtr thisKnob = guiKnob->getKnob();
 
-    bool isEnabled = dimension.isAll() ? thisKnob->isEnabled(DimIdx(0), view) : thisKnob->isEnabled(DimIdx(dimension), view);
+    bool isEnabled = dimension.isAll() ? thisKnob->isEnabled(DimIdx(0), view.isAll() ? ViewIdx(0) : ViewIdx(view)) : thisKnob->isEnabled(DimIdx(dimension), view.isAll() ? ViewIdx(0) : ViewIdx(view));
     if (!isEnabled) {
         return false;
     }
     DimSpec srcDim;
-    ViewIdx srcView;
+    ViewSetSpec srcView;
     QDrag* drag;
     guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim, &srcView);
 
@@ -347,7 +354,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     bool ret = true;
     if (source) {
         DimSpec targetDim = dimension;
-        if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible(view) ) {
+        if ( (targetDim == 0) && !view.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(view)) ) {
             targetDim = DimSpec::all();
         }
 
@@ -395,13 +402,14 @@ KnobWidgetDnD::drop(QDropEvent* e)
         KnobIPtr source;
         KnobIPtr thisKnob = guiKnob->getKnob();
         DimSpec srcDim;
-        ViewIdx srcView;
+        ViewSetSpec srcView;
         QDrag* drag;
         guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim, &srcView);
         guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), DimSpec::all(), ViewIdx(0));
         if ( source && (source != thisKnob) ) {
             DimSpec targetDim = _imp->dimension;
-            if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible(_imp->view) ) {
+            ViewSetSpec targetView = _imp->view;
+            if ( (targetDim == 0) && !targetView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(targetView)) ) {
                 targetDim = DimSpec::all();
             }
 
@@ -423,26 +431,58 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 ss << effect->getNode()->getScriptName_mt_safe() << "." << source->getName();
                 ss << ".getValue(";
                 if (source->getNDimensions() > 1) {
-                    if (srcDim == -1) {
+                    if (srcDim.isAll()) {
                         ss << "dimension";
                     } else {
                         ss << srcDim;
                     }
                 }
+                std::vector<std::string> projectViewNames;
+                std::list<ViewIdx> sourceViews = source->getViewsList();
+                if (sourceViews.size() > 1) {
+                    ss << ", ";
+                    if (srcView.isAll()) {
+                        ss << "view";
+                    } else {
+                        projectViewNames = guiKnob->getGui()->getApp()->getProject()->getProjectViewNames();
+                        if (srcView >= 0 && srcView < (int)projectViewNames.size()) {
+                            ss << projectViewNames[srcView];
+                        } else {
+                            ss << "Main";
+                        }
+                    }
+                }
                 ss << ")";
                 ss << " * curve(frame,";
-                if (targetDim == -1) {
+                if (targetDim.isAll()) {
                     ss << "dimension";
                 } else {
                     ss << targetDim;
                 }
+                 std::list<ViewIdx> targetViews = thisKnob->getViewsList();
+                if (targetViews.size() > 1) {
+                    ss << ", ";
+                    if (targetView.isAll()) {
+                        ss << "view";
+                    } else {
+                        if (projectViewNames.empty()) {
+                            projectViewNames = guiKnob->getGui()->getApp()->getProject()->getProjectViewNames();
+                        }
+                        if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
+                            ss << projectViewNames[targetView];
+                        } else {
+                            ss << "Main";
+                        }
+                    }
+                }
+
                 ss << ")";
 
 
                 expr = ss.str();
-                guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, _imp->view, expr) );
+                guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, targetView, expr) );
             } else if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier) ) {
-                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob->getKnob(), eKnobClipBoardTypeCopyLink, srcDim, targetDim, srcView ,_imp->view, source) );
+                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob->getKnob(), eKnobClipBoardTypeCopyLink, srcDim, targetDim, srcView, targetView, source) );
             }
 
             return true;
@@ -472,9 +512,10 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
     if (!knob) {
         return;
     }
-    bool enabled = _imp->dimension.isAll() ? knob->getKnob()->isEnabled(DimIdx(0), _imp->view) : knob->getKnob()->isEnabled(DimIdx(_imp->dimension), _imp->view);
+    KnobIPtr internalKnob = knob->getKnob();
+    bool isEnabled = _imp->dimension.isAll() ? internalKnob->isEnabled(DimIdx(0), _imp->view.isAll() ? ViewIdx(0) : ViewIdx(_imp->view)) : internalKnob->isEnabled(DimIdx(_imp->dimension), _imp->view.isAll() ? ViewIdx(0) : ViewIdx(_imp->view));
 
-    if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && enabled) {
+    if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && isEnabled) {
         _imp->widget->setFocus();
     }
 }

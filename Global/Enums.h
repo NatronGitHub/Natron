@@ -412,7 +412,6 @@ enum ViewerContextLayoutTypeEnum
     eViewerContextLayoutTypeSpacing,
     eViewerContextLayoutTypeSeparator,
     eViewerContextLayoutTypeStretchAfter,
-    eViewerContextLayoutTypeStretchBefore,
     eViewerContextLayoutTypeAddNewLine
 };
 

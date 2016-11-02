@@ -1318,7 +1318,7 @@ SERIALIZATION_NAMESPACE::GroupKnobSerialization::serialize(Archive & ar, const u
     }
 }
 
-static void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::GroupKnobSerialization& k, SERIALIZATION_NAMESPACE::NodeSerialization* node)
+inline void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::GroupKnobSerialization& k, SERIALIZATION_NAMESPACE::NodeSerialization* node)
 {
     for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = k._children.begin(); it!=k._children.end(); ++it) {
         SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroup = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(it->get());

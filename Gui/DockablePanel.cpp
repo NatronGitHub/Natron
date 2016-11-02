@@ -683,7 +683,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             }
         }
 
-        pushUndoCommand( new RestoreDefaultsCommand(true, knobsList, DimSpec::all(), ViewSetSpec::all()) );
+        pushUndoCommand( new RestoreDefaultsCommand(knobsList, DimSpec::all(), ViewSetSpec::all()) );
     }
 }
 

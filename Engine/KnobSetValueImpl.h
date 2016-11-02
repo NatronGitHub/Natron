@@ -588,19 +588,20 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 
     resetExtraToDefaultValue(dimension, view);
 
-    if (isDouble) {
-        double time = getCurrentTime();
+    double time = getCurrentTime();
 
-        // Double default values may be normalized so denormalize it
-        // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
-        int nDims = getNDimensions();
-        std::vector<double> defValues(nDims);
-        for (int i = 0; i < nDims; ++i) {
-            if (dimension.isAll() || i == dimension) {
-                {
-                    QMutexLocker l(&_valueMutex);
-                    defValues[i] = _defaultValues[i].value;
-                }
+    // Double default values may be normalized so denormalize it
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    int nDims = getNDimensions();
+    std::vector<double> defValues(nDims);
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() || i == dimension) {
+            {
+                QMutexLocker l(&_valueMutex);
+                defValues[i] = _defaultValues[i].value;
+            }
+
+            if (isDouble) {
 
                 if ( isDouble->getDefaultValuesAreNormalized() ) {
                     if (isDouble->getValueIsNormalized(DimIdx(i)) == eValueIsNormalizedNone) {
@@ -613,14 +614,16 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
                         defValues[i] = isDouble->normalize(DimIdx(i), time, defValues[i]);
                     }
                 }
+            } // isDouble
 
-            }
         }
-        if (dimension.isAll()) {
-            setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
-        } else {
-            ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
-        }
+    }
+
+
+    if (dimension.isAll()) {
+        setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
+    } else {
+        ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
     }
 }
 

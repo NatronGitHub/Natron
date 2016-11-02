@@ -65,6 +65,7 @@ public:
 
     virtual ~DopeSheetView() OVERRIDE;
 
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
 
     /**

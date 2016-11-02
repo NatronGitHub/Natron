@@ -215,7 +215,7 @@ Knob<T>::getValue(DimIdx dimension,
     if ( !hasExpr.empty() ) {
         T ret;
         double time = getCurrentTime();
-        if ( getValueFromExpression(time, /*view*/ view, dimension, clamp, &ret) ) {
+        if ( getValueFromExpression(time, view, dimension, clamp, &ret) ) {
             return ret;
         }
     }

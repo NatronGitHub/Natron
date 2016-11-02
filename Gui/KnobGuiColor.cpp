@@ -215,7 +215,6 @@ void
 KnobGuiColor::connectKnobSignalSlots()
 {
     KnobColorPtr knob = _knob.lock();
-    QObject::connect( this, SIGNAL(dimensionSwitchToggled(ViewSetSpec,bool)), knob.get(), SLOT(onDimensionSwitchToggled(ViewSetSpec,bool)) );
     QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions(ViewSetSpec)), this, SLOT(onMustShowAllDimension(ViewSetSpec)) );
     QObject::connect( knob.get(), SIGNAL(pickingEnabled(ViewSetSpec,bool)), this, SLOT(onInternalKnobPickingEnabled(ViewSetSpec,bool)) );
 }
@@ -261,7 +260,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
     _colorLabel->setFixedSize(medSize);
-    QObject::connect( _colorLabel, SIGNAL(pickingEnabled(bool)), this, SLOT(onPickingEnabled(bool)) );
+    QObject::connect( _colorLabel, SIGNAL(pickingEnabled(bool)), this, SLOT(onColorLabelPickingEnabled(bool)) );
     containerLayout->addWidget(_colorLabel);
 
     if (_useSimplifiedUI) {
@@ -279,7 +278,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     containerLayout->addWidget(_colorDialogButton);
 
     if (_useSimplifiedUI) {
-        KnobGuiValue::setWidgetsVisible(false);
+        setWidgetsVisibleInternal(false);
         KnobGuiWidgets::enableRightClickMenu(getKnobGui(), _colorLabel, DimSpec::all(), getView());
     }
 }
@@ -384,7 +383,7 @@ KnobGuiColor::onDimensionsFolded()
         assert(sb);
         sb->setUseLineColor(false, Qt::red);
     }
-    Q_EMIT dimensionSwitchToggled(false);
+    knob->onDimensionSwitchToggled(getView(), false);
 }
 
 void
@@ -406,7 +405,7 @@ KnobGuiColor::onDimensionsExpanded()
         assert(sb);
         sb->setUseLineColor(true, colors[i]);
     }
-    Q_EMIT dimensionSwitchToggled(true);
+    knob->onDimensionSwitchToggled(getView(), true);
 }
 
 void

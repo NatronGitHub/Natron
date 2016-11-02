@@ -144,7 +144,7 @@ KnobGuiContainerHelper::getKnobGui(const KnobIPtr& knob) const
 int
 KnobGuiContainerHelper::getItemsSpacingOnSameLine() const
 {
-    return TO_DPIX(15);
+    return 15;
 }
 
 KnobGuiPtr
@@ -285,8 +285,8 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     return pageGui;
 } // KnobGuiContainerHelper::getOrCreatePage
 
-static QPixmap
-getStandardIcon(QMessageBox::Icon icon,
+QPixmap
+KnobGuiContainerHelper::getStandardIcon(QMessageBox::Icon icon,
                 int size,
                 QWidget* widget)
 {
@@ -730,25 +730,23 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                 labelAlignment = Qt::AlignRight;
             }
 
-            std::list<ViewIdx> views = knob->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                int rowIndex = gridLayout->rowCount();
-                QWidget* labelContainer = ret->getLabelContainer(*it);
-                QWidget* fieldContainer = ret->getFieldContainer(*it);
-                if (!labelContainer) {
-                    gridLayout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
+            int rowIndex = gridLayout->rowCount();
+            QWidget* labelContainer = ret->getLabelContainer();
+            QWidget* fieldContainer = ret->getFieldContainer();
+            if (!labelContainer) {
+                gridLayout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
+            } else {
+                if (labelOnSameColumn) {
+                    labelContainer->layout()->addWidget(fieldContainer);
+                    gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 2);
                 } else {
-                    if (labelOnSameColumn) {
-                        labelContainer->layout()->addWidget(fieldContainer);
-                        gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 2);
-                    } else {
-                        gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
-                        gridLayout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
-                    }
-
+                    gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
+                    gridLayout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
                 }
+
             }
-            
+
+
             workAroundGridLayoutBug(gridLayout);
 
         }  // makeNewLine

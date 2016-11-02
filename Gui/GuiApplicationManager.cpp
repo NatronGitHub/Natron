@@ -1087,7 +1087,7 @@ void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
                                         const KnobIPtr& serialization,
                                         DimSpec dimension,
-                                        ViewIdx view)
+                                        ViewSetSpec view)
 {
     _imp->_knobsClipBoard->serialization = serialization;
     _imp->_knobsClipBoard->type = type;
@@ -1099,7 +1099,7 @@ void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
                                         KnobIPtr *serialization,
                                         DimSpec* dimension,
-                                        ViewIdx *view) const
+                                        ViewSetSpec *view) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;
     *type = _imp->_knobsClipBoard->type;

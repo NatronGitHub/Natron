@@ -128,8 +128,6 @@ struct KnobGuiPrivate
     // A pointer to the previous knob on the row
     KnobIWPtr prevKnob;
 
-    // The spacing in px to use before the previous knob
-    int spacingBeforePrevKnob;
 
     struct ViewWidgets
     {
@@ -157,6 +155,14 @@ struct KnobGuiPrivate
     // If multi-view, an arrow to unfold views
     GroupBoxLabel* viewUnfoldArrow;
 
+    //  each view row is contained in this widget
+    QWidget* viewsContainer;
+    QVBoxLayout* viewsContainerLayout;
+
+    // Contains all knobs in the second column of the grid layout for this knob
+    QWidget* mainContainer;
+    QHBoxLayout* mainLayout;
+
     // The label
     KnobClickableLabel* descriptionLabel;
 
@@ -180,6 +186,11 @@ struct KnobGuiPrivate
     void refreshIsOnNewLineFlag();
 
     void createLabel(QWidget* parentWidget);
+
+    void createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it);
+
+    void addWidgetsToPreviousKnobLayout();
+
 };
 
 NATRON_NAMESPACE_EXIT;

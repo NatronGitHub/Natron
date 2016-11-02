@@ -108,14 +108,16 @@ struct TableItemPrivate
     // Weak ref to column 0 item of the parent
     TableItemWPtr parent;
 
-    TableItemPrivate()
+    TableItemPrivate(const TableModelPtr& model)
     : columns()
     , model()
     , indexInParent(-1)
     , children()
     , parent()
     {
-
+        if (model) {
+            setModelAndInitColumns(model);
+        }
     }
 
     void setModelAndInitColumns(const TableModelPtr& m)
@@ -178,8 +180,8 @@ struct TableItemPrivate
 
 };
 
-TableItem::TableItem()
-: _imp(new TableItemPrivate())
+TableItem::TableItem(const TableModelPtr& model)
+: _imp(new TableItemPrivate(model))
 {
     
 }
@@ -191,9 +193,9 @@ TableItem::~TableItem()
 }
 
 TableItemPtr
-TableItem::create(const TableItemPtr& parent)
+TableItem::create(const TableModelPtr& model, const TableItemPtr& parent)
 {
-    TableItemPtr ret(new TableItem);
+    TableItemPtr ret(new TableItem(model));
     if (parent) {
         // Inserting the item in the parent may not succeed if parent is not in a model already.
         parent->insertChild(-1, ret);
@@ -381,7 +383,7 @@ struct TableModelPrivate
     TableModelPrivate(int columns, TableModel::TableModelTypeEnum type)
     : type(type)
     , topLevelItems()
-    , headerItem(TableItem::create())
+    , headerItem()
     , colCount(columns)
     {
         assert(columns > 0);
@@ -499,8 +501,7 @@ TableModel::insertRows(int row, int count, const QModelIndex & parent)
         int row_i = row;
         int rowsToAdd = count;
         while (rowsToAdd > 0) {
-            TableItemPtr newItem = TableItem::create();
-            newItem->_imp->setModelAndInitColumns(thisShared);
+            TableItemPtr newItem = TableItem::create(thisShared);
             newItem->_imp->parent = parentItem;
 
             if (parentItem) {
@@ -949,8 +950,7 @@ TableModel::setHorizontalHeaderData(const std::vector<std::pair<QString, QIcon> 
     TableModelPtr thisShared = shared_from_this();
     TableItemPtr item = _imp->headerItem;
     if (!item) {
-        item = TableItem::create();
-        item->_imp->setModelAndInitColumns(thisShared);
+        item = TableItem::create(thisShared);
     }
     for (std::size_t i = 0; i < sections.size(); ++i) {
         if (!sections[i].first.isEmpty()) {
@@ -972,8 +972,8 @@ TableModel::setHorizontalHeaderData(const QStringList& sections)
     TableModelPtr thisShared = shared_from_this();
     TableItemPtr item = _imp->headerItem;
     if (!item) {
-        item = TableItem::create();
-        item->_imp->setModelAndInitColumns(thisShared);
+        item = TableItem::create(thisShared);
+
     }
     for (int i = 0; i < sections.size(); ++i) {
         if (!sections[i].isEmpty()) {
@@ -1039,8 +1039,7 @@ TableModel::setData(const QModelIndex &index, const QVariant &value, int role)
         return false;
     }
 
-    itm = TableItem::create();
-    itm->_imp->setModelAndInitColumns(shared_from_this());
+    itm = TableItem::create(shared_from_this());
     itm->setData(index.column(), role, value);
     setRow(index.row(), itm);
 
@@ -1073,8 +1072,7 @@ TableModel::setItemData(const QModelIndex &index, const QMap<int, QVariant> &rol
         if (_imp->type == eTableModelTypeTree) {
             return false;
         }
-        itm = TableItem::create();
-        itm->_imp->setModelAndInitColumns(shared_from_this());
+        itm = TableItem::create(shared_from_this());
         for (QMap<int, QVariant>::ConstIterator it = roles.constBegin(); it != roles.constEnd(); ++it) {
             itm->setData( index.column(), it.key(), it.value() );
         }

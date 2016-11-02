@@ -761,7 +761,10 @@ public:
         }
     }
 
-    virtual ~RemoveItemsUndoCommand();
+    virtual ~RemoveItemsUndoCommand()
+    {
+        
+    }
 
     virtual void undo() OVERRIDE FINAL
     {
@@ -1078,7 +1081,9 @@ public:
         setText(tr("Paste Item(s)"));
     }
 
-    virtual ~PasteItemUndoCommand();
+    virtual ~PasteItemUndoCommand()
+    {
+    }
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -1152,7 +1157,10 @@ public:
         
     }
 
-    virtual ~DuplicateItemUndoCommand();
+    virtual ~DuplicateItemUndoCommand()
+    {
+
+    }
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -1562,7 +1570,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     items.push_back(ModelItem());
     ModelItem &mitem = items.back();
     mitem.columnItems.resize(nCols);
-    mitem.item = TableItem::create();
+    mitem.item = TableItem::create(tableModel);
     
     TableItemPtr parentItem;
     KnobTableItemPtr knobParentItem = item->getParent();

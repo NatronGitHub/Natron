@@ -3101,9 +3101,6 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                     case eViewerContextLayoutTypeStretchAfter:
                         serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutStretchAfter;
                         break;
-                    case eViewerContextLayoutTypeStretchBefore:
-                        serialization->_inViewerContextItemLayout = kInViewerContextItemLayoutStretchBefore;
-                        break;
                     case eViewerContextLayoutTypeSpacing:
                         serialization->_inViewerContextItemLayout.clear();
                         break;
@@ -3435,8 +3432,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             layoutType = eViewerContextLayoutTypeAddNewLine;
         } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchAfter) {
             layoutType = eViewerContextLayoutTypeStretchAfter;
-        } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutStretchBefore) {
-            layoutType = eViewerContextLayoutTypeStretchBefore;
         } else if (serialization->_inViewerContextItemLayout == kInViewerContextItemLayoutAddSeparator) {
             layoutType = eViewerContextLayoutTypeSeparator;
         }

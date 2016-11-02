@@ -70,15 +70,6 @@ CurveWidget::CurveWidget(QWidget* parent)
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
-    if ( parent->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
-        ///if this is the curve widget associated to the CurveEditor
-        //        QDesktopWidget* desktop = QApplication::desktop();
-        //        _imp->sizeH = desktop->screenGeometry().size();
-        _imp->sizeH = QSize(10000, 10000);
-    } else {
-        ///a random parametric param curve editor
-        _imp->sizeH =  QSize(400, 400);
-    }
 }
 
 CurveWidget::~CurveWidget()
@@ -92,6 +83,17 @@ CurveWidget::initializeImplementation(Gui* gui, const AnimationModuleBasePtr& mo
     _imp.reset(new CurveWidgetPrivate(gui, model, publicInterface));
     _imp->_widget = this;
     setImplementation(_imp);
+
+
+    if ( parentWidget()->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
+        ///if this is the curve widget associated to the CurveEditor
+        //        QDesktopWidget* desktop = QApplication::desktop();
+        //        _imp->sizeH = desktop->screenGeometry().size();
+        _imp->sizeH = QSize(10000, 10000);
+    } else {
+        ///a random parametric param curve editor
+        _imp->sizeH =  QSize(400, 400);
+    }
 }
 
 void

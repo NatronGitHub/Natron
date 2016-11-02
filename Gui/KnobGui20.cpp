@@ -110,7 +110,7 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
 
 
 void
-KnobGui::copyAnimationToClipboard(DimSpec dimension, ViewIdx view) const
+KnobGui::copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const
 {
     copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension, view);
 }
@@ -122,14 +122,14 @@ KnobGui::onCopyAnimationActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
     copyAnimationToClipboard(dimension, view);
 }
 
 void
-KnobGui::copyValuesToClipboard(DimSpec dimension, ViewIdx view ) const
+KnobGui::copyValuesToClipboard(DimSpec dimension, ViewSetSpec view ) const
 {
     copyToClipBoard(eKnobClipBoardTypeCopyValue, dimension, view);
 }
@@ -141,14 +141,14 @@ KnobGui::onCopyValuesActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
     copyValuesToClipboard(dimension, view);
 }
 
 void
-KnobGui::copyLinkToClipboard(DimSpec dimension, ViewIdx view) const
+KnobGui::copyLinkToClipboard(DimSpec dimension, ViewSetSpec view) const
 {
     copyToClipBoard(eKnobClipBoardTypeCopyLink, dimension, view);
 }
@@ -160,7 +160,7 @@ KnobGui::onCopyLinksActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
     copyLinkToClipboard(dimension, view);
@@ -169,7 +169,7 @@ KnobGui::onCopyLinksActionTriggered()
 void
 KnobGui::copyToClipBoard(KnobClipBoardType type,
                          DimSpec dimension,
-                         ViewIdx view) const
+                         ViewSetSpec view) const
 {
     KnobIPtr knob = getKnob();
 
@@ -181,7 +181,7 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
 }
 
 void
-KnobGui::pasteClipBoard(DimSpec targetDimension, ViewIdx view)
+KnobGui::pasteClipBoard(DimSpec targetDimension, ViewSetSpec view)
 {
     KnobIPtr knob = getKnob();
 
@@ -191,7 +191,7 @@ KnobGui::pasteClipBoard(DimSpec targetDimension, ViewIdx view)
 
     //the dimension from which it was copied from
     DimSpec cbDim;
-    ViewIdx cbView;
+    ViewSetSpec cbView;
     KnobClipBoardType type;
     KnobIPtr fromKnob;
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim, &cbView);
@@ -199,7 +199,7 @@ KnobGui::pasteClipBoard(DimSpec targetDimension, ViewIdx view)
         return;
     }
 
-    if ( (targetDimension == 0) && !getAllDimensionsVisible(view) ) {
+    if ( (targetDimension == 0) &&  !view.isAll() && !getAllDimensionsVisible(ViewIdx(view)) ) {
         targetDimension = DimSpec::all();
     }
 
@@ -237,7 +237,7 @@ KnobGui::onPasteActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
     pasteClipBoard(dimension, view);
@@ -245,7 +245,7 @@ KnobGui::onPasteActionTriggered()
 
 
 void
-KnobGui::linkTo(DimSpec dimension, ViewIdx view)
+KnobGui::linkTo(DimSpec dimension, ViewSetSpec view)
 {
     KnobIPtr thisKnob = getKnob();
 
@@ -327,7 +327,7 @@ KnobGui::onLinkToActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
 
@@ -342,7 +342,7 @@ KnobGui::onResetDefaultValuesActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
 
@@ -350,7 +350,7 @@ KnobGui::onResetDefaultValuesActionTriggered()
 }
 
 void
-KnobGui::resetDefault(DimSpec dimension, ViewIdx view)
+KnobGui::resetDefault(DimSpec dimension, ViewSetSpec view)
 {
     KnobIPtr knob = getKnob();
     KnobButtonPtr isBtn = toKnobButton(knob);
@@ -361,7 +361,7 @@ KnobGui::resetDefault(DimSpec dimension, ViewIdx view)
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobIPtr > knobs;
         knobs.push_back(knob);
-        pushUndoCommand( new RestoreDefaultsCommand(false, knobs, dimension, view) );
+        pushUndoCommand( new RestoreDefaultsCommand(knobs, dimension, view) );
     }
 }
 

@@ -63,7 +63,7 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
     friend class TableView;
     friend struct TableItemPrivate;
 
-    TableItem();
+    TableItem(const TableModelPtr& model);
 
 public:
 
@@ -73,7 +73,7 @@ public:
      * this item is considered a top-level item.
      * If the parent not NULL, it must belong to a model already
      **/
-    static TableItemPtr create(const TableItemPtr& parent = TableItemPtr());
+    static TableItemPtr create(const TableModelPtr& model, const TableItemPtr& parent = TableItemPtr());
 
     virtual ~TableItem();
 

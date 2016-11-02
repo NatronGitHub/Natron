@@ -258,6 +258,7 @@ KnobGuiTablePrivate::encodeTable(const boost::shared_ptr<KnobTable>& knob) const
     int nRows = model->rowCount();
     for (int i = 0; i < nRows; ++i) {
         TableItemPtr item = model->getItem(i);
+        assert(item);
         // In order to use XML tags, the text inside the tags has to be escaped.
         for (int c = 0; c < nCols; ++c) {
             std::string label = knob->getColumnLabel(c);
@@ -279,7 +280,10 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
 {
     assert( values.size() == knob->getColumnsCount() );
     int col = 0;
-    TableItemPtr tableItem = TableItem::create();
+    TableItemPtr tableItem = TableItem::create(model);
+
+    // Prevent the model from emitting the itemDataChanged signal, otherwise it will call updateGui again
+    model->blockSignals(true);
 
     for (QStringList::const_iterator it = values.begin(); it != values.end(); ++it, ++col) {
         Qt::ItemFlags flags;
@@ -297,6 +301,7 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
         tableItem->setText(col, *it);
         tableItem->setFlags(col, flags);
     }
+    model->blockSignals(false);
 
     int modelRowCount = model->rowCount();
     if (row >= modelRowCount) {
@@ -309,6 +314,8 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
     }
 
     isInsertingItem = false;
+
+
 }
 
 void

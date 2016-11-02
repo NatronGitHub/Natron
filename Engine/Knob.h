@@ -125,7 +125,7 @@ public:
                                  double time,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange( (int)reason, (int)setValueRetCode, v, view,  dim, time, setKeyFrame );
+        Q_EMIT appendParamEditChange(reason, setValueRetCode, v, view,  dim, time, setKeyFrame);
     }
 
     void s_setDirty(bool b)
@@ -243,7 +243,7 @@ Q_SIGNALS:
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
-    void appendParamEditChange(int reason, int setValueRetCode, Variant v, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
+    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, Variant v, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
 
     // Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);

@@ -103,7 +103,7 @@ KnobGui::onUnlinkActionTriggered()
     if (!action) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(action, &view, &dimension);
 
@@ -132,7 +132,7 @@ KnobGui::onSetExprActionTriggered()
     if (!action) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(action, &view, &dimension);
 
@@ -150,7 +150,7 @@ KnobGui::onClearExprActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
     pushUndoCommand( new SetExpressionCommand(getKnob(), false, dimension, view, "") );
@@ -326,7 +326,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
 
@@ -444,7 +444,7 @@ KnobGui::onSetKeyActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
 
@@ -524,7 +524,7 @@ KnobGui::onRemoveKeyActionTriggered()
     if (!act) {
         return;
     }
-    ViewIdx view;
+    ViewSetSpec view;
     DimSpec dimension;
     getDimViewFromActionData(act, &view, &dimension);
 
@@ -827,7 +827,7 @@ KnobGui::show()
     if (!_imp->customInteract) {
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             if (it->second.widgets) {
-                bool showWidget = it->first == !_imp->viewUnfoldArrow || ViewIdx(0) || _imp->viewUnfoldArrow->isChecked();
+                bool showWidget = ((it->first == ViewIdx(0)) || !_imp->viewUnfoldArrow || _imp->viewUnfoldArrow->isChecked());
                 it->second.widgets->setWidgetsVisible(showWidget);
             }
         }
@@ -860,7 +860,7 @@ KnobGui::onMultiViewUnfoldClicked(bool expanded)
             if (expanded) {
                 it->second.widgets->setWidgetsVisible(true);
             } else {
-                bool showWidget = it->first == !_imp->viewUnfoldArrow || ViewIdx(0);
+                bool showWidget = (it->first == ViewIdx(0) || !_imp->viewUnfoldArrow);
                 it->second.widgets->setWidgetsVisible(showWidget);
             }
 

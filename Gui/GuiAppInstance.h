@@ -189,8 +189,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewIdx view);
-    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewIdx* view) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewSetSpec view);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewSetSpec* view) const;
 
     virtual bool checkAllReadersModificationDate(bool errorAndWarn) OVERRIDE FINAL;
 

@@ -70,12 +70,19 @@ AnimationViewBase::AnimationViewBase(QWidget* parent)
     setMouseTracking(true);
 }
 
+AnimationViewBase::~AnimationViewBase()
+{
+
+}
+
 void
 AnimationViewBase::initialize(Gui* gui, const AnimationModuleBasePtr& model)
 {
     if (_imp) {
         return;
     }
+    initializeImplementation(gui, model, this);
+
     TimeLinePtr timeline = model->getTimeline();
     if (timeline) {
         ProjectPtr project = gui->getApp()->getProject();
@@ -85,7 +92,6 @@ AnimationViewBase::initialize(Gui* gui, const AnimationModuleBasePtr& model)
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
 
     }
-    initializeImplementation(gui, model, this);
 }
 
 void

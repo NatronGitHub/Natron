@@ -200,7 +200,6 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
         _imp->layoutTypeChoice->addItem(tr("Spacing (px)"), QIcon(), QKeySequence(), tr("The spacing in pixels to add after the parameter"));
         _imp->layoutTypeChoice->addItem(tr("Separator"), QIcon(), QKeySequence(), tr("A vertical line will be added after the parameter"));
         _imp->layoutTypeChoice->addItem(tr("Stretch After"), QIcon(), QKeySequence(), tr("The layout will be stretched between this parameter and the next"));
-        _imp->layoutTypeChoice->addItem(tr("Stretch Before"), QIcon(), QKeySequence(), tr("The layout will be stretched between the previous parameter and this one"));
         _imp->layoutTypeChoice->addItem(tr("New Line"), QIcon(), QKeySequence(), tr("A new line will be added after this parameter"));
 
         ViewerContextLayoutTypeEnum type = knob->getInViewerContextLayoutType();
@@ -293,9 +292,7 @@ EditNodeViewerContextDialog::onOkClicked()
             _imp->knob->setInViewerContextItemSpacing(_imp->itemSpacingSpinbox->value());
             _imp->knob->setInViewerContextLayoutType(eViewerContextLayoutTypeSpacing);
             break;
-        case eViewerContextLayoutTypeStretchBefore:
-            _imp->knob->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchBefore);
-            break;
+
     }
     if (_imp->viewerUILabelEdit) {
         _imp->knob->setInViewerContextLabel(_imp->viewerUILabelEdit->text());

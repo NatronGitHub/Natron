@@ -27,8 +27,7 @@
 #include "Serialization/SerializationFwd.h"
 
 #define kInViewerContextItemLayoutSpacing "Spacing"
-#define kInViewerContextItemLayoutStretchBefore "StretchB"
-#define kInViewerContextItemLayoutStretchAfter "StretchA"
+#define kInViewerContextItemLayoutStretchAfter "Stretch"
 #define kInViewerContextItemLayoutNewLine "NewLine"
 #define kInViewerContextItemLayoutAddSeparator "Separator"
 

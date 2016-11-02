@@ -2970,7 +2970,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->enableFpsKnob.lock()) {
         _imp->fpsKnob.lock()->setEnabled(_imp->enableFpsKnob.lock()->getValue());
         refreshFps();
-    } else if (k == _imp->fpsKnob.lock()) {
+    } else if (k == _imp->fpsKnob.lock() && reason != eValueChangedReasonPluginEdited) {
         refreshFps();
     } else if (k == _imp->playForwardButtonKnob.lock()) {
         if (reason != eValueChangedReasonPluginEdited) {
@@ -4461,7 +4461,7 @@ ViewerNode::refreshFps()
                 fps = getApp()->getProjectFrameRate();
             }
         }
-        _imp->fpsKnob.lock()->setValue(fps);
+        _imp->fpsKnob.lock()->setValue(fps, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
     ViewerInstancePtr viewerNode = getInternalViewerNode();
     if (!viewerNode) {

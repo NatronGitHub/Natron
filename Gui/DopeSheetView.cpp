@@ -157,7 +157,7 @@ public:
     QRectF rectToWidgetCoordinates(const RectD &rect) const;
     QRectF nameItemRectToRowRect(const QRectF &rect) const;
 
-    Qt::CursorShape getCursorDuringHover(const QPointF &widgetCoords) const;
+    Qt::CursorShape getCursorDuringHover(const QPoint &widgetCoords) const;
     Qt::CursorShape getCursorForEventState(DopeSheetView::EventStateEnum es) const;
 
     bool isNearByClipRectLeft(const QPointF& zoomCoordPos, const RectD &clipRect) const;
@@ -165,10 +165,15 @@ public:
     bool isNearByClipRectBottom(const QPointF& zoomCoordPos, const RectD &clipRect) const;
     bool isNearByCurrentFrameIndicatorBottom(const QPointF &zoomCoords) const;
 
-    bool isNearbySelectedKeysBRectRightEdge(const QPointF& widgetPos) const;
-    bool isNearbySelectedKeysBRectLeftEdge(const QPointF& widgetPos) const;
-
-    bool isNearbySelectedKeysBRec(const QPointF& widgetPos) const;
+    virtual bool isSelectedKeyFramesRectanglePointEnabled(SelectedKeyFramesRectanglePointEnum pt) const
+    {
+        if (pt == eSelectedKeyFramesRectanglePointMidLeft ||
+            pt == eSelectedKeyFramesRectanglePointMidRight ||
+            pt == eSelectedKeyFramesRectanglePointCenter) {
+            return true;
+        }
+        return false;
+    }
 
     KeyFrameWithStringSet isNearByKeyframe(const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, const QPointF &widgetCoords) const;
 
@@ -253,6 +258,7 @@ DopeSheetView::DopeSheetView(QWidget *parent)
 : AnimationViewBase(parent)
 , _imp()
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 /**
@@ -264,6 +270,11 @@ DopeSheetView::~DopeSheetView()
 {
 }
 
+QSize
+DopeSheetView::sizeHint() const
+{
+    return QSize(10000, 10000);
+}
 
 void
 DopeSheetView::initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* /*publicInterface*/)
@@ -348,17 +359,17 @@ DopeSheetViewPrivate::nameItemRectToRowRect(const QRectF &rect) const
 }
 
 Qt::CursorShape
-DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widgetCoords) const
+DopeSheetViewPrivate::getCursorDuringHover(const QPoint &widgetCoords) const
 {
     QPointF clickZoomCoords = zoomCtx.toZoomCoordinates( widgetCoords.x(), widgetCoords.y() );
 
-    if ( isNearbySelectedKeysBRec(widgetCoords) ) {
+    if ( isNearbySelectedKeyFramesCrossWidget(widgetCoords) ) {
         return getCursorForEventState(DopeSheetView::eEventStateMoveKeyframeSelection);
-    } else if ( isNearbySelectedKeysBRectRightEdge(widgetCoords) ) {
+    } else if ( isNearbyBboxMidRight(widgetCoords) ) {
         return getCursorForEventState(DopeSheetView::eEventStateDraggingMidRightBbox);
-    } else if ( isNearbySelectedKeysBRectLeftEdge(widgetCoords) ) {
+    } else if ( isNearbyBboxMidLeft(widgetCoords) ) {
         return getCursorForEventState(DopeSheetView::eEventStateDraggingMidLeftBbox);
-    } else if ( isNearByCurrentFrameIndicatorBottom(clickZoomCoords) ) {
+    } else if ( isNearbyTimelineBtmPoly(widgetCoords) || isNearbyTimelineTopPoly(widgetCoords)) {
         return getCursorForEventState(DopeSheetView::eEventStateMoveCurrentFrameIndicator);
     }
 
@@ -1037,6 +1048,12 @@ DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin,
 }
 
 void
+DopeSheetView::refreshSelectionBoundingBox()
+{
+    _imp->computeSelectedKeysBRect();
+}
+
+void
 DopeSheetViewPrivate::computeSelectedKeysBRect()
 {
     AnimationModuleBasePtr model = _model.lock();
@@ -1124,6 +1141,8 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
 
         selectedKeysBRect.x1 -= xAdjustOffset;
         selectedKeysBRect.x2 += xAdjustOffset;
+    } else {
+        selectedKeysBRect.clear();
     }
 } // DopeSheetViewPrivate::computeSelectedKeysBRect
 
@@ -1994,16 +2013,16 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
     QPointF clickZoomCoords = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     if ( buttonDownIsLeft(e) ) {
-        if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRec( e->pos() ) ) {
+        if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
             _imp->eventState = DopeSheetView::eEventStateMoveKeyframeSelection;
             didSomething = true;
-        } else if ( _imp->isNearByCurrentFrameIndicatorBottom(clickZoomCoords) ) {
+        } else if ( _imp->isNearbyTimelineBtmPoly(e->pos()) || _imp->isNearbyTimelineTopPoly(e->pos()) ) {
             _imp->eventState = DopeSheetView::eEventStateMoveCurrentFrameIndicator;
             didSomething = true;
-        } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectLeftEdge( e->pos() ) ) {
+        } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbyBboxMidLeft( e->pos() ) ) {
             _imp->eventState = DopeSheetView::eEventStateDraggingMidLeftBbox;
             didSomething = true;
-        } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbySelectedKeysBRectRightEdge( e->pos() ) ) {
+        } else if ( !_imp->selectedKeysBRect.isNull() && _imp->isNearbyBboxMidRight( e->pos() ) ) {
             _imp->eventState = DopeSheetView::eEventStateDraggingMidRightBbox;
             didSomething = true;
         }

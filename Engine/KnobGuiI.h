@@ -51,11 +51,11 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
-    virtual void copyAnimationToClipboard(DimSpec /* dimension */, ViewIdx) const {}
+    virtual void copyAnimationToClipboard(DimSpec /* dimension */, ViewSetSpec) const {}
 
-    virtual void copyValuesToClipboard(DimSpec /*dimension*/, ViewIdx) const {}
+    virtual void copyValuesToClipboard(DimSpec /*dimension*/, ViewSetSpec) const {}
 
-    virtual void copyLinkToClipboard(DimSpec /*dimension */, ViewIdx) const {}
+    virtual void copyLinkToClipboard(DimSpec /*dimension */, ViewSetSpec) const {}
 
     virtual bool isGuiFrozenForPlayback() const = 0;
     virtual void saveOpenGLContext() OVERRIDE = 0;

@@ -61,13 +61,12 @@ KnobSerialization::encode(YAML::Emitter& em) const
     if (_masterIsAlias) {
         propNames.push_back("MasterIsAlias");
     }
-    assert((int)_values.size() == _dimension);
-
 
     int nDimsToSerialize = 0;
     int nDimsWithValue = 0;
     int nDimsWithDefValue = 0;
     for (PerViewValueSerializationMap::const_iterator it = _values.begin(); it != _values.end(); ++it) {
+        assert((int)it->second.size() == _dimension);
         for (PerDimensionValueSerializationVec::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if (it2->_mustSerialize && _isPersistent) {
                 ++nDimsToSerialize;

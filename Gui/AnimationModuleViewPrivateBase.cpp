@@ -244,28 +244,28 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
         GL_GPU::glVertex2f( middleTop.x(), std::min( middleTop.y(), selectedKeysBRect.y2 ) );
 
         //top tick
-        {
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidTop)) {
             double yBottom = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             double yTop = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             GL_GPU::glVertex2f(xMid, yBottom);
             GL_GPU::glVertex2f(xMid, yTop);
         }
         //left tick
-        {
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidLeft)) {
             double xLeft = zoomCtx.toZoomCoordinates(topLeftWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             double xRight = zoomCtx.toZoomCoordinates(topLeftWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             GL_GPU::glVertex2f(xLeft, yMid);
             GL_GPU::glVertex2f(xRight, yMid);
         }
         //bottom tick
-        {
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidBottom)) {
             double yBottom = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             double yTop = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             GL_GPU::glVertex2f(xMid, yBottom);
             GL_GPU::glVertex2f(xMid, yTop);
         }
         //right tick
-        {
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidRight)) {
             double xLeft = zoomCtx.toZoomCoordinates(btmRightWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             double xRight = zoomCtx.toZoomCoordinates(btmRightWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             GL_GPU::glVertex2f(xLeft, yMid);
@@ -274,12 +274,30 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
         GL_GPU::glEnd();
 
         GL_GPU::glPointSize(TO_DPIX(BOUNDING_BOX_HANDLE_SIZE));
-        GL_GPU::glBegin(GL_POINTS);
-        GL_GPU::glVertex2f( selectedKeysBRect.x1, selectedKeysBRect.y1 );
-        GL_GPU::glVertex2f( selectedKeysBRect.x1, selectedKeysBRect.y2 );
-        GL_GPU::glVertex2f( selectedKeysBRect.x2, selectedKeysBRect.y2 );
-        GL_GPU::glVertex2f( selectedKeysBRect.x2, selectedKeysBRect.y1 );
-        GL_GPU::glEnd();
+        std::vector<Point> ptsToDraw;
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointTopLeft)) {
+            Point p = {selectedKeysBRect.x1, selectedKeysBRect.y2};
+            ptsToDraw.push_back(p);
+        }
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointTopRight)) {
+            Point p = {selectedKeysBRect.x2, selectedKeysBRect.y2};
+            ptsToDraw.push_back(p);
+        }
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointBottomLeft)) {
+            Point p = {selectedKeysBRect.x1, selectedKeysBRect.y1};
+            ptsToDraw.push_back(p);
+        }
+        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointBottomRight)) {
+            Point p = {selectedKeysBRect.x2, selectedKeysBRect.y1};
+            ptsToDraw.push_back(p);
+        }
+        if (!ptsToDraw.empty()) {
+            GL_GPU::glBegin(GL_POINTS);
+            for (std::size_t i = 0; i < ptsToDraw.size(); ++i) {
+                glVertex2d(ptsToDraw[i].x, ptsToDraw[i].y);
+            }
+            GL_GPU::glEnd();
+        }
 
         glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);

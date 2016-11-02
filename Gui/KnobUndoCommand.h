@@ -356,7 +356,7 @@ public:
                      KnobClipBoardType type,
                      DimSpec fromDimension,
                      DimSpec targetDimension,
-                     ViewIdx fromView,
+                     ViewSetSpec fromView,
                      ViewSetSpec targetView,
                      const KnobIPtr& fromKnob);
 
@@ -376,8 +376,7 @@ class RestoreDefaultsCommand
 
 public:
 
-    RestoreDefaultsCommand(bool isNodeReset,
-                           const std::list<KnobIPtr > & knobs,
+    RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
                            DimSpec targetDim,
                            ViewSetSpec targetView,
                            QUndoCommand *parent = 0);
@@ -386,7 +385,6 @@ public:
 
 private:
 
-    bool _isNodeReset;
     DimSpec _targetDim;
     ViewSetSpec _targetView;
     std::list<KnobIWPtr> _knobs;

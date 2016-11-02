@@ -477,9 +477,6 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "eViewerContextLayoutTypeStretchAfter", (long) NATRON_NAMESPACE::eViewerContextLayoutTypeStretchAfter))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCONTEXTLAYOUTTYPEENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerContextLayoutTypeStretchBefore", (long) NATRON_NAMESPACE::eViewerContextLayoutTypeStretchBefore))
-        return ;
-    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCONTEXTLAYOUTTYPEENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eViewerContextLayoutTypeAddNewLine", (long) NATRON_NAMESPACE::eViewerContextLayoutTypeAddNewLine))
         return ;
     // Register converter for enum 'NATRON_NAMESPACE::ViewerContextLayoutTypeEnum'.

@@ -113,7 +113,7 @@ struct KnobDnDData
 {
     KnobIWPtr source;
     DimSpec sourceDimension;
-    ViewIdx sourceView;
+    ViewSetSpec sourceView;
     QDrag* drag;
 };
 
@@ -1322,7 +1322,7 @@ void
 GuiAppInstance::setKnobDnDData(QDrag* drag,
                                const KnobIPtr& knob,
                                DimSpec dimension,
-                               ViewIdx view)
+                               ViewSetSpec view)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->knobDnd.source = knob;
@@ -1335,7 +1335,7 @@ void
 GuiAppInstance::getKnobDnDData(QDrag** drag,
                                KnobIPtr* knob,
                                DimSpec* dimension,
-                               ViewIdx* view) const
+                               ViewSetSpec* view) const
 {
     assert( QThread::currentThread() == qApp->thread() );
     *knob = _imp->knobDnd.source.lock();

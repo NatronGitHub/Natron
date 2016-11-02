@@ -148,6 +148,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->displayViewChoice->addItem(tr("Dope Sheet"), pixDopeSheet, QKeySequence());
     _imp->displayViewChoice->addItem(tr("Split"), QIcon(), QKeySequence());
     _imp->displayViewChoice->setCurrentIndex_no_emit(0);
+    _imp->displayViewChoice->setFixedWidth(iconSize * 2);
     connect(_imp->displayViewChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewCurrentIndexChanged(int)));
     _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
 
@@ -215,10 +216,10 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
              _imp->dopeSheetView, SLOT(onAnimationTreeViewScrollbarMoved(int)) );
 
     connect( _imp->treeView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
+             _imp->dopeSheetView, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
     connect( _imp->treeView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
+             _imp->dopeSheetView, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()

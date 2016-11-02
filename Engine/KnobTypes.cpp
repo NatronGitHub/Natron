@@ -464,6 +464,7 @@ KnobChoice::KnobChoice(const KnobHolderPtr& holder,
     , _showMissingEntryWarning(true)
     , _isDisplayChannelKnob(false)
 {
+    _activeEntryMap.insert(std::make_pair(ViewIdx(0), std::string()));
 }
 
 KnobChoice::~KnobChoice()
@@ -929,7 +930,6 @@ KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
             PerViewActiveEntryMap::iterator foundView = _activeEntryMap.find(view_i);
             if (foundView == _activeEntryMap.end()) {
-                throw std::invalid_argument("KnobChoice::setActiveEntry: invalid view index");
                 return;
             }
             foundView->second = entry;

@@ -230,14 +230,10 @@ TimeLineGui::setTimeline(const TimeLinePtr& timeline)
     if (_imp->timeline) {
         //connect the internal timeline to the gui
         QObject::disconnect( _imp->timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)) );
-
-        //connect the gui to the internal timeline
-        QObject::disconnect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()) );
     }
 
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)), Qt::UniqueConnection );
-    QObject::connect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()), Qt::UniqueConnection );
 
     _imp->timeline = timeline;
 }

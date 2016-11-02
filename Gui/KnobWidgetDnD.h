@@ -50,7 +50,7 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   DimSpec dimension,
-                  ViewIdx view,
+                  ViewSetSpec view,
                   QWidget* widget);
 
 public:
@@ -58,7 +58,7 @@ public:
 
     static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
                                                    DimSpec dimension,
-                                                   ViewIdx view,
+                                                   ViewSetSpec view,
                                                    QWidget* widget)
     {
         return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, view, widget));

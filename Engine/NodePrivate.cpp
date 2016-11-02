@@ -99,6 +99,8 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , renderStartedCounter(0)
 , inputIsRenderingCounter(0)
 , lastInputNRenderStartedSlotCallTime()
+, nodeIsRendering(0)
+, nodeIsRenderingMutex()
 , persistentMessage()
 , persistentMessageType(0)
 , persistentMessageMutex()

@@ -103,13 +103,13 @@ public:
     void setKnobClipBoard(KnobClipBoardType type,
                           const KnobIPtr& serialization,
                           DimSpec dimension,
-                          ViewIdx view);
+                          ViewSetSpec view);
 
 
     void getKnobClipBoard(KnobClipBoardType *type,
                           KnobIPtr* serialization,
                           DimSpec *dimension,
-                          ViewIdx *view) const;
+                          ViewSetSpec *view) const;
 
 
     void updateAllRecentFileMenus();

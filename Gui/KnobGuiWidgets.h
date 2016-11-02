@@ -67,7 +67,7 @@ public:
     /**
      * @brief Enable right click menu for the given widget
      **/
-    static void enableRightClickMenu(const KnobGuiPtr& knob, QWidget* widget, DimSpec dimension, ViewIdx view);
+    static void enableRightClickMenu(const KnobGuiPtr& knob, QWidget* widget, DimSpec dimension, ViewSetSpec view);
 
     /**
      * @brief Override this to delete all user interface created for this knob

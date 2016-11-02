@@ -185,9 +185,10 @@ public:
             nodeUi->getColor(&r, &g, &b);
             c.setRgbF(r, g, b);
         }
+        TableModelPtr thisShared = shared_from_this();
         TableItemPtr item = getItem(row);
         if (!item) {
-            item = TableItem::create();
+            item = TableItem::create(thisShared);
             setRow(row, item);
         }
         {

@@ -159,7 +159,7 @@ ClickableLabel::setSunken(bool s)
 
 KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
-                                       ViewIdx view,
+                                       ViewSetSpec view,
                                        QWidget* parent )
     : ClickableLabel(icon, parent)
 , _dnd(KnobWidgetDnD::create(knob, DimSpec::all(), view, this) )
@@ -169,7 +169,7 @@ KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
 
 KnobClickableLabel::KnobClickableLabel(const QString& text,
                                        const KnobGuiPtr& knob,
-                                       ViewIdx view,
+                                       ViewSetSpec view,
                                        QWidget* parent)
     : ClickableLabel(text, parent)
 , _dnd( KnobWidgetDnD::create(knob, DimSpec::all(), view,this) )

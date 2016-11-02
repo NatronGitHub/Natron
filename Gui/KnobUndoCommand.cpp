@@ -62,7 +62,7 @@ struct PasteKnobClipBoardUndoCommandPrivate
 
     DimSpec fromDimension;
     DimSpec targetDimension;
-    ViewIdx fromView;
+    ViewSetSpec fromView;
     ViewSetSpec targetView;
 
     // Original serialization of both knobs
@@ -89,7 +89,7 @@ PasteKnobClipBoardUndoCommand::PasteKnobClipBoardUndoCommand(const KnobIPtr& kno
                                    KnobClipBoardType type,
                                    DimSpec fromDimension,
                                    DimSpec targetDimension,
-                                   ViewIdx fromView,
+                                   ViewSetSpec fromView,
                                    ViewSetSpec targetView,
                                    const KnobIPtr& fromKnob)
     : QUndoCommand(0)
@@ -679,13 +679,11 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
-                                               const std::list<KnobIPtr > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
                                                DimSpec targetDim,
                                                ViewSetSpec targetView,
                                                QUndoCommand *parent)
 : QUndoCommand(parent)
-, _isNodeReset(isNodeReset)
 , _targetDim(targetDim)
 , _targetView(targetView)
 , _knobs()

@@ -107,6 +107,8 @@ public:
 
     void onLastTaskAddedFinished(const ProgressTaskInfo* task);
 
+    TableModelPtr getModel() const;
+
 public Q_SLOTS:
 
     void onCancelTasksTriggered();

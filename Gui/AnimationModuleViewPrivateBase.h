@@ -97,6 +97,25 @@ public:
 
     void drawSelectedKeyFramesBbox();
 
+    enum SelectedKeyFramesRectanglePointEnum
+    {
+        eSelectedKeyFramesRectanglePointTopLeft,
+        eSelectedKeyFramesRectanglePointTopRight,
+        eSelectedKeyFramesRectanglePointBottomRight,
+        eSelectedKeyFramesRectanglePointBottomLeft,
+        eSelectedKeyFramesRectanglePointMidBottom,
+        eSelectedKeyFramesRectanglePointMidTop,
+        eSelectedKeyFramesRectanglePointMidLeft,
+        eSelectedKeyFramesRectanglePointMidRight,
+        eSelectedKeyFramesRectanglePointCenter
+    };
+
+    virtual bool isSelectedKeyFramesRectanglePointEnabled(SelectedKeyFramesRectanglePointEnum pt) const
+    {
+        Q_UNUSED(pt);
+        return true;
+    }
+
     void drawTexturedKeyframe(AnimationModuleViewPrivateBase::KeyframeTexture textureType,
                              bool drawTime,
                              double time,
@@ -134,7 +153,10 @@ public:
     void createMenu();
 
     // Called in the end of createMenu
-    virtual void addMenuOptions();
+    virtual void addMenuOptions()
+    {
+        
+    }
 
     /**
      * @brief A thin wrapper around AnimationModuleBase::moveSelectedKeysAndNodes that clamps keyframes motion to integers if needed

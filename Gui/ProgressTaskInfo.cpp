@@ -442,7 +442,7 @@ ProgressTaskInfoPrivate::createItems()
         color.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
     }
     _publicInterface->createCellWidgets();
-    item = TableItem::create();
+    item = TableItem::create(panel->getModel());
     {
         item->setFlags(COL_NAME, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);

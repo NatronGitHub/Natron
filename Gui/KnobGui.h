@@ -110,6 +110,7 @@ public:
     {
         KnobGuiPtr ret(new KnobGui(knob,layoutType,container));
         ret->initialize();
+        return ret;
     }
 
     virtual ~KnobGui() OVERRIDE;
@@ -143,8 +144,8 @@ public:
     Gui* getGui() const;
 
 
-    QWidget* getFieldContainer(ViewIdx view) const;
-    QWidget* getLabelContainer(ViewIdx view) const;
+    QWidget* getFieldContainer() const;
+    QWidget* getLabelContainer() const;
 
     KnobGuiWidgetsPtr getWidgetsForView(ViewIdx view);
 
@@ -200,9 +201,12 @@ public:
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
-    virtual void copyAnimationToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
-    virtual void copyValuesToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
-    virtual void copyLinkToClipboard(DimSpec dimension, ViewIdx view) const OVERRIDE FINAL;
+    virtual void copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+    virtual void copyValuesToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+    virtual void copyLinkToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL;
+
+    bool getAllViewsVisible() const;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -216,7 +220,6 @@ public:
                                   int indexInParent);
 
 
-    bool getAllDimensionsVisible(ViewIdx view) const;
 
     void setWarningValue(KnobWarningEnum warn, const QString& value);
 
@@ -244,7 +247,7 @@ public Q_SLOTS:
 
     void onRightClickClicked(const QPoint & pos);
 
-    void showRightClickMenuForDimension(const QPoint & pos, DimSpec dimension, ViewIdx view);
+    void showRightClickMenuForDimension(const QPoint & pos, DimSpec dimension, ViewSetSpec view);
 
     void setEnabledSlot();
 
@@ -271,12 +274,12 @@ public Q_SLOTS:
     void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo(DimSpec dimension, ViewIdx view);
+    void linkTo(DimSpec dimension, ViewSetSpec view);
 
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.
-    void resetDefault(DimSpec dimension, ViewIdx view);
+    void resetDefault(DimSpec dimension, ViewSetSpec view);
 
     void onSetDirty(bool d);
 
@@ -317,26 +320,27 @@ Q_SIGNALS:
 
 private:
 
-    void createViewWidgets(QWidget* parentWidget, ViewIdx view);
+    void createViewContainers(QWidget* parentWidget, ViewIdx view);
 
-    static void getDimViewFromActionData(const QAction* action, ViewIdx* view, DimSpec* dimension);
+    static void getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimSpec* dimension);
 
     void refreshKnobWarningIndicatorVisibility();
 
     void updateGuiInternal(DimSpec dimension, ViewSetSpec view);
 
-    void copyToClipBoard(KnobClipBoardType type, DimSpec dimension, ViewIdx view) const;
+    void copyToClipBoard(KnobClipBoardType type, DimSpec dimension, ViewSetSpec view) const;
 
-    void pasteClipBoard(DimSpec dimension, ViewIdx view);
+    void pasteClipBoard(DimSpec dimension, ViewSetSpec view);
 
 
 
-    void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewIdx view);
-    Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewIdx view, bool isEnabled);
+    void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view);
+    Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view, bool isEnabled);
 
 
 private:
 
+    friend class KnobGuiPrivate;
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
