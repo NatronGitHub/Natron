@@ -475,7 +475,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerPatternWinSizeHint) );
         param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "patternSize.png");
         param->setAnimationEnabled(false);
-        param->setRange(1, std::numeric_limits<int>::infinity());
+        param->setRange(1, INT_MAX);
         param->disableSlider();
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
@@ -492,7 +492,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerSearchWinSizeHint) );
         param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "searchSize.png");
         param->setAnimationEnabled(false);
-        param->setRange(1, std::numeric_limits<int>::infinity());
+        param->setRange(1, INT_MAX);
         param->disableSlider();
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -1011,7 +1011,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         param->setHintToolTip( tr(kTrackerParamJitterPeriodHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue(10);
-        param->setRange(0, std::numeric_limits<int>::infinity());
+        param->setRange(0, INT_MAX);
         param->setEvaluateOnChange(false);
         transformPage->addKnob(param);
         _imp->jitterPeriod = param;
@@ -1026,7 +1026,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         param->setDimensionName(DimIdx(1), "r");
         param->setDimensionName(DimIdx(2), "s");
         for (int i = 0; i < 3; ++i) {
-            param->setRange(0, std::numeric_limits<int>::infinity(), DimIdx(i));
+            param->setRange(0, INT_MAX, DimIdx(i));
         }
         param->setEvaluateOnChange(false);
         transformPage->addKnob(param);
@@ -1038,7 +1038,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         param->setHintToolTip( tr(kTrackerParamSmoothCornerPinHint) );
         param->setAnimationEnabled(false);
         param->disableSlider();
-        param->setRange(0, std::numeric_limits<int>::infinity());
+        param->setRange(0, INT_MAX);
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         transformPage->addKnob(param);

@@ -375,8 +375,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     _imp->_dragStartPoint = e->pos();
     _imp->_keyDragLastMovement.ry() = _imp->_keyDragLastMovement.rx() = 0;
 
-
-    setFocus();
+    // is it really needed ?
+    //setFocus();
     ////
     // right button: popup menu
     if ( buttonDownIsRight(e) ) {

@@ -2178,6 +2178,8 @@ public:
     virtual void cloneDefaultValues(const KnobIPtr& other) OVERRIDE FINAL;
 
     ///MT-safe
+    void setMinimum(const T& mini, DimSpec dimension = DimSpec::all());
+    void setMaximum(const T& maxi, DimSpec dimension = DimSpec::all());
     void setRange(const T& mini, const T& maxi, DimSpec dimension = DimSpec::all());
     void setDisplayRange(const T& mini, const T& maxi, DimSpec dimension = DimSpec::all());
     void setRangeAcrossDimensions(const std::vector<T> &minis, const std::vector<T> &maxis);

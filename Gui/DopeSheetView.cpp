@@ -1695,7 +1695,7 @@ DopeSheetView::getBackgroundColour(double &r,
     running_in_main_thread();
 
     // use the same settings as the curve editor
-    appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
+    appPTR->getCurrentSettings()->getAnimationModuleEditorBackgroundColor(&r, &g, &b);
 }
 
 void

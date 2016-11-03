@@ -138,6 +138,42 @@ Knob<T>::~Knob()
 
 template <typename T>
 void
+Knob<T>::setMinimum(const T& mini, DimSpec dimension)
+{
+    {
+        QWriteLocker k(&_minMaxMutex);
+        if (dimension.isAll()) {
+            for (int i = 0; i < getNDimensions(); ++i) {
+                _minimums[i] = mini;
+            }
+        } else {
+            _minimums[dimension] = mini;
+        }
+    }
+
+    _signalSlotHandler->s_minMaxChanged(dimension);
+}
+
+template <typename T>
+void
+Knob<T>::setMaximum(const T& maxi, DimSpec dimension)
+{
+    {
+        QWriteLocker k(&_minMaxMutex);
+        if (dimension.isAll()) {
+            for (int i = 0; i < getNDimensions(); ++i) {
+                _maximums[i] = maxi;
+            }
+        } else {
+            _maximums[dimension] = maxi;
+        }
+    }
+
+    _signalSlotHandler->s_minMaxChanged(dimension);
+}
+
+template <typename T>
+void
 Knob<T>::setRange(const T& mini,
                   const T& maxi,
                  DimSpec dimension)

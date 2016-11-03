@@ -354,6 +354,28 @@ KnobGui::getWidgetsForView(ViewIdx view)
     return foundView->second.widgets;
 }
 
+static int getLayoutLeftMargin(KnobGui::KnobLayoutTypeEnum type)
+{
+    switch (type) {
+        case KnobGui::eKnobLayoutTypeViewerUI:
+            return 0;
+        case KnobGui::eKnobLayoutTypePage:
+            return 3;
+        case KnobGui::eKnobLayoutTypeTableItemWidget:
+            return 0;
+    }
+}
+static int getLayoutBottomMargin(KnobGui::KnobLayoutTypeEnum type)
+{
+    switch (type) {
+        case KnobGui::eKnobLayoutTypeViewerUI:
+            return 0;
+        case KnobGui::eKnobLayoutTypePage:
+            return NATRON_SETTINGS_VERTICAL_SPACING_PIXELS;
+        case KnobGui::eKnobLayoutTypeTableItemWidget:
+            return 0;
+    }
+}
 void
 KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
 {
@@ -366,7 +388,11 @@ KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
     // Create a new container and layout
     viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(parentWidget);
     viewWidgets.fieldLayout = new QHBoxLayout(viewWidgets.field);
-    viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
+
+    int leftMargin = getLayoutLeftMargin(_imp->layoutType);
+    int bottomMargin = getLayoutBottomMargin(_imp->layoutType);
+    
+    viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(leftMargin), 0, 0, TO_DPIY(bottomMargin) );
     viewWidgets.fieldLayout->setSpacing( TO_DPIY(2) );
     viewWidgets.fieldLayout->setAlignment(Qt::AlignLeft);
 
@@ -427,8 +453,11 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
 
     labelContainer = new QWidget(parentWidget);
     QHBoxLayout* labelLayout = new QHBoxLayout(labelContainer);
-    double verticalMargin = layoutType == KnobGui::eKnobLayoutTypePage ? TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) : 0;
-    labelLayout->setContentsMargins(TO_DPIX(3), 0, 0, verticalMargin);
+
+    int leftMargin = getLayoutLeftMargin(layoutType);
+    int bottomMargin = getLayoutBottomMargin(layoutType);
+
+    labelLayout->setContentsMargins( TO_DPIX(leftMargin), 0, 0, TO_DPIY(bottomMargin) );
     labelLayout->setSpacing( TO_DPIY(2) );
 
     if (mustCreateLabel) {
@@ -557,8 +586,8 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
 
     prevMainLayout->addWidget(labelContainer);
 
-    // Separate the label and the actual field by 2 px
-    prevMainLayout->addSpacing(TO_DPIX(2));
+    // Separate the label and the actual field
+    prevMainLayout->addSpacing(TO_DPIX(1));
     prevMainLayout->addWidget(mainContainer);
 } // addWidgetsToPreviousKnobLayout
 
@@ -611,8 +640,12 @@ KnobGui::createGUI(QWidget* parentWidget)
     _imp->mainLayout->addWidget(_imp->viewsContainer);
 
 
-    if ( knob->isNewLineActivated() && firstViewWidgets->shouldAddStretch() ) {
-        _imp->mainLayout->addStretch();
+    if ( firstViewWidgets->shouldAddStretch() ) {
+        if ((_imp->layoutType == eKnobLayoutTypePage && knob->isNewLineActivated()) ||
+            (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine)) {
+            _imp->mainLayout->addStretch();
+        }
+
     }
 
 

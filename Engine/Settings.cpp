@@ -323,7 +323,7 @@ Settings::initializeKnobsThreading()
                                         "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
-    _numberOfThreads->setRange(-1, std::numeric_limits<int>::infinity());
+    _numberOfThreads->setRange(-1, INT_MAX);
     _numberOfThreads->setDisplayRange(-1, 30);
     _threadingPage->addKnob(_numberOfThreads);
 
@@ -336,7 +336,7 @@ Settings::initializeKnobsThreading()
                                                  "in some situations to worse performances. Overall to get the best performances you should have your "
                                                  "CPU at 100% activity without idle times.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setRange(0, std::numeric_limits<int>::infinity());
+    _numberOfParallelRenders->setRange(0, INT_MAX);
     _numberOfParallelRenders->disableSlider();
     _threadingPage->addKnob(_numberOfParallelRenders);
 #endif
@@ -361,7 +361,7 @@ Settings::initializeKnobsThreading()
                                            "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
                                            "for an effect.") );
 
-    _nThreadsPerEffect->setRange(0, std::numeric_limits<int>::infinity());
+    _nThreadsPerEffect->setRange(0, INT_MAX);
     _nThreadsPerEffect->disableSlider();
     _threadingPage->addKnob(_nThreadsPerEffect);
 
@@ -1124,7 +1124,7 @@ Settings::initializeKnobsViewers()
 
     _checkerboardTileSize = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Checkerboard tile size (pixels)") );
     _checkerboardTileSize->setName("checkerboardTileSize");
-    _checkerboardTileSize->setRange(1, std::numeric_limits<int>::infinity());
+    _checkerboardTileSize->setRange(1, INT_MAX);
     _checkerboardTileSize->setHintToolTip( tr("The size (in screen pixels) of one tile of the checkerboard.") );
     _viewersTab->addKnob(_checkerboardTileSize);
 
@@ -1166,7 +1166,7 @@ Settings::initializeKnobsViewers()
 
     _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
-    _maximumNodeViewerUIOpened->setRange(1, std::numeric_limits<int>::infinity());
+    _maximumNodeViewerUIOpened->setRange(1, INT_MAX);
     _maximumNodeViewerUIOpened->disableSlider();
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
@@ -1216,7 +1216,7 @@ Settings::initializeKnobsNodeGraph()
     _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum undo/redo for the node graph") );
     _maxUndoRedoNodeGraph->setName("maxUndoRedo");
     _maxUndoRedoNodeGraph->disableSlider();
-    _maxUndoRedoNodeGraph->setRange(0, std::numeric_limits<int>::infinity());
+    _maxUndoRedoNodeGraph->setRange(0, INT_MAX);
     _maxUndoRedoNodeGraph->setHintToolTip( tr("Set the maximum of events related to the node graph %1 "
                                               "remembers. Past this limit, older events will be deleted forever, "
                                               "allowing to re-use the RAM for other purposes. \n"

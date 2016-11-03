@@ -141,10 +141,11 @@ struct KnobGuiValuePrivate
         KnobDoubleBasePtr k = getKnobAsDouble();
         KnobIntBasePtr i = getKnobAsInt();
 
+        const bool clampToMinMax = false;
         if (k) {
-            value = k->getValue(dimension, publicInterface->getView());
+            value = k->getValue(dimension, publicInterface->getView(), clampToMinMax);
         } else if (i) {
-            value = (double)i->getValue(dimension, publicInterface->getView());
+            value = (double)i->getValue(dimension, publicInterface->getView(), clampToMinMax);
         } else {
             value = 0;
         }
@@ -961,7 +962,7 @@ KnobGuiValue::sliderEditingEnd(double d)
         if (doubleKnob) {
             std::vector<double> oldValues, newValues;
             for (int i = 0; i < (int)_imp->spinBoxes.size(); ++i) {
-                oldValues.push_back( doubleKnob->getValue(DimIdx(i),view) );
+                oldValues.push_back( doubleKnob->getValue(DimIdx(i),view, false /*clampToMinmax*/) );
                 newValues.push_back(d);
                 newValuesVec.push_back(d);
             }
@@ -970,7 +971,7 @@ KnobGuiValue::sliderEditingEnd(double d)
             assert(intKnob);
             std::vector<int> oldValues, newValues;
             for (int i = 0; i < (int)_imp->spinBoxes.size(); ++i) {
-                oldValues.push_back( intKnob->getValue(DimIdx(i), view) );
+                oldValues.push_back( intKnob->getValue(DimIdx(i), view, false /*clampToMinmax*/) );
                 newValues.push_back( (int)d );
                 newValuesVec.push_back(d);
             }
@@ -980,10 +981,10 @@ KnobGuiValue::sliderEditingEnd(double d)
         _imp->spinBoxes[0].first->setValue(d);
         d = valueAccordingToType(true, DimIdx(0), d);
         if (doubleKnob) {
-            getKnobGui()->pushUndoCommand( new KnobUndoCommand<double>(internalKnob, doubleKnob->getValue(DimIdx(0), view), d, DimIdx(0) ,view) );
+            getKnobGui()->pushUndoCommand( new KnobUndoCommand<double>(internalKnob, doubleKnob->getValue(DimIdx(0), view, false /*clampToMinmax*/), d, DimIdx(0) ,view) );
         } else {
             assert(intKnob);
-            getKnobGui()->pushUndoCommand( new KnobUndoCommand<int>(internalKnob, intKnob->getValue(DimIdx(0), view), (int)d, DimIdx(0) ,view) );
+            getKnobGui()->pushUndoCommand( new KnobUndoCommand<int>(internalKnob, intKnob->getValue(DimIdx(0), view, false /*clampToMinmax*/), (int)d, DimIdx(0) ,view) );
         }
         newValuesVec.push_back(d);
     }
@@ -1064,7 +1065,9 @@ KnobGuiValue::onSpinBoxValueChanged()
 void
 KnobGuiValue::setWidgetsVisible(bool visible)
 {
-    _imp->container->setVisible(visible);
+    if (_imp->container) {
+        _imp->container->setVisible(visible);
+    }
 }
 
 void

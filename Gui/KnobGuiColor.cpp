@@ -450,7 +450,7 @@ KnobGuiColor::showColorDialog()
     KnobColorPtr knob = _knob.lock();
     const int nDims = knob->getNDimensions();
     ViewIdx view = getView();
-    double curR = knob->getValue(DimIdx(0), view);
+    double curR = knob->getValue(DimIdx(0), view, false /*clampToMinmax*/);
 
     _lastColor.resize(nDims);
     _lastColor[0] = curR;
@@ -458,14 +458,14 @@ KnobGuiColor::showColorDialog()
     double curB = curR;
     double curA = 1.;
     if (nDims > 1) {
-        curG = knob->getValue(DimIdx(1), view);
+        curG = knob->getValue(DimIdx(1), view, false /*clampToMinmax*/);
         _lastColor[1] =  curG;
-        curB = knob->getValue(DimIdx(2), view);
+        curB = knob->getValue(DimIdx(2), view, false /*clampToMinmax*/);
         _lastColor[2] = curB;
     }
     if (nDims > 3) {
         dialog.setOption(QColorDialog::ShowAlphaChannel);
-        curA = knob->getValue(DimIdx(3), view);
+        curA = knob->getValue(DimIdx(3), view, false /*clampToMinmax*/);
         _lastColor[3] = curA;
     }
 

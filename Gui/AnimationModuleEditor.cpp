@@ -221,6 +221,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     connect( _imp->treeView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
              _imp->dopeSheetView, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
+
+    onSelectionModelSelectionChanged(false);
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()
@@ -371,11 +373,11 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     }
 
     if (curves.empty() || curves.size() > 1) {
-        throw std::invalid_argument(tr("Cannot set expression on multiple items").toStdString());
+        throw std::invalid_argument(tr("Cannot set an expression on multiple items").toStdString());
     }
     KnobAnimPtr isKnobAnim = toKnobAnim(curves.front()->getItem());
     if (!isKnobAnim) {
-        throw std::invalid_argument(tr("Cannot set expression on something else than a knob").toStdString());
+        throw std::invalid_argument(tr("Cannot set an expression on something else than a knob").toStdString());
     }
     KnobIPtr knob = isKnobAnim->getInternalKnob();
     const CurveGuiPtr& curve = curves.front();
@@ -396,6 +398,7 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
 void
 AnimationModuleEditor::onExprLineEditFinished()
 {
+
     try {
         setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
     } catch(const std::exception& e) {

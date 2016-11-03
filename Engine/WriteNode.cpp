@@ -906,7 +906,7 @@ WriteNode::initializeKnobs()
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
-    frameIncrKnob->setRange(1, std::numeric_limits<int>::infinity());
+    frameIncrKnob->setRange(1, INT_MAX);
     frameIncrKnob->setDefaultValue(1);
     controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
