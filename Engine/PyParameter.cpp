@@ -623,7 +623,7 @@ Param::slaveTo(Param* other,
         PythonSetNullError();
         return false;
     }
-    if ( !KnobI::areTypesCompatibleForSlave(thisKnob, otherKnob) ) {
+    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
         PyErr_SetString(PyExc_ValueError, tr("Cannot slave to a parameter with an incompatible type").toStdString().c_str());
         return false;
     }

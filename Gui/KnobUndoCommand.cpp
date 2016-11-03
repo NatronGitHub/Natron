@@ -86,25 +86,27 @@ struct PasteKnobClipBoardUndoCommandPrivate
 };
 
 PasteKnobClipBoardUndoCommand::PasteKnobClipBoardUndoCommand(const KnobIPtr& knob,
-                                   KnobClipBoardType type,
-                                   DimSpec fromDimension,
-                                   DimSpec targetDimension,
-                                   ViewSetSpec fromView,
-                                   ViewSetSpec targetView,
-                                   const KnobIPtr& fromKnob)
-    : QUndoCommand(0)
-    , _imp( new PasteKnobClipBoardUndoCommandPrivate() )
+                                                             KnobClipBoardType type,
+                                                             DimSpec fromDimension,
+                                                             DimSpec targetDimensionIn,
+                                                             ViewSetSpec fromView,
+                                                             ViewSetSpec targetViewIn,
+                                                             const KnobIPtr& fromKnob)
+: QUndoCommand(0)
+, _imp( new PasteKnobClipBoardUndoCommandPrivate() )
 {
     assert(knob && fromKnob);
+
+    // If target view is all but target is not multi-view, convert back to main view
+    // Also, if all dimensions are folded, convert to all dimensions
+    knob->convertDimViewArgAccordingToKnobState(targetDimensionIn, targetViewIn, &_imp->targetDimension, &_imp->targetView);
 
 
     _imp->fromKnob = fromKnob;
     _imp->knob = knob;
     _imp->type = type;
     _imp->fromDimension = fromDimension;
-    _imp->targetDimension = targetDimension;
     _imp->fromView = fromView;
-    _imp->targetView = targetView;
 
     _imp->toKnobSerialization.reset(new SERIALIZATION_NAMESPACE::KnobSerialization);
     knob->toSerialization(_imp->toKnobSerialization.get());
@@ -115,16 +117,22 @@ PasteKnobClipBoardUndoCommand::PasteKnobClipBoardUndoCommand(const KnobIPtr& kno
     QString text;
     switch (type) {
     case eKnobClipBoardTypeCopyAnim:
-        text = tr("Paste Animation on %1");
+        text = tr("Paste Animation on %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) );
         break;
     case eKnobClipBoardTypeCopyValue:
-        text = tr("Paste Value on %1");
+        text = tr("Paste Value on %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) );
         break;
     case eKnobClipBoardTypeCopyLink:
-        text = tr("Paste Link on %1");
+        text = tr("Link %1 to %2").arg( QString::fromUtf8( fromKnob->getLabel().c_str() ) ).arg( QString::fromUtf8( knob->getLabel().c_str() ) );
+        break;
+    case eKnobClipBoardTypeCopyExpressionLink:
+        text = tr("Link with Expression %1 to %2").arg( QString::fromUtf8( fromKnob->getLabel().c_str() ) ).arg( QString::fromUtf8( knob->getLabel().c_str() ) );
+        break;
+    case eKnobClipBoardTypeCopyExpressionMultCurveLink:
+        text = tr("Set curve(frame)*%1 on %2").arg( QString::fromUtf8( fromKnob->getLabel().c_str() ) ).arg( QString::fromUtf8( knob->getLabel().c_str() ) );
         break;
     }
-    setText( text.arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+    setText(text);
 }
 
 PasteKnobClipBoardUndoCommand::~PasteKnobClipBoardUndoCommand()
@@ -161,9 +169,9 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
 
 
     // Get view names
-    std::vector<std::string> viewNames;
+    std::vector<std::string> projectViewNames;
     if (internalKnob->getHolder() && internalKnob->getHolder()->getApp()) {
-        viewNames = internalKnob->getHolder()->getApp()->getProject()->getProjectViewNames();
+        projectViewNames = internalKnob->getHolder()->getApp()->getProject()->getProjectViewNames();
     }
 
     // group changes under the same evaluation
@@ -178,31 +186,38 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
         fromAnimString = fromKnob->getStringAnimation();
     }
 
-
-    for (int i = 0; i < internalKnob->getNDimensions(); ++i) {
-        if ( ( _imp->targetDimension.isAll()) || ( i == _imp->targetDimension) ) {
-
-
-            // Read the curve from the clipboard
-            CurvePtr fromCurve(new Curve());
+    for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
+        if ( ( !_imp->targetView.isAll()) && ( *it != _imp->targetView) ) {
+            continue;
+        }
+        for (int i = 0; i < internalKnob->getNDimensions(); ++i) {
+            if ( ( !_imp->targetDimension.isAll()) && ( i != _imp->targetDimension) ) {
+                continue;
+            }
 
             ViewIdx fromView;
             DimIdx fromDim;
 
             if ( !_imp->targetDimension.all() && !_imp->fromDimension.isAll() ) {
-                fromView = _imp->fromView;
                 fromDim = DimIdx(_imp->fromDimension);
             } else {
                 // If the source knob dimension is all or target dimension is all copy dimension to dimension respectively
-                fromView = _imp->fromView;
                 fromDim = DimIdx(i);
             }
+
+            if ( !_imp->targetView.isAll() && !_imp->fromView.isAll() ) {
+                fromView = ViewIdx(_imp->fromView);
+            } else {
+                // If the source knob view is all or target view is all copy view to view respectively
+                fromView = *it;
+            }
+
 
             switch (_imp->type) {
                 case eKnobClipBoardTypeCopyAnim: {
                     std::string fromViewName;
-                    if (fromView >= 0 && fromView < (int)viewNames.size()) {
-                        fromViewName = viewNames[_imp->fromView];
+                    if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
+                        fromViewName = projectViewNames[_imp->fromView];
                     } else {
                         fromViewName = "Main";
                     }
@@ -213,24 +228,23 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                     if (fromDim < 0 || fromDim >= (int) foundFromView->second.size()) {
                         continue;
                     }
+
+
+                    // Read the curve from the clipboard
+                    CurvePtr fromCurve(new Curve());
+                    
 
                     if (!foundFromView->second[_imp->fromDimension]._animationCurve.keys.empty()) {
                         fromCurve->fromSerialization(foundFromView->second[_imp->fromDimension]._animationCurve);
                     }
-                    if (_imp->targetView.isAll()) {
-                        for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
-                            internalKnob->cloneCurve(*it, DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/, fromAnimString.get());
-                        }
-                    } else {
-                        assert(_imp->targetView.isViewIdx());
-                        internalKnob->cloneCurve(ViewIdx(_imp->targetView), DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/, fromAnimString.get());
-                    }
+                    internalKnob->cloneCurve(*it, DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/, fromAnimString.get());
+
                     break;
                 }
                 case eKnobClipBoardTypeCopyValue: {
                     std::string fromViewName;
-                    if (fromView >= 0 && fromView < (int)viewNames.size()) {
-                        fromViewName = viewNames[_imp->fromView];
+                    if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
+                        fromViewName = projectViewNames[_imp->fromView];
                     } else {
                         fromViewName = "Main";
                     }
@@ -242,44 +256,133 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         continue;
                     }
 
-                    if (_imp->targetView.isAll()) {
-                        for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
-                            internalKnob->restoreValueFromSerialization(foundFromView->second[fromDim], DimIdx(i), *it, false /*restoreDefaultValue*/);
-                        }
-                    } else {
-                        internalKnob->restoreValueFromSerialization(foundFromView->second[fromDim], DimIdx(i),  ViewIdx(_imp->targetView), false /*restoreDefaultValue*/);
-                    }
+                    internalKnob->restoreValueFromSerialization(foundFromView->second[fromDim], DimIdx(i), *it, false /*restoreDefaultValue*/);
 
                     break;
                 }
                 case eKnobClipBoardTypeCopyLink: {
                     if (isRedo) {
-                        if (_imp->targetView.isAll()) {
-                            for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
-                                internalKnob->slaveTo(fromKnob, DimIdx(i), fromDim, *it, fromView);
-                            }
-                        } else {
-                            internalKnob->slaveTo(fromKnob, DimIdx(i), fromDim, ViewIdx(_imp->targetView), fromView);
-                        }
-
+                        internalKnob->slaveTo(fromKnob, DimIdx(i), fromDim, *it, fromView);
                     } else {
-                        if (_imp->targetView.isAll()) {
-                            for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
-                                internalKnob->unSlave(DimIdx(i), *it, false /*copyState*/);
-                            }
-                        } else {
-                            internalKnob->unSlave(DimIdx(i), ViewIdx(_imp->targetView), false /*copyState*/);
-                        }
+                        internalKnob->unSlave(DimIdx(i), *it, false /*copyState*/);
                     }
                     break;
                 }
-            };
-
-        }
-    }
+                case eKnobClipBoardTypeCopyExpressionLink:
+                case eKnobClipBoardTypeCopyExpressionMultCurveLink:
+                {
+                    if (isRedo) {
+                        std::string expression = makeLinkExpression(projectViewNames, internalKnob, _imp->type == eKnobClipBoardTypeCopyExpressionMultCurveLink, fromKnob, _imp->fromDimension, _imp->fromView, _imp->targetDimension, _imp->targetView);
+                        const bool hasRetVar = false;
+                        try {
+                            // Don't fail if exception is invalid, it should have been tested prior to creating an undo/redo command, otherwise user is going
+                            // to hit CTRL-Z and nothing will happen
+                            internalKnob->setExpression(DimIdx(i), *it, expression, hasRetVar, /*failIfInvalid*/ false);
+                        } catch (...) {
+                        }
+                    } else { // !isRedo
+                        internalKnob->clearExpression(DimIdx(i), *it, true);
+                    } // isRedo
+                    break;
+                }
+            }; // switch
+            
+        } // for all dimensions
+    } // for all views
     internalKnob->endChanges();
 
 } // redo
+
+std::string
+PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>& projectViewNames,
+                                                  const KnobIPtr& targetKnob,
+                                                  bool multCurve,
+                                                  const KnobIPtr& fromKnob,
+                                                  DimSpec fromDimension,
+                                                  ViewSetSpec fromView,
+                                                  DimSpec targetDimension,
+                                                  ViewSetSpec targetView)
+{
+    EffectInstancePtr fromEffect = toEffectInstance( fromKnob->getHolder() );
+    EffectInstancePtr toEffect = toEffectInstance( targetKnob->getHolder() );
+    assert(fromEffect && toEffect);
+    if (!fromEffect || !toEffect) {
+        return std::string();
+    }
+
+    std::stringstream ss;
+    if (fromEffect == toEffect) {
+        // Same node, use thisNode
+        ss << "thisNode.";
+    } else {
+        // If the container of the effect is a group, prepend thisGroup, otherwise use
+        // the canonical app prefix
+        NodeGroupPtr isEffectContainerGroup;
+        {
+            NodeCollectionPtr effectContainer = fromEffect->getNode()->getGroup();
+            isEffectContainerGroup = toNodeGroup(effectContainer);
+        }
+        if (isEffectContainerGroup) {
+            ss << "thisGroup.";
+        } else {
+            ss << fromEffect->getApp()->getAppIDString() << ".";
+        }
+        ss << fromEffect->getNode()->getScriptName_mt_safe() << ".";
+    }
+
+    // Call getValue on the fromKnob
+    ss << fromKnob->getName();
+    ss << ".getValue(";
+    if (fromKnob->getNDimensions() > 1) {
+        if (fromDimension.isAll()) {
+            ss << "dimension";
+        } else {
+            ss << fromDimension;
+        }
+    }
+    std::list<ViewIdx> sourceViews = fromKnob->getViewsList();
+    if (sourceViews.size() > 1) {
+        ss << ", ";
+        if (fromView.isAll()) {
+            ss << "view";
+        } else {
+            if (fromView >= 0 && fromView < (int)projectViewNames.size()) {
+                ss << projectViewNames[fromView];
+            } else {
+                ss << "Main";
+            }
+        }
+    }
+    ss << ")";
+
+    // Also check if we need to multiply by the target knob's curve
+    if (multCurve) {
+        ss << " * curve(frame, ";
+        if (targetDimension.isAll()) {
+            ss << "dimension";
+        } else {
+            ss << targetDimension;
+        }
+
+        std::list<ViewIdx> targetKnobViews = targetKnob->getViewsList();
+        if (targetKnobViews.size() > 1) {
+            ss << ", ";
+            if (targetView.isAll()) {
+                ss << "view";
+            } else {
+
+                if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
+                    ss << projectViewNames[targetView];
+                } else {
+                    ss << "Main";
+                }
+            }
+        }
+
+        ss << ")";
+    }
+    return ss.str();
+} // makeLinkExpression
 
 static void setVariant(const KnobIntBasePtr& isInt,
                        const KnobBoolBasePtr& isBool,

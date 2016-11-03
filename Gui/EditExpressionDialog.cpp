@@ -94,10 +94,10 @@ NATRON_NAMESPACE_ENTER;
 
 EditExpressionDialog::EditExpressionDialog(Gui* gui,
                                            DimSpec dimension,
-                                           ViewIdx view,
+                                           ViewSetSpec view,
                                            const KnobGuiPtr& knob,
                                            QWidget* parent)
-    : EditScriptDialog(gui, knob, parent)
+    : EditScriptDialog(gui, knob, dimension, view, parent)
     , _dimension(dimension)
     , _view(view)
     , _knob(knob)
@@ -110,7 +110,7 @@ EditExpressionDialog::getDimension() const
     return _dimension;
 }
 
-ViewIdx
+ViewSetSpec
 EditExpressionDialog::getView() const
 {
     return _view;
@@ -133,7 +133,7 @@ EditExpressionDialog::setTitle()
 bool
 EditExpressionDialog::hasRetVariable() const
 {
-    return _knob->getKnob()->isExpressionUsingRetVariable(_view, _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension));
+    return _knob->getKnob()->isExpressionUsingRetVariable(_view.isAll() ? ViewIdx(0) : ViewIdx(_view), _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension));
 }
 
 QString
@@ -142,7 +142,7 @@ EditExpressionDialog::compileExpression(const QString& expr)
     std::string exprResult;
 
     try {
-        _knob->getKnob()->validateExpression(expr.toStdString(), _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension), _view, isUseRetButtonChecked()
+        _knob->getKnob()->validateExpression(expr.toStdString(), _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension), _view.isAll() ? ViewIdx(0) : ViewIdx(_view), isUseRetButtonChecked()
                                              , &exprResult);
     } catch (const std::exception& e) {
         QString err = QString( tr("ERROR") + QLatin1String(": %1") ).arg( QString::fromUtf8( e.what() ) );

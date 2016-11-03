@@ -223,6 +223,20 @@ public:
 
     void setWarningValue(KnobWarningEnum warn, const QString& value);
 
+
+
+    /**
+     * @brief Check if the given clipboard copy operation can be processed. 
+     * @param showErrorDialog If true, show an error dialog upon failure.
+     **/
+    bool canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView, bool showErrorDialog);
+
+    /**
+     * @brief Copy from the given fromKnob according to the given copy type.
+     **/
+    bool pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView);
+
+
 public Q_SLOTS:
 
     void onRemoveAliasLinkActionTriggered();
@@ -332,15 +346,13 @@ private:
 
     void pasteClipBoard(DimSpec dimension, ViewSetSpec view);
 
-
-
     void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view);
     Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view, bool isEnabled);
 
 
 private:
 
-    friend class KnobGuiPrivate;
+    friend struct KnobGuiPrivate;
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 

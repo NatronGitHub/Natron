@@ -803,10 +803,14 @@ KnobDoubleBase::isTypePOD() const
     return true;
 }
 
+
 template<typename T>
 bool
 Knob<T>::isTypeCompatible(const KnobIPtr & other) const
 {
+    if (typeName() == other->typeName()) {
+        return true;
+    }
     return isTypePOD() == other->isTypePOD();
 }
 

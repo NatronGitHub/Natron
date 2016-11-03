@@ -633,7 +633,9 @@ enum KnobClipBoardType
 {
     eKnobClipBoardTypeCopyValue,
     eKnobClipBoardTypeCopyAnim,
-    eKnobClipBoardTypeCopyLink
+    eKnobClipBoardTypeCopyLink,
+    eKnobClipBoardTypeCopyExpressionLink,
+    eKnobClipBoardTypeCopyExpressionMultCurveLink,
 };
 
 enum ValueIsNormalizedEnum

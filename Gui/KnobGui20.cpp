@@ -180,6 +180,72 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
     appPTR->setKnobClipBoard(type, knob, dimension, view);
 }
 
+
+bool
+KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec /*fromView*/, DimSpec /*targetDimensionIn*/, ViewSetSpec /*targetViewIn*/, bool showErrorDialog)
+{
+    KnobIPtr knob = getKnob();
+
+    if (!knob || !fromKnob) {
+        return false;
+    }
+
+    // Links are only valid for effects knobs
+    if (type == eKnobClipBoardTypeCopyExpressionLink ||
+        type == eKnobClipBoardTypeCopyExpressionMultCurveLink ||
+        type == eKnobClipBoardTypeCopyLink) {
+        EffectInstancePtr fromEffect = toEffectInstance(fromKnob->getHolder());
+        EffectInstancePtr toEffect = toEffectInstance(knob->getHolder());
+
+        // Can only link knobs between effects.
+        if (!fromEffect || !toEffect) {
+            return false;
+        }
+    }
+
+    // If target knob does not support animation, cancel
+    if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
+        if (showErrorDialog) {
+            Dialogs::errorDialog( tr("Paste").toStdString(), tr("%1 parameter does not support animation").arg(QString::fromUtf8(knob->getLabel().c_str())).toStdString() );
+        }
+
+        return false;
+    }
+
+    // If types are incompatible, cancel
+    if ( fromKnob->isTypeCompatible(knob) ) {
+        if (showErrorDialog) {
+            Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
+        }
+
+        return false;
+    }
+
+    // If drag & dropping all source dimensions and destination does not have the same amounto of dimensions, fail
+    if ( fromDim.isAll() && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
+        if (showErrorDialog) {
+            Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+        }
+        
+        return false;
+    }
+
+
+    return true;
+}
+
+bool
+KnobGui::pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView)
+{
+
+    if (!canPasteKnob(fromKnob, type, fromDim, fromView, targetDimension, targetView, true)) {
+        return false;
+    }
+
+    pushUndoCommand( new PasteKnobClipBoardUndoCommand(getKnob(), type, fromDim, targetDimension, fromView, targetView, fromKnob) );
+    return true;
+} // pasteKnob
+
 void
 KnobGui::pasteClipBoard(DimSpec targetDimension, ViewSetSpec view)
 {
@@ -198,37 +264,10 @@ KnobGui::pasteClipBoard(DimSpec targetDimension, ViewSetSpec view)
     if (!fromKnob) {
         return;
     }
-
-    if ( (targetDimension == 0) &&  !view.isAll() && !getAllDimensionsVisible(ViewIdx(view)) ) {
-        targetDimension = DimSpec::all();
-    }
-
-    if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
-        Dialogs::errorDialog( tr("Paste").toStdString(), tr("This parameter does not support animation").toStdString() );
-
-        return;
-    }
-
-    if ( !KnobI::areTypesCompatibleForSlave( fromKnob, knob ) ) {
-        Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
-
-        return;
-    }
-
-    if ( !cbDim.isAll() && targetDimension.isAll() ) {
-        Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
-
-        return;
-    }
-
-    if ( ( targetDimension.isAll() || cbDim.isAll()) && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
-        Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
-
-        return;
-    }
-
-    pushUndoCommand( new PasteKnobClipBoardUndoCommand(knob, type, cbDim, targetDimension, cbView, ViewSetSpec(view), fromKnob) );
+    pasteKnob(fromKnob, type, cbDim, cbView, targetDimension, view);
 } // pasteClipBoard
+
+
 
 void
 KnobGui::onPasteActionTriggered()
@@ -255,67 +294,31 @@ KnobGui::linkTo(DimSpec dimension, ViewSetSpec view)
         return;
     }
 
+    std::list<ViewIdx> views = thisKnob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (view.isAll() || ViewIdx(view) == *it) {
+            for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
+                if ( (i == dimension) || (dimension.isAll()) ) {
+                    std::string expr = thisKnob->getExpression(DimIdx(i), *it);
+                    if ( !expr.empty() ) {
+                        Dialogs::errorDialog( tr("Param Link").toStdString(), tr("This parameter already has an expression set, edit or clear it.").toStdString() );
 
-    for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
-        if ( (i == dimension) || (dimension.isAll()) ) {
-            std::string expr = thisKnob->getExpression(DimIdx(i), view);
-            if ( !expr.empty() ) {
-                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("This parameter already has an expression set, edit or clear it.").toStdString() );
-
-                return;
+                        return;
+                    }
+                }
             }
         }
     }
+
 
     LinkToKnobDialog dialog( shared_from_this(), _imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
         KnobIPtr otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
-            if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types are incompatible!").toStdString() );
 
-                return;
-            }
+            pasteKnob(otherKnob, eKnobClipBoardTypeCopyLink, DimSpec::all(), ViewSetSpec::all(), dimension, view);
 
-
-            for (int i = 0; i < thisKnob->getNDimensions(); ++i) {
-                if ( (i == dimension) || (dimension.isAll()) ) {
-                    MasterKnobLink linkData;
-                    if (thisKnob->getMaster(DimIdx(i), view, &linkData)) {
-
-                        KnobIPtr masterKnob = linkData.masterKnob.lock();
-                        Dialogs::errorDialog( tr("Param Link").toStdString(),
-                                             tr("Cannot link %1 because the knob is already linked to %2.")
-                                             .arg( QString::fromUtf8( thisKnob->getLabel().c_str() ) )
-                                             .arg( QString::fromUtf8( masterKnob->getLabel().c_str() ) )
-                                             .toStdString() );
-
-                        return;
-                    }
-                }
-            }
-
-            EffectInstancePtr otherEffect = toEffectInstance( otherKnob->getHolder() );
-            if (!otherEffect) {
-                return;
-            }
-
-            std::stringstream expr;
-            NodeCollectionPtr thisCollection = isEffect->getNode()->getGroup();
-            NodeGroupPtr otherIsGroup = toNodeGroup(otherEffect);
-            if ( otherIsGroup == thisCollection ) {
-                expr << "thisGroup"; // make expression generic if possible
-            } else {
-                expr << otherEffect->getNode()->getFullyQualifiedName();
-            }
-            expr << "." << otherKnob->getName() << ".get()";
-            if (otherKnob->getNDimensions() > 1) {
-                expr << "[dimension]";
-            }
-
-            thisKnob->setExpression(dimension, view, expr.str(), false, false);
-            thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
 } // KnobGui::linkTo

@@ -125,7 +125,7 @@ public:
     , _firstRedoCalled(false)
     , _timelineTime(knob->getCurrentTime())
     {
-        assert(oldValue.size() == newValue.size() && oldValue.size() == knob->getNDimensions());
+        assert(oldValue.size() == newValue.size() && (int)oldValue.size() == knob->getNDimensions());
 
 
         if (!commandName.isEmpty()) {
@@ -364,6 +364,15 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
+
+    static std::string makeLinkExpression(const std::vector<std::string>& projectViewNames,
+                                          const KnobIPtr& targetKnob,
+                                          bool multCurve,
+                                          const KnobIPtr& fromKnob,
+                                          DimSpec fromDimension,
+                                          ViewSetSpec fromView,
+                                          DimSpec targetDimension,
+                                          ViewSetSpec targetView);
 
     void copyFrom(const SERIALIZATION_NAMESPACE::KnobSerializationPtr& fromKnobSerialization, const KnobIPtr& fromKnob, bool isRedo);
 };

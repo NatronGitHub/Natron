@@ -802,25 +802,22 @@ KnobGui::getAllViewsVisible() const
 }
 
 void
-KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view)
+KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewIn)
 {
-    if ( (dimension == 0) && !view.isAll() && !getAllDimensionsVisible(ViewIdx(view)) ) {
-        dimension = DimSpec::all();
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
     }
+    DimSpec dimension;
+    ViewSetSpec view;
+    knob->convertDimViewArgAccordingToKnobState(dimensionIn, viewIn, &dimension, &view);
 
     menu->clear();
 
-    KnobIPtr knob = getKnob();
+
     bool dimensionHasKeyframeAtTime = false;
     bool hasAllKeyframesAtTime = true;
     int nDims = knob->getNDimensions();
-
-
-    if (dimension.isAll() && nDims == 1) {
-        dimension = DimSpec(0);
-    }
-
-
     bool hasDimensionSlaved = false;
     bool hasAnimation = false;
     bool dimensionHasAnimation = false;

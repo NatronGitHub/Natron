@@ -137,7 +137,7 @@ KnobGui::onSetExprActionTriggered()
     getDimViewFromActionData(action, &view, &dimension);
 
     EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimension, view, shared_from_this(), _imp->container->getContainerWidget());
-    dialog->create(QString::fromUtf8( getKnob()->getExpression(dimension.isAll() ? DimIdx(0) : DimIdx(dimension), view).c_str() ), true);
+    dialog->create(QString::fromUtf8( getKnob()->getExpression(dimension.isAll() ? DimIdx(0) : DimIdx(dimension), view.isAll() ? ViewIdx(0) : ViewIdx(view)).c_str() ), true);
     QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditExprDialogFinished(bool)) );
 
     dialog->show();
@@ -169,7 +169,7 @@ KnobGui::onEditExprDialogFinished(bool accepted)
             QString expr = dialog->getExpression(&hasRetVar);
             std::string stdExpr = expr.toStdString();
             DimSpec dim = dialog->getDimension();
-            ViewIdx view = dialog->getView();
+            ViewSetSpec view = dialog->getView();
 
             pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, view, stdExpr) );
 
@@ -360,17 +360,26 @@ KnobGui::onRemoveAnimationActionTriggered()
         return;
     }
 
+    AnimItemDimViewKeyFramesMap keysToRemove;
 
     int nDims = internalKnob->getNDimensions();
+    std::list<ViewIdx> views = internalKnob->getViewsList();
 
-    AnimItemDimViewKeyFramesMap keysToRemove;
-    for (int i = 0; i < nDims; ++i) {
-        if (dimension == i || dimension.isAll()) {
-            AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
             KeyFrameWithStringSet& keys = keysToRemove[id];
-            knobAnim->getKeyframes(DimIdx(i), view, &keys);
+            knobAnim->getKeyframes(DimIdx(i), *it, &keys);
+
         }
     }
+
 
     pushUndoCommand( new RemoveKeysCommand(keysToRemove, model) );
    
@@ -484,34 +493,44 @@ KnobGui::onSetKeyActionTriggered()
     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
     KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
-    int nDims = internalKnob->getNDimensions();
 
     double time = internalKnob->getCurrentTime();
     AnimItemDimViewKeyFramesMap keysToAdd;
-    for (int i = 0; i < nDims; ++i) {
-        if (dimension == i || dimension.isAll()) {
-            AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+
+    int nDims = internalKnob->getNDimensions();
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
             KeyFrameWithStringSet& keys = keysToAdd[id];
 
             KeyFrameWithString kf;
             kf.key.setTime(time);
             if (isInt) {
-                kf.key.setValue( isInt->getValue(DimIdx(i), view) );
+                kf.key.setValue( isInt->getValue(DimIdx(i), *it) );
             } else if (isBool) {
-                kf.key.setValue( isBool->getValue(DimIdx(i), view) );
+                kf.key.setValue( isBool->getValue(DimIdx(i), *it) );
             } else if (isDouble) {
-                kf.key.setValue( isDouble->getValue(DimIdx(i), view) );
+                kf.key.setValue( isDouble->getValue(DimIdx(i), *it) );
             } else if (isString) {
-                std::string v = isString->getValue(DimIdx(i), view);
+                std::string v = isString->getValue(DimIdx(i), *it);
                 double dv;
                 isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
                 kf.string = v;
                 kf.key.setValue(dv);
             }
             keys.insert(kf);
-
         }
     }
+
     if (!keysToAdd.empty()) {
         pushUndoCommand( new AddKeysCommand(keysToAdd, model, false/*replaceAnimation*/));
     }
@@ -562,14 +581,23 @@ KnobGui::onRemoveKeyActionTriggered()
     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
 
-    int nDims = internalKnob->getNDimensions();
-
     double time = internalKnob->getCurrentTime();
     AnimItemDimViewKeyFramesMap keysToRemove;
-    for (int i = 0; i < nDims; ++i) {
-        if (dimension == i || dimension.isAll()) {
 
-            CurvePtr curve = knobAnim->getCurve(DimIdx(i), view);
+    int nDims = internalKnob->getNDimensions();
+
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            CurvePtr curve = knobAnim->getCurve(DimIdx(i), *it);
             if (!curve) {
                 continue;
             }
@@ -577,16 +605,17 @@ KnobGui::onRemoveKeyActionTriggered()
             KeyFrameWithString kf;
             if (curve->getKeyFrameWithTime(time, &kf.key)) {
                 if (isString) {
-                    isString->getStringAnimation()->stringFromInterpolatedIndex(time, view, &kf.string);
+                    isString->getStringAnimation()->stringFromInterpolatedIndex(time, *it, &kf.string);
                 }
 
-                AnimItemDimViewIndexID id(knobAnim, view, DimIdx(i));
+                AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
                 KeyFrameWithStringSet& keys = keysToRemove[id];
                 keys.insert(kf);
             }
 
         }
     }
+
     if (!keysToRemove.empty()) {
         pushUndoCommand( new RemoveKeysCommand(keysToRemove, model));
     }

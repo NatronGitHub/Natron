@@ -244,7 +244,7 @@ ScriptEditor::ScriptEditor(const std::string& scriptName, Gui* gui)
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
     _imp->outputEdit->setReadOnly(true);
 
-    _imp->inputEdit = new InputScriptTextEdit(gui, KnobGuiPtr(), this);
+    _imp->inputEdit = new InputScriptTextEdit(gui, KnobGuiPtr(), DimSpec::all(), ViewSetSpec::all(), this);
     QObject::connect( _imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()) );
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
     _imp->inputEdit->setTabStopWidth(fm.width( QLatin1Char(' ') ) * 4);

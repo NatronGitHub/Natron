@@ -1471,6 +1471,12 @@ public:
         return false;
     }
 
+    // Don't allow other knobs to slave to this one
+    virtual bool isTypeCompatible(const KnobIPtr & /*other*/) const OVERRIDE FINAL
+    {
+        return false;
+    }
+
     void setCurveColor(DimIdx dimension, double r, double g, double b);
 
     void setPeriodic(bool periodic);

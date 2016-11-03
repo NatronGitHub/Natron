@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/ViewIdx.h"
 #include "Global/Macros.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"

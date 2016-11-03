@@ -126,11 +126,9 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     if (!internalKnob) {
         return false;
     }
-    DimSpec dragDim = _imp->dimension;
-    ViewSetSpec dragView = _imp->view;
-    if ( (dragDim == 0) && !dragView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(dragView)) ) {
-        dragDim = DimSpec::all();
-    }
+    DimSpec dragDim;
+    ViewSetSpec dragView;
+    internalKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &dragDim, &dragView);
 
     if (guiKnob->getGui()) {
         guiKnob->getGui()->setCurrentKnobWidgetFocus(shared_from_this());
@@ -230,11 +228,9 @@ KnobWidgetDnD::startDrag()
         return;
     }
 
-    DimSpec dragDim = _imp->dimension;
-    ViewSetSpec dragView = _imp->view;
-    if ( (dragDim == 0) && !dragView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(dragView)) ) {
-        dragDim = DimSpec::all();
-    }
+    DimSpec dragDim;
+    ViewSetSpec dragView;
+    internalKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &dragDim, &dragView);
 
     guiKnob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim, dragView);
 
@@ -259,18 +255,15 @@ KnobWidgetDnD::startDrag()
     }
     knobLine += QString::fromUtf8( internalKnob->getName().c_str() );
 
-
-    if (internalKnob->getNDimensions() > 1) {
-        if (!dragDim.isAll()) {
-            knobLine += QLatin1Char('.');
-            knobLine += QString::fromUtf8( internalKnob->getDimensionName(DimIdx(dragDim)).c_str() );
-        } else {
-            if (!isExprMult) {
-                knobLine += QLatin1Char(' ');
-                knobLine += tr("(all dimensions)");
-            }
-        }
+    if (dragView.isAll()) {
+        knobLine += tr(" (all views)");
+    } else if (dragDim.isAll()) {
+        knobLine += tr(" (all dimensions)");
+    } else {
+        knobLine += QLatin1Char('.');
+        knobLine += QString::fromUtf8( internalKnob->getDimensionName(DimIdx(dragDim)).c_str() );
     }
+
 
     if (isExprMult) {
         knobLine += QString::fromUtf8(" * curve(frame, dimension)");
@@ -339,9 +332,18 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
 {
     KnobIPtr source;
     KnobGuiPtr guiKnob = knob.lock();
+    if (!guiKnob) {
+        return false;
+    }
     KnobIPtr thisKnob = guiKnob->getKnob();
+    if (!thisKnob) {
+        return false;
+    }
+    DimSpec targetDim;
+    ViewSetSpec targetView;
+    thisKnob->convertDimViewArgAccordingToKnobState(dimension, view, &targetDim, &targetView);
 
-    bool isEnabled = dimension.isAll() ? thisKnob->isEnabled(DimIdx(0), view.isAll() ? ViewIdx(0) : ViewIdx(view)) : thisKnob->isEnabled(DimIdx(dimension), view.isAll() ? ViewIdx(0) : ViewIdx(view));
+    bool isEnabled = targetDim.isAll() ? thisKnob->isEnabled(DimIdx(0), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView)) : thisKnob->isEnabled(DimIdx(targetDim), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView));
     if (!isEnabled) {
         return false;
     }
@@ -353,31 +355,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
 
     bool ret = true;
     if (source) {
-        DimSpec targetDim = dimension;
-        if ( (targetDim == 0) && !view.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(view)) ) {
-            targetDim = DimSpec::all();
-        }
-
-        if ( !KnobI::areTypesCompatibleForSlave( source, thisKnob ) ) {
-            if (warn) {
-                Dialogs::errorDialog( tr("Link").toStdString(), tr("You can only link parameters of the same type. To overcome this, use an expression instead.").toStdString() );
-            }
-            ret = false;
-        }
-
-        if ( ret && !srcDim.isAll() && targetDim.isAll() ) {
-            if (warn) {
-                Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
-            }
-            ret = false;
-        }
-
-        if ( ret && ( targetDim.isAll() || srcDim.isAll() ) && ( source->getNDimensions() != thisKnob->getNDimensions() ) ) {
-            if (warn) {
-                Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
-            }
-            ret = false;
-        }
+        ret = guiKnob->canPasteKnob(source, eKnobClipBoardTypeCopyLink, srcDim, srcView, targetDim, view, warn);
     } else {
         ret = false;
     }
@@ -405,87 +383,25 @@ KnobWidgetDnD::drop(QDropEvent* e)
         ViewSetSpec srcView;
         QDrag* drag;
         guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim, &srcView);
+
+        // Clear clipboard
         guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), DimSpec::all(), ViewIdx(0));
         if ( source && (source != thisKnob) ) {
-            DimSpec targetDim = _imp->dimension;
-            ViewSetSpec targetView = _imp->view;
-            if ( (targetDim == 0) && !targetView.isAll() && !guiKnob->getAllDimensionsVisible(ViewIdx(targetView)) ) {
-                targetDim = DimSpec::all();
-            }
+
+            DimSpec targetDim;
+            ViewSetSpec targetView;
+            thisKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &targetDim, &targetView);
 
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
+            KnobClipBoardType type = eKnobClipBoardTypeCopyLink;
             if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
-                EffectInstancePtr effect = toEffectInstance( source->getHolder() );
-                if (!effect) {
-                    return false;
-                }
-                NodeCollectionPtr group = effect->getNode()->getGroup();
-                NodeGroupPtr isGroup = toNodeGroup( group );
-                std::string expr;
-                std::stringstream ss;
-                if (isGroup) {
-                    ss << "thisGroup.";
-                } else {
-                    ss << effect->getApp()->getAppIDString() << ".";
-                }
-                ss << effect->getNode()->getScriptName_mt_safe() << "." << source->getName();
-                ss << ".getValue(";
-                if (source->getNDimensions() > 1) {
-                    if (srcDim.isAll()) {
-                        ss << "dimension";
-                    } else {
-                        ss << srcDim;
-                    }
-                }
-                std::vector<std::string> projectViewNames;
-                std::list<ViewIdx> sourceViews = source->getViewsList();
-                if (sourceViews.size() > 1) {
-                    ss << ", ";
-                    if (srcView.isAll()) {
-                        ss << "view";
-                    } else {
-                        projectViewNames = guiKnob->getGui()->getApp()->getProject()->getProjectViewNames();
-                        if (srcView >= 0 && srcView < (int)projectViewNames.size()) {
-                            ss << projectViewNames[srcView];
-                        } else {
-                            ss << "Main";
-                        }
-                    }
-                }
-                ss << ")";
-                ss << " * curve(frame,";
-                if (targetDim.isAll()) {
-                    ss << "dimension";
-                } else {
-                    ss << targetDim;
-                }
-                 std::list<ViewIdx> targetViews = thisKnob->getViewsList();
-                if (targetViews.size() > 1) {
-                    ss << ", ";
-                    if (targetView.isAll()) {
-                        ss << "view";
-                    } else {
-                        if (projectViewNames.empty()) {
-                            projectViewNames = guiKnob->getGui()->getApp()->getProject()->getProjectViewNames();
-                        }
-                        if (targetView >= 0 && targetView < (int)projectViewNames.size()) {
-                            ss << projectViewNames[targetView];
-                        } else {
-                            ss << "Main";
-                        }
-                    }
-                }
-
-                ss << ")";
-
-
-                expr = ss.str();
-                guiKnob->pushUndoCommand( new SetExpressionCommand(guiKnob->getKnob(), false, targetDim, targetView, expr) );
-            } else if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier) ) {
-                guiKnob->pushUndoCommand( new PasteKnobClipBoardUndoCommand(guiKnob->getKnob(), eKnobClipBoardTypeCopyLink, srcDim, targetDim, srcView, targetView, source) );
+                type = eKnobClipBoardTypeCopyExpressionMultCurveLink;
+            } else if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier)) {
+                type = eKnobClipBoardTypeCopyLink;
+            } else {
+                return false;
             }
-
-            return true;
+            return guiKnob->pasteKnob(source, type, srcDim, srcView, targetDim, targetView);
         }
 
         e->acceptProposedAction();
@@ -513,7 +429,11 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
         return;
     }
     KnobIPtr internalKnob = knob->getKnob();
-    bool isEnabled = _imp->dimension.isAll() ? internalKnob->isEnabled(DimIdx(0), _imp->view.isAll() ? ViewIdx(0) : ViewIdx(_imp->view)) : internalKnob->isEnabled(DimIdx(_imp->dimension), _imp->view.isAll() ? ViewIdx(0) : ViewIdx(_imp->view));
+    DimSpec targetDim;
+    ViewSetSpec targetView;
+    internalKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &targetDim, &targetView);
+
+    bool isEnabled = targetDim.isAll() ? internalKnob->isEnabled(DimIdx(0), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView)) : internalKnob->isEnabled(DimIdx(targetDim), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView));
 
     if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && isEnabled) {
         _imp->widget->setFocus();

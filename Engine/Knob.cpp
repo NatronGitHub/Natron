@@ -209,6 +209,26 @@ KnobHelper::getKnobGuiPointer() const
     return _imp->gui.lock();
 }
 
+
+void
+KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const
+{
+
+    std::list<ViewIdx> targetViews = getViewsList();
+
+    // If target view is all but target is not multi-view, convert back to main view
+    *viewOut = viewIn;
+    if (targetViews.size() == 1) {
+        *viewOut = ViewSetSpec(targetViews.front());
+    }
+    // If pasting on a folded knob view,
+    if ( (dimIn == 0) && getNDimensions() > 1 && !viewOut->isAll() && !getAllDimensionVisible(ViewIdx(*viewOut)) ) {
+        *dimOut = DimSpec::all();
+    }
+    
+}
+
+
 bool
 KnobHelper::getAllDimensionVisible(ViewIdx view) const
 {
@@ -2551,30 +2571,6 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     return output;
 } // KnobHelper::createDuplicateOnNode
 
-bool
-KnobI::areTypesCompatibleForSlave(const KnobIPtr& lhs,
-                                  const KnobIPtr& rhs)
-{
-    if ( lhs->typeName() == rhs->typeName() ) {
-        return true;
-    }
-
-    //These are compatible types
-    KnobIntPtr lhsIsInt = toKnobInt(lhs);
-    KnobIntPtr rhsIsInt = toKnobInt(rhs);
-    KnobDoublePtr lhsIsDouble = toKnobDouble(lhs);
-    KnobColorPtr lhsIsColor = toKnobColor(lhs);
-    KnobDoublePtr rhsIsDouble = toKnobDouble(rhs);
-    KnobColorPtr rhsIsColor = toKnobColor(rhs);
-
-    //Knobs containing doubles are compatibles with knobs containing integers because the user might want to link values
-    //stored in a double parameter to a int parameter and vice versa
-    if ( (lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt) ) {
-        return true;
-    }
-
-    return false;
-}
 
 bool
 KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,

@@ -48,14 +48,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
     DimSpec _dimension;
-    ViewIdx _view;
+    ViewSetSpec _view;
     KnobGuiPtr _knob;
 
 public:
 
     EditExpressionDialog(Gui* gui,
                          DimSpec dimension,
-                         ViewIdx view,
+                         ViewSetSpec view,
                          const KnobGuiPtr& knob,
                          QWidget* parent);
 
@@ -65,7 +65,7 @@ public:
 
     DimSpec getDimension() const;
 
-    ViewIdx getView() const;
+    ViewSetSpec getView() const;
 private:
 
     virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;

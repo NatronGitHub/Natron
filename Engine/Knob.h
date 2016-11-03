@@ -388,7 +388,12 @@ public:
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) = 0;
     virtual KnobGuiIPtr getKnobGuiPointer() const = 0;
     virtual bool getAllDimensionVisible(ViewIdx view) const = 0;
-    static bool areTypesCompatibleForSlave(const KnobIPtr& lhs, const KnobIPtr& rhs);
+
+    /**
+     * @brief Given the dimension and view in input, if the knob has all its dimensions folded or is not multi-view,
+     * adjust the arguments so that they best fit PasteKnobClipBoardUndoCommand
+     **/
+    virtual void convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const = 0;
 
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
@@ -1385,6 +1390,7 @@ public:
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getAllDimensionVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const OVERRIDE FINAL;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
@@ -2156,7 +2162,7 @@ public:
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypePOD() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const KnobIPtr & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isTypeCompatible(const KnobIPtr & other) const OVERRIDE WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void onTimeChanged(bool isPlayback, double time) OVERRIDE FINAL;

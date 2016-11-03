@@ -98,6 +98,8 @@ struct EditScriptDialogPrivate
 {
     Gui* gui;
     KnobGuiWPtr knobExpressionReceiver;
+    DimSpec knobDimension;
+    ViewSetSpec knobView;
     QVBoxLayout* mainLayout;
     Label* expressionLabel;
     InputScriptTextEdit* expressionEdit;
@@ -109,9 +111,14 @@ struct EditScriptDialogPrivate
     OutputScriptTextEdit* resultEdit;
     DialogButtonBox* buttons;
 
-    EditScriptDialogPrivate(Gui* gui, const KnobGuiPtr& knobExpressionReceiver)
+    EditScriptDialogPrivate(Gui* gui,
+                            const KnobGuiPtr& knobExpressionReceiver,
+                            DimSpec knobDimension,
+                            ViewSetSpec knobView)
         : gui(gui)
         , knobExpressionReceiver(knobExpressionReceiver)
+        , knobDimension(knobDimension)
+        , knobView(knobView)
         , mainLayout(0)
         , expressionLabel(0)
         , expressionEdit(0)
@@ -128,9 +135,11 @@ struct EditScriptDialogPrivate
 
 EditScriptDialog::EditScriptDialog(Gui* gui,
                                    const KnobGuiPtr& knobExpressionReceiver,
+                                   DimSpec knobDimension,
+                                   ViewSetSpec knobView,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditScriptDialogPrivate(gui, knobExpressionReceiver) )
+    , _imp( new EditScriptDialogPrivate(gui, knobExpressionReceiver, knobDimension, knobView) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
@@ -169,7 +178,7 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->expressionLabel = new Label(labelHtml, this);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
-    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), this);
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), _imp->knobDimension, _imp->knobView, this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     _imp->mainLayout->addWidget(_imp->expressionEdit);

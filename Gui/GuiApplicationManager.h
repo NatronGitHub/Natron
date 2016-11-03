@@ -39,7 +39,7 @@
 #include "Engine/DimensionIdx.h"
 #include "Engine/Variant.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/ViewIdx.h"
 #include "Gui/GuiFwd.h"
 
 #if defined(appPTR)

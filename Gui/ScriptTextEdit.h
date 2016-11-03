@@ -40,6 +40,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -80,6 +83,8 @@ public:
 
     InputScriptTextEdit(Gui* gui,
                         const KnobGuiPtr& knobExpressionReceiver,
+                        DimSpec dimension,
+                        ViewSetSpec view,
                         QWidget* parent);
 
     virtual ~InputScriptTextEdit();
@@ -111,6 +116,8 @@ private:
     PySyntaxHighlighter* _highlighter;
     Gui* _gui;
     KnobGuiWPtr _knobExpressionReceiver;
+    DimSpec _knobTargetDimension;
+    ViewSetSpec _knobTargetView;
 };
 
 class LineNumberWidget
