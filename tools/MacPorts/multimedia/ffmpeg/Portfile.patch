@@ -1,5 +1,5 @@
 --- Portfile.orig	2016-11-02 17:14:23.000000000 +0100
-+++ Portfile	2016-11-02 17:14:27.000000000 +0100
++++ Portfile	2016-11-03 11:10:53.000000000 +0100
 @@ -107,6 +107,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
@@ -86,7 +86,7 @@
 +                    port:fontconfig \
 +                    port:freetype \
 +                    port:fribidi \
-+                    port:libsdl
++                    port:libsdl2
 +
 +    configure.args-delete \
 +                    --enable-libass \

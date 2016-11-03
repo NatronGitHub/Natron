@@ -303,7 +303,7 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    port:libsdl
+                    port:libsdl2
 
     configure.args-delete \
                     --enable-libass \
