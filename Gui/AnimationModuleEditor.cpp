@@ -148,7 +148,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->displayViewChoice->addItem(tr("Dope Sheet"), pixDopeSheet, QKeySequence());
     _imp->displayViewChoice->addItem(tr("Split"), QIcon(), QKeySequence());
     _imp->displayViewChoice->setCurrentIndex_no_emit(0);
-    _imp->displayViewChoice->setFixedWidth(iconSize * 2);
+    _imp->displayViewChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    _imp->displayViewChoice->setFixedWidth(iconSize + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
     connect(_imp->displayViewChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewCurrentIndexChanged(int)));
     _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
 
@@ -370,11 +371,11 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     }
 
     if (curves.empty() || curves.size() > 1) {
-        throw std::invalid_argument("Cannot set expression on multiple items");
+        throw std::invalid_argument(tr("Cannot set expression on multiple items").toStdString());
     }
     KnobAnimPtr isKnobAnim = toKnobAnim(curves.front()->getItem());
     if (!isKnobAnim) {
-        throw std::invalid_argument("Cannot set expression on non knob");
+        throw std::invalid_argument(tr("Cannot set expression on something else than a knob").toStdString());
     }
     KnobIPtr knob = isKnobAnim->getInternalKnob();
     const CurveGuiPtr& curve = curves.front();
@@ -395,7 +396,11 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
 void
 AnimationModuleEditor::onExprLineEditFinished()
 {
-    setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
+    try {
+        setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
+    } catch(const std::exception& e) {
+        Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
+    }
 }
 
 void

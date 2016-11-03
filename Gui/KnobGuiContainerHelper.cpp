@@ -714,8 +714,6 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
         // Fill the fieldLayout with the widgets
         ret->createGUI(page->tab);
 
-        ret->setEnabledSlot();
-
 
         // Must add the row to the layout before calling setSecret()
         if (ret->isOnNewLine()) {

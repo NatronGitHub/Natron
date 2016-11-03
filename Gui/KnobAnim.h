@@ -52,7 +52,9 @@ public:
                               QTreeWidgetItem *parentItem,
                               const KnobGuiPtr& knobGui)
     {
-        return KnobAnimPtr(new KnobAnim(model, holder, parentItem, knobGui));
+        KnobAnimPtr ret(new KnobAnim(model, holder, parentItem, knobGui));
+        ret->initialize();
+        return ret;
     }
 
     virtual ~KnobAnim();

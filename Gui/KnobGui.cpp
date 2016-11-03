@@ -279,33 +279,34 @@ KnobGuiPrivate::refreshIsOnNewLineFlag()
 
     KnobIPtr prevKnobOnLine;
     // Find all knobs on the same layout line
-    if (layoutType == KnobGui::eKnobLayoutTypePage) {
-        KnobIPtr parentKnob = k->getParentKnob();
-        KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
-        if (isParentGroup) {
-            // If the parent knob is a group, knobs on the same line have to be found in the children
-            // of the parent
-            KnobsVec groupsiblings = isParentGroup->getChildren();
-            findKnobsOnSameLine(groupsiblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+    {
+        KnobsVec siblings;
+        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI && k->getHolder()->getInViewerContextKnobIndex(k) != -1) {
+            siblings = k->getHolder()->getViewerUIKnobs();
         } else {
-            // Parent is a page, find the siblings in the children of the page
-            KnobPagePtr isParentPage = toKnobPage(parentKnob);
-            if (isParentPage) {
-                KnobsVec pagesiblings = isParentPage->getChildren();
-                findKnobsOnSameLine(pagesiblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+            KnobIPtr parentKnob = k->getParentKnob();
+            KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
+            if (isParentGroup) {
+                // If the parent knob is a group, knobs on the same line have to be found in the children
+                // of the parent
+                siblings = isParentGroup->getChildren();
+            } else {
+                // Parent is a page, find the siblings in the children of the page
+                KnobPagePtr isParentPage = toKnobPage(parentKnob);
+                if (isParentPage) {
+                    siblings = isParentPage->getChildren();
+                }
             }
         }
-    } else if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-        assert(k->getHolder());
-        KnobsVec viewerKnobs = k->getHolder()->getViewerUIKnobs();
-        findKnobsOnSameLine(viewerKnobs, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+        if (!siblings.empty()) {
+            findKnobsOnSameLine(siblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+        }
     }
-    
+ 
     isOnNewLine = true;
-    bool canStayOnSameLine = prevKnobOnLine;
     prevKnob = prevKnobOnLine;
 
-    if (canStayOnSameLine) {
+    if (prevKnobOnLine) {
         if (layoutType == KnobGui::eKnobLayoutTypeViewerUI && prevKnobOnLine->getInViewerContextLayoutType() != eViewerContextLayoutTypeAddNewLine) {
             isOnNewLine = false;
         } else if (layoutType == KnobGui::eKnobLayoutTypePage && !prevKnobOnLine->isNewLineActivated()) {
@@ -397,7 +398,7 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
         it->second.widgets->createWidget(it->second.fieldLayout);
         it->second.widgets->updateToolTip();
 
-        if ( k->isNewLineActivated() && it->second.widgets->shouldAddStretch() ) {
+        if ( k->isNewLineActivated() /*&& it->second.widgets->shouldAddStretch()*/ ) {
             it->second.fieldLayout->addStretch();
         }
     }
@@ -521,11 +522,12 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
     KnobGuiPtr prevKnobGui = container->getKnobGui(prev);
     assert(prevKnobGui);
 
+    KnobIPtr thisKnob = knob.lock();
     QHBoxLayout* prevMainLayout = prevKnobGui->_imp->mainLayout;
     assert(prevMainLayout);
 
-    if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-        assert(prevKnobGui->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI);
+    if (thisKnob->getHolder()->getInViewerContextKnobIndex(thisKnob) != -1) {
+        assert(prev->getHolder()->getInViewerContextKnobIndex(prev) != -1);
         switch (prev->getInViewerContextLayoutType()) {
             case eViewerContextLayoutTypeSeparator:
                 addVerticalLineSpacer(prevMainLayout);
@@ -603,6 +605,12 @@ KnobGui::createGUI(QWidget* parentWidget)
 
     _imp->createLabel(parentWidget);
 
+    // For the viewer layout, if a knob creates a new line, prepend the layout with
+    // its label because it is not using a grid layout.
+    if (_imp->isOnNewLine && _imp->layoutType == eKnobLayoutTypeViewerUI) {
+        _imp->mainLayout->addWidget(_imp->labelContainer);
+    }
+
     _imp->mainLayout->addWidget(_imp->viewsContainer);
 
 
@@ -637,8 +645,9 @@ KnobGui::createGUI(QWidget* parentWidget)
         }
     }
 
-    // Refresh secretness
+    // Refresh secretness and enabledness
     setSecret();
+    setEnabledSlot();
 
 } // KnobGui::createGUI
 

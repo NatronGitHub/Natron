@@ -30,6 +30,12 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
+
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -45,7 +51,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/AnimationModuleBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
@@ -54,8 +59,9 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+struct KnobGuiParametricPrivate;
 class KnobGuiParametric
-    : public QObject, public KnobGuiWidgets, public OverlaySupport, public AnimationModuleBase
+    : public QObject, public KnobGuiWidgets, public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -96,17 +102,8 @@ public:
     virtual RectD getViewportRect() const OVERRIDE FINAL;
     virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
     virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
-    virtual void pushUndoCommand(QUndoCommand *cmd) OVERRIDE FINAL;
     virtual int getWidgetFontHeight() const OVERRIDE FINAL;
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
-
-    // Overriden from AnimationModuleBase
-    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const OVERRIDE FINAL;
-    virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
-    virtual CurveWidget* getCurveWidget() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
 
@@ -137,22 +134,9 @@ private:
     virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;
 
 private:
-    // TODO: PIMPL
-    QWidget* treeColumn;
-    CurveWidget* _curveWidget;
-    QTreeWidget* _tree;
-    AnimationModuleSelectionModelPtr _selectionModel;
-    KnobAnimPtr _animRoot;
-    Button* _resetButton;
-    struct CurveDescriptor
-    {
-        CurveGuiPtr curve;
-        QTreeWidgetItem* treeItem;
-    };
 
-    typedef std::vector<CurveDescriptor> CurveGuis;
-    CurveGuis _curves;
-    KnobParametricWPtr _knob;
+    boost::scoped_ptr<KnobGuiParametricPrivate> _imp;
+
 };
 
 NATRON_NAMESPACE_EXIT;

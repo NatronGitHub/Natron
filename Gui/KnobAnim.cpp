@@ -129,7 +129,6 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 , _imp(new KnobAnimPrivate(this, holder))
 {
     assert(knobGui);
-    assert(parentItem);
 
     _imp->knobGui = knobGui;
     KnobIPtr knob = knobGui->getKnob();
@@ -267,13 +266,14 @@ KnobAnim::getViewsList() const
 
 static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& knob, KnobAnim* self)
 {
-    CurvePtr curve = knob->getCurve(view, dim);
+    CurvePtr curve = knob->getAnimationCurve(view, dim);
     if (!curve) {
         return false;
     }
     bool curveIsAnimated = curve->isAnimated();
     QTreeWidgetItem *dimItem = self->getTreeItem(dim, view);
-    dimItem->setHidden(!curveIsAnimated && knob->isEnabled(dim, view));
+    bool enabled = knob->isEnabled(dim, view);
+    dimItem->setHidden(!curveIsAnimated || !enabled);
     dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
     return curveIsAnimated;
 }
@@ -281,41 +281,40 @@ static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& k
 void
 KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 {
-
-    if (refreshHolder) {
-        KnobsHolderAnimBasePtr holder = getHolder();
-        if (holder) {
-            holder->refreshVisibility();
-        }
-    } else {
-        KnobGuiPtr knobGui = _imp->knobGui.lock();
-        if (!knobGui) {
-            return;
-        }
-        KnobIPtr knob = knobGui->getKnob();
-        if (!knob) {
-            return;
-        }
-        bool showItem = false;
-        if (!knob->getIsSecret()) {
-            std::list<ViewIdx> views = knob->getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                bool hasDimVisible = false;
-                for (int i = 0; i < knob->getNDimensions(); ++i) {
-                    hasDimVisible |= refreshDimViewVisibility(DimIdx(i), *it, knob, this);
-                }
-                // If there's a view item, refresh its visibility
-                PerViewItemMap::const_iterator foundViewItem = _imp->viewItems.find(*it);
-                if (foundViewItem != _imp->viewItems.end()) {
-                    foundViewItem->second->setHidden(!hasDimVisible);
-                }
-
-                showItem |= hasDimVisible;
-            }
-        }
-        _imp->rootItem->setHidden(!showItem);
-        _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
+    KnobsHolderAnimBasePtr holder = getHolder();
+    if (holder && refreshHolder) {
+        holder->refreshVisibility();
+        return;
     }
+
+    KnobGuiPtr knobGui = _imp->knobGui.lock();
+    if (!knobGui) {
+        return;
+    }
+    KnobIPtr knob = knobGui->getKnob();
+    if (!knob) {
+        return;
+    }
+    bool showItem = false;
+    if (!knob->getIsSecret()) {
+        std::list<ViewIdx> views = knob->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            bool hasDimVisible = false;
+            for (int i = 0; i < knob->getNDimensions(); ++i) {
+                hasDimVisible |= refreshDimViewVisibility(DimIdx(i), *it, knob, this);
+            }
+            // If there's a view item, refresh its visibility
+            PerViewItemMap::const_iterator foundViewItem = _imp->viewItems.find(*it);
+            if (foundViewItem != _imp->viewItems.end()) {
+                foundViewItem->second->setHidden(!hasDimVisible);
+            }
+
+            showItem |= hasDimVisible;
+        }
+    }
+    _imp->rootItem->setHidden(!showItem);
+    _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
+
 }
 
 void

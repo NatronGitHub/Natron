@@ -290,13 +290,6 @@ NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob)
 
     ret->createGUI(widgetsContainer);
 
-    if (ret->isOnNewLine()) {
-        QWidget* mainContainer = ret->getFieldContainer();
-        widgetsContainerLayout->addWidget(mainContainer);
-    }
-
-    ret->setEnabledSlot();
-    ret->setSecret();
     return ret;
 
 }
@@ -319,7 +312,12 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
     {
         for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
-            createKnobInternal(*it);
+            KnobGuiPtr ret = createKnobInternal(*it);
+
+            if (ret->isOnNewLine()) {
+                QWidget* mainContainer = ret->getFieldContainer();
+                widgetsContainerLayout->addWidget(mainContainer);
+            }
         }
     }
 
@@ -331,10 +329,6 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         KnobsVec playerKnobs = playerPage->getChildren();
         assert(!playerKnobs.empty());
-        /*playerContainer =  new QWidget(viewerTab);
-        playerLayout =  new QHBoxLayout(playerContainer);
-        playerLayout->setContentsMargins(0, 0, 0, 0);
-        playerLayout->setSpacing(0);*/
         for (KnobsVec::const_iterator it = playerKnobs.begin(); it != playerKnobs.end(); ++it) {
             KnobGuiPtr ret = createKnobInternal(*it);
             if (it == playerKnobs.begin()) {

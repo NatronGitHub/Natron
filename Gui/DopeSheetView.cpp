@@ -1056,6 +1056,9 @@ DopeSheetView::refreshSelectionBoundingBox()
 void
 DopeSheetViewPrivate::computeSelectedKeysBRect()
 {
+    if (zoomCtx.screenHeight() == 0 || zoomCtx.screenWidth() == 0) {
+        return;
+    }
     AnimationModuleBasePtr model = _model.lock();
     const AnimItemDimViewKeyFramesMap& selectedKeyframes = model->getSelectionModel()->getCurrentKeyFramesSelection();
     const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
@@ -1122,9 +1125,15 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
         }
     }
 
+    if ( selectedKeysBRect.isNull() ) {
+        selectedKeysBRect.clear();
+        return;
+    }
+
     QTreeWidgetItem *bottomMostItem = treeView->itemAt(0, selectedKeysBRect.y2);
     double bottom = treeView->visualItemRect(bottomMostItem).bottom();
     bottom = zoomCtx.toZoomCoordinates(0, bottom).y();
+
 
     QTreeWidgetItem *topMostItem = treeView->itemAt(0, selectedKeysBRect.y1);
     double top = treeView->visualItemRect(topMostItem).top();

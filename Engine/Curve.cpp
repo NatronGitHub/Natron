@@ -1505,7 +1505,7 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         std::pair<KeyFrameSet::iterator, bool> ret = addKeyFrameNoUpdate(*it);
         
         // huh, we are just moving one set to another, there cannot be a failure!
-        assert(!ret.second);
+        assert(ret.second);
         
         // refresh derivative
         ret.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, ret.first);

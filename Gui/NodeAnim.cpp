@@ -106,33 +106,6 @@ NodeAnim::initialize(AnimatedItemTypeEnum itemType)
     initializeTableItems();
 }
 
-static void initializeKnobsAnimInternal(const AnimationModulePtr& model,
-                                        const KnobsHolderAnimBasePtr& holder,
-                                        QTreeWidgetItem* parent,
-                                        const std::vector<KnobGuiPtr> &knobs,
-                                        std::vector<KnobAnimPtr>& itemsKnobMap)
-{
-    for (std::vector<KnobGuiPtr>::const_iterator it = knobs.begin();
-         it != knobs.end(); ++it) {
-
-        const KnobGuiPtr &knobGui = *it;
-        KnobIPtr knob = knobGui->getKnob();
-        if (!knob) {
-            continue;
-        }
-
-        // If the knob is not animted, don't create an item
-        if ( !knob->canAnimate() || !knob->isAnimationEnabled() ) {
-            continue;
-        }
-        assert(knob->getNDimensions() >= 1);
-
-        KnobAnimPtr knobAnimObject(KnobAnim::create(model, holder, parent, knobGui));
-        itemsKnobMap.push_back(knobAnimObject);
-
-    } // for all knobs
-
-} // initializeKnobsAnimInternal
 
 void
 NodeAnim::initializeKnobsAnim()
@@ -173,10 +146,14 @@ NodeAnim::initializeTableItems()
 {
     NodeGuiPtr nodeGui = _imp->nodeGui.lock();
     KnobItemsTableGuiPtr table = nodeGui->getKnobItemsTable();
-
+    if (!table) {
+        return;
+    }
 
     KnobItemsTablePtr internalTable = table->getInternalTable();
-
+    if (!internalTable) {
+        return;
+    }
 
     connect(internalTable.get(), SIGNAL(itemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
     connect(internalTable.get(), SIGNAL(itemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onTableItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
@@ -414,7 +391,9 @@ NodeAnim::refreshKnobsVisibility()
 
     for (std::vector<KnobAnimPtr>::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
         QTreeWidgetItem *knobItem = (*it)->getRootItem();
-
+        if (!knobItem) {
+            continue;
+        }
         // Expand if it's a multidim root item
         if (knobItem->childCount() > 0) {
             knobItem->setExpanded(true);
