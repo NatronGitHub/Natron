@@ -193,11 +193,15 @@ findKnobsOnSameLine(const KnobsVec& knobs,
         if (knobs[k] == ref) {
             idx = k;
             if (k > 0) {
-                *prevKnob = knobs[k - 1];
+                if ((layoutType == KnobGui::eKnobLayoutTypePage && !knobs[k - 1]->isNewLineActivated()) ||
+                    (layoutType == KnobGui::eKnobLayoutTypeViewerUI && knobs[k - 1]->getInViewerContextLayoutType() != eViewerContextLayoutTypeAddNewLine)) {
+                    *prevKnob = knobs[k - 1];
+                }
             }
             break;
         }
     }
+
     assert(idx != -1);
     if (idx < 0) {
         return;
@@ -464,20 +468,22 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
 
         descriptionLabel = new KnobClickableLabel(QString(), thisShared, ViewSetSpec::all(), parentWidget);
         KnobGuiContainerHelper::setLabelFromTextAndIcon(descriptionLabel, QString::fromUtf8(labelText.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), firstViewWidgets->isLabelBold());
-
-        // Make a warning indicator
-        warningIndicator = new Label(parentWidget);
-        warningIndicator->setVisible(false);
-
-
-        QFontMetrics fm(descriptionLabel->font(), 0);
-        int pixSize = fm.height();
-        QPixmap stdErrorPix;
-        stdErrorPix = KnobGuiContainerHelper::getStandardIcon(QMessageBox::Critical, pixSize, descriptionLabel);
-        warningIndicator->setPixmap(stdErrorPix);
-
-
         QObject::connect( descriptionLabel, SIGNAL(clicked(bool)), _publicInterface, SIGNAL(labelClicked(bool)) );
+
+
+        if (layoutType == KnobGui::eKnobLayoutTypePage) {
+            // Make a warning indicator
+            warningIndicator = new Label(parentWidget);
+            warningIndicator->setVisible(false);
+
+            QFontMetrics fm(descriptionLabel->font(), 0);
+            int pixSize = fm.height();
+            QPixmap stdErrorPix;
+            stdErrorPix = KnobGuiContainerHelper::getStandardIcon(QMessageBox::Critical, pixSize, descriptionLabel);
+            warningIndicator->setPixmap(stdErrorPix);
+            
+        }
+
     }
 
     // if multi-view, create an arrow to show/hide all dimensions
@@ -548,11 +554,24 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
     assert(prevKnobGui);
 
     KnobIPtr thisKnob = knob.lock();
-    QHBoxLayout* prevMainLayout = prevKnobGui->_imp->mainLayout;
+
+    // Recurse on previous knobs until the first one on the same line
+    QHBoxLayout* prevMainLayout = 0;
+    {
+        KnobIPtr tmpPrev = prev;
+        KnobGuiPtr tmpPrevGui = prevKnobGui;
+        while (tmpPrevGui) {
+            prevMainLayout = tmpPrevGui->_imp->mainLayout;
+            tmpPrev = tmpPrevGui->_imp->prevKnob.lock();
+            if (!tmpPrev) {
+                break;
+            }
+            tmpPrevGui = container->getKnobGui(tmpPrev);
+        }
+    }
     assert(prevMainLayout);
 
-    if (thisKnob->getHolder()->getInViewerContextKnobIndex(thisKnob) != -1) {
-        assert(prev->getHolder()->getInViewerContextKnobIndex(prev) != -1);
+    if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
         switch (prev->getInViewerContextLayoutType()) {
             case eViewerContextLayoutTypeSeparator:
                 addVerticalLineSpacer(prevMainLayout);
