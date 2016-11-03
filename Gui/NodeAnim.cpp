@@ -350,7 +350,6 @@ NodeAnim::refreshVisibility()
             case eAnimatedItemTypeReader:
             case eAnimatedItemTypeRetime:
             case eAnimatedItemTypeTimeOffset:
-#pragma message WARN("For curve editor don't do this")
                 showNode = true;
                 break;
             case eAnimatedItemTypeGroup:

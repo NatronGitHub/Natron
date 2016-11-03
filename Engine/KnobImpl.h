@@ -649,18 +649,20 @@ Knob<T>::setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOff
     if (dimensionStartOffset < 0 || dimensionStartOffset + (int)values.size() > nDims) {
         throw std::invalid_argument("Knob<T>::setDefaultValuesWithoutApplying: Invalid arguments");
     }
-    QMutexLocker l(&_valueMutex);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        int dimension = i + dimensionStartOffset;
-        _defaultValues[dimension].value = values[i];
-        if (!_defaultValues[dimension].defaultValueSet) {
-            _defaultValues[dimension].defaultValueSet = true;
-            _defaultValues[dimension].initialValue = values[i];
+    {
+        QMutexLocker l(&_valueMutex);
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            int dimension = i + dimensionStartOffset;
+            _defaultValues[dimension].value = values[i];
+            if (!_defaultValues[dimension].defaultValueSet) {
+                _defaultValues[dimension].defaultValueSet = true;
+                _defaultValues[dimension].initialValue = values[i];
+            }
+
         }
-
     }
+    resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     computeHasModifications();
-
 
 }
 

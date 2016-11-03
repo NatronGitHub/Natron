@@ -1649,6 +1649,20 @@ Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp,
     return setKeyFrameInterpolationInternal(interp, index, newIndex);
 }
 
+bool
+Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret)
+{
+    int index = keyFrameIndex(time);
+    if (index == -1) {
+        return false;
+    }
+    KeyFrame r = setKeyFrameInterpolationInternal(interp, index, &index);
+    if (ret) {
+        *ret = r;
+    }
+    return true;
+}
+
 void
 Curve::setCurveInterpolation(KeyframeTypeEnum interp)
 {

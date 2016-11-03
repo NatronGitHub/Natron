@@ -3884,6 +3884,7 @@ Node::findOrCreateChannelEnabled()
         }
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
+        premultWarning->setName("premultWarningKnob");
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecret(true);
         premultWarning->setAsLabel();

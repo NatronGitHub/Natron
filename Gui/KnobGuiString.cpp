@@ -521,6 +521,12 @@ KnobGuiString::~KnobGuiString()
 }
 
 bool
+KnobGuiString::shouldAddStretch() const
+{
+    return !_label;
+}
+
+bool
 KnobGuiString::parseFont(const QString & s, QFont* f, QColor* color)
 {
     double r,g,b;

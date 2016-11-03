@@ -359,6 +359,7 @@ TableItem::setData(int col, int role, const QVariant &value)
         // Nothing changed
         return;
     }
+    curValue = value;
 
     TableModelPtr model = getModel();
     if (model) {
@@ -800,7 +801,6 @@ TableModel::removeItem(const TableItemPtr& item)
                 assert(!item->_imp->parent.lock());
                 item->_imp->indexInParent = -1;
                 item->_imp->model.reset();
-#pragma message WARN("Should we also recursively remove children of item?")
                 it = _imp->topLevelItems.erase(it);
                 for (; it != _imp->topLevelItems.end(); ++it) {
                     --item->_imp->indexInParent;

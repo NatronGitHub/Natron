@@ -397,10 +397,6 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
         KnobIPtr k = knob.lock();
         it->second.widgets->createWidget(it->second.fieldLayout);
         it->second.widgets->updateToolTip();
-
-        if ( k->isNewLineActivated() /*&& it->second.widgets->shouldAddStretch()*/ ) {
-            it->second.fieldLayout->addStretch();
-        }
     }
 }
 
@@ -602,6 +598,7 @@ KnobGui::createGUI(QWidget* parentWidget)
 
     assert(!_imp->views.empty());
     KnobGuiWidgetsPtr firstViewWidgets = _imp->views.begin()->second.widgets;
+    assert(firstViewWidgets);
 
     _imp->createLabel(parentWidget);
 
@@ -612,6 +609,12 @@ KnobGui::createGUI(QWidget* parentWidget)
     }
 
     _imp->mainLayout->addWidget(_imp->viewsContainer);
+
+
+    if ( knob->isNewLineActivated() && firstViewWidgets->shouldAddStretch() ) {
+        _imp->mainLayout->addStretch();
+    }
+
 
 
     // Now create the widgets for each view, they will be appended to the row layout created in createViewContainers

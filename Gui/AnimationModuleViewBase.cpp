@@ -558,6 +558,13 @@ AnimationViewBase::onCenterOnSelectedCurvesActionTriggered()
 }
 
 void
+AnimationViewBase::refreshSelectionBboxAndRedraw()
+{
+    refreshSelectionBoundingBox();
+    update();
+}
+
+void
 AnimationViewBase::onSelectionModelKeyframeSelectionChanged()
 {
     refreshSelectionBboxAndRedraw();

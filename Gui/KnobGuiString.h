@@ -212,7 +212,7 @@ private:
 
     QFont makeFontFromState() const;
 
-    virtual bool shouldAddStretch() const OVERRIDE { return false; }
+    virtual bool shouldAddStretch() const OVERRIDE;
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;

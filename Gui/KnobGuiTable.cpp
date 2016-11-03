@@ -186,16 +186,17 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
     _imp->table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _imp->table->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
 #if QT_VERSION < 0x050000
     _imp->table->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->table->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 #endif
-    _imp->table->setDragDropMode(QAbstractItemView::InternalMove);
     _imp->table->header()->setStretchLastSection(true);
     _imp->table->setUniformRowHeights(true);
+
+    _imp->table->setDragDropMode(QAbstractItemView::InternalMove);
+
     _imp->table->setItemDelegate( new KnobTableItemDelegate(knob, _imp->table) );
 
     const int numCols = knob->getColumnsCount();
@@ -302,13 +303,8 @@ KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
         tableItem->setFlags(col, flags);
     }
     model->blockSignals(false);
-
-    int modelRowCount = model->rowCount();
-    if (row >= modelRowCount) {
-        model->insertRow(row);
-    }
+    model->addTopLevelItem(tableItem);
     isInsertingItem = true;
-    model->setRow(row, tableItem);
     for (int c= 0; c < values.size(); ++c) {
         table->resizeColumnToContents(c);
     }
