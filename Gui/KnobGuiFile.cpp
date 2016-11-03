@@ -221,7 +221,7 @@ KnobGuiFile::updateLastOpened(const QString &str)
 }
 
 void
-KnobGuiFile::updateGUI(DimSpec /*dimension*/)
+KnobGuiFile::updateGUI()
 {
     KnobFilePtr knob = _knob.lock();
 
@@ -714,7 +714,7 @@ KnobGuiPath::updateLastOpened(const QString &str)
 }
 
 void
-KnobGuiPath::updateGUI(DimSpec dimension)
+KnobGuiPath::updateGUI()
 {
     KnobPathPtr knob = _knob.lock();
 
@@ -725,7 +725,7 @@ KnobGuiPath::updateGUI(DimSpec dimension)
         }
         _lineEdit->setText(value);
     } else {
-        KnobGuiTable::updateGUI(dimension);
+        KnobGuiTable::updateGUI();
     }
 }
 

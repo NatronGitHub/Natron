@@ -52,7 +52,7 @@ NATRON_NAMESPACE_ENTER;
  * associated knob.
  **/
 struct KnobGuiWidgetsPrivate;
-class KnobGuiWidgets
+class KnobGuiWidgets : public boost::enable_shared_from_this<KnobGuiWidgets>
 {
 public:
 
@@ -83,7 +83,7 @@ public:
      * @brief Must be implemented to update the gui of the given dimensions according to the values 
      * of the internal knob.
      **/
-    virtual void updateGUI(DimSpec dimension) = 0;
+    virtual void updateGUI() = 0;
 
     /**
      * @brief Implement to show/hide all widgets

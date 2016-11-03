@@ -50,6 +50,8 @@ KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, K
     , warningIndicator(NULL)
     , customInteract(NULL)
     , guiRemoved(false)
+    , tabGroup(0)
+    , refreshGuiRequests(0)
     , layoutType(layoutType)
 {
 }

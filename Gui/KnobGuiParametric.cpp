@@ -341,7 +341,7 @@ KnobGuiParametric::setEnabled()
 }
 
 void
-KnobGuiParametric::updateGUI(DimSpec /*dimension*/)
+KnobGuiParametric::updateGUI()
 {
     _imp->curveWidget->update();
 }

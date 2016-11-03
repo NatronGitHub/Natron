@@ -166,7 +166,7 @@ protected:
     virtual bool shouldAddStretch() const OVERRIDE ;
     virtual void setEnabled() OVERRIDE ;
     virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE ;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE ;
+    virtual void updateGUI() OVERRIDE ;
     virtual void setDirty(bool dirty) OVERRIDE ;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE ;
     virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE ;
@@ -256,7 +256,7 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
 
-    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL ;
+    virtual void updateGUI() OVERRIDE FINAL ;
 
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
@@ -269,13 +269,13 @@ private:
 };
 
 inline KnobGuiDoublePtr
-toKnobGuiDouble(const KnobGuiIPtr& knobGui)
+toKnobGuiDouble(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiDouble>(knobGui);
 }
 
 inline KnobGuiIntPtr
-toKnobGuiInt(const KnobGuiIPtr& knobGui)
+toKnobGuiInt(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiInt>(knobGui);
 }

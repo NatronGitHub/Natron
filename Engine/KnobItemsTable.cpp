@@ -192,6 +192,8 @@ struct KnobTableItemPrivate
     // Locks all members
     mutable QMutex lock;
 
+    std::list<ViewIdx> splitViews;
+
     // List of keyframe times set by the user
     PerViewAnimationCurveMap animationCurves;
 
@@ -204,8 +206,11 @@ struct KnobTableItemPrivate
     , label()
     , iconFilePath()
     , lock()
+    , splitViews()
     , animationCurves()
     {
+        splitViews.push_back(ViewIdx(0));
+
         CurvePtr c(new Curve);
         c->setYComponentMovable(false);
         animationCurves[ViewIdx(0)] = c;
@@ -1726,8 +1731,21 @@ KnobTableItem::getKeyFrameDataType() const
 void
 KnobTableItem::splitView(ViewIdx view)
 {
+    if (!canSplitViews()) {
+        return;
+    }
     {
         QMutexLocker k(&_imp->lock);
+
+        for (std::list<ViewIdx>::iterator it = _imp->splitViews.begin(); it!=_imp->splitViews.end(); ++it) {
+            if (*it == view) {
+                return;
+            }
+        }
+        _imp->splitViews.push_back(view);
+
+
+
         CurvePtr& foundCurve = _imp->animationCurves[view];
         if (!foundCurve) {
             foundCurve.reset(new Curve);
@@ -1740,11 +1758,20 @@ KnobTableItem::splitView(ViewIdx view)
 void
 KnobTableItem::unSplitView(ViewIdx view)
 {
+    if (!canSplitViews()) {
+        return;
+    }
     if (view == 0) {
         return;
     }
     {
         QMutexLocker k(&_imp->lock);
+        for (std::list<ViewIdx>::iterator it = _imp->splitViews.begin(); it!=_imp->splitViews.end(); ++it) {
+            if (*it == view) {
+                _imp->splitViews.erase(it);
+                break;
+            }
+        }
         PerViewAnimationCurveMap::iterator foundView = _imp->animationCurves.find(view);
         if (foundView != _imp->animationCurves.end()) {
             _imp->animationCurves.erase(foundView);
@@ -1755,12 +1782,8 @@ KnobTableItem::unSplitView(ViewIdx view)
 std::list<ViewIdx>
 KnobTableItem::getViewsList() const
 {
-    std::list<ViewIdx> ret;
     QMutexLocker k(&_imp->lock);
-    for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it != _imp->animationCurves.end(); ++it) {
-        ret.push_back(it->first);
-    }
-    return ret;
+    return _imp->splitViews;
 }
 
 ViewIdx
@@ -1772,17 +1795,38 @@ KnobTableItem::getViewIdxFromGetSpec(ViewGetSpec view) const
 ViewIdx
 KnobTableItemPrivate::getViewIdxFromGetSpec(ViewGetSpec view) const
 {
-    ViewIdx view_i(view);
-
-    if (view.isCurrent()) {
-        KnobItemsTablePtr m = model.lock();
-        if (!m) {
-            view_i = ViewIdx(0);
+    KnobItemsTablePtr m = model.lock();
+    if (!m) {
+        return ViewIdx(0);
+    }
+    if (!view.isCurrent()) {
+        QMutexLocker k(&lock);
+        std::list<ViewIdx>::const_iterator foundView = std::find(splitViews.begin(), splitViews.end(), ViewIdx(view.value()));
+        if (foundView == splitViews.end()) {
+            // If the view does not exist, set the main view
+            return ViewIdx(0);
+        }
+        return ViewIdx(view);
+    } else {
+        int nSplitViews;
+        {
+            QMutexLocker k(&lock);
+            nSplitViews = splitViews.size();
+        }
+        if (nSplitViews <= 1) {
+            return ViewIdx(0);
         } else {
-            view_i = m->getNode()->getEffectInstance()->getCurrentView();
+            ViewIdx curView = m->getNode()->getEffectInstance()->getCurrentView();
+            QMutexLocker k(&lock);
+            std::list<ViewIdx>::const_iterator foundView = std::find(splitViews.begin(), splitViews.end(), curView);
+            if (foundView == splitViews.end()) {
+                // If the view does not exist, set the main view
+                return ViewIdx(0);
+            }
+            return curView;
         }
     }
-    return view_i;
+
 }
 
 CurvePtr

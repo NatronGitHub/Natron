@@ -176,6 +176,13 @@ struct KnobGuiPrivate
     // True when the gui is no longer valid
     bool guiRemoved;
 
+    // If the knob is a group as tab, this will be the tab widget
+    TabGroup* tabGroup;
+
+    // Used to concatenate updateGui() request
+    int refreshGuiRequests;
+
+
     // True if this KnobGui is used in the viewer
     KnobGui::KnobLayoutTypeEnum layoutType;
 

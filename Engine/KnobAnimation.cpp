@@ -411,7 +411,6 @@ KnobHelper::cloneCurves(const KnobIPtr& other,
     int dimMin = std::min( getNDimensions(), other->getNDimensions() );
     StringAnimationManagerPtr stringAnim = other->getStringAnimation();
 
-    QMutexLocker k(&_imp->curvesMutex);
     bool hasChanged = false;
     if (dimension.isAll()) {
         for (int i = 0; i < dimMin; ++i) {

@@ -133,7 +133,6 @@ void
 KnobHelper::deleteKnob()
 {
     // Prevent any signal 
-    blockGuiRefreshing();
     blockValueChanges();
 
     KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
@@ -222,9 +221,17 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
         *viewOut = ViewSetSpec(targetViews.front());
     }
     // If pasting on a folded knob view,
-    if ( (dimIn == 0) && getNDimensions() > 1 && !viewOut->isAll() && !getAllDimensionVisible(ViewIdx(*viewOut)) ) {
+    int nDims = getNDimensions();
+    *dimOut = dimIn;
+    if (nDims == 1) {
+        *dimOut = DimSpec(0);
+    }
+    if ( (*dimOut == 0) && nDims > 1 && !viewOut->isAll() && !getAllDimensionVisible(ViewIdx(*viewOut)) ) {
         *dimOut = DimSpec::all();
     }
+
+
+
     
 }
 
@@ -470,7 +477,14 @@ KnobHelper::getViewIdxFromGetSpec(ViewGetSpec view) const
         if (nSplitViews <= 1) {
             return ViewIdx(0);
         } else {
-            return getCurrentView();
+            ViewIdx curView = getCurrentView();
+            QMutexLocker k(&_imp->splitViewMutex);
+            std::list<ViewIdx>::const_iterator foundView = std::find(_imp->splitViews.begin(), _imp->splitViews.end(), curView);
+            if (foundView == _imp->splitViews.end()) {
+                // If the view does not exist, set the main view
+                return ViewIdx(0);
+            }
+            return curView;
         }
     }
 }
@@ -572,9 +586,11 @@ KnobHelper::endChanges()
 void
 KnobHelper::blockValueChanges()
 {
-    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    {
+        QMutexLocker k(&_imp->valueChangedBlockedMutex);
 
-    ++_imp->valueChangedBlocked;
+        ++_imp->valueChangedBlocked;
+    }
 }
 
 void
@@ -615,27 +631,6 @@ KnobHelper::isListenersNotificationBlocked() const
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
 
     return _imp->listenersNotificationBlocked > 0;
-}
-
-void
-KnobHelper::blockGuiRefreshing()
-{
-    QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    ++_imp->guiRefreshBlocked;
-}
-
-void
-KnobHelper::unblockGuiRefreshing()
-{
-    QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    --_imp->guiRefreshBlocked;
-}
-
-bool
-KnobHelper::isGuiRefreshingBlocked() const
-{
-    QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    return _imp->guiRefreshBlocked;
 }
 
 void
@@ -763,7 +758,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     // If the knob has no holder, still refresh its state
     if (!holder) {
         computeHasModifications();
-        if (!isGuiRefreshingBlocked()) {
+        if (!isValueChangesBlocked()) {
             _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
         }
         if ( !isListenersNotificationBlocked() ) {
@@ -4449,7 +4444,7 @@ KnobHolder::endChanges(bool discardRendering)
 
         if (!guiFrozen) {
             boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
-            if (!it->knob->isGuiRefreshingBlocked()) {
+            if (!it->valueChangeBlocked) {
                 handler->s_mustRefreshKnobGui(it->view, dimension, it->reason);
             }
 

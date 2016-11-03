@@ -634,11 +634,6 @@ public:
     virtual void unblockListenersNotification() = 0;
     virtual bool isListenersNotificationBlocked() const = 0;
 
-    // Prevent knob gui refreshing while under the block/unblock bracket
-    virtual void blockGuiRefreshing() = 0;
-    virtual void unblockGuiRefreshing() = 0;
-    virtual bool isGuiRefreshingBlocked() const = 0;
-
     // Prevent autokeying
     virtual void setAutoKeyingEnabled(bool enabled) = 0;
 
@@ -1424,9 +1419,6 @@ public:
     virtual void blockListenersNotification() OVERRIDE FINAL;
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void blockGuiRefreshing() OVERRIDE FINAL;
-    virtual void unblockGuiRefreshing() OVERRIDE FINAL;
-    virtual bool isGuiRefreshingBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAutoKeyingEnabled(bool enabled) OVERRIDE FINAL;
     virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool evaluateValueChange(DimSpec dimension, double time, ViewSetSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;

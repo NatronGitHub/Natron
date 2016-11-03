@@ -243,6 +243,14 @@ public:
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
     /**
+     * @brief Returns whether the user can call split/unsplitView
+     **/
+    virtual bool canSplitViews() const 
+    {
+        return false;
+    }
+
+    /**
      * @brief Split the given view off the main view
      **/
     virtual void splitView(ViewIdx view);

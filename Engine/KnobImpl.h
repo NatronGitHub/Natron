@@ -558,10 +558,11 @@ Knob<T>::unSlaveInternal(DimIdx dimension,
         return;
     }
 
+    resetMaster(dimension, view);
+
     // Re-enable the parameter. This is not wrong since anyway if the parameter was disabled in the first place, user shouldn't even have been able to slave it.
     setEnabled(true, dimension);
 
-    resetMaster(dimension, view);
     bool hasChanged = false;
     if (copyState) {
         // Clone the master
@@ -918,7 +919,7 @@ Knob<T>::onTimeChanged(bool isPlayback,
 
     if (shouldRefresh) {
         refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
-        if (!isGuiRefreshingBlocked()) {
+        if (!isValueChangesBlocked()) {
             _signalSlotHandler->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonTimeChanged);
         }
     }

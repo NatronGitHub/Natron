@@ -50,17 +50,25 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 void
-KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum /*reason*/)
+KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/)
 {
-#pragma message WARN("Make this slot in a queued connection to avoid many redraws requests")
-    if (_imp->guiRemoved) {
-        return;
-    }
-    if (_imp->widgetCreated) {
-        updateGuiInternal(dimension, view);
-    }
+    Q_EMIT s_doUpdateGuiLater();
 }
 
+void
+KnobGui::doUpdateGuiLater()
+{
+    if (_imp->guiRemoved || !_imp->widgetCreated) {
+        return;
+    }
+    if (!_imp->customInteract) {
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            it->second.widgets->updateGUI();
+        }
+    } else {
+        _imp->customInteract->update();
+    }
+}
 
 void
 KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
@@ -213,7 +221,7 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
     }
 
     // If types are incompatible, cancel
-    if ( fromKnob->isTypeCompatible(knob) ) {
+    if ( !fromKnob->isTypeCompatible(knob) ) {
         if (showErrorDialog) {
             Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
         }
@@ -564,50 +572,27 @@ KnobGui::setKnobGuiPointer()
     getKnob()->setKnobGuiPointer( shared_from_this() );
 }
 
-
-
 void
-KnobGui::onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension)
+KnobGui::updateAnimationLevelLater()
 {
-#pragma message WARN("Make this a queued connection")
     if (_imp->customInteract) {
         return;
     }
     KnobIPtr knob = getKnob();
     int nDim = knob->getNDimensions();
-    if (dimension.isAll()) {
-        if (view.isAll()) {
-            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-                for (int i = 0; i < nDim; ++i) {
-                    if (it->second.widgets) {
-                        it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first) );
-                    }
-                }
-            }
-        } else {
-            ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
-            if (foundView != _imp->views.end()) {
-                for (int i = 0; i < nDim; ++i) {
-                    foundView->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), view_i) );
-                }
-            }
-        }
-    } else {
-        if (view.isAll()) {
-            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-                if (it->second.widgets) {
-                    it->second.widgets->reflectAnimationLevel(DimIdx(dimension), knob->getAnimationLevel(DimIdx(dimension), it->first) );
-                }
-            }
-        } else {
-            ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
-            if (foundView != _imp->views.end()) {
-                foundView->second.widgets->reflectAnimationLevel(DimIdx(dimension), knob->getAnimationLevel(DimIdx(dimension), view_i) );
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        for (int i = 0; i < nDim; ++i) {
+            if (it->second.widgets) {
+                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first) );
             }
         }
     }
+}
+
+void
+KnobGui::onAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dimension*/)
+{
+    Q_EMIT s_updateAnimationLevelLater();
 }
 
 void
@@ -749,7 +734,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
         }
     }
     onHelpChanged();
-    foundView->second.widgets->updateGUI(dimension);
+    foundView->second.widgets->updateGUI();
 } // KnobGui::onExprChanged
 
 void

@@ -75,17 +75,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
-#include "Gui/TabGroup.h"
 #include "Gui/PropertiesBinWrapper.h"
 
 #include "ofxNatron.h"
 
 
 NATRON_NAMESPACE_ENTER;
-using std::make_pair;
 
-
-//=============================GROUP_KNOB_GUI===================================
 
 KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiWidgets(knob, view)
@@ -93,7 +89,6 @@ KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)
     , _button(0)
     , _children()
     , _childrenToEnable()
-    , _tabGroup(0)
     , _knob( toKnobGroup(knob->getKnob()) )
 {
 }
@@ -102,24 +97,6 @@ KnobGuiGroup::~KnobGuiGroup()
 {
 }
 
-TabGroup*
-KnobGuiGroup::getOrCreateTabWidget()
-{
-    if (_tabGroup) {
-        return _tabGroup;
-    }
-
-    _tabGroup = new TabGroup( getKnobGui()->getContainer()->getContainerWidget() );
-
-    return _tabGroup;
-}
-
-void
-KnobGuiGroup::removeTabWidget()
-{
-    delete _tabGroup;
-    _tabGroup = 0;
-}
 
 void
 KnobGuiGroup::removeSpecificGui()
@@ -182,9 +159,6 @@ KnobGuiGroup::setCheckedInternal(bool checked,
             knob->show();
         }
     }
-    if (_tabGroup) {
-        _tabGroup->setVisible(checked);
-    }
     //getGui()->getPropertiesBin()->setUpdatesEnabled(true);
 }
 
@@ -207,7 +181,7 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 }
 
 void
-KnobGuiGroup::updateGUI(DimSpec /*dimension*/)
+KnobGuiGroup::updateGUI()
 {
     bool b = _knob.lock()->getValue();
 
@@ -237,9 +211,7 @@ KnobGuiGroup::setWidgetsVisible(bool visible)
             k->hide();
         }
     }
-    if (_tabGroup) {
-        _tabGroup->setVisible(visible);
-    }
+
 }
 
 void
@@ -251,9 +223,7 @@ KnobGuiGroup::setEnabled()
     if (_button) {
         _button->setEnabled(enabled);
     }
-    if (_tabGroup) {
-        _tabGroup->setEnabled(enabled);
-    }
+
     if (enabled) {
         for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
             for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {

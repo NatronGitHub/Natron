@@ -99,7 +99,7 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
@@ -162,7 +162,7 @@ private:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
     virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;

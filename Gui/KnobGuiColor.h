@@ -183,7 +183,7 @@ private:
 };
 
 inline KnobGuiColorPtr
-toKnobGuiColor(const KnobGuiIPtr& knobGui)
+toKnobGuiColor(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
 }

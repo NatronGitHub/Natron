@@ -77,9 +77,7 @@ public:
     const std::list<KnobGuiWPtr>& getChildren() const { return _children; }
 
     bool isChecked() const;
-    TabGroup* getOrCreateTabWidget();
 
-    void removeTabWidget();
 
 public Q_SLOTS:
     void onCheckboxChecked(bool b);
@@ -91,7 +89,7 @@ private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled()  OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }
@@ -107,7 +105,6 @@ private:
     GroupBoxLabel *_button;
     std::list<KnobGuiWPtr> _children;
     std::vector< std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
-    TabGroup* _tabGroup;
     //enabled too
     KnobGroupWPtr _knob;
 };

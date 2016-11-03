@@ -523,7 +523,8 @@ KnobGuiString::~KnobGuiString()
 bool
 KnobGuiString::shouldAddStretch() const
 {
-    return !_label;
+    // Never add stretch after the line edits, text edit, they expand horizontally
+    return _label != 0;
 }
 
 bool
@@ -611,7 +612,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setFontFamily(font.family().toStdString());
-    updateGUI(DimIdx(0));
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -622,7 +623,7 @@ KnobGuiString::onFontSizeChanged(double size)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setFontSize(size);
-    updateGUI(DimIdx(0));
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -631,7 +632,7 @@ KnobGuiString::boldChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setBoldActivated(toggled);
-    updateGUI(DimIdx(0));
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -670,7 +671,7 @@ KnobGuiString::colorFontButtonClicked()
         double g = currentColor.greenF();
         double b = currentColor.blueF();
         knob->setFontColor(r, g, b);
-        updateGUI(DimIdx(0));
+        updateGUI();
         Q_EMIT fontPropertyChanged();
 
     }
@@ -683,14 +684,14 @@ KnobGuiString::italicChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setItalicActivated(toggled);
-    updateGUI(DimIdx(0));
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
 
 
 void
-KnobGuiString::updateGUI(DimSpec /*dimension*/)
+KnobGuiString::updateGUI()
 {
     KnobStringPtr knob = _knob.lock();
     std::string value = knob->getValue(DimIdx(0), getView());

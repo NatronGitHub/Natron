@@ -330,6 +330,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     _imp->spinBoxes.resize(nDims);
 
+    KnobGuiWidgetsPtr thisShared = shared_from_this();
     int rowIndex = 0;
     int columnIndex = 0;
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
@@ -351,7 +352,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), type, knobUI, DimIdx(i), getView());
         box->setProperty(kKnobGuiValueSpinBoxDimensionProperty, (int)i);
         box->setAlignment(getSpinboxAlignment());
-        NumericKnobValidator* validator = new NumericKnobValidator(box, knobUI, getView());
+        NumericKnobValidator* validator = new NumericKnobValidator(box, thisShared, getView());
         box->setValidator(validator);
         QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
 
@@ -599,8 +600,7 @@ KnobGuiValue::onRectangleFormatButtonClicked()
             _imp->spinBoxes[3].second->setText( QString::fromUtf8("t") );
         }
     }
-    updateGUI(DimIdx(2));
-    updateGUI(DimIdx(3));
+    updateGUI();
 }
 
 void
@@ -785,15 +785,10 @@ KnobGuiValue::onDecimalsChanged(const int deci,
 }
 
 void
-KnobGuiValue::updateGUI(DimSpec dimension)
+KnobGuiValue::updateGUI()
 {
     KnobIPtr knob = _imp->getKnob();
     const int knobDim = (int)_imp->spinBoxes.size();
-
-    if ( (knobDim < 1) || (dimension >= knobDim) ) {
-        return;
-    }
-    assert( dimension.isAll() || (dimension >= 0 && dimension < knobDim) );
 
     std::vector<double> values(knobDim);
     double refValue = 0.;
@@ -829,58 +824,36 @@ KnobGuiValue::updateGUI(DimSpec dimension)
         return;
     }
 
-    if (dimension == -1) {
-        refValue = values[0];
-        refExpresion = expressions[0];
-    } else {
-        refValue = values[dimension];
-        refExpresion = expressions[dimension];
-    }
-    bool allValuesNotEqual = false;
+    refValue = values[0];
+    refExpresion = expressions[0];
+
+    bool allValuesEqual = true;
     for (int i = 0; i < knobDim; ++i) {
         if ( (values[i] != refValue) || (expressions[i] != refExpresion) ) {
-            allValuesNotEqual = true;
+            allValuesEqual = false;
+            break;
         }
     }
-    if (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) {
+    if (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && !allValuesEqual) {
         expandAllDimensions();
-    } else if (_imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
+    } else if (_imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && allValuesEqual) {
         foldAllDimensions();
     }
 
 
-    if (dimension != -1) {
-        switch (dimension) {
-        case 0:
-            assert(knobDim >= 1);
-            if (_imp->slider) {
-                _imp->slider->seekScalePosition(values[0]);
-            }
-            _imp->spinBoxes[dimension].first->setValue(values[dimension]);
-            if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) {
-                for (int i = 1; i < knobDim; ++i) {
-                    _imp->spinBoxes[i].first->setValue(values[dimension]);
-                }
-            }
-            break;
-        default:
-            _imp->spinBoxes[dimension].first->setValue(values[dimension]);
-            break;
+    if (_imp->slider) {
+        _imp->slider->seekScalePosition(values[0]);
+    }
+    if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) {
+        for (int i = 0; i < knobDim; ++i) {
+            _imp->spinBoxes[i].first->setValue(values[0]);
         }
     } else {
-        if (_imp->slider) {
-            _imp->slider->seekScalePosition(values[0]);
-        }
-        if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) {
-            for (int i = 0; i < knobDim; ++i) {
-                _imp->spinBoxes[i].first->setValue(values[0]);
-            }
-        } else {
-            for (int i = 0; i < knobDim; ++i) {
-                _imp->spinBoxes[i].first->setValue(values[i]);
-            }
+        for (int i = 0; i < knobDim; ++i) {
+            _imp->spinBoxes[i].first->setValue(values[i]);
         }
     }
+
 
     updateExtraGui(values);
 } // KnobGuiValue::updateGUI
@@ -988,7 +961,7 @@ KnobGuiValue::sliderEditingEnd(double d)
         }
         newValuesVec.push_back(d);
     }
-    updateExtraGui(newValuesVec);
+    //updateExtraGui(newValuesVec);
 }
 
 void
@@ -1055,11 +1028,11 @@ KnobGuiValue::onSpinBoxValueChanged()
         }
     }
 
-    updateExtraGui(newValue);
+    //updateExtraGui(newValue);
 
-    if (_imp->slider) {
-        _imp->slider->seekScalePosition(newValue[0]);
-    }
+    //if (_imp->slider) {
+    //    _imp->slider->seekScalePosition(newValue[0]);
+    //}
 } // KnobGuiValue::onSpinBoxValueChanged
 
 void
@@ -1375,10 +1348,10 @@ KnobGuiInt::onKeybindRecorderEditingFinished()
 }
 
 void
-KnobGuiInt::updateGUI(DimSpec dimension)
+KnobGuiInt::updateGUI()
 {
     if (!_shortcutRecorder) {
-        KnobGuiValue::updateGUI(dimension);
+        KnobGuiValue::updateGUI();
     } else {
         KnobIntPtr knob = _knob.lock();
         assert(knob->getNDimensions() == 2);

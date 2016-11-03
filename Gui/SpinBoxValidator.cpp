@@ -37,7 +37,7 @@ NATRON_NAMESPACE_ENTER;
 struct NumericKnobValidatorPrivate
 {
     const SpinBox* spinbox;
-    KnobGuiWPtr knobGui;
+    KnobGuiWidgetsWPtr knobGui;
     ViewIdx view;
 
     ///Only these knobs have spinboxes
@@ -48,7 +48,7 @@ struct NumericKnobValidatorPrivate
     KnobIntBasePtr isInt;
 
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
-                                const KnobGuiPtr& knob,
+                                const KnobGuiWidgetsPtr& knob,
                                 ViewIdx view)
         : spinbox(spinbox)
         , knobGui(knob)
@@ -60,7 +60,7 @@ struct NumericKnobValidatorPrivate
         isColorGui = toKnobGuiColor(knob);
         isIntGui = toKnobGuiInt(knob);
 
-        KnobIPtr internalKnob = knob->getKnob();
+        KnobIPtr internalKnob = knob->getKnobGui()->getKnob();
 
         isDouble = toKnobDoubleBase(internalKnob);
         isInt = toKnobIntBase(internalKnob);
@@ -69,7 +69,7 @@ struct NumericKnobValidatorPrivate
 };
 
 NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,
-                                           const KnobGuiPtr& knob,
+                                           const KnobGuiWidgetsPtr& knob,
                                            ViewIdx view)
     : _imp( new NumericKnobValidatorPrivate(spinbox, knob, view) )
 {
@@ -109,17 +109,18 @@ NumericKnobValidator::validateInput(const QString& userText,
         simplifiedUserText.remove(0, 1);
     }
     std::string expr = simplifiedUserText.toStdString();
-    KnobGuiPtr knobUI = _imp->knobGui.lock();
-    if (!expr.empty() && knobUI) {
+    KnobGuiWidgetsPtr knobWidgets = _imp->knobGui.lock();
+    if (!expr.empty() && knobWidgets) {
+        KnobIPtr internalKnob = knobWidgets->getKnobGui()->getKnob();
         try {
-            knobUI->getKnob()->validateExpression(expr, DimIdx(0), _imp->view, false, &ret);
+            internalKnob->validateExpression(expr, DimIdx(0), _imp->view, false, &ret);
         } catch (...) {
             return false;
         }
 
         if (isPersistentExpression) {
             //Only set the expression if it starts with '='
-            knobUI->pushUndoCommand( new SetExpressionCommand(knobUI->getKnob(),
+            knobWidgets->getKnobGui()->pushUndoCommand( new SetExpressionCommand(internalKnob,
                                                               false,
                                                               dimension,
                                                               _imp->view,

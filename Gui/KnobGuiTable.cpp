@@ -428,7 +428,7 @@ KnobGuiTable::onRemoveButtonClicked()
 }
 
 void
-KnobGuiTable::updateGUI(DimSpec /*dimension*/)
+KnobGuiTable::updateGUI()
 {
     KnobGuiPtr knobUI = getKnobGui();
     boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( knobUI->getKnob() );

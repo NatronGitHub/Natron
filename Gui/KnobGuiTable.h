@@ -81,7 +81,7 @@ protected:
     virtual void setWidgetsVisible(bool visible) OVERRIDE;
     virtual void setEnabled() OVERRIDE;
     virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE;
+    virtual void updateGUI() OVERRIDE;
     virtual void reflectAnimationLevel(DimIdx /*dimension*/,
                                        AnimationLevelEnum /*level*/) OVERRIDE
     {

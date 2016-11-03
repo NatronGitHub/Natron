@@ -121,7 +121,7 @@ private:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void updateGUI(DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }

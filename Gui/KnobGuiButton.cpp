@@ -206,7 +206,7 @@ KnobGuiButton::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiButton::updateGUI(DimSpec /*dimension*/)
+KnobGuiButton::updateGUI()
 {
     KnobButtonPtr k = _knob.lock();
 

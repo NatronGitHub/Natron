@@ -119,6 +119,8 @@ public:
 
     void removeGui();
 
+    void removeTabWidget();
+
     void setGuiRemoved();
 
     KnobIPtr getKnob() const;
@@ -236,6 +238,7 @@ public:
      **/
     bool pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView);
 
+    TabGroup* getOrCreateTabWidget();
 
 public Q_SLOTS:
 
@@ -327,10 +330,22 @@ public Q_SLOTS:
 
     void onMultiViewUnfoldClicked(bool expanded);
 
+    void doUpdateGuiLater();
+
+    void updateAnimationLevelLater();
+
+    void onSplitViewActionTriggered();
+
+    void onUnSplitViewActionTriggered();
+
 Q_SIGNALS:
 
     // Emitted when the description label is clicked
     void labelClicked(bool);
+
+    void s_doUpdateGuiLater();
+
+    void s_updateAnimationLevelLater();
 
 private:
 
@@ -339,8 +354,6 @@ private:
     static void getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimSpec* dimension);
 
     void refreshKnobWarningIndicatorVisibility();
-
-    void updateGuiInternal(DimSpec dimension, ViewSetSpec view);
 
     void copyToClipBoard(KnobClipBoardType type, DimSpec dimension, ViewSetSpec view) const;
 

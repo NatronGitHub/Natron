@@ -50,6 +50,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
+#include "Gui/TabGroup.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -845,6 +846,9 @@ KnobGui::hide()
     } else if (_imp->descriptionLabel) {
         _imp->descriptionLabel->hide();
     }
+    if (_imp->tabGroup) {
+        _imp->tabGroup->hide();
+    }
 } // KnobGui::hide
 
 void
@@ -878,6 +882,10 @@ KnobGui::show()
         _imp->labelContainer->show();
     } else if (_imp->descriptionLabel) {
         _imp->descriptionLabel->show();
+    }
+
+    if (_imp->tabGroup) {
+        _imp->tabGroup->show();
     }
 }
 
@@ -955,7 +963,39 @@ KnobGui::setEnabledSlot()
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setReadOnly( !knob->isEnabled(DimIdx(0)) );
     }
+    if (_imp->tabGroup) {
+        _imp->tabGroup->setEnabled( !knob->isEnabled(DimIdx(0)));
+    }
 }
 
+void
+KnobGui::onSplitViewActionTriggered()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    ViewIdx view = ViewIdx(action->data().toInt());
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    internalKnob->splitView(view);
+}
+
+void
+KnobGui::onUnSplitViewActionTriggered()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    ViewIdx view = ViewIdx(action->data().toInt());
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    internalKnob->unSplitView(view);
+}
 
 NATRON_NAMESPACE_EXIT;

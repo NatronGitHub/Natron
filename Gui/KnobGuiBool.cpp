@@ -217,7 +217,7 @@ KnobGuiBool::createWidget(QHBoxLayout* layout)
     onLabelChanged();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
-    //QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
+    QObject::connect( knobUI.get(), SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
 
     ///set the copy/link actions in the right click menu
     KnobGuiWidgets::enableRightClickMenu(knobUI, _checkBox, DimIdx(0), getView());
@@ -237,7 +237,7 @@ KnobGuiBool::removeSpecificGui()
 }
 
 void
-KnobGuiBool::updateGUI(DimSpec /*dimension*/)
+KnobGuiBool::updateGUI()
 {
     bool checked = _knob.lock()->getValue(DimIdx(0), getView());
     if (_checkBox->isChecked() == checked) {

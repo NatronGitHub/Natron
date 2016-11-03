@@ -87,7 +87,7 @@ private:
     {
     }
 
-    virtual void updateGUI(DimSpec /*dimension*/) OVERRIDE FINAL
+    virtual void updateGUI() OVERRIDE FINAL
     {
     }
 

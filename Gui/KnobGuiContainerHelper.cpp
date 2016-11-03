@@ -561,12 +561,12 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
     boost::shared_ptr<KnobGuiGroup> parentGroupGui;
-
+    KnobGuiPtr parentKnobGui;
     // If this knob is within a group, make sure the group is created so far
     if (parentIsGroup) {
-        KnobGuiPtr parentGui = findKnobGuiOrCreate(parentKnob);
-        if (parentGui) {
-            parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentGui->getWidgetsForView(ViewIdx(0)));
+        parentKnobGui = findKnobGuiOrCreate(parentKnob);
+        if (parentKnobGui) {
+            parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
         }
     }
 
@@ -599,8 +599,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
             page->groupAsTab->refreshTabSecretNess( isGroup );
         } else {
             // This is a group inside a group
-            assert(parentGroupGui);
-            TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
+            assert(parentKnobGui);
+            TabGroup* groupAsTab = parentKnobGui->getOrCreateTabWidget();
             assert(groupAsTab);
             groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
 
@@ -620,10 +620,9 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
                 } else {
                     KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
                     assert( it != _imp->knobsMap.end() );
-
-                    boost::shared_ptr<KnobGuiGroup> parentParentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(it->second->getWidgetsForView(ViewIdx(0)));
-                    assert(parentParentGroupGui);
-                    parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
+                    if (it != _imp->knobsMap.end() && it->second) {
+                        parentTabGroup = it->second->getOrCreateTabWidget();
+                    }
                 }
 
                 QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
@@ -695,10 +694,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
             if (parentParentIsGroup) {
                 KnobGuiPtr parentParentGui = findKnobGuiOrCreate(parentParent);
                 assert(parentParentGui);
-                boost::shared_ptr<KnobGuiGroup> parentParentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentParentGui->getWidgetsForView(ViewIdx(0)));
-                assert(parentParentGroupGui);
-                if (parentParentGroupGui) {
-                    TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
+                if (parentParentGui) {
+                    TabGroup* groupAsTab = parentParentGui->getOrCreateTabWidget();
                     assert(groupAsTab);
                     gridLayout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
                 }
@@ -831,15 +828,12 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
             } else if (isParentGroup) {
                 KnobsGuiMapping::iterator found  = _imp->findKnobGui(knob);
                 assert( found != _imp->knobsMap.end() );
-
-                boost::shared_ptr<KnobGuiGroup> parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(found->second->getWidgetsForView(ViewIdx(0)));
-                assert(parentGroupGui);
-                if (parentGroupGui) {
-                    TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
+                if (found != _imp->knobsMap.end() && found->second) {
+                    TabGroup* groupAsTab = found->second->getOrCreateTabWidget();
                     if (groupAsTab) {
                         groupAsTab->removeTab(isGrp);
                         if ( groupAsTab->isEmpty() ) {
-                            parentGroupGui->removeTabWidget();
+                            found->second->removeTabWidget();
                         }
                     }
                 }

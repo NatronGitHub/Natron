@@ -44,6 +44,7 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/TabGroup.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -102,6 +103,8 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(dimensionNameChanged(DimIdx)), this, SLOT(onDimensionNameChanged(DimIdx)) );
         QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
     }
+    QObject::connect( this, SIGNAL(s_doUpdateGuiLater()), this, SLOT(doUpdateGuiLater()), Qt::QueuedConnection );
+    QObject::connect( this, SIGNAL(s_updateAnimationLevelLater()), this, SLOT(updateAnimationLevelLater()), Qt::QueuedConnection );
 
 }
 
@@ -145,6 +148,17 @@ KnobGui::removeGui()
         }
     }
     _imp->guiRemoved = true;
+
+    removeTabWidget();
+}
+
+void
+KnobGui::removeTabWidget()
+{
+    if (_imp->tabGroup) {
+        _imp->tabGroup->deleteLater();
+        _imp->tabGroup = 0;
+    }
 }
 
 void
@@ -174,6 +188,17 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
         cmd->redo();
         delete cmd;
     }
+}
+
+TabGroup*
+KnobGui::getOrCreateTabWidget()
+{
+    if (_imp->tabGroup) {
+        return _imp->tabGroup;
+    }
+
+    _imp->tabGroup = new TabGroup( _imp->container->getContainerWidget() );
+    return _imp->tabGroup;
 }
 
 /**
@@ -659,6 +684,13 @@ KnobGui::createGUI(QWidget* parentWidget)
     _imp->mainLayout->addWidget(_imp->viewsContainer);
 
 
+
+    // Now create the widgets for each view, they will be appended to the row layout created in createViewContainers
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        _imp->createViewWidgets(it);
+    }
+
+
     if ( firstViewWidgets->shouldAddStretch() ) {
         if ((_imp->layoutType == eKnobLayoutTypePage && knob->isNewLineActivated()) ||
             (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine)) {
@@ -666,14 +698,6 @@ KnobGui::createGUI(QWidget* parentWidget)
         }
 
     }
-
-
-
-    // Now create the widgets for each view, they will be appended to the row layout created in createViewContainers
-    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        _imp->createViewWidgets(it);
-    }
-
 
     // If not on a new line, add to the previous knob layout this knob's label
     if (!_imp->isOnNewLine) {
@@ -706,26 +730,7 @@ KnobGui::createGUI(QWidget* parentWidget)
 
 } // KnobGui::createGUI
 
-void
-KnobGui::updateGuiInternal(DimSpec dimension, ViewSetSpec view)
-{
-    if (!_imp->customInteract) {
-        if (view.isAll()) {
-            for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-                it->second.widgets->updateGUI(dimension);
-            }
 
-        } else {
-            ViewIdx view_i = getKnob()->getViewIdxFromGetSpec(ViewGetSpec(view));
-            KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view_i);
-            if (foundView != _imp->views.end()) {
-                foundView->second.widgets->updateGUI(dimension);
-            }
-        }
-    } else {
-        _imp->customInteract->update();
-    }
-}
 
 void
 KnobGui::onRightClickClicked(const QPoint & pos)
@@ -889,9 +894,10 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
     bool dimensionIsSlaved = false;
     bool hasDimensionDisabled = false;
 
-    std::list<ViewIdx> views;
+    std::list<ViewIdx> views, knobViews;
+    knobViews = getKnob()->getViewsList();
     if (view.isAll()) {
-        views = getKnob()->getViewsList();
+        views = knobViews;
     } else {
         views.push_back(ViewIdx(view));
     }
@@ -1315,7 +1321,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             menu->addAction(clearExprAction);
         }
     }
-    if ( !isAllViewsAction && ( (dimension != -1) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
+    if ( !isAllViewsAction && ( (!dimension.isAll()) || (knob->getNDimensions() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
         {
             QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
             QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
@@ -1342,10 +1348,73 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
         }
     }
 
-
-    ///find-out to which node that master knob belongs to
     KnobHolderPtr holder = knob->getHolder();
     EffectInstancePtr isEffect = toEffectInstance(holder);
+
+    // Add actions to split/unsplit views
+    std::vector<std::string> projectViews;
+    if (holder && holder->getApp()) {
+        projectViews = holder->getApp()->getProject()->getProjectViewNames();
+    }
+
+    if (knob->canSplitViews()) {
+        std::vector<QAction*> splitActions, unSplitActions;
+        for (std::size_t i = 1; i < projectViews.size(); ++i) {
+            std::list<ViewIdx>::iterator foundView = std::find(knobViews.begin(), knobViews.end(), ViewIdx(i));
+            if (foundView == knobViews.end()) {
+                QString label = tr("Split %1 View").arg(QString::fromUtf8(projectViews[i].c_str()));
+                QAction* splitAction = new QAction(label, menu);
+                QObject::connect( splitAction, SIGNAL(triggered()), this, SLOT(onSplitViewActionTriggered()) );
+                splitAction->setData((int)i);
+                if (!isDimensionEnabled) {
+                    splitAction->setEnabled(false);
+                }
+                splitActions.push_back(splitAction);
+
+            }
+        }
+
+        for (std::list<ViewIdx>::iterator it = knobViews.begin(); it != knobViews.end(); ++it) {
+            if (*it == ViewIdx(0)) {
+                continue;
+            }
+            QString viewName;
+            if (*it >= 0 && *it < (int)projectViews.size()) {
+                viewName = QString::fromUtf8(projectViews[*it].c_str());
+            } else {
+                viewName = QString::fromUtf8("*");
+            }
+            QString label = tr("Unsplit %1 View").arg(viewName);
+            QAction* unSplitAction = new QAction(label, menu);
+            QObject::connect( unSplitAction, SIGNAL(triggered()), this, SLOT(onUnSplitViewActionTriggered()) );
+            unSplitAction->setData((int)*it);
+            if (!isDimensionEnabled) {
+                unSplitAction->setEnabled(false);
+            }
+            unSplitActions.push_back(unSplitAction);
+        }
+
+        if (!splitActions.empty() || !unSplitActions.empty()) {
+            Menu* viewsMenu = new Menu(menu);
+            viewsMenu->setTitle(tr("Multi-View"));
+            if (!isDimensionEnabled) {
+                viewsMenu->menuAction()->setEnabled(false);
+            }
+            for (std::vector<QAction*>::iterator it = splitActions.begin(); it!=splitActions.end(); ++it) {
+                viewsMenu->addAction(*it);
+            }
+            if (!splitActions.empty() && !unSplitActions.empty()) {
+                viewsMenu->addSeparator();
+            }
+            for (std::vector<QAction*>::iterator it = unSplitActions.begin(); it != unSplitActions.end(); ++it) {
+                viewsMenu->addAction(*it);
+            }
+            menu->addAction(viewsMenu->menuAction());
+        }
+    } // canSplitViews
+
+    ///find-out to which node that master knob belongs to
+
     NodeCollectionPtr collec;
     NodeGroupPtr isCollecGroup;
     if (isEffect) {
@@ -1404,7 +1473,10 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             actionText.append( QString::fromUtf8( knobName.c_str() ) );
         }
         QAction* unlinkAction = new QAction(actionText, menu);
-        unlinkAction->setData( QVariant(dimension) );
+        QList<QVariant> actionData;
+        actionData.push_back((int)dimension);
+        actionData.push_back((int)view);
+        unlinkAction->setData(actionData);
         QObject::connect( unlinkAction, SIGNAL(triggered()), this, SLOT(onUnlinkActionTriggered()) );
         menu->addAction(unlinkAction);
     }
