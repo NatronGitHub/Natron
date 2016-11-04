@@ -242,30 +242,17 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
-    /**
-     * @brief Returns whether the user can call split/unsplitView
-     **/
-    virtual bool canSplitViews() const 
+
+
+
+    //////////// Overriden from AnimatingObjectI
+    virtual bool canSplitViews() const OVERRIDE
     {
         return false;
     }
-
-    /**
-     * @brief Split the given view off the main view
-     **/
-    virtual void splitView(ViewIdx view);
-
-    /**
-     * @brief un-split the given view if it has been split before
-     **/
-    virtual void unSplitView(ViewIdx view);
-
-    /**
-     * @brief Returns a list of all different view split in the item
-     **/
-    std::list<ViewIdx> getViewsList() const;
-
-    //////////// Overriden from AnimatingObjectI
+    virtual bool splitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
     virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
@@ -382,8 +369,6 @@ protected:
 
 protected:
 
-    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const;
-
     /**
      * @brief Implement to initialize the knobs of the item and add them to the table by calling setColumn
      **/
@@ -441,6 +426,7 @@ protected:
 
 Q_SIGNALS:
 
+    void availableViewsChanged();
     void labelIconChanged(TableChangeReasonEnum);
     void labelChanged(QString, TableChangeReasonEnum);
     void curveAnimationChanged(std::list<double> added, std::list<double> removed, ViewIdx view);

@@ -20,12 +20,130 @@
 
 #include <stdexcept>
 
+#include <QMutex>
+
 NATRON_NAMESPACE_ENTER;
 
+struct AnimatingObjectIPrivate
+{
+    mutable QMutex viewsMutex;
+    std::list<ViewIdx> views;
+
+    AnimatingObjectIPrivate()
+    : viewsMutex()
+    , views()
+    {
+        views.push_back(ViewIdx(0));
+    }
+
+    ViewIdx findMatchingView(ViewIdx inView) const
+    {
+        // Private - should not lock
+        assert(!viewsMutex.tryLock());
+
+        std::list<ViewIdx>::const_iterator foundView = std::find(views.begin(), views.end(), inView);
+
+        // Not found - fallback on main view
+        if (foundView == views.end()) {
+            return ViewIdx(0);
+        }
+        return inView;
+    }
+};
+
 AnimatingObjectI::AnimatingObjectI()
+: _imp(new AnimatingObjectIPrivate())
 {
 
 }
+
+AnimatingObjectI::~AnimatingObjectI()
+{
+    
+}
+
+std::list<ViewIdx>
+AnimatingObjectI::getViewsList() const
+{
+    QMutexLocker k(&_imp->viewsMutex);
+    return _imp->views;
+}
+
+ViewIdx
+AnimatingObjectI::getViewIdxFromGetSpec(ViewGetSpec view) const
+{
+    if (!view.isCurrent()) {
+
+        // Find the view. If it is not in the split views, fallback on the main view.
+        QMutexLocker k(&_imp->viewsMutex);
+        return _imp->findMatchingView(ViewIdx(view.value()));
+
+    } else {
+
+
+        {
+            QMutexLocker k(&_imp->viewsMutex);
+            if (_imp->views.size() <= 1) {
+                // Only 1 view, return the main-view
+                // Doing it early avoids calling getCurrentView() which
+                // may be expensive if it has to read thread local storage.
+                return ViewIdx(0);
+            }
+        }
+
+        ViewIdx curView = getCurrentView();
+
+        {
+            QMutexLocker k(&_imp->viewsMutex);
+            return _imp->findMatchingView(curView);
+        }
+    }
+} // getViewIdxFromGetSpec
+
+bool
+AnimatingObjectI::splitView(ViewIdx view)
+{
+    if (!canSplitViews()) {
+        return false;
+    }
+    {
+        QMutexLocker k(&_imp->viewsMutex);
+        for (std::list<ViewIdx>::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+            if (*it == view) {
+                return false;
+            }
+        }
+        _imp->views.push_back(view);
+    }
+    return true;
+}
+
+bool
+AnimatingObjectI::unSplitView(ViewIdx view)
+{
+    // Cannot split the main view
+    if (view == 0) {
+        return false;
+    }
+
+    if (!canSplitViews()) {
+        return false;
+    }
+
+    bool viewFound = false;
+    {
+        QMutexLocker k(&_imp->viewsMutex);
+        for (std::list<ViewIdx>::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+            if (*it == view) {
+                _imp->views.erase(it);
+                viewFound = true;
+                break;
+            }
+        }
+    }
+    return viewFound;
+}
+
 
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setIntValueAtTime(double /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)

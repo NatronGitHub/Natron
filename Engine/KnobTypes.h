@@ -119,11 +119,6 @@ public:
         return true;
     }
 
-    virtual bool canSplitViews() const OVERRIDE FINAL
-    {
-        return !isShortcutKnob();
-    }
-
     void disableSlider();
 
 
@@ -249,10 +244,6 @@ public:
         return true;
     }
 
-    virtual bool canSplitViews() const OVERRIDE FINAL
-    {
-        return true;
-    }
 
 private:
 
@@ -312,11 +303,6 @@ public:
     }
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return true;
     }
@@ -653,11 +639,6 @@ public:
         return true;
     }
 
-    virtual bool canSplitViews() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.
      * @param entriesHelp Can either be empty, meaning no-tooltip or must be of the size of the entries.
@@ -783,9 +764,9 @@ public:
     void setTextToFitHorizontally(const std::string& text);
     std::string getTextToFitHorizontally() const;
 
-    virtual void splitView(ViewIdx view) OVERRIDE FINAL;
+    virtual bool splitView(ViewIdx view) OVERRIDE FINAL;
 
-    virtual void unSplitView(ViewIdx view) OVERRIDE FINAL;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -979,11 +960,6 @@ public:
         return true;
     }
 
-    virtual bool canSplitViews() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
     virtual bool isAnimatedByDefault() const OVERRIDE FINAL
     {
         return true;
@@ -1074,11 +1050,6 @@ public:
     void setAsMultiLine()
     {
         _multiLine = true;
-    }
-
-    virtual bool canSplitViews() const OVERRIDE FINAL
-    {
-        return true;
     }
 
     void setUsesRichText(bool useRichText)

@@ -63,6 +63,7 @@ public:
 
     }
 
+    void createItemForView(const std::vector<std::string>& projectViewNames, const std::list<ViewIdx>& itemViews, ViewIdx view);
 
     KnobAnim* publicInterface;
 
@@ -135,10 +136,10 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
     _imp->knob = knob;
     _imp->parentItem = parentItem;
     
-    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(secretChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
-    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(enabledChanged()), this, SLOT(onKnobSignalReceivedInDirectConnection()) );
-    QObject::connect( this, SIGNAL(concatenateSignal()), this, SLOT(refreshKnobVisibility()), Qt::QueuedConnection);
-
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(secretChanged()), this, SLOT(emit_s_refreshKnobVisibilityLater()) );
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(enabledChanged()), this, SLOT(emit_s_refreshKnobVisibilityLater()) );
+    QObject::connect( this, SIGNAL(s_refreshKnobVisibilityLater()), this, SLOT(onDoRefreshKnobVisibilityLaterTriggered()), Qt::QueuedConnection);
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(availableViewsChanged()), this, SLOT(onKnobAvailableViewsChanged()));
 
 }
 
@@ -158,12 +159,11 @@ KnobAnim::initialize()
     std::list<ViewIdx> views = knob->getViewsList();
     assert(nDims >= 1 && !views.empty());
 
-    AnimItemBasePtr thisShared = shared_from_this();
 
 
     // Create the root item for the knob
     QString knobLabel = QString::fromUtf8( knob->getLabel().c_str() );
-    _imp->rootItem = createKnobNameItem(thisShared,
+    _imp->rootItem = createKnobNameItem(shared_from_this(),
                                         knobLabel,
                                         eAnimatedItemTypeKnobRoot,
                                         nDims > 0 ? DimSpec::all() : DimSpec(0),
@@ -172,62 +172,106 @@ KnobAnim::initialize()
 
 
 
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        _imp->createItemForView(projectViews, views, *it);
+    }
 
-    AnimationModuleBasePtr model = getModel();
+    assert(_imp->dimViewItems.size() == nDims * views.size());
+} // initialize
+
+void
+KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNames, const std::list<ViewIdx>& itemViews, ViewIdx view)
+{
+    AnimItemBasePtr thisShared = publicInterface->shared_from_this();
+
+    KnobIPtr internalKnob = knob.lock();
+    int nDims = internalKnob->getNDimensions();
+
+    AnimationModuleBasePtr model = publicInterface->getModel();
     CurveWidget* curveWidget = model->getCurveWidget();
 
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-
-        // Create a view item if the knob has views splits
-        QTreeWidgetItem * viewItem = 0;
-        if (views.size() > 1) {
-            QString viewName;
-            if (*it >= 0 && *it < (int)projectViews.size()) {
-                viewName = QString::fromUtf8(projectViews[*it].c_str());
-            }
-            viewItem = createKnobNameItem(thisShared,
-                                          viewName,
-                                          eAnimatedItemTypeKnobView,
-                                          nDims > 1 ? DimSpec::all() : DimSpec(0),
-                                          *it,
-                                          _imp->rootItem);
-            _imp->viewItems[*it] = viewItem;
+    // Create a view item if the knob has views splits
+    QTreeWidgetItem * viewItem = 0;
+    if (itemViews.size() > 1) {
+        QString viewName;
+        if (view >= 0 && view < (int)projectViewNames.size()) {
+            viewName = QString::fromUtf8(projectViewNames[view].c_str());
         }
+        viewItem = createKnobNameItem(thisShared,
+                                      viewName,
+                                      eAnimatedItemTypeKnobView,
+                                      nDims > 1 ? DimSpec::all() : DimSpec(0),
+                                      view,
+                                      rootItem);
+        viewItems[view] = viewItem;
+    }
 
-        // Now create an item per dimension if the knob is multi-dimensional
-        if (nDims > 1) {
-            for (int i = 0; i < nDims; ++i) {
-                QString dimName = QString::fromUtf8( knob->getDimensionName(DimIdx(i)).c_str() );
-                QTreeWidgetItem *dimItem = createKnobNameItem(thisShared,
-                                                              dimName,
-                                                              eAnimatedItemTypeKnobDim,
-                                                              DimSpec(i),
-                                                              *it,
-                                                              viewItem ? viewItem : _imp->rootItem);
-                DimensionViewPair p;
-                p.view = *it;
-                p.dimension = DimIdx(i);
-                DimViewItem& item = _imp->dimViewItems[p];
-                item.treeItem = dimItem;
-                if (curveWidget) {
-                    item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
-                }
-
-            }
-        } else {
-            // If single-dimensional, use the view item for the dimension item if multi-view
-            // otherwise use the root item
+    // Now create an item per dimension if the knob is multi-dimensional
+    if (nDims > 1) {
+        for (int i = 0; i < nDims; ++i) {
+            QString dimName = QString::fromUtf8( internalKnob->getDimensionName(DimIdx(i)).c_str() );
+            QTreeWidgetItem *dimItem = createKnobNameItem(thisShared,
+                                                          dimName,
+                                                          eAnimatedItemTypeKnobDim,
+                                                          DimSpec(i),
+                                                          view,
+                                                          viewItem ? viewItem : rootItem);
             DimensionViewPair p;
-            p.view = *it;
-            p.dimension = DimIdx(0);
-            DimViewItem& item = _imp->dimViewItems[p];
-            item.treeItem = viewItem ? viewItem : _imp->rootItem;
+            p.view = view;
+            p.dimension = DimIdx(i);
+            DimViewItem& item = dimViewItems[p];
+            item.treeItem = dimItem;
             if (curveWidget) {
                 item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
             }
+
         }
-    } // for all views
-    assert(_imp->dimViewItems.size() == nDims * views.size());
+    } else {
+        // If single-dimensional, use the view item for the dimension item if multi-view
+        // otherwise use the root item
+        DimensionViewPair p;
+        p.view = view;
+        p.dimension = DimIdx(0);
+        DimViewItem& item = dimViewItems[p];
+        item.treeItem = viewItem ? viewItem : rootItem;
+        if (curveWidget) {
+            item.curve.reset(new CurveGui(curveWidget, thisShared, p.dimension, p.view));
+        }
+    }
+} // createItemForView
+
+void
+KnobAnim::onKnobAvailableViewsChanged()
+{
+    delete _imp->rootItem;
+    _imp->dimViewItems.clear();
+    _imp->viewItems.clear();
+
+    initialize();
+
+    refreshKnobVisibilityNow();
+
+    getModel()->refreshSelectionBboxAndUpdateView();
+} // onKnobAvailableViewsChanged
+
+
+void
+KnobAnim::refreshViewLabels(const std::vector<std::string>& projectViewNames)
+{
+    for (PerViewItemMap::const_iterator it = _imp->viewItems.begin(); it != _imp->viewItems.end(); ++it) {
+        QString viewName;
+        if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
+            viewName = QString::fromUtf8(projectViewNames[it->first].c_str());
+        } else {
+            viewName = it->second->text(0);
+            QString notFoundSuffix = QString::fromUtf8("(*)");
+            if (!viewName.endsWith(notFoundSuffix)) {
+                viewName += QLatin1Char(' ');
+                viewName += notFoundSuffix;
+            }
+        }
+        it->second->setText(0, viewName);
+    }
 }
 
 KnobsHolderAnimBasePtr
@@ -272,9 +316,11 @@ static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& k
     }
     bool curveIsAnimated = curve->isAnimated();
     QTreeWidgetItem *dimItem = self->getTreeItem(dim, view);
-    bool enabled = knob->isEnabled(dim, view);
-    dimItem->setHidden(!curveIsAnimated || !enabled);
-    dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
+    if (dimItem) {
+        bool enabled = knob->isEnabled(dim, view);
+        dimItem->setHidden(!curveIsAnimated || !enabled);
+        dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
+    }
     return curveIsAnimated;
 }
 
@@ -318,10 +364,28 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 }
 
 void
-KnobAnim::refreshKnobVisibility()
+KnobAnim::refreshKnobVisibilityNow()
 {
-    _imp->nRefreshRequestsPending = 0;
     refreshVisibilityConditional(true);
+}
+
+
+void
+KnobAnim::emit_s_refreshKnobVisibilityLater()
+{
+    ++_imp->nRefreshRequestsPending;
+    Q_EMIT s_refreshKnobVisibilityLater();
+
+}
+
+void
+KnobAnim::onDoRefreshKnobVisibilityLaterTriggered()
+{
+    if (_imp->nRefreshRequestsPending == 0) {
+        return;
+    }
+    _imp->nRefreshRequestsPending = 0;
+    refreshKnobVisibilityNow();
 }
 
 
@@ -452,14 +516,6 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
     
 }
 
-void
-KnobAnim::onKnobSignalReceivedInDirectConnection()
-{
-    ++_imp->nRefreshRequestsPending;
-    if (_imp->nRefreshRequestsPending == 1) {
-        Q_EMIT concatenateSignal();
-    }
-}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

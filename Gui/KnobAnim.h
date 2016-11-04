@@ -87,18 +87,23 @@ public:
 
     void refreshVisibilityConditional(bool refreshHolder);
 
+    void refreshViewLabels(const std::vector<std::string>& projectViewNames);
+
 public Q_SLOTS:
 
-    void onKnobSignalReceivedInDirectConnection();
+    void emit_s_refreshKnobVisibilityLater();
 
-    void refreshKnobVisibility();
+    void onDoRefreshKnobVisibilityLaterTriggered();
 
+    void onKnobAvailableViewsChanged();
 
 Q_SIGNALS:
 
-    void concatenateSignal();
+    void s_refreshKnobVisibilityLater();
 
 private:
+
+    void refreshKnobVisibilityNow();
 
     void initialize();
     

@@ -44,6 +44,7 @@
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/GuiAppInstance.h"
@@ -183,9 +184,9 @@ CurveWidgetPrivate::drawScale()
                         QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
-                            _widget->renderText(value, btmLeft.y(), s.toStdString(), c.redF(), c.greenF(), c.blueF(), Qt::AlignHCenter);
+                            _widget->renderText(value, btmLeft.y(), s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignHCenter);
                         } else {
-                            _widget->renderText(btmLeft.x(), value, s.toStdString(), c.redF(), c.greenF(), c.blueF(), Qt::AlignVCenter);
+                            _widget->renderText(btmLeft.x(), value, s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignVCenter);
                         }
                     }
                 }
@@ -515,7 +516,10 @@ CurveWidgetPrivate::refreshSelectionRectangle(double x,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QPointF dragStartPointCanonical = _publicInterface->toWidgetCoordinates(x,y);
+    QPointF dragStartPointCanonical = QPointF(_dragStartPoint.x(),_dragStartPoint.y());
+    _publicInterface->toCanonicalCoordinates(&dragStartPointCanonical.rx(),&dragStartPointCanonical.ry());
+
+    // x and y are in canonical coordinates as well
 
     selectionRect.x1 = std::min(dragStartPointCanonical.x(), x);
     selectionRect.x2 = std::max(dragStartPointCanonical.x(), x);
@@ -541,8 +545,7 @@ CurveWidgetPrivate::updateDopeSheetViewFrameRange()
     if (!animModule) {
         return;
     }
-#pragma message WARN("fix this")
-    animModule->getEditor()->centerOn( zoomCtx.left(), zoomCtx.right() );
+    animModule->getEditor()->getDopesheetView()->centerOn( zoomCtx.left(), zoomCtx.right() );
 }
 
 void
@@ -565,11 +568,11 @@ CurveWidgetPrivate::addMenuOptions()
     
 
 
-    QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to ASCII file"), fileMenu);
+    QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to Ascii file..."), fileMenu);
     QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _widget, SLOT(onExportCurveToAsciiActionTriggered()) );
     fileMenu->addAction(exportCurveToAsciiAction);
 
-    QAction* importCurveFromAsciiAction = new QAction(tr("Import curve from ASCII file"), fileMenu);
+    QAction* importCurveFromAsciiAction = new QAction(tr("Import curve from Ascii file..."), fileMenu);
     QObject::connect( importCurveFromAsciiAction, SIGNAL(triggered()), _widget, SLOT(onImportCurveFromAsciiActionTriggered()) );
     fileMenu->addAction(importCurveFromAsciiAction);
 

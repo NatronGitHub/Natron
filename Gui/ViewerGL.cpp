@@ -2466,11 +2466,13 @@ ViewerGL::renderText(double x,
                      double r,
                      double g,
                      double b,
+                     double a,
                      int flags)
 {
     QColor c;
 
     c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    c.setAlphaF(Image::clamp(a, 0., 1.));
     renderText(x, y, QString::fromUtf8( string.c_str() ), c, font(), flags);
 
     return true;

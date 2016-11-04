@@ -854,9 +854,12 @@ Knob<T>::isTypeCompatible(const KnobIPtr & other) const
 }
 
 template<typename T>
-void
+bool
 Knob<T>::splitView(ViewIdx view)
 {
+    if (!KnobHelper::splitView(view)) {
+        return false;
+    }
     {
         QMutexLocker k(&_valueMutex);
         int nDims = getNDimensions();
@@ -868,14 +871,16 @@ Knob<T>::splitView(ViewIdx view)
             }
         }
     }
-    KnobHelper::splitView(view);
-
+    return true;
 }
 
 template<typename T>
-void
+bool
 Knob<T>::unSplitView(ViewIdx view)
 {
+    if (!KnobHelper::unSplitView(view)) {
+        return false;
+    }
     {
         QMutexLocker k(&_valueMutex);
         int nDims = getNDimensions();
@@ -889,8 +894,7 @@ Knob<T>::unSplitView(ViewIdx view)
 
         }
     }
-    KnobHelper::unSplitView(view);
-    
+    return true;
 }
 
 template<typename T>

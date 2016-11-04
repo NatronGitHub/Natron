@@ -247,9 +247,13 @@ Gui::hasPickers() const
 void
 Gui::setViewersCurrentView(ViewIdx view)
 {
-    QMutexLocker l(&_imp->_viewerTabsMutex);
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
         if (!internalViewerNode) {
             continue;

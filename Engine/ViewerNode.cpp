@@ -2420,7 +2420,9 @@ ViewerNode::refreshViewsKnobVisibility()
 {
     KnobChoicePtr knob = _imp->activeViewKnob.lock();
     if (knob) {
-        knob->setInViewerContextSecret(getApp()->getProject()->getProjectViewsCount() <= 1);
+        const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
+        knob->populateChoices(views);
+        knob->setInViewerContextSecret(views.size() <= 1);
     }
 }
 

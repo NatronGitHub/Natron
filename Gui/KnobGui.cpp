@@ -640,6 +640,12 @@ KnobGui::createGUI(QWidget* parentWidget)
     }
 
 
+    // If not on a new line, add to the previous knob layout this knob's label
+    if (!_imp->isOnNewLine) {
+        _imp->addWidgetsToPreviousKnobLayout();
+    }
+
+
     if ( firstViewWidgets->shouldAddStretch() ) {
         if ((_imp->layoutType == eKnobLayoutTypePage && knob->isNewLineActivated()) ||
             (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine)) {
@@ -650,13 +656,8 @@ KnobGui::createGUI(QWidget* parentWidget)
                 _imp->mainLayout->addStretch();
             }
         }
-
     }
 
-    // If not on a new line, add to the previous knob layout this knob's label
-    if (!_imp->isOnNewLine) {
-        _imp->addWidgetsToPreviousKnobLayout();
-    }
 
 
     if (_imp->descriptionLabel) {
@@ -1311,7 +1312,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
         projectViews = holder->getApp()->getProject()->getProjectViewNames();
     }
 
-    if (knob->canSplitViews() && knob->isAnimationEnabled()) {
+    if (knob->canSplitViews()) {
         std::vector<QAction*> splitActions, unSplitActions;
         for (std::size_t i = 1; i < projectViews.size(); ++i) {
             std::list<ViewIdx>::iterator foundView = std::find(knobViews.begin(), knobViews.end(), ViewIdx(i));

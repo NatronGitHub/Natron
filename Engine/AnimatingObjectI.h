@@ -31,6 +31,12 @@
 #include <list>
 #include <string>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
+
 #include "Global/GlobalDefines.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/EngineFwd.h"
@@ -139,6 +145,7 @@ struct DimensionViewPairCompare
 };
 typedef std::set<DimensionViewPair, DimensionViewPairCompare> DimensionViewPairSet;
 
+struct AnimatingObjectIPrivate;
 class AnimatingObjectI
 {
 public:
@@ -163,6 +170,8 @@ public:
 
     AnimatingObjectI();
 
+    virtual ~AnimatingObjectI();
+
     /**
      * @brief Returns the internal value that is represented by keyframes themselves.
      **/
@@ -182,6 +191,55 @@ public:
      * @brief For an object that supports animating strings, this is should return a pointer to it
      **/
     virtual StringAnimationManagerPtr getStringAnimation() const { return StringAnimationManagerPtr(); };
+
+
+    /**
+     * @brief Returns true if this object can support multi-view animation. When supported, the object may have a different
+     * animation for each view.
+     **/
+    virtual bool canSplitViews() const = 0;
+
+    /**
+     * @brief Get list of views that are split off in the animating object.
+     * The ViewIdx(0) is always present and represents the first view in the 
+     * list of the project views.
+     * User can split views by calling splitView in which case they can be attributed
+     * a new animation different from the main view. To remove the custom animation for a view
+     * call unSplitView which will make the view listen to the main view again
+     **/
+    std::list<ViewIdx> getViewsList() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Split the given view in the storage off the main view so that the user can give it
+     * a different animation.
+     * @return True if the view was successfully split, false otherwise.
+     * This must be overloaded by sub-classes to split new data structures when called. 
+     * The base class version should always be called first and if the return value is false it should
+     * exit immediately.
+     **/
+    virtual bool splitView(ViewIdx view);
+
+    /**
+     * @brief Unsplit a view that was previously split with splitView. After this call the animation
+     * for the view will be the one of the main view.
+     * @return true if the view was unsplit, false otherwise.
+     **/
+    virtual bool unSplitView(ViewIdx view);
+
+    /**
+     * @brief Must return the current view in the object context. If the calling thread
+     * is a render thread, this can be the view being rendered by this thread, otherwise this
+     * can be the current view visualized by the UI.
+     **/
+    virtual ViewIdx getCurrentView() const = 0;
+
+    /**
+     * @brief Helper function to use in any getter/setter function when the user gives a ViewGetSpec
+     * to figure out which view to address.
+     **/
+    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const WARN_UNUSED_RETURN;
+
+
 
     ////////////////////////// Integer based animating objects
 
@@ -544,6 +602,10 @@ public:
      * @param isLeft If true, the left derivative will be set, otherwise the right derivative will be set
      **/
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) = 0;
+
+private:
+
+    boost::scoped_ptr<AnimatingObjectIPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

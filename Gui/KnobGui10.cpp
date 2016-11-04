@@ -1037,7 +1037,35 @@ KnobGui::onProjectViewsChanged()
         it->second.viewLongName = viewLongName;
         it->second.viewLabel->setText(viewShortName);
     }
-  
+
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+
+    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+    if (!isEffect) {
+        return;
+    }
+    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+    if (!node) {
+        return;
+    }
+    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+
+    KnobAnimPtr knobAnim;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        if ((*it)->getInternalKnob() == knob) {
+            knobAnim = *it;
+            break;
+        }
+    }
+
+    if (!knobAnim) {
+        return;
+    }
+    knobAnim->refreshViewLabels(projectViewNames);
 }
 
 NATRON_NAMESPACE_EXIT;

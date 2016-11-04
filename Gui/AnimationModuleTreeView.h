@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+#define NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX 4
 NATRON_NAMESPACE_ENTER;
 
 class AnimationModuleTreeViewPrivate;

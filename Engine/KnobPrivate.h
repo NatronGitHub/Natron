@@ -241,12 +241,6 @@ struct KnobHelperPrivate
     // For each dimension its expression
     ExprPerDimensionVec expressions;
 
-    // Protects splitViews
-    mutable QMutex splitViewMutex;
-
-    // All views that have a different value
-    std::list<ViewIdx> splitViews;
-
     // Protects lastRandomHash
     mutable QMutex lastRandomHashMutex;
 
@@ -326,8 +320,6 @@ struct KnobHelperPrivate
     , dimensionNames()
     , expressionMutex()
     , expressions()
-    , splitViewMutex()
-    , splitViews()
     , lastRandomHash(0)
     , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
     , hasModificationsMutex()
@@ -345,7 +337,6 @@ struct KnobHelperPrivate
             }
         }
 
-        splitViews.push_back(ViewIdx(0));
         enabled.resize(dimension);
         curves.resize(dimension);
         masters.resize(dimension);

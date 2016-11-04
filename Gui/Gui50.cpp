@@ -805,9 +805,13 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::redrawAllViewers()
 {
-    QMutexLocker k(&_imp->_viewerTabsMutex);
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
 
-    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getViewer()->redraw();
         }

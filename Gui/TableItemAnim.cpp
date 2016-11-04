@@ -94,7 +94,9 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
     _imp->tableItem = item;
 
     connect(item.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onInternalItemLabelChanged(QString,TableChangeReasonEnum)));
+    connect(item.get(), SIGNAL(availableViewsChanged()), this, SLOT(onInternalItemAvailableViewsChanged()));
 
+    connect(item->getApp()->getProject().get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()));
 }
 
 TableItemAnim::~TableItemAnim()
@@ -287,34 +289,9 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     assert(parentItem);
     parentItem->addChild(_imp->nameItem);
 
-    CurveWidget* curveWidget = getModel()->getCurveWidget();
 
     if (item->getCanAnimateUserKeyframes()) {
-        std::list<ViewIdx> views = item->getViewsList();
-        const std::vector<std::string>& projectViews = item->getApp()->getProject()->getProjectViewNames();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            QString viewName;
-            if (*it >= 0 && *it < (int)projectViews.size()) {
-                viewName = QString::fromUtf8(projectViews[*it].c_str());
-            }
-            QTreeWidgetItem* animationItem = new QTreeWidgetItem;
-            QString itemLabel;
-            if (views.size() > 1) {
-                itemLabel += viewName + QString::fromUtf8(" ");
-                itemLabel += tr("Animation");
-            }
-            animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
-            animationItem->setText(0, itemLabel);
-            animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
-            ItemCurve& ic = _imp->animationItems[*it];
-            ic.item = animationItem;
-            if (curveWidget) {
-                ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it));
-            }
-
-            _imp->nameItem->addChild(animationItem);
-        }
-
+        createViewItems();
     }
 
     AnimationModuleBasePtr model = getModel();
@@ -327,6 +304,41 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     }
 
     initializeKnobsAnim();
+}
+
+void
+TableItemAnim::createViewItems()
+{
+    KnobTableItemPtr item = getInternalItem();
+
+    CurveWidget* curveWidget = getModel()->getCurveWidget();
+    AnimItemBasePtr thisShared = shared_from_this();
+
+    std::list<ViewIdx> views = item->getViewsList();
+    const std::vector<std::string>& projectViews = item->getApp()->getProject()->getProjectViewNames();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        QString viewName;
+        if (*it >= 0 && *it < (int)projectViews.size()) {
+            viewName = QString::fromUtf8(projectViews[*it].c_str());
+        }
+        QTreeWidgetItem* animationItem = new QTreeWidgetItem;
+        QString itemLabel;
+        if (views.size() > 1) {
+            itemLabel += viewName + QString::fromUtf8(" ");
+            itemLabel += tr("Animation");
+        }
+        animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
+        animationItem->setText(0, itemLabel);
+        animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
+        ItemCurve& ic = _imp->animationItems[*it];
+        ic.item = animationItem;
+        if (curveWidget) {
+            ic.curve.reset(new CurveGui(curveWidget, thisShared, DimIdx(0), *it));
+        }
+
+        _imp->nameItem->addChild(animationItem);
+    }
+
 }
 
 void
@@ -378,6 +390,40 @@ void
 TableItemAnim::refreshVisibility()
 {
     refreshKnobsVisibility();
+}
+
+void
+TableItemAnim::onProjectViewsChanged()
+{
+    const std::vector<std::string>& projectViewNames = getInternalItem()->getApp()->getProject()->getProjectViewNames();
+    for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it != _imp->animationItems.end(); ++it) {
+        QString viewName;
+        if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
+            viewName = QString::fromUtf8(projectViewNames[it->first].c_str());
+        } else {
+            viewName = it->second.item->text(0);
+            QString notFoundSuffix = QString::fromUtf8("(*)");
+            if (!viewName.endsWith(notFoundSuffix)) {
+                viewName += QLatin1Char(' ');
+                viewName += notFoundSuffix;
+            }
+        }
+        it->second.item->setText(0, viewName);
+    }
+}
+
+void
+TableItemAnim::onInternalItemAvailableViewsChanged()
+{
+    for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it != _imp->animationItems.end(); ++it) {
+        delete it->second.item;
+    }
+    _imp->animationItems.clear();
+    createViewItems();
+
+    refreshVisibility();
+
+    getModel()->refreshSelectionBboxAndUpdateView();
 }
 
 NATRON_NAMESPACE_EXIT;

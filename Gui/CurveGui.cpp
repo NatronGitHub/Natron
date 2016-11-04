@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 #define NATRON_NO_PREDEFINED_CURVE_COLORS 6
-#define NATRON_NO_PREDEFINED_CURVE_SATURATION 200
+#define NATRON_NO_PREDEFINED_CURVE_SATURATION 220
 #define NATRON_NO_PREDEFINED_CURVE_VALUE 150
 static const OfxRGBColourD curveColors[NATRON_NO_PREDEFINED_CURVE_COLORS] =
 {
@@ -575,8 +575,8 @@ CurveGui::drawCurve(int curveIndex,
 
                 double xText = _imp->curveWidget->toZoomCoordinates(10, 0).x();
 
-                _imp->curveWidget->renderText( xText, curveYRange.min, tr("min").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF());
-                _imp->curveWidget->renderText( xText, curveYRange.max, tr("max").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF());
+                _imp->curveWidget->renderText( xText, curveYRange.min, tr("min").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), minMaxColor.alphaF());
+                _imp->curveWidget->renderText( xText, curveYRange.max, tr("max").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), minMaxColor.alphaF());
             }
         }
 
@@ -625,7 +625,7 @@ CurveGui::drawCurve(int curveIndex,
         }
 
         if ( ( textX >= btmLeft.x() ) && ( textX <= topRight.x() ) && ( textY >= btmLeft.y() ) && ( textY <= topRight.y() ) ) {
-            _imp->curveWidget->renderText( textX, textY, curveName.toStdString(), thisColor.redF(), thisColor.greenF(), thisColor.blueF());
+            _imp->curveWidget->renderText( textX, textY, curveName.toStdString(), thisColor.redF(), thisColor.greenF(), thisColor.blueF(), thisColor.alphaF());
         }
         GL_GPU::glColor4f(_imp->color[0], _imp->color[1], _imp->color[2], _imp->color[3]);
 
@@ -713,9 +713,9 @@ CurveGui::drawCurve(int curveIndex,
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
                     _imp->curveWidget->renderText( leftTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                              leftDerivStr.toStdString(), 0.9, 0.9, 0.9);
+                                              leftDerivStr.toStdString(), 0.9, 0.9, 0.9, 1.);
                     _imp->curveWidget->renderText( rightTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                                  rightDerivStr.toStdString(), 0.9, 0.9, 0.9);
+                                                  rightDerivStr.toStdString(), 0.9, 0.9, 0.9, 1.);
 
 
                     QString coordStr = QString::fromUtf8("x: %1, y: %2");
@@ -725,7 +725,7 @@ CurveGui::drawCurve(int curveIndex,
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
                     _imp->curveWidget->renderText( x, _imp->curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                                  coordStr.toStdString(), 0.9, 0.9, 0.9);
+                                                  coordStr.toStdString(), 0.9, 0.9, 0.9, 1.);
 
                 }
 

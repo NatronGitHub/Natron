@@ -121,7 +121,7 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
     node->getNodeGui()->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
 
     // Refresh the knob anim visibility in a queued connection
-    knobAnim->onKnobSignalReceivedInDirectConnection();
+    knobAnim->emit_s_refreshKnobVisibilityLater();
 
 
 }
@@ -770,7 +770,11 @@ KnobGui::onHelpChanged()
 void
 KnobGui::refreshModificationsStateNow()
 {
-    bool hasModif = getKnob()->hasModifications();
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setAltered(!hasModif);
     }

@@ -703,7 +703,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
         }  break;
         case eEventStateSelecting:
-            _imp->refreshSelectionRectangle( (double)e->x(), (double)e->y() );
+            _imp->refreshSelectionRectangle( newClick_opengl.x(), newClick_opengl.y() );
             break;
 
         case eEventStateDraggingTangent:

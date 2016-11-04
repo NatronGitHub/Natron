@@ -1189,10 +1189,6 @@ public:
      **/
     virtual double getCurrentTime() const = 0;
 
-    /**
-     * @brief Returns the current view being rendered
-     **/
-    virtual ViewIdx getCurrentView() const = 0;
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
 
@@ -1318,22 +1314,6 @@ public:
     virtual bool isTypeCompatible(const KnobIPtr & other) const = 0;
     KnobPagePtr getTopLevelPage() const;
 
-    /**
-     * @brief Get list of views that are split off in the knob
-     **/
-    virtual std::list<ViewIdx> getViewsList() const = 0;
-
-    /**
-     * @brief Split the given view in the storage off the main view so that the user can give it different values
-     **/
-    virtual void splitView(ViewIdx view) = 0;
-    virtual void unSplitView(ViewIdx view) = 0;
-    virtual ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const = 0;
-
-    /**
-     * @brief Returns true if this knob supports multi-view
-     **/
-    virtual bool canSplitViews() const = 0;
 };
 
 
@@ -1729,14 +1709,11 @@ public:
 
     virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view, bool restoreDefaultValue) OVERRIDE FINAL;
 
+    virtual bool splitView(ViewIdx view) OVERRIDE;
 
-    virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE;
 
-    virtual void splitView(ViewIdx view) OVERRIDE;
-
-    virtual void unSplitView(ViewIdx view) OVERRIDE;
-
-    virtual ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool canSplitViews() const OVERRIDE;
 
 protected:
 
@@ -2200,9 +2177,9 @@ public:
     virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
 
 
-    virtual void splitView(ViewIdx view) OVERRIDE;
+    virtual bool splitView(ViewIdx view) OVERRIDE;
 
-    virtual void unSplitView(ViewIdx view) OVERRIDE;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE;
 
 protected:
 
@@ -2330,9 +2307,9 @@ public:
 
     std::string getStringAtTime(double time, ViewGetSpec view);
 
-    virtual void splitView(ViewIdx view) OVERRIDE;
+    virtual bool splitView(ViewIdx view) OVERRIDE;
 
-    virtual void unSplitView(ViewIdx view) OVERRIDE;
+    virtual bool unSplitView(ViewIdx view) OVERRIDE;
 
 protected:
 

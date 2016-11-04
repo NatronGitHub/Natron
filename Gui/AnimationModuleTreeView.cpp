@@ -325,8 +325,7 @@ public:
     // item painting
     void drawPluginIconArea(QPainter *p, const std::string& iconFilePath, const QRect &rowRect, bool drawPluginIcon) const;
     void drawParentContainerContour(QPainter *p, const NodeAnimPtr& parentNode, const QRect &itemRect);
-    void drawNodeTopSeparation(QPainter *p, const NodeAnimPtr& node, const QRect &rowRect) const;
-    //void drawNodeBottomSeparation(QPainter *p, const NodeAnimPtr& node, const NodeAnimPtr& nodeBelow, const QRect &rowRect) const;
+    void drawNodeTopSeparation(QPainter *p, const QRect &itemRect) const;
 
     QColor desaturate(const QColor &color) const;
 
@@ -467,50 +466,17 @@ AnimationModuleTreeViewPrivate::drawParentContainerContour(QPainter *p,
 }
 
 void
-AnimationModuleTreeViewPrivate::drawNodeTopSeparation(QPainter *p,
-                                            const NodeAnimPtr& node,
-                                            const QRect &rowRect) const
+AnimationModuleTreeViewPrivate::drawNodeTopSeparation(QPainter *p,  const QRect &itemRect) const
 {
-    int lineWidth = TO_DPIX(4);
-    int lineBegin = getBranchRect( node->getTreeItem() ).right() + TO_DPIX(2);
-
+    int lineWidth = TO_DPIY(NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX);
 
     QPen pen(Qt::black);
     pen.setWidth(lineWidth);
     p->setPen(pen);
-    p->drawLine(lineBegin, rowRect.top() + lineWidth - 1, rowRect.right(), rowRect.top() + lineWidth - 1);
+    p->drawLine(itemRect.left(), itemRect.top(), itemRect.right(), itemRect.top());
 }
 
-#if 0
-void
-AnimationModuleTreeViewPrivate::drawNodeBottomSeparation(QPainter *p,
-                                               const NodeAnimPtr& node,
-                                               const NodeAnimPtr& nodeBelow,
-                                               const QRect &rowRect) const
-{
-    int lineWidth = (TO_DPIX(4) / 2);
-    int lineBegin = publicInterface->rect().left();
 
-    if ( node->containsNodeContext() ) {
-        if ( node->getTreeItem()->isExpanded() ) {
-            lineBegin = getBranchRect( node->getTreeItem() ).right() + TO_DPIX(2);
-        }
-    } else {
-        NodeAnimPtr parentNode = model->mapNameItemToNodeAnim( nodeBelow->getTreeItem()->parent() );
-        if (parentNode) {
-            lineBegin = getBranchRect( parentNode->getTreeItem() ).right() + TO_DPIX(2);
-        }
-    }
-
-    QPen pen(Qt::black);
-    pen.setWidth(lineWidth);
-
-    p->setPen(pen);
-
-    p->drawLine(lineBegin, rowRect.bottom() - lineWidth + 2,
-                rowRect.right(), rowRect.bottom() - lineWidth + 2);
-}
-#endif
 
 /**
  * @brief Returns a desaturated shade of 'color'.
@@ -766,16 +732,10 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
 
         // Separate each node row
         if (isNodeItem && !isTreeViewTopItem) {
-            _imp->drawNodeTopSeparation(painter, isNodeItem, rowRect);
+            _imp->drawNodeTopSeparation(painter, itemRect);
         }
 
-        // If the next item is a node as well, draw a separation
-        /*{
-            NodeAnimPtr nodeBelow = _imp->itemBelowIsNode(item);
-            if (nodeBelow) {
-                _imp->drawNodeBottomSeparation(painter, closestEnclosingNode, nodeBelow, rowRect);
-            }
-        }*/
+
 
         painter->restore();
     }

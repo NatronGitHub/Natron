@@ -190,7 +190,7 @@ public:
     void drawNodeRow(QTreeWidgetItem* treeItem, const NodeAnimPtr& item) const;
     void drawKnobRow(QTreeWidgetItem* treeItem, const KnobAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
     void drawAnimItemRow(QTreeWidgetItem* treeItem, const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const;
-    void drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const;
+    void drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, AnimatedItemTypeEnum type, DimSpec dimension, ViewSetSpec view) const;
 
     void drawNodeRowSeparation(const NodeAnimPtr NodeAnim) const;
 
@@ -219,6 +219,12 @@ public:
 
     void createSelectionFromRect(const RectD &rect, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
 
+    void createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+
+    void checkAnimItemInRectInternal(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void checkTableItemAnimInRect(const RectD& rect, QTreeWidgetItem* item, const TableItemAnimPtr& knob, AnimatedItemTypeEnum type, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& knob, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
 
     void updateCurveWidgetFrameRange();
 
@@ -692,7 +698,7 @@ DopeSheetViewPrivate::drawTreeItemRecursive(QTreeWidgetItem* item,  std::list<No
     } else if (isKnobAnim) {
         drawKnobRow(item, isKnobAnim, dimension, view);
     } else if (isTableItemAnim) {
-        drawTableItemRow(item, isTableItemAnim, dimension, view);
+        drawTableItemRow(item, isTableItemAnim, type, dimension, view);
     }
 
     int nChildren = item->childCount();
@@ -771,9 +777,13 @@ DopeSheetViewPrivate::drawNodeRow(QTreeWidgetItem* /*treeItem*/, const NodeAnimP
 }
 
 void
-DopeSheetViewPrivate::drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, DimSpec dimension, ViewSetSpec view) const
+DopeSheetViewPrivate::drawTableItemRow(QTreeWidgetItem* treeItem, const TableItemAnimPtr& item, AnimatedItemTypeEnum type, DimSpec dimension, ViewSetSpec view) const
 {
-    drawAnimItemRow(treeItem, item, dimension, view);
+    if (type == eAnimatedItemTypeTableItemRoot) {
+#pragma message WARN("Todo when enabling lifetime table items")
+    } else {
+        drawAnimItemRow(treeItem, item, dimension, view);
+    }
 }
 
 void
@@ -816,7 +826,7 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const NodeAnimPtr item) const
     QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
-    GL_GPU::glLineWidth(TO_DPIY(4));
+    GL_GPU::glLineWidth(TO_DPIY(NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX));
     GL_GPU::glColor4f(0.f, 0.f, 0.f, 1.f);
 
     GL_GPU::glBegin(GL_LINES);
@@ -1589,63 +1599,174 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 } // DopeSheetViewPrivate::onMouseLeftButtonDrag
 
 void
+DopeSheetViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
+{
+    CurveGuiPtr guiCurve = knob->getCurveGui(dimension, view);
+    if (!guiCurve) {
+        return;
+    }
+
+    KeyFrameSet set = guiCurve->getKeyFrames();
+    if ( set.empty() ) {
+        return;
+    }
+
+    StringAnimationManagerPtr stringAnim = knob->getInternalAnimItem()->getStringAnimation();
+
+    AnimItemDimViewIndexID id(knob, view, dimension);
+    KeyFrameWithStringSet& outKeys = (*result)[id];
+
+    double visualRectCenterY = treeView->visualItemRect(item).center().y();
+
+    for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
+        double x = it2->getTime();
+        RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(x, visualRectCenterY);
+
+        if ( canonicalRect.intersects(zoomKfRect) ) {
+            KeyFrameWithString k;
+            k.key = *it2;
+            if (stringAnim) {
+                stringAnim->stringFromInterpolatedIndex(it2->getValue(), view, &k.string);
+            }
+            outKeys.insert(k);
+        }
+    }
+} // checkAnimItemInRectInternal
+
+void
+DopeSheetViewPrivate::checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+{
+    int nDims = knob->getNDimensions();
+    if (view.isAll()) {
+        std::list<ViewIdx> views = knob->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            for (int i = 0; i < nDims; ++i) {
+                if (!dimension.isAll() && dimension != i) {
+                    continue;
+                }
+                checkAnimItemInRectInternal(rect, item, knob, *it, DimIdx(i), result, selectedNodes, selectedItems);
+            }
+        }
+    } else {
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            checkAnimItemInRectInternal(rect, item, knob, ViewIdx(view), DimIdx(i), result, selectedNodes, selectedItems);
+        }
+    }
+} // checkAnimItemInRect
+
+
+void
+DopeSheetViewPrivate::checkTableItemAnimInRect(const RectD& rect,QTreeWidgetItem* item,  const TableItemAnimPtr& knob, AnimatedItemTypeEnum type, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+{
+    if (type == eAnimatedItemTypeTableItemAnimation) {
+        checkAnimItemInRect(rect, item, knob, view, dimension, result, selectedNodes, selectedItems);
+    } else if (type == eAnimatedItemTypeTableItemRoot) {
+#pragma message WARN("Todo when enabling lifetime for table items")
+    }
+
+}
+
+
+void
+DopeSheetViewPrivate::checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& node, AnimItemDimViewKeyFramesMap * /*result*/, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* /*selectedItems*/)
+{
+
+    std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(node);
+    if ( foundRange == nodeRanges.end() ) {
+        return;
+    }
+    QPoint visualRectCenter = treeView->visualItemRect(item).center();
+    QPointF center = zoomCtx.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
+
+    if ( rect.contains( (foundRange->second.first + foundRange->second.second) / 2., center.y() ) ) {
+        selectedNodes->push_back(node);
+    }
+
+
+
+}
+
+void
+DopeSheetViewPrivate::createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+{
+    assert(item);
+    if ( item->isHidden() ) {
+        return;
+    }
+
+    QTreeWidgetItem* parentItem = item->parent();
+    if (parentItem && !parentItem->isExpanded()) {
+        return;
+    }
+
+    AnimatedItemTypeEnum type = (AnimatedItemTypeEnum)item->data(0, QT_ROLE_CONTEXT_TYPE).toInt();
+    void* ptr = item->data(0, QT_ROLE_CONTEXT_ITEM_POINTER).value<void*>();
+    assert(ptr);
+    if (!ptr) {
+        return;
+    }
+    DimSpec dimension = DimSpec(item->data(0, QT_ROLE_CONTEXT_DIM).toInt());
+    ViewSetSpec view = ViewSetSpec(item->data(0, QT_ROLE_CONTEXT_VIEW).toInt());
+
+    NodeAnimPtr isNodeAnim;
+    TableItemAnimPtr isTableItemAnim;
+    KnobAnimPtr isKnobAnim;
+    switch (type) {
+        case eAnimatedItemTypeCommon:
+        case eAnimatedItemTypeFrameRange:
+        case eAnimatedItemTypeGroup:
+        case eAnimatedItemTypeReader:
+        case eAnimatedItemTypeRetime:
+        case eAnimatedItemTypeTimeOffset: {
+            isNodeAnim = ((NodeAnim*)ptr)->shared_from_this();
+        }   break;
+        case eAnimatedItemTypeTableItemAnimation:
+        case eAnimatedItemTypeTableItemRoot: {
+            isTableItemAnim = toTableItemAnim(((AnimItemBase*)ptr)->shared_from_this());
+        }   break;
+        case eAnimatedItemTypeKnobDim:
+        case eAnimatedItemTypeKnobRoot:
+        case eAnimatedItemTypeKnobView: {
+            isKnobAnim = toKnobAnim(((AnimItemBase*)ptr)->shared_from_this());
+        }   break;
+    }
+
+    if (isNodeAnim) {
+        checkNodeAnimInRect(rect, item, isNodeAnim, result, selectedNodes, selectedItems);
+    } else if (isKnobAnim) {
+        checkAnimItemInRect(rect, item, isKnobAnim, view, dimension, result, selectedNodes, selectedItems);
+    } else if (isTableItemAnim) {
+        checkTableItemAnimInRect(rect, item, isTableItemAnim, type, view, dimension, result, selectedNodes, selectedItems);
+    }
+
+    int nChildren = item->childCount();
+    for (int i = 0; i < nChildren; ++i) {
+        QTreeWidgetItem* child = item->child(i);
+        createSelectionFromRectRecursive(rect, child, result, selectedNodes, selectedItems);
+    }
+} // createSelectionFromRectRecursive
+
+void
 DopeSheetViewPrivate::createSelectionFromRect(const RectD &canonicalRect,
                                               AnimItemDimViewKeyFramesMap *keys,
                                               std::vector<NodeAnimPtr >* nodes,
-                                              std::vector<TableItemAnimPtr >* /*tableItems*/)
+                                              std::vector<TableItemAnimPtr >* tableItems)
 {
 
-    AnimationModuleSelectionModelPtr selectModel = _model.lock()->getSelectionModel();
-    const AnimItemDimViewKeyFramesMap& selectedKeys = selectModel->getCurrentKeyFramesSelection();
-
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
+    int nTopLevelTreeItems = treeView->topLevelItemCount();
+    for (int i = 0; i < nTopLevelTreeItems; ++i) {
+        QTreeWidgetItem* topLevelItem = treeView->topLevelItem(i);
+        if (!topLevelItem) {
             continue;
         }
-
-        KeyFrameSet set = guiCurve->getKeyFrames();
-        if ( set.empty() ) {
-            continue;
-        }
-
-        StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
-
-
-        KeyFrameWithStringSet& outKeys = (*keys)[it->first];
-
-        for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
-            double y = it2->getValue();
-            double x = it2->getTime();
-            if ( (x <= canonicalRect.x2) && (x >= canonicalRect.x1) && (y <= canonicalRect.y2) && (y >= canonicalRect.y1) ) {
-                //KeyPtr newSelectedKey( new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey) );
-                KeyFrameWithString k;
-                k.key = *it2;
-                if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &k.string);
-                }
-                outKeys.insert(k);
-            }
-        }
+        createSelectionFromRectRecursive(canonicalRect, topLevelItem, keys, nodes, tableItems);
 
     }
 
-    const std::list<NodeAnimPtr>& selectedNodes = selectModel->getCurrentNodesSelection();
-
-    for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
-        if ( foundRange == nodeRanges.end() ) {
-            continue;
-        }
-        QPoint visualRectCenter = treeView->visualItemRect( (*it)->getTreeItem() ).center();
-        QPointF center = zoomCtx.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
-
-        if ( canonicalRect.contains( (foundRange->second.first + foundRange->second.second) / 2., center.y() ) ) {
-            nodes->push_back(*it);
-        }
-
-    }
-}
+} // createSelectionFromRect
 
 void
 DopeSheetViewPrivate::updateCurveWidgetFrameRange()

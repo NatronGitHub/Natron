@@ -665,10 +665,11 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
 
-    double overlayColor[3];
+    double overlayColor[4];
     if ( !_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
+    overlayColor[3] = 1.;
 
     KnobDoublePtr centerKnob = marker->getCenterKnob();
     KnobDoublePtr offsetKnob = marker->getOffsetKnob();
@@ -764,12 +765,12 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
                 QPointF textPos = overlay->toCanonicalCoordinates( QPointF(xOffsetPixels + 5, fontHeight + 5 ) );
-                overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2]);
+                overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2], overlayColor[3]);
 
                 QPointF framePos = overlay->toCanonicalCoordinates( QPointF( xOffsetPixels + 5, overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y1) ).y() ) );
                 QString frameText = tr("Frame");
                 frameText.append( QString::fromUtf8(" ") + QString::number(it2->first) );
-                overlay->renderText(framePos.x(), framePos.y(), frameText.toStdString(), overlayColor[0], overlayColor[1], overlayColor[2]);
+                overlay->renderText(framePos.x(), framePos.y(), frameText.toStdString(), overlayColor[0], overlayColor[1], overlayColor[2], overlayColor[3]);
 
                 //Draw contour
                 GL_GPU::glEnable(GL_LINE_SMOOTH);
@@ -971,7 +972,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
     int fontHeight = overlay->getWidgetFontHeight();
     QPointF textPos = overlay->toCanonicalCoordinates( QPointF(5, fontHeight + 5) );
-    overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2]);
+    overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2], overlayColor[3]);
 
     //Draw internal marker
 
@@ -1866,10 +1867,11 @@ TrackerNode::drawOverlay(double time,
 
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
-        double markerColor[3];
+        double markerColor[4];
         if ( !getNode()->getOverlayColor(&markerColor[0], &markerColor[1], &markerColor[2]) ) {
             markerColor[0] = markerColor[1] = markerColor[2] = 0.8;
         }
+        markerColor[3] = 1.;
 
         std::vector<TrackMarkerPtr > allMarkers;
         std::list<TrackMarkerPtr > selectedMarkers;
@@ -2361,7 +2363,7 @@ TrackerNode::drawOverlay(double time,
 
                     GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
 
-                    overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2]);
+                    overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2], markerColor[3]);
                 } // for (int l = 0; l < 2; ++l) {
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {

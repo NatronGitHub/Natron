@@ -378,18 +378,20 @@ AnimationViewBase::restoreOpenGLContext()
 
 bool
 AnimationViewBase::renderText(double x,
-                        double y,
-                        const std::string &string,
-                        double r,
-                        double g,
-                        double b,
-                        int flags)
+                              double y,
+                              const std::string &string,
+                              double r,
+                              double g,
+                              double b,
+                              double a,
+                              int flags)
 {
     QColor c;
 
     c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    c.setAlphaF(Image::clamp(a, 0., 1.));
     _imp->renderText( x, y, QString::fromUtf8( string.c_str() ), c, font(), flags );
-
+    
     return true;
 }
 

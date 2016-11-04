@@ -867,21 +867,27 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
     return false;
 }
 
-void
+bool
 KnobChoice::splitView(ViewIdx view)
 {
+    if (!KnobIntBase::splitView(view)) {
+        return false;
+    }
     {
         QMutexLocker k(&_entriesMutex);
         const std::string& mainViewEntry = _activeEntryMap[ViewIdx(0)];
         std::string& viewEntry = _activeEntryMap[view];
         viewEntry = mainViewEntry;
     }
-    KnobIntBase::splitView(view);
+    return true;
 }
 
-void
+bool
 KnobChoice::unSplitView(ViewIdx view)
 {
+    if (!KnobIntBase::unSplitView(view)) {
+        return false;
+    }
     {
         QMutexLocker k(&_entriesMutex);
         PerViewActiveEntryMap::iterator found = _activeEntryMap.find(view);
@@ -889,7 +895,7 @@ KnobChoice::unSplitView(ViewIdx view)
             _activeEntryMap.erase(found);
         }
     }
-    KnobIntBase::unSplitView(view);
+    return true;
 }
 
 std::string

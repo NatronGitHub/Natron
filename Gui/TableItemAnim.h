@@ -95,7 +95,13 @@ public Q_SLOTS:
 
     void onInternalItemLabelChanged(const QString& label, TableChangeReasonEnum);
 
+    void onInternalItemAvailableViewsChanged();
+
+    void onProjectViewsChanged();
+
 private:
+
+    void createViewItems();
 
     void insertChild(int index, const TableItemAnimPtr& child);
 

@@ -390,30 +390,19 @@ KnobHelper::isAnimated(DimIdx dimension,
     return curve ? curve->isAnimated() : false;
 }
 
-std::list<ViewIdx>
-KnobHelper::getViewsList() const
+bool
+KnobHelper::canSplitViews() const
 {
-    QMutexLocker k(&_imp->splitViewMutex);
-    return _imp->splitViews;
+    return isAnimationEnabled();
 }
 
 
-void
+bool
 KnobHelper::splitView(ViewIdx view)
 {
-    if (!canSplitViews() || !isAnimationEnabled()) {
-        return;
+    if (!AnimatingObjectI::splitView(view)) {
+        return false;
     }
-    {
-        QMutexLocker k(&_imp->splitViewMutex);
-        for (std::list<ViewIdx>::iterator it = _imp->splitViews.begin(); it!=_imp->splitViews.end(); ++it) {
-            if (*it == view) {
-                return;
-            }
-        }
-        _imp->splitViews.push_back(view);
-    }
-
     int nDims = getNDimensions();
     for (int i = 0; i < nDims; ++i) {
         {
@@ -455,59 +444,14 @@ KnobHelper::splitView(ViewIdx view)
     }
 
     _signalSlotHandler->s_availableViewsChanged();
+    return true;
 } // splitView
 
-ViewIdx
-KnobHelper::getViewIdxFromGetSpec(ViewGetSpec view) const
-{
-    if (!view.isCurrent()) {
-        QMutexLocker k(&_imp->splitViewMutex);
-        std::list<ViewIdx>::const_iterator foundView = std::find(_imp->splitViews.begin(), _imp->splitViews.end(), ViewIdx(view.value()));
-        if (foundView == _imp->splitViews.end()) {
-            // If the view does not exist, set the main view
-            return ViewIdx(0);
-        }
-        return ViewIdx(view);
-    } else {
-        int nSplitViews;
-        {
-            QMutexLocker k(&_imp->splitViewMutex);
-            nSplitViews = _imp->splitViews.size();
-        }
-        if (nSplitViews <= 1) {
-            return ViewIdx(0);
-        } else {
-            ViewIdx curView = getCurrentView();
-            QMutexLocker k(&_imp->splitViewMutex);
-            std::list<ViewIdx>::const_iterator foundView = std::find(_imp->splitViews.begin(), _imp->splitViews.end(), curView);
-            if (foundView == _imp->splitViews.end()) {
-                // If the view does not exist, set the main view
-                return ViewIdx(0);
-            }
-            return curView;
-        }
-    }
-}
-
-void
+bool
 KnobHelper::unSplitView(ViewIdx view)
 {
-    if (view == 0) {
-        return;
-    }
-    if (!canSplitViews() || !isAnimationEnabled()) {
-        return;
-    }
-    bool viewFound = false;
-    {
-        QMutexLocker k(&_imp->splitViewMutex);
-        for (std::list<ViewIdx>::iterator it = _imp->splitViews.begin(); it!=_imp->splitViews.end(); ++it) {
-            if (*it == view) {
-                _imp->splitViews.erase(it);
-                viewFound = true;
-                break;
-            }
-        }
+    if (!AnimatingObjectI::unSplitView(view)) {
+        return false;
     }
     int nDims = getNDimensions();
     for (int i = 0; i < nDims; ++i) {
@@ -554,9 +498,8 @@ KnobHelper::unSplitView(ViewIdx view)
             }
         }
     }
-    if (viewFound) {
-        _signalSlotHandler->s_availableViewsChanged();
-    }
+    _signalSlotHandler->s_availableViewsChanged();
+    return true;
 } // unSplitView
 
 int
@@ -5187,18 +5130,25 @@ AnimatingKnobStringHelper::saveAnimation(std::map<std::string,std::map<double, s
 
 }
 
-void
+bool
 AnimatingKnobStringHelper::splitView(ViewIdx view)
 {
+    if (!KnobStringBase::splitView(view)) {
+        return false;
+    }
     _animation->splitView(view);
-    KnobStringBase::splitView(view);
+    return true;
 }
 
-void
+bool
 AnimatingKnobStringHelper::unSplitView(ViewIdx view)
 {
+    if (!KnobStringBase::unSplitView(view)) {
+        return false;
+    }
     _animation->unSplitView(view);
-    KnobStringBase::unSplitView(view);
+    return true;
+
 }
 
 

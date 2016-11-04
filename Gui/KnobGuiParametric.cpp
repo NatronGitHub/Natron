@@ -248,7 +248,8 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
         _imp->curves.push_back(desc);
         visibleCurves.push_back(curve);
     }
-    _imp->animRoot->refreshKnobVisibility();
+    _imp->animRoot->emit_s_refreshKnobVisibilityLater();
+    _imp->selectionModel->selectAll();
     _imp->curveWidget->centerOnCurves(visibleCurves, true);
     QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
 } // createWidget

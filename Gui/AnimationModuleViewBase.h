@@ -94,7 +94,7 @@ public:
     virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
     virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0) OVERRIDE FINAL;
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, double a, int flags = 0) OVERRIDE FINAL;
     /////
 
 
