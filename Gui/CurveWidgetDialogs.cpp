@@ -86,8 +86,8 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0, 3, 0, 0);
-    _mainLayout->setSpacing(2);
+    _mainLayout->setContentsMargins(0, TO_DPIX(3), 0, 0);
+    _mainLayout->setSpacing(TO_DPIX(2));
     setLayout(_mainLayout);
 
     //////File

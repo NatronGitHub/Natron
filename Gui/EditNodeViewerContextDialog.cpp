@@ -105,7 +105,7 @@ EditNodeViewerContextDialog::EditNodeViewerContextDialog(const KnobIPtr& knob, Q
     _imp->mainLayout = new QFormLayout(_imp->mainContainer);
     _imp->mainLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     _imp->mainLayout->setFormAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-    _imp->mainLayout->setSpacing(3);
+    _imp->mainLayout->setSpacing(TO_DPIX(3));
     _imp->mainLayout->setContentsMargins(0, 0, TO_DPIX(15), 0);
 
     _imp->vLayout->addWidget(_imp->mainContainer);

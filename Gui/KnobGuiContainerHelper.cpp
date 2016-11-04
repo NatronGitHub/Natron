@@ -471,7 +471,7 @@ workAroundGridLayoutBug(QGridLayout* layout)
     layout->addWidget(foundSpacer, layout->rowCount(), 0, 1, 2);
 }
 
-void
+bool
 KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold)
 {
     bool pixmapSet = false;
@@ -498,6 +498,9 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
         if ( !pix.isNull() ) {
             pixmapSet = true;
             widget->setPixmap(pix);
+            return true;
+        } else {
+            return false;
         }
     }
     if (!pixmapSet) {
@@ -506,6 +509,7 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
             widget->setBold(true);
         }
         widget->setText_overload(labelText );
+        return !labelText.isEmpty();
     }
 
 }

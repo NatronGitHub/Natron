@@ -144,12 +144,12 @@ DockablePanel::DockablePanel(Gui* gui,
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->_headerWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        _imp->_headerLayout->setSpacing(2);
+        _imp->_headerLayout->setSpacing(TO_DPIX(2));
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
 
         if (isEffect) {
             _imp->_iconLabel = new Label( getHeaderWidget() );
-            _imp->_iconLabel->setContentsMargins(2, 2, 2, 2);
+            _imp->_iconLabel->setContentsMargins(TO_DPIX(2), TO_DPIX(2), TO_DPIX(2), TO_DPIX(2));
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
@@ -384,8 +384,8 @@ DockablePanel::DockablePanel(Gui* gui,
 
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
-    _imp->_horizLayout->setSpacing(2);
+    _imp->_horizLayout->setContentsMargins(0, TO_DPIX(3), TO_DPIX(3), 0);
+    _imp->_horizLayout->setSpacing(TO_DPIX(2));
 
     _imp->_rightContainer = new QWidget(_imp->_horizContainer);
     _imp->_rightContainerLayout = new QVBoxLayout(_imp->_rightContainer);

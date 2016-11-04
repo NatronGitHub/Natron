@@ -335,6 +335,19 @@ static int getLayoutBottomMargin(KnobGui::KnobLayoutTypeEnum type)
             return 0;
     }
 }
+
+static int getLayoutSpacing(KnobGui::KnobLayoutTypeEnum type)
+{
+    switch (type) {
+        case KnobGui::eKnobLayoutTypeViewerUI:
+            return 0;
+        case KnobGui::eKnobLayoutTypePage:
+            return 2;
+        case KnobGui::eKnobLayoutTypeTableItemWidget:
+            return 0;
+    }
+}
+
 void
 KnobGui::createViewContainers(ViewIdx view)
 {
@@ -350,9 +363,9 @@ KnobGui::createViewContainers(ViewIdx view)
 
     int leftMargin = getLayoutLeftMargin(_imp->layoutType);
     int bottomMargin = getLayoutBottomMargin(_imp->layoutType);
-    
+    int layoutSpacing = TO_DPIY(getLayoutSpacing(_imp->layoutType));
     viewWidgets.fieldLayout->setContentsMargins( TO_DPIX(leftMargin), 0, 0, TO_DPIY(bottomMargin) );
-    viewWidgets.fieldLayout->setSpacing( TO_DPIY(2) );
+    viewWidgets.fieldLayout->setSpacing(layoutSpacing);
     viewWidgets.fieldLayout->setAlignment(Qt::AlignLeft);
 
 
@@ -445,7 +458,8 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
     int bottomMargin = getLayoutBottomMargin(layoutType);
 
     labelLayout->setContentsMargins( TO_DPIX(leftMargin), 0, 0, TO_DPIY(bottomMargin) );
-    labelLayout->setSpacing( TO_DPIY(2) );
+    int layoutSpacing = TO_DPIY(getLayoutSpacing(layoutType));
+    labelLayout->setSpacing(layoutSpacing);
 
     if (mustCreateLabel) {
 
@@ -453,7 +467,9 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
         KnobGuiContainerHelper::setLabelFromTextAndIcon(descriptionLabel, QString::fromUtf8(labelText.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), firstViewWidgets->isLabelBold());
         QObject::connect( descriptionLabel, SIGNAL(clicked(bool)), _publicInterface, SIGNAL(labelClicked(bool)) );
 
-
+        if (descriptionLabel->text().isEmpty() && (!descriptionLabel->pixmap() || descriptionLabel->pixmap()->isNull())) {
+            descriptionLabel->hide();
+        }
         if (layoutType == KnobGui::eKnobLayoutTypePage) {
             // Make a warning indicator
             warningIndicator = new Label(parentWidget);
@@ -577,7 +593,6 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
     firstKnobOnLineMainLayout->addWidget(labelContainer);
 
     // Separate the label and the actual field
-    firstKnobOnLineMainLayout->addSpacing(TO_DPIX(1));
     firstKnobOnLineMainLayout->addWidget(mainContainer);
 
     // Set the pointer to the mainLayout of the knob starting the line

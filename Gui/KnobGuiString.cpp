@@ -416,7 +416,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _richTextOptions = new QWidget(_container);
             _richTextOptionsLayout = new QHBoxLayout(_richTextOptions);
             _richTextOptionsLayout->setContentsMargins(0, 0, 0, 0);
-            _richTextOptionsLayout->setSpacing(8);
+            _richTextOptionsLayout->setSpacing(TO_DPIX(8));
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont( makeFontFromState() );

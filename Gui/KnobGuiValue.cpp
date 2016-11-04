@@ -239,11 +239,12 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     layout->addWidget(_imp->container);
 
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    containerLayout->setSpacing(3);
+    containerLayout->setSpacing(TO_DPIX(3));
 
     KnobGuiPtr knobUI = getKnobGui();
-    
-    if (knobUI->getKnobsCountOnSameLine() > 1 && knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeViewerUI) {
+
+    bool tooManyKnobOnLine = knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeViewerUI && knobUI->getKnobsCountOnSameLine() > 1;
+    if (tooManyKnobOnLine) {
         disableSlider();
     }
 
@@ -340,7 +341,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         QHBoxLayout *boxContainerLayout = 0;
         boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
-        boxContainerLayout->setSpacing(3);
+        boxContainerLayout->setSpacing(TO_DPIX(3));
 
 
         ClickableLabel *subDesc = 0;
@@ -448,7 +449,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
                                                sliderType, knobUI->getGui(), eScaleTypeLinear, layout->parentWidget() );
         if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
             // When in horizontal layout, we don't want the slider to grow
-            _imp->slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+             _imp->slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         } else {
             _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         }
@@ -493,41 +494,14 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         _imp->dimensionSwitchButton->setIconSize(medIconSize);
         _imp->dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _imp->dimensionSwitchButton->setCheckable(true);
-        containerLayout->addWidget(_imp->dimensionSwitchButton);
-
-        bool showSlider = true;
-        double firstDimensionValue = 0.;
-        SequenceTime time = 0;
-        if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-            time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-        }
-        for (int i = 0; i < nDims; ++i) {
-            double v = _imp->getKnobValue(DimIdx(i));
-            if (getNormalizationPolicy(DimIdx(i)) != eValueIsNormalizedNone) {
-                v = denormalize(DimIdx(i), time, v);
-            }
-            if (i == 0) {
-                firstDimensionValue = v;
-            } else if (v != firstDimensionValue) {
-                showSlider = false;
-                break;
-            }
-        }
-        if (!showSlider) {
-            _imp->slider->hide();
-            _imp->dimensionSwitchButton->setChecked(true);
-        } else {
-            foldAllDimensions();
-        }
-
         QObject::connect( _imp->dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked(bool)) );
-    } else {
-        if (_imp->slider) {
-            _imp->slider->hide();
-        }
+        containerLayout->addWidget(_imp->dimensionSwitchButton);
     }
 
     addExtraWidgets(containerLayout);
+
+    updateGUI();
+
 } // createWidget
 
 void
@@ -659,12 +633,16 @@ KnobGuiValue::expandAllDimensions()
         return;
     }
 
-    _imp->dimensionSwitchButton->setChecked(true);
-    _imp->dimensionSwitchButton->setDown(true);
+    if (!_imp->dimensionSwitchButton->isChecked()) {
+        _imp->dimensionSwitchButton->setChecked(true);
+        _imp->dimensionSwitchButton->setDown(true);
+    }
     _imp->slider->hide();
+
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
         if (i > 0) {
             _imp->spinBoxes[i].first->show();
+
         }
         if (_imp->spinBoxes[i].second) {
             _imp->spinBoxes[i].second->show();
@@ -680,9 +658,12 @@ KnobGuiValue::foldAllDimensions()
         return;
     }
 
-    _imp->dimensionSwitchButton->setChecked(false);
-    _imp->dimensionSwitchButton->setDown(false);
+    if (_imp->dimensionSwitchButton->isChecked()) {
+        _imp->dimensionSwitchButton->setChecked(false);
+        _imp->dimensionSwitchButton->setDown(false);
+    }
     _imp->slider->show();
+
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
         if (i > 0) {
             _imp->spinBoxes[i].first->hide();
@@ -819,10 +800,6 @@ KnobGuiValue::updateGUI()
         expressions[i] = knob->getExpression(DimIdx(i));
     }
 
-    // If spinbox values did not change, just don't do anything
-    if (!isGuiDifferentFromInternalValues) {
-        return;
-    }
 
     refValue = values[0];
     refExpresion = expressions[0];
@@ -834,10 +811,16 @@ KnobGuiValue::updateGUI()
             break;
         }
     }
-    if (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && !allValuesEqual) {
-        expandAllDimensions();
-    } else if (_imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && allValuesEqual) {
-        foldAllDimensions();
+    if (_imp->dimensionSwitchButton) {
+        if (allValuesEqual) {
+            foldAllDimensions();
+        } else {
+            expandAllDimensions();
+        }
+    }
+    // If spinbox values did not change, just don't do anything
+    if (!isGuiDifferentFromInternalValues) {
+        return;
     }
 
 
