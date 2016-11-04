@@ -2440,8 +2440,7 @@ void
 OfxDouble2DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
-    std::vector<double> displayMins(2);
-    std::vector<double> displayMaxs(2);
+
     KnobDoublePtr knob = _knob.lock();
 
     std::vector<double> mins(2);
@@ -2449,7 +2448,7 @@ OfxDouble2DInstance::setRange()
     _properties.getDoublePropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getDoublePropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
     for (int i = 0; i < 2; ++i) {
-        knob->setRange(displayMins[i], displayMaxs[i], DimIdx(i + _startIndex));
+        knob->setRange(mins[i], maxs[i], DimIdx(i + _startIndex));
     }
 }
 
@@ -2679,15 +2678,13 @@ OfxInteger2DInstance::setRange()
 {
     DYNAMIC_PROPERTY_CHECK();
 
-    std::vector<int> displayMins(2);
-    std::vector<int> displayMaxs(2);
     KnobIntPtr knob = _knob.lock();
     std::vector<int> mins(2);
     std::vector<int> maxs(2);
     _properties.getIntPropertyN(kOfxParamPropMin, &mins[0], mins.size());
     _properties.getIntPropertyN(kOfxParamPropMax, &maxs[0], maxs.size());
     for (int i = 0; i < 2; ++i) {
-        knob->setRange(displayMins[i], displayMaxs[i], DimIdx(i + _startIndex));
+        knob->setRange(mins[i], maxs[i], DimIdx(i + _startIndex));
     }
 }
 
