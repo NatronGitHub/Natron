@@ -712,7 +712,7 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
 
         QColor nodeColor;
         if (isNodeItem) {
-            isNodeItem = closestEnclosingNode;
+            closestEnclosingNode = isNodeItem;
             if (drawPluginIconToo) {
                 iconFilePath = isNodeItem->getNodeGui()->getNode()->getPluginIconFilePath();
             }

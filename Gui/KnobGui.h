@@ -117,7 +117,12 @@ public:
 
     KnobGuiContainerI* getContainer();
 
-    void removeGui();
+    /**
+     * @brief Calls deleteLater on all widgets owned by this knob. If the knob is on a same layout line of the other,
+     * it will not re-adjust the layout. If removing a knob it is advised to wipe all knobs in the grid layout and
+     * reconstruct them.
+     **/
+    void destroyWidgetsLater();
 
     void removeTabWidget();
 
@@ -242,6 +247,8 @@ public:
 
 public Q_SLOTS:
 
+    void onProjectViewsChanged();
+
     void onRemoveAliasLinkActionTriggered();
 
     void onUnlinkActionTriggered();
@@ -300,7 +307,7 @@ public Q_SLOTS:
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
+    void onInternalKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
 
     void onAppendParamEditChanged(ValueChangedReasonEnum reason,
                               ValueChangedReturnCodeEnum setValueRetCode,
@@ -330,13 +337,17 @@ public Q_SLOTS:
 
     void onMultiViewUnfoldClicked(bool expanded);
 
-    void doUpdateGuiLater();
+    void onDoUpdateGuiLaterReceived();
 
-    void updateAnimationLevelLater();
+    void onDoUpdateAnimationLevelLaterReceived();
 
     void onSplitViewActionTriggered();
 
     void onUnSplitViewActionTriggered();
+
+    void onInternalKnobAvailableViewsChanged();
+
+    void onDoUpdateModificationsStateLaterReceived();
 
 Q_SIGNALS:
 
@@ -347,9 +358,17 @@ Q_SIGNALS:
 
     void s_updateAnimationLevelLater();
 
+    void s_updateModificationsStateLater();
+
 private:
 
-    void createViewContainers(QWidget* parentWidget, ViewIdx view);
+    void refreshModificationsStateNow();
+
+    void refreshGuiNow();
+
+    void refreshAnimationLevelNow();
+
+    void createViewContainers(ViewIdx view);
 
     static void getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimSpec* dimension);
 

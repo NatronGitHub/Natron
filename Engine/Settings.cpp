@@ -89,6 +89,8 @@ static const CPUDriverEnum defaultMesaDriver = eCPUDriverLLVMPipe;
 
 Settings::Settings()
     : KnobHolder( AppInstancePtr() ) // < Settings are process wide and do not belong to a single AppInstance
+    , _nRedrawStyleSheetRequests(0)
+    , _restoringDefaults(false)
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -2268,7 +2270,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         if ( _customOcioConfigFile->isEnabled(DimIdx(DimIdx(0))) ) {
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
+            if ( warnOcioChanged && appPTR->getTopLevelInstance() && !_restoringDefaults ) {
                 bool stopAsking = false;
                 Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
                                        tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
@@ -2288,77 +2290,80 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _powerOf2Tiling && !_restoringSettings) {
         appPTR->onViewerTileCacheSizeChanged();
     } else if ( k == _texturesMode &&  !_restoringSettings) {
-         appPTR->onViewerTileCacheSizeChanged();
+        appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
     } else if ( !_restoringSettings &&
-                ( ( k == _sunkenColor ) ||
-                  ( k == _baseColor ) ||
-                  ( k == _raisedColor ) ||
-                  ( k == _selectionColor ) ||
-                  ( k == _textColor ) ||
-                  ( k == _altTextColor ) ||
-                  ( k == _timelinePlayheadColor ) ||
-                  ( k == _timelineBoundsColor ) ||
-                  ( k == _timelineBGColor ) ||
-                  ( k == _interpolatedColor ) ||
-                  ( k == _keyframeColor ) ||
-                  ( k == _trackerKeyframeColor ) ||
-                  ( k == _cachedFrameColor ) ||
-                  ( k == _diskCachedFrameColor ) ||
-                  ( k == _curveEditorBGColor ) ||
-                  ( k == _gridColor ) ||
-                  ( k == _curveEditorScaleColor ) ||
-                  ( k == _dopesheetBackgroundColor ) ||
-                  ( k == _dopesheetRootSectionBackgroundColor ) ||
-                  ( k == _dopesheetKnobSectionBackgroundColor ) ||
-                  ( k == _dopesheetScaleColor ) ||
-                  ( k == _dopesheetGridColor ) ||
-                  ( k == _keywordColor ) ||
-                  ( k == _operatorColor ) ||
-                  ( k == _curLineColor ) ||
-                  ( k == _braceColor ) ||
-                  ( k == _defClassColor ) ||
-                  ( k == _stringsColor ) ||
-                  ( k == _commentsColor ) ||
-                  ( k == _selfColor ) ||
-                  ( k == _sliderColor ) ||
-                  ( k == _numbersColor ) ) ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _qssFile ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _hostName ) {
-        std::string hostName = _hostName->getActiveEntryText();
-        bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
-        _customHostName->setSecret(!isCustom);
-    } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
-        StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
-                                                            tr("You are about to make %1 crash to test the reporting system.\n"
-                                                               "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
-                                                            StandardButtons(eStandardButtonYes | eStandardButtonNo) );
-        if (reply == eStandardButtonYes) {
-            crash_application();
-        }
-    } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
-        appPTR->reloadScriptEditorFonts();
-    } else if ( k == _pluginUseImageCopyForSource ) {
-        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } else if ( k == _enableOpenGL ) {
-        appPTR->refreshOpenGLRenderingFlagOnAllInstances();
-        if (!_restoringSettings) {
-            appPTR->clearPluginsLoadedCache();
-        }
-    } else {
-        ret = false;
-    }
+               ( ( k == _sunkenColor ) ||
+                ( k == _baseColor ) ||
+                ( k == _raisedColor ) ||
+                ( k == _selectionColor ) ||
+                ( k == _textColor ) ||
+                ( k == _altTextColor ) ||
+                ( k == _timelinePlayheadColor ) ||
+                ( k == _timelineBoundsColor ) ||
+                ( k == _timelineBGColor ) ||
+                ( k == _interpolatedColor ) ||
+                ( k == _keyframeColor ) ||
+                ( k == _trackerKeyframeColor ) ||
+                ( k == _cachedFrameColor ) ||
+                ( k == _diskCachedFrameColor ) ||
+                ( k == _curveEditorBGColor ) ||
+                ( k == _gridColor ) ||
+                ( k == _curveEditorScaleColor ) ||
+                ( k == _dopesheetBackgroundColor ) ||
+                ( k == _dopesheetRootSectionBackgroundColor ) ||
+                ( k == _dopesheetKnobSectionBackgroundColor ) ||
+                ( k == _dopesheetScaleColor ) ||
+                ( k == _dopesheetGridColor ) ||
+                ( k == _keywordColor ) ||
+                ( k == _operatorColor ) ||
+                ( k == _curLineColor ) ||
+                ( k == _braceColor ) ||
+                ( k == _defClassColor ) ||
+                ( k == _stringsColor ) ||
+                ( k == _commentsColor ) ||
+                ( k == _selfColor ) ||
+                ( k == _sliderColor ) ||
+                ( k == _numbersColor ) ||
+                ( k == _qssFile) ) ) {
+                   if (_restoringDefaults) {
+                       ++_nRedrawStyleSheetRequests;
+                   } else {
+                       appPTR->reloadStylesheets();
+                   }
+               } else if ( k == _hostName ) {
+                   std::string hostName = _hostName->getActiveEntryText();
+                   bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
+                   _customHostName->setSecret(!isCustom);
+               } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
+                   StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
+                                                                      tr("You are about to make %1 crash to test the reporting system.\n"
+                                                                         "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
+                                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo) );
+                   if (reply == eStandardButtonYes) {
+                       crash_application();
+                   }
+               } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
+                   appPTR->reloadScriptEditorFonts();
+               } else if ( k == _pluginUseImageCopyForSource ) {
+                   appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
+               } else if ( k == _enableOpenGL ) {
+                   appPTR->refreshOpenGLRenderingFlagOnAllInstances();
+                   if (!_restoringSettings) {
+                       appPTR->clearPluginsLoadedCache();
+                   }
+               } else {
+                   ret = false;
+               }
     if (ret) {
-        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings ) {
+        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings && !_restoringDefaults ) {
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
-
+    
     return ret;
 } // onKnobValueChanged
 
@@ -2658,6 +2663,9 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
+    _nRedrawStyleSheetRequests = 0;
+    _restoringDefaults = true;
+
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2665,6 +2673,12 @@ Settings::restoreDefault()
     }
     setCachingLabels();
     endChanges();
+
+    if (_nRedrawStyleSheetRequests > 0) {
+        appPTR->reloadStylesheets();
+        _nRedrawStyleSheetRequests = 0;
+    }
+    _restoringDefaults = false;
 }
 
 bool

@@ -628,6 +628,11 @@ private:
     KnobColorPtr _defaultViewsGroupColor;
     KnobColorPtr _defaultDeepGroupColor;
     std::vector<std::string> _knownHostNames;
+
+    // Count the number of stylesheet changes during restore defaults
+    // to avoid reloading it many times
+    int _nRedrawStyleSheetRequests;
+    bool _restoringDefaults;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;

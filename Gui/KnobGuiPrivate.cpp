@@ -37,7 +37,6 @@ KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, K
     , widgetCreated(false)
     , container(container)
     , copyRightClickMenu( new MenuWithToolTips( container->getContainerWidget() ) )
-    , knobsOnSameLine()
     , prevKnob()
     , views()
     , labelContainer(NULL)
@@ -46,26 +45,21 @@ KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, K
     , viewsContainerLayout(NULL)
     , mainContainer(NULL)
     , mainLayout(NULL)
+    , firstKnobOnLine()
+    , otherKnobsInMainLayout()
     , descriptionLabel(NULL)
     , warningIndicator(NULL)
     , customInteract(NULL)
     , guiRemoved(false)
     , tabGroup(0)
     , refreshGuiRequests(0)
+    , refreshModifStateRequests(0)
+    , refreshAnimationLevelRequests(0)
     , layoutType(layoutType)
 {
 }
 
-void
-KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobIPtr& knob)
-{
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-        if (it->lock() == knob) {
-            knobsOnSameLine.erase(it);
-            break;
-        }
-    }
-}
+
 
 NATRON_NAMESPACE_EXIT;
 

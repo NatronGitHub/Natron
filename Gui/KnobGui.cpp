@@ -37,9 +37,11 @@
 #include "Engine/KnobItemsTable.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/Project.h"
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/GuiApplicationManager.h"
@@ -93,7 +95,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(dirty(bool)), this, SLOT(onSetDirty(bool)) );
-        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSetSpec,DimSpec)), this, SLOT(onAnimationLevelChanged(ViewSetSpec,DimSpec)) );
+        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSetSpec,DimSpec)), this, SLOT(onInternalKnobAnimationLevelChanged(ViewSetSpec,DimSpec)) );
         QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,Variant,ViewSetSpec,DimSpec,double,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,Variant,ViewSetSpec,DimSpec,double,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
@@ -102,9 +104,27 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(DimIdx)), this, SLOT(onDimensionNameChanged(DimIdx)) );
         QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
+        QObject::connect( handler, SIGNAL(availableViewsChanged()), this, SLOT(onInternalKnobAvailableViewsChanged()) );
+
     }
-    QObject::connect( this, SIGNAL(s_doUpdateGuiLater()), this, SLOT(doUpdateGuiLater()), Qt::QueuedConnection );
-    QObject::connect( this, SIGNAL(s_updateAnimationLevelLater()), this, SLOT(updateAnimationLevelLater()), Qt::QueuedConnection );
+    KnobHolderPtr holder = knob->getHolder();
+    AppInstancePtr app;
+    if (holder) {
+        app = holder->getApp();
+    }
+    if (app) {
+        ProjectPtr project = app->getProject();
+        QObject::connect(project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()));
+    }
+
+
+    if (knob->getHolder() && knob->getHolder()->getApp()) {
+
+    }
+    QObject::connect( this, SIGNAL(s_doUpdateGuiLater()), this, SLOT(onDoUpdateGuiLaterReceived()), Qt::QueuedConnection );
+    QObject::connect( this, SIGNAL(s_updateAnimationLevelLater()), this, SLOT(onDoUpdateAnimationLevelLaterReceived()), Qt::QueuedConnection );
+    QObject::connect( this, SIGNAL(s_updateModificationsStateLater()), this, SLOT(onDoUpdateModificationsStateLaterReceived()), Qt::QueuedConnection );
+
 
 }
 
@@ -115,41 +135,40 @@ KnobGui::getContainer()
 }
 
 void
-KnobGui::removeGui()
+KnobGui::destroyWidgetsLater()
 {
     assert(!_imp->guiRemoved);
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
-        KnobGuiPtr kg = _imp->container->getKnobGui( it->lock() );
-        if (kg) {
-            kg->_imp->removeFromKnobsOnSameLineVector( getKnob() );
+
+    // First remove any other knobs that is on the same layout line from the main layout
+    for (std::list<KnobGuiWPtr>::const_iterator it = _imp->otherKnobsInMainLayout.begin(); it != _imp->otherKnobsInMainLayout.end(); ++it) {
+        KnobGuiPtr otherKnob = it->lock();
+        if (!otherKnob) {
+            continue;
         }
+        // Remove the 2 container widgets that were added in addWidgetsToPreviousKnobLayout()
+        _imp->mainLayout->removeWidget(otherKnob->_imp->mainContainer);
+        _imp->mainLayout->removeWidget(otherKnob->_imp->labelContainer);
     }
 
-    if ( _imp->knobsOnSameLine.empty() ) {
-        if (_imp->isOnNewLine) {
-            if (_imp->labelContainer) {
-                _imp->labelContainer->deleteLater();
-                _imp->labelContainer = 0;
-            }
-        }
-    } else {
-        if (_imp->descriptionLabel) {
-            _imp->descriptionLabel->deleteLater();
-            _imp->descriptionLabel = 0;
-        }
-    }
-    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        if (_imp->knobsOnSameLine.empty() && _imp->isOnNewLine && it->second.field) {
-            it->second.field->deleteLater();
-            it->second.field = 0;
-        }
-        if (it->second.widgets) {
-            it->second.widgets->removeSpecificGui();
-        }
-    }
+
+    // Now delete the main container, this will delete all children recursively
+    _imp->mainContainer->deleteLater();
+    _imp->mainContainer = 0;
+
+    _imp->views.clear();
     _imp->guiRemoved = true;
 
     removeTabWidget();
+}
+
+void
+KnobGuiPrivate::removeViewGui(KnobGuiPrivate::PerViewWidgetsMap::iterator it)
+{
+
+    if (it->second.field) {
+        it->second.field->deleteLater();
+        it->second.field = 0;
+    }
 }
 
 void
@@ -201,106 +220,6 @@ KnobGui::getOrCreateTabWidget()
     return _imp->tabGroup;
 }
 
-/**
- * @brief Given a knob "ref" within a vector of knobs, returns a vector
- * of all knobs that should be on the same horizontal line as this knob.
- **/
-static void
-findKnobsOnSameLine(const KnobsVec& knobs,
-                    KnobGui::KnobLayoutTypeEnum layoutType,
-                    const KnobIPtr& ref,
-                    std::vector<KnobIWPtr>& knobsOnSameLine,
-                    KnobIPtr* prevKnob)
-{
-    int idx = -1;
-
-    for (U32 k = 0; k < knobs.size(); ++k) {
-        if (knobs[k] == ref) {
-            idx = k;
-            if (k > 0) {
-                if ((layoutType == KnobGui::eKnobLayoutTypePage && !knobs[k - 1]->isNewLineActivated()) ||
-                    (layoutType == KnobGui::eKnobLayoutTypeViewerUI && knobs[k - 1]->getInViewerContextLayoutType() != eViewerContextLayoutTypeAddNewLine)) {
-                    *prevKnob = knobs[k - 1];
-                }
-            }
-            break;
-        }
-    }
-
-    assert(idx != -1);
-    if (idx < 0) {
-        return;
-    }
-    ///find all knobs backward that are on the same line.
-    int k = idx - 1;
-    KnobIPtr parent = ref->getParentKnob();
-    bool isPreviousNewLineActivated = true;
-    if (k >= 0) {
-        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-            isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
-        } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
-            isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
-        }
-    }
-    while ( k >= 0 && !isPreviousNewLineActivated ) {
-        if (parent) {
-            assert(knobs[k]->getParentKnob() == parent);
-            knobsOnSameLine.push_back(knobs[k]);
-        } else {
-            if ( !knobs[k]->getParentKnob() &&
-                !toKnobPage( knobs[k] ) &&
-                !toKnobGroup( knobs[k] ) ) {
-                knobsOnSameLine.push_back(knobs[k]);
-            }
-        }
-        --k;
-        if (k >= 0) {
-            if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-                isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
-            } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
-                isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
-            } else {
-                isPreviousNewLineActivated = true;
-            }
-        }
-    }
-
-    ///find all knobs forward that are on the same line.
-    k = idx;
-    if (k >= 0 &&  k < (int)(knobs.size() - 1)) {
-        if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-            isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
-        } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
-            isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
-        } else {
-            isPreviousNewLineActivated = true;
-        }
-
-    }
-    while ( k < (int)(knobs.size() - 1) && !isPreviousNewLineActivated ) {
-        if (parent) {
-            assert(knobs[k + 1]->getParentKnob() == parent);
-            knobsOnSameLine.push_back(knobs[k + 1]);
-        } else {
-            if ( !knobs[k + 1]->getParentKnob() &&
-                !toKnobPage( knobs[k + 1] ) &&
-                !toKnobGroup( knobs[k + 1] ) ) {
-                knobsOnSameLine.push_back(knobs[k + 1]);
-            }
-        }
-        ++k;
-        if (k >= 0 &&  k < (int)(knobs.size() - 1)) {
-            if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
-                isPreviousNewLineActivated = knobs[k]->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine;
-            } else if (layoutType == KnobGui::eKnobLayoutTypePage) {
-                isPreviousNewLineActivated = knobs[k]->isNewLineActivated();
-            } else {
-                isPreviousNewLineActivated = true;
-            }
-        }
-    }
-} // findKnobsOnSame
-
 void
 KnobGuiPrivate::refreshIsOnNewLineFlag()
 {
@@ -328,7 +247,18 @@ KnobGuiPrivate::refreshIsOnNewLineFlag()
             }
         }
         if (!siblings.empty()) {
-            findKnobsOnSameLine(siblings, layoutType, k, knobsOnSameLine, &prevKnobOnLine);
+            // Find the previous knob on the line in the layout
+            for (std::size_t i = 0; i < siblings.size(); ++i) {
+                if (siblings[i] == k) {
+                    if (i > 0) {
+                        if ((layoutType == KnobGui::eKnobLayoutTypePage && !siblings[i - 1]->isNewLineActivated()) ||
+                            (layoutType == KnobGui::eKnobLayoutTypeViewerUI && siblings[i - 1]->getInViewerContextLayoutType() != eViewerContextLayoutTypeAddNewLine)) {
+                            prevKnobOnLine = siblings[i - 1];
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
  
@@ -406,7 +336,7 @@ static int getLayoutBottomMargin(KnobGui::KnobLayoutTypeEnum type)
     }
 }
 void
-KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
+KnobGui::createViewContainers(ViewIdx view)
 {
 
 
@@ -415,7 +345,7 @@ KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
     KnobGuiPrivate::ViewWidgets& viewWidgets = _imp->views[view];
 
     // Create a new container and layout
-    viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(parentWidget);
+    viewWidgets.field = _imp->container->createKnobHorizontalFieldContainer(_imp->viewsContainer);
     viewWidgets.fieldLayout = new QHBoxLayout(viewWidgets.field);
 
     int leftMargin = getLayoutLeftMargin(_imp->layoutType);
@@ -433,7 +363,7 @@ KnobGui::createViewContainers(QWidget* parentWidget, ViewIdx view)
     KnobParametricPtr isParametric = toKnobParametric(knob);
     OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
-        _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
+        _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract, viewWidgets.field);
         viewWidgets.fieldLayout->addWidget(_imp->customInteract);
     } else {
         viewWidgets.widgets.reset(appPTR->createGuiForKnob(thisShared, view));
@@ -448,11 +378,39 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
 {
 
     // createViewContainers must have been called before
-    if (it->second.widgets) {
+    assert(it->second.widgets);
+
+    // Create per-view label
+    {
         KnobIPtr k = knob.lock();
-        it->second.widgets->createWidget(it->second.fieldLayout);
-        it->second.widgets->updateToolTip();
+        std::vector<std::string> projectViews;
+        if (k->getHolder() && k->getHolder()->getApp()) {
+            projectViews = k->getHolder()->getApp()->getProject()->getProjectViewNames();
+        }
+
+        std::string viewShortName, viewLongName;
+        if (it->first >= 0 && it->first < (int)projectViews.size()) {
+            if (!projectViews[it->first].empty()) {
+                viewLongName = projectViews[it->first];//[0];
+                if (!viewLongName.empty()) {
+                    viewShortName.push_back(viewLongName[0]);
+                } else {
+                    viewLongName.push_back('*');
+                }
+            }
+        }
+        it->second.viewLongName = QString::fromUtf8(viewLongName.c_str());
+        it->second.viewLabel = new KnobClickableLabel(QString::fromUtf8(viewShortName.c_str()), _publicInterface->shared_from_this(), it->first, it->second.field);
+        it->second.fieldLayout->addWidget(it->second.viewLabel);
+        if (views.size() == 1) {
+            it->second.viewLabel->hide();
+        }
+
     }
+
+    it->second.widgets->createWidget(it->second.fieldLayout);
+    it->second.widgets->updateToolTip();
+
 }
 
 
@@ -512,35 +470,14 @@ KnobGuiPrivate::createLabel(QWidget* parentWidget)
     }
 
     // if multi-view, create an arrow to show/hide all dimensions
-    if (views.size() > 1) {
-        viewUnfoldArrow = new GroupBoxLabel(labelContainer);
-        viewUnfoldArrow->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        viewUnfoldArrow->setChecked(true);
-        QObject::connect( viewUnfoldArrow, SIGNAL(checked(bool)), _publicInterface, SLOT(onMultiViewUnfoldClicked(bool)) );
-        labelLayout->addWidget(viewUnfoldArrow);
-
-        assert(k->getHolder() && k->getHolder()->getApp());
-        const std::vector<std::string>& projectViews = k->getHolder()->getApp()->getProject()->getProjectViewNames();
-
-        // Create per-view label
-        for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = views.begin(); it != views.end(); ++it) {
-            if (it->second.field) {
-
-                // Create the view label
-                std::string viewShortName;
-                // Use the first character of the view name as label
-                if (it->first >= 0 && it->first < (int)projectViews.size()) {
-                    if (!projectViews[it->first].empty()) {
-                        viewShortName = projectViews[it->first][0];
-                    }
-                }
-                it->second.viewLabel = new KnobClickableLabel(QString::fromUtf8(viewShortName.c_str()), thisShared, it->first, parentWidget);
-                it->second.fieldLayout->addWidget(it->second.viewLabel);
-                viewsContainerLayout->addWidget(it->second.field);
-            }
-        }
+    viewUnfoldArrow = new GroupBoxLabel(labelContainer);
+    viewUnfoldArrow->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    viewUnfoldArrow->setChecked(true);
+    if (views.size() == 1) {
+        viewUnfoldArrow->setVisible(false);
     }
-
+    QObject::connect( viewUnfoldArrow, SIGNAL(checked(bool)), _publicInterface, SLOT(onMultiViewUnfoldClicked(bool)) );
+    labelLayout->addWidget(viewUnfoldArrow);
 
     if (warningIndicator) {
         labelLayout->addWidget(warningIndicator);
@@ -581,34 +518,42 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
     KnobIPtr thisKnob = knob.lock();
 
     // Recurse on previous knobs until the first one on the same line
-    QHBoxLayout* prevMainLayout = 0;
+    QHBoxLayout* firstKnobOnLineMainLayout = 0;
+    KnobGuiPtr firstKnobGuiOnLine;
     {
         KnobIPtr tmpPrev = prev;
         KnobGuiPtr tmpPrevGui = prevKnobGui;
         while (tmpPrevGui) {
-            prevMainLayout = tmpPrevGui->_imp->mainLayout;
+            firstKnobGuiOnLine = tmpPrevGui;
+            firstKnobOnLineMainLayout = tmpPrevGui->_imp->mainLayout;
             tmpPrev = tmpPrevGui->_imp->prevKnob.lock();
             if (!tmpPrev) {
                 break;
             }
             tmpPrevGui = container->getKnobGui(tmpPrev);
         }
-    }
-    assert(prevMainLayout);
 
+        assert(firstKnobOnLineMainLayout);
+        assert(firstKnobGuiOnLine);
+    }
+
+    // Register this knob to the first knob on the line
+    firstKnobGuiOnLine->_imp->otherKnobsInMainLayout.push_back(_publicInterface->shared_from_this());
+
+    // Check if we need to add spacing or stretch
     if (layoutType == KnobGui::eKnobLayoutTypeViewerUI) {
         switch (prev->getInViewerContextLayoutType()) {
             case eViewerContextLayoutTypeSeparator:
-                addVerticalLineSpacer(prevMainLayout);
+                addVerticalLineSpacer(firstKnobOnLineMainLayout);
                 break;
             case eViewerContextLayoutTypeSpacing: {
                 int spacing = TO_DPIX(prev->getInViewerContextItemSpacing());
                 if (spacing > 0) {
-                    prevMainLayout->addSpacing(spacing);
+                    firstKnobOnLineMainLayout->addSpacing(spacing);
                 }
             }   break;
             case eViewerContextLayoutTypeStretchAfter:
-                prevMainLayout->addStretch();
+                firstKnobOnLineMainLayout->addStretch();
                 break;
             default:
                 // We cannot be here, this function should not be called if we were
@@ -624,15 +569,19 @@ KnobGuiPrivate::addWidgetsToPreviousKnobLayout()
             spacing = TO_DPIX(container->getItemsSpacingOnSameLine());
         }
         if (spacing > 0) {
-            prevMainLayout->addSpacing(spacing);
+            firstKnobOnLineMainLayout->addSpacing(spacing);
         }
     }
 
-    prevMainLayout->addWidget(labelContainer);
+    // Add the label to the main layout
+    firstKnobOnLineMainLayout->addWidget(labelContainer);
 
     // Separate the label and the actual field
-    prevMainLayout->addSpacing(TO_DPIX(1));
-    prevMainLayout->addWidget(mainContainer);
+    firstKnobOnLineMainLayout->addSpacing(TO_DPIX(1));
+    firstKnobOnLineMainLayout->addWidget(mainContainer);
+
+    // Set the pointer to the mainLayout of the knob starting the line
+    firstKnobOnLine = firstKnobGuiOnLine;
 } // addWidgetsToPreviousKnobLayout
 
 
@@ -665,7 +614,7 @@ KnobGui::createGUI(QWidget* parentWidget)
     // Create row widgets container for each view
     std::list<ViewIdx> views = knob->getViewsList();
     for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
-        createViewContainers(parentWidget, *it);
+        createViewContainers(*it);
     }
 
 
@@ -694,7 +643,12 @@ KnobGui::createGUI(QWidget* parentWidget)
     if ( firstViewWidgets->shouldAddStretch() ) {
         if ((_imp->layoutType == eKnobLayoutTypePage && knob->isNewLineActivated()) ||
             (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine)) {
-            _imp->mainLayout->addStretch();
+            KnobGuiPtr firstKnobGuiOnLine = _imp->firstKnobOnLine.lock();
+            if (firstKnobGuiOnLine) {
+                firstKnobGuiOnLine->_imp->mainLayout->addStretch();
+            } else {
+                _imp->mainLayout->addStretch();
+            }
         }
 
     }
@@ -714,7 +668,7 @@ KnobGui::createGUI(QWidget* parentWidget)
 
 
     // Refresh modifications state
-    onHasModificationsChanged();
+    refreshModificationsStateNow();
 
     
     // Refresh animation and expression state on all views
@@ -1357,7 +1311,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
         projectViews = holder->getApp()->getProject()->getProjectViewNames();
     }
 
-    if (knob->canSplitViews()) {
+    if (knob->canSplitViews() && knob->isAnimationEnabled()) {
         std::vector<QAction*> splitActions, unSplitActions;
         for (std::size_t i = 1; i < projectViews.size(); ++i) {
             std::list<ViewIdx>::iterator foundView = std::find(knobViews.begin(), knobViews.end(), ViewIdx(i));
@@ -1374,20 +1328,14 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             }
         }
 
-        for (std::list<ViewIdx>::iterator it = knobViews.begin(); it != knobViews.end(); ++it) {
-            if (*it == ViewIdx(0)) {
+        for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            if (it->first == ViewIdx(0)) {
                 continue;
             }
-            QString viewName;
-            if (*it >= 0 && *it < (int)projectViews.size()) {
-                viewName = QString::fromUtf8(projectViews[*it].c_str());
-            } else {
-                viewName = QString::fromUtf8("*");
-            }
-            QString label = tr("Unsplit %1 View").arg(viewName);
+            QString label = tr("Unsplit %1 View").arg(it->second.viewLongName);
             QAction* unSplitAction = new QAction(label, menu);
             QObject::connect( unSplitAction, SIGNAL(triggered()), this, SLOT(onUnSplitViewActionTriggered()) );
-            unSplitAction->setData((int)*it);
+            unSplitAction->setData((int)it->first);
             if (!isDimensionEnabled) {
                 unSplitAction->setEnabled(false);
             }

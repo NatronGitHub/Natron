@@ -127,7 +127,6 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleCenter);
     (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleCopy);
     (void)QT_TR_NOOP(kShortcutDescActionAnimationModulePasteKeyframes);
-    (void)QT_TR_NOOP(kShortcutDescActionAnimationModuleEditorRenameNode);
     (void)QT_TR_NOOP(kShortcutDescActionAnimationModulePasteKeyframesAbsolute);
     (void)QT_TR_NOOP(kShortcutDescActionScriptEditorPrevScript);
     (void)QT_TR_NOOP(kShortcutDescActionScriptEditorNextScript);

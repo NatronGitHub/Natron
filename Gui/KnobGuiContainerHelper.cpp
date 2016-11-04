@@ -846,7 +846,7 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
         } else {
             KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
             if ( it != _imp->knobsMap.end() ) {
-                it->second->removeGui();
+                it->second->destroyWidgetsLater();
                 _imp->knobsMap.erase(it);
             }
         }
@@ -874,7 +874,7 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
             if (knob) {
                 knob->setKnobGuiPointer( KnobGuiPtr() );
             }
-            it->second->removeGui();
+            it->second->destroyWidgetsLater();
             it->second.reset();
         }
     }

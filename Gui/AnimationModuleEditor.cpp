@@ -144,9 +144,34 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     appPTR->getIcon(NATRON_PIXMAP_DOPE_SHEET, iconSize, &pixDopeSheet);
 
     _imp->displayViewChoice = new ComboBox(_imp->buttonsContainer);
-    _imp->displayViewChoice->addItem(tr("Curve Editor"), pixCurveEditor, QKeySequence());
-    _imp->displayViewChoice->addItem(tr("Dope Sheet"), pixDopeSheet, QKeySequence());
-    _imp->displayViewChoice->addItem(tr("Split"), QIcon(), QKeySequence());
+
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                            kShortcutIDActionAnimationModuleShowCurveEditor,
+                                                            kShortcutDescActionAnimationModuleShowCurveEditor,
+                                                            _imp->displayViewChoice);
+       //action->setText(QString());
+        action->setIcon(QIcon(pixCurveEditor));
+        _imp->displayViewChoice->addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                            kShortcutIDActionAnimationModuleShowDopeSheet,
+                                                            kShortcutDescActionAnimationModuleShowDopeSheet,
+                                                            _imp->displayViewChoice);
+        //action->setText(QString());
+        action->setIcon(QIcon(pixDopeSheet));
+        _imp->displayViewChoice->addAction(action);
+    }
+    {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                            kShortcutIDActionAnimationModuleSplit,
+                                                            kShortcutDescActionAnimationModuleSplit,
+                                                            _imp->displayViewChoice);
+        //action->setText(QString());
+        //action->setIcon(QIcon(pixSplit));
+        _imp->displayViewChoice->addAction(action);
+    }
     _imp->displayViewChoice->setCurrentIndex_no_emit(0);
     _imp->displayViewChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
     _imp->displayViewChoice->setFixedWidth(iconSize + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
@@ -295,6 +320,15 @@ AnimationModuleEditor::keyPressEvent(QKeyEvent* e)
 
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         _imp->model->renameSelectedNode();
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowCurveEditor, modifiers, key) ) {
+        onViewCurrentIndexChanged(0);
+        _imp->displayViewChoice->setCurrentIndex_no_emit(0);
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowDopeSheet, modifiers, key) ) {
+        onViewCurrentIndexChanged(1);
+        _imp->displayViewChoice->setCurrentIndex_no_emit(1);
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSplit, modifiers, key) ) {
+        onViewCurrentIndexChanged(2);
+        _imp->displayViewChoice->setCurrentIndex_no_emit(2);
     } else {
         accept = false;
     }
@@ -401,8 +435,8 @@ AnimationModuleEditor::onExprLineEditFinished()
 
     try {
         setSelectedCurveExpression( _imp->knobExpressionLineEdit->text() );
-    } catch(const std::exception& e) {
-        Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
+    } catch(const std::exception& /*e*/) {
+        //Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
     }
 }
 
@@ -429,7 +463,7 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
 {
     const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->model->getSelectionModel()->getCurrentKeyFramesSelection();
     bool expressionFieldsEnabled = true;
-    if (selectedKeys.size() > 1) {
+    if (selectedKeys.size() > 1 || selectedKeys.size() == 0) {
         expressionFieldsEnabled = false;
     }
     if (expressionFieldsEnabled) {
@@ -442,7 +476,7 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
         }
     }
     _imp->knobLabel->setVisible(expressionFieldsEnabled);
-    _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
+    _imp->knobExpressionLineEdit->setVisible(expressionFieldsEnabled);
     _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
 
 }

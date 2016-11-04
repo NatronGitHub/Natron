@@ -716,7 +716,7 @@ DopeSheetViewPrivate::drawRows() const
         std::list<NodeAnimPtr> nodesAnimOrdered;
         int nTopLevelTreeItems = treeView->topLevelItemCount();
         for (int i = 0; i < nTopLevelTreeItems; ++i) {
-            QTreeWidgetItem* topLevelItem = treeView->topLevelItem(nTopLevelTreeItems);
+            QTreeWidgetItem* topLevelItem = treeView->topLevelItem(i);
             if (!topLevelItem) {
                 continue;
             }
@@ -1741,7 +1741,9 @@ DopeSheetView::centerOnRangeInternal(const std::pair<double, double>& range)
         finalRange.first -= diffRange;
         finalRange.second += diffRange;
     }
-
+    if (finalRange.first >= finalRange.second || _imp->zoomCtx.bottom() >= _imp->zoomCtx.top()) {
+        return;
+    }
 
     _imp->zoomCtx.fill( finalRange.first, finalRange.second,
                        _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );

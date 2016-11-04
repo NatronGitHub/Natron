@@ -122,9 +122,6 @@ struct KnobGuiPrivate
     // Right click menu
     QMenu* copyRightClickMenu;
 
-    // A vector of all other knobs on the same line.
-    std::vector<KnobIWPtr> knobsOnSameLine;
-
     // A pointer to the previous knob on the row
     KnobIWPtr prevKnob;
 
@@ -139,6 +136,9 @@ struct KnobGuiPrivate
 
         // The view label
         KnobClickableLabel* viewLabel;
+
+        // View name used in the right click menu
+        QString viewLongName;
 
         // The implementation of the knob gui
         KnobGuiWidgetsPtr widgets;
@@ -163,6 +163,15 @@ struct KnobGuiPrivate
     QWidget* mainContainer;
     QHBoxLayout* mainLayout;
 
+    // If this knob is not on a new line, this is a reference (weak) to the first knob
+    // on the layout line.
+    KnobGuiWPtr firstKnobOnLine;
+
+    // If this knob is the first knob on the line, potentially it may have other knobs
+    // on the same layout line. This is a list, in order, of the knobs that
+    // are on the same layout line.
+    std::list<KnobGuiWPtr> otherKnobsInMainLayout;
+
     // The label
     KnobClickableLabel* descriptionLabel;
 
@@ -182,13 +191,17 @@ struct KnobGuiPrivate
     // Used to concatenate updateGui() request
     int refreshGuiRequests;
 
+    // Used to concatenate onHasModificationsChanged() request
+    int refreshModifStateRequests;
+    
+    // Used to concatenate onAnimationLevelChanged() request
+    int refreshAnimationLevelRequests;
+
 
     // True if this KnobGui is used in the viewer
     KnobGui::KnobLayoutTypeEnum layoutType;
 
     KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
-
-    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
 
     void refreshIsOnNewLineFlag();
 
@@ -198,6 +211,7 @@ struct KnobGuiPrivate
 
     void addWidgetsToPreviousKnobLayout();
 
+    void removeViewGui(KnobGuiPrivate::PerViewWidgetsMap::iterator it);
 };
 
 NATRON_NAMESPACE_EXIT;

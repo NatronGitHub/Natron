@@ -85,7 +85,8 @@ CurveWidget::initializeImplementation(Gui* gui, const AnimationModuleBasePtr& mo
     setImplementation(_imp);
 
 
-    if ( parentWidget()->objectName() == QString::fromUtf8("CurveEditorSplitter") ) {
+    AnimationModulePtr isAnimModule = toAnimationModule(model);
+    if (isAnimModule) {
         ///if this is the curve widget associated to the CurveEditor
         //        QDesktopWidget* desktop = QApplication::desktop();
         //        _imp->sizeH = desktop->screenGeometry().size();

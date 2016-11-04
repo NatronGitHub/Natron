@@ -35,6 +35,7 @@
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/Plugin.h"
+#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/EffectInstance.h"
@@ -277,7 +278,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     }
 
     EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -340,7 +341,7 @@ KnobGui::onRemoveAnimationActionTriggered()
         return;
     }
     EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -413,7 +414,7 @@ KnobGui::onInterpolationActionTriggered()
         return;
     }
     EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -467,7 +468,7 @@ KnobGui::onSetKeyActionTriggered()
         return;
     }
     EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -557,7 +558,7 @@ KnobGui::onRemoveKeyActionTriggered()
         return;
     }
     EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -783,69 +784,34 @@ KnobGui::hasToolTip() const
 int
 KnobGui::getKnobsCountOnSameLine() const
 {
-    return _imp->knobsOnSameLine.size();
+    if (!_imp->otherKnobsInMainLayout.empty()) {
+        return _imp->otherKnobsInMainLayout.size();
+    } else {
+        KnobGuiPtr firstKnobOnLine = _imp->firstKnobOnLine.lock();
+        if (!firstKnobOnLine) {
+            return 0;
+        } else {
+            return firstKnobOnLine->_imp->otherKnobsInMainLayout.size();
+        }
+    }
 }
 
 void
 KnobGui::hide()
 {
-    if (!_imp->customInteract) {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.widgets) {
-                it->second.widgets->setWidgetsVisible(false);
-            }
-        }
-
+    if (_imp->otherKnobsInMainLayout.empty()) {
+        _imp->mainContainer->hide();
     } else {
-        _imp->customInteract->hide();
-    }
-
-    //also  hide the curve from the curve editor if there's any and the knob is not inside a group
-    KnobIPtr knob = getKnob();
-    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
-        KnobIPtr parent = getKnob()->getParentKnob();
-        bool isSecret = true;
-        while (parent) {
-            if ( !parent->getIsSecret() ) {
-                isSecret = false;
-                break;
-            }
-            parent = parent->getParentKnob();
-        }
-    }
-
-    ////In order to remove the row of the layout we have to make sure ALL the knobs on the row
-    ////are hidden.
-    bool shouldRemoveWidget = true;
-    for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        KnobGuiPtr sibling = _imp->container->getKnobGui( _imp->knobsOnSameLine[i].lock() );
-        if ( sibling && !sibling->isSecretRecursive() ) {
-            shouldRemoveWidget = false;
-        }
-    }
-
-    if (shouldRemoveWidget) {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.field) {
-                it->second.field->hide();
-            }
-        }
-
-        if (_imp->container) {
-            _imp->container->refreshTabWidgetMaxHeight();
-        }
-    } else {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.field && !it->second.field->isVisible()) {
-                it->second.field->show();
-            }
+        // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widgets
+        if (_imp->viewsContainer) {
+            _imp->viewsContainer->hide();
         }
     }
     if (_imp->labelContainer) {
         _imp->labelContainer->hide();
-    } else if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->hide();
     }
+
+    // Also hide the tabwidget if it has any
     if (_imp->tabGroup) {
         _imp->tabGroup->hide();
     }
@@ -854,36 +820,19 @@ KnobGui::hide()
 void
 KnobGui::show()
 {
-    if ( !getGui() ) {
-        return;
-    }
-    if (!_imp->customInteract) {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.widgets) {
-                bool showWidget = ((it->first == ViewIdx(0)) || !_imp->viewUnfoldArrow || _imp->viewUnfoldArrow->isChecked());
-                it->second.widgets->setWidgetsVisible(showWidget);
-            }
-        }
+    if (_imp->otherKnobsInMainLayout.empty()) {
+        _imp->mainContainer->show();
     } else {
-        _imp->customInteract->show();
-    }    
-    
-    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        if (it->second.field && !it->second.field->isVisible()) {
-            it->second.field->show();
+        // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widgets
+        if (_imp->viewsContainer) {
+            _imp->viewsContainer->show();
         }
     }
-    if (_imp->container) {
-        _imp->container->refreshTabWidgetMaxHeight();
-    }
-
-
     if (_imp->labelContainer) {
         _imp->labelContainer->show();
-    } else if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->show();
     }
 
+    // Also show the tabwidget if it has any
     if (_imp->tabGroup) {
         _imp->tabGroup->show();
     }
@@ -893,15 +842,10 @@ void
 KnobGui::onMultiViewUnfoldClicked(bool expanded)
 {
     for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        if (it->second.widgets) {
-            if (expanded) {
-                it->second.widgets->setWidgetsVisible(true);
-            } else {
-                bool showWidget = (it->first == ViewIdx(0) || !_imp->viewUnfoldArrow);
-                it->second.widgets->setWidgetsVisible(showWidget);
-            }
-
+        if (it->first == ViewIdx(0)) {
+            continue;
         }
+        it->second.field->setVisible(expanded);
     }
 }
 
@@ -996,6 +940,104 @@ KnobGui::onUnSplitViewActionTriggered()
         return;
     }
     internalKnob->unSplitView(view);
+}
+
+void
+KnobGui::onInternalKnobAvailableViewsChanged()
+{
+    // Sync views to what's inside the knob
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+    // Remove un-needed views
+    KnobGuiPrivate::PerViewWidgetsMap viewsToKeep;
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+        std::list<ViewIdx>::iterator found = std::find(views.begin(), views.end(), it->first);
+        if (found != views.end()) {
+            viewsToKeep.insert(*it);
+            continue;
+        }
+        _imp->removeViewGui(it);
+    }
+
+    _imp->views = viewsToKeep;
+
+    // Add new views
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        KnobGuiPrivate::PerViewWidgetsMap::iterator  found = _imp->views.find(*it);
+        if (found == _imp->views.end()) {
+            createViewContainers(*it);
+            KnobGuiPrivate::PerViewWidgetsMap::iterator found = _imp->views.find(*it);
+            assert(found != _imp->views.end());
+            _imp->createViewWidgets(found);
+
+            // This will reflect animation level and view
+            for (int i = 0; i < internalKnob->getNDimensions(); ++i) {
+                onExprChanged(DimIdx(i), *it);
+            }
+
+        }
+    }
+
+    // Refresh view label visibility
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+        it->second.viewLabel->setVisible(_imp->views.size() > 1);
+    }
+
+    // Reflect modif state
+    refreshModificationsStateNow();
+
+    _imp->viewUnfoldArrow->setVisible(_imp->views.size() > 1);
+}
+
+void
+KnobGui::onProjectViewsChanged()
+{
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    assert(knob->getHolder() && knob->getHolder()->getApp());
+    KnobHolderPtr holder = knob->getHolder();
+    AppInstancePtr app;
+    if (holder) {
+        app = holder->getApp();
+    }
+    if (!app) {
+        return;
+    }
+
+    const std::vector<std::string>& projectViewNames = app->getProject()->getProjectViewNames();
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        QString viewLongName, viewShortName;
+        if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
+            viewLongName = QString::fromUtf8(projectViewNames[it->first].c_str());
+            if (!viewLongName.isEmpty()) {
+                viewShortName.append(viewLongName[0]);
+            } else {
+                viewShortName += QString::fromUtf8("(*)");
+            }
+        } else {
+            viewLongName = it->second.viewLabel->text();
+            QString notFoundSuffix = QString::fromUtf8("(*)");
+            if (!viewLongName.endsWith(notFoundSuffix)) {
+                viewLongName.push_back(QLatin1Char(' '));
+                viewLongName += notFoundSuffix;
+            }
+            if (!viewLongName.isEmpty()) {
+                viewShortName.append(viewLongName[0]);
+                viewShortName.push_back(QLatin1Char(' '));
+            }
+            viewShortName += QString::fromUtf8("(*)");
+
+        }
+        it->second.viewLongName = viewLongName;
+        it->second.viewLabel->setText(viewShortName);
+    }
+  
 }
 
 NATRON_NAMESPACE_EXIT;

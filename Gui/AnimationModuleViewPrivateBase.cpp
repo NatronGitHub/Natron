@@ -349,8 +349,8 @@ AnimationModuleViewPrivateBase::drawTexturedKeyframe(AnimationModuleViewPrivateB
                                                      const QColor& textColor,
                                                      const RectD &rect) const
 {
-    GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-    GLProtectMatrix<GL_GPU> pr(GL_MODELVIEW);
+
+    GL_GPU::glColor4f(1, 1, 1, 1);
 
     GL_GPU::glEnable(GL_TEXTURE_2D);
     GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
@@ -366,7 +366,6 @@ AnimationModuleViewPrivateBase::drawTexturedKeyframe(AnimationModuleViewPrivateB
     GL_GPU::glVertex2f( rect.right(), rect.top() );
     GL_GPU::glEnd();
 
-    GL_GPU::glColor4f(1, 1, 1, 1);
     GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
     GL_GPU::glDisable(GL_TEXTURE_2D);

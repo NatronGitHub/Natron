@@ -874,6 +874,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes, kShortcutDescActionAnimationModulePasteKeyframes, Qt::ControlModifier, Qt::Key_V);
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, kShortcutDescActionAnimationModulePasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
 
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowCurveEditor, kShortcutDescActionAnimationModuleShowCurveEditor, Qt::ShiftModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowDopeSheet, kShortcutDescActionAnimationModuleShowDopeSheet, Qt::ShiftModifier, Qt::Key_D);
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSplit, kShortcutDescActionAnimationModuleSplit, Qt::ShiftModifier, Qt::Key_S);
+
+
+
     //Script editor
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorNextScript, kShortcutDescActionScriptEditorNextScript, Qt::ControlModifier, Qt::Key_BracketRight, Qt::ShiftModifier | Qt::AltModifier);

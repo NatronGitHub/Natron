@@ -84,6 +84,17 @@ struct PluginTreeNode
     AnimatedCheckBox* mtCheckbox;
     AnimatedCheckBox* glCheckbox;
     PluginWPtr plugin;
+
+    PluginTreeNode()
+    : item(0)
+    , enabledCheckbox(0)
+    , rsCheckbox(0)
+    , mtCheckbox(0)
+    , glCheckbox(0)
+    , plugin()
+    {
+
+    }
 };
 
 typedef std::list<PluginTreeNode> PluginTreeNodeList;

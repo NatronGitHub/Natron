@@ -52,15 +52,25 @@ NATRON_NAMESPACE_ENTER;
 void
 KnobGui::onMustRefreshGuiActionTriggered(ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/)
 {
+    ++_imp->refreshGuiRequests;
     Q_EMIT s_doUpdateGuiLater();
 }
 
 void
-KnobGui::doUpdateGuiLater()
+KnobGui::onDoUpdateGuiLaterReceived()
 {
-    if (_imp->guiRemoved || !_imp->widgetCreated) {
+    if (_imp->guiRemoved || !_imp->widgetCreated || !_imp->refreshGuiRequests) {
         return;
     }
+    
+    _imp->refreshGuiRequests = 0;
+    refreshGuiNow();
+}
+
+void
+KnobGui::refreshGuiNow()
+{
+
     if (!_imp->customInteract) {
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             it->second.widgets->updateGUI();
@@ -85,7 +95,7 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
         return;
     }
     EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (isEffect) {
+    if (!isEffect) {
         return;
     }
     NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
@@ -573,11 +583,18 @@ KnobGui::setKnobGuiPointer()
 }
 
 void
-KnobGui::updateAnimationLevelLater()
+KnobGui::onDoUpdateAnimationLevelLaterReceived()
 {
-    if (_imp->customInteract) {
+    if (_imp->customInteract || !_imp->refreshAnimationLevelRequests) {
         return;
     }
+    _imp->refreshAnimationLevelRequests = 0;
+    refreshAnimationLevelNow();
+}
+
+void
+KnobGui::refreshAnimationLevelNow()
+{
     KnobIPtr knob = getKnob();
     int nDim = knob->getNDimensions();
     for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
@@ -590,8 +607,9 @@ KnobGui::updateAnimationLevelLater()
 }
 
 void
-KnobGui::onAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dimension*/)
+KnobGui::onInternalKnobAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dimension*/)
 {
+    ++_imp->refreshAnimationLevelRequests;
     Q_EMIT s_updateAnimationLevelLater();
 }
 
@@ -749,24 +767,38 @@ KnobGui::onHelpChanged()
         }
     }
 }
+void
+KnobGui::refreshModificationsStateNow()
+{
+    bool hasModif = getKnob()->hasModifications();
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setAltered(!hasModif);
+    }
+
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        it->second.viewLabel->setAltered(!hasModif);
+        if (it->second.widgets) {
+            it->second.widgets->reflectModificationsState();
+        }
+    }
+}
+
+void
+KnobGui::onDoUpdateModificationsStateLaterReceived()
+{
+    if (_imp->guiRemoved || !_imp->refreshModifStateRequests) {
+        return;
+    }
+    _imp->refreshModifStateRequests = 0;
+
+    refreshModificationsStateNow();
+}
 
 void
 KnobGui::onHasModificationsChanged()
 {
-    if (_imp->guiRemoved) {
-        return;
-    }
-    if (_imp->descriptionLabel) {
-        bool hasModif = getKnob()->hasModifications();
-        _imp->descriptionLabel->setAltered(!hasModif);
-    }
-    if (!_imp->customInteract) {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.widgets) {
-                it->second.widgets->reflectModificationsState();
-            }
-        }
-    }
+    ++_imp->refreshModifStateRequests;
+    Q_EMIT s_updateModificationsStateLater();
 }
 
 void
