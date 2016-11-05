@@ -178,6 +178,7 @@ NodePrivate::createChannelSelector(int inputNb,
     page->addKnob(layer);
 
     if (isOutput) {
+        layer->setAddNewLine(false);
         KnobBoolPtr processAllKnob = AppManager::createKnob<KnobBool>(effect, tr(kNodeParamProcessAllLayersLabel), 1, false);
         processAllKnob->setName(kNodeParamProcessAllLayers);
         processAllKnob->setHintToolTip(tr(kNodeParamProcessAllLayersHint));

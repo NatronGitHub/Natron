@@ -5744,15 +5744,7 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
 
     ClipPreferencesRunning_RAII runningflag_( shared_from_this() );
     bool ret = refreshMetaDatas_public(false);
-    node->refreshIdentityState();
 
-    if ( !node->duringInputChangedAction() ) {
-        ///The channels selector refreshing is already taken care of in the inputChanged action
-        node->refreshChannelSelectors();
-    }
-
-    node->checkForPremultWarningAndCheckboxes();
-    node->refreshLayersSelectorsVisibility();
 
     markedNodes.push_back( node.get() );
 
@@ -5827,7 +5819,18 @@ EffectInstance::refreshMetaDatas_internal()
 
     bool ret = setMetaDatasInternal(metadata);
     onMetaDatasRefreshed(metadata);
-  
+
+    NodePtr node = getNode();
+    node->refreshIdentityState();
+
+    if ( !node->duringInputChangedAction() ) {
+        ///The channels selector refreshing is already taken care of in the inputChanged action
+        node->refreshChannelSelectors();
+    }
+
+    node->checkForPremultWarningAndCheckboxes();
+    node->refreshLayersSelectorsVisibility();
+
     return ret;
 }
 
