@@ -1197,9 +1197,7 @@ Knob<T>::copyKnob(const KnobIPtr& other,
     hasChanged |= cloneCurves(other, view, otherView, dimension, otherDimension, offset, range);
     hasChanged |= cloneExtraData(other, view, otherView, dimension, otherDimension, offset, range);
 
-    if ( getHolder() ) {
-        getHolder()->updateHasAnimation();
-    }
+
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
     endChanges();
 

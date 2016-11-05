@@ -4430,6 +4430,12 @@ KnobHolder::endChanges(bool discardRendering)
     }
 
 
+    // Update the holder has animation flag
+    if (thisBracketHadChange) {
+        updateHasAnimation();
+    }
+
+
     // Call getClipPreferences & render
     if ( hasHadAnyChange && !discardRendering && !isLoadingProject && !duringInputChangeAction && !isChangeDueToTimeChange && (evaluationBlocked == 0) ) {
         if (isMT) {

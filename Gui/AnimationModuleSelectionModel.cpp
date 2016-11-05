@@ -248,6 +248,24 @@ AnimationModuleSelectionModel::clearSelection()
 }
 
 void
+AnimationModuleSelectionModel::clearKeyframesFromSelection()
+{
+    const std::list<TableItemAnimPtr>& tableItems = getCurrentTableItemsSelection();
+    const std::list<NodeAnimPtr>& nodes = getCurrentNodesSelection();
+    const AnimItemDimViewKeyFramesMap& selectedKeys = getCurrentKeyFramesSelection();
+
+    AnimItemDimViewKeyFramesMap newKeys;
+    std::vector<TableItemAnimPtr> newTableItems;
+    std::vector<NodeAnimPtr> newNodes;
+    newNodes.insert(newNodes.end(), nodes.begin(), nodes.end());
+    newTableItems.insert(newTableItems.end(), tableItems.begin(), tableItems.end());
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it!=selectedKeys.end(); ++it) {
+        newKeys.insert(std::make_pair(it->first, KeyFrameWithStringSet()));
+    }
+    makeSelection(newKeys, newTableItems, newNodes, AnimationModuleSelectionModel::SelectionTypeAdd | AnimationModuleSelectionModel::SelectionTypeClear);
+}
+
+void
 AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                                              const std::vector<TableItemAnimPtr>& selectedTableItems,
                                              const std::vector<NodeAnimPtr >& nodes,
@@ -448,45 +466,54 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr
             break;
         }
     }
-    for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
-        if ((*it)->getNode() == removed) {
-            it = _imp->selectedTableItems.erase(it);
+
+    {
+        std::list<TableItemAnimPtr> newTableItems;
+        for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+            if ((*it)->getNode() != removed) {
+                newTableItems.push_back(*it);
+            }
         }
+        _imp->selectedTableItems = newTableItems;
     }
-    for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
 
-        AnimItemBasePtr keyHolder = it->first.item;
-        assert(keyHolder);
+    {
+        AnimItemDimViewKeyFramesMap newKeys;
+        for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+
+            AnimItemBasePtr keyHolder = it->first.item;
+            assert(keyHolder);
 
 
-        bool found = false;
-        // If it is a keyframe of a table item animation
-        TableItemAnimPtr isTableItemAnim = toTableItemAnim(keyHolder);
-        if (isTableItemAnim && isTableItemAnim->getNode() == removed) {
-            found = true;
-            it = _imp->selectedKeyframes.erase(it);
-        }
+            bool found = false;
+            // If it is a keyframe of a table item animation
+            TableItemAnimPtr isTableItemAnim = toTableItemAnim(keyHolder);
+            if (isTableItemAnim && isTableItemAnim->getNode() == removed) {
+                found = true;
+            }
 
-        if (!found) {
-            // If it is a keyframe of a knob
-            KnobAnimPtr isKnob = toKnobAnim(keyHolder);
-            if (isKnob) {
-                KnobsHolderAnimBasePtr holder = isKnob->getHolder();
-                TableItemAnimPtr holderIsTableItem = toTableItemAnim(holder);
-                if (holderIsTableItem && holderIsTableItem->getNode() == removed) {
-                    it = _imp->selectedKeyframes.erase(it);
-                    found = true;
-                }
-                if (!found) {
-                    NodeAnimPtr holderIsNode = toNodeAnim(holder);
-                    if (holderIsNode && holderIsNode == removed) {
-                        it = _imp->selectedKeyframes.erase(it);
+            if (!found) {
+                // If it is a keyframe of a knob
+                KnobAnimPtr isKnob = toKnobAnim(keyHolder);
+                if (isKnob) {
+                    KnobsHolderAnimBasePtr holder = isKnob->getHolder();
+                    TableItemAnimPtr holderIsTableItem = toTableItemAnim(holder);
+                    if (holderIsTableItem && holderIsTableItem->getNode() == removed) {
                         found = true;
+                    }
+                    if (!found) {
+                        NodeAnimPtr holderIsNode = toNodeAnim(holder);
+                        if (holderIsNode && holderIsNode == removed) {
+                            found = true;
+                        }
                     }
                 }
             }
+            if (!found) {
+                newKeys.insert(*it);
+            }
         }
-
+        _imp->selectedKeyframes = newKeys;
     }
 }
 
@@ -496,36 +523,42 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const TableItemAn
     for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
  
         if (*it == removed) {
-            it = _imp->selectedTableItems.erase(it);
+            _imp->selectedTableItems.erase(it);
+            break;
         }
     }
-    for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
 
-        AnimItemBasePtr keyHolder = it->first.item;
-        assert(keyHolder);
+    {
+        AnimItemDimViewKeyFramesMap newKeys;
+        for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+
+            AnimItemBasePtr keyHolder = it->first.item;
+            assert(keyHolder);
 
 
-        bool found = false;
-        // If it is a keyframe of a table item animation
-        TableItemAnimPtr isTableItemAnim = toTableItemAnim(keyHolder);
-        if (isTableItemAnim && isTableItemAnim == removed) {
-            found = true;
-            it = _imp->selectedKeyframes.erase(it);
-        }
+            bool found = false;
+            // If it is a keyframe of a table item animation
+            TableItemAnimPtr isTableItemAnim = toTableItemAnim(keyHolder);
+            if (isTableItemAnim && isTableItemAnim == removed) {
+                found = true;
+            }
 
-        if (!found) {
-            // If it is a keyframe of a knob
-            KnobAnimPtr isKnob = toKnobAnim(keyHolder);
-            if (isKnob) {
-                KnobsHolderAnimBasePtr holder = isKnob->getHolder();
-                TableItemAnimPtr holderIsTableItem = toTableItemAnim(holder);
-                if (holderIsTableItem && holderIsTableItem == removed) {
-                    it = _imp->selectedKeyframes.erase(it);
-                    found = true;
+            if (!found) {
+                // If it is a keyframe of a knob
+                KnobAnimPtr isKnob = toKnobAnim(keyHolder);
+                if (isKnob) {
+                    KnobsHolderAnimBasePtr holder = isKnob->getHolder();
+                    TableItemAnimPtr holderIsTableItem = toTableItemAnim(holder);
+                    if (holderIsTableItem && holderIsTableItem == removed) {
+                        found = true;
+                    }
                 }
             }
+            if (!found) {
+                newKeys.insert(*it);
+            }
         }
-        
+        _imp->selectedKeyframes = newKeys;
     }
 }
 

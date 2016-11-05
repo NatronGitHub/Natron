@@ -68,6 +68,11 @@ public:
     void clearSelection();
 
     /**
+     * @brief Clear all keyframes but not items
+     **/
+    void clearKeyframesFromSelection();
+
+    /**
      * @brief Select given items in the corresponding tree
      **/
     void selectItems(const QList<QTreeWidgetItem *> &items);

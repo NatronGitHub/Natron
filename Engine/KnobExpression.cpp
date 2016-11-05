@@ -1078,12 +1078,7 @@ KnobHelper::clearExpression(DimSpec dimension,
 
 void
 KnobHelper::expressionChanged(DimIdx dimension, ViewIdx view)
-{
-    KnobHolderPtr holder = getHolder();
-    if (holder) {
-        holder->updateHasAnimation();
-    }
-
+{ 
     _signalSlotHandler->s_expressionChanged(dimension, view);
 
     computeHasModifications();

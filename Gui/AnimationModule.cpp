@@ -306,6 +306,7 @@ AnimationModule::addNode(const NodeGuiPtr& nodeGui)
     // Check if it already exists
     for (std::list<NodeAnimPtr>::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ((*it)->getNodeGui() == nodeGui) {
+            (*it)->refreshVisibility();
             return;
         }
     }

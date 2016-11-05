@@ -219,7 +219,11 @@ CurveGui::evaluate(bool useExpr, double x) const
     if (!item) {
         return 0;
     }
-    return item->evaluateCurve(useExpr, x, _imp->dimension, _imp->view);
+    try {
+        return item->evaluateCurve(useExpr, x, _imp->dimension, _imp->view);
+    } catch (...) {
+        return 0;
+    }
 }
 
 int

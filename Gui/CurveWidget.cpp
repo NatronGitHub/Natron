@@ -523,7 +523,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     ////
     // default behaviour: unselect selected keyframes, if any, and start a new selection
     if ( !modCASIsControl(e) ) {
-        model->getSelectionModel()->clearSelection();
+        model->getSelectionModel()->clearKeyframesFromSelection();
     }
     _imp->_state = eEventStateSelecting;
 

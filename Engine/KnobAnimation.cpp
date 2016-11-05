@@ -140,14 +140,6 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
     onKeyframesRemoved(times, view, dimension);
 
 
-    // Refresh the has animation flag on the holder
-    {
-        KnobHolderPtr holder = getHolder();
-        if (holder) {
-            holder->updateHasAnimation();
-        }
-    }
-
     // Evaluate the change
     evaluateValueChange(dimension, *times.begin(), view, eValueChangedReasonNatronInternalEdited);
 
@@ -723,13 +715,6 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension)
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
             removeAnimationInternal(view_i, DimIdx(dimension));
-        }
-    }
-        
-    {
-        KnobHolderPtr holder = getHolder();
-        if (holder) {
-            holder->updateHasAnimation();
         }
     }
     

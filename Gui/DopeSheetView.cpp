@@ -2277,7 +2277,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
         // So the user left clicked on background
         if (_imp->eventState == DopeSheetView::eEventStateNoEditingState) {
             if ( !modCASIsShift(e) ) {
-                animModule->getSelectionModel()->clearSelection();
+                animModule->getSelectionModel()->clearKeyframesFromSelection();
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
