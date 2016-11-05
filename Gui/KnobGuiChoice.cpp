@@ -541,6 +541,9 @@ KnobGuiChoice::updateGUI()
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
     KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     std::string activeEntry = knob->getActiveEntryText();
 
     if ( !activeEntry.empty() ) {

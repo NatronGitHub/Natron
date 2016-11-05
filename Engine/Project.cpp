@@ -1593,7 +1593,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
         }
-    } else if ( knob == _imp->addFormatKnob ) {
+    } else if ( knob == _imp->addFormatKnob && reason != eValueChangedReasonRestoreDefault) {
         Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
@@ -2562,10 +2562,12 @@ Project::unionFrameRangeWith(int first,
 void
 Project::recomputeFrameRangeFromReaders()
 {
-    int first = 1, last = 1;
+    int first = INT_MIN, last = INT_MAX;
 
     recomputeFrameRangeForAllReaders(&first, &last);
-
+    if (first == INT_MIN || last == INT_MAX) {
+        return;
+    }
     beginChanges();
     _imp->frameRange->setValue(first, ViewSetSpec::all(), DimIdx(0));
     _imp->frameRange->setValue(last, ViewSetSpec::all(), DimIdx(1));

@@ -1000,6 +1000,9 @@ KnobGui::onProjectViewsChanged()
     if (!knob) {
         return;
     }
+    if (!knob->getHolder()) {
+        return;
+    }
     assert(knob->getHolder() && knob->getHolder()->getApp());
     KnobHolderPtr holder = knob->getHolder();
     AppInstancePtr app;
