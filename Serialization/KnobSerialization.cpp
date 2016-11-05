@@ -169,10 +169,11 @@ KnobSerialization::encode(YAML::Emitter& em) const
                                 break;
                         }
                     }
-                    if (it->second.size() > 1) {
-                        em << YAML::EndSeq;
-                    }
+
                 } // for each dimension
+                if (it->second.size() > 1) {
+                    em << YAML::EndSeq;
+                }
             } // for each view
 
 
