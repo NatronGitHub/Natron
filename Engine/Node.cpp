@@ -2082,6 +2082,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 continue;
             }
             (*it)->blockValueChanges();
+            (*it)->unSplitAllViews();
             (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
             (*it)->unblockValueChanges();
         }
@@ -7543,7 +7544,7 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     //refreshLayersSelectorsVisibility();
 
-    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() );
+    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() /*&& !getApp()->isCreatingNodeTree() */);
 
     if (shouldDoInputChanged) {
         ///When loading a group (or project) just wait until everything is setup to actually compute input

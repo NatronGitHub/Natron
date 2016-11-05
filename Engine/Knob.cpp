@@ -3338,6 +3338,9 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         ViewIdx view_i(0);
         Project::getViewIndex(projectViews, it->first, &view_i);
 
+        if (view_i != 0) {
+            splitView(view_i);
+        }
         for (std::size_t d = 0; d < it->second.size(); ++d) {
             
             DimIdx dimensionIndex(it->second[d]._dimension);
@@ -3381,7 +3384,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     // Allow changes again
     endChanges();
     unblockValueChanges();
-    computeHasModifications();
+    evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonRestoreDefault);
 } // KnobHelper::fromSerialization
 
 

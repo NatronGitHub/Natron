@@ -866,6 +866,9 @@ void
 ViewerNode::onInputChanged(int /*inputNb*/)
 {
     _imp->refreshInputChoices(true);
+    refreshInputFromChoiceMenu(0);
+    refreshInputFromChoiceMenu(1);
+
 }
 
 void

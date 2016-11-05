@@ -144,6 +144,18 @@ AnimatingObjectI::unSplitView(ViewIdx view)
     return viewFound;
 }
 
+void
+AnimatingObjectI::unSplitAllViews()
+{
+    std::list<ViewIdx> views = getViewsList();
+    for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
+        if (*it == ViewIdx(0)) {
+            continue;
+        }
+        unSplitView(*it);
+    }
+}
+
 
 ValueChangedReturnCodeEnum
 AnimatingObjectI::setIntValueAtTime(double /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
