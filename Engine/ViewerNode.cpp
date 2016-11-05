@@ -4161,7 +4161,10 @@ ViewerNode::getCurrentOperator() const
 void
 ViewerNode::setRefreshButtonDown(bool down)
 {
-    _imp->refreshButtonKnob.lock()->setValue(down);
+    KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
+    knob->blockValueChanges();
+    knob->setValue(down);
+    knob->unblockValueChanges();
 }
 
 bool
