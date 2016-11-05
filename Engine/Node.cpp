@@ -9862,16 +9862,20 @@ Node::getOverlayColor(double* r,
         return true;
     }
 
+    double tmpColor[3];
     {
         QMutexLocker k(&_imp->nodeUIDataMutex);
-        *r = _imp->overlayColor[0];
-        *g = _imp->overlayColor[1];
-        *b = _imp->overlayColor[2];
+        tmpColor[0] = _imp->overlayColor[0];
+        tmpColor[1] = _imp->overlayColor[1];
+        tmpColor[2] = _imp->overlayColor[2];
     }
-    if (*r == -1 && *g == -1 && *b == -1) {
+    if (tmpColor[0] == -1 && tmpColor[1] == -1 && tmpColor[2] == -1) {
         // No overlay color
         return false;
     }
+    *r = tmpColor[0];
+    *g = tmpColor[1];
+    *b = tmpColor[2];
 
     return true;
 }
