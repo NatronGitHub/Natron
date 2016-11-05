@@ -552,9 +552,11 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     removeAnimation(view, dimension);
 
 
-
+    // Prevent clearExpression from triggereing evaluateValueChange with a reason different than eValueChangedReasonRestoreDefault
+    blockValueChanges();
     clearExpression(dimension, view, true);
     resetExtraToDefaultValue(dimension, view);
+    unblockValueChanges();
 
     int nDims = getNDimensions();
     std::vector<T> defValues(nDims);
