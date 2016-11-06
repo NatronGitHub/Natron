@@ -166,6 +166,11 @@ public:
     QTreeWidgetItem * lastVisibleChild(QTreeWidgetItem *item) const;
     QTreeWidgetItem* getTreeItemForModelIndex(const QModelIndex& index) const;
 
+    QModelIndex indexFromItemPublic(QTreeWidgetItem* item) 
+    {
+        return indexFromItem(item);
+    }
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     void drawBranch(QPainter *painter, const QRect &rect, const NodeAnimPtr& closestEnclosingNodeItem, const QColor& nodeColor, QTreeWidgetItem* item) const;
@@ -206,15 +211,6 @@ private Q_SLOTS:
      */
     void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
 
-    /**
-     * @brief Check the selected state of the knob context items which have
-     * selected keyframes. If all keyframes of the dimension are selected,
-     * then the item is selected too.
-     *
-     * This slot is automatically called when a keyframe selection is changed
-     * (keyframe added/removed, selection moved) in the dope sheet model.
-     */
-    void onSelectionModelKeyframeSelectionChanged(bool recurse);
 
     /**
      * @brief Puts the settings panel associated with 'item' on top of the

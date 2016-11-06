@@ -86,12 +86,12 @@ AnimationModuleSelectionModel::addAnimatedItemKeyframes(const AnimItemBasePtr& i
                 for (int i = 0; i < nDims; ++i) {
                     AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
                     KeyFrameWithStringSet &keysForItem = (*result)[key];
-                    item->getKeyframes(DimIdx(i), *it3, &keysForItem);
+                    item->getKeyframes(DimIdx(i), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
                 }
             } else {
                 AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
                 KeyFrameWithStringSet &keysForItem = (*result)[key];
-                item->getKeyframes(DimIdx(dim), *it3, &keysForItem);
+                item->getKeyframes(DimIdx(dim), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
             }
         }
 
@@ -100,16 +100,57 @@ AnimationModuleSelectionModel::addAnimatedItemKeyframes(const AnimItemBasePtr& i
             for (int i = 0; i < nDims; ++i) {
                 AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
                 KeyFrameWithStringSet &keysForItem = (*result)[key];
-                item->getKeyframes(DimIdx(i), ViewIdx(viewSpec), &keysForItem);
+                item->getKeyframes(DimIdx(i), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
             }
         } else {
             AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
             KeyFrameWithStringSet &keysForItem = (*result)[key];
-            item->getKeyframes(DimIdx(dim), ViewIdx(viewSpec), &keysForItem);
+            item->getKeyframes(DimIdx(dim), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged,&keysForItem);
         }
     }
 
 }
+
+void
+AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(const AnimItemBasePtr& item,
+                                                        DimSpec dim,
+                                                        ViewSetSpec viewSpec,
+                                                        AnimItemDimViewKeyFramesMap* result)
+{
+    std::list<ViewIdx> views = item->getViewsList();
+    int nDims = item->getNDimensions();
+    if (viewSpec.isAll()) {
+        for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
+
+            if (dim.isAll()) {
+                for (int i = 0; i < nDims; ++i) {
+                    AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
+                    KeyFrameWithStringSet &keysForItem = (*result)[key];
+                    (void)keysForItem;
+                }
+            } else {
+                AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
+                KeyFrameWithStringSet &keysForItem = (*result)[key];
+                (void)keysForItem;
+            }
+        }
+
+    } else {
+        if (dim.isAll()) {
+            for (int i = 0; i < nDims; ++i) {
+                AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
+                KeyFrameWithStringSet &keysForItem = (*result)[key];
+                (void)keysForItem;
+            }
+        } else {
+            AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
+            KeyFrameWithStringSet &keysForItem = (*result)[key];
+            (void)keysForItem;
+        }
+    }
+    
+}
+
 
 void
 AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& item,
@@ -222,11 +263,16 @@ AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items
         }
 
         if (isKnob) {
-            AnimationModuleSelectionModel::addAnimatedItemKeyframes(isKnob, dim, view, &keys);
+
+            AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isKnob, dim, view, &keys);
+            // Commented-out: this would select all keyframes for the curve
+            // AnimationModuleSelectionModel::addAnimatedItemKeyframes(isKnob, dim, view, &keys);
         } else if (isNodeItem) {
             nodes.push_back(isNodeItem);
         } else if (isTableItem) {
-            AnimationModuleSelectionModel::addTableItemKeyframes(isTableItem, false, dim, view, &tableItems, &keys);
+            tableItems.push_back(isTableItem);
+            AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isTableItem, dim, view, &keys);
+            //AnimationModuleSelectionModel::addTableItemKeyframes(isTableItem, false, dim, view, &tableItems, &keys);
         }
     }
 
@@ -236,6 +282,13 @@ AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items
     makeSelection(keys, tableItems, nodes, sFlags);
 }
 
+void
+AnimationModuleSelectionModel::selectKeyframes(const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view)
+{
+    AnimItemDimViewKeyFramesMap keys;
+    item->getKeyframes(dimension, view, &keys);
+    makeSelection(keys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr >(), AnimationModuleSelectionModel::SelectionTypeClear);
+}
 
 void
 AnimationModuleSelectionModel::clearSelection()
@@ -292,12 +345,14 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
         } else {
             for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 KeyFrameWithStringSet::iterator timeExist = exists->second.find(*it2);
-                if (timeExist == exists->second.end()) {
+                if (timeExist != exists->second.end()) {
                     exists->second.erase(timeExist);
-                    exists->second.insert(*it2);
+                    if (!selectionFlags.testFlag(AnimationModuleSelectionModel::SelectionTypeToggle)) {
+                        exists->second.insert(*it2);
+                    }
                     hasChanged = true;
-                } else if (selectionFlags & AnimationModuleSelectionModel::SelectionTypeToggle) {
-                    exists->second.erase(timeExist);
+                } else {
+                    exists->second.insert(*it2);
                     hasChanged = true;
                 }
             }
@@ -403,7 +458,52 @@ AnimationModuleSelectionModel::getSelectedKeyframesCount() const
 }
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, double time) const
+AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, double time) const
+{
+    std::list<DimensionViewPair> curvesToProcess;
+    if (dimension.isAll()) {
+        int nDims = item->getNDimensions();
+        for (int i = 0; i < nDims; ++i) {
+            if (view.isAll()) {
+                std::list<ViewIdx> views = item->getViewsList();
+                for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                    DimensionViewPair p = {DimIdx(i), *it};
+                    curvesToProcess.push_back(p);
+                }
+            } else {
+                assert(view.isViewIdx());
+                DimensionViewPair p = {DimIdx(i), ViewIdx(view)};
+                curvesToProcess.push_back(p);
+            }
+        }
+    } else {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = item->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                DimensionViewPair p = {DimIdx(dimension), *it};
+                curvesToProcess.push_back(p);
+            }
+
+        } else {
+            assert(view.isViewIdx());
+            DimensionViewPair p = {DimIdx(dimension), ViewIdx(view.value())};
+            curvesToProcess.push_back(p);
+        }
+    }
+    assert(!curvesToProcess.empty());
+    if (curvesToProcess.empty()) {
+        return false;
+    }
+    for (std::list<DimensionViewPair>::iterator it = curvesToProcess.begin(); it != curvesToProcess.end(); ++it) {
+        if (!isKeyframeSelectedOnCurve(item, it->dimension, it->view, time)) {
+            return false;
+        }
+    }
+    return true;
+} // isKeyframeSelected
+
+bool
+AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, double time) const
 {
     AnimItemDimViewIndexID key(anim, view, dimension);
     AnimItemDimViewKeyFramesMap::const_iterator found = _imp->selectedKeyframes.find(key);

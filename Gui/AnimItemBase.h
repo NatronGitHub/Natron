@@ -187,13 +187,23 @@ public:
      **/
     virtual double evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, ViewIdx view);
 
+    enum GetKeyframesTypeEnum
+    {
+        // If passing DimSpec::all() or ViewSetSpec::all(), only keyframes that
+        // are in all dimensions/views are considered for potential result.
+        eGetKeyframesTypeOnlyIfAll,
+
+        // All keyframes are merged into the resulting keyframes set.
+        eGetKeyframesTypeMerged
+    };
+
     /**
      * @brief Returns a set of all keyframes for given dimension/view
      * If dimension is all or view is all it will merge keyframes of all dimensions/views
      * respectively. In case all is passed to either dimension or view, the value of the
      * keyframes is irrelevant.
      **/
-    void getKeyframes(DimSpec dimension, ViewSetSpec view, KeyFrameWithStringSet *result) const;
+    void getKeyframes(DimSpec dimension, ViewSetSpec view, GetKeyframesTypeEnum type, KeyFrameWithStringSet *result) const;
 
     /**
      * @brief Same as getKeyframes above, except that each dimension/view pair has its own keyframe set 

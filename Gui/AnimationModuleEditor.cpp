@@ -224,7 +224,9 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), this, SLOT(onSelectionModelSelectionChanged(bool)) );
 
-    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->dopeSheetView, SLOT(onSelectionModelKeyframeSelectionChanged()) );
+
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->curveView, SLOT(onSelectionModelKeyframeSelectionChanged()) );
 
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
              _imp->treeView, SLOT(onNodeAdded(NodeAnimPtr)) );
@@ -466,16 +468,24 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
     if (selectedKeys.size() > 1 || selectedKeys.size() == 0) {
         expressionFieldsEnabled = false;
     }
+    QString knobLabel, currentExpression;
     if (expressionFieldsEnabled) {
         for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it!=selectedKeys.end(); ++it) {
             KnobAnimPtr knob = toKnobAnim(it->first.item);
             if (!knob) {
                 expressionFieldsEnabled = false;
                 break;
+            } else {
+                knobLabel = knob->getViewDimensionLabel(it->first.dim, it->first.view);
+                currentExpression = QString::fromUtf8(knob->getInternalKnob()->getExpression(it->first.dim, it->first.view).c_str());
             }
         }
     }
     _imp->knobLabel->setVisible(expressionFieldsEnabled);
+    if (expressionFieldsEnabled) {
+        _imp->knobLabel->setText(knobLabel);
+        _imp->knobExpressionLineEdit->setText(currentExpression);
+    }
     _imp->knobExpressionLineEdit->setVisible(expressionFieldsEnabled);
     _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
 

@@ -377,7 +377,7 @@ KnobGui::onRemoveAnimationActionTriggered()
             }
             AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
             KeyFrameWithStringSet& keys = keysToRemove[id];
-            knobAnim->getKeyframes(DimIdx(i), *it, &keys);
+            knobAnim->getKeyframes(DimIdx(i), *it, AnimItemBase::eGetKeyframesTypeMerged, &keys);
 
         }
     }
@@ -439,7 +439,7 @@ KnobGui::onInterpolationActionTriggered()
         if (dimension.isAll() ||  dimension == i) {
             AnimItemDimViewIndexID id(knobAnim, view,  DimIdx(i));
             KeyFrameWithStringSet& keys = keysToSet[id];
-            knobAnim->getKeyframes(DimIdx(i), view, &keys);
+            knobAnim->getKeyframes(DimIdx(i), view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
         }
     }
 

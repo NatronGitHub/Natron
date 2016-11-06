@@ -89,38 +89,82 @@ AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyF
 }
 
 void
-AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, KeyFrameWithStringSet *result) const
+AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframesTypeEnum type, KeyFrameWithStringSet *result) const
 {
 
     assert(viewSpec.isAll() || viewSpec.isViewIdx());
-
-
-
-    std::list<ViewIdx> views = getViewsList();
+    std::list<DimensionViewPair> curvesToProcess;
     if (dimension.isAll()) {
         int nDims = getNDimensions();
         for (int i = 0; i < nDims; ++i) {
             if (viewSpec.isAll()) {
+                std::list<ViewIdx> views = getViewsList();
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                    _imp->addKeyFramesForDimView(DimIdx(i), *it, result);
+                    DimensionViewPair p = {DimIdx(i), *it};
+                    curvesToProcess.push_back(p);
                 }
             } else {
                 assert(viewSpec.isViewIdx());
-                _imp->addKeyFramesForDimView(DimIdx(i), ViewIdx(viewSpec.value()), result);
+                DimensionViewPair p = {DimIdx(i), ViewIdx(viewSpec)};
+                curvesToProcess.push_back(p);
             }
         }
     } else {
         if (viewSpec.isAll()) {
+            std::list<ViewIdx> views = getViewsList();
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                _imp->addKeyFramesForDimView(DimIdx(dimension.value()), *it, result);
+                DimensionViewPair p = {DimIdx(dimension), *it};
+                curvesToProcess.push_back(p);
             }
 
         } else {
             assert(viewSpec.isViewIdx());
-            _imp->addKeyFramesForDimView(DimIdx(dimension.value()), ViewIdx(viewSpec.value()), result);
+            DimensionViewPair p = {DimIdx(dimension), ViewIdx(viewSpec.value())};
+            curvesToProcess.push_back(p);
         }
     }
-}
+    assert(!curvesToProcess.empty());
+    if (curvesToProcess.empty()) {
+        return;
+    }
+
+    if (type == eGetKeyframesTypeMerged) {
+        for (std::list<DimensionViewPair>::const_iterator it = curvesToProcess.begin(); it!=curvesToProcess.end(); ++it) {
+            _imp->addKeyFramesForDimView(it->dimension, it->view, result);
+        }
+    } else {
+        // Get keyframes from first curve and then check if present in other curves
+        const DimensionViewPair& firstDimView = curvesToProcess.front();
+
+        KeyFrameWithStringSet tmpResult;
+        _imp->addKeyFramesForDimView(firstDimView.dimension, firstDimView.view, &tmpResult);
+
+        KeyFrame k;
+        for (KeyFrameWithStringSet::const_iterator it2 = tmpResult.begin(); it2 != tmpResult.end(); ++it2) {
+
+            bool hasKeyFrameForAllCurves = true;
+
+            std::list<DimensionViewPair>::const_iterator it = curvesToProcess.begin();
+            ++it;
+            for (; it != curvesToProcess.end(); ++it) {
+                CurvePtr curve = getCurve(it->dimension, it->view);
+                if (!curve) {
+                    return;
+                }
+
+                if (!curve->getKeyFrameWithTime(it2->key.getTime(), &k)) {
+                    hasKeyFrameForAllCurves = false;
+                    break;
+                }
+                
+            }
+            if (hasKeyFrameForAllCurves) {
+                result->insert(*it2);
+            }
+        }
+
+    }
+} // getKeyframes
 
 void
 AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimViewKeyFramesMap *result) const
@@ -175,7 +219,7 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
             _imp->addKeyFramesForDimView(DimIdx(dimension.value()), ViewIdx(viewSpec.value()), &keys);
         }
     }
-}
+} // getKeyframes
 
 double
 AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimension, ViewIdx view)

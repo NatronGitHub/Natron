@@ -78,6 +78,11 @@ public:
     void selectItems(const QList<QTreeWidgetItem *> &items);
 
     /**
+     * @brief Select all the keyframes for the given item/dim/view
+     **/
+    void selectKeyframes(const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view);
+
+    /**
      * @brief Set the selection with given flags
      **/
     void makeSelection(const AnimItemDimViewKeyFramesMap &keys,
@@ -110,7 +115,9 @@ public:
     /**
      * @brief Returns true if the given keyframe is selected for the item/dimension/view
      **/
-    bool isKeyframeSelected(const AnimItemBasePtr &item, DimIdx dimension ,ViewIdx view, double time) const;
+    bool isKeyframeSelectedOnCurve(const AnimItemBasePtr &item, DimIdx dimension ,ViewIdx view, double time) const;
+
+    bool isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, double time) const;
 
     /**
      * @brief Returns whether the given node is selected
@@ -122,6 +129,11 @@ public:
     void removeAnyReferenceFromSelection(const TableItemAnimPtr& item);
 
     static void addAnimatedItemKeyframes(const AnimItemBasePtr& item,
+                                         DimSpec dim,
+                                         ViewSetSpec viewSpec,
+                                         AnimItemDimViewKeyFramesMap* result);
+
+    static void addAnimatedItemsWithoutKeyframes(const AnimItemBasePtr& item,
                                          DimSpec dim,
                                          ViewSetSpec viewSpec,
                                          AnimItemDimViewKeyFramesMap* result);

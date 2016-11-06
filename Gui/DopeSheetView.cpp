@@ -526,7 +526,7 @@ KeyFrameWithStringSet DopeSheetViewPrivate::isNearByKeyframe(const AnimItemBaseP
 {
     KeyFrameWithStringSet ret;
     KeyFrameWithStringSet keys;
-    item->getKeyframes(dimension, view, &keys);
+    item->getKeyframes(dimension, view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
 
     for (KeyFrameWithStringSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
 
@@ -973,38 +973,31 @@ DopeSheetViewPrivate::drawKeyframes(QTreeWidgetItem* treeItem, const AnimItemBas
 
     double rowCenterYWidget = treeView->visualItemRect(treeItem).center().y();
 
-
-    // Draw keyframe in the knob dim row only if it's visible
-    bool drawInDimRow = treeView->isItemVisibleRecursive(treeItem);
-
     AnimationModuleBasePtr animModel = _model.lock();
     AnimationModuleSelectionModelPtr selectModel = animModel->getSelectionModel();
 
     double singleSelectedTime;
     bool hasSingleKfTimeSelected = selectModel->hasSingleKeyFrameTimeSelected(&singleSelectedTime);
 
-    AnimItemDimViewKeyFramesMap dimViewKeys;
-    item->getKeyframes(dimension, view, &dimViewKeys);
+    KeyFrameWithStringSet dimViewKeys;
+    item->getKeyframes(dimension, view, AnimItemBase::eGetKeyframesTypeMerged, &dimViewKeys);
 
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
+    for (KeyFrameWithStringSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
 
-        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        const double keyTime = it->key.getTime();
+        RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
 
-            const double keyTime = it2->key.getTime();
-            RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(keyTime, rowCenterYWidget);
+        bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, keyTime);
+        bool drawSelected = isKeyFrameSelected || (!selectionRect.isNull() && selectionRect.intersects(zoomKfRect));
 
-            bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, it->first.dim, it->first.view, keyTime);
+        DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType( it->key.getInterpolation(), drawSelected);
 
-            if (drawInDimRow) {
-                DopeSheetViewPrivate::KeyframeTexture texType = kfTextureFromKeyframeType( it2->key.getInterpolation(), isKeyFrameSelected || selectionRect.intersects(zoomKfRect) /*draSelected*/ );
+        if (texType != DopeSheetViewPrivate::kfTextureNone) {
+            drawTexturedKeyframe(texType, hasSingleKfTimeSelected && isKeyFrameSelected /*drawKeyTime*/, keyTime, selectionColor, zoomKfRect);
+        }
 
-                if (texType != DopeSheetViewPrivate::kfTextureNone) {
-                    drawTexturedKeyframe(texType, hasSingleKfTimeSelected && isKeyFrameSelected /*drawKeyTime*/, keyTime, selectionColor, zoomKfRect);
-                }
-            }
-        } // for all keyframes
+    } // for all keyframes
 
-    } // for all dim/view
 
 } // DopeSheetViewPrivate::drawKeyframes
 
@@ -1074,35 +1067,34 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
     const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
     //const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
 
-    selectedKeysBRect.setupInfinity();
+    selectedKeysBRect.clear();
 
-    RectD bbox;
     bool bboxSet = false;
     int nKeysInSelection = 0;
     for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
+        QTreeWidgetItem* treeItem = it->first.item->getTreeItem(it->first.dim, it->first.view);
+        if (!treeItem) {
+            continue;
+        }
+        double visualRectCenterY = treeView->visualItemRect(treeItem).center().y();
+
         for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             ++nKeysInSelection;
             double x = it2->key.getTime();
-            double y = it2->key.getValue();
-            if (bboxSet) {
-                if ( x < bbox.left() ) {
-                    bbox.set_left(x);
-                }
-                if ( x > bbox.right() ) {
-                    bbox.set_right(x);
-                }
-                if ( y > bbox.top() ) {
-                    bbox.set_top(y);
-                }
-                if ( y < bbox.bottom() ) {
-                    bbox.set_bottom(y);
-                }
-            } else {
+
+            RectD zoomKfRect = getKeyFrameBoundingRectZoomCoords(x, visualRectCenterY);
+
+            if (!bboxSet) {
                 bboxSet = true;
-                bbox.set_left(x);
-                bbox.set_right(x);
-                bbox.set_top(y);
-                bbox.set_bottom(y);
+                selectedKeysBRect.x1 = zoomKfRect.x1;
+                selectedKeysBRect.x2 = zoomKfRect.x2;
+                selectedKeysBRect.y1 = zoomKfRect.y1;
+                selectedKeysBRect.y2 = zoomKfRect.y2;
+            } else {
+                selectedKeysBRect.x1 = std::min(zoomKfRect.x1, selectedKeysBRect.x1);
+                selectedKeysBRect.x2 = std::max(zoomKfRect.x2, selectedKeysBRect.x2);
+                selectedKeysBRect.y1 = std::min(zoomKfRect.y1, selectedKeysBRect.y1);
+                selectedKeysBRect.y2 = std::max(zoomKfRect.y2, selectedKeysBRect.y2);
             }
 
         }
@@ -1119,20 +1111,29 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
         ++nNodesInSelection;
 
         const FrameRange& range = foundRange->second;
+        QTreeWidgetItem* nodeItem = (*it)->getTreeItem();
+
+        QRect itemRect = treeView->visualItemRect(nodeItem);
+        if (itemRect.isEmpty()) {
+            continue;
+        }
+        double x1 = range.first;
+        double x2 = range.second;
+        double y = _publicInterface->toZoomCoordinates(0, itemRect.center().y()).y();
 
         //x1,x2 are in zoom coords
-        selectedKeysBRect.x1 = std::min(range.first, selectedKeysBRect.x1);
-        selectedKeysBRect.x2 = std::max(range.second, selectedKeysBRect.x2);
-
-        QTreeWidgetItem* nodeItem = (*it)->getTreeItem();
-        QRect itemRect = treeView->visualItemRect(nodeItem);
-        if ( !itemRect.isNull() && !itemRect.isEmpty() ) {
-            double y = itemRect.center().y();
-
-            //y1,y2 are in widget coords
+        if (bboxSet) {
+            selectedKeysBRect.x1 = std::min(x1, selectedKeysBRect.x1);
+            selectedKeysBRect.x2 = std::max(x2, selectedKeysBRect.x2);
             selectedKeysBRect.y1 = std::min(y, selectedKeysBRect.y1);
             selectedKeysBRect.y2 = std::max(y, selectedKeysBRect.y2);
+        } else {
+            bboxSet = true;
+            selectedKeysBRect.x1 = x1;
+            selectedKeysBRect.x2 = x2;
+            selectedKeysBRect.y1 = selectedKeysBRect.y2 = y;
         }
+
     }
 
     if ( selectedKeysBRect.isNull() ) {
@@ -1140,18 +1141,25 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
         return;
     }
 
-    QTreeWidgetItem *bottomMostItem = treeView->itemAt(0, selectedKeysBRect.y2);
-    double bottom = treeView->visualItemRect(bottomMostItem).bottom();
-    bottom = zoomCtx.toZoomCoordinates(0, bottom).y();
+    // Adjust the bbox top match the top/bottom items edges
+    {
+        double y1Widget = _publicInterface->toWidgetCoordinates(0, selectedKeysBRect.y1).y();
+        QTreeWidgetItem *bottomMostItem = treeView->itemAt(0, y1Widget);
+        if (bottomMostItem) {
+            double bottom = treeView->visualItemRect(bottomMostItem).bottom();
+            bottom = zoomCtx.toZoomCoordinates(0, bottom).y();
+            selectedKeysBRect.y1 = bottom;
+        }
+        double y2Widget = _publicInterface->toWidgetCoordinates(0, selectedKeysBRect.y2).y();
+        QTreeWidgetItem *topMostItem = treeView->itemAt(0, y2Widget);
+        if (topMostItem) {
+            double top = treeView->visualItemRect(topMostItem).top();
+            top = zoomCtx.toZoomCoordinates(0, top).y();
 
-
-    QTreeWidgetItem *topMostItem = treeView->itemAt(0, selectedKeysBRect.y1);
-    double top = treeView->visualItemRect(topMostItem).top();
-    top = zoomCtx.toZoomCoordinates(0, top).y();
-
-    selectedKeysBRect.y1 = bottom;
-    selectedKeysBRect.y2 = top;
-
+            selectedKeysBRect.y2 = top;
+        }
+    }
+    
     if ( !selectedKeysBRect.isNull() ) {
         /// Adjust the bounding rect of the size of a keyframe
         double leftWidget = zoomCtx.toWidgetCoordinates(selectedKeysBRect.x1, 0).x();
@@ -2258,7 +2266,35 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
                             sFlags |= AnimationModuleSelectionModel::SelectionTypeRecurse;
 
                             AnimItemDimViewKeyFramesMap selectedKeys;
-                            animItem->getKeyframes(dimension, view, &selectedKeys);
+                            if (dimension.isAll()) {
+                                int nDims = animItem->getNDimensions();
+                                if (view.isAll()) {
+                                    std::list<ViewIdx> views = animItem->getViewsList();
+                                    for (int i = 0; i < nDims; ++i) {
+                                        for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
+                                            AnimItemDimViewIndexID id(animItem, ViewIdx(*it), DimIdx(i));
+                                            selectedKeys[id] = keysUnderMouse;
+                                        }
+                                    }
+                                } else {
+                                    for (int i = 0; i < nDims; ++i) {
+                                        AnimItemDimViewIndexID id(animItem, ViewIdx(view), DimIdx(i));
+                                        selectedKeys[id] = keysUnderMouse;
+                                    }
+                                }
+                            } else {
+                                if (view.isAll()) {
+                                    std::list<ViewIdx> views = animItem->getViewsList();
+                                    for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
+                                        AnimItemDimViewIndexID id(animItem, ViewIdx(*it), DimIdx(dimension));
+                                        selectedKeys[id] = keysUnderMouse;
+                                    }
+                                } else {
+                                    AnimItemDimViewIndexID id(animItem, ViewIdx(view), DimIdx(dimension));
+                                    selectedKeys[id] = keysUnderMouse;
+                                }
+                            }
+
                             std::vector<NodeAnimPtr > selectedNodes;
                             std::vector<TableItemAnimPtr > selectedTableItems;
                             animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);

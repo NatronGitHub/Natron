@@ -165,34 +165,20 @@ AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates(const QModelIn
                                                         QItemSelection *finalSelection) const
 {
     // Recursively fills the list of parents until we hit a parent node
-    std::list<QModelIndex> parentIndexes;
+    std::list<QTreeWidgetItem*> parentItems;
     {
-        QModelIndex pIndex = index.parent();
-        QTreeWidgetItem* parentItem = _view->getTreeItemForModelIndex(pIndex);
-        NodeAnimPtr isParentNode;
-        if (parentItem) {
-            AnimatedItemTypeEnum type;
-            KnobAnimPtr isKnob;
-            TableItemAnimPtr isTableItem;
-            NodeAnimPtr isNodeItem;
-            ViewSetSpec view;
-            DimSpec dim;
-            bool found = _model.lock()->findItem(parentItem, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-            if (found) {
-                isParentNode = isNodeItem;
-            }
-        }
-        int nbLvlOfNodesSelected = 0;
-        while ( nbLvlOfNodesSelected < 1 && pIndex.isValid() ) {
-            if (isParentNode) {
-                ++nbLvlOfNodesSelected;
-            }
-            parentIndexes.push_back(pIndex);
 
-            pIndex = pIndex.parent();
-            if ( pIndex.isValid() ) {
-                parentItem = _view->getTreeItemForModelIndex(pIndex);
-                if (parentItem) {
+
+        QModelIndex pIndex = index.parent();
+        QTreeWidgetItem* parentItem = 0;
+        do {
+            // Check if the parent index corresponds to an item in the model
+            parentItem = _view->getTreeItemForModelIndex(pIndex);
+            if (parentItem) {
+                parentItems.push_back(parentItem);
+                pIndex = pIndex.parent();
+
+                {
                     AnimatedItemTypeEnum type;
                     KnobAnimPtr isKnob;
                     TableItemAnimPtr isTableItem;
@@ -200,37 +186,45 @@ AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates(const QModelIn
                     ViewSetSpec view;
                     DimSpec dim;
                     bool found = _model.lock()->findItem(parentItem, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-                    if (found) {
-                        isParentNode = isNodeItem;
+                    (void)found;
+                    if (isNodeItem) {
+                        // We recurse until we found the immediate parent node.
+                        // We don't recurse on parent group nodes
+                        break;
+                    }
+                }
+                
+            }
+        } while (pIndex.isValid() && parentItem );
+    }
+
+    QItemSelection uuSelec = unitedSelection;
+
+    // If all children are selected, select the parent
+    for (std::list<QTreeWidgetItem*>::const_iterator it = parentItems.begin(); it != parentItems.end(); ++it) {
+        bool selectParent = true;
+        {
+            int nChildren = (*it)->childCount();
+            for (int i = 0; i < nChildren; ++i) {
+                QTreeWidgetItem* child = (*it)->child(i);
+                if (!child) {
+                    continue;
+                }
+
+                // If one of the children is deselected, don't select the parent
+                if (!child->isHidden()) {
+                    QModelIndex childIndex = _view->indexFromItemPublic(child);
+                    assert(childIndex.isValid());
+                    if (childIndex.isValid()) {
+                        bool isChildSelected = uuSelec.contains(childIndex);
+                        if (!isChildSelected) {
+                            selectParent = false;
+                            break;
+                        }
                     }
                 }
             }
         }
-    }
-    QItemSelection uuSelec = unitedSelection;
-
-    // If all children are selected, select the parent
-    for (std::list<QModelIndex>::const_iterator it = parentIndexes.begin();
-         it != parentIndexes.end();
-         ++it) {
-        QModelIndex index = (*it);
-        bool selectParent = true;
-        int row = 0;
-        QModelIndex childIndexIt = index.child(row, 0);
-
-        while ( childIndexIt.isValid() ) {
-            if ( childIndexIt.data(QT_ROLE_CONTEXT_IS_ANIMATED).toBool() ) {
-                if ( !uuSelec.contains(childIndexIt) ) {
-                    selectParent = false;
-
-                    break;
-                }
-            }
-
-            ++row;
-            childIndexIt = index.child(row, 0);
-        }
-
         if ( (flags & QItemSelectionModel::Select && selectParent) ) {
             finalSelection->select(index, index);
             uuSelec.select(index, index);
@@ -329,6 +323,7 @@ public:
 
     QColor desaturate(const QColor &color) const;
 
+    void openSettingsPanelForNode(const NodeAnimPtr& node);
 
     /* attributes */
     AnimationModuleTreeView *publicInterface;
@@ -920,78 +915,38 @@ AnimationModuleTreeView::onNodeAboutToBeRemoved(const NodeAnimPtr& node)
     newParent->removeChild(treeItem);
 } // onNodeAboutToBeRemoved
 
-
-
 void
-AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
+AnimationModuleTreeViewPrivate::openSettingsPanelForNode(const NodeAnimPtr& node)
 {
-    AnimationModuleTreeViewSelectionModel *mySelecModel = dynamic_cast<AnimationModuleTreeViewSelectionModel *>( selectionModel() );
+    NodeGuiPtr nodeGui = node->getNodeGui();
 
-    assert(mySelecModel);
-    if (!mySelecModel) {
-        throw std::logic_error("AnimationModuleTreeView::onKeyframeSelectionChanged");
+    // Move the nodeGui's settings panel on top
+    DockablePanel *panel = 0;
+
+    if (nodeGui) {
+        nodeGui->ensurePanelCreated();
     }
 
-    // Automatically select items in the tree according to the selection made by the user
+    if ( nodeGui && nodeGui->getParentMultiInstance() ) {
+        panel = nodeGui->getParentMultiInstance()->getSettingPanel();
+    } else {
+        panel = nodeGui->getSettingPanel();
+    }
 
-    // Retrieve the knob anim with selected keyframes
-
-    AnimationModuleSelectionModelPtr selModel = getModel()->getSelectionModel();
-    
-    const AnimItemDimViewKeyFramesMap& selectedKeys = selModel->getCurrentKeyFramesSelection();
-    const std::list<NodeAnimPtr >& selectedNodes = selModel->getCurrentNodesSelection();
-    const std::list<TableItemAnimPtr>& tableItems = selModel->getCurrentTableItemsSelection();
-
-
-    // Prevent recursion
-    disconnect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-               this, SLOT(onTreeSelectionModelSelectionChanged()) );
-
-
-    // For each knob/dim/view, if all keyframes are selected, add the item to the selection
-    std::set<QModelIndex> toSelect;
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        bool selectItem = true;
-
-        KeyFrameWithStringSet allKeys;
-        it->first.item->getKeyframes(it->first.dim, it->first.view, &allKeys);
-
-        if (allKeys.size() != it->second.size()) {
-            selectItem = false;
+    if ( nodeGui && panel && nodeGui->isVisible() ) {
+        if ( !nodeGui->isSettingsPanelVisible() ) {
+            nodeGui->setVisibleSettingsPanel(true);
         }
 
-        QTreeWidgetItem *knobItem = it->first.item->getRootItem();
-
-        if (selectItem) {
-            toSelect.insert( indexFromItem(knobItem) );
+        if ( !nodeGui->wasBeginEditCalled() ) {
+            nodeGui->beginEditKnobs();
         }
+
+        gui->putSettingsPanelFirst( nodeGui->getSettingPanel() );
+        gui->getApp()->redrawAllViewers();
     }
 
-    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        toSelect.insert( indexFromItem( (*it)->getTreeItem() ) );
-    }
-
-    for (std::list<TableItemAnimPtr>::const_iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
-        toSelect.insert( indexFromItem( (*it)->getRootItem() ) );
-    }
-
-    QItemSelection selection;
-
-    for (std::set<QModelIndex>::const_iterator indexIt = toSelect.begin();
-         indexIt != toSelect.end();
-         ++indexIt) {
-        QModelIndex index = (*indexIt);
-
-        selection.select(index, index);
-    }
-
-    QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
-    mySelecModel->selectWithRecursion(selection, flags, recurse);
-
-
-    connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-            this, SLOT(onTreeSelectionModelSelectionChanged()) );
-} // AnimationModuleTreeView::onKeyframeSelectionChanged
+} // openSettingsPanelForNode
 
 void
 AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
@@ -1019,37 +974,16 @@ AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
     } else if (isTableItem) {
         isNodeItem = isTableItem->getNode();
     }
-    if (!isNodeItem) {
-        return;
+    if (isNodeItem) {
+        _imp->openSettingsPanelForNode(isNodeItem);
     }
-    NodeGuiPtr nodeGui = isNodeItem->getNodeGui();
-
-    // Move the nodeGui's settings panel on top
-    DockablePanel *panel = 0;
-
-    if (nodeGui) {
-        nodeGui->ensurePanelCreated();
-    }
-
-    if ( nodeGui && nodeGui->getParentMultiInstance() ) {
-        panel = nodeGui->getParentMultiInstance()->getSettingPanel();
-    } else {
-        panel = nodeGui->getSettingPanel();
-    }
-
-    if ( nodeGui && panel && nodeGui->isVisible() ) {
-        if ( !nodeGui->isSettingsPanelVisible() ) {
-            nodeGui->setVisibleSettingsPanel(true);
-        }
-
-        if ( !nodeGui->wasBeginEditCalled() ) {
-            nodeGui->beginEditKnobs();
-        }
-
-        _imp->gui->putSettingsPanelFirst( nodeGui->getSettingPanel() );
-        _imp->gui->getApp()->redrawAllViewers();
+    if (isKnob) {
+        getModel()->getSelectionModel()->selectKeyframes(isKnob, dim, view);
+    } else if (isTableItem && foundType == eAnimatedItemTypeTableItemAnimation) {
+        getModel()->getSelectionModel()->selectKeyframes(isTableItem, dim, view);
     }
 }
+
 
 void
 AnimationModuleTreeView::onTreeSelectionModelSelectionChanged()
