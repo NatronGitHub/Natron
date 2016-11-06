@@ -754,7 +754,7 @@ Gui::dockClicked()
 {
     raise();
     show();
-    setWindowState(Qt::WindowActive);
+    setWindowState(windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
 }
 #endif
 
