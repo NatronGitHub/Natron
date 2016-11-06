@@ -364,7 +364,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& _defaultPluginID,
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setObjectName( QString::fromUtf8("nodeCreationDialog") );
-    //setAttribute(Qt::WA_DeleteOnClose, false);
+    setAttribute(Qt::WA_DeleteOnClose, true);
     _imp->layout = new QVBoxLayout(this);
     _imp->layout->setContentsMargins(0, 0, 0, 0);
 
