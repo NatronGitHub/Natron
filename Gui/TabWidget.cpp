@@ -964,21 +964,17 @@ bool
 TabWidget::appendTab(PanelWidget* widget,
                      ScriptObject* object)
 {
-    return appendTab(QIcon(), widget, object);
-}
-
-bool
-TabWidget::appendTab(const QIcon & icon,
-                     PanelWidget* widget,
-                     ScriptObject* object)
-{
+    QString title;
+    QIcon icon = widget->getIcon();
+    //if (icon.isNull()) {
+        title = QString::fromUtf8( object->getLabel().c_str() );
+    //}
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
 
         ///If we do not know the tab ignore it
         std::string name = object->getScriptName();
-        std::string label = object->getLabel();
-        if ( name.empty() || label.empty() ) {
+        if ( name.empty()) {
             return false;
         }
 
@@ -988,7 +984,7 @@ TabWidget::appendTab(const QIcon & icon,
         _imp->tabs.push_back( std::make_pair(widget, object) );
         //widget->setParent(this);
         _imp->modifyingTabBar = true;
-        _imp->tabBar->addTab( icon, QString::fromUtf8( label.c_str() ) );
+        _imp->tabBar->addTab( icon, title );
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() == 1) {
@@ -1012,11 +1008,14 @@ TabWidget::appendTab(const QIcon & icon,
 
 void
 TabWidget::insertTab(int index,
-                     const QIcon & icon,
                      PanelWidget* widget,
                      ScriptObject* object)
 {
-    QString title = QString::fromUtf8( object->getLabel().c_str() );
+    QString title;
+    QIcon icon = widget->getIcon();
+    //if (icon.isNull()) {
+        title = QString::fromUtf8( object->getLabel().c_str() );
+    //}
     QMutexLocker l(&_imp->tabWidgetStateMutex);
 
     if ( (U32)index < _imp->tabs.size() ) {
@@ -1043,13 +1042,7 @@ TabWidget::insertTab(int index,
     _imp->floatButton->setEnabled(true);
 }
 
-void
-TabWidget::insertTab(int index,
-                     PanelWidget* widget,
-                     ScriptObject* object)
-{
-    insertTab(index, QIcon(), widget, object);
-}
+
 
 PanelWidget*
 TabWidget::removeTab(int index,

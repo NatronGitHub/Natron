@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QTreeWidgetItem>
 #include <QMenu>
+#include <QPainter>
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>

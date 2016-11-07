@@ -352,14 +352,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionAnimationModulePasteKeyframesAbsolute "pastekeyframesAbs"
 #define kShortcutDescActionAnimationModulePasteKeyframesAbsolute "Paste Keyframes Absolute"
 
-#define kShortcutIDActionAnimationModuleShowCurveEditor "showCurveEditor"
-#define kShortcutDescActionAnimationModuleShowCurveEditor "Curve Editor"
+#define kShortcutIDActionAnimationModuleStackView "stackAnimView"
+#define kShortcutDescActionAnimationModuleStackView "Stack/un-stack Curve Editor and Dope Sheet"
 
-#define kShortcutIDActionAnimationModuleShowDopeSheet "showDopeSheet"
-#define kShortcutDescActionAnimationModuleShowDopeSheet "Dope Sheet"
-
-#define kShortcutIDActionAnimationModuleSplit "splitAnimViews"
-#define kShortcutDescActionAnimationModuleSplit "Split"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

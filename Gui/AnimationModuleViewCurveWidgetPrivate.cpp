@@ -40,11 +40,10 @@
 #include "Engine/StringAnimationManager.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"
-#include "Gui/DopeSheetView.h"
+#include "Gui/AnimationModuleViewPrivate.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/GuiAppInstance.h"
@@ -59,29 +58,11 @@
 NATRON_NAMESPACE_ENTER;
 
 
-CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
-                                       const AnimationModuleBasePtr& model,
-                                       AnimationViewBase* publicInterface)
-: AnimationModuleViewPrivateBase(gui, publicInterface, model)
-, _state(eEventStateNone)
-, _selectedDerivative()
-, sizeH()
-{
-}
-
-CurveWidgetPrivate::~CurveWidgetPrivate()
-{
-
-}
-
-
-
 void
-CurveWidgetPrivate::drawCurves()
+AnimationModuleViewPrivate::drawCurves()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
     std::vector<CurveGuiPtr> curves = getSelectedCurves();
@@ -93,22 +74,21 @@ CurveWidgetPrivate::drawCurves()
 }
 
 void
-CurveWidgetPrivate::drawScale()
+AnimationModuleViewPrivate::drawCurveEditorScale()
 {
     glCheckError(GL_GPU);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
 
-    QPointF btmLeft = zoomCtx.toZoomCoordinates(0, _widget->height() - 1);
-    QPointF topRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, 0);
+    QPointF btmLeft = curveEditorZoomContext.toZoomCoordinates(0, _publicInterface->height() - 1);
+    QPointF topRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, 0);
 
     ///don't attempt to draw a scale on a widget with an invalid height/width
-    if ( (_widget->height() <= 1) || (_widget->width() <= 1) ) {
+    if ( (_publicInterface->height() <= 1) || (_publicInterface->width() <= 1) ) {
         return;
     }
 
-    QFontMetrics fontM = _widget->fontMetrics();
+    QFontMetrics fontM = _publicInterface->fontMetrics();
     const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 500.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
@@ -132,7 +112,7 @@ CurveWidgetPrivate::drawScale()
         GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         for (int axis = 0; axis < 2; ++axis) {
-            const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
+            const double rangePixel = (axis == 0) ? _publicInterface->width() : _publicInterface->height(); // AXIS-SPECIFIC
             const double range_min = (axis == 0) ? btmLeft.x() : btmLeft.y(); // AXIS-SPECIFIC
             const double range_max = (axis == 0) ? topRight.x() : topRight.y(); // AXIS-SPECIFIC
             const double range = range_max - range_min;
@@ -184,9 +164,9 @@ CurveWidgetPrivate::drawScale()
                         QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
-                            _widget->renderText(value, btmLeft.y(), s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignHCenter);
+                            _publicInterface->renderText(value, btmLeft.y(), s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignHCenter);
                         } else {
-                            _widget->renderText(btmLeft.x(), value, s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignVCenter);
+                            _publicInterface->renderText(btmLeft.x(), value, s.toStdString(), c.redF(), c.greenF(), c.blueF(), c.alphaF(), Qt::AlignVCenter);
                         }
                     }
                 }
@@ -206,18 +186,15 @@ CurveWidgetPrivate::drawScale()
 
 
     glCheckErrorIgnoreOSXBug(GL_GPU);
-} // drawScale
+} // drawCurveEditorScale
 
 
 CurveGuiPtr
-CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
-                                  double* x,
-                                  double *y) const
+AnimationModuleViewPrivate::isNearbyCurve(const QPoint &pt, double* x, double *y) const
 {
-    QPointF curvePos = zoomCtx.toZoomCoordinates( pt.x(), pt.y() );
+    QPointF curvePos = curveEditorZoomContext.toZoomCoordinates( pt.x(), pt.y() );
 
-    
-   const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
+    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
     
     for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
@@ -233,7 +210,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
         } catch (...) {
         }
         
-        double yWidget = zoomCtx.toWidgetCoordinates(0, yCurve).y();
+        double yWidget = curveEditorZoomContext.toWidgetCoordinates(0, yCurve).y();
         if ( (pt.y() < yWidget + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.y() > yWidget - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
             if (x != NULL) {
                 *x = curvePos.x();
@@ -250,7 +227,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
 } // isNearbyCurve
 
 AnimItemDimViewKeyFrame
-CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbyKeyFrame(const ZoomContext& ctx, const QPoint & pt) const
 {
     AnimItemDimViewKeyFrame ret;
     
@@ -263,7 +240,7 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt) const
         KeyFrameSet set = guiCurve->getKeyFrames();
 
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
-            QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
+            QPointF keyFramewidgetPos = ctx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
             if ( (std::abs( pt.y() - keyFramewidgetPos.y() ) < TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
                 (std::abs( pt.x() - keyFramewidgetPos.x() ) < TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 
@@ -284,11 +261,11 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt) const
 } // CurveWidgetPrivate::isNearbyKeyFrame
 
 AnimItemDimViewKeyFrame
-CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyKeyFrameText(const QPoint& pt) const
 {
     AnimItemDimViewKeyFrame ret;
     
-    QFontMetrics fm( _widget->font() );
+    QFontMetrics fm( _publicInterface->font() );
     int yOffset = 4;
     const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
 
@@ -305,7 +282,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
 
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             
-            QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
+            QPointF topLeftWidget = curveEditorZoomContext.toWidgetCoordinates( it2->getTime(), it2->getValue() );
             topLeftWidget.ry() += yOffset;
             
             QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( it2->getTime() ).arg( it2->getValue() );
@@ -331,7 +308,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
 }
 
 std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame >
-CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
 {
     
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > ret;
@@ -347,9 +324,9 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             
             QPointF leftTanPos, rightTanPos;
-            _widget->getKeyTangentPoints(it2, set, &leftTanPos, &rightTanPos);
-            QPointF leftTanPt = zoomCtx.toWidgetCoordinates(leftTanPos.x(), leftTanPos.y());
-            QPointF rightTanPt = zoomCtx.toWidgetCoordinates( rightTanPos.x(), rightTanPos.y());
+            _publicInterface->getKeyTangentPoints(it2, set, &leftTanPos, &rightTanPos);
+            QPointF leftTanPt = curveEditorZoomContext.toWidgetCoordinates(leftTanPos.x(), leftTanPos.y());
+            QPointF rightTanPt = curveEditorZoomContext.toWidgetCoordinates( rightTanPos.x(), rightTanPos.y());
             if ( ( pt.x() >= (leftTanPt.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
                 ( pt.x() <= (leftTanPt.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
                 ( pt.y() <= (leftTanPt.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -384,9 +361,9 @@ CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 }
 
 std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame >
-CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
 {
-    QFontMetrics fm( _widget->font() );
+    QFontMetrics fm( _publicInterface->font() );
     int yOffset = 4;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > ret;
     
@@ -405,11 +382,11 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             
             QPointF leftTanPos, rightTanPos;
-            _widget->getKeyTangentPoints(it2, set, &leftTanPos, &rightTanPos);
+            _publicInterface->getKeyTangentPoints(it2, set, &leftTanPos, &rightTanPos);
             
             double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
-            QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( leftTanPos.x(), leftTanPos.y() );
-            QPointF topLeft_RightTanWidget = zoomCtx.toWidgetCoordinates( rightTanPos.x(), rightTanPos.y() );
+            QPointF topLeft_LeftTanWidget = curveEditorZoomContext.toWidgetCoordinates( leftTanPos.x(), leftTanPos.y() );
+            QPointF topLeft_RightTanWidget = curveEditorZoomContext.toWidgetCoordinates( rightTanPos.x(), rightTanPos.y() );
             topLeft_LeftTanWidget.ry() += yOffset;
             topLeft_RightTanWidget.ry() += yOffset;
             
@@ -447,8 +424,7 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
 
 
 void
-CurveWidgetPrivate::keyFramesWithinRect(const RectD& canonicalRect,
-                                        AnimItemDimViewKeyFramesMap* keys) const
+AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, AnimItemDimViewKeyFramesMap* keys) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -492,31 +468,48 @@ CurveWidgetPrivate::keyFramesWithinRect(const RectD& canonicalRect,
 
 
 void
-CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
+AnimationModuleViewPrivate::moveSelectedTangent(const QPointF & pos)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
 
-    AnimItemDimViewKeyFrame& key = _selectedDerivative.second;
+    AnimItemDimViewKeyFrame& key = selectedDerivative.second;
     double dy = key.key.key.getValue() - pos.y();
     double dx = key.key.key.getTime() - pos.x();
 
 
     AnimationModuleBasePtr model = _model.lock();
-    model->pushUndoCommand(new MoveTangentCommand(model, _selectedDerivative.first, key.id.item, key.id.dim, key.id.view, key.key.key, dx, dy));
+    model->pushUndoCommand(new MoveTangentCommand(model, selectedDerivative.first, key.id.item, key.id.dim, key.id.view, key.key.key, dx, dy));
 } // moveSelectedTangent
 
+void
+AnimationModuleViewPrivate::makeSelectionFromCurveEditorSelectionRectangle(bool toggleSelection)
+{
 
+    AnimationModuleBasePtr model = _model.lock();
+    AnimationModuleSelectionModelPtr selectModel = model->getSelectionModel();
+
+    AnimItemDimViewKeyFramesMap selectedKeys;
+    keyFramesWithinRect(selectionRect, &selectedKeys);
+
+    AnimationModuleSelectionModel::SelectionTypeFlags sFlags = ( toggleSelection )
+    ? AnimationModuleSelectionModel::SelectionTypeToggle
+    : AnimationModuleSelectionModel::SelectionTypeAdd;
+
+
+    selectModel->makeSelection( selectedKeys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), sFlags );
+    _publicInterface->refreshSelectionBoundingBox();
+}
 
 void
-CurveWidgetPrivate::refreshSelectionRectangle(double x,
+AnimationModuleViewPrivate::refreshSelectionRectangle(double x,
                                               double y)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QPointF dragStartPointCanonical = QPointF(_dragStartPoint.x(),_dragStartPoint.y());
+    QPointF dragStartPointCanonical = QPointF(dragStartPoint.x(),dragStartPoint.y());
     _publicInterface->toCanonicalCoordinates(&dragStartPointCanonical.rx(),&dragStartPointCanonical.ry());
 
     // x and y are in canonical coordinates as well
@@ -526,72 +519,118 @@ CurveWidgetPrivate::refreshSelectionRectangle(double x,
     selectionRect.y1 = std::min(dragStartPointCanonical.y(), y);
     selectionRect.y2 = std::max(dragStartPointCanonical.y(), y);
 
-    AnimationModuleBasePtr model = _model.lock();
-    AnimationModuleSelectionModelPtr selectModel = model->getSelectionModel();
-
-    AnimItemDimViewKeyFramesMap selectedKeys;
-    keyFramesWithinRect(selectionRect, &selectedKeys);
-
-    selectModel->makeSelection( selectedKeys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), (AnimationModuleSelectionModel::SelectionTypeAdd |
-                                                                                                            AnimationModuleSelectionModel::SelectionTypeClear) );
-    _widget->refreshSelectionBoundingBox();
 }
 
 
 void
-CurveWidgetPrivate::updateDopeSheetViewFrameRange()
+AnimationModuleViewPrivate::addMenuCurveEditorMenuOptions(Menu* menu)
 {
-    AnimationModulePtr animModule = toAnimationModule(_model.lock());
-    if (!animModule) {
-        return;
-    }
-    animModule->getEditor()->getDopesheetView()->centerOn( zoomCtx.left(), zoomCtx.right() );
-}
-
-void
-CurveWidgetPrivate::addMenuOptions()
-{
-    Menu* fileMenu = new Menu(_rightClickMenu);
+    Menu* fileMenu = new Menu(menu);
     //fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( tr("File") );
-    _rightClickMenu->addAction( fileMenu->menuAction() );
+    menu->addAction( fileMenu->menuAction() );
 
     AnimationModulePtr isAnimModule = toAnimationModule(_model.lock());
 
     Menu* predefMenu  = 0;
     if (isAnimModule) {
-        predefMenu = new Menu(_rightClickMenu);
+        predefMenu = new Menu(menu);
         predefMenu->setTitle( tr("Predefined") );
-        _rightClickMenu->addAction( predefMenu->menuAction() );
+        menu->addAction( predefMenu->menuAction() );
     }
 
     
 
 
     QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to Ascii file..."), fileMenu);
-    QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _widget, SLOT(onExportCurveToAsciiActionTriggered()) );
+    QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _publicInterface, SLOT(onExportCurveToAsciiActionTriggered()) );
     fileMenu->addAction(exportCurveToAsciiAction);
 
     QAction* importCurveFromAsciiAction = new QAction(tr("Import curve from Ascii file..."), fileMenu);
-    QObject::connect( importCurveFromAsciiAction, SIGNAL(triggered()), _widget, SLOT(onImportCurveFromAsciiActionTriggered()) );
+    QObject::connect( importCurveFromAsciiAction, SIGNAL(triggered()), _publicInterface, SLOT(onImportCurveFromAsciiActionTriggered()) );
     fileMenu->addAction(importCurveFromAsciiAction);
 
 
     if (predefMenu) {
-        QAction* loop = new QAction(tr("Loop"), _rightClickMenu);
-        QObject::connect( loop, SIGNAL(triggered()), _widget, SLOT(onApplyLoopExpressionOnSelectedCurveActionTriggered()) );
+        QAction* loop = new QAction(tr("Loop"), menu);
+        QObject::connect( loop, SIGNAL(triggered()), _publicInterface, SLOT(onApplyLoopExpressionOnSelectedCurveActionTriggered()) );
         predefMenu->addAction(loop);
 
-        QAction* reverse = new QAction(tr("Reverse"), _rightClickMenu);
-        QObject::connect( reverse, SIGNAL(triggered()), _widget, SLOT(onApplyReverseExpressionOnSelectedCurveActionTriggered()) );
+        QAction* reverse = new QAction(tr("Reverse"), menu);
+        QObject::connect( reverse, SIGNAL(triggered()), _publicInterface, SLOT(onApplyReverseExpressionOnSelectedCurveActionTriggered()) );
         predefMenu->addAction(reverse);
 
 
-        QAction* negate = new QAction(tr("Negate"), _rightClickMenu);
-        QObject::connect( negate, SIGNAL(triggered()), _widget, SLOT(onApplyNegateExpressionOnSelectedCurveActionTriggered()) );
+        QAction* negate = new QAction(tr("Negate"), menu);
+        QObject::connect( negate, SIGNAL(triggered()), _publicInterface, SLOT(onApplyNegateExpressionOnSelectedCurveActionTriggered()) );
         predefMenu->addAction(negate);
     }
-}
+} // addMenuCurveEditorMenuOptions
+
+bool
+AnimationModuleViewPrivate::setCurveEditorCursor(const QPoint& eventPos)
+{
+    if (!curveEditorSelectedKeysBRect.isNull()) {
+        if ( isNearbySelectedKeyFramesCrossWidget(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeAllCursor) );
+            return true;
+        } else if ( isNearbyBboxMidBtm(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeVerCursor) );
+            return true;
+        } else if ( isNearbyBboxMidTop(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeVerCursor) );
+            return true;
+        } else if ( isNearbyBboxMidLeft(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeHorCursor) );
+            return true;
+        } else if ( isNearbyBboxMidRight(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeHorCursor) );
+            return true;
+        } else if ( isNearbyBboxTopLeft(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeFDiagCursor) );
+            return true;
+        } else if ( isNearbyBboxBtmRight(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeFDiagCursor) );
+            return true;
+        } else if ( isNearbyBboxTopRight(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeBDiagCursor) );
+            return true;
+        } else if ( isNearbyBboxBtmLeft(curveEditorZoomContext, curveEditorSelectedKeysBRect, eventPos) ) {
+            _publicInterface->setCursor( QCursor(Qt::SizeBDiagCursor) );
+            return true;
+        }
+    }
+
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > selectedTan = isNearbyTangent(eventPos);
+    AnimItemDimViewKeyFrame nearbyKey = isNearbyKeyFrame(curveEditorZoomContext, eventPos);
+
+    // if there's a keyframe or derivative handle nearby set the cursor to cross
+    if (nearbyKey.id.item || selectedTan.second.id.item) {
+        _publicInterface->setCursor( QCursor(Qt::CrossCursor) );
+        return true;
+    }
+
+    AnimItemDimViewKeyFrame nearbyKeyText = isNearbyKeyFrameText(eventPos);
+    if (nearbyKeyText.id.item) {
+        _publicInterface->setCursor( QCursor(Qt::IBeamCursor) );
+        return true;
+    }
+    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame> tangentText = isNearbySelectedTangentText(eventPos);
+    if (tangentText.second.id.item) {
+        _publicInterface->setCursor( QCursor(Qt::IBeamCursor) );
+        return true;
+    }
+    // if we're nearby a timeline polygon, set cursor to horizontal displacement
+    if ( isNearbyTimelineBtmPoly(eventPos) || isNearbyTimelineTopPoly(eventPos) ) {
+        _publicInterface->setCursor( QCursor(Qt::SizeHorCursor) );
+        return true;
+    }
+    // default case
+    //_publicInterface->unsetCursor();
+
+    return false;
+
+} // setCursor
 
 
 NATRON_NAMESPACE_EXIT;

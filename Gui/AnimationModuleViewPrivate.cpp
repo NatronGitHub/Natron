@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "AnimationModuleViewPrivateBase.h"
+#include "AnimationModuleViewPrivate.h"
 
 #include <QGLWidget>
 #include <QApplication>
@@ -37,13 +37,14 @@
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/AnimationModule.h"
-#include "Gui/AnimationModuleViewBase.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TableItemAnim.h"
@@ -53,32 +54,41 @@
 
 NATRON_NAMESPACE_ENTER;
 
-AnimationModuleViewPrivateBase::AnimationModuleViewPrivateBase(Gui* gui, AnimationViewBase* publicInterface, const AnimationModuleBasePtr& model)
+AnimationModuleViewPrivate::AnimationModuleViewPrivate(Gui* gui, AnimationModuleView* publicInterface, const AnimationModuleBasePtr& model)
 : _publicInterface(publicInterface)
 , _gui(gui)
 , _model(model)
 , zoomCtxMutex()
-, zoomCtx()
+, curveEditorZoomContext()
+, dopeSheetZoomContext()
 , zoomOrPannedSinceLastFit(false)
 , textRenderer()
 , selectionRect()
-, selectedKeysBRect()
+, curveEditorSelectedKeysBRect()
+, dopeSheetSelectedKeysBRect()
 , kfTexturesIDs()
-, _rightClickMenu( new Menu(publicInterface) )
 , savedTexture(0)
 , drawnOnce(false)
-, _dragStartPoint()
-, _lastMousePos()
-, _mustSetDragOrientation(false)
-, _mouseDragOrientation()
-, _keyDragLastMovement()
+, dragStartPoint()
+, lastMousePos()
+, mustSetDragOrientation(false)
+, mouseDragOrientation()
+, keyDragLastMovement()
+, state(eEventStateNone)
+, eventTriggeredFromCurveEditor(false)
+, treeView(0)
+, nodeRanges()
+, nodeRangesBeingComputed()
+, rangeComputationRecursion(0)
+, currentEditedReader()
+, customInteract()
 {
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
         kfTexturesIDs[i] = 0;
     }
 }
 
-AnimationModuleViewPrivateBase::~AnimationModuleViewPrivateBase()
+AnimationModuleViewPrivate::~AnimationModuleViewPrivate()
 {
     if (kfTexturesIDs[0]) {
         GL_GPU::glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
@@ -86,8 +96,29 @@ AnimationModuleViewPrivateBase::~AnimationModuleViewPrivateBase()
 
 }
 
+
+RectD
+AnimationModuleViewPrivate::getKeyFrameBoundingRectCanonical(bool curveEditor, double xCanonical, double yCanonical) const
+{
+    const ZoomContext* ctx = curveEditor ? &curveEditorZoomContext : &dopeSheetZoomContext;
+    QPointF posWidget = ctx->toWidgetCoordinates(xCanonical, yCanonical);
+    RectD ret;
+    double keyframeTexSize = TO_DPIX(getKeyframeTextureSize());
+    QPointF x1y1 = ctx->toZoomCoordinates(posWidget.x() - keyframeTexSize / 2., posWidget.y() + keyframeTexSize / 2);
+    QPointF x2y2 = ctx->toZoomCoordinates(posWidget.x() + keyframeTexSize / 2., posWidget.y() - keyframeTexSize / 2);
+
+    ret.x1 = x1y1.x();
+    ret.y1 = x1y1.y();
+    ret.x2 = x2y2.x();
+    ret.y2 = x2y2.y();
+
+    return ret;
+}
+
+
+
 void
-AnimationModuleViewPrivateBase::drawTimelineMarkers()
+AnimationModuleViewPrivate::drawTimelineMarkers()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -105,8 +136,8 @@ AnimationModuleViewPrivateBase::drawTimelineMarkers()
     settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
     settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
-    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
-    QPointF btmRight = zoomCtx.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
+    QPointF topLeft = curveEditorZoomContext.toZoomCoordinates(0, 0);
+    QPointF btmRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
 
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
@@ -133,18 +164,18 @@ AnimationModuleViewPrivateBase::drawTimelineMarkers()
         GL_GPU::glEnable(GL_POLYGON_SMOOTH);
         GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
 
-        QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
-        QPointF btmRight = zoomCtx.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
+        QPointF topLeft = curveEditorZoomContext.toZoomCoordinates(0, 0);
+        QPointF btmRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
         QPointF btmCursorBtm( timeline->currentFrame(), btmRight.y() );
-        QPointF btmcursorBtmWidgetCoord = zoomCtx.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
-        QPointF btmCursorTop = zoomCtx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIX(CURSOR_HEIGHT));
-        QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
-        QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF btmcursorBtmWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
+        QPointF btmCursorTop = curveEditorZoomContext.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIX(CURSOR_HEIGHT));
+        QPointF btmCursorLeft = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF btmCursorRight = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
         QPointF topCursortop( timeline->currentFrame(), topLeft.y() );
-        QPointF topcursorTopWidgetCoord = zoomCtx.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
-        QPointF topCursorBtm = zoomCtx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIX(CURSOR_HEIGHT));
-        QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
-        QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+        QPointF topcursorTopWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
+        QPointF topCursorBtm = curveEditorZoomContext.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIX(CURSOR_HEIGHT));
+        QPointF topCursorLeft = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+        QPointF topCursorRight = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
 
 
         GL_GPU::glBegin(GL_POLYGON);
@@ -161,10 +192,10 @@ AnimationModuleViewPrivateBase::drawTimelineMarkers()
         GL_GPU::glEnd();
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
     glCheckErrorIgnoreOSXBug(GL_GPU);
-} // AnimationModuleViewPrivateBase::drawTimelineMarkers
+} // AnimationModuleViewPrivate::drawTimelineMarkers
 
 void
-AnimationModuleViewPrivateBase::drawSelectionRectangle()
+AnimationModuleViewPrivate::drawSelectionRectangle()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -204,7 +235,7 @@ AnimationModuleViewPrivateBase::drawSelectionRectangle()
 
 
 void
-AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
+AnimationModuleViewPrivate::drawSelectedKeyFramesBbox(bool isCurveEditor)
 {
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -214,8 +245,11 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
         GL_GPU::glEnable(GL_LINE_SMOOTH);
         GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x1, selectedKeysBRect.y2 );
-        QPointF btmRightWidget = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x2, selectedKeysBRect.y1 );
+        const ZoomContext* ctx = isCurveEditor ? &curveEditorZoomContext : &dopeSheetZoomContext;
+        RectD selectedKeysBRect = isCurveEditor ? curveEditorSelectedKeysBRect : dopeSheetSelectedKeysBRect;
+
+        QPointF topLeftWidget = ctx->toWidgetCoordinates( selectedKeysBRect.x1, selectedKeysBRect.y2 );
+        QPointF btmRightWidget = ctx->toWidgetCoordinates( selectedKeysBRect.x2, selectedKeysBRect.y1 );
         double xMid = ( selectedKeysBRect.x1 + selectedKeysBRect.x2 ) / 2.;
         double yMid = ( selectedKeysBRect.y1 + selectedKeysBRect.y2 ) / 2.;
 
@@ -229,11 +263,11 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
         GL_GPU::glVertex2f( selectedKeysBRect.x2, selectedKeysBRect.y1 );
         GL_GPU::glEnd();
 
-        QPointF middleWidgetCoord = zoomCtx.toWidgetCoordinates( xMid, yMid );
-        QPointF middleLeft = zoomCtx.toZoomCoordinates( middleWidgetCoord.x() - TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
-        QPointF middleRight = zoomCtx.toZoomCoordinates( middleWidgetCoord.x() + TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
-        QPointF middleTop = zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() - TO_DPIX(XHAIR_SIZE));
-        QPointF middleBottom = zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() + TO_DPIX(XHAIR_SIZE));
+        QPointF middleWidgetCoord = ctx->toWidgetCoordinates( xMid, yMid );
+        QPointF middleLeft = ctx->toZoomCoordinates( middleWidgetCoord.x() - TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
+        QPointF middleRight = ctx->toZoomCoordinates( middleWidgetCoord.x() + TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
+        QPointF middleTop = ctx->toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() - TO_DPIX(XHAIR_SIZE));
+        QPointF middleBottom = ctx->toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() + TO_DPIX(XHAIR_SIZE));
 
 
 
@@ -244,30 +278,30 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
         GL_GPU::glVertex2f( middleTop.x(), std::min( middleTop.y(), selectedKeysBRect.y2 ) );
 
         //top tick
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidTop)) {
-            double yBottom = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
-            double yTop = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
+        if (isCurveEditor) {
+            double yBottom = ctx->toZoomCoordinates(0, topLeftWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
+            double yTop = ctx->toZoomCoordinates(0, topLeftWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             GL_GPU::glVertex2f(xMid, yBottom);
             GL_GPU::glVertex2f(xMid, yTop);
         }
         //left tick
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidLeft)) {
-            double xLeft = zoomCtx.toZoomCoordinates(topLeftWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
-            double xRight = zoomCtx.toZoomCoordinates(topLeftWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
+        {
+            double xLeft = ctx->toZoomCoordinates(topLeftWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
+            double xRight = ctx->toZoomCoordinates(topLeftWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             GL_GPU::glVertex2f(xLeft, yMid);
             GL_GPU::glVertex2f(xRight, yMid);
         }
         //bottom tick
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidBottom)) {
-            double yBottom = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
-            double yTop = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
+        if (isCurveEditor) {
+            double yBottom = ctx->toZoomCoordinates(0, btmRightWidget.y() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
+            double yTop = ctx->toZoomCoordinates(0, btmRightWidget.y() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE)).y();
             GL_GPU::glVertex2f(xMid, yBottom);
             GL_GPU::glVertex2f(xMid, yTop);
         }
         //right tick
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointMidRight)) {
-            double xLeft = zoomCtx.toZoomCoordinates(btmRightWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
-            double xRight = zoomCtx.toZoomCoordinates(btmRightWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
+        {
+            double xLeft = ctx->toZoomCoordinates(btmRightWidget.x() - TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
+            double xRight = ctx->toZoomCoordinates(btmRightWidget.x() + TO_DPIX(BOUNDING_BOX_HANDLE_SIZE), 0).x();
             GL_GPU::glVertex2f(xLeft, yMid);
             GL_GPU::glVertex2f(xRight, yMid);
         }
@@ -275,19 +309,19 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
 
         GL_GPU::glPointSize(TO_DPIX(BOUNDING_BOX_HANDLE_SIZE));
         std::vector<Point> ptsToDraw;
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointTopLeft)) {
+        if (isCurveEditor) {
             Point p = {selectedKeysBRect.x1, selectedKeysBRect.y2};
             ptsToDraw.push_back(p);
         }
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointTopRight)) {
+        if (isCurveEditor) {
             Point p = {selectedKeysBRect.x2, selectedKeysBRect.y2};
             ptsToDraw.push_back(p);
         }
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointBottomLeft)) {
+        if (isCurveEditor) {
             Point p = {selectedKeysBRect.x1, selectedKeysBRect.y1};
             ptsToDraw.push_back(p);
         }
-        if (isSelectedKeyFramesRectanglePointEnabled(eSelectedKeyFramesRectanglePointBottomRight)) {
+        if (isCurveEditor) {
             Point p = {selectedKeysBRect.x2, selectedKeysBRect.y1};
             ptsToDraw.push_back(p);
         }
@@ -301,11 +335,11 @@ AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox()
 
         glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-} // AnimationModuleViewPrivateBase::drawSelectedKeyFramesBbox
+} // AnimationModuleViewPrivate::drawSelectedKeyFramesBbox
 
 
 void
-AnimationModuleViewPrivateBase::drawSelectionRect() const
+AnimationModuleViewPrivate::drawSelectionRect() const
 {
 
     // Perform drawing
@@ -343,11 +377,7 @@ AnimationModuleViewPrivateBase::drawSelectionRect() const
 }
 
 void
-AnimationModuleViewPrivateBase::drawTexturedKeyframe(AnimationModuleViewPrivateBase::KeyframeTexture textureType,
-                                                     bool drawTime,
-                                                     double time,
-                                                     const QColor& textColor,
-                                                     const RectD &rect) const
+AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect) const
 {
 
     GL_GPU::glColor4f(1, 1, 1, 1);
@@ -369,18 +399,23 @@ AnimationModuleViewPrivateBase::drawTexturedKeyframe(AnimationModuleViewPrivateB
     GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
     GL_GPU::glDisable(GL_TEXTURE_2D);
+    glCheckErrorIgnoreOSXBug(GL_GPU);
 
-    if (drawTime) {
-        QString text = QString::number(time);
-        QPointF p = zoomCtx.toWidgetCoordinates( rect.right(), rect.bottom() );
-        p.rx() += 3;
-        p = zoomCtx.toZoomCoordinates( p.x(), p.y() );
-        renderText(p.x(), p.y(), text, textColor, _publicInterface->font());
-    }
 }
 
 void
-AnimationModuleViewPrivateBase::renderText(double x,
+AnimationModuleViewPrivate::drawKeyFrameTime(const ZoomContext& ctx,  double time, const QColor& textColor, const RectD& rect) const
+{
+    QString text = QString::number(time);
+    QPointF p = ctx.toWidgetCoordinates( rect.right(), rect.bottom() );
+    p.rx() += 3;
+    p = ctx.toZoomCoordinates( p.x(), p.y() );
+    renderText(ctx, p.x(), p.y(), text, textColor, _publicInterface->font());
+}
+
+void
+AnimationModuleViewPrivate::renderText(const ZoomContext& ctx,
+                                       double x,
                                       double y,
                                       const QString & text,
                                       const QColor & color,
@@ -393,10 +428,10 @@ AnimationModuleViewPrivateBase::renderText(double x,
 
     double w = (double)_publicInterface->width();
     double h = (double)_publicInterface->height();
-    double bottom = zoomCtx.bottom();
-    double left = zoomCtx.left();
-    double top =  zoomCtx.top();
-    double right = zoomCtx.right();
+    double bottom = ctx.bottom();
+    double left = ctx.left();
+    double top =  ctx.top();
+    double right = ctx.right();
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
@@ -408,21 +443,21 @@ AnimationModuleViewPrivateBase::renderText(double x,
 
 
 bool
-AnimationModuleViewPrivateBase::isNearbyTimelineTopPoly(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbyTimelineTopPoly(const QPoint & pt) const
 {
     TimeLinePtr timeline = _model.lock()->getTimeline();
     if (!timeline) {
         return false;
     }
 
-    QPointF pt_opengl = zoomCtx.toZoomCoordinates( pt.x(), pt.y() );
+    QPointF pt_opengl = curveEditorZoomContext.toZoomCoordinates( pt.x(), pt.y() );
 
-    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
+    QPointF topLeft = curveEditorZoomContext.toZoomCoordinates(0, 0);
     QPointF topCursortop( timeline->currentFrame(), topLeft.y() );
-    QPointF topcursorTopWidgetCoord = zoomCtx.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
-    QPointF topCursorBtm = zoomCtx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIY(CURSOR_HEIGHT));
-    QPointF topCursorLeft = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
-    QPointF topCursorRight = zoomCtx.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+    QPointF topcursorTopWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
+    QPointF topCursorBtm = curveEditorZoomContext.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIY(CURSOR_HEIGHT));
+    QPointF topCursorLeft = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+    QPointF topCursorRight = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
 
     QPolygonF poly;
     poly.push_back(topCursorBtm);
@@ -433,20 +468,20 @@ AnimationModuleViewPrivateBase::isNearbyTimelineTopPoly(const QPoint & pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyTimelineBtmPoly(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbyTimelineBtmPoly(const QPoint & pt) const
 {
     TimeLinePtr timeline = _model.lock()->getTimeline();
     if (!timeline) {
         return false;
     }
-    QPointF pt_opengl = zoomCtx.toZoomCoordinates( pt.x(), pt.y() );
+    QPointF pt_opengl = curveEditorZoomContext.toZoomCoordinates( pt.x(), pt.y() );
 
-    QPointF btmRight = zoomCtx.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
+    QPointF btmRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
     QPointF btmCursorBtm( timeline->currentFrame(), btmRight.y() );
-    QPointF btmcursorBtmWidgetCoord = zoomCtx.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
-    QPointF btmCursorTop = zoomCtx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIY(CURSOR_HEIGHT));
-    QPointF btmCursorLeft = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
-    QPointF btmCursorRight = zoomCtx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+    QPointF btmcursorBtmWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
+    QPointF btmCursorTop = curveEditorZoomContext.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIY(CURSOR_HEIGHT));
+    QPointF btmCursorLeft = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+    QPointF btmCursorRight = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
 
     QPolygonF poly;
     poly.push_back(btmCursorTop);
@@ -457,16 +492,16 @@ AnimationModuleViewPrivateBase::isNearbyTimelineBtmPoly(const QPoint & pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const
+AnimationModuleViewPrivate::isNearbySelectedKeyFramesCrossWidget(const ZoomContext& ctx, const RectD& rect, const QPoint & pt) const
 {
-    double xMid = ( selectedKeysBRect.x1 + selectedKeysBRect.x2 ) / 2.;
-    double yMid = ( selectedKeysBRect.y1 + selectedKeysBRect.y2 ) / 2.;
+    double xMid = ( rect.x1 + rect.x2 ) / 2.;
+    double yMid = ( rect.y1 + rect.y2 ) / 2.;
 
-    QPointF middleWidgetCoord = zoomCtx.toWidgetCoordinates( xMid, yMid );
-    QPointF middleLeft = zoomCtx.toZoomCoordinates( middleWidgetCoord.x() - TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
-    QPointF middleRight = zoomCtx.toZoomCoordinates( middleWidgetCoord.x() + TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
-    QPointF middleTop = zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() - TO_DPIX(XHAIR_SIZE));
-    QPointF middleBottom = zoomCtx.toZoomCoordinates(middleWidgetCoord.x(), middleWidgetCoord.y() + TO_DPIX(XHAIR_SIZE));
+    QPointF middleWidgetCoord = ctx.toWidgetCoordinates( xMid, yMid );
+    QPointF middleLeft = QPointF(middleWidgetCoord.x() - TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
+    QPointF middleRight = QPointF( middleWidgetCoord.x() + TO_DPIX(XHAIR_SIZE), middleWidgetCoord.y() );
+    QPointF middleTop = QPointF(middleWidgetCoord.x(), middleWidgetCoord.y() - TO_DPIX(XHAIR_SIZE));
+    QPointF middleBottom = QPointF(middleWidgetCoord.x(), middleWidgetCoord.y() + TO_DPIX(XHAIR_SIZE));
 
 
     if ( ( pt.x() >= (middleLeft.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -487,9 +522,9 @@ AnimationModuleViewPrivateBase::isNearbySelectedKeyFramesCrossWidget(const QPoin
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxTopLeft(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxTopLeft(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x1, selectedKeysBRect.y2 );
+    QPointF other = ctx.toWidgetCoordinates( rect.x1, rect.y2 );
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -502,10 +537,10 @@ AnimationModuleViewPrivateBase::isNearbyBboxTopLeft(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxMidLeft(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxMidLeft(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates(selectedKeysBRect.x1,
-                                                selectedKeysBRect.y2 - (selectedKeysBRect.height()) / 2.);
+    QPointF other = ctx.toWidgetCoordinates(rect.x1,
+                                                rect.y2 - (rect.height()) / 2.);
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -518,9 +553,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxMidLeft(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxBtmLeft(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxBtmLeft(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x1, selectedKeysBRect.y1);
+    QPointF other = ctx.toWidgetCoordinates( rect.x1, rect.y1);
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -533,9 +568,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxBtmLeft(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxMidBtm(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxMidBtm(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x1 + selectedKeysBRect.width() / 2., selectedKeysBRect.y1 );
+    QPointF other = ctx.toWidgetCoordinates( rect.x1 + rect.width() / 2., rect.y1 );
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -548,9 +583,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxMidBtm(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxBtmRight(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxBtmRight(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x2, selectedKeysBRect.y1);
+    QPointF other = ctx.toWidgetCoordinates( rect.x2, rect.y1);
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -563,9 +598,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxBtmRight(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxMidRight(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxMidRight(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates(selectedKeysBRect.x2, selectedKeysBRect.y1 + selectedKeysBRect.height() / 2.);
+    QPointF other = ctx.toWidgetCoordinates(rect.x2, rect.y1 + rect.height() / 2.);
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -578,9 +613,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxMidRight(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxTopRight(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxTopRight(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x2, selectedKeysBRect.y2 );
+    QPointF other = ctx.toWidgetCoordinates( rect.x2, rect.y2 );
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -593,9 +628,9 @@ AnimationModuleViewPrivateBase::isNearbyBboxTopRight(const QPoint& pt) const
 }
 
 bool
-AnimationModuleViewPrivateBase::isNearbyBboxMidTop(const QPoint& pt) const
+AnimationModuleViewPrivate::isNearbyBboxMidTop(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates( selectedKeysBRect.x1 + selectedKeysBRect.width() / 2., selectedKeysBRect.y2 );
+    QPointF other = ctx.toWidgetCoordinates( rect.x1 + rect.width() / 2., rect.y2 );
 
     if ( ( pt.x() >= (other.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
         ( pt.x() <= (other.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -608,7 +643,7 @@ AnimationModuleViewPrivateBase::isNearbyBboxMidTop(const QPoint& pt) const
 }
 
 void
-AnimationModuleViewPrivateBase::generateKeyframeTextures()
+AnimationModuleViewPrivate::generateKeyframeTextures()
 {
     QImage kfTexturesImages[KF_TEXTURES_COUNT];
 
@@ -631,13 +666,15 @@ AnimationModuleViewPrivateBase::generateKeyframeTextures()
     kfTexturesImages[16].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root.png") );
     kfTexturesImages[17].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root_selected.png") );
 
+    int keyFrameTextureSize = TO_DPIX(getKeyframeTextureSize());
+
     GL_GPU::glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
 
     GL_GPU::glEnable(GL_TEXTURE_2D);
 
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
-        if (std::max( kfTexturesImages[i].width(), kfTexturesImages[i].height() ) != KF_PIXMAP_SIZE) {
-            kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if (std::max( kfTexturesImages[i].width(), kfTexturesImages[i].height() ) != keyFrameTextureSize) {
+            kfTexturesImages[i] = kfTexturesImages[i].scaled(keyFrameTextureSize, keyFrameTextureSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
         GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
@@ -648,46 +685,46 @@ AnimationModuleViewPrivateBase::generateKeyframeTextures()
         GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        GL_GPU::glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits() );
+        GL_GPU::glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, keyFrameTextureSize, keyFrameTextureSize, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits() );
     }
 
     GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
     GL_GPU::glDisable(GL_TEXTURE_2D);
 }
 
-AnimationModuleViewPrivateBase::KeyframeTexture
-AnimationModuleViewPrivateBase::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
-                                                bool selected) const
+AnimationModuleViewPrivate::KeyframeTexture
+AnimationModuleViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
+                                                bool selected) 
 {
-    AnimationModuleViewPrivateBase::KeyframeTexture ret = AnimationModuleViewPrivateBase::kfTextureNone;
+    AnimationModuleViewPrivate::KeyframeTexture ret = AnimationModuleViewPrivate::kfTextureNone;
 
     switch (kfType) {
         case eKeyframeTypeConstant:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpConstantSelected : AnimationModuleViewPrivateBase::kfTextureInterpConstant;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpConstantSelected : AnimationModuleViewPrivate::kfTextureInterpConstant;
             break;
         case eKeyframeTypeLinear:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpLinearSelected : AnimationModuleViewPrivateBase::kfTextureInterpLinear;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpLinearSelected : AnimationModuleViewPrivate::kfTextureInterpLinear;
             break;
         case eKeyframeTypeBroken:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpBreakSelected : AnimationModuleViewPrivateBase::kfTextureInterpBreak;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpBreakSelected : AnimationModuleViewPrivate::kfTextureInterpBreak;
             break;
         case eKeyframeTypeFree:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpCurveSelected : AnimationModuleViewPrivateBase::kfTextureInterpCurve;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpCurveSelected : AnimationModuleViewPrivate::kfTextureInterpCurve;
             break;
         case eKeyframeTypeSmooth:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpCurveZSelected : AnimationModuleViewPrivateBase::kfTextureInterpCurveZ;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpCurveZSelected : AnimationModuleViewPrivate::kfTextureInterpCurveZ;
             break;
         case eKeyframeTypeCatmullRom:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpCurveRSelected : AnimationModuleViewPrivateBase::kfTextureInterpCurveR;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpCurveRSelected : AnimationModuleViewPrivate::kfTextureInterpCurveR;
             break;
         case eKeyframeTypeCubic:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpCurveCSelected : AnimationModuleViewPrivateBase::kfTextureInterpCurveC;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpCurveCSelected : AnimationModuleViewPrivate::kfTextureInterpCurveC;
             break;
         case eKeyframeTypeHorizontal:
-            ret = (selected) ? AnimationModuleViewPrivateBase::kfTextureInterpCurveHSelected : AnimationModuleViewPrivateBase::kfTextureInterpCurveH;
+            ret = (selected) ? AnimationModuleViewPrivate::kfTextureInterpCurveHSelected : AnimationModuleViewPrivate::kfTextureInterpCurveH;
             break;
         default:
-            ret = AnimationModuleViewPrivateBase::kfTextureNone;
+            ret = AnimationModuleViewPrivate::kfTextureNone;
             break;
     }
     
@@ -696,7 +733,7 @@ AnimationModuleViewPrivateBase::kfTextureFromKeyframeType(KeyframeTypeEnum kfTyp
 
 
 std::vector<CurveGuiPtr>
-AnimationModuleViewPrivateBase::getSelectedCurves() const
+AnimationModuleViewPrivate::getSelectedCurves() const
 {
     const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
 
@@ -713,33 +750,32 @@ AnimationModuleViewPrivateBase::getSelectedCurves() const
 
 
 void
-AnimationModuleViewPrivateBase::createMenu()
+AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalPos)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    
-    _rightClickMenu->clear();
 
+    Menu rightClickMenu(_publicInterface);
 
-    Menu* editMenu = new Menu(_rightClickMenu);
+    Menu* editMenu = new Menu(&rightClickMenu);
     //editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( tr("Edit") );
-    _rightClickMenu->addAction( editMenu->menuAction() );
+    rightClickMenu.addAction( editMenu->menuAction() );
 
-    Menu* interpMenu = new Menu(_rightClickMenu);
+    Menu* interpMenu = new Menu(&rightClickMenu);
     //interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( tr("Interpolation") );
-    _rightClickMenu->addAction( interpMenu->menuAction() );
+    rightClickMenu.addAction( interpMenu->menuAction() );
 
-    Menu* viewMenu = new Menu(_rightClickMenu);
+    Menu* viewMenu = new Menu(&rightClickMenu);
     //viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( tr("View") );
-    _rightClickMenu->addAction( viewMenu->menuAction() );
+    rightClickMenu.addAction( viewMenu->menuAction() );
 
 
-    Menu* optionsMenu = new Menu(_rightClickMenu);
+    Menu* optionsMenu = new Menu(&rightClickMenu);
     optionsMenu->setTitle( tr("Options") );
-    _rightClickMenu->addAction( optionsMenu->menuAction() );
+    rightClickMenu.addAction( optionsMenu->menuAction() );
 
 
     QAction* deleteKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys,
@@ -834,18 +870,24 @@ AnimationModuleViewPrivateBase::createMenu()
     viewMenu->addAction(frameCurve);
 
 
-    QAction* updateOnPenUp = new QAction(tr("Update on mouse release only"), _rightClickMenu);
+    QAction* updateOnPenUp = new QAction(tr("Update on mouse release only"), &rightClickMenu);
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked( appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly() );
     optionsMenu->addAction(updateOnPenUp);
     QObject::connect( updateOnPenUp, SIGNAL(triggered()), _publicInterface, SLOT(onUpdateOnPenUpActionTriggered()) );
 
-    addMenuOptions();
+    if (isCurveWidget) {
+        addMenuCurveEditorMenuOptions(&rightClickMenu);
+    }
+
+    rightClickMenu.exec(globalPos);
+    
 } // createMenu
 
 
+
 void
-AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonicalPos,  const QPointF & newCanonicalPos)
+AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPos,  const QPointF & newCanonicalPos)
 {
 
 
@@ -856,7 +898,7 @@ AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonic
     bool clampYToIntegers = false;
     bool canMoveY = true;
 
-    QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(), _dragStartPoint.y() );
+    QPointF dragStartPointOpenGL = curveEditorZoomContext.toZoomCoordinates( dragStartPoint.x(), dragStartPoint.y() );
     QPointF deltaSinceDragStart;
     deltaSinceDragStart.rx() = newCanonicalPos.x() - dragStartPointOpenGL.x();
     deltaSinceDragStart.ry() = newCanonicalPos.y() - dragStartPointOpenGL.y();
@@ -887,12 +929,12 @@ AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonic
 
     // Compute delta in time
     double dt = 0;
-    if (_mouseDragOrientation.x() != 0) {
+    if (mouseDragOrientation.x() != 0) {
         if (clampXToIntegers) {
             // We clamp the whole motion and not just the delta between the last pos and the new position otherwise dt would always be clamped
-            dt = deltaSinceDragStart.x() - _keyDragLastMovement.x();
+            dt = deltaSinceDragStart.x() - keyDragLastMovement.x();
             // And update _keyDragLastMovement
-            _keyDragLastMovement.rx() = deltaSinceDragStart.x();
+            keyDragLastMovement.rx() = deltaSinceDragStart.x();
         } else {
             dt = newCanonicalPos.x() - oldCanonicalPos.x();
         }
@@ -902,11 +944,11 @@ AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonic
     // Compute delta in value
     double dv = 0;
     if (canMoveY) {
-        if (_mouseDragOrientation.y() != 0) {
+        if (mouseDragOrientation.y() != 0) {
             if (clampYToIntegers) {
                 // We clamp the whole motion and not just the delta between the last pos and the new position otherwise dv would always be clamped
-                dv = deltaSinceDragStart.y() - _keyDragLastMovement.y();
-                _keyDragLastMovement.ry() = deltaSinceDragStart.y();
+                dv = deltaSinceDragStart.y() - keyDragLastMovement.y();
+                keyDragLastMovement.ry() = deltaSinceDragStart.y();
             } else {
                 dv = newCanonicalPos.y() - oldCanonicalPos.y();
             }
@@ -920,7 +962,7 @@ AnimationModuleViewPrivateBase::moveSelectedKeyFrames(const QPointF & oldCanonic
 
 
 void
-AnimationModuleViewPrivateBase::transformSelectedKeyFrames(const QPointF & oldPosCanonical,  const QPointF & newPosCanonical, bool shiftHeld, TransformSelectionCenterEnum centerType, bool scaleX, bool scaleY)
+AnimationModuleViewPrivate::transformSelectedKeyFrames(const QPointF & oldPosCanonical,  const QPointF & newPosCanonical, bool shiftHeld, TransformSelectionCenterEnum centerType, bool scaleX, bool scaleY)
 {
     if (newPosCanonical == oldPosCanonical) {
         return;
@@ -933,21 +975,21 @@ AnimationModuleViewPrivateBase::transformSelectedKeyFrames(const QPointF & oldPo
         return;
     }
 
-    QPointF center((selectedKeysBRect.x1 + selectedKeysBRect.x2) / 2., (selectedKeysBRect.y1 + selectedKeysBRect.y2) / 2.);
+    QPointF center((curveEditorSelectedKeysBRect.x1 + curveEditorSelectedKeysBRect.x2) / 2., (curveEditorSelectedKeysBRect.y1 + curveEditorSelectedKeysBRect.y2) / 2.);
 
     if (shiftHeld) {
         switch (centerType) {
             case eTransformSelectionCenterBottom:
-                center.ry() = selectedKeysBRect.y1;
+                center.ry() = curveEditorSelectedKeysBRect.y1;
                 break;
             case eTransformSelectionCenterLeft:
-                center.rx() = selectedKeysBRect.x2;
+                center.rx() = curveEditorSelectedKeysBRect.x2;
                 break;
             case eTransformSelectionCenterRight:
-                center.rx() = selectedKeysBRect.x1;
+                center.rx() = curveEditorSelectedKeysBRect.x1;
                 break;
             case eTransformSelectionCenterTop:
-                center.ry() = selectedKeysBRect.y2;
+                center.ry() = curveEditorSelectedKeysBRect.y2;
                 break;
             case eTransformSelectionCenterMiddle:
                 break;
@@ -979,7 +1021,7 @@ AnimationModuleViewPrivateBase::transformSelectedKeyFrames(const QPointF & oldPo
 
 
 void
-AnimationModuleViewPrivateBase::moveCurrentFrameIndicator(int frame)
+AnimationModuleViewPrivate::moveCurrentFrameIndicator(int frame)
 {
     AnimationModuleBasePtr animModel = _model.lock();
     if (!animModel) {
@@ -997,5 +1039,66 @@ AnimationModuleViewPrivateBase::moveCurrentFrameIndicator(int frame)
     _gui->setDraftRenderEnabled(true);
     timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
 }
+
+void
+AnimationModuleViewPrivate::zoomView(const QPointF& evPos, int deltaX, int deltaY, ZoomContext& zoomCtx, bool canZoomX,  bool canZoomY)
+{
+    const double zoomFactor_min = 0.0001;
+    const double zoomFactor_max = 10000.;
+    const double par_min = 0.0001;
+    const double par_max = 10000.;
+    double zoomFactor;
+    double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
+    double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
+
+
+    if ( (zoomCtx.screenWidth() > 0) && (zoomCtx.screenHeight() > 0) ) {
+        QPointF zoomCenter = zoomCtx.toZoomCoordinates( evPos.x(), evPos.y() );
+
+        if (canZoomY) {
+            // Alt + Shift + Wheel: zoom values only, keep point under mouse
+            zoomFactor = curveEditorZoomContext.factor() * scaleFactorY;
+
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactorY = zoomFactor / zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactorY = zoomFactor / zoomCtx.factor();
+            }
+
+            double par = zoomCtx.aspectRatio() / scaleFactorY;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorY = par / zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorY = par / zoomCtx.factor();
+            }
+
+            {
+                QMutexLocker k(&zoomCtxMutex);
+                zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+            }
+        }
+
+        if (canZoomX) {
+            // Alt + Wheel: zoom time only, keep point under mouse
+            double par = zoomCtx.aspectRatio() * scaleFactorX;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorX = par / zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorX = par / zoomCtx.factor();
+            }
+
+            {
+                QMutexLocker k(&zoomCtxMutex);
+                zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+            }
+        }
+    }
+} // zoomView
 
 NATRON_NAMESPACE_EXIT;

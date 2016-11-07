@@ -48,6 +48,7 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraphTextItem.h"
@@ -413,6 +414,16 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     _imp->_evtState = eEventStateNone;
 
 } // NodeGraph::createNodeGUI
+
+QIcon
+NodeGraph::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_NODE_GRAPH, iconSize, &p);
+    return QIcon(p);
+}
+
 
 QUndoStack*
 NodeGraph::getUndoStack() const

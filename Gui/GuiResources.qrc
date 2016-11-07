@@ -161,6 +161,7 @@
         <file>Resources/Images/diskcache_icon.png</file>
         <file>Resources/Images/dot_icon.png</file>
         <file>Resources/Images/DopeSheetIcon.png</file>
+        <file>Resources/Images/DS_CE_Icon.png</file>
         <file>Resources/Images/ellipse.png</file>
         <file>Resources/Images/enter_group.png</file>
         <file>Resources/Images/execScript.png</file>
@@ -218,6 +219,8 @@
         <file>Resources/Images/prevKF.png</file>
         <file>Resources/Images/previousIncr.png</file>
         <file>Resources/Images/previousScript.png</file>
+        <file>Resources/Images/ProgressPanelIcon.png</file>
+        <file>Resources/Images/PropertiesIcon.png</file>
         <file>Resources/Images/readImage.png</file>
         <file>Resources/Images/rectangle.png</file>
         <file>Resources/Images/redo.png</file>
@@ -250,6 +253,7 @@
         <file>Resources/Images/rotopaint_smear.png</file>
         <file>Resources/Images/rotopaint_solid.png</file>
         <file>Resources/Images/saveScript.png</file>
+        <file>Resources/Images/ScriptEditorIcon.png</file>
         <file>Resources/Images/scrollbarButton_down.png</file>
         <file>Resources/Images/scrollbarButton_left.png</file>
         <file>Resources/Images/scrollbarButton_right.png</file>
@@ -283,6 +287,7 @@
         <file>Resources/Images/unvisible.png</file>
         <file>Resources/Images/updateViewerDisabled.png</file>
         <file>Resources/Images/updateViewerEnabled.png</file>
+        <file>Resources/Images/ViewerPanelIcon.png</file>
         <file>Resources/Images/viewer_icon.png</file>
         <file>Resources/Images/viewer_roiDisabled.png</file>
         <file>Resources/Images/viewer_roiEnabled.png</file>

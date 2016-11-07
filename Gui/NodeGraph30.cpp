@@ -46,7 +46,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/CurveWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"

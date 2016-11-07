@@ -50,7 +50,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/CurveWidget.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"

@@ -46,8 +46,8 @@
 #include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"

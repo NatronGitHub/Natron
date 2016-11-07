@@ -45,6 +45,7 @@
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleTreeView.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/NodeAnim.h"
@@ -317,7 +318,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
         std::vector<TableItemAnimPtr> tableItems;
         std::vector<NodeAnimPtr> nodes;
         model->getSelectionModel()->makeSelection(keys, tableItems, nodes, (AnimationModuleSelectionModel::SelectionTypeAdd | AnimationModuleSelectionModel::SelectionTypeClear));
-        getGui()->getAnimationModuleEditor()->getCurveWidget()->centerOnCurves(curves, false);
+        getGui()->getAnimationModuleEditor()->getView()->centerOnCurves(curves, false);
     }
 }
 

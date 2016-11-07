@@ -33,12 +33,12 @@
 
 #include "Gui/AnimationModuleBase.h"
 #include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TableItemAnim.h"
-#include "Gui/CurveWidget.h"
 
 #include "Engine/Bezier.h"
 #include "Engine/Knob.h"
@@ -515,23 +515,6 @@ WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
 {
     _warp.reset(new Curve::TranslationKeyFrameWarp(dt, dv));
     setText( tr("Move KeyFrame(s)") );
-
-    /*std::set<NodeAnimPtr> uniqueNodeAnims;
-    for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        AnimatedItemTypeEnum type = (*it)->getItemType();
-        if ((*it)->isRangeDrawingEnabled()) {
-            uniqueNodeAnims.insert(*it);
-        }
-        NodeGroupPtr isGroup = (*it)->getInternalNode()->isEffectNodeGroup();
-        if (isGroup) {
-            NodesList recurseNodes;
-            isGroup->getNodes_recursive(recurseNodes, true);
-            for (NodesList::iterator it = recurseNodes.begin(); it != recurseNodes.end(); ++it) {
-                uniqueNodeAnims.insert(*it);
-            }
-        }
-    }*/
-
 }
 
 WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
@@ -650,7 +633,7 @@ WarpKeysCommand::warpKeys()
         model->setCurrentSelection(_keys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
     }
 
-}
+} // warpKeys
 
 void
 WarpKeysCommand::undo()

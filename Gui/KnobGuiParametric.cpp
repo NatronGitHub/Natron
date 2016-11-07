@@ -61,11 +61,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OfxOverlayInteract.h"
 
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/KnobGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
@@ -92,7 +92,7 @@ struct KnobGuiParametricPrivate
     KnobGuiParametric* _publicInterface;
 
     QWidget* treeColumn;
-    CurveWidget* curveWidget;
+    AnimationModuleView* curveWidget;
     QTreeWidget* tree;
 
     AnimationModuleSelectionModelPtr selectionModel;
@@ -151,7 +151,7 @@ public:
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const OVERRIDE FINAL;
     virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
-    virtual CurveWidget* getCurveWidget() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AnimationModuleView* getView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -210,7 +210,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     _imp->model.reset(new KnobGuiParametricAnimationModel(knobUI->getGui(), _imp.get()));
     _imp->selectionModel.reset(new AnimationModuleSelectionModel(_imp->model));
-    _imp->curveWidget = new CurveWidget(layout->parentWidget());
+    _imp->curveWidget = new AnimationModuleView(layout->parentWidget());
 
     _imp->animRoot = KnobAnim::create(_imp->model, KnobsHolderAnimBasePtr(), 0 /*parentTreeItem*/, knobUI);
     _imp->curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -272,8 +272,8 @@ KnobGuiParametricAnimationModel::refreshSelectionBboxAndUpdateView()
     _imp->curveWidget->refreshSelectionBboxAndRedraw();
 }
 
-CurveWidget*
-KnobGuiParametricAnimationModel::getCurveWidget() const
+AnimationModuleView*
+KnobGuiParametricAnimationModel::getView() const
 {
     return _imp->curveWidget;
 }

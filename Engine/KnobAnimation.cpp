@@ -376,9 +376,8 @@ KnobHelper::cloneCurve(ViewIdx view,
             }
         }
 
-        if (!keysAdded.empty() || !keysRemoved.empty()) {
-            _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
-        }
+        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+
     }
     return hasChanged;
 } // cloneCurve
@@ -462,8 +461,8 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
             }
         }
     }
-    _signalSlotHandler->s_keyFrameInterpolationChanged(times.front(), view, dimension);
-
+    std::list<double> keysAdded, keysRemoved;
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
 
 }
 
@@ -528,7 +527,8 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
 
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
-    _signalSlotHandler->s_derivativeMoved(time, view, dimension);
+    std::list<double> keysAdded, keysRemoved;
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
     return true;
 } // setLeftAndRightDerivativesAtTimeInternal
 
@@ -598,7 +598,8 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double t
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
 
-    _signalSlotHandler->s_derivativeMoved(time, view, dimension);
+    std::list<double> keysAdded, keysRemoved;
+    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
 
     return true;
 }

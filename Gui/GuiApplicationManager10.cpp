@@ -56,7 +56,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-#include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiFactory.h"
@@ -155,7 +154,6 @@ GuiApplicationManager::createGuiForKnob(const KnobGuiPtr& knob, ViewIdx view) co
 void
 GuiApplicationManager::registerGuiMetaTypes() const
 {
-    qRegisterMetaType<CurveWidget*>();
 }
 
 #ifdef Q_OS_MAC
@@ -874,10 +872,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes, kShortcutDescActionAnimationModulePasteKeyframes, Qt::ControlModifier, Qt::Key_V);
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, kShortcutDescActionAnimationModulePasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
 
-    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowCurveEditor, kShortcutDescActionAnimationModuleShowCurveEditor, Qt::ShiftModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowDopeSheet, kShortcutDescActionAnimationModuleShowDopeSheet, Qt::ShiftModifier, Qt::Key_D);
-    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSplit, kShortcutDescActionAnimationModuleSplit, Qt::ShiftModifier, Qt::Key_S);
-
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, kShortcutDescActionAnimationModuleStackView, Qt::NoModifier, Qt::Key_S);
 
 
     //Script editor

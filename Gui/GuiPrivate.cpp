@@ -92,7 +92,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"

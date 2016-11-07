@@ -59,7 +59,6 @@
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/AnimationModuleTreeView.h"
-#include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobUndoCommand.h"
@@ -590,10 +589,10 @@ AnimationModule::refreshSelectionBboxAndUpdateView()
     _imp->editor->refreshSelectionBboxAndRedrawView();
 }
 
-CurveWidget*
-AnimationModule::getCurveWidget() const
+AnimationModuleView*
+AnimationModule::getView() const
 {
-    return _imp->editor->getCurveWidget();
+    return _imp->editor->getView();
 }
 
 NATRON_NAMESPACE_EXIT;

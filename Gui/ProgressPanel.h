@@ -109,6 +109,8 @@ public:
 
     TableModelPtr getModel() const;
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onCancelTasksTriggered();

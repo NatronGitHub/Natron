@@ -590,10 +590,25 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_CURVE_EDITOR:
             path = NATRON_IMAGES_PATH "CurveEditorIcon.png";
             break;
+        case NATRON_PIXMAP_PROGRESS_PANEL:
+            path = NATRON_IMAGES_PATH "ProgressPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_SCRIPT_EDITOR:
+            path = NATRON_IMAGES_PATH "ScriptEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_ANIMATION_MODULE:
+            path = NATRON_IMAGES_PATH "DS_CE_Icon.png";
+            break;
+        case NATRON_PIXMAP_VIEWER_PANEL:
+            path = NATRON_IMAGES_PATH "ViewerPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_PROPERTIES_PANEL:
+            path = NATRON_IMAGES_PATH "PropertiesIcon.png";
+            break;
         case NATRON_PIXMAP_DOPE_SHEET:
             path = NATRON_IMAGES_PATH "DopeSheetIcon.png";
             break;
-        case NATRON_PIXMPA_NODE_GRAPH:
+        case NATRON_PIXMAP_NODE_GRAPH:
             path = NATRON_IMAGES_PATH "NodeGraphIcon.png";
             break;
 

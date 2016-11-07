@@ -147,7 +147,7 @@ public:
     };
 
     EditKeyFrameDialog(EditModeEnum mode,
-                       CurveWidget* curveWidget,
+                       AnimationModuleView* curveWidget,
                        const AnimItemDimViewKeyFrame& key,
                        QWidget* parent);
 

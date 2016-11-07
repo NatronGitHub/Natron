@@ -42,9 +42,9 @@
 #include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"

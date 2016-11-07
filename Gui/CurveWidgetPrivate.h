@@ -39,7 +39,7 @@
 
 
 #include "Gui/AnimationModuleBase.h"
-#include "Gui/AnimationModuleViewPrivateBase.h"
+#include "Gui/AnimationModuleViewPrivate.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/CurveGui.h"
@@ -54,76 +54,29 @@ NATRON_NAMESPACE_ENTER;
 
 /*****************************CURVE WIDGET***********************************************/
 
-enum EventStateEnum
-{
-    eEventStateDraggingView = 0,
-    eEventStateDraggingKeys,
-    eEventStateSelecting,
-    eEventStateDraggingTangent,
-    eEventStateDraggingTimeline,
-    eEventStateZooming,
-    eEventStateDraggingTopLeftBbox,
-    eEventStateDraggingMidLeftBbox,
-    eEventStateDraggingBtmLeftBbox,
-    eEventStateDraggingMidBtmBbox,
-    eEventStateDraggingBtmRightBbox,
-    eEventStateDraggingMidRightBbox,
-    eEventStateDraggingTopRightBbox,
-    eEventStateDraggingMidTopBbox,
-    eEventStateNone
-};
+
 
 // although all members are public, CurveWidgetPrivate is really a class because it has lots of member functions
 // (in fact, many members could probably be made private)
-class CurveWidgetPrivate : public AnimationModuleViewPrivateBase
+class CurveWidgetPrivate : public AnimationModuleViewPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(CurveWidget)
 
 public:
     CurveWidgetPrivate(Gui* gui,
                        const AnimationModuleBasePtr& model,
-                       AnimationViewBase* publicInterface);
+                       AnimationModuleView* publicInterface);
 
     virtual ~CurveWidgetPrivate();
 
-    virtual void addMenuOptions() OVERRIDE FINAL;
-
-    void drawCurves();
-
-    void drawScale();
 
 
-    /**
-     * @brief Returns whether the click at position pt is nearby the curve.
-     * If so then the value x and y will be set to the position on the curve
-     * if they are not NULL.
-     **/
-    CurveGuiPtr isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
-    AnimItemDimViewKeyFrame isNearbyKeyFrame(const QPoint & pt) const;
-    AnimItemDimViewKeyFrame isNearbyKeyFrameText(const QPoint& pt) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbyTangent(const QPoint & pt) const;
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > isNearbySelectedTangentText(const QPoint & pt) const;
-
-    void moveSelectedTangent(const QPointF & pos);
-
-    void refreshSelectionRectangle(double x, double y);
-
-    void updateDopeSheetViewFrameRange();
-
-    void keyFramesWithinRect(const RectD& canonicalRect, AnimItemDimViewKeyFramesMap* keys) const;
 
 
-    // If there's a custom interact to draw (for parametric parameters)
-    boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
 
 
-    // Interaction State
-    EventStateEnum _state;
+public:
 
-    ///the value is either (1,0) or (0,1)
-    std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame> _selectedDerivative;
-    QSize sizeH;
-    CurveWidget* _widget;
 
 
 };

@@ -34,6 +34,7 @@
 #include "Engine/Project.h"
 
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 
@@ -112,6 +113,8 @@ createKnobNameItem(const AnimItemBasePtr& anim,
 
     ret->setText(0, text);
 
+    ret->setExpanded(true);
+
     if ( (itemType == eAnimatedItemTypeKnobRoot) || (itemType == eAnimatedItemTypeKnobDim) || (itemType == eAnimatedItemTypeKnobView) ) {
         ret->setFlags(ret->flags() & ~Qt::ItemIsDragEnabled & ~Qt::ItemIsDropEnabled);
     }
@@ -188,7 +191,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
     int nDims = internalKnob->getNDimensions();
 
     AnimationModuleBasePtr model = publicInterface->getModel();
-    CurveWidget* curveWidget = model->getCurveWidget();
+    AnimationModuleView* curveWidget = model->getView();
 
     // Create a view item if the knob has views splits
     QTreeWidgetItem * viewItem = 0;

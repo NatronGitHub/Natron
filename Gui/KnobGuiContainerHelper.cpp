@@ -511,6 +511,7 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
         widget->setText_overload(labelText );
         return !labelText.isEmpty();
     }
+    return false;
 
 }
 

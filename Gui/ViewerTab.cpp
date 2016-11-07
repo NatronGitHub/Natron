@@ -350,6 +350,15 @@ ViewerTab::setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonic
     _imp->viewer->setFormat(formatName, canonicalRect, par, texIndex);
 }
 
+QIcon
+ViewerTab::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_PANEL, iconSize, &p);
+    return QIcon(p);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

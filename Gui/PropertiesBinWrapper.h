@@ -41,6 +41,8 @@ public:
 
     virtual ~PropertiesBinWrapper();
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;

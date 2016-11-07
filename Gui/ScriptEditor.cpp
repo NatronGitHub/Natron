@@ -648,6 +648,15 @@ ScriptEditor::focusInEvent(QFocusEvent* e)
     QWidget::focusInEvent(e);
 }
 
+QIcon
+ScriptEditor::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_EDITOR, iconSize, &p);
+    return QIcon(p);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

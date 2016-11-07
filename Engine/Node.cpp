@@ -6624,8 +6624,8 @@ Node::getPluginIconFilePath() const
         return std::string();
     }
 
-
-    return plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+    std::string resourcesPath = plugin->getProperty<std::string>(kNatronPluginPropResourcesPath);
+    return resourcesPath + plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
 }
 
 bool

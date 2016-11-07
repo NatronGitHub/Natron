@@ -171,6 +171,10 @@ public:
         return indexFromItem(item);
     }
 
+    QTreeWidgetItem* getTreeBottomItem() const;
+
+    int getTreeBottomYWidgetCoords() const;
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     void drawBranch(QPainter *painter, const QRect &rect, const NodeAnimPtr& closestEnclosingNodeItem, const QColor& nodeColor, QTreeWidgetItem* item) const;
@@ -230,6 +234,8 @@ private Q_SLOTS:
     void onTreeSelectionModelSelectionChanged();
 
 private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
     boost::scoped_ptr<AnimationModuleTreeViewPrivate> _imp;
 };

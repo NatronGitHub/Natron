@@ -72,7 +72,7 @@ BezierCurve::splitView(const QString& viewName)
         PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
-    item->splitView(ViewIdx(thisViewSpec.value()));
+    (void)item->splitView(ViewIdx(thisViewSpec.value()));
 }
 
 void
@@ -92,7 +92,7 @@ BezierCurve::unSplitView(const QString& viewName)
         PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
         return;
     }
-    item->unSplitView(ViewIdx(thisViewSpec.value()));
+    (void)item->unSplitView(ViewIdx(thisViewSpec.value()));
 }
 
 

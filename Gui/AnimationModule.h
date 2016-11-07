@@ -125,7 +125,7 @@ public:
     virtual void pushUndoCommand(QUndoCommand *cmd) OVERRIDE FINAL;
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
-    virtual CurveWidget* getCurveWidget() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AnimationModuleView* getView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     NodeAnimPtr findNodeAnim(const NodePtr& node) const;
     NodeAnimPtr findNodeAnim(const KnobIPtr &knob) const;

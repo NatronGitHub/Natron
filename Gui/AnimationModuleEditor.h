@@ -100,6 +100,13 @@ public:
 
     virtual ~AnimationModuleEditor();
 
+    enum AnimationModuleDisplayViewMode
+    {
+        eAnimationModuleDisplayViewModeStacked,
+        eAnimationModuleDisplayViewModeCurveEditor,
+    };
+
+    AnimationModuleEditor::AnimationModuleDisplayViewMode getDisplayMode() const;
 
     /**
      * @brief Tells to the dope sheet model to add 'nodeGui' to the dope sheet
@@ -125,9 +132,7 @@ public:
 
     int getTimelineCurrentTime() const;
 
-    DopeSheetView* getDopesheetView() const;
-
-    CurveWidget* getCurveWidget() const;
+    AnimationModuleView* getView() const;
 
     AnimationModuleTreeView* getTreeView() const;
 
@@ -141,6 +146,10 @@ public:
 
     void setSelectedCurveExpression(const QString& expression);
 
+    void zoomDisplayedView(int delta);
+
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onExprLineEditFinished();
@@ -148,6 +157,22 @@ public Q_SLOTS:
     void onViewCurrentIndexChanged(int index);
 
     void onSelectionModelSelectionChanged(bool recurse);
+
+    void onRemoveSelectedKeyFramesActionTriggered();
+
+    void onCopySelectedKeyFramesToClipBoardActionTriggered();
+
+    void onPasteClipBoardKeyFramesActionTriggered();
+
+    void onPasteClipBoardKeyFramesAbsoluteActionTriggered();
+
+    void onSelectAllKeyFramesActionTriggered();
+
+    void onSetInterpolationActionTriggered();
+
+    void onCenterAllCurvesActionTriggered();
+
+    void onCenterOnSelectedCurvesActionTriggered();
 
 private:
 

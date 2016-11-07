@@ -159,20 +159,6 @@ public:
         Q_EMIT expressionChanged(dimension, view);
     }
 
-    void s_derivativeMoved(double time,
-                           ViewIdx view,
-                           DimIdx dimension)
-    {
-        Q_EMIT derivativeMoved(time, view, dimension);
-    }
-
-    void s_keyFrameInterpolationChanged(double time,
-                                        ViewIdx view,
-                                        DimIdx dimension)
-    {
-        Q_EMIT keyFrameInterpolationChanged(time, view, dimension);
-    }
-
     void s_hasModificationsChanged()
     {
         Q_EMIT hasModificationsChanged();
@@ -231,12 +217,6 @@ Q_SIGNALS:
     // Emitted when the animation of a curve has changed. The added list contains keyframes that were added and removed list
     // keys that were removed
     void curveAnimationChanged(std::list<double> added, std::list<double> removed, ViewIdx view, DimIdx dimension);
-
-    // Emitted when a derivative is changed on a keyframe
-    void derivativeMoved(double time, ViewIdx view, DimIdx dimension);
-
-    // Emitted when interpolation on a key is changed
-    void keyFrameInterpolationChanged(double time, ViewIdx view, DimIdx dimension);
 
     // Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(DimIdx dimension, ViewIdx, bool slaved);

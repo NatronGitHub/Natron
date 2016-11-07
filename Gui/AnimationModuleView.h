@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_ANIMATIONMODULEVIEWBASE_H
-#define NATRON_GUI_ANIMATIONMODULEVIEWBASE_H
+#ifndef NATRON_GUI_AnimationModuleView_H
+#define NATRON_GUI_AnimationModuleView_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -44,14 +44,10 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 
-#define KF_TEXTURES_COUNT 18
-#define KF_PIXMAP_SIZE 14
-#define KF_X_OFFSET 7
-
 NATRON_NAMESPACE_ENTER;
 
-class AnimationModuleViewPrivateBase;
-class AnimationViewBase
+class AnimationModuleViewPrivate;
+class AnimationModuleView
 : public QGLWidget
 , public OverlaySupport
 {
@@ -62,9 +58,9 @@ class AnimationViewBase
     
 public:
 
-    AnimationViewBase(QWidget* parent);
+    AnimationModuleView(QWidget* parent);
 
-    virtual ~AnimationViewBase();
+    virtual ~AnimationModuleView();
 
     void initialize(Gui* gui, const AnimationModuleBasePtr& model);
 
@@ -74,7 +70,7 @@ public:
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
-    virtual void refreshSelectionBoundingBox() = 0;
+    void refreshSelectionBoundingBox();
 
     void refreshSelectionBboxAndRedraw();
 
@@ -84,7 +80,7 @@ public:
     virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
@@ -98,9 +94,6 @@ public:
     /////
 
 
-    QPointF toZoomCoordinates(double x, double y) const;
-    QPointF toWidgetCoordinates(double x, double y) const;
-
     /**
      * @brief Make the view fill the given rectangle.
      **/
@@ -111,11 +104,61 @@ public:
      **/
     void centerOn(double xmin, double xmax);
 
-    virtual void centerOnAllItems() = 0;
+    void centerOnAllItems();
 
-    virtual void centerOnSelection() = 0;
+    void centerOnSelection();
 
+    RectD getSelectionRectangle() const;
+
+
+    /**
+     * @brief Returns a pair composed of the first keyframe (or the starting
+     * time of the first reader) displayed in the view and the last.
+     *
+     * This function is used to center the displayed content on a keyframe
+     * selection.
+     */
+    std::pair<double, double> getKeyframeRange() const;
+
+
+    /**
+     * @brief Convenience function: fill the view according to the bounding box of all given curves.
+     * @param curves The curves to compute the bounding box from. If empty, uses all selected curves
+     * in the tree view.
+     * @param useDisplayRange If true, then if the curves have a display range, it uses it in order
+     * to compute the bounding box of a curve, otherwise it uses the bounding box of its keyframes.
+     **/
+    void centerOnCurves(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange);
+
+
+
+    // The interact will be drawn after the background and before any curve
+    void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
+
+    OfxParamOverlayInteractPtr getCustomInteract() const;
+
+
+    /**
+     * @brief Computes the position of the right and left tangents handle in curve coordinates
+     **/
+    void getKeyTangentPoints(KeyFrameSet::const_iterator it,
+                             const KeyFrameSet& keys,
+                             QPointF* leftTanPos,
+                             QPointF* rightTanPos);
+
+    // Uses curve editor zoom context
+    QPointF toZoomCoordinates(double x, double y) const;
+    QPointF toWidgetCoordinates(double x, double y) const;
+    
 public Q_SLOTS:
+
+    
+
+    void onTimeLineFrameChanged(SequenceTime time, int reason);
+
+    void onUpdateOnPenUpActionTriggered();
+
+    void onSelectionModelKeyframeSelectionChanged();
 
     void onRemoveSelectedKeyFramesActionTriggered();
 
@@ -133,11 +176,29 @@ public Q_SLOTS:
 
     void onCenterOnSelectedCurvesActionTriggered();
 
-    void onTimeLineFrameChanged(SequenceTime time, int reason);
+    void onNodeAdded(const NodeAnimPtr& NodeAnim);
 
-    void onUpdateOnPenUpActionTriggered();
+    void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
 
-    void onSelectionModelKeyframeSelectionChanged();
+    void onKnobAnimationChanged();
+
+    void onRangeNodeKnobChanged();
+
+    void onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
+
+    void onAnimationTreeViewScrollbarMoved(int);
+
+    void onEditKeyFrameDialogFinished(bool accepted);
+
+    void onExportCurveToAsciiActionTriggered();
+
+    void onImportCurveFromAsciiActionTriggered();
+
+    void onApplyLoopExpressionOnSelectedCurveActionTriggered();
+
+    void onApplyNegateExpressionOnSelectedCurveActionTriggered();
+
+    void onApplyReverseExpressionOnSelectedCurveActionTriggered();
 
 protected:
 
@@ -149,22 +210,24 @@ private:
     virtual void resizeGL(int width, int height) OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
 
-protected:
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
-    void setImplementation(const boost::shared_ptr<AnimationModuleViewPrivateBase>& imp)
-    {
-        _imp = imp;
-    }
+public:
+    
+    virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
 
-    virtual void initializeImplementation(Gui* gui, const AnimationModuleBasePtr& model, AnimationViewBase* publicInterface) = 0;
-
-    virtual void drawView() = 0;
 private:
 
-    boost::shared_ptr<AnimationModuleViewPrivateBase> _imp;
+
+    friend class CurveGui;
+    boost::shared_ptr<AnimationModuleViewPrivate> _imp;
 
 };
 
 
 NATRON_NAMESPACE_EXIT;
-#endif // NATRON_GUI_ANIMATIONMODULEVIEWBASE_H
+#endif // NATRON_GUI_AnimationModuleView_H

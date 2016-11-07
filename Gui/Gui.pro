@@ -90,8 +90,11 @@ SOURCES += \
     AnimationModuleSelectionModel.cpp \
     AnimationModuleTreeView.cpp \
     AnimationModuleUndoRedo.cpp \
-    AnimationModuleViewBase.cpp \
-    AnimationModuleViewPrivateBase.cpp \
+    AnimationModuleView.cpp \
+    AnimationModuleViewCurveWidget.cpp \
+    AnimationModuleViewCurveWidgetPrivate.cpp \
+    AnimationModuleViewDopeSheet.cpp \
+    AnimationModuleViewPrivate.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
@@ -99,16 +102,13 @@ SOURCES += \
     ColoredFrame.cpp \
     ComboBox.cpp \
     CurveGui.cpp \
-    CurveWidget.cpp \
     CurveWidgetDialogs.cpp \
-    CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
     DialogButtonBox.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
     DocumentationManager.cpp \
-    DopeSheetView.cpp \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
@@ -246,8 +246,8 @@ HEADERS += \
     AnimationModuleSelectionModel.h \
     AnimationModuleTreeView.h \
     AnimationModuleUndoRedo.h \
-    AnimationModuleViewBase.h \
-    AnimationModuleViewPrivateBase.h \
+    AnimationModuleView.h \
+    AnimationModuleViewPrivate.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
@@ -255,7 +255,6 @@ HEADERS += \
     ColoredFrame.h \
     ComboBox.h \
     CurveGui.h \
-    CurveWidget.h \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \
     CustomParamInteract.h \
@@ -264,7 +263,6 @@ HEADERS += \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
     DocumentationManager.h \
-    DopeSheetView.h \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \

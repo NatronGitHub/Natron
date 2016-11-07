@@ -1667,17 +1667,17 @@ Settings::setDefaultValues()
     _exprColor->setDefaultValue(0.78, DimIdx(1));
     _exprColor->setDefaultValue(0.39, DimIdx(2));
 
-    _curveEditorBGColor->setDefaultValue(0., DimIdx(0));
-    _curveEditorBGColor->setDefaultValue(0., DimIdx(1));
-    _curveEditorBGColor->setDefaultValue(0., DimIdx(2));
+    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(0));
+    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(1));
+    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(2));
 
-    _gridColor->setDefaultValue(0.46, DimIdx(0));
-    _gridColor->setDefaultValue(0.84, DimIdx(1));
-    _gridColor->setDefaultValue(0.35, DimIdx(2));
+    _gridColor->setDefaultValue(0.714, DimIdx(0));
+    _gridColor->setDefaultValue(0.714, DimIdx(1));
+    _gridColor->setDefaultValue(0.714, DimIdx(2));
 
-    _curveEditorScaleColor->setDefaultValue(0.26, DimIdx(0));
-    _curveEditorScaleColor->setDefaultValue(0.48, DimIdx(1));
-    _curveEditorScaleColor->setDefaultValue(0.2, DimIdx(2));
+    _curveEditorScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _curveEditorScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _curveEditorScaleColor->setDefaultValue(0.714, DimIdx(2));
 
     // Initialize Dope sheet editor Settings knobs
     _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(0));

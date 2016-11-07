@@ -641,6 +641,16 @@ ProgressPanel::onItemRightClicked(QPoint globalPos, const TableItemPtr& item)
     }
 }
 
+QIcon
+ProgressPanel::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_PROGRESS_PANEL, iconSize, &p);
+    return QIcon(p);
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 

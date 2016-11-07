@@ -393,9 +393,16 @@ NodeAnim::refreshKnobsVisibility()
         if (!knobItem) {
             continue;
         }
-        // Expand if it's a multidim root item
-        if (knobItem->childCount() > 0) {
+        int nChildren = knobItem->childCount();
+        if (nChildren > 0) {
             knobItem->setExpanded(true);
+            for (int i = 0; i < nChildren; ++i) {
+                QTreeWidgetItem* child = knobItem->child(i);
+                if (child) {
+                    child->setExpanded(true);
+                }
+            }
+
         }
         (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
     }

@@ -42,11 +42,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/AppManager.h" // appPTR
 
 #include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/LineEdit.h" // LineEdit
 #include "Gui/SpinBox.h" // SpinBox
 #include "Gui/Button.h" // Button
-#include "Gui/CurveWidget.h" // CurveWidget
 #include "Gui/SequenceFileDialog.h" // SequenceFileDialog
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h" // Label
@@ -321,7 +321,7 @@ ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr >* columns) c
 
 struct EditKeyFrameDialogPrivate
 {
-    CurveWidget* curveWidget;
+    AnimationModuleView* curveWidget;
     AnimItemDimViewKeyFrame key;
     double originalX, originalY;
     QVBoxLayout* mainLayout;
@@ -335,7 +335,7 @@ struct EditKeyFrameDialogPrivate
     EditKeyFrameDialog::EditModeEnum mode;
 
     EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,
-                              CurveWidget* curveWidget,
+                              AnimationModuleView* curveWidget,
                               const AnimItemDimViewKeyFrame& key)
         : curveWidget(curveWidget)
         , key(key)
@@ -360,7 +360,7 @@ struct EditKeyFrameDialogPrivate
 };
 
 EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
-                                       CurveWidget* curveWidget,
+                                       AnimationModuleView* curveWidget,
                                        const AnimItemDimViewKeyFrame& key,
                                        QWidget* parent)
     : QDialog(parent)

@@ -53,7 +53,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 

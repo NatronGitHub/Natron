@@ -605,6 +605,56 @@ AnimationModuleTreeView::lastVisibleChild(QTreeWidgetItem *item) const
     return ret;
 }
 
+static QTreeWidgetItem* getTreeBottomItemInternal(QTreeWidgetItem* item)
+{
+    if (item->isHidden()) {
+        return 0;
+    }
+
+    int nChildren = item->childCount();
+    if (nChildren == 0) {
+        return item;
+    }
+    if (!item->isExpanded()) {
+        return item;
+    }
+    QTreeWidgetItem* hasChildRet = 0;
+    for (int i = nChildren - 1; i >= 0; --i) {
+        hasChildRet = getTreeBottomItemInternal(item->child(i));
+        if (hasChildRet) {
+            return hasChildRet;
+        }
+    }
+
+    return item;
+}
+
+QTreeWidgetItem*
+AnimationModuleTreeView::getTreeBottomItem() const
+{
+    int nTopLevel = topLevelItemCount();
+    if (nTopLevel <= 0) {
+        return 0;
+    }
+    for (int i = nTopLevel - 1; i >= 0; --i) {
+        QTreeWidgetItem* subRet = getTreeBottomItemInternal(topLevelItem(i));
+        if (subRet) {
+            return subRet;
+        }
+    }
+    return 0;
+}
+
+int
+AnimationModuleTreeView::getTreeBottomYWidgetCoords() const
+{
+    QTreeWidgetItem* item = getTreeBottomItem();
+    if (!item) {
+        return 0;
+    }
+    return visualItemRect(item).bottomLeft().y();
+}
+
 QTreeWidgetItem*
 AnimationModuleTreeView::getTreeItemForModelIndex(const QModelIndex& index) const
 {
@@ -675,7 +725,8 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
         if (isNodeItem) {
             closestEnclosingNode = isNodeItem;
             if (drawPluginIconToo) {
-                iconFilePath = isNodeItem->getNodeGui()->getNode()->getPluginIconFilePath();
+                NodePtr internalNode = isNodeItem->getNodeGui()->getNode();
+                iconFilePath = internalNode->getPluginIconFilePath();
             }
         } else if (isTableItem) {
             closestEnclosingNode = isTableItem->getNode();
@@ -991,7 +1042,11 @@ AnimationModuleTreeView::onTreeSelectionModelSelectionChanged()
     getModel()->getSelectionModel()->selectItems(selectedItems());
 }
 
-
+void
+AnimationModuleTreeView::keyPressEvent(QKeyEvent* e)
+{
+    return QTreeWidget::keyPressEvent(e);
+}
 
 NATRON_NAMESPACE_EXIT;
 

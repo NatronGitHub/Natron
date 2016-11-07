@@ -56,7 +56,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    CurveGui(CurveWidget *curveWidget, const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view);
+    CurveGui(AnimationModuleView *curveWidget, const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view);
 
     virtual ~CurveGui() OVERRIDE;
     

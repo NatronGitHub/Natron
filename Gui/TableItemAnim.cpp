@@ -42,6 +42,7 @@
 
 
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobAnim.h"
@@ -311,7 +312,7 @@ TableItemAnim::createViewItems()
 {
     KnobTableItemPtr item = getInternalItem();
 
-    CurveWidget* curveWidget = getModel()->getCurveWidget();
+    AnimationModuleView* curveWidget = getModel()->getView();
     AnimItemBasePtr thisShared = shared_from_this();
 
     std::list<ViewIdx> views = item->getViewsList();

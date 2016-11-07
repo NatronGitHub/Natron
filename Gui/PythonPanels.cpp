@@ -577,7 +577,7 @@ void
 PyTabWidget::insertTab(int index,
                        PyPanel* tab)
 {
-    _tab->insertTab(index, QIcon(), tab, tab);
+    _tab->insertTab(index, tab, tab);
 }
 
 void

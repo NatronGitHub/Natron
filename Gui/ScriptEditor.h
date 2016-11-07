@@ -70,6 +70,8 @@ public:
 
     void sourceScript(const QString& filename);
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void doAppendToScriptEditorOnMainThread(const QString& str);

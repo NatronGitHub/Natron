@@ -33,6 +33,8 @@
 #include "Gui/Gui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/TabWidget.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -121,5 +123,15 @@ PropertiesBinWrapper::getUndoStack() const
 
     return 0;
 }
+
+QIcon
+PropertiesBinWrapper::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_PROPERTIES_PANEL, iconSize, &p);
+    return QIcon(p);
+}
+
 
 NATRON_NAMESPACE_EXIT;

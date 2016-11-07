@@ -124,9 +124,9 @@ public:
     virtual void refreshSelectionBboxAndUpdateView() = 0;
 
     /**
-     * @brief Return a pointer to the curve widget if there's one
+     * @brief Return a pointer to the view
      **/
-    virtual CurveWidget* getCurveWidget() const = 0;
+    virtual AnimationModuleView* getView() const = 0;
 
     /**
      * @brief Set the selection
