@@ -93,11 +93,11 @@ AnimationModuleViewPrivate::drawCurveEditorScale()
     const double largestTickSizePixel = 500.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
     SettingsPtr sett = appPTR->getCurrentSettings();
-    sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
+    sett->getAnimationModuleEditorGridColor(&gridR, &gridG, &gridB);
 
 
     double scaleR, scaleG, scaleB;
-    sett->getCurveEditorScaleColor(&scaleR, &scaleG, &scaleB);
+    sett->getAnimationModuleEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
     QColor scaleColor;
     scaleColor.setRgbF( Image::clamp(scaleR, 0., 1.),

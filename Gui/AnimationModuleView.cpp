@@ -150,13 +150,13 @@ AnimationModuleView::resizeGL(int width,
     }
     GL_GPU::glViewport (0, 0, width, height);
 
-    int treeItemBottomWidgetCoordY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
+    //int treeItemBottomWidgetCoordY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
     
     // Width and height may be 0 when tearing off a tab to another panel
     if ( (width > 0) && (height > 0) ) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         _imp->curveEditorZoomContext.setScreenSize(width, height);
-        _imp->dopeSheetZoomContext.setScreenSize(width, treeItemBottomWidgetCoordY + 1);
+        _imp->dopeSheetZoomContext.setScreenSize(width, height);
     }
 
     if (height == 1) {
@@ -214,40 +214,61 @@ AnimationModuleView::paintGL()
         treeItemBottomWidgetCoordY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
 
         assert(isAnimModule);
-        GL_GPU::glViewport (0, h - treeItemBottomWidgetCoordY - 1, w, treeItemBottomWidgetCoordY + 1);
+        if (treeItemBottomWidgetCoordY <=  0) {
+            treeItemBottomWidgetCoordY = 0;
+            displayMode = AnimationModuleEditor::eAnimationModuleDisplayViewModeCurveEditor;
+        } else {
+
+            GL_GPU::glMatrixMode(GL_PROJECTION);
+            GL_GPU::glLoadIdentity();
+            GL_GPU::glOrtho(_imp->dopeSheetZoomContext.left(), _imp->dopeSheetZoomContext.right(), _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top(), 1, -1);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glLoadIdentity();
+            glCheckError(GL_GPU);
+            
+            
+            GL_GPU::glEnable(GL_SCISSOR_TEST);
+            GL_GPU::glScissor(0, h - treeItemBottomWidgetCoordY - 1, w, treeItemBottomWidgetCoordY + 1);
+            
+            
+            _imp->drawDopeSheetView();
+        }
+        
+    }
+    
+    if (treeItemBottomWidgetCoordY < h) {
         GL_GPU::glMatrixMode(GL_PROJECTION);
         GL_GPU::glLoadIdentity();
-        GL_GPU::glOrtho(_imp->dopeSheetZoomContext.left(), _imp->dopeSheetZoomContext.right(), _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top(), 1, -1);
+        GL_GPU::glOrtho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
         GL_GPU::glMatrixMode(GL_MODELVIEW);
         GL_GPU::glLoadIdentity();
         glCheckError(GL_GPU);
-
-
-        GL_GPU::glEnable(GL_SCISSOR_TEST);
-        GL_GPU::glScissor(0, h - treeItemBottomWidgetCoordY - 1, w, treeItemBottomWidgetCoordY + 1);
-
-
-        _imp->drawDopeSheetView();
-
+        
+        if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
+            GL_GPU::glScissor(0, 0, w, h - treeItemBottomWidgetCoordY);
+        }
+        
+        _imp->drawCurveEditorView();
     }
-    GL_GPU::glViewport (0, 0, w, h);
-    GL_GPU::glMatrixMode(GL_PROJECTION);
-    GL_GPU::glLoadIdentity();
-    GL_GPU::glOrtho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
-    GL_GPU::glLoadIdentity();
-    glCheckError(GL_GPU);
-
-    if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
-        GL_GPU::glScissor(0, 0, w, h - treeItemBottomWidgetCoordY);
-    }
-
-    _imp->drawCurveEditorView();
 
     if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
         GL_GPU::glDisable(GL_SCISSOR_TEST);
+        
+        // Draw a line to split dope sheet and curve editor
+        QPointF bottomLeft = _imp->curveEditorZoomContext.toZoomCoordinates(0, 0);
+        QPointF topRight = _imp->curveEditorZoomContext.toZoomCoordinates(w, h);
+        
+        double treeItemBottomZoomCord = _imp->curveEditorZoomContext.toZoomCoordinates(0, treeItemBottomWidgetCoordY).y();
+        if (treeItemBottomWidgetCoordY < h) {
+            GL_GPU::glLineWidth(1.5);
+            GL_GPU::glColor3d(0, 0, 0);
+            GL_GPU::glBegin(GL_LINES);
+            GL_GPU::glVertex2d(bottomLeft.x(), treeItemBottomZoomCord);
+            GL_GPU::glVertex2d(topRight.x(), treeItemBottomZoomCord);
+            GL_GPU::glEnd();
+        }
     }
-
+    
     _imp->drawTimelineMarkers();
 
     glCheckError(GL_GPU);
@@ -1099,6 +1120,16 @@ void
 AnimationModuleView::mouseDoubleClickEvent(QMouseEvent* e)
 {
 
+    if (_imp->curveEditorDoubleClickEvent(e)) {
+        e->accept();
+        update();
+        return;
+    }
+    if (_imp->dopeSheetDoubleClickEvent(e)) {
+        e->accept();
+        update();
+        return;
+    }
 } // mouseDoubleClickEvent
 
 void

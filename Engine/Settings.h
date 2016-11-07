@@ -320,9 +320,6 @@ public:
     void getTimelineBGColor(double* r, double* g, double* b) const;
     void getCachedFrameColor(double* r, double* g, double* b) const;
     void getDiskCachedColor(double* r, double* g, double* b) const;
-    void getCurveEditorBGColor(double* r, double* g, double* b) const;
-    void getCurveEditorGridColor(double* r, double* g, double* b) const;
-    void getCurveEditorScaleColor(double* r, double* g, double* b) const;
     void getAnimationModuleEditorBackgroundColor(double* r, double* g, double* b) const;
     void getAnimationModuleEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getAnimationModuleEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
@@ -400,7 +397,6 @@ private:
     void initializeKnobsPython();
     void initializeKnobsAppearance();
     void initializeKnobsGuiColors();
-    void initializeKnobsCurveEditorColors();
     void initializeKnobsDopeSheetColors();
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
@@ -582,19 +578,14 @@ private:
     KnobColorPtr _diskCachedFrameColor;
     KnobColorPtr _sliderColor;
 
-    // Apprance/Curve Editor
-    KnobPagePtr _curveEditorColorsTab;
-    KnobColorPtr _curveEditorBGColor;
-    KnobColorPtr _gridColor;
-    KnobColorPtr _curveEditorScaleColor;
 
     // Appearance/Dope Sheet
-    KnobPagePtr _dopesheetColorsTab;
-    KnobColorPtr _dopesheetBackgroundColor;
+    KnobPagePtr _animationColorsTab;
+    KnobColorPtr _animationViewBackgroundColor;
     KnobColorPtr _dopesheetRootSectionBackgroundColor;
     KnobColorPtr _dopesheetKnobSectionBackgroundColor;
-    KnobColorPtr _dopesheetScaleColor;
-    KnobColorPtr _dopesheetGridColor;
+    KnobColorPtr _animationViewScaleColor;
+    KnobColorPtr _animationViewGridColor;
 
     // Appearance/Script Editor
     KnobPagePtr _scriptEditorColorsTab;

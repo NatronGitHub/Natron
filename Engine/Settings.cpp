@@ -138,7 +138,6 @@ Settings::initializeKnobs()
     initializeKnobsPython();
     initializeKnobsAppearance();
     initializeKnobsGuiColors();
-    initializeKnobsCurveEditorColors();
     initializeKnobsDopeSheetColors();
     initializeKnobsNodeGraphColors();
     initializeKnobsScriptEditorColors();
@@ -862,58 +861,37 @@ Settings::initializeKnobsGuiColors()
     _guiColorsTab->addKnob(_sliderColor);
 } // Settings::initializeKnobsGuiColors
 
-void
-Settings::initializeKnobsCurveEditorColors()
-{
-    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Curve Editor") );
-    _appearanceTab->addKnob(_curveEditorColorsTab);
-
-    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Background color"), 3);
-    _curveEditorBGColor->setName("curveEditorBG");
-    _curveEditorBGColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorBGColor);
-
-    _gridColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Grid color"), 3);
-    _gridColor->setName("curveditorGrid");
-    _gridColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_gridColor);
-
-    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale color"), 3);
-    _curveEditorScaleColor->setName("curveeditorScale");
-    _curveEditorScaleColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorScaleColor);
-}
 
 void
 Settings::initializeKnobsDopeSheetColors()
 {
-    _dopesheetColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Dope Sheet") );
-    _appearanceTab->addKnob(_dopesheetColorsTab);
+    _animationColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Animation Module") );
+    _appearanceTab->addKnob(_animationColorsTab);
 
-    _dopesheetBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet background color"), 3);
-    _dopesheetBackgroundColor->setName("dopesheetBackground");
-    _dopesheetBackgroundColor->setSimplified(true);
-    _dopesheetColorsTab->addKnob(_dopesheetBackgroundColor);
+    _animationViewBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Background Color"), 3);
+    _animationViewBackgroundColor->setName("animationViewBGColor");
+    _animationViewBackgroundColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewBackgroundColor);
 
     _dopesheetRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
     _dopesheetRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
     _dopesheetRootSectionBackgroundColor->setSimplified(true);
-    _dopesheetColorsTab->addKnob(_dopesheetRootSectionBackgroundColor);
+    _animationColorsTab->addKnob(_dopesheetRootSectionBackgroundColor);
 
     _dopesheetKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
     _dopesheetKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
     _dopesheetKnobSectionBackgroundColor->setSimplified(true);
-    _dopesheetColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
+    _animationColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
 
-    _dopesheetScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet scale color"), 3);
-    _dopesheetScaleColor->setName("dopesheetScale");
-    _dopesheetScaleColor->setSimplified(true);
-    _dopesheetColorsTab->addKnob(_dopesheetScaleColor);
+    _animationViewScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale Color"), 3);
+    _animationViewScaleColor->setName("animationViewScaleColor");
+    _animationViewScaleColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewScaleColor);
 
-    _dopesheetGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet grid color"), 3);
-    _dopesheetGridColor->setName("dopesheetGrid");
-    _dopesheetGridColor->setSimplified(true);
-    _dopesheetColorsTab->addKnob(_dopesheetGridColor);
+    _animationViewGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Grid Color"), 3);
+    _animationViewGridColor->setName("animationViewGridColor");
+    _animationViewGridColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewGridColor);
 }
 
 void
@@ -1667,22 +1645,17 @@ Settings::setDefaultValues()
     _exprColor->setDefaultValue(0.78, DimIdx(1));
     _exprColor->setDefaultValue(0.39, DimIdx(2));
 
-    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(0));
-    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(1));
-    _curveEditorBGColor->setDefaultValue(0.19, DimIdx(2));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
 
-    _gridColor->setDefaultValue(0.714, DimIdx(0));
-    _gridColor->setDefaultValue(0.714, DimIdx(1));
-    _gridColor->setDefaultValue(0.714, DimIdx(2));
+    _animationViewGridColor->setDefaultValue(0.714, DimIdx(0));
+    _animationViewGridColor->setDefaultValue(0.714, DimIdx(1));
+    _animationViewGridColor->setDefaultValue(0.714, DimIdx(2));
 
-    _curveEditorScaleColor->setDefaultValue(0.714, DimIdx(0));
-    _curveEditorScaleColor->setDefaultValue(0.718, DimIdx(1));
-    _curveEditorScaleColor->setDefaultValue(0.714, DimIdx(2));
-
-    // Initialize Dope sheet editor Settings knobs
-    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(0));
-    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(1));
-    _dopesheetBackgroundColor->setDefaultValue(0.208, DimIdx(2));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
 
     _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
     _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
@@ -1693,14 +1666,6 @@ Settings::setDefaultValues()
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
     _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
-
-    _dopesheetScaleColor->setDefaultValue(0.714, DimIdx(0));
-    _dopesheetScaleColor->setDefaultValue(0.718, DimIdx(1));
-    _dopesheetScaleColor->setDefaultValue(0.714, DimIdx(2));
-
-    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(0));
-    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(1));
-    _dopesheetGridColor->setDefaultValue(0.714, DimIdx(2));
 
     _keywordColor->setDefaultValue(0.7, DimIdx(0));
     _keywordColor->setDefaultValue(0.7, DimIdx(1));
@@ -2310,14 +2275,11 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                 ( k == _trackerKeyframeColor ) ||
                 ( k == _cachedFrameColor ) ||
                 ( k == _diskCachedFrameColor ) ||
-                ( k == _curveEditorBGColor ) ||
-                ( k == _gridColor ) ||
-                ( k == _curveEditorScaleColor ) ||
-                ( k == _dopesheetBackgroundColor ) ||
+                ( k == _animationViewBackgroundColor ) ||
+                ( k == _animationViewGridColor ) ||
+                ( k == _animationViewScaleColor ) ||
                 ( k == _dopesheetRootSectionBackgroundColor ) ||
                 ( k == _dopesheetKnobSectionBackgroundColor ) ||
-                ( k == _dopesheetScaleColor ) ||
-                ( k == _dopesheetGridColor ) ||
                 ( k == _keywordColor ) ||
                 ( k == _operatorColor ) ||
                 ( k == _curLineColor ) ||
@@ -3354,43 +3316,13 @@ Settings::getDiskCachedColor(double* r,
 }
 
 void
-Settings::getCurveEditorBGColor(double* r,
-                                double* g,
-                                double* b) const
-{
-    *r = _curveEditorBGColor->getValue(DimIdx(0));
-    *g = _curveEditorBGColor->getValue(DimIdx(1));
-    *b = _curveEditorBGColor->getValue(DimIdx(2));
-}
-
-void
-Settings::getCurveEditorGridColor(double* r,
-                                  double* g,
-                                  double* b) const
-{
-    *r = _gridColor->getValue(DimIdx(0));
-    *g = _gridColor->getValue(DimIdx(1));
-    *b = _gridColor->getValue(DimIdx(2));
-}
-
-void
-Settings::getCurveEditorScaleColor(double* r,
-                                   double* g,
-                                   double* b) const
-{
-    *r = _curveEditorScaleColor->getValue(DimIdx(0));
-    *g = _curveEditorScaleColor->getValue(DimIdx(1));
-    *b = _curveEditorScaleColor->getValue(DimIdx(2));
-}
-
-void
 Settings::getAnimationModuleEditorBackgroundColor(double *r,
                                             double *g,
                                             double *b) const
 {
-    *r = _dopesheetBackgroundColor->getValue(DimIdx(0));
-    *g = _dopesheetBackgroundColor->getValue(DimIdx(1));
-    *b = _dopesheetBackgroundColor->getValue(DimIdx(2));
+    *r = _animationViewBackgroundColor->getValue(DimIdx(0));
+    *g = _animationViewBackgroundColor->getValue(DimIdx(1));
+    *b = _animationViewBackgroundColor->getValue(DimIdx(2));
 }
 
 void
@@ -3422,9 +3354,9 @@ Settings::getAnimationModuleEditorScaleColor(double *r,
                                        double *g,
                                        double *b) const
 {
-    *r = _dopesheetScaleColor->getValue(DimIdx(0));
-    *g = _dopesheetScaleColor->getValue(DimIdx(1));
-    *b = _dopesheetScaleColor->getValue(DimIdx(2));
+    *r = _animationViewScaleColor->getValue(DimIdx(0));
+    *g = _animationViewScaleColor->getValue(DimIdx(1));
+    *b = _animationViewScaleColor->getValue(DimIdx(2));
 }
 
 void
@@ -3432,9 +3364,9 @@ Settings::getAnimationModuleEditorGridColor(double *r,
                                       double *g,
                                       double *b) const
 {
-    *r = _dopesheetGridColor->getValue(DimIdx(0));
-    *g = _dopesheetGridColor->getValue(DimIdx(1));
-    *b = _dopesheetGridColor->getValue(DimIdx(2));
+    *r = _animationViewGridColor->getValue(DimIdx(0));
+    *g = _animationViewGridColor->getValue(DimIdx(1));
+    *b = _animationViewGridColor->getValue(DimIdx(2));
 }
 
 void

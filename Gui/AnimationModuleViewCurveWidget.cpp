@@ -381,7 +381,7 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
         return true;
     }
 
-
+    return false;
 } // mousePressEvent
 
 void
