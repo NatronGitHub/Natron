@@ -363,13 +363,12 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
     }
     _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
 
-    
-    if (_imp->rootItem->isHidden() != !showItem) {
-        _imp->rootItem->setHidden(!showItem);
 
-        // Post a redraw, this will concatenate
-        getModel()->getView()->redraw();
-    }
+    _imp->rootItem->setHidden(!showItem);
+
+    // Post a redraw, this will concatenate
+    getModel()->getView()->redraw();
+
 
 }
 

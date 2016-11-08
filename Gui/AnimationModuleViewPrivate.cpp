@@ -28,6 +28,7 @@
 #include <QApplication>
 
 #include <QThread>
+#include <QDebug>
 #include <QImage>
 
 #include "Engine/KnobTypes.h"
@@ -975,9 +976,18 @@ AnimationModuleViewPrivate::transformSelectedKeyFrames(const QPointF & oldPosCan
     }
 
     double dt = newPosCanonical.x() - oldPosCanonical.x();
-    double dv = 0;
-    if (eventTriggeredFromCurveEditor) {
-        dv = newPosCanonical.y() - oldPosCanonical.y();
+    double dv = newPosCanonical.y() - oldPosCanonical.y();
+
+    switch (centerType) {
+        case eTransformSelectionCenterBottom:
+        case eTransformSelectionCenterTop:
+            dt = 0;
+            break;
+        case eTransformSelectionCenterLeft:
+        case eTransformSelectionCenterRight:
+            dv = 0;
+        default:
+            break;
     }
 
     if (dt == 0 && dv == 0) {
@@ -1022,6 +1032,7 @@ AnimationModuleViewPrivate::transformSelectedKeyFrames(const QPointF & oldPosCan
             sy *= ratio;
         }
     }
+    qDebug() << "sx=" << sx << "sy=" << sy << "center=" << center.x() << center.y() << "oldPos" << oldPosCanonical.x() << oldPosCanonical.y() << "newPos" << newPosCanonical.x() << newPosCanonical.y();
     Transform::Matrix3x3 transform =  Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y());
     _model.lock()->transformSelectedKeys(transform);
 
