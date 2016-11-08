@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
-#include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"

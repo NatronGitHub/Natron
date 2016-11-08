@@ -49,11 +49,15 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#ifdef DEBUG
+#include <SequenceParsing.h> // for removePath
+#endif
+
 #include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
 #include "Engine/Texture.h"
-#include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
 #include "Global/GLIncludes.h"

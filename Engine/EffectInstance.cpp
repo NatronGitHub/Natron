@@ -47,8 +47,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
-#include <SequenceParsing.h>
-
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 

@@ -31,6 +31,7 @@
 
 #include "Engine/FileSystemModel.h"
 #include "Engine/StandardPaths.h"
+
 #include <SequenceParsing.h>
 
 NATRON_NAMESPACE_USING
