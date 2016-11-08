@@ -1,11 +1,11 @@
---- Portfile.orig	2016-10-24 16:30:51.000000000 +0200
-+++ Portfile	2016-10-24 16:30:57.000000000 +0200
-@@ -21,7 +21,7 @@
- checksums       rmd160 9e5e59182ab25a9f299867ea399a4835a6faccdd \
-                 sha256 d5082e14a50a7e461863991a8e932fc06a1b2f2688108c4478c400c39e257ebb
+--- Portfile.orig	2016-11-02 17:19:53.000000000 +0100
++++ Portfile	2016-11-02 17:20:18.000000000 +0100
+@@ -22,7 +22,7 @@
+ checksums       rmd160 16599535d20434aba8b13fa4c0b94ccfaded37af \
+                 sha256 349f2261767c51a9e59e37025a027686f45f55cfbb8c46fd55c8697092f9f971
  
 -depends_lib     port:jpeg
 +depends_lib     path:lib/libjpeg.dylib:jpeg
  
- configure.args  --disable-opengl
+ patchfiles      configure.patch
  

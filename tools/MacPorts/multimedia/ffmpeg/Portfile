@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 154232 2016-10-24 21:39:16Z devans@macports.org $
+# $Id$
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -10,7 +10,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.1.5
+version             3.2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -52,8 +52,15 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  1f532c75541e5c98cab3bdda503ae6c5688c876f \
-                    sha256  49cc3105f7891c5637f8fabb1b75ebb19c9b5123b311a3ccc6182aa35d58b89a
+checksums           rmd160  ed34d7d669f66f587efcbb7092781a48f629eef8 \
+                    sha256  88f70c1b8cab108f494ecbab5ba302cdb35d59a84cea88008b5fe49be068d5da
+
+# root directory of extracted tarball is owned by root and has permissions 700
+# set to 755 to facilitate maintenance
+
+post-extract {
+    file attributes ${worksrcpath} -permissions 0755
+}
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -80,7 +87,7 @@ depends_lib         port:lame \
                     port:freetype \
                     port:fribidi \
                     path:lib/libspeex.dylib:speex \
-                    port:libsdl \
+                    port:libsdl2 \
                     port:soxr \
                     port:bzip2 \
                     port:xz \
@@ -296,7 +303,7 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    port:libsdl
+                    port:libsdl2
 
     configure.args-delete \
                     --enable-libass \
@@ -323,12 +330,10 @@ variant natron conflicts x11 description {Minimal FFmpeg for Natron, without blu
 
 }
 
-default_variants +x11
-
 if {[variant_isset x11]} {
-    require_active_variants libsdl x11
+    require_active_variants libsdl2 x11
 } else {
-    require_active_variants libsdl "" x11
+    require_active_variants libsdl2 "" x11
 }
 
 variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
@@ -404,10 +409,8 @@ variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+}
 
 variant nonfree description {enable nonfree code, libraries and binaries will not be redistributable} {
     configure.args-append   --enable-nonfree \
-                            --enable-libfdk-aac \
-                            --enable-libfaac
-    depends_lib-append      port:libfdk-aac \
-                            port:faac
+                            --enable-libfdk-aac
+    depends_lib-append      port:libfdk-aac
     license                 Restrictive
 }
 
@@ -416,7 +419,6 @@ notes "
 *******
 ******* This build of ${name} includes nonfree code as follows:
 *******
-*******     libfaac
 *******     libfdk-aac
 *******
 ******* The following libraries and binaries may not be redistributed:

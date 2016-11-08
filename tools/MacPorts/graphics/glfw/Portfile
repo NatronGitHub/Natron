@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 154289 2016-10-26 16:23:55Z michaelld@macports.org $
+# $Id$
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -25,7 +25,7 @@ platform darwin {
 
         epoch           1
 
-        long_description ${description}. This version of GLFW is the latest to provide support for Mac OS X 10.6 and prior, and is will not be updated. It is provided in the hope that it allows ports depending on GLFW to build on these older Mac OS X installs.
+        long_description ${description}. This version of GLFW is the latest to provide support for Mac OS X 10.6 and prior, and it will not be updated. It is provided in the hope that it allows ports depending on GLFW to build on these older Mac OS X installs.
 
         # patch to fix install directory for cmake files and docs
 

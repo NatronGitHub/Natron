@@ -1,6 +1,6 @@
---- Portfile.orig	2016-08-31 17:30:21.000000000 +0200
-+++ Portfile	2016-08-31 17:30:26.000000000 +0200
-@@ -100,6 +100,11 @@
+--- Portfile.orig	2016-11-02 17:14:23.000000000 +0100
++++ Portfile	2016-11-03 11:10:53.000000000 +0100
+@@ -107,6 +107,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
  
@@ -12,7 +12,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -131,11 +136,13 @@
+@@ -138,11 +143,13 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
@@ -27,7 +27,7 @@
  
  
  platform darwin {
-@@ -199,6 +206,17 @@
+@@ -206,6 +213,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -45,7 +45,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -223,6 +241,15 @@
+@@ -230,6 +248,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -61,7 +61,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -248,11 +275,52 @@
+@@ -255,11 +282,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -86,7 +86,7 @@
 +                    port:fontconfig \
 +                    port:freetype \
 +                    port:fribidi \
-+                    port:libsdl
++                    port:libsdl2
 +
 +    configure.args-delete \
 +                    --enable-libass \
@@ -113,8 +113,8 @@
 +
  }
  
- default_variants +x11
-@@ -323,6 +391,12 @@
+ if {[variant_isset x11]} {
+@@ -328,6 +396,12 @@
                              port:samba3
  
      license                 GPL-3+
