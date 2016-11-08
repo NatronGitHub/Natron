@@ -77,9 +77,6 @@ AnimationModuleViewPrivate::AnimationModuleViewPrivate(Gui* gui, AnimationModule
 , state(eEventStateNone)
 , eventTriggeredFromCurveEditor(false)
 , treeView(0)
-, nodeRanges()
-, nodeRangesBeingComputed()
-, rangeComputationRecursion(0)
 , currentEditedReader()
 , customInteract()
 {
@@ -898,7 +895,12 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
     bool clampYToIntegers = false;
     bool canMoveY = true;
 
-    QPointF dragStartPointOpenGL = curveEditorZoomContext.toZoomCoordinates( dragStartPoint.x(), dragStartPoint.y() );
+    QPointF dragStartPointOpenGL;
+    if (eventTriggeredFromCurveEditor) {
+        dragStartPointOpenGL = curveEditorZoomContext.toZoomCoordinates( dragStartPoint.x(), dragStartPoint.y() );
+    } else {
+        dragStartPointOpenGL = dopeSheetZoomContext.toZoomCoordinates( dragStartPoint.x(), dragStartPoint.y() );
+    }
     QPointF deltaSinceDragStart;
     deltaSinceDragStart.rx() = newCanonicalPos.x() - dragStartPointOpenGL.x();
     deltaSinceDragStart.ry() = newCanonicalPos.y() - dragStartPointOpenGL.y();

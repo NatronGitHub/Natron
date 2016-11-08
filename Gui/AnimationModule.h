@@ -141,9 +141,11 @@ public:
      **/
     std::vector<NodeAnimPtr > getChildrenNodes(const NodeAnimPtr& node) const;
 
-
+    NodeAnimPtr getNearestTimeNodeFromOutputsInternal(const NodePtr& node) const;
     NodeAnimPtr getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const;
-    NodePtr getNearestReader(const NodeAnimPtr& timeNode) const;
+
+    NodeAnimPtr getNearestReaderInternal(const NodePtr& timeNode) const;
+    NodeAnimPtr getNearestReader(const NodeAnimPtr& timeNode) const;
     AnimationModuleEditor* getEditor() const;
 
   

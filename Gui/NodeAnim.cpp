@@ -33,6 +33,8 @@
 
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleTreeView.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobGui.h"
@@ -51,8 +53,10 @@ public:
     , nameItem(0)
     , knobs()
     , topLevelTableItems()
+    , frameRange()
+    , rangeComputationRecursion(0)
     {
-
+        frameRange.min = frameRange.max = 0.;
     }
 
 
@@ -63,6 +67,43 @@ public:
     boost::scoped_ptr<QTreeWidgetItem> nameItem;
     std::vector<KnobAnimPtr> knobs;
     std::vector<TableItemAnimPtr> topLevelTableItems;
+
+
+    // Frame range
+    RangeD frameRange;
+    // to avoid recursion in groups
+    int rangeComputationRecursion;
+
+public:
+
+    void computeNodeRange();
+    void computeReaderRange();
+    void computeRetimeRange();
+    void computeTimeOffsetRange();
+    void computeFRRange();
+    void computeGroupRange();
+    void computeCommonNodeRange();
+
+    void refreshParentContainerRange();
+
+};
+
+// Small RAII style class to prevent recursion in frame range computation
+class ComputingFrameRangeRecursion_RAII
+{
+    NodeAnimPrivate* _imp;
+public:
+
+    ComputingFrameRangeRecursion_RAII(NodeAnimPrivate* imp)
+    : _imp(imp)
+    {
+        ++_imp->rangeComputationRecursion;
+    }
+
+    ~ComputingFrameRangeRecursion_RAII()
+    {
+        --_imp->rangeComputationRecursion;
+    }
 };
 
 
@@ -85,27 +126,80 @@ NodeAnim::~NodeAnim()
 }
 
 void
-NodeAnim::initialize(AnimatedItemTypeEnum itemType)
+NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
 {
-    _imp->nodeType = itemType;
+    _imp->nodeType = nodeType;
     NodePtr internalNode = getNodeGui()->getNode();
 
     NodeAnimPtr thisShared = shared_from_this();
     _imp->nameItem.reset(new QTreeWidgetItem);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
     _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
-    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, nodeType);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
 
     connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
 
-
-
     initializeKnobsAnim();
 
     initializeTableItems();
-}
 
+    // Connect signals/slots to knobs to compute the frame range
+    AnimationModulePtr animModel = toAnimationModule(_imp->model.lock());
+    assert(animModel);
+
+    if (nodeType == eAnimatedItemTypeCommon) {
+        // Also connect the lifetime knob
+        KnobIntPtr lifeTimeKnob = internalNode->getLifeTimeKnob();
+        if (lifeTimeKnob) {
+            connect( lifeTimeKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
+        }
+
+    } else if (nodeType == eAnimatedItemTypeReader) {
+        // The dopesheet view must refresh if the user set some values in the settings panel
+        // so we connect some signals/slots
+        KnobIPtr lastFrameKnob = internalNode->getKnobByName(kReaderParamNameLastFrame);
+        if (!lastFrameKnob) {
+            return;
+        }
+        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnobHandler =  lastFrameKnob->getSignalSlotHandler();
+        assert(lastFrameKnob);
+        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = internalNode->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
+        assert(startingTimeKnob);
+
+        connect( lastFrameKnobHandler.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
+
+        connect( startingTimeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
+
+        // We don't make the connection for the first frame knob, because the
+        // starting time is updated when it's modified. Thus we avoid two
+        // refreshes of the view.
+    } else if (nodeType == eAnimatedItemTypeRetime) {
+        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  internalNode->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
+        assert(speedKnob);
+
+        connect( speedKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
+    } else if (nodeType == eAnimatedItemTypeTimeOffset) {
+        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  internalNode->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
+        assert(timeOffsetKnob);
+
+        connect( timeOffsetKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
+    } else if (nodeType == eAnimatedItemTypeFrameRange) {
+        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  internalNode->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
+        assert(frameRangeKnob);
+
+        connect( frameRangeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),  this, SLOT(onFrameRangeKnobChanged()) );
+    }
+    
+    refreshFrameRange();
+
+} // initialize
+
+void
+NodeAnim::onFrameRangeKnobChanged()
+{
+    refreshVisibility();
+}
 
 void
 NodeAnim::initializeKnobsAnim()
@@ -340,46 +434,46 @@ NodeAnim::refreshVisibility()
     bool showNode = false;
 
     if (nodeGui->isSettingsPanelVisible() ) {
-        switch (nodeType) {
-            case eAnimatedItemTypeCommon:
-                showNode = AnimationModule::isNodeAnimated(nodeGui);
-                break;
-
-                // For range nodes always show them
-            case eAnimatedItemTypeFrameRange:
-            case eAnimatedItemTypeReader:
-            case eAnimatedItemTypeRetime:
-            case eAnimatedItemTypeTimeOffset:
-                showNode = true;
-                break;
-            case eAnimatedItemTypeGroup:
-            {
-                // Check if there's at list one animated node in the group
-                if (AnimationModule::isNodeAnimated(nodeGui)) {
-                    showNode = true;
-                }
-                if (!showNode) {
-                    NodeGroupPtr isGroup = toNodeGroup(nodeGui->getNode()->getEffectInstance());
-                    assert(isGroup);
-                    NodesList nodes = isGroup->getNodes();
-                    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                        if ((*it)->getEffectInstance()->getHasAnimation()) {
-                            showNode = true;
-                            break;
-                        }
+        if (isRangeDrawingEnabled()) {
+            showNode = true;
+        }
+        if (!showNode) {
+            switch (nodeType) {
+                case eAnimatedItemTypeCommon:
+                    showNode = AnimationModule::isNodeAnimated(nodeGui);
+                    break;
+                case eAnimatedItemTypeGroup:
+                {
+                    /*// Check if there's at list one animated node in the group
+                    if (AnimationModule::isNodeAnimated(nodeGui)) {
+                        showNode = true;
                     }
-                }
-            }   break;
-            default:
-                break;
+                    if (!showNode) {
+                        NodeGroupPtr isGroup = toNodeGroup(nodeGui->getNode()->getEffectInstance());
+                        assert(isGroup);
+                        NodesList nodes = isGroup->getNodes();
+                        for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                            if ((*it)->getEffectInstance()->getHasAnimation()) {
+                                showNode = true;
+                                break;
+                            }
+                        }
+                    }*/
+                }   break;
+                default:
+                    break;
+            }
         }
     }
-
+    
     refreshKnobsVisibility();
 
     nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
 
     nodeItem->setHidden(!showNode);
+
+    refreshFrameRange();
+
 } // refreshVisibility
 
 
@@ -407,6 +501,332 @@ NodeAnim::refreshKnobsVisibility()
         (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
     }
 }
+
+RangeD
+NodeAnim::getFrameRange() const
+{
+    return _imp->frameRange;
+}
+
+void
+NodeAnim::refreshFrameRange()
+{
+    _imp->computeNodeRange();
+}
+
+void
+NodeAnimPrivate::computeNodeRange()
+{
+    if (rangeComputationRecursion > 0) {
+        return;
+    }
+    {
+        ComputingFrameRangeRecursion_RAII computingFrameRangeRecursionCounter(this);
+
+        frameRange.min = frameRange.max = 0;
+
+        switch (nodeType) {
+            case eAnimatedItemTypeReader:
+                computeReaderRange();
+                break;
+            case eAnimatedItemTypeRetime:
+                computeRetimeRange();
+                break;
+            case eAnimatedItemTypeTimeOffset:
+                computeTimeOffsetRange();
+                break;
+            case eAnimatedItemTypeFrameRange:
+                computeFRRange();
+                break;
+            case eAnimatedItemTypeGroup:
+                computeGroupRange();
+                break;
+            case eAnimatedItemTypeCommon:
+                computeCommonNodeRange();
+                break;
+            default:
+                break;
+        }
+        
+        refreshParentContainerRange();
+    } // ComputingFrameRangeRecursion_RAII
+} // computeNodeRange
+
+void
+NodeAnimPrivate::refreshParentContainerRange()
+{
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+    AnimationModulePtr isAnimModule = toAnimationModule(model.lock());
+    assert(isAnimModule);
+
+    // If inside a group, refresh the group
+    {
+        NodeGroupPtr parentGroup = toNodeGroup( node->getGroup() );
+        NodeAnimPtr parentGroupNodeAnim;
+
+        if (parentGroup) {
+            parentGroupNodeAnim = isAnimModule->findNodeAnim( parentGroup->getNode() );
+        }
+        if (parentGroupNodeAnim) {
+            parentGroupNodeAnim->refreshFrameRange();
+        }
+    }
+    // if modified by a time node, refresh its frame range as well
+    {
+        NodeAnimPtr isConnectedToTimeNode = isAnimModule->getNearestTimeNodeFromOutputsInternal(node);
+        if (isConnectedToTimeNode) {
+            isConnectedToTimeNode->refreshFrameRange();
+        }
+    }
+} // refreshParentContainerRange
+
+void
+NodeAnimPrivate::computeReaderRange()
+{
+
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
+    if (!startingTimeKnob) {
+        return;
+    }
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    if (!firstFrameKnob) {
+        return;
+    }
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    if (!lastFrameKnob) {
+        return;
+    }
+
+    int startingTimeValue = startingTimeKnob->getValue();
+    int firstFrameValue = firstFrameKnob->getValue();
+    int lastFrameValue = lastFrameKnob->getValue();
+    frameRange.min = startingTimeValue;
+    frameRange.max = startingTimeValue + (lastFrameValue - firstFrameValue) + 1;
+
+} // computeReaderRange
+
+void
+NodeAnimPrivate::computeRetimeRange()
+{
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+    NodePtr input = node->getInput(0);
+    if (!input) {
+        return;
+    }
+    if (input) {
+        double inputFirst, inputLast;
+        input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
+
+        U64 hash;
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), &hash);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), &hash);
+        assert( !framesFirst.empty() && !framesLast.empty() );
+        if ( framesFirst.empty() || framesLast.empty() ) {
+            return;
+        }
+
+        {
+            const FrameRangesMap& rangeFirst = framesFirst[0];
+            assert( !rangeFirst.empty() );
+            if ( rangeFirst.empty() ) {
+                return;
+            }
+            FrameRangesMap::const_iterator it = rangeFirst.find( ViewIdx(0) );
+            assert( it != rangeFirst.end() );
+            if ( it == rangeFirst.end() ) {
+                return;
+            }
+            const std::vector<OfxRangeD>& frames = it->second;
+            assert( !frames.empty() );
+            if ( frames.empty() ) {
+                return;
+            }
+            frameRange.min = (frames.front().min);
+        }
+        {
+            FrameRangesMap& rangeLast = framesLast[0];
+            assert( !rangeLast.empty() );
+            if ( rangeLast.empty() ) {
+                return;
+            }
+            FrameRangesMap::const_iterator it = rangeLast.find( ViewIdx(0) );
+            assert( it != rangeLast.end() );
+            if ( it == rangeLast.end() ) {
+                return;
+            }
+            const std::vector<OfxRangeD>& frames = it->second;
+            assert( !frames.empty() );
+            if ( frames.empty() ) {
+                return;
+            }
+            frameRange.max = (frames.front().min);
+        }
+    }
+
+} // computeRetimeRange
+
+void
+NodeAnimPrivate::computeTimeOffsetRange()
+{
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+
+    // Retrieve nearest reader useful values
+    {
+        AnimationModulePtr isAnimModel = toAnimationModule(model.lock());
+
+        NodeAnimPtr nearestReader = isAnimModel->getNearestReaderInternal(node);
+        if (nearestReader) {
+
+            // Retrieve the time offset values
+            KnobIntBasePtr timeOffsetKnob = toKnobIntBase(node->getKnobByName(kReaderParamNameTimeOffset));
+            assert(timeOffsetKnob);
+            int timeOffsetValue = timeOffsetKnob->getValue();
+
+            frameRange = nearestReader->getFrameRange();
+            frameRange.min += timeOffsetValue;
+            frameRange.max += timeOffsetValue;
+        }
+    }
+
+} // computeTimeOffsetRange
+
+void
+NodeAnimPrivate::computeCommonNodeRange()
+{
+
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+    int first,last;
+    bool lifetimeEnabled = node->isLifetimeActivated(&first, &last);
+
+    if (lifetimeEnabled) {
+        frameRange.min = first;
+        frameRange.max = last;
+    }
+
+}
+
+void
+NodeAnimPrivate::computeFRRange()
+{
+
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+
+    KnobIntBasePtr frameRangeKnob = toKnobIntBase(node->getKnobByName(kFrameRangeParamNameFrameRange));
+    assert(frameRangeKnob);
+
+    frameRange.min = frameRangeKnob->getValue(DimIdx(0));
+    frameRange.max = frameRangeKnob->getValue(DimIdx(1));
+}
+
+void
+NodeAnimPrivate::computeGroupRange()
+{
+
+    NodeGuiPtr nodeUI = nodeGui.lock();
+    NodePtr node = nodeUI->getNode();
+    if (!node) {
+        return;
+    }
+
+    AnimationModulePtr isAnimModel = toAnimationModule(model.lock());
+    if (!isAnimModel) {
+        return;
+    }
+    NodeGroupPtr nodegroup = node->isEffectNodeGroup();
+    assert(nodegroup);
+    if (!nodegroup) {
+        return;
+    }
+
+
+    AnimationModuleTreeView* treeView = isAnimModel->getEditor()->getTreeView();
+
+    NodesList nodes = nodegroup->getNodes();
+
+    std::set<double> times;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodeAnimPtr childAnim = isAnimModel->findNodeAnim(*it);
+
+        if (!childAnim) {
+            continue;
+        }
+
+        if (!treeView->isItemVisibleRecursive(childAnim->getTreeItem())) {
+            continue;
+        }
+
+        childAnim->refreshFrameRange();
+        RangeD childRange = childAnim->getFrameRange();
+        times.insert(childRange.min);
+        times.insert(childRange.max);
+
+        // Also check the child knobs keyframes
+        NodeGuiPtr childGui = childAnim->getNodeGui();
+        const KnobsVec &knobs = childGui->getNode()->getKnobs();
+
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+
+            if ( !(*it2)->isAnimationEnabled() || !(*it2)->hasAnimation() ) {
+                continue;
+            } else {
+                // For each dimension and for each split view get the first/last keyframe (if any)
+                int nDims = (*it2)->getNDimensions();
+                std::list<ViewIdx> views = (*it2)->getViewsList();
+                for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
+                    for (int i = 0; i < nDims; ++i) {
+                        CurvePtr curve = (*it2)->getCurve(*it3, DimIdx(i));
+                        if (!curve) {
+                            continue;
+                        }
+                        int nKeys = curve->getKeyFramesCount();
+                        if (nKeys > 0) {
+                            KeyFrame k;
+                            if (curve->getKeyFrameWithIndex(0, &k)) {
+                                times.insert( k.getTime() );
+                            }
+                            if (curve->getKeyFrameWithIndex(nKeys - 1, &k)) {
+                                times.insert( k.getTime() );
+                            }
+                        }
+                    }
+                }
+            }
+        } // for all knobs
+    } // for all children nodes
+
+    if (times.size() <= 1) {
+        frameRange.min = 0;
+        frameRange.max = 0;
+    } else {
+        frameRange.min = *times.begin();
+        frameRange.max = *times.rbegin();
+    }
+
+} // computeGroupRange
 
 
 NATRON_NAMESPACE_EXIT;

@@ -122,16 +122,13 @@ AnimationModuleViewPrivate::setDopeSheetCursor(const QPoint& eventPos)
     const std::list<NodeAnimPtr>& selectedNodes = animModel->getSelectionModel()->getCurrentNodesSelection();
     for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         if ( (*it)->isRangeDrawingEnabled() ) {
-            std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
-            if ( foundRange == nodeRanges.end() ) {
-                continue;
-            }
 
+
+            RangeD range = (*it)->getFrameRange();
             QRectF treeItemRect = treeView->visualItemRect((*it)->getTreeItem());
-            const FrameRange& range = foundRange->second;
             RectD nodeClipRect;
-            nodeClipRect.x1 = range.first;
-            nodeClipRect.x2 = range.second;
+            nodeClipRect.x1 = range.min;
+            nodeClipRect.x2 = range.max;
             nodeClipRect.y2 = dopeSheetZoomContext.toZoomCoordinates( 0, treeItemRect.top() ).y();
             nodeClipRect.y1 = dopeSheetZoomContext.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
 
@@ -558,14 +555,12 @@ void
 AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
 {
     // Draw the clip
+    if (!item->isRangeDrawingEnabled()) {
+        return;
+    }
     {
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find( item );
-        if ( foundRange == nodeRanges.end() ) {
-            return;
-        }
+        RangeD range = item->getFrameRange();
 
-
-        const FrameRange& range = foundRange->second;
         QRectF treeItemRect = treeView->visualItemRect( item->getTreeItem() );
         QPointF treeRectTopLeft = treeItemRect.topLeft();
         treeRectTopLeft = dopeSheetZoomContext.toZoomCoordinates( treeRectTopLeft.x(), treeRectTopLeft.y() );
@@ -573,8 +568,8 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
         treeRectBtmRight = dopeSheetZoomContext.toZoomCoordinates( treeRectBtmRight.x(), treeRectBtmRight.y() );
 
         RectD clipRectZoomCoords;
-        clipRectZoomCoords.x1 = range.first;
-        clipRectZoomCoords.x2 = range.second;
+        clipRectZoomCoords.x1 = range.min;
+        clipRectZoomCoords.x2 = range.max;
         clipRectZoomCoords.y2 = treeRectTopLeft.y();
         clipRectZoomCoords.y1 = treeRectBtmRight.y();
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
@@ -600,7 +595,7 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
             int originalFirstFrame = originalFrameRangeKnob->getValue(DimIdx(0));
             int originalLastFrame = originalFrameRangeKnob->getValue(DimIdx(1));
             int firstFrame = firstFrameKnob->getValue();
-            int lineBegin = range.first - (firstFrame - originalFirstFrame);
+            int lineBegin = range.min - (firstFrame - originalFirstFrame);
             int frameCount = originalLastFrame - originalFirstFrame + 1;
             int lineEnd = lineBegin + (frameCount / speedValue);
 
@@ -662,15 +657,15 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
 
             QFontMetrics fm(_publicInterface->font());
             int fontHeigt = fm.height();
-            QString leftText = QString::number(range.first);
-            QString rightText = QString::number(range.second - 1);
+            QString leftText = QString::number(range.min);
+            QString rightText = QString::number(range.max - 1);
             int rightTextW = fm.width(rightText);
-            QPointF textLeftPos( dopeSheetZoomContext.toZoomCoordinates(dopeSheetZoomContext.toWidgetCoordinates(range.first, 0).x() + 3, 0).x(),
+            QPointF textLeftPos( dopeSheetZoomContext.toZoomCoordinates(dopeSheetZoomContext.toWidgetCoordinates(range.min, 0).x() + 3, 0).x(),
                                  dopeSheetZoomContext.toZoomCoordinates(0, dopeSheetZoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
 
             renderText(dopeSheetZoomContext, textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, _publicInterface->font());
 
-            QPointF textRightPos( dopeSheetZoomContext.toZoomCoordinates(dopeSheetZoomContext.toWidgetCoordinates(range.second, 0).x() - rightTextW - 3, 0).x(),
+            QPointF textRightPos( dopeSheetZoomContext.toZoomCoordinates(dopeSheetZoomContext.toWidgetCoordinates(range.max, 0).x() - rightTextW - 3, 0).x(),
                                   dopeSheetZoomContext.toZoomCoordinates(0, dopeSheetZoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
 
             renderText(dopeSheetZoomContext, textRightPos.x(), textRightPos.y(), rightText, selectionColor, _publicInterface->font());
@@ -745,11 +740,10 @@ AnimationModuleViewPrivate::drawDopeSheetGroupOverlay(const NodeAnimPtr &item,
     int height = treeView->getHeightForItemAndChildren( item->getTreeItem() );
     QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
 
-    assert( nodeRanges.find( group ) != nodeRanges.end() );
-    FrameRange groupRange = nodeRanges.find( group )->second; // map::at() is C++11
+    RangeD groupRange = group->getFrameRange();
     RectD overlayRect;
-    overlayRect.x1 = groupRange.first;
-    overlayRect.x2 = groupRange.second;
+    overlayRect.x1 = groupRange.min;
+    overlayRect.x2 = groupRange.max;
 
     overlayRect.y1 = dopeSheetZoomContext.toZoomCoordinates(0, nameItemRect.top() + height).y();
     overlayRect.y2 = dopeSheetZoomContext.toZoomCoordinates( 0, nameItemRect.top() ).y();
@@ -779,7 +773,7 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
     AnimationModuleBasePtr model = _model.lock();
     const AnimItemDimViewKeyFramesMap& selectedKeyframes = model->getSelectionModel()->getCurrentKeyFramesSelection();
     const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
-    //const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
+    const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
 
     dopeSheetSelectedKeysBRect.clear();
 
@@ -818,24 +812,20 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
         
     }
 
-    int nNodesInSelection = 0;
     for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
-        if ( foundRange == nodeRanges.end() ) {
+
+        if (!(*it)->isRangeDrawingEnabled()) {
             continue;
         }
-
-        ++nNodesInSelection;
-
-        const FrameRange& range = foundRange->second;
+        RangeD range = (*it)->getFrameRange();
         QTreeWidgetItem* nodeItem = (*it)->getTreeItem();
 
         QRect itemRect = treeView->visualItemRect(nodeItem);
         if (itemRect.isEmpty()) {
             continue;
         }
-        double x1 = range.first;
-        double x2 = range.second;
+        double x1 = range.min;
+        double x2 = range.max;
         double y = dopeSheetZoomContext.toZoomCoordinates(0, itemRect.center().y()).y();
 
         //x1,x2 are in zoom coords
@@ -853,12 +843,44 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
 
     }
 
+    for (std::list<TableItemAnimPtr >::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
+
+        if (!(*it)->isRangeDrawingEnabled()) {
+            continue;
+        }
+        RangeD range = (*it)->getFrameRange();
+        QTreeWidgetItem* nodeItem = (*it)->getRootItem();
+
+        QRect itemRect = treeView->visualItemRect(nodeItem);
+        if (itemRect.isEmpty()) {
+            continue;
+        }
+        double x1 = range.min;
+        double x2 = range.max;
+        double y = dopeSheetZoomContext.toZoomCoordinates(0, itemRect.center().y()).y();
+
+        //x1,x2 are in zoom coords
+        if (bboxSet) {
+            dopeSheetSelectedKeysBRect.x1 = std::min(x1, dopeSheetSelectedKeysBRect.x1);
+            dopeSheetSelectedKeysBRect.x2 = std::max(x2, dopeSheetSelectedKeysBRect.x2);
+            dopeSheetSelectedKeysBRect.y1 = std::min(y, dopeSheetSelectedKeysBRect.y1);
+            dopeSheetSelectedKeysBRect.y2 = std::max(y, dopeSheetSelectedKeysBRect.y2);
+        } else {
+            bboxSet = true;
+            dopeSheetSelectedKeysBRect.x1 = x1;
+            dopeSheetSelectedKeysBRect.x2 = x2;
+            dopeSheetSelectedKeysBRect.y1 = dopeSheetSelectedKeysBRect.y2 = y;
+        }
+        
+    }
+
+
     if ( dopeSheetSelectedKeysBRect.isNull() ) {
         dopeSheetSelectedKeysBRect.clear();
         return;
     }
 
-    // Adjust the bbox top match the top/bottom items edges
+    // Adjust the bbox to match the top/bottom items edges
     {
         double y1Widget = dopeSheetZoomContext.toWidgetCoordinates(0, dopeSheetSelectedKeysBRect.y1).y();
         QTreeWidgetItem *bottomMostItem = treeView->itemAt(0, y1Widget);
@@ -900,363 +922,10 @@ AnimationModuleViewPrivate::computeRangesBelow(const NodeAnimPtr& node)
     double thisNodeY = treeView->visualItemRect( node->getTreeItem() ).y();
     for (std::vector<NodeAnimPtr>::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         if ( treeView->visualItemRect((*it)->getTreeItem()).y() >=  thisNodeY) {
-            computeNodeRange(*it);
+            (*it)->refreshFrameRange();
         }
     }
 }
-
-void
-AnimationModuleViewPrivate::computeNodeRange(const NodeAnimPtr& node)
-{
-    AnimatedItemTypeEnum nodeType = node->getItemType();
-
-    switch (nodeType) {
-        case eAnimatedItemTypeReader:
-            computeReaderRange(node);
-            break;
-        case eAnimatedItemTypeRetime:
-            computeRetimeRange(node);
-            break;
-        case eAnimatedItemTypeTimeOffset:
-            computeTimeOffsetRange(node);
-            break;
-        case eAnimatedItemTypeFrameRange:
-            computeFRRange(node);
-            break;
-        case eAnimatedItemTypeGroup:
-            computeGroupRange(node);
-            break;
-        case eAnimatedItemTypeCommon:
-            computeCommonNodeRange(node);
-            break;
-        default:
-            break;
-    }
-}
-
-void
-AnimationModuleViewPrivate::computeReaderRange(const NodeAnimPtr& reader)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-
-    nodeRangesBeingComputed.push_back(reader);
-    ++rangeComputationRecursion;
-
-    NodePtr node = reader->getInternalNode();
-
-    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
-    if (!startingTimeKnob) {
-        return;
-    }
-    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
-    if (!firstFrameKnob) {
-        return;
-    }
-    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
-    if (!lastFrameKnob) {
-        return;
-    }
-
-    int startingTimeValue = startingTimeKnob->getValue();
-    int firstFrameValue = firstFrameKnob->getValue();
-    int lastFrameValue = lastFrameKnob->getValue();
-    FrameRange range(startingTimeValue,
-                     startingTimeValue + (lastFrameValue - firstFrameValue) + 1);
-
-    nodeRanges[reader] = range;
-
-    AnimationModulePtr model = toAnimationModule(_model.lock());
-
-    {
-        NodeAnimPtr isInGroup = model->getGroupNodeAnim(reader);
-        if (isInGroup) {
-            computeGroupRange( isInGroup );
-        }
-    }
-    {
-        NodeAnimPtr isConnectedToTimeNode = model->getNearestTimeNodeFromOutputs(reader);
-        if (isConnectedToTimeNode) {
-            computeNodeRange( isConnectedToTimeNode );
-        }
-    }
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), reader);
-    assert( found != nodeRangesBeingComputed.end() );
-    nodeRangesBeingComputed.erase(found);
-} // AnimationModuleViewPrivate::computeReaderRange
-
-void
-AnimationModuleViewPrivate::computeRetimeRange(const NodeAnimPtr& retimer)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-
-    nodeRangesBeingComputed.push_back(retimer);
-    ++rangeComputationRecursion;
-
-    NodePtr node = retimer->getInternalNode();
-    if (!node) {
-        return;
-    }
-    NodePtr input = node->getInput(0);
-    if (input) {
-        double inputFirst, inputLast;
-        input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
-
-        U64 hash;
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), &hash);
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), &hash);
-        assert( !framesFirst.empty() && !framesLast.empty() );
-        if ( framesFirst.empty() || framesLast.empty() ) {
-            return;
-        }
-
-        FrameRange range;
-        {
-            const FrameRangesMap& rangeFirst = framesFirst[0];
-            assert( !rangeFirst.empty() );
-            if ( rangeFirst.empty() ) {
-                return;
-            }
-            FrameRangesMap::const_iterator it = rangeFirst.find( ViewIdx(0) );
-            assert( it != rangeFirst.end() );
-            if ( it == rangeFirst.end() ) {
-                return;
-            }
-            const std::vector<OfxRangeD>& frames = it->second;
-            assert( !frames.empty() );
-            if ( frames.empty() ) {
-                return;
-            }
-            range.first = (frames.front().min);
-        }
-        {
-            FrameRangesMap& rangeLast = framesLast[0];
-            assert( !rangeLast.empty() );
-            if ( rangeLast.empty() ) {
-                return;
-            }
-            FrameRangesMap::const_iterator it = rangeLast.find( ViewIdx(0) );
-            assert( it != rangeLast.end() );
-            if ( it == rangeLast.end() ) {
-                return;
-            }
-            const std::vector<OfxRangeD>& frames = it->second;
-            assert( !frames.empty() );
-            if ( frames.empty() ) {
-                return;
-            }
-            range.second = (frames.front().min);
-        }
-
-        nodeRanges[retimer] = range;
-    } else {
-        nodeRanges[retimer] = FrameRange();
-    }
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), retimer);
-    assert( found != nodeRangesBeingComputed.end() );
-    if ( found != nodeRangesBeingComputed.end() ) {
-        nodeRangesBeingComputed.erase(found);
-    }
-} // AnimationModuleViewPrivate::computeRetimeRange
-
-void
-AnimationModuleViewPrivate::computeTimeOffsetRange(const NodeAnimPtr& timeOffset)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-
-    nodeRangesBeingComputed.push_back(timeOffset);
-    ++rangeComputationRecursion;
-
-    FrameRange range(0, 0);
-
-    // Retrieve nearest reader useful values
-    {
-        AnimationModulePtr model = toAnimationModule(_model.lock());
-
-        NodeAnimPtr nearestReader = model->findNodeAnim( model->getNearestReader(timeOffset) );
-        if (nearestReader) {
-            assert( nodeRanges.find( nearestReader ) != nodeRanges.end() );
-            FrameRange nearestReaderRange = nodeRanges.find( nearestReader )->second; // map::at() is C++11
-
-            // Retrieve the time offset values
-            KnobIntBasePtr timeOffsetKnob = toKnobIntBase( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset) );
-            assert(timeOffsetKnob);
-
-            int timeOffsetValue = timeOffsetKnob->getValue();
-
-            range.first = nearestReaderRange.first + timeOffsetValue;
-            range.second = nearestReaderRange.second + timeOffsetValue;
-        }
-    }
-
-    nodeRanges[timeOffset] = range;
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), timeOffset);
-    assert( found != nodeRangesBeingComputed.end() );
-    nodeRangesBeingComputed.erase(found);
-}
-
-void
-AnimationModuleViewPrivate::computeCommonNodeRange(const NodeAnimPtr& node)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), node) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-    nodeRangesBeingComputed.push_back(node);
-    ++rangeComputationRecursion;
-
-
-    FrameRange range;
-    int first,last;
-    bool lifetimeEnabled = node->getNodeGui()->getNode()->isLifetimeActivated(&first, &last);
-
-    if (lifetimeEnabled) {
-        range.first = first;
-        range.second = last;
-        nodeRanges[node] = range;
-    }
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), node);
-    assert( found != nodeRangesBeingComputed.end() );
-    nodeRangesBeingComputed.erase(found);
-}
-
-void
-AnimationModuleViewPrivate::computeFRRange(const NodeAnimPtr& frameRange)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-
-    nodeRangesBeingComputed.push_back(frameRange);
-    ++rangeComputationRecursion;
-
-    NodePtr node = frameRange->getInternalNode();
-
-    KnobIntBase *frameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName("frameRange").get() );
-    assert(frameRangeKnob);
-
-    FrameRange range;
-    range.first = frameRangeKnob->getValue(DimIdx(0));
-    range.second = frameRangeKnob->getValue(DimIdx(1));
-
-    nodeRanges[frameRange] = range;
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), frameRange);
-    assert( found != nodeRangesBeingComputed.end() );
-    nodeRangesBeingComputed.erase(found);
-}
-
-void
-AnimationModuleViewPrivate::computeGroupRange(const NodeAnimPtr& groupAnim)
-{
-    if ( std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), groupAnim) != nodeRangesBeingComputed.end() ) {
-        return;
-    }
-
-    NodePtr internalNode = groupAnim->getInternalNode();
-    if (!internalNode) {
-        return;
-    }
-
-    AnimationModulePtr model = toAnimationModule(_model.lock());
-
-    FrameRange range;
-    std::set<double> times;
-    NodeGroupPtr nodegroup = internalNode->isEffectNodeGroup();
-    assert(nodegroup);
-    if (!nodegroup) {
-        throw std::logic_error("AnimationModuleViewPrivate::computeGroupRange: node is not a group");
-    }
-
-    nodeRangesBeingComputed.push_back(groupAnim);
-    ++rangeComputationRecursion;
-
-
-    NodesList nodes = nodegroup->getNodes();
-
-    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodeAnimPtr childAnim = model->findNodeAnim(*it);
-
-        if (!childAnim) {
-            continue;
-        }
-
-        if (!treeView->isItemVisibleRecursive(childAnim->getTreeItem())) {
-            continue;
-        }
-
-        NodeGuiPtr childGui = childAnim->getNodeGui();
-
-
-        computeNodeRange(childAnim);
-
-        std::map<NodeAnimPtr, FrameRange >::iterator found = nodeRanges.find(childAnim);
-        if ( found != nodeRanges.end() ) {
-            times.insert(found->second.first);
-            times.insert(found->second.second);
-        }
-
-
-        const KnobsVec &knobs = childGui->getNode()->getKnobs();
-
-        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-
-            if ( !(*it2)->isAnimationEnabled() || !(*it2)->hasAnimation() ) {
-                continue;
-            } else {
-                int nDims = (*it2)->getNDimensions();
-                std::list<ViewIdx> views = (*it2)->getViewsList();
-                for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
-                    for (int i = 0; i < nDims; ++i) {
-                        CurvePtr curve = (*it2)->getCurve(*it3, DimIdx(i));
-                        if (!curve) {
-                            continue;
-                        }
-                        int nKeys = curve->getKeyFramesCount();
-                        if (nKeys > 0) {
-                            KeyFrame k;
-                            if (curve->getKeyFrameWithIndex(0, &k)) {
-                                times.insert( k.getTime() );
-                            }
-                            if (curve->getKeyFrameWithIndex(nKeys - 1, &k)) {
-                                times.insert( k.getTime() );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (times.size() <= 1) {
-        range.first = 0;
-        range.second = 0;
-    } else {
-        range.first = *times.begin();
-        range.second = *times.rbegin();
-    }
-
-    nodeRanges[groupAnim] = range;
-
-    --rangeComputationRecursion;
-    std::list<NodeAnimPtr>::iterator found = std::find(nodeRangesBeingComputed.begin(), nodeRangesBeingComputed.end(), groupAnim);
-    assert( found != nodeRangesBeingComputed.end() );
-    nodeRangesBeingComputed.erase(found);
-} // AnimationModuleViewPrivate::computeGroupRange
-
 
 void
 AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
@@ -1334,14 +1003,15 @@ void
 AnimationModuleViewPrivate::checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& node, AnimItemDimViewKeyFramesMap * /*result*/, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* /*selectedItems*/)
 {
 
-    std::map<NodeAnimPtr, FrameRange >::const_iterator foundRange = nodeRanges.find(node);
-    if ( foundRange == nodeRanges.end() ) {
+
+    if (!node->isRangeDrawingEnabled()) {
         return;
     }
+    RangeD frameRange = node->getFrameRange();
     QPoint visualRectCenter = treeView->visualItemRect(item).center();
     QPointF center = dopeSheetZoomContext.toZoomCoordinates( visualRectCenter.x(), visualRectCenter.y() );
 
-    if ( rect.contains( (foundRange->second.first + foundRange->second.second) / 2., center.y() ) ) {
+    if ( rect.contains( (frameRange.min + frameRange.max) / 2., center.y() ) ) {
         selectedNodes->push_back(node);
     }
 
@@ -1446,216 +1116,6 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangleInternal
 } // createSelectionFromRect
 
 
-std::pair<double, double> AnimationModuleView::getKeyframeRange() const
-{
-
-    std::pair<double, double> ret = std::make_pair(0, 0);
-
-    AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
-    std::vector<TableItemAnimPtr> selectedTableItems;
-    _imp->_model.lock()->getSelectionModel()->getAllKeyFrames(&selectedKeyframes, &selectedNodes, &selectedTableItems);
-
-    bool rangeSet = false;
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        if (it->second.empty()) {
-            continue;
-        }
-        if (!rangeSet) {
-            ret.first = it->second.begin()->key.getTime();
-            ret.second = it->second.rbegin()->key.getTime();
-            rangeSet = true;
-        } else {
-            ret.first = std::min(ret.first,it->second.begin()->key.getTime());
-            ret.first = std::max(ret.first,it->second.begin()->key.getTime());
-        }
-    }
-    return ret;
-} // getKeyframeRange
-
-
-void
-AnimationModuleViewPrivate::centerDopeSheetOnRangeInternal(const std::pair<double, double>& range)
-{
-
-    if (range.first == range.second) {
-        return;
-    }
-
-    std::pair<double, double> finalRange = range;
-    double actualRange = (range.second - range.first);
-    if (actualRange < NATRON_DOPESHEET_MIN_RANGE_FIT) {
-        double diffRange = NATRON_DOPESHEET_MIN_RANGE_FIT - actualRange;
-        diffRange /= 2;
-        finalRange.first -= diffRange;
-        finalRange.second += diffRange;
-    }
-    if (finalRange.first >= finalRange.second || dopeSheetZoomContext.bottom() >= dopeSheetZoomContext.top()) {
-        return;
-    }
-
-    dopeSheetZoomContext.fill( finalRange.first, finalRange.second, dopeSheetZoomContext.bottom(), dopeSheetZoomContext.top() );
-
-}
-
-
-
-void
-AnimationModuleView::onNodeAdded(const NodeAnimPtr& node)
-{
-    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
-    AnimatedItemTypeEnum nodeType = node->getItemType();
-    NodePtr internalNode = node->getInternalNode();
-
-    if (nodeType == eAnimatedItemTypeCommon) {
-        NodeGroupPtr isInGroup = toNodeGroup(internalNode->getGroup());
-        if (isInGroup) {
-            const KnobsVec& knobs = internalNode->getKnobs();
-            for (KnobsVec::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-                connect((*knobIt)->getSignalSlotHandler().get(), SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,DimIdx)),
-                         this, SLOT(onKnobAnimationChanged()) );
-            }
-        }
-        // Also connect the lifetime knob
-        KnobIntPtr lifeTimeKnob = internalNode->getLifeTimeKnob();
-        if (lifeTimeKnob) {
-            connect( lifeTimeKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                this, SLOT(onRangeNodeKnobChanged()) );
-        }
-
-    } else if (nodeType == eAnimatedItemTypeReader) {
-        // The dopesheet view must refresh if the user set some values in the settings panel
-        // so we connect some signals/slots
-        KnobIPtr lastFrameKnob = internalNode->getKnobByName(kReaderParamNameLastFrame);
-        if (!lastFrameKnob) {
-            return;
-        }
-        boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnobHandler =  lastFrameKnob->getSignalSlotHandler();
-        assert(lastFrameKnob);
-        boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = internalNode->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
-        assert(startingTimeKnob);
-
-        connect( lastFrameKnobHandler.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                 this, SLOT(onRangeNodeKnobChanged()) );
-
-        connect( startingTimeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                 this, SLOT(onRangeNodeKnobChanged()) );
-
-        // We don't make the connection for the first frame knob, because the
-        // starting time is updated when it's modified. Thus we avoid two
-        // refreshes of the view.
-    } else if (nodeType == eAnimatedItemTypeRetime) {
-        boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  internalNode->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
-        assert(speedKnob);
-
-        connect( speedKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                 this, SLOT(onRangeNodeKnobChanged()) );
-    } else if (nodeType == eAnimatedItemTypeTimeOffset) {
-        boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  internalNode->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
-        assert(timeOffsetKnob);
-
-        connect( timeOffsetKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                 this, SLOT(onRangeNodeKnobChanged()) );
-    } else if (nodeType == eAnimatedItemTypeFrameRange) {
-        boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  internalNode->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
-        assert(frameRangeKnob);
-
-        connect( frameRangeKnob.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)),
-                 this, SLOT(onRangeNodeKnobChanged()) );
-    }
-
-    _imp->computeNodeRange(node);
-
-
-    NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim(node);
-    if (parentGroupNodeAnim) {
-        _imp->computeGroupRange( parentGroupNodeAnim );
-    }
-
-} // DopeSheetView::onNodeAdded
-
-void
-AnimationModuleView::onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim)
-{
-    // Refresh the group range
-    {
-        AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
-        NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim(NodeAnim);
-        if (parentGroupNodeAnim) {
-            _imp->computeGroupRange( parentGroupNodeAnim );
-        }
-    }
-
-    // remove the node from the frame ranges
-    std::map<NodeAnimPtr, FrameRange>::iterator toRemove = _imp->nodeRanges.find(NodeAnim);
-
-    if ( toRemove != _imp->nodeRanges.end() ) {
-        _imp->nodeRanges.erase(toRemove);
-    }
-
-    // Recompute selection rectangle bounding box
-    refreshSelectionBboxAndRedraw();
-}
-
-void
-AnimationModuleView::onKnobAnimationChanged()
-{
-    KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(sender());
-    if (!knobHandler) {
-        return;
-    }
-    KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
-    EffectInstancePtr effectInstance = toEffectInstance(holder);
-    if (!effectInstance) {
-        return;
-    }
-    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
-
-    NodeAnimPtr node = animModel->findNodeAnim( effectInstance->getNode() );
-
-    if (!node) {
-        return;
-    }
-
-    {
-        NodeAnimPtr parentGroupNodeAnim = animModel->getGroupNodeAnim( node );
-        if (parentGroupNodeAnim) {
-            _imp->computeGroupRange( parentGroupNodeAnim );
-        }
-    }
-
-    // Since this function is called a lot, let a chance to Qt to concatenate events
-    // NB: updateGL() does not concatenate
-    update();
-}
-
-void
-AnimationModuleView::onRangeNodeKnobChanged()
-{
-    KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(sender());
-    if (!knobHandler) {
-        return;
-    }
-
-    KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
-    EffectInstancePtr effectInstance = toEffectInstance(holder);
-    if (!effectInstance) {
-        return;
-    }
-    AnimationModulePtr animModel = toAnimationModule(_imp->_model.lock());
-
-    NodeAnimPtr node = animModel->findNodeAnim( effectInstance->getNode() );
-
-    if (!node) {
-        return;
-    }
-    _imp->computeNodeRange(node);
-
-    // Since this function is called a lot, let a chance to Qt to concatenate events
-    // NB: updateGL() does not concatenate
-    update();
-}
-
 void
 AnimationModuleView::onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem *item)
 {
@@ -1755,23 +1215,28 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
         }
 
         // Look for a range node
-        for (std::map<NodeAnimPtr, FrameRange >::const_iterator it = nodeRanges.begin(); it != nodeRanges.end(); ++it) {
+        std::vector<NodeAnimPtr> topLevelNodes;
+        animModule->getTopLevelNodes(&topLevelNodes);
 
-            QRectF treeItemRect = treeView->visualItemRect(it->first->getTreeItem());
-            const FrameRange& range = it->second;
+        for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {
+            if (!(*it)->isRangeDrawingEnabled()) {
+                continue;
+            }
+            QRectF treeItemRect = treeView->visualItemRect((*it)->getTreeItem());
+            RangeD range = (*it)->getFrameRange();
             RectD nodeClipRect;
-            nodeClipRect.x1 = range.first;
-            nodeClipRect.x2 = range.second;
+            nodeClipRect.x1 = range.min;
+            nodeClipRect.x2 = range.max;
             nodeClipRect.y2 = dopeSheetZoomContext.toZoomCoordinates( 0, treeItemRect.top() ).y();
             nodeClipRect.y1 = dopeSheetZoomContext.toZoomCoordinates( 0, treeItemRect.bottom() ).y();
 
-            AnimatedItemTypeEnum nodeType = it->first->getItemType();
+            AnimatedItemTypeEnum nodeType = (*it)->getItemType();
 
             // If we click inside a range, start dragging
             if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
                 AnimItemDimViewKeyFramesMap selectedKeys;
                 std::vector<NodeAnimPtr > selectedNodes;
-                selectedNodes.push_back(it->first);
+                selectedNodes.push_back(*it);
                 std::vector<TableItemAnimPtr > selectedTableItems;
                 animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
@@ -1787,11 +1252,11 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
             }
 
             if (nodeType == eAnimatedItemTypeReader) {
-                currentEditedReader = it->first;
+                currentEditedReader = *it;
                 if ( isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
                     std::vector<NodeAnimPtr > selectedNodes;
-                    selectedNodes.push_back(it->first);
+                    selectedNodes.push_back(*it);
                     std::vector<TableItemAnimPtr > selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
@@ -1801,16 +1266,16 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
                 } else if ( isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
                     std::vector<NodeAnimPtr > selectedNodes;
-                    selectedNodes.push_back(it->first);
+                    selectedNodes.push_back(*it);
                     std::vector<TableItemAnimPtr > selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
                     state = eEventStateReaderRightTrim;
                     return true;
                     break;
-                } else if ( animModule->canSlipReader(it->first) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
+                } else if ( animModule->canSlipReader(*it) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
                     std::vector<NodeAnimPtr > selectedNodes;
-                    selectedNodes.push_back(it->first);
+                    selectedNodes.push_back(*it);
                     std::vector<TableItemAnimPtr > selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
                     state = eEventStateReaderSlip;

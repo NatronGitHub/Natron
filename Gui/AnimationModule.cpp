@@ -324,9 +324,9 @@ AnimationModule::addNode(const NodeGuiPtr& nodeGui)
     EffectInstancePtr effectInstance = node->getEffectInstance();
 
     // Don't add an item for this node if it doesn't have any knob that may animate
-    if ( !getNodeCanAnimate(node) ) {
-        return;
-    }
+    //if ( !getNodeCanAnimate(node) ) {
+    //    return;
+    //}
 
     std::string pluginID = node->getPluginID();
     NodeGroupPtr isGroup = toNodeGroup(effectInstance);
@@ -367,11 +367,17 @@ AnimationModule::removeNode(const NodeGuiPtr& node)
     if ( toRemove == _imp->nodes.end() ) {
         return;
     }
-
+    (*toRemove)->refreshFrameRange();
+    
     _imp->selectionModel->removeAnyReferenceFromSelection(*toRemove);
     Q_EMIT nodeAboutToBeRemoved(*toRemove);
 
     _imp->nodes.erase(toRemove);
+
+
+    // Recompute selection rectangle bounding box
+    refreshSelectionBboxAndUpdateView();
+
 }
 
 bool
@@ -423,6 +429,9 @@ AnimationModule::getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
 
 NodeAnimPtr AnimationModule::findNodeAnim(const NodePtr& node) const
 {
+    if (!node) {
+        return NodeAnimPtr();
+    }
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->getInternalNode() == node ) {
             return *it;
@@ -506,25 +515,31 @@ std::vector<NodeAnimPtr > AnimationModule::getChildrenNodes(const NodeAnimPtr& n
     return children;
 }
 
-NodeAnimPtr AnimationModule::getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const
+NodeAnimPtr AnimationModule::getNearestTimeNodeFromOutputsInternal(const NodePtr& node) const
 {
     std::list<NodePtr> markedNodes;
-    NodePtr internalNode = node->getInternalNode();
-    assert(internalNode);
-    NodeCollectionPtr collection = internalNode->getGroup();
-    NodePtr timeNode = _imp->getNearestTimeNodeFromOutputs_recursive(node->getInternalNode(), collection, markedNodes);
-
+    NodeCollectionPtr collection = node->getGroup();
+    NodePtr timeNode = _imp->getNearestTimeNodeFromOutputs_recursive(node, collection, markedNodes);
     return findNodeAnim(timeNode);
 }
 
-NodePtr
+NodeAnimPtr AnimationModule::getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const
+{
+    NodePtr internalNode = node->getInternalNode();
+    return getNearestTimeNodeFromOutputsInternal(internalNode);
+}
+
+NodeAnimPtr
+AnimationModule::getNearestReaderInternal(const NodePtr& timeNode) const
+{
+    std::list<NodePtr> markedNodes;
+    return findNodeAnim(_imp->getNearestReaderFromInputs_recursive(timeNode, markedNodes));
+}
+
+NodeAnimPtr
 AnimationModule::getNearestReader(const NodeAnimPtr& timeNode) const
 {
-    assert( timeNode->isTimeNode() );
-    std::list<NodePtr> markedNodes;
-    NodePtr nearestReader = _imp->getNearestReaderFromInputs_recursive(timeNode->getInternalNode(), markedNodes);
-
-    return nearestReader;
+    return getNearestReaderInternal(timeNode->getInternalNode());
 }
 
 AnimationModuleSelectionModelPtr

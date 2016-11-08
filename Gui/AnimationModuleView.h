@@ -112,13 +112,11 @@ public:
 
 
     /**
-     * @brief Returns a pair composed of the first keyframe (or the starting
-     * time of the first reader) displayed in the view and the last.
-     *
-     * This function is used to center the displayed content on a keyframe
-     * selection.
+     * @brief Returns the bounding box of the given curves
      */
-    std::pair<double, double> getKeyframeRange() const;
+    static RectD getCurvesKeyframeBbox(const std::vector<CurveGuiPtr> & curves);
+    static RectD getCurvesDisplayRangesBbox(const std::vector<CurveGuiPtr> & curves);
+    static std::pair<double,double> getCurvesKeyframeTimesBbox(const std::vector<CurveGuiPtr> & curves);
 
 
     /**
@@ -129,8 +127,6 @@ public:
      * to compute the bounding box of a curve, otherwise it uses the bounding box of its keyframes.
      **/
     void centerOnCurves(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange);
-
-
 
     // The interact will be drawn after the background and before any curve
     void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
@@ -175,14 +171,6 @@ public Q_SLOTS:
     void onCenterAllCurvesActionTriggered();
 
     void onCenterOnSelectedCurvesActionTriggered();
-
-    void onNodeAdded(const NodeAnimPtr& NodeAnim);
-
-    void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
-
-    void onKnobAnimationChanged();
-
-    void onRangeNodeKnobChanged();
 
     void onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem *item);
 

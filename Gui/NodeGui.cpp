@@ -3927,6 +3927,10 @@ NodeGui::onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& k
             data.keyframes.erase(found);
         }
     }
+
+    if (_settingsPanel && !_settingsPanel->isClosed()) {
+        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
+    }
 }
 
 void

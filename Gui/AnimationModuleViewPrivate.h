@@ -46,7 +46,6 @@
 NATRON_NAMESPACE_ENTER;
 
 typedef std::set<double> TimeSet;
-typedef std::pair<double, double> FrameRange;
 typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
@@ -227,8 +226,6 @@ public:
     // Called in the end of createMenu
     void addMenuCurveEditorMenuOptions(Menu* menu);
 
-    void centerDopeSheetOnRangeInternal(const std::pair<double, double>& range);
-
     /**
      * @brief A thin wrapper around AnimationModuleBase::moveSelectedKeysAndNodes that clamps keyframes motion to integers if needed
      **/
@@ -275,13 +272,7 @@ public:
     void refreshCurveEditorSelectedKeysBRect();
 
     void computeRangesBelow(const NodeAnimPtr& NodeAnim);
-    void computeNodeRange(const NodeAnimPtr& NodeAnim);
-    void computeReaderRange(const NodeAnimPtr& reader);
-    void computeRetimeRange(const NodeAnimPtr& retimer);
-    void computeTimeOffsetRange(const NodeAnimPtr& timeOffset);
-    void computeFRRange(const NodeAnimPtr& frameRange);
-    void computeGroupRange(const NodeAnimPtr& group);
-    void computeCommonNodeRange(const NodeAnimPtr& node);
+    
 
     void makeSelectionFromDopeSheetSelectionRectangle(bool toggleSelection);
 
@@ -362,11 +353,6 @@ public:
 
     // Pointer to the tree view
     AnimationModuleTreeView *treeView;
-
-    // Frame ranges of nodes
-    std::map<NodeAnimPtr, FrameRange> nodeRanges;
-    std::list<NodeAnimPtr> nodeRangesBeingComputed; // to avoid recursion in groups
-    int rangeComputationRecursion;
 
     // Selected reader
     NodeAnimPtr currentEditedReader;

@@ -433,8 +433,8 @@ AnimationModuleTreeViewPrivate::drawParentContainerContour(QPainter *p,
 {
     NodeAnimPtr nodeIt = parentNode;
     while (nodeIt) {
-        QColor nodeColor = parentNode->getNodeGui()->getCurrentColor();
-        QTreeWidgetItem *nodeItem = parentNode->getTreeItem();
+        QColor nodeColor = nodeIt->getNodeGui()->getCurrentColor();
+        QTreeWidgetItem *nodeItem = nodeIt->getTreeItem();
 
         QRect branchRect = getBranchRect(nodeItem);
         QRect targetRect = getArrowRect(nodeItem, branchRect);

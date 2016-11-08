@@ -60,7 +60,12 @@ public:
      * @brief Select all items
      **/
     void selectAll();
-    void getAllKeyFrames(AnimItemDimViewKeyFramesMap* keyframes, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
+
+    /**
+     * @brief Return all items in the model.
+     * @param withKeyFrames if true, the keyframes will have each of the item/dim/view associated to the keyframes for this particular item.
+     **/
+    void getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* keyframes, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
 
     /**
      * @brief Clear all items from selection
@@ -136,16 +141,17 @@ public:
     static void addAnimatedItemsWithoutKeyframes(const AnimItemBasePtr& item,
                                          DimSpec dim,
                                          ViewSetSpec viewSpec,
-                                         AnimItemDimViewKeyFramesMap* result);
+                                                 AnimItemDimViewKeyFramesMap* result);
 
     static void addTableItemKeyframes(const TableItemAnimPtr& item,
+                                      bool withKeyFrames,
                                       bool recurse,
                                       DimSpec dim,
                                       ViewSetSpec viewSpec,
                                       std::vector<TableItemAnimPtr> *selectedTableItems,
                                       AnimItemDimViewKeyFramesMap* result);
-
-
+    
+    
 Q_SIGNALS:
 
     void selectionChanged(bool recurse);

@@ -91,6 +91,8 @@ public:
 
     virtual void refreshKnobsVisibility() OVERRIDE FINAL;
 
+    RangeD getFrameRange() const;
+
 public Q_SLOTS:
 
     void onInternalItemLabelChanged(const QString& label, TableChangeReasonEnum);

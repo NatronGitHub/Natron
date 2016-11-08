@@ -604,36 +604,69 @@ AnimationModuleView::onCenterOnSelectedCurvesActionTriggered()
 void
 AnimationModuleView::centerOnAllItems()
 {
+    AnimationModuleBasePtr model = _imp->_model.lock();
 
-    centerOnCurves(std::vector<boost::shared_ptr<CurveGui> >(), false);
-    _imp->centerDopeSheetOnRangeInternal(getKeyframeRange());
+    AnimItemDimViewKeyFramesMap allCurves;
+    std::vector<NodeAnimPtr > allNodes;
+    std::vector<TableItemAnimPtr> allTableItems;
+    model->getSelectionModel()->getAllItems(false, &allCurves, &allNodes, &allTableItems);
+
+    RectD ret;
+    // Get a list of all curve guis from the AnimItemDimViewKeyFramesMap
+    std::vector<CurveGuiPtr > allCurveGuis;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = allCurves.begin(); it != allCurves.end(); ++it) {
+        CurveGuiPtr curve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        if (!curve) {
+            continue;
+        }
+        allCurveGuis.push_back(curve);
+    }
+
+    // First get the bbox of all curves keyframes
+    ret = getCurvesKeyframeBbox(allCurveGuis);
+
+    // Then merge nodes ranges
+    for (std::size_t i = 0; i < allNodes.size(); ++i) {
+        if (allNodes[i]->isRangeDrawingEnabled()) {
+            RangeD frameRange = allNodes[i]->getFrameRange();
+            if (ret.isNull()) {
+                ret.x1 = frameRange.min;
+                ret.x2 = frameRange.max;
+            } else {
+                ret.x1 = std::min(ret.x1, frameRange.min);
+                ret.x2 = std::min(ret.x2, frameRange.max);
+            }
+        }
+    }
+
+    // Then merge table items ranges
+    for (std::size_t i = 0; i < allTableItems.size(); ++i) {
+        if (allTableItems[i]->isRangeDrawingEnabled()) {
+            RangeD frameRange = allTableItems[i]->getFrameRange();
+            if (ret.isNull()) {
+                ret.x1 = frameRange.min;
+                ret.x2 = frameRange.max;
+            } else {
+                ret.x1 = std::min(ret.x1, frameRange.min);
+                ret.x2 = std::min(ret.x2, frameRange.max);
+            }
+        }
+    }
+
+    if (!ret.isNull()) {
+        centerOn(ret.x1, ret.x2, ret.y1, ret.y2);
+    }
 }
 
 void
 AnimationModuleView::centerOnSelection()
 {
 
-    {
-        int selectedKeyframesCount = _imp->_model.lock()->getSelectionModel()->getSelectedKeyframesCount();
-
-
-        FrameRange range;
-
-        // frame on project bounds
-        if (selectedKeyframesCount <= 1) {
-            range = getKeyframeRange();
-        }  else {
-            // or frame on current selection
-            range.first = _imp->dopeSheetSelectedKeysBRect.left();
-            range.second = _imp->dopeSheetSelectedKeysBRect.right();
-        }
-        _imp->centerDopeSheetOnRangeInternal(range);
-    }
     std::vector<CurveGuiPtr > selection = _imp->getSelectedCurves();
     if ( selection.empty() ) {
         centerOnAllItems();
     } else {
-        centerOnCurves(selection, false);
+        centerOnCurves(selection, false /*useDisplayRange*/);
     }
 }
 
@@ -796,6 +829,7 @@ AnimationModuleView::mousePressEvent(QMouseEvent* e)
     _imp->lastMousePos = e->pos();
     _imp->dragStartPoint = e->pos();
     _imp->keyDragLastMovement.ry() = _imp->keyDragLastMovement.rx() = 0;
+    _imp->mustSetDragOrientation = true;
 
 
 
@@ -843,7 +877,6 @@ AnimationModuleView::mousePressEvent(QMouseEvent* e)
 
     // is the click near the vertical current time marker?
     if ( _imp->isNearbyTimelineBtmPoly( e->pos() ) || _imp->isNearbyTimelineTopPoly( e->pos() ) ) {
-        _imp->mustSetDragOrientation = true;
         _imp->state = eEventStateDraggingTimeline;
         e->accept();
         update();
@@ -951,7 +984,7 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
                     newClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( e->x(), _imp->dragStartPoint.y() );
                     oldClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( _imp->lastMousePos.x(), _imp->dragStartPoint.y() );
                 }
-                _imp->moveSelectedKeyFrames(newClick_opengl, oldClick_opengl);
+                _imp->moveSelectedKeyFrames(oldClick_opengl, newClick_opengl);
             }
         }   break;
         case eEventStateDraggingBtmLeftBbox:

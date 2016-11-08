@@ -630,7 +630,7 @@ WarpKeysCommand::warpKeys()
 
     AnimationModuleBasePtr model = _model.lock();
     if (model) {
-        model->setCurrentSelection(_keys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
+        model->setCurrentSelection(_keys, _tableItems, _nodes);
     }
 
 } // warpKeys

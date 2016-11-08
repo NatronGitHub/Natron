@@ -240,6 +240,14 @@ TableItemAnim::isRangeDrawingEnabled() const
     return false;
 }
 
+RangeD
+TableItemAnim::getFrameRange() const
+{
+#pragma message WARN("ToDo")
+    RangeD ret = {0,0};
+    return ret;
+}
+
 TableItemAnimPtr
 TableItemAnim::findTableItem(const KnobTableItemPtr& item) const
 {

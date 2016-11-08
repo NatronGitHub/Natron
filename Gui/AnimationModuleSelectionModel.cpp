@@ -154,6 +154,7 @@ AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(const AnimItemBa
 
 void
 AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& item,
+                                                     bool withKeyFrames,
                                                      bool recurse,
                                                      DimSpec dim,
                                                      ViewSetSpec viewSpec,
@@ -164,23 +165,31 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
         selectedTableItems->push_back(item);
     }
 
-    addAnimatedItemKeyframes(item, dim, viewSpec, result);
+    if (withKeyFrames) {
+        addAnimatedItemKeyframes(item, dim, viewSpec, result);
+    } else {
+        addAnimatedItemsWithoutKeyframes(item, dim, viewSpec, result);
+    }
 
     const std::vector<KnobAnimPtr>& knobs = item->getKnobs();
     for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), result);
+        if (withKeyFrames) {
+            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), result);
+        } else {
+            addAnimatedItemsWithoutKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), result);
+        }
     }
 
     if (recurse) {
         std::vector<TableItemAnimPtr> children = item->getChildren();
         for (std::size_t i = 0; i < children.size(); ++i) {
-            addTableItemKeyframes(children[i], true, dim, viewSpec, selectedTableItems, result);
+            addTableItemKeyframes(children[i], withKeyFrames, true, dim, viewSpec, selectedTableItems, result);
         }
     }
 }
 
 void
-AnimationModuleSelectionModel::getAllKeyFrames(AnimItemDimViewKeyFramesMap* selectedKeyframes, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr>* selectedTableItems) const
+AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* selectedKeyframes, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr>* selectedTableItems) const
 {
 
     AnimationModuleSelectionProviderPtr model = getModel();
@@ -201,13 +210,17 @@ AnimationModuleSelectionModel::getAllKeyFrames(AnimItemDimViewKeyFramesMap* sele
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
 
         for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+            if (withKeyFrames) {
+                addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+            } else {
+                addAnimatedItemsWithoutKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+            }
         }
 
         const std::vector<TableItemAnimPtr>& topLevelTableItems = (*it)->getTopLevelItems();
         for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
             // We select keyframes for the root item, this will also select children
-            addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
+            addTableItemKeyframes(*it2, withKeyFrames, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
         }
         if ((*it)->isRangeDrawingEnabled()) {
             selectedNodes->push_back(*it);
@@ -217,11 +230,15 @@ AnimationModuleSelectionModel::getAllKeyFrames(AnimItemDimViewKeyFramesMap* sele
     }
 
     for (std::vector<KnobAnimPtr>::const_iterator it2 = topLevelKnobs.begin(); it2 != topLevelKnobs.end(); ++it2) {
-        addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+        if (withKeyFrames) {
+            addAnimatedItemKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+        } else {
+            addAnimatedItemsWithoutKeyframes(*it2, DimSpec::all(), ViewSetSpec::all(), selectedKeyframes);
+        }
     }
 
     for (std::vector<TableItemAnimPtr>::const_iterator it2 = topLevelTableItems.begin(); it2 != topLevelTableItems.end(); ++it2) {
-        addTableItemKeyframes(*it2, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
+        addTableItemKeyframes(*it2, withKeyFrames, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
     }
 
 }
@@ -235,7 +252,7 @@ AnimationModuleSelectionModel::selectAll()
     AnimItemDimViewKeyFramesMap selectedKeyframes;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
-    getAllKeyFrames(&selectedKeyframes, &selectedNodes, &selectedTableItems);
+    getAllItems(true, &selectedKeyframes, &selectedNodes, &selectedTableItems);
 
     makeSelection( selectedKeyframes, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                AnimationModuleSelectionModel::SelectionTypeClear |

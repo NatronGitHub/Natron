@@ -256,7 +256,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 
     // This may fail if we cannot find a keyframe at the given time
     std::vector<KeyFrame> newKeys;
-    if ( !curve->transformKeyframesValueAndTime(times, warp, outKeys, &keysAdded, &keysRemoved) ) {
+    if ( !curve->transformKeyframesValueAndTime(times, warp, &newKeys, &keysAdded, &keysRemoved) ) {
         return false;
     }
     if (outKeys) {

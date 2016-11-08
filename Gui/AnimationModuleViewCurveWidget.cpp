@@ -64,18 +64,115 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
+std::pair<double,double>
+AnimationModuleView::getCurvesKeyframeTimesBbox(const std::vector<CurveGuiPtr> & curves)
+{
+    double xmin = 0, xmax = 0;
+    double rangeSet = false;
+    for (std::size_t i = 0; i < curves.size(); ++i) {
+        const CurveGuiPtr& c = curves[i];
+        KeyFrameSet keys = c->getKeyFrames();
+
+        if ( keys.empty() ) {
+            continue;
+        }
+        double cmin = keys.begin()->getTime();
+        double cmax = keys.rbegin()->getTime();
+        if (!rangeSet) {
+            rangeSet = true;
+            xmin = cmin;
+            xmax = cmax;
+        } else {
+            xmin = std::min(cmin, xmin);
+            xmax = std::max(cmax, xmax);
+        }
+    }
+    return std::make_pair(xmin, xmax);
+}
+
+RectD
+AnimationModuleView::getCurvesKeyframeBbox(const std::vector<CurveGuiPtr> & curves)
+{
+    RectD ret;
+    bool retSet = false;
+    for (std::size_t i = 0; i < curves.size(); ++i) {
+        const CurveGuiPtr& c = curves[i];
+        KeyFrameSet keys = c->getKeyFrames();
+
+        if ( keys.empty() ) {
+            continue;
+        }
+        double xmin = keys.begin()->getTime();
+        double xmax = keys.rbegin()->getTime();
+        double ymin = INT_MAX;
+        double ymax = INT_MIN;
+        //find out ymin,ymax
+        for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+            double value = it2->getValue();
+            ymin = std::min(value, ymin);
+            ymax = std::max(value, ymax);
+        }
+        if (!retSet) {
+            retSet = true;
+            ret.x1 = xmin;
+            ret.x2 = xmax;
+            ret.y1 = ymin;
+            ret.y2 = ymax;
+        } else {
+            ret.merge(xmin, ymin, xmax, ymax);
+        }
+    }
+    return ret;
+}
+
+RectD
+AnimationModuleView::getCurvesDisplayRangesBbox(const std::vector<CurveGuiPtr> & curves)
+{
+    RectD ret;
+    bool retSet = false;
+    for (std::size_t i = 0; i < curves.size(); ++i) {
+        CurvePtr curve = curves[i]->getInternalCurve();
+        if (!curve) {
+            continue;
+        }
+        Curve::YRange thisCurveRange = curve->getCurveDisplayYRange();
+        std::pair<double, double> thisXRange = curve->getXRange();
+
+        // Ignore unset ranges
+        if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
+            thisCurveRange.min == INT_MIN ||
+            thisCurveRange.max == std::numeric_limits<double>::infinity() ||
+            thisCurveRange.max == INT_MAX ||
+            thisXRange.first == -std::numeric_limits<double>::infinity() ||
+            thisXRange.first == INT_MIN ||
+            thisXRange.second == std::numeric_limits<double>::infinity() ||
+            thisXRange.second == INT_MAX) {
+            continue;
+        }
+
+
+        if (!retSet) {
+            ret.x1 = thisXRange.first;
+            ret.x2 = thisXRange.second;
+            ret.y1 = thisCurveRange.min;
+            ret.y2 = thisCurveRange.max;
+            retSet = true;
+        } else {
+            ret.merge(thisXRange.first, thisCurveRange.min, thisXRange.second, thisCurveRange.max);
+        }
+    }
+    return ret;
+}
 
 void
 AnimationModuleView::centerOnCurves(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange)
 {
 
-    // First try to center curves given their display range
-    Curve::YRange displayRange(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-    std::pair<double, double> xRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-    bool rangeSet = false;
-
+    // If curves is empty, use currently selected curves from the tree
     std::vector<CurveGuiPtr> curvesToFrame;
-    if (curves.empty()) {
+    if (!curves.empty()) {
+        curvesToFrame = curves;
+    } else {
         // Frame all curves selected in the tree view
         const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->_model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
         for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
@@ -85,92 +182,34 @@ AnimationModuleView::centerOnCurves(const std::vector<CurveGuiPtr> & curves, boo
             }
             curvesToFrame.push_back(guiCurve);
         }
-    } else {
-        curvesToFrame = curves;
     }
 
     if (curvesToFrame.empty()) {
         return;
     }
 
+    // First try to center curves given their display range if useDisplayRange is true
+
     if (useDisplayRange) {
-        for (std::vector<boost::shared_ptr<CurveGui> > ::const_iterator it = curvesToFrame.begin(); it != curvesToFrame.end(); ++it) {
-            boost::shared_ptr<Curve> curve = (*it)->getInternalCurve();
-            if (!curve) {
-                continue;
-            }
-            Curve::YRange thisCurveRange = curve->getCurveDisplayYRange();
-            std::pair<double, double> thisXRange = curve->getXRange();
+        RectD bbox = getCurvesDisplayRangesBbox(curvesToFrame);
 
-
-            if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
-                thisCurveRange.min == INT_MIN ||
-                thisCurveRange.max == std::numeric_limits<double>::infinity() ||
-                thisCurveRange.max == INT_MAX ||
-                thisXRange.first == -std::numeric_limits<double>::infinity() ||
-                thisXRange.first == INT_MIN ||
-                thisXRange.second == std::numeric_limits<double>::infinity() ||
-                thisXRange.second == INT_MAX) {
-                continue;
-            }
-
-
-            if (!rangeSet) {
-                displayRange = thisCurveRange;
-                xRange = thisXRange;
-                rangeSet = true;
-            } else {
-                displayRange.min = std::min(displayRange.min, thisCurveRange.min);
-                displayRange.max = std::min(displayRange.max, thisCurveRange.max);
-                xRange.first = std::min(xRange.first, thisXRange.first);
-                xRange.second = std::min(xRange.second, thisXRange.second);
-            }
-        } // for all curves
-
-        if (rangeSet) {
-            double paddingX = (xRange.second - xRange.first) / 20.;
-            double paddingY = (displayRange.max - displayRange.min) / 20.;
-            AnimationModuleView::centerOn(xRange.first - paddingX, xRange.second + paddingX, displayRange.min - paddingY, displayRange.max + paddingY);
+        if (!bbox.isNull()) {
+            bbox.addPaddingPercentage(0.2, 0.2);
+            AnimationModuleView::centerOn(bbox.x1, bbox.x2, bbox.y1, bbox.y2);
             return;
         }
     } // useDisplayRange
     
-    // If no range, center them using the bounding box of keyframes
-    
-    bool doCenter = false;
-    RectD ret;
-    for (U32 i = 0; i < curves.size(); ++i) {
-        const CurveGuiPtr& c = curves[i];
-        KeyFrameSet keys = c->getKeyFrames();
+    // If no range or useDisplayRange is false, center them using the bounding box of keyframes
+    RectD bbox = getCurvesKeyframeBbox(curvesToFrame);
+    if (!bbox.isNull()) {
+        bbox.addPaddingPercentage(0.1, 0.1);
+    }
+    if ( !bbox.isNull() ) {
+        AnimationModuleView::centerOn(bbox.x1, bbox.x2, bbox.y1, bbox.y2);
+    }
+} // centerOnCurves
 
-        if ( keys.empty() ) {
-            continue;
-        }
-        doCenter = true;
-        double xmin = keys.begin()->getTime();
-        double xmax = keys.rbegin()->getTime();
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
-        //find out ymin,ymax
-        for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-            double value = it2->getValue();
-            if (value < ymin) {
-                ymin = value;
-            }
-            if (value > ymax) {
-                ymax = value;
-            }
-        }
-        ret.merge(xmin, ymin, xmax, ymax);
-    }
-    ret.set_bottom(ret.bottom() - ret.height() / 10);
-    ret.set_left(ret.left() - ret.width() / 10);
-    ret.set_right(ret.right() + ret.width() / 10);
-    ret.set_top(ret.top() + ret.height() / 10);
-    if ( doCenter && !ret.isNull() ) {
-        AnimationModuleView::centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
-    }
-} // centerOn
 
 
 void
@@ -337,7 +376,6 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
             caughtBbox = false;
         }
         if (caughtBbox) {
-            mustSetDragOrientation = true;
             return true;
         }
     }
@@ -350,7 +388,6 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
         keys.insert(nearbyKeyframe.key);
         model->getSelectionModel()->makeSelection(keysToAdd, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                                                                            AnimationModuleSelectionModel::SelectionTypeClear) );
-        mustSetDragOrientation = true;
         state = eEventStateDraggingKeys;
         _publicInterface->setCursor( QCursor(Qt::CrossCursor) );
         return true;
@@ -363,7 +400,6 @@ AnimationModuleViewPrivate::curveEditorMousePressEvent(QMouseEvent* e)
 
     //select the derivative only if it is not a constant keyframe
     if ( selectedTan.second.id.item && (selectedTan.second.key.key.getInterpolation() != eKeyframeTypeConstant) ) {
-        mustSetDragOrientation = true;
         state = eEventStateDraggingTangent;
         selectedDerivative = selectedTan;
         return true;
@@ -795,7 +831,6 @@ AnimationModuleViewPrivate::addKey(const CurveGuiPtr& curve, double xCurve, doub
     keys.insert(k);
     model->pushUndoCommand( new AddKeysCommand(keysToAdd, model, false /*clearAndAdd*/) );
 
-    mustSetDragOrientation = true;
     state = eEventStateDraggingKeys;
     _publicInterface->setCursor( QCursor(Qt::CrossCursor) );
 

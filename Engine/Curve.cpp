@@ -1384,52 +1384,53 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     KeyFrameSet warpedKeyFrames;
     
     // To speed up findWithTime search, taking advantage of the fact that input times are ordered
-    std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
-    for (std::list<double>::const_iterator it = times.begin();
-         it!=times.end();
-         ++it) {
-        // Ensure the user passed increasing sorted keyframes
-        assert(next == times.end() || *next > *it);
-        if (next != times.end() && *next <= *it) {
-            throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
-        }
-        
-        // Find in the original keyframes
-        std::list<KeyFrame>::iterator found = originalKeyFramesMinusTransformedKeyFrames.end();
-        {
-            // Since input keyframe times are sorted, we don't have to find before the time that was found
-            // at the previous iteration
-            std::list<KeyFrame>::iterator findStart = ( ( findHint == originalKeyFramesMinusTransformedKeyFrames.end() ) ?
-                                                       originalKeyFramesMinusTransformedKeyFrames.begin() :
-                                                       findHint );
-            found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
-        }
-        
-        if (found == originalKeyFramesMinusTransformedKeyFrames.end()) {
-            // It can fail here because the time provided by the user does not exist in the original keyframes
-            // or if the same keyframe time was passed multiple times in the input times list.
-            return false;
-        }
-        
-        // Apply warp
-        KeyFrame warpedKey = warp.applyForwardWarp(*found);
-        
-        {
-            std::pair<KeyFrameSet::iterator,bool> insertOk = warpedKeyFrames.insert(warpedKey);
-            if (!insertOk.second) {
-                // 2 input keyframes were warped to the same point
+    {
+        std::list<KeyFrame>::iterator findHint = originalKeyFramesMinusTransformedKeyFrames.end();
+        for (std::list<double>::const_iterator it = times.begin();
+             it!=times.end();
+             ++it) {
+            // Ensure the user passed increasing sorted keyframes
+            assert(next == times.end() || *next > *it);
+            if (next != times.end() && *next <= *it) {
+                throw std::invalid_argument("Curve::transformKeyframesValueAndTime: input keyframe times to transform were not sorted by increasing order by the caller");
+            }
+
+            // Find in the original keyframes
+            std::list<KeyFrame>::iterator found = originalKeyFramesMinusTransformedKeyFrames.end();
+            {
+                // Since input keyframe times are sorted, we don't have to find before the time that was found
+                // at the previous iteration
+                std::list<KeyFrame>::iterator findStart = ( ( findHint == originalKeyFramesMinusTransformedKeyFrames.end() ) ?
+                                                           originalKeyFramesMinusTransformedKeyFrames.begin() :
+                                                           findHint );
+                found = std::find_if(findStart, originalKeyFramesMinusTransformedKeyFrames.end(), KeyFrameTimePredicate(*it));
+            }
+
+            if (found == originalKeyFramesMinusTransformedKeyFrames.end()) {
+                // It can fail here because the time provided by the user does not exist in the original keyframes
+                // or if the same keyframe time was passed multiple times in the input times list.
                 return false;
             }
-        }
-        
-        // Remove from the set to get a diff of keyframes untouched by the warp operation
-        findHint = originalKeyFramesMinusTransformedKeyFrames.erase(found);
-        
-        if (next != times.end()) {
-            ++next;
-        }
-    } // for all times
-    
+
+            // Apply warp
+            KeyFrame warpedKey = warp.applyForwardWarp(*found);
+
+            {
+                std::pair<KeyFrameSet::iterator,bool> insertOk = warpedKeyFrames.insert(warpedKey);
+                if (!insertOk.second) {
+                    // 2 input keyframes were warped to the same point
+                    return false;
+                }
+            }
+
+            // Remove from the set to get a diff of keyframes untouched by the warp operation
+            findHint = originalKeyFramesMinusTransformedKeyFrames.erase(found);
+            
+            if (next != times.end()) {
+                ++next;
+            }
+        } // for all times
+    }
     
     KeyFrameSet finalSet;
     
@@ -1469,13 +1470,13 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     // Compute keyframes added if needed
     if (keysAddedOut) {
         // Keyframes added are those in the final set that are not in the original set
-        KeyFrameSet::iterator findHint = _imp->keyFrames.end();
+        KeyFrameSet::const_iterator findHint = _imp->keyFrames.end();
         for (KeyFrameSet::const_iterator it = finalSet.begin();
-             it != finalSet.begin();
+             it != finalSet.end();
              ++it) {
             // Find in the original keyframes
             findHint = findWithTime(_imp->keyFrames, findHint, it->getTime());
-            if (findHint == finalSet.end()) {
+            if (findHint == _imp->keyFrames.end()) {
                 keysAddedOut->push_back(it->getTime());
             }
         }
@@ -1484,9 +1485,9 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
     // Compute keyframes removed if needed
     if (keysRemovedOut) {
         // Keyframes removed are those in the original set that are not in the final set
-        KeyFrameSet::iterator findHint = finalSet.end();
+        KeyFrameSet::const_iterator findHint = finalSet.end();
         for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin();
-             it != _imp->keyFrames.begin();
+             it != _imp->keyFrames.end();
              ++it) {
             // Find in the original keyframes
             findHint = findWithTime(finalSet, findHint, it->getTime());

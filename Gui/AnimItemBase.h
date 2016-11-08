@@ -236,7 +236,6 @@ public:
     virtual void refreshKnobsVisibility() = 0;
 
     virtual void refreshVisibility() = 0;
-
     
 };
 

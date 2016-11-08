@@ -153,6 +153,21 @@ public:
         y2 = -std::numeric_limits<double>::infinity();
     }
 
+    void addPadding(double x, double y)
+    {
+        x1 -= x;
+        x2 += x;
+        y1 -= y;
+        y2 += y;
+    }
+
+    void addPaddingPercentage(double xPercent, double yPercent)
+    {
+        double x = width() * xPercent;
+        double y = height() * yPercent;
+        addPadding(x, y);
+    }
+
     void set(const RectD & b)
     {
         *this = b;

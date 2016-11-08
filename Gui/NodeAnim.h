@@ -30,7 +30,7 @@
 #include <QObject>
 
 #include "Gui/AnimItemBase.h"
-
+#include "Global/GlobalDefines.h"
 NATRON_NAMESPACE_ENTER;
 
 class NodeAnimPrivate;
@@ -83,12 +83,18 @@ public:
 
     virtual void refreshVisibility() OVERRIDE FINAL;
 
+    void refreshFrameRange();
+
+    RangeD getFrameRange() const;
+
 public Q_SLOTS:
 
-    
+    void onFrameRangeKnobChanged();
+
     void onNodeLabelChanged(const QString &name);
 
     void onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum);
+    
     void onTableItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum);
 
 private:

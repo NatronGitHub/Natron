@@ -217,9 +217,6 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
              _imp->view, SLOT(onNodeAdded(NodeAnimPtr)) );
 
-    connect( _imp->model.get(), SIGNAL(nodeAboutToBeRemoved(NodeAnimPtr)),
-             _imp->view, SLOT(onNodeAboutToBeRemoved(NodeAnimPtr)) );
-
     connect( _imp->treeView->verticalScrollBar(), SIGNAL(valueChanged(int)),
              _imp->view, SLOT(onAnimationTreeViewScrollbarMoved(int)) );
 
