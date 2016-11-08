@@ -40,6 +40,8 @@
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/AnimationModuleView.h"
+#include "Gui/AnimationModuleUndoRedo.h"
+#include "Gui/KnobUndoCommand.h"
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
 #include "Gui/ComboBox.h"
@@ -54,6 +56,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/SpinBox.h"
 
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
@@ -61,7 +64,64 @@
 NATRON_NAMESPACE_ENTER;
 
 
-////////////////////////// AnimationModuleEditor //////////////////////////
+enum KeyFrameInterpolationChoiceMenuEnum
+{
+    eKeyFrameInterpolationChoiceMenuConstant,
+    eKeyFrameInterpolationChoiceMenuLinear,
+    eKeyFrameInterpolationChoiceMenuSmooth,
+    eKeyFrameInterpolationChoiceMenuHoriz,
+    eKeyFrameInterpolationChoiceMenuCubic,
+    eKeyFrameInterpolationChoiceMenuCatRom,
+    eKeyFrameInterpolationChoiceMenuBroken,
+    eKeyFrameInterpolationChoiceMenuFree
+
+};
+
+inline KeyframeTypeEnum toKeyFrameType(KeyFrameInterpolationChoiceMenuEnum v)
+{
+    switch (v) {
+        case eKeyFrameInterpolationChoiceMenuBroken:
+            return eKeyframeTypeBroken;
+        case eKeyFrameInterpolationChoiceMenuCatRom:
+            return eKeyframeTypeCatmullRom;
+        case eKeyFrameInterpolationChoiceMenuConstant:
+            return eKeyframeTypeConstant;
+        case eKeyFrameInterpolationChoiceMenuCubic:
+            return eKeyframeTypeCubic;
+        case eKeyFrameInterpolationChoiceMenuFree:
+            return eKeyframeTypeFree;
+        case eKeyFrameInterpolationChoiceMenuHoriz:
+            return eKeyframeTypeHorizontal;
+        case eKeyFrameInterpolationChoiceMenuLinear:
+            return eKeyframeTypeLinear;
+        case eKeyFrameInterpolationChoiceMenuSmooth:
+            return eKeyframeTypeSmooth;
+    }
+}
+
+inline KeyFrameInterpolationChoiceMenuEnum fromKeyFrameType(KeyframeTypeEnum v)
+{
+    switch (v) {
+        case eKeyframeTypeBroken:
+            return eKeyFrameInterpolationChoiceMenuBroken;
+        case eKeyframeTypeCatmullRom:
+            return eKeyFrameInterpolationChoiceMenuCatRom;
+        case eKeyframeTypeConstant:
+            return eKeyFrameInterpolationChoiceMenuConstant;
+        case eKeyframeTypeCubic:
+            return eKeyFrameInterpolationChoiceMenuCubic;
+        case eKeyframeTypeFree:
+            return eKeyFrameInterpolationChoiceMenuFree;
+        case eKeyframeTypeHorizontal:
+            return eKeyFrameInterpolationChoiceMenuHoriz;
+        case eKeyframeTypeLinear:
+            return eKeyFrameInterpolationChoiceMenuLinear;
+        case eKeyframeTypeSmooth:
+            return eKeyFrameInterpolationChoiceMenuSmooth;
+        default:
+            return eKeyFrameInterpolationChoiceMenuLinear;
+    }
+}
 
 class AnimationModuleEditorPrivate
 {
@@ -81,6 +141,17 @@ public:
     LineEdit* knobExpressionLineEdit;
     Label* expressionResultLabel;
 
+    Label* keyframeLabel;
+    Label* keyframeLeftSlopeLabel;
+    SpinBox* keyframeLeftSlopeSpinBox;
+    Label* keyframeTimeLabel;
+    SpinBox* keyframeTimeSpinBox;
+    Label* keyframeValueLabel;
+    SpinBox* keyframeValueSpinBox;
+    LineEdit* keyframeValueLineEdit;
+    Label* keyframeRightSlopeLabel;
+    SpinBox* keyframeRightSlopeSpinBox;
+    ComboBox* keyframeInterpolationChoice;
 
     Splitter *treeAndViewSplitter;
 
@@ -90,6 +161,11 @@ public:
     AnimationModuleView* view;
 
     AnimationModulePtr model;
+
+    // If there's a single selected keyframe, get it,otherwise return false;
+    bool getKeyframe(AnimItemDimViewIndexID* curve, KeyFrameWithString* key) const;
+
+    void refreshExpressionResult();
 
 };
 
@@ -102,6 +178,17 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , knobLabel(0)
 , knobExpressionLineEdit(0)
 , expressionResultLabel(0)
+, keyframeLabel(0)
+, keyframeLeftSlopeLabel(0)
+, keyframeLeftSlopeSpinBox(0)
+, keyframeTimeLabel(0)
+, keyframeTimeSpinBox(0)
+, keyframeValueLabel(0)
+, keyframeValueSpinBox(0)
+, keyframeValueLineEdit(0)
+, keyframeRightSlopeLabel(0)
+, keyframeRightSlopeSpinBox(0)
+, keyframeInterpolationChoice(0)
 , treeAndViewSplitter(0)
 , treeView(0)
 , view(0)
@@ -161,16 +248,163 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     _imp->buttonsLayout->addSpacing(TO_DPIX(10));
 
+    _imp->keyframeLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeLabel->setAltered(true);
+    _imp->keyframeLabel->setText(tr("Keyframe:"));
+
+    _imp->keyframeLeftSlopeLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeLeftSlopeLabel->setAltered(true);
+    _imp->keyframeLeftSlopeLabel->setText(tr("L"));
+    QColor slopeColor;
+    slopeColor.setRgbF(1., 0.35, 0.35);
+    _imp->keyframeLeftSlopeLabel->setTextColor(slopeColor);
+
+    _imp->keyframeLeftSlopeSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeLeftSlopeSpinBox->setUseLineColor(true, slopeColor);
+    QObject::connect(_imp->keyframeLeftSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onLeftSlopeSpinBoxValueChanged(double)));
+
+    _imp->keyframeTimeLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeTimeLabel->setAltered(true);
+    _imp->keyframeTimeLabel->setText(tr("Frame"));
+
+    _imp->keyframeTimeSpinBox = new SpinBox(_imp->buttonsContainer);
+    QObject::connect(_imp->keyframeTimeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onKeyframeTimeSpinBoxValueChanged(double)));
+
+    _imp->keyframeValueLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeValueLabel->setAltered(true);
+    _imp->keyframeValueLabel->setText(tr("Value"));
+
+    _imp->keyframeValueSpinBox = new SpinBox(_imp->buttonsContainer);
+    QObject::connect(_imp->keyframeValueSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onKeyframeValueSpinBoxValueChanged(double)));
+
+    _imp->keyframeValueLineEdit = new LineEdit(_imp->buttonsContainer);
+    _imp->keyframeValueLineEdit->setText(tr("Enter Text..."));
+    QObject::connect(_imp->keyframeValueLineEdit, SIGNAL(editingFinished()), this, SLOT(onKeyframeValueLineEditEditFinished()));
+
+    _imp->keyframeRightSlopeLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeRightSlopeLabel->setAltered(true);
+    _imp->keyframeRightSlopeLabel->setText(tr("R"));
+    _imp->keyframeRightSlopeLabel->setTextColor(slopeColor);
+
+    _imp->keyframeRightSlopeSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeRightSlopeSpinBox->setUseLineColor(true, slopeColor);
+    QObject::connect(_imp->keyframeRightSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onRightSlopeSpinBoxValueChanged(double)));
+
+    _imp->keyframeInterpolationChoice = new ComboBox(_imp->buttonsContainer);
+    _imp->keyframeInterpolationChoice->setFixedWidth(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE) * 3);
+    QObject::connect(_imp->keyframeInterpolationChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onKeyfameInterpolationChoiceMenuChanged(int)));
+
+    {
+        QPixmap pixConstant, pixLinear, pixSmooth, pixHorizontal, pixCubic, pixCatmullRom, pixBroken, pixFree;
+        pixConstant.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_constant.png"));
+        pixLinear.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_linear.png"));
+        pixSmooth.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_z.png"));
+        pixHorizontal.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_h.png"));
+        pixCubic.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_c.png"));
+        pixCatmullRom.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_r.png"));
+        pixBroken.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_break.png"));
+        pixFree.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve.png"));
+
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleConstant,
+                                                                kShortcutDescActionAnimationModuleConstant,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixConstant));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleLinear,
+                                                                kShortcutDescActionAnimationModuleLinear,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixLinear));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleSmooth,
+                                                                kShortcutDescActionAnimationModuleSmooth,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixSmooth));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleHorizontal,
+                                                                kShortcutDescActionAnimationModuleHorizontal,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixHorizontal));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleCubic,
+                                                                kShortcutDescActionAnimationModuleCubic,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixCubic));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleCatmullrom,
+                                                                kShortcutDescActionAnimationModuleCatmullrom,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixCatmullRom));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
+                                                                kShortcutIDActionAnimationModuleBreak,
+                                                                kShortcutDescActionAnimationModuleBreak,
+                                                                _imp->keyframeInterpolationChoice);
+            action->setIcon(QIcon(pixBroken));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+        {
+            QAction* action = new QAction(_imp->keyframeInterpolationChoice);
+            action->setText(tr("Custom Tangents"));
+            action->setIcon(QIcon(pixFree));
+            _imp->keyframeInterpolationChoice->addAction(action);
+        }
+
+
+
+    }
+
     _imp->knobLabel = new Label(_imp->buttonsContainer);
     _imp->knobLabel->setAltered(true);
     _imp->knobLabel->setText( tr("No curve selected") );
     _imp->knobExpressionLineEdit = new LineEdit(_imp->buttonsContainer);
+    _imp->knobExpressionLineEdit->setPlaceholderText(tr("curve (No Expression)"));
     _imp->knobExpressionLineEdit->setReadOnly_NoFocusRect(true);
     QObject::connect( _imp->knobExpressionLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()) );
     _imp->expressionResultLabel = new Label(_imp->buttonsContainer);
     _imp->expressionResultLabel->setAltered(true);
     _imp->expressionResultLabel->setText( QString::fromUtf8("= ") );
 
+    _imp->buttonsLayout->addWidget(_imp->keyframeLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(5));
+    _imp->buttonsLayout->addWidget(_imp->keyframeLeftSlopeLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(1));
+    _imp->buttonsLayout->addWidget(_imp->keyframeLeftSlopeSpinBox);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(2));
+    _imp->buttonsLayout->addWidget(_imp->keyframeTimeLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(1));
+    _imp->buttonsLayout->addWidget(_imp->keyframeTimeSpinBox);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(2));
+    _imp->buttonsLayout->addWidget(_imp->keyframeValueLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(1));
+    _imp->buttonsLayout->addWidget(_imp->keyframeValueSpinBox);
+    _imp->buttonsLayout->addWidget(_imp->keyframeValueLineEdit);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(2));
+    _imp->buttonsLayout->addWidget(_imp->keyframeRightSlopeLabel);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(1));
+    _imp->buttonsLayout->addWidget(_imp->keyframeRightSlopeSpinBox);
+    _imp->buttonsLayout->addSpacing(TO_DPIX(2));
+    _imp->buttonsLayout->addWidget(_imp->keyframeInterpolationChoice);
+
+    _imp->buttonsLayout->addSpacing(TO_DPIX(5));
 
     _imp->buttonsLayout->addWidget(_imp->knobLabel);
     _imp->buttonsLayout->addSpacing(TO_DPIX(5));
@@ -224,6 +458,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
              _imp->view, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
     onSelectionModelSelectionChanged(false);
+
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()
@@ -467,18 +703,90 @@ AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
                 break;
             } else {
                 knobLabel = knob->getViewDimensionLabel(it->first.dim, it->first.view);
-                currentExpression = QString::fromUtf8(knob->getInternalKnob()->getExpression(it->first.dim, it->first.view).c_str());
+                NamedKnobHolderPtr isHolderNamed = boost::dynamic_pointer_cast<NamedKnobHolder>(knob->getInternalKnob()->getHolder());
+                if (isHolderNamed) {
+                    QString holderName = QString::fromUtf8(isHolderNamed->getScriptName_mt_safe().c_str());
+                    holderName += QLatin1Char('.');
+                    knobLabel.prepend(holderName);
+                }
+                KnobIPtr internalKnob = knob->getInternalKnob();
+
+                currentExpression = QString::fromUtf8(internalKnob->getExpression(it->first.dim, it->first.view).c_str());
+
             }
         }
     }
     _imp->knobLabel->setVisible(expressionFieldsEnabled);
     if (expressionFieldsEnabled) {
-        _imp->knobLabel->setText(knobLabel);
+        _imp->knobLabel->setText(tr("%1:").arg(knobLabel));
         _imp->knobExpressionLineEdit->setText(currentExpression);
     }
+
+
     _imp->knobExpressionLineEdit->setVisible(expressionFieldsEnabled);
     _imp->expressionResultLabel->setVisible(expressionFieldsEnabled);
 
+    _imp->refreshExpressionResult();
+
+    // Also refresh keyframe widgets
+    refreshKeyframeWidgetsFromSelection();
+} // onSelectionModelSelectionChanged
+
+void
+AnimationModuleEditorPrivate::refreshExpressionResult()
+{
+    if (!expressionResultLabel->isVisible()) {
+        return;
+    }
+    const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    if (selectedKeys.size() > 1 || selectedKeys.size() == 0) {
+        return;
+    }
+    AnimItemDimViewIndexID id = selectedKeys.begin()->first;
+    KnobAnimPtr knob = toKnobAnim(id.item);
+    if (!knob) {
+        return;
+    }
+    KnobIPtr internalKnob = knob->getInternalKnob();
+    if (!internalKnob) {
+        return;
+    }
+
+    bool expressionIsError = false;
+
+    std::string exprError;
+    internalKnob->isExpressionValid(id.dim, id.view, &exprError);
+    if (!exprError.empty()) {
+        expressionIsError = true;
+    }
+
+    if (expressionIsError) {
+        expressionResultLabel->setText(publicInterface->tr(" = Invalid Expression"));
+    } else {
+        QString internalKnobValueStr;
+        KnobStringBasePtr isStringKnob = toKnobStringBase(internalKnob);
+        KnobBoolBasePtr isBoolKnob = toKnobBool(internalKnob);
+        KnobIntBasePtr isIntKnob = toKnobInt(internalKnob);
+        KnobDoubleBasePtr isDoubleKnob = toKnobDouble(internalKnob);
+        if (isStringKnob) {
+            internalKnobValueStr = QString::fromUtf8(isStringKnob->getValue(id.dim, id.view).c_str());
+        } else if (isBoolKnob) {
+            bool val = isBoolKnob->getValue(id.dim, id.view);
+            internalKnobValueStr = val ? publicInterface->tr("True") : publicInterface->tr("False");
+        } else if (isIntKnob) {
+            internalKnobValueStr = QString::number(isIntKnob->getValue(id.dim, id.view));
+        } else if (isDoubleKnob) {
+            internalKnobValueStr = QString::number(isDoubleKnob->getValue(id.dim, id.view), 'f', 2);
+        }
+        expressionResultLabel->setText(QString::fromUtf8("= ") + internalKnobValueStr);
+
+    }
+} // refreshExpressionResult
+
+void
+AnimationModuleEditor::onTimelineTimeChanged(SequenceTime /*time*/, int /*reason*/)
+{
+    _imp->refreshExpressionResult();
 }
 
 
@@ -550,6 +858,180 @@ AnimationModuleEditor::getIcon() const
     QPixmap p;
     appPTR->getIcon(NATRON_PIXMAP_ANIMATION_MODULE, iconSize, &p);
     return QIcon(p);
+}
+
+bool
+AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFrameWithString* key) const
+{
+    const AnimItemDimViewKeyFramesMap& selectedCurves = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    if (selectedCurves.size() > 1 || selectedCurves.empty()) {
+        return false;
+    }
+
+    AnimItemDimViewKeyFramesMap::const_iterator it = selectedCurves.begin();
+    const KeyFrameWithStringSet& keys = it->second;
+    if (keys.size() == 0 || keys.size() > 1) {
+        return false;
+    }
+    *curve = it->first;
+    *key = *keys.begin();
+    return true;
+}
+
+void
+AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
+{
+    bool showKeyframeWidgets = true;
+
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    showKeyframeWidgets = _imp->getKeyframe(&id, &keyData);
+
+    AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
+    if (showKeyframeWidgets) {
+        dataType = id.item->getInternalAnimItem()->getKeyFrameDataType();
+    }
+
+    bool canHaveTangents = dataType == AnimatingObjectI::eKeyframeDataTypeInt || dataType == AnimatingObjectI::eKeyframeDataTypeDouble;
+
+    if (dataType == AnimatingObjectI::eKeyframeDataTypeBool) {
+        _imp->keyframeValueSpinBox->setMinimum(0);
+        _imp->keyframeValueSpinBox->setMaximum(1);
+    } else {
+        _imp->keyframeValueSpinBox->setMinimum(-std::numeric_limits<double>::infinity());
+        _imp->keyframeValueSpinBox->setMaximum(std::numeric_limits<double>::infinity());
+    }
+
+    _imp->keyframeLabel->setEnabled(showKeyframeWidgets);
+    _imp->keyframeLeftSlopeLabel->setEnabled(showKeyframeWidgets && canHaveTangents);
+    _imp->keyframeLeftSlopeSpinBox->setEnabled(showKeyframeWidgets && canHaveTangents);
+    _imp->keyframeTimeLabel->setEnabled(showKeyframeWidgets);
+    _imp->keyframeTimeSpinBox->setEnabled(showKeyframeWidgets);
+    _imp->keyframeValueLabel->setEnabled(showKeyframeWidgets);
+    _imp->keyframeValueLineEdit->setEnabled(showKeyframeWidgets);
+    _imp->keyframeValueLineEdit->setVisible(dataType == AnimatingObjectI::eKeyframeDataTypeString);
+    _imp->keyframeValueSpinBox->setEnabled(showKeyframeWidgets);
+    _imp->keyframeValueSpinBox->setVisible(dataType != AnimatingObjectI::eKeyframeDataTypeString);
+    _imp->keyframeRightSlopeLabel->setEnabled(showKeyframeWidgets && canHaveTangents);
+    _imp->keyframeRightSlopeSpinBox->setEnabled(showKeyframeWidgets && canHaveTangents);
+    _imp->keyframeInterpolationChoice->setEnabled(showKeyframeWidgets && canHaveTangents);
+
+    if (showKeyframeWidgets) {
+        _imp->keyframeLeftSlopeSpinBox->setValue(keyData.key.getLeftDerivative());
+        _imp->keyframeRightSlopeSpinBox->setValue(keyData.key.getRightDerivative());
+
+        KeyframeTypeEnum interp = keyData.key.getInterpolation();
+        KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
+        _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
+
+        _imp->keyframeTimeSpinBox->setValue(keyData.key.getTime());
+        _imp->keyframeValueSpinBox->setValue(keyData.key.getValue());
+        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(keyData.string.c_str()));
+    }
+} // refreshKeyframeWidgetsFromSelection
+
+void
+AnimationModuleEditor::onKeyfameInterpolationChoiceMenuChanged(int index)
+{
+    KeyframeTypeEnum type = toKeyFrameType((KeyFrameInterpolationChoiceMenuEnum)index);
+
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+
+    AnimItemDimViewKeyFramesMap selectedKeys;
+    selectedKeys[id].insert(keyData);
+    _imp->model->pushUndoCommand(new SetKeysInterpolationCommand(selectedKeys,
+                                                                 _imp->model,
+                                                                 type));
+
+
+}
+
+void
+AnimationModuleEditor::onLeftSlopeSpinBoxValueChanged(double value)
+{
+
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+    _imp->model->pushUndoCommand(new MoveTangentCommand(_imp->model,
+                                                        MoveTangentCommand::eSelectedTangentLeft,
+                                                        id.item,
+                                                        id.dim,
+                                                        id.view,
+                                                        keyData.key,
+                                                        value));
+}
+
+void
+AnimationModuleEditor::onRightSlopeSpinBoxValueChanged(double value)
+{
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+    _imp->model->pushUndoCommand(new MoveTangentCommand(_imp->model,
+                                                        MoveTangentCommand::eSelectedTangentRight,
+                                                        id.item,
+                                                        id.dim,
+                                                        id.view,
+                                                        keyData.key,
+                                                        value));
+
+}
+
+void
+AnimationModuleEditor::onKeyframeTimeSpinBoxValueChanged(double value)
+{
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+    AnimItemDimViewKeyFramesMap selectedKeys;
+    selectedKeys[id].insert(keyData);
+    double dt = value - keyData.key.getTime();
+    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), dt, 0));
+}
+
+
+void
+AnimationModuleEditor::onKeyframeValueLineEditEditFinished()
+{
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+    KnobStringBasePtr isKnobString = boost::dynamic_pointer_cast<KnobStringBase>(id.item->getInternalAnimItem());
+    if (!isKnobString) {
+        return;
+    }
+
+    std::string str = _imp->keyframeValueLineEdit->text().toStdString();
+    isKnobString->getHolder()->beginMultipleEdits(tr("Set KeyFrame on %1").arg(QString::fromUtf8(isKnobString->getLabel().c_str())).toStdString());
+    isKnobString->setValueAtTime(keyData.key.getTime(), str, id.view);
+    isKnobString->getHolder()->endMultipleEdits();
+}
+
+void
+AnimationModuleEditor::onKeyframeValueSpinBoxValueChanged(double value)
+{
+    AnimItemDimViewIndexID id;
+    KeyFrameWithString keyData;
+    if (!_imp->getKeyframe(&id, &keyData)) {
+        return;
+    }
+    AnimItemDimViewKeyFramesMap selectedKeys;
+    selectedKeys[id].insert(keyData);
+    double dv = value - keyData.key.getValue();
+    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), 0, dv));
 }
 
 

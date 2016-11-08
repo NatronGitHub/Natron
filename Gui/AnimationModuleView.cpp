@@ -1218,6 +1218,13 @@ AnimationModuleView::toWidgetCoordinates(double x, double y) const
     return _imp->curveEditorZoomContext.toWidgetCoordinates(x, y);
 }
 
+void
+AnimationModuleView::setSelectedDerivative(MoveTangentCommand::SelectedTangentEnum tangent, AnimItemDimViewKeyFrame key)
+{
+    _imp->selectedDerivative.first = tangent;
+    _imp->selectedDerivative.second = key;
+}
+
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
 #include "moc_AnimationModuleView.cpp"

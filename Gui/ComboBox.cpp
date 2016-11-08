@@ -370,7 +370,17 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         center.ry() -= pixRect.height() / 2.;
 
         QRect targetRect(center.x(), center.y(), pixRect.width(), pixRect.height());
-        p.drawPixmap(targetRect, _currentPixmap, pixRect);
+
+        QStyleOption opt;
+        opt.initFrom(this);
+        QPixmap pix = _currentPixmap;
+        if (!isEnabled()) {
+            pix = style()->generatedIconPixmap(QIcon::Disabled, pix, &opt);
+        }
+        style()->drawItemPixmap(&p, targetRect, Qt::AlignCenter, pix);
+
+
+        //p.drawPixmap(targetRect, _currentPixmap, pixRect);
     }
 
     {

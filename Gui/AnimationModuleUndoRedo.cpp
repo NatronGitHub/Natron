@@ -936,6 +936,7 @@ MoveTangentCommand::undo()
         AnimItemDimViewKeyFramesMap newSelection;
         AnimationModuleSelectionModel::addAnimatedItemKeyframes(_object.lock(), _dimension, _view, &newSelection);
         model->setCurrentSelection(newSelection, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
+  
     }
 }
 

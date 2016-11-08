@@ -41,6 +41,7 @@
 #include "Engine/OverlaySupport.h"
 
 #include "Gui/AnimItemBase.h"
+#include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 
@@ -145,6 +146,8 @@ public:
     // Uses curve editor zoom context
     QPointF toZoomCoordinates(double x, double y) const;
     QPointF toWidgetCoordinates(double x, double y) const;
+
+    void setSelectedDerivative(MoveTangentCommand::SelectedTangentEnum tangent, AnimItemDimViewKeyFrame key);
     
 public Q_SLOTS:
 

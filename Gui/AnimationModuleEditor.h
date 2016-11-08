@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
+#include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -152,6 +153,8 @@ public:
 
 public Q_SLOTS:
 
+    void refreshKeyframeWidgetsFromSelection();
+
     void onExprLineEditFinished();
 
     void onDisplayViewClicked(bool clicked);
@@ -173,6 +176,20 @@ public Q_SLOTS:
     void onCenterAllCurvesActionTriggered();
 
     void onCenterOnSelectedCurvesActionTriggered();
+
+    void onKeyfameInterpolationChoiceMenuChanged(int index);
+
+    void onLeftSlopeSpinBoxValueChanged(double value);
+
+    void onRightSlopeSpinBoxValueChanged(double value);
+
+    void onKeyframeValueLineEditEditFinished();
+
+    void onKeyframeTimeSpinBoxValueChanged(double value);
+
+    void onKeyframeValueSpinBoxValueChanged(double value);
+
+    void onTimelineTimeChanged(SequenceTime time, int reason);
 
 private:
 

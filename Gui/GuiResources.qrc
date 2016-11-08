@@ -121,7 +121,7 @@
         <file>Resources/Images/checkbox.png</file>
         <file>Resources/Images/checkbox_animation1_checked.png</file>
         <file>Resources/Images/checkbox_animation1_checked_hovered.png</file>
-        <file>Resources/Images/checkbox_animation1_unchecked.png</file>
+        <file>Resources/Images/checkbox_animation1_unchecked.png</file> 
         <file>Resources/Images/checkbox_animation1_unchecked_hovered.png</file>
         <file>Resources/Images/checkbox_animation2_checked.png</file>
         <file>Resources/Images/checkbox_animation2_checked_hovered.png</file>
@@ -139,7 +139,7 @@
         <file>Resources/Images/checkbox_hovered.png</file>
         <file>Resources/Images/checkbox_unchecked_readonly.png</file>
         <file>Resources/Images/checkerboard_off.png</file>
-        <file>Resources/Images/checkerboard_on.png</file>
+        <file>Resources/Images/checkerboard_on.png</file> 
         <file>Resources/Images/clearAnimation.png</file>
         <file>Resources/Images/clearAnimationBw.png</file>
         <file>Resources/Images/clearAnimationFw.png</file>
