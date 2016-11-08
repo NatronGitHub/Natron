@@ -3326,6 +3326,9 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         projectViews = getHolder()->getApp()->getProject()->getProjectViewNames();
     }
 
+    // Clear any existing animation
+    removeAnimation(ViewSetSpec::all(), DimSpec::all());
+
     // There is a case where the dimension of a parameter might have changed between versions, e.g:
     // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
     // both dimensions.
@@ -3350,6 +3353,12 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 CurvePtr curve = getCurve(view_i, dimensionIndex);
                 if (curve) {
                     curve->fromSerialization(it->second[d]._animationCurve);
+                    std::list<double> keysAdded, keysRemoved;
+                    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                    for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+                        keysAdded.push_back(it->getTime());
+                    }
+                    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view_i, dimensionIndex);
                 }
             } else if (it->second[d]._expression.empty() && !it->second[d]._slaveMasterLink.hasLink) {
                 // restore value if no expression/link

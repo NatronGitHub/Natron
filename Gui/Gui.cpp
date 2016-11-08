@@ -438,6 +438,7 @@ Gui::createMenuActions()
 
     _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
+    _imp->actionProject_settings->setShortcutContext(Qt::WidgetShortcut);
     QObject::connect( _imp->actionProject_settings, SIGNAL(triggered()), this, SLOT(setVisibleProjectSettingsPanel()) );
 
     _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, this);

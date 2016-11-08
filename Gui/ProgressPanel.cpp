@@ -330,7 +330,7 @@ ProgressPanel::removeTaskFromTable(const ProgressTaskInfoPtr& task)
 void
 ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
 {
-    std::vector<TableItemPtr> table;
+    //std::vector<TableItemPtr> table;
     std::vector<ProgressTaskInfoPtr> newOrder;
 
     {
@@ -342,26 +342,27 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
                 _imp->tasks.erase(foundInMap);
             }
         }
-        int rc = _imp->model->rowCount();
-        assert( (int)_imp->tasksOrdered.size() == rc );
 
-        for (int i = 0; i < rc; ++i) {
-            std::list<ProgressTaskInfoPtr>::const_iterator foundSelected = std::find(tasks.begin(), tasks.end(), _imp->tasksOrdered[i]);
+        for (std::size_t i = 0; i < _imp->tasksOrdered.size(); ++i) {
             _imp->tasksOrdered[i]->removeCellWidgets(i, _imp->view);
+
+            std::list<ProgressTaskInfoPtr>::const_iterator foundSelected = std::find(tasks.begin(), tasks.end(), _imp->tasksOrdered[i]);
             if ( foundSelected != tasks.end() ) {
-                continue;
+                TableItemPtr item = _imp->model->getItem(i);
+                _imp->model->removeItem(item);
+            } else {
+                newOrder.push_back(_imp->tasksOrdered[i]);
             }
-            TableItemPtr item = _imp->model->getItem(i);
-            table.push_back(item);
-            _imp->model->setRow(i, TableItemPtr()) ;
+
+           // table.push_back(item);
 
 
-            newOrder.push_back(_imp->tasksOrdered[i]);
+
         }
         _imp->tasksOrdered = newOrder;
     }
 
-    _imp->model->setTable(table);
+   // _imp->model->setTable(table);
 
     ///Refresh custom widgets
     for (std::size_t i = 0; i < newOrder.size(); ++i) {
@@ -504,10 +505,9 @@ ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
 {
     assert( QThread::currentThread() == qApp->thread() );
     int rc = _imp->model->rowCount();
-    _imp->model->insertRows(rc);
 
     TableItemPtr item = task->getTableItem();
-    _imp->model->setRow(rc, item);
+    _imp->model->insertTopLevelItem(rc, item);
 
     task->setCellWidgets(rc, _imp->view);
 

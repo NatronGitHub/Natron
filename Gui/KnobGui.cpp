@@ -83,8 +83,30 @@ KnobGui::initialize()
 
     // Set the pointer to the GUI only for the settings panel knob gui
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->container);
+    NodeGuiPtr nodeUI;
     if (isNodePanel) {
+        nodeUI = isNodePanel->getNode();
         knob->setKnobGuiPointer(thisShared);
+    }
+
+    if (nodeUI) {
+        // Refresh the timeline keyframes on the NodeGui from the existing keyframes on the internal knob
+        std::list<double> keysAdded, keysRemoved;
+        std::list<ViewIdx> views = knob->getViewsList();
+        int nDims = knob->getNDimensions();
+        for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
+            for (int i = 0; i < nDims; ++i) {
+                CurvePtr curve = knob->getCurve(*it, DimIdx(i));
+                if (!curve) {
+                    continue;
+                }
+                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+                    keysAdded.push_back(it2->getTime());
+                }
+            }
+        }
+        nodeUI->onKnobKeyFramesChanged(knob, keysAdded, keysRemoved);
     }
     KnobHelperPtr helper = toKnobHelper(knob);
     assert(helper);

@@ -577,6 +577,8 @@ Gui::keyPressEvent(QKeyEvent* e)
             // valid serialization
             (void)lastUsedGraph->pasteClipboard();
         }
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, modifiers, key)) {
+        setVisibleProjectSettingsPanel();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {

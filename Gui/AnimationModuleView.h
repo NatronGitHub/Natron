@@ -66,9 +66,9 @@ public:
 
     bool hasDrawnOnce() const;
 
-    void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
+    //void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
-    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+    //void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
     void refreshSelectionBoundingBox();
 

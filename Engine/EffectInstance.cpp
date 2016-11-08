@@ -709,7 +709,7 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
         tlsArgs->isSequential = isSequentialRender;
         tlsArgs->abortInfo = renderInfo;
-        tlsArgs->treeRoot = inputEffect->getNode();
+        tlsArgs->treeRoot = getNode();
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();

@@ -64,6 +64,9 @@
 #define BOUNDING_BOX_HANDLE_SIZE 4
 
 
+#define CURVE_EDITOR_MIN_HEIGHT_PX 50
+
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -208,10 +211,12 @@ AnimationModuleView::paintGL()
     int w = width();
     int h = height();
     int treeItemBottomWidgetCoordY = 0;
+    bool drawCurveEditor = true;
 
     if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
 
         treeItemBottomWidgetCoordY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
+        drawCurveEditor = treeItemBottomWidgetCoordY < h - CURVE_EDITOR_MIN_HEIGHT_PX;
 
         assert(isAnimModule);
         if (treeItemBottomWidgetCoordY <=  0) {
@@ -228,32 +233,35 @@ AnimationModuleView::paintGL()
             
             
             GL_GPU::glEnable(GL_SCISSOR_TEST);
-            GL_GPU::glScissor(0, h - treeItemBottomWidgetCoordY - 1, w, treeItemBottomWidgetCoordY + 1);
+            int scissorY = drawCurveEditor ? h - treeItemBottomWidgetCoordY - 1 : 0;
+            int scissorH = drawCurveEditor ? treeItemBottomWidgetCoordY + 1 : h;
+            GL_GPU::glScissor(0, scissorY, w, scissorH);
             
             
             _imp->drawDopeSheetView();
         }
         
     }
-    
-    if (treeItemBottomWidgetCoordY < h) {
-        GL_GPU::glMatrixMode(GL_PROJECTION);
-        GL_GPU::glLoadIdentity();
-        GL_GPU::glOrtho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
-        GL_GPU::glMatrixMode(GL_MODELVIEW);
-        GL_GPU::glLoadIdentity();
-        glCheckError(GL_GPU);
-        
+
+    GL_GPU::glMatrixMode(GL_PROJECTION);
+    GL_GPU::glLoadIdentity();
+    GL_GPU::glOrtho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
+    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    GL_GPU::glLoadIdentity();
+    glCheckError(GL_GPU);
+
+
+    if (drawCurveEditor) {
+
         if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
             GL_GPU::glScissor(0, 0, w, h - treeItemBottomWidgetCoordY);
         }
-        
         _imp->drawCurveEditorView();
     }
+    GL_GPU::glDisable(GL_SCISSOR_TEST);
 
-    if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
-        GL_GPU::glDisable(GL_SCISSOR_TEST);
-        
+    if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked && drawCurveEditor) {
+
         // Draw a line to split dope sheet and curve editor
         QPointF bottomLeft = _imp->curveEditorZoomContext.toZoomCoordinates(0, 0);
         QPointF topRight = _imp->curveEditorZoomContext.toZoomCoordinates(w, h);
@@ -269,7 +277,7 @@ AnimationModuleView::paintGL()
         }
     }
     
-    _imp->drawTimelineMarkers();
+    _imp->drawTimelineMarkers(_imp->curveEditorZoomContext);
 
     glCheckError(GL_GPU);
 } // paintGL
@@ -488,7 +496,7 @@ AnimationModuleView::getStringWidthForCurrentFont(const std::string& string) con
 }
 
 
-
+#if 0
 void
 AnimationModuleView::getProjection(double *zoomLeft,
                            double *zoomBottom,
@@ -514,9 +522,13 @@ AnimationModuleView::setProjection(double zoomLeft,
 
     _imp->curveEditorZoomContext.setZoom(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
     double zoomRight = zoomLeft + _imp->dopeSheetZoomContext.screenWidth() * 1. / (zoomFactor * zoomAspectRatio);
-    _imp->dopeSheetZoomContext.fill(zoomLeft, zoomRight, _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top());
+    double dopeSheetBtm = _imp->dopeSheetZoomContext.bottom();
+    double dopeSheetTop = _imp->dopeSheetZoomContext.top();
+    if (zoomLeft < zoomRight && dopeSheetBtm < dopeSheetTop) {
+        _imp->dopeSheetZoomContext.fill(zoomLeft, zoomRight, _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top());
+    }
 }
-
+#endif
 
 void
 AnimationModuleView::onTimeLineFrameChanged(SequenceTime,
@@ -1147,11 +1159,12 @@ AnimationModuleView::wheelEvent(QWheelEvent *e)
     } else if ( modCASIsControl(e) ) {
         // Times only
         _imp->zoomView(e->pos(), e->delta(), e->delta(), _imp->curveEditorZoomContext, true, false);
+        _imp->zoomView(e->pos(), e->delta(), e->delta(), _imp->dopeSheetZoomContext, true, false);
     } else {
         // Values + Times
         _imp->zoomView(e->pos(), e->delta(), e->delta(), _imp->curveEditorZoomContext, true, true);
+        _imp->zoomView(e->pos(), e->delta(), e->delta(), _imp->dopeSheetZoomContext, true, false);
     }
-    _imp->zoomView(e->pos(), e->delta(), e->delta(), _imp->dopeSheetZoomContext, true, false);
 
 
     // Synchronize the dope sheet editor and opened viewers

@@ -523,23 +523,29 @@ NodeGui::createGui()
 
 
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
+    {
 
-    if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
-        QPixmap pix(iconFilePath);
-        if ( QFile::exists(iconFilePath) && !pix.isNull() ) {
-            _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
-            _pluginIcon->setZValue(depth + 1);
-            _pluginIconFrame = new QGraphicsRectItem(this);
-            _pluginIconFrame->setZValue(depth);
-            _pluginIconFrame->setBrush( QColor(50, 50, 50) );
-            int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
+        _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
+        _pluginIcon->setZValue(depth + 1);
+        _pluginIconFrame = new QGraphicsRectItem(this);
+        _pluginIconFrame->setZValue(depth);
+        int r, g, b;
+        appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
+        _pluginIconFrame->setBrush( QColor(r, g, b) );
+
+
+        int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
+        QPixmap pix;
+        pix.load(iconFilePath);
+        if (!pix.isNull()) {
             if (std::max( pix.width(), pix.height() ) != size) {
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
             _pluginIcon->setPixmap(pix);
         }
+        
     }
-
+    
     _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
     _presetIcon->setZValue(depth + 1);
     _presetIcon->hide();
@@ -862,8 +868,9 @@ NodeGui::resize(int width,
     }
 
     const bool hasPluginIcon = _pluginIcon && _pluginIcon->isVisible();
-    const int iconWidth = getPluginIconWidth();
+
     adjustSizeToContent(&width, &height, adjustToTextSize);
+    const int iconWidth = getPluginIconWidth();
 
     getNode()->onNodeUISizeChanged(width, height);
 
@@ -3997,18 +4004,6 @@ NodeGui::onNodePresetsChanged()
                     getSettingPanel()->setPluginIcon(pixmap);
                 }
 
-
-
-                if (!_pluginIcon) {
-                    _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
-                    _pluginIcon->setZValue(getBaseDepth() + 1);
-                    _pluginIconFrame = new QGraphicsRectItem(this);
-                    _pluginIconFrame->setZValue( getBaseDepth() );
-
-                    int r, g, b;
-                    appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
-                    _pluginIconFrame->setBrush( QColor(r, g, b) );
-                }
 
                 if (_pluginIcon) {
                     _pluginIcon->setPixmap(pixmap);

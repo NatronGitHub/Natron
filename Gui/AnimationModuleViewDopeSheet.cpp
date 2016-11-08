@@ -790,6 +790,9 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
         if (!treeItem) {
             continue;
         }
+        if (!treeView->isItemVisibleRecursive(treeItem)) {
+            continue;
+        }
         double visualRectCenterYCanonical = dopeSheetZoomContext.toZoomCoordinates(0, treeView->visualItemRect(treeItem).center().y()).y();
 
         for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {

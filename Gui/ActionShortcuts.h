@@ -48,11 +48,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 #define kShortcutGroupGlobal "Global"
-#define kShortcutGroupNodegraph "NodeGraph"
-#define kShortcutGroupAnimationModule "AnimatioEditor"
+#define kShortcutGroupNodegraph "Node Graph"
+#define kShortcutGroupAnimationModule "Animation Editor"
 #define kShortcutGroupPlayer "Player"
 #define kShortcutGroupNodes "Nodes"
-#define kShortcutGroupScriptEditor "ScriptEditor"
+#define kShortcutGroupScriptEditor "Script Editor"
 
 /////////GLOBAL SHORTCUTS
 #define kShortcutIDActionNewProject "newProject"
@@ -353,7 +353,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionAnimationModulePasteKeyframesAbsolute "Paste Keyframes Absolute"
 
 #define kShortcutIDActionAnimationModuleStackView "stackAnimView"
-#define kShortcutDescActionAnimationModuleStackView "Stack/un-stack Curve Editor and Dope Sheet"
+#define kShortcutDescActionAnimationModuleStackView "Show Curve Editor + Dope Sheet"
 
 
 // Script editor shortcuts

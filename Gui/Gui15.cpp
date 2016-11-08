@@ -380,10 +380,10 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
 void
 Gui::removeVisibleDockablePanel(DockablePanel* panel)
 {
-    // Refresh timeline's keyframes
-    refreshTimelineGuiKeyframes();
 
     getApp()->unregisterSettingsPanel(panel);
+    // Refresh timeline's keyframes
+    refreshTimelineGuiKeyframes();
 }
 
 

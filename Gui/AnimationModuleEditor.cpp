@@ -57,7 +57,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
-
+#include "Engine/Utils.h"
 NATRON_NAMESPACE_ENTER;
 
 
@@ -75,7 +75,7 @@ public:
 
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
-    ComboBox* displayViewChoice;
+    Button* displayViewChoice;
 
     Label* knobLabel;
     LineEdit* knobExpressionLineEdit;
@@ -139,26 +139,25 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     appPTR->getIcon(NATRON_PIXMAP_CURVE_EDITOR, iconSize, &pixCurveEditor);
     appPTR->getIcon(NATRON_PIXMAP_ANIMATION_MODULE, iconSize, &pixStacked);
 
-    _imp->displayViewChoice = new ComboBox(_imp->buttonsContainer);
-    {
-        QAction* action = new QAction(_imp->displayViewChoice);
-        action->setText(tr("Dope Sheet + Curve Editor"));
-        action->setIcon(QIcon(pixStacked));
-        _imp->displayViewChoice->addAction(action);
-    }
-    {
-        QAction* action = new QAction(_imp->displayViewChoice);
-        action->setText(tr("Curve Editor Only"));
-        action->setIcon(QIcon(pixCurveEditor));
-        _imp->displayViewChoice->addAction(action);
-    }
- 
+    QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+    QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
-    _imp->displayViewChoice->setCurrentIndex_no_emit(0);
-    _imp->displayViewChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    _imp->displayViewChoice->setFixedWidth(iconSize + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
-    connect(_imp->displayViewChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewCurrentIndexChanged(int)));
-    _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
+    {
+        _imp->displayViewChoice = new Button(_imp->buttonsContainer);
+        QIcon ic;
+        ic.addPixmap(pixStacked, QIcon::Normal, QIcon::On);
+        ic.addPixmap(pixCurveEditor, QIcon::Normal, QIcon::Off);
+        _imp->displayViewChoice->setIcon(ic);
+        _imp->displayViewChoice->setCheckable(true);
+        _imp->displayViewChoice->setChecked(true);
+        _imp->displayViewChoice->setDown(true);
+        _imp->displayViewChoice->setFixedSize(medSize);
+        _imp->displayViewChoice->setIconSize(medIconSize);
+        _imp->displayViewChoice->setFocusPolicy(Qt::NoFocus);
+        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, "<p>" + tr("Switch between Dope Sheet + CurveEditor and Curve Editor only").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->displayViewChoice);
+        connect(_imp->displayViewChoice, SIGNAL(clicked(bool)), this, SLOT(onDisplayViewClicked(bool)));
+        _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
+    }
 
     _imp->buttonsLayout->addSpacing(TO_DPIX(10));
 
@@ -239,7 +238,7 @@ AnimationModuleEditor::~AnimationModuleEditor()
 AnimationModuleEditor::AnimationModuleDisplayViewMode
 AnimationModuleEditor::getDisplayMode() const
 {
-    return (AnimationModuleEditor::AnimationModuleDisplayViewMode)_imp->displayViewChoice->activeIndex();
+    return _imp->displayViewChoice->isChecked() ? eAnimationModuleDisplayViewModeStacked : eAnimationModuleDisplayViewModeCurveEditor;
 }
 
 void
@@ -302,14 +301,9 @@ AnimationModuleEditor::keyPressEvent(QKeyEvent* e)
     if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         _imp->model->renameSelectedNode();
     } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, modifiers, key) ) {
-        int index = _imp->displayViewChoice->activeIndex();
-        if (index == 0) {
-            index = 1;
-        } else {
-            index = 0;
-        }
-        onViewCurrentIndexChanged((int)index);
-        _imp->displayViewChoice->setCurrentIndex_no_emit((int)index);
+        bool checked = _imp->displayViewChoice->isChecked();
+        _imp->displayViewChoice->setChecked(!checked);
+        onDisplayViewClicked(!checked);
     } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys, modifiers, key) ) {
         onRemoveSelectedKeyFramesActionTriggered();
     } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleConstant, modifiers, key) ) {
@@ -390,22 +384,22 @@ AnimationModuleEditor::getUndoStack() const
 }
 
 bool
-AnimationModuleEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data)
+AnimationModuleEditor::saveProjection(SERIALIZATION_NAMESPACE::ViewportData* /*data*/)
 {
 
-    if (!_imp->view->hasDrawnOnce()) {
+    /*if (!_imp->view->hasDrawnOnce()) {
         return false;
     }
     _imp->view->getProjection(&data->left, &data->bottom, &data->zoomFactor, &data->par);
-
-    return true;
+*/
+    return false;
 }
 
 bool
-AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data)
+AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& /*data*/)
 {
-    _imp->view->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
-    return true;
+    //_imp->view->setProjection(data.left, data.bottom, data.zoomFactor, data.par);
+    return false;
 }
 
 
@@ -456,8 +450,9 @@ AnimationModuleEditor::onExprLineEditFinished()
 }
 
 void
-AnimationModuleEditor::onViewCurrentIndexChanged(int /*index*/)
+AnimationModuleEditor::onDisplayViewClicked(bool clicked)
 {
+    _imp->displayViewChoice->setDown(clicked);
     _imp->view->update();
 }
 

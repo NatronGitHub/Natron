@@ -118,7 +118,7 @@ AnimationModuleViewPrivate::getKeyFrameBoundingRectCanonical(bool curveEditor, d
 
 
 void
-AnimationModuleViewPrivate::drawTimelineMarkers()
+AnimationModuleViewPrivate::drawTimelineMarkers(const ZoomContext& ctx)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -136,8 +136,8 @@ AnimationModuleViewPrivate::drawTimelineMarkers()
     settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
     settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
-    QPointF topLeft = curveEditorZoomContext.toZoomCoordinates(0, 0);
-    QPointF btmRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
+    QPointF topLeft = ctx.toZoomCoordinates(0, 0);
+    QPointF btmRight = ctx.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
 
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
@@ -164,18 +164,18 @@ AnimationModuleViewPrivate::drawTimelineMarkers()
         GL_GPU::glEnable(GL_POLYGON_SMOOTH);
         GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
 
-        QPointF topLeft = curveEditorZoomContext.toZoomCoordinates(0, 0);
-        QPointF btmRight = curveEditorZoomContext.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
+        QPointF topLeft = ctx.toZoomCoordinates(0, 0);
+        QPointF btmRight = ctx.toZoomCoordinates(_publicInterface->width() - 1, _publicInterface->height() - 1);
         QPointF btmCursorBtm( timeline->currentFrame(), btmRight.y() );
-        QPointF btmcursorBtmWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
-        QPointF btmCursorTop = curveEditorZoomContext.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIX(CURSOR_HEIGHT));
-        QPointF btmCursorLeft = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
-        QPointF btmCursorRight = curveEditorZoomContext.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF btmcursorBtmWidgetCoord = ctx.toWidgetCoordinates( btmCursorBtm.x(), btmCursorBtm.y() );
+        QPointF btmCursorTop = ctx.toZoomCoordinates(btmcursorBtmWidgetCoord.x(), btmcursorBtmWidgetCoord.y() - TO_DPIX(CURSOR_HEIGHT));
+        QPointF btmCursorLeft = ctx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
+        QPointF btmCursorRight = ctx.toZoomCoordinates( btmcursorBtmWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., btmcursorBtmWidgetCoord.y() );
         QPointF topCursortop( timeline->currentFrame(), topLeft.y() );
-        QPointF topcursorTopWidgetCoord = curveEditorZoomContext.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
-        QPointF topCursorBtm = curveEditorZoomContext.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIX(CURSOR_HEIGHT));
-        QPointF topCursorLeft = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
-        QPointF topCursorRight = curveEditorZoomContext.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+        QPointF topcursorTopWidgetCoord = ctx.toWidgetCoordinates( topCursortop.x(), topCursortop.y() );
+        QPointF topCursorBtm = ctx.toZoomCoordinates(topcursorTopWidgetCoord.x(), topcursorTopWidgetCoord.y() + TO_DPIX(CURSOR_HEIGHT));
+        QPointF topCursorLeft = ctx.toZoomCoordinates( topcursorTopWidgetCoord.x() - TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
+        QPointF topCursorRight = ctx.toZoomCoordinates( topcursorTopWidgetCoord.x() + TO_DPIX(CURSOR_WIDTH) / 2., topcursorTopWidgetCoord.y() );
 
 
         GL_GPU::glBegin(GL_POLYGON);
@@ -1057,7 +1057,7 @@ AnimationModuleViewPrivate::zoomView(const QPointF& evPos, int deltaX, int delta
 
         if (canZoomY) {
             // Alt + Shift + Wheel: zoom values only, keep point under mouse
-            zoomFactor = curveEditorZoomContext.factor() * scaleFactorY;
+            zoomFactor = zoomCtx.factor() * scaleFactorY;
 
             if (zoomFactor <= zoomFactor_min) {
                 zoomFactor = zoomFactor_min;

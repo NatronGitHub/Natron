@@ -121,7 +121,7 @@ public:
 
     virtual ~AnimationModuleViewPrivate();
 
-    void drawTimelineMarkers();
+    void drawTimelineMarkers(const ZoomContext& ctx);
 
     void drawSelectionRectangle();
 

@@ -154,7 +154,7 @@ public Q_SLOTS:
 
     void onExprLineEditFinished();
 
-    void onViewCurrentIndexChanged(int index);
+    void onDisplayViewClicked(bool clicked);
 
     void onSelectionModelSelectionChanged(bool recurse);
 
