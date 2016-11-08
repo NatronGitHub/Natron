@@ -262,7 +262,10 @@ AnimationModuleViewPrivate::drawDopeSheetScale() const
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
 
     // Retrieve the appropriate settings for drawing
+    double gridR, gridG, gridB;
     SettingsPtr settings = appPTR->getCurrentSettings();
+    settings->getAnimationModuleEditorGridColor(&gridR, &gridG, &gridB);
+
     double scaleR, scaleG, scaleB;
     settings->getAnimationModuleEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
@@ -311,7 +314,7 @@ AnimationModuleViewPrivate::drawDopeSheetScale() const
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            GL_GPU::glColor4f(scaleColor.redF(), scaleColor.greenF(), scaleColor.blueF(), alpha);
+            GL_GPU::glColor4f(gridR, gridG, gridB, alpha);
 
             // Draw the vertical lines belonging to the grid
             GL_GPU::glBegin(GL_LINES);
@@ -700,7 +703,7 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
     for (KeyFrameWithStringSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
 
         const double keyTime = it->key.getTime();
-        RectD zoomKfRect = getKeyFrameBoundingRectCanonical(false, keyTime, rowCenterYCanonical);
+        RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, keyTime, rowCenterYCanonical);
 
         bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, keyTime);
         bool drawSelected = isKeyFrameSelected || (!selectionRect.isNull() && selectionRect.intersects(zoomKfRect));
@@ -793,7 +796,7 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
             ++nKeysInSelection;
             double x = it2->key.getTime();
 
-            RectD zoomKfRect = getKeyFrameBoundingRectCanonical(false, x, visualRectCenterYCanonical);
+            RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, x, visualRectCenterYCanonical);
 
             if (!bboxSet) {
                 bboxSet = true;
@@ -949,7 +952,7 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
 
     for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
         double x = it2->getTime();
-        RectD zoomKfRect = getKeyFrameBoundingRectCanonical(false, x, visualRectCenterYCanonical);
+        RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, x, visualRectCenterYCanonical);
 
         if ( canonicalRect.intersects(zoomKfRect) ) {
             KeyFrameWithString k;
@@ -1085,7 +1088,7 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangle(bool to
     AnimItemDimViewKeyFramesMap selectedKeys;
     std::vector<NodeAnimPtr > nodesSelection;
     std::vector<TableItemAnimPtr> tableItemSelection;
-    makeSelectionFromDopeSheetSelectionRectangleInternal(dopeSheetSelectedKeysBRect, &selectedKeys, &nodesSelection, &tableItemSelection);
+    makeSelectionFromDopeSheetSelectionRectangleInternal(selectionRect, &selectedKeys, &nodesSelection, &tableItemSelection);
 
     AnimationModuleSelectionModel::SelectionTypeFlags sFlags = ( toggleSelection )
     ? AnimationModuleSelectionModel::SelectionTypeToggle
@@ -1093,7 +1096,7 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangle(bool to
 
     _model.lock()->getSelectionModel()->makeSelection(selectedKeys, tableItemSelection, nodesSelection, sFlags);
 
-    refreshDopeSheetSelectedKeysBRect();
+    _publicInterface->refreshSelectionBoundingBox();
 }
 
 void

@@ -95,14 +95,13 @@ AnimationModuleViewPrivate::~AnimationModuleViewPrivate()
 
 
 RectD
-AnimationModuleViewPrivate::getKeyFrameBoundingRectCanonical(bool curveEditor, double xCanonical, double yCanonical) const
+AnimationModuleViewPrivate::getKeyFrameBoundingRectCanonical(const ZoomContext& ctx, double xCanonical, double yCanonical) const
 {
-    const ZoomContext* ctx = curveEditor ? &curveEditorZoomContext : &dopeSheetZoomContext;
-    QPointF posWidget = ctx->toWidgetCoordinates(xCanonical, yCanonical);
+    QPointF posWidget = ctx.toWidgetCoordinates(xCanonical, yCanonical);
     RectD ret;
     double keyframeTexSize = TO_DPIX(getKeyframeTextureSize());
-    QPointF x1y1 = ctx->toZoomCoordinates(posWidget.x() - keyframeTexSize / 2., posWidget.y() + keyframeTexSize / 2);
-    QPointF x2y2 = ctx->toZoomCoordinates(posWidget.x() + keyframeTexSize / 2., posWidget.y() - keyframeTexSize / 2);
+    QPointF x1y1 = ctx.toZoomCoordinates(posWidget.x() - keyframeTexSize / 2., posWidget.y() + keyframeTexSize / 2);
+    QPointF x2y2 = ctx.toZoomCoordinates(posWidget.x() + keyframeTexSize / 2., posWidget.y() - keyframeTexSize / 2);
 
     ret.x1 = x1y1.x();
     ret.y1 = x1y1.y();
@@ -928,6 +927,11 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
         }
     }
 
+    // Dopesheet can only move X
+    if (!eventTriggeredFromCurveEditor) {
+        canMoveY = false;
+    }
+
 
     // Compute delta in time
     double dt = 0;
@@ -971,7 +975,10 @@ AnimationModuleViewPrivate::transformSelectedKeyFrames(const QPointF & oldPosCan
     }
 
     double dt = newPosCanonical.x() - oldPosCanonical.x();
-    double dv = newPosCanonical.y() - oldPosCanonical.y();
+    double dv = 0;
+    if (eventTriggeredFromCurveEditor) {
+        dv = newPosCanonical.y() - oldPosCanonical.y();
+    }
 
     if (dt == 0 && dv == 0) {
         return;

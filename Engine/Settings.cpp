@@ -883,7 +883,7 @@ Settings::initializeKnobsDopeSheetColors()
     _dopesheetKnobSectionBackgroundColor->setSimplified(true);
     _animationColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
 
-    _animationViewScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale Color"), 3);
+    _animationViewScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale Text Color"), 3);
     _animationViewScaleColor->setName("animationViewScaleColor");
     _animationViewScaleColor->setSimplified(true);
     _animationColorsTab->addKnob(_animationViewScaleColor);
@@ -1649,9 +1649,9 @@ Settings::setDefaultValues()
     _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
     _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
 
-    _animationViewGridColor->setDefaultValue(0.714, DimIdx(0));
-    _animationViewGridColor->setDefaultValue(0.714, DimIdx(1));
-    _animationViewGridColor->setDefaultValue(0.714, DimIdx(2));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
 
     _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
     _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));

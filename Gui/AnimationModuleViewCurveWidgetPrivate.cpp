@@ -503,14 +503,12 @@ AnimationModuleViewPrivate::makeSelectionFromCurveEditorSelectionRectangle(bool 
 }
 
 void
-AnimationModuleViewPrivate::refreshSelectionRectangle(double x,
-                                              double y)
+AnimationModuleViewPrivate::refreshSelectionRectangle(const ZoomContext& ctx, double x, double y)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QPointF dragStartPointCanonical = QPointF(dragStartPoint.x(),dragStartPoint.y());
-    _publicInterface->toCanonicalCoordinates(&dragStartPointCanonical.rx(),&dragStartPointCanonical.ry());
+    QPointF dragStartPointCanonical = ctx.toZoomCoordinates(dragStartPoint.x(),dragStartPoint.y());
 
     // x and y are in canonical coordinates as well
 

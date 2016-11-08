@@ -340,18 +340,18 @@ public:
         virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
         {
             if (_inverted) {
-                return KeyFrame(key.getTime() - _dt, key.getTime() - _dv);
+                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
             } else {
-                return KeyFrame(key.getTime() + _dt, key.getTime() + _dv);
+                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
             }
         }
 
         virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const OVERRIDE FINAL
         {
             if (_inverted) {
-                return KeyFrame(key.getTime() + _dt, key.getTime() + _dv);
+                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
             } else {
-                return KeyFrame(key.getTime() - _dt, key.getTime() - _dv);
+                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
             }
         }
 
@@ -437,7 +437,7 @@ public:
             p.y = key.getValue();
             p.z = 1;
             p = Transform::matApply(mat, p);
-            return KeyFrame(p.x, p.y);
+            return KeyFrame(p.x, p.y, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
 
         }
 

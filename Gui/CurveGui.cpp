@@ -673,7 +673,7 @@ CurveGui::drawCurve(int curveIndex,
             }
 
 
-            RectD keyframeBbox = _imp->curveWidget->_imp->getKeyFrameBoundingRectCanonical(true, key.getTime(), key.getValue());
+            RectD keyframeBbox = _imp->curveWidget->_imp->getKeyFrameBoundingRectCanonical(_imp->curveWidget->_imp->curveEditorZoomContext, key.getTime(), key.getValue());
 
             // draw texture of the keyframe
             {

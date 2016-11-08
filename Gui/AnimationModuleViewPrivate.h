@@ -211,7 +211,7 @@ public:
 
     void moveSelectedTangent(const QPointF & pos);
 
-    void refreshSelectionRectangle(double x, double y);
+    void refreshSelectionRectangle(const ZoomContext& ctx, double x, double y);
 
     void keyFramesWithinRect(const RectD& canonicalRect, AnimItemDimViewKeyFramesMap* keys) const;
 
@@ -249,7 +249,7 @@ public:
     /**
      * @brief Returns the bounding box of the keyframe texture
      **/
-    RectD getKeyFrameBoundingRectCanonical(bool curveEditor, double xCanonical, double yCanonical) const;
+    RectD getKeyFrameBoundingRectCanonical(const ZoomContext& ctx, double xCanonical, double yCanonical) const;
 
     QRectF nameItemRectToRowRect(const QRectF &rect) const;
 

@@ -718,7 +718,7 @@ AnimationModuleView::centerOn(double xmin,  double xmax)
 void
 AnimationModuleView::refreshSelectionBoundingBox()
 {
-    
+    _imp->refreshCurveEditorSelectedKeysBRect();
     _imp->refreshDopeSheetSelectedKeysBRect();
 }
 
@@ -1057,7 +1057,7 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
             QPointF newClick_opengl, oldClick_opengl;
             newClick_opengl = _imp->curveEditorZoomContext.toZoomCoordinates( e->x(), e->y() );
             oldClick_opengl = _imp->curveEditorZoomContext.toZoomCoordinates( _imp->lastMousePos.x(), _imp->lastMousePos.y() );
-            _imp->refreshSelectionRectangle( newClick_opengl.x(), newClick_opengl.y() );
+            _imp->refreshSelectionRectangle(_imp->curveEditorZoomContext, newClick_opengl.x(), newClick_opengl.y() );
             e->accept();
             update();
             break;
@@ -1066,7 +1066,7 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
             QPointF newClick_opengl, oldClick_opengl;
             newClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( e->x(), e->y() );
             oldClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( _imp->lastMousePos.x(), _imp->lastMousePos.y() );
-            _imp->refreshSelectionRectangle( newClick_opengl.x(), newClick_opengl.y() );
+            _imp->refreshSelectionRectangle(_imp->dopeSheetZoomContext,  newClick_opengl.x(), newClick_opengl.y() );
             e->accept();
             update();
             break;
@@ -1129,15 +1129,14 @@ AnimationModuleView::mouseReleaseEvent(QMouseEvent* e)
 {
 
     // If we were dragging timeline and autoproxy is on, then on mouse release trigger a non proxy render
-    if (_imp->state == eEventStateDraggingTimeline) {
-        if ( _imp->_gui->isDraftRenderEnabled() ) {
-            _imp->_gui->setDraftRenderEnabled(false);
-            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
-            if (autoProxyEnabled) {
-                _imp->_gui->renderAllViewers(true);
-            }
+    if ( _imp->_gui->isDraftRenderEnabled() ) {
+        _imp->_gui->setDraftRenderEnabled(false);
+        bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+        if (autoProxyEnabled) {
+            _imp->_gui->renderAllViewers(true);
         }
     }
+
 
     bool mustUpdate = false;
     if (_imp->state == eEventStateSelectionRectCurveEditor) {
