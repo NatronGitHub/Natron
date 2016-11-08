@@ -37,7 +37,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
-#include <SequenceParsing.h>
+
+#include <SequenceParsing.h> // for removePath
 
 NATRON_NAMESPACE_ENTER;
 

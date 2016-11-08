@@ -148,6 +148,7 @@ class KnobDouble;
 class KnobFactory;
 class KnobFile;
 class KnobGroup;
+class KnobGuiI;
 class KnobHelper;
 class KnobHolder;
 class KnobI;

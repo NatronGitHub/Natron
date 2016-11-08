@@ -126,8 +126,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-#include "SequenceParsing.h"
-
 
 NATRON_NAMESPACE_ENTER;
 GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,

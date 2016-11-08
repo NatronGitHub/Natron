@@ -34,6 +34,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 #include <QtCore/QReadWriteLock>
@@ -42,8 +43,7 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/Variant.h"
-#include "Engine/AppManager.h"
-#include "Engine/KnobGuiI.h"
+#include "Engine/AppManager.h" // for AppManager::createKnob
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"

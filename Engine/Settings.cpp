@@ -58,7 +58,7 @@
 
 #include "Gui/GuiDefines.h"
 
-#include "SequenceParsing.h"
+#include <SequenceParsing.h> // for removePath
 
 #ifdef WINDOWS
 #include <ofxhPluginCache.h>

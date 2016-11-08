@@ -400,7 +400,7 @@ struct ValueSerialization
             if (convertOldFileKeyframesToPattern) {
                 SequenceParsing::FileNameContent content(v);
                 content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1,
-                                                              content.getNumPrependingZeroes() + 1,
+                                                              content.getLeadingZeroes() + 1,
                                                               &v);
             }
             isFile->setValue(v, ViewIdx(0), _dimension);
