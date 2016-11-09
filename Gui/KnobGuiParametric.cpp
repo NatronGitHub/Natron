@@ -154,7 +154,8 @@ public:
     virtual AnimationModuleView* getView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    virtual bool isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getTreeColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 
@@ -305,6 +306,21 @@ KnobGuiParametricAnimationModel::pushUndoCommand(QUndoCommand *cmd)
     _imp->_publicInterface->getKnobGui()->pushUndoCommand(cmd);
 }
 
+bool
+KnobGuiParametricAnimationModel::isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const
+{
+    QTreeWidgetItem* treeItem = item->getTreeItem(dimension, view);
+    if (!treeItem) {
+        return false;
+    }
+    return _imp->tree->isItemSelected(treeItem);
+}
+
+int
+KnobGuiParametricAnimationModel::getTreeColumnsCount() const
+{
+    return _imp->tree->columnCount();
+}
 
 void
 KnobGuiParametric::onColorChanged(DimSpec dimension)

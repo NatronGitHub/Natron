@@ -174,14 +174,7 @@ AnimationModuleView::centerOnCurves(const std::vector<CurveGuiPtr> & curves, boo
         curvesToFrame = curves;
     } else {
         // Frame all curves selected in the tree view
-        const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->_model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-        for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-            CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-            if (!guiCurve) {
-                continue;
-            }
-            curvesToFrame.push_back(guiCurve);
-        }
+        curvesToFrame = _imp->getVisibleCurves();
     }
 
     if (curvesToFrame.empty()) {

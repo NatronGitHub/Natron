@@ -31,9 +31,12 @@
 #include <QResizeEvent>
 #include <QPixmapCache>
 #include <QStyleOption>
+#include <QApplication>
+#include <QStyle>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/Image.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewIdx.h"
@@ -71,136 +74,90 @@ AnimationModuleTreeViewSelectionModel::AnimationModuleTreeViewSelectionModel(con
 AnimationModuleTreeViewSelectionModel::~AnimationModuleTreeViewSelectionModel()
 {}
 
-void
-AnimationModuleTreeViewSelectionModel::selectInternal(const QItemSelection &userSelection,
-                                            QItemSelectionModel::SelectionFlags command,
-                                            bool recurse)
+
+static void
+addItemToItemsSet(QTreeWidgetItem* item, bool recurse, std::set<QTreeWidgetItem*>* outSet)
 {
-    QItemSelection finalSelection = userSelection;
-
+    outSet->insert(item);
     if (recurse) {
-        QModelIndexList userSelectedIndexes = userSelection.indexes();
-
-        for (QModelIndexList::const_iterator it = userSelectedIndexes.begin();
-             it != userSelectedIndexes.end();
-             ++it) {
-            const QModelIndex& index = (*it);
-            if ( !index.isValid() ) {
-                continue;
+        int nChildren = item->childCount();
+        for (int i = 0; i < nChildren; ++i) {
+            QTreeWidgetItem* child = item->child(i);
+            if (child) {
+                addItemToItemsSet(child, recurse, outSet);
             }
+        }
+    }
+}
 
-            // Add children of the index to the selection
-            selectChildren(index, &finalSelection);
 
-            QItemSelection unitedSelection = selection();
+static void
+itemSelectionToTreeItemsSet(AnimationModuleTreeView* treeView, const QItemSelection &userSelection, std::set<QTreeWidgetItem*>* outList)
+{
+    QModelIndexList userSelectedIndexes = userSelection.indexes();
+    for (QModelIndexList::const_iterator it = userSelectedIndexes.begin(); it != userSelectedIndexes.end(); ++it) {
+        if (it->column() > 0) {
+            continue;
+        }
+        QTreeWidgetItem* treeItem = treeView->getTreeItemForModelIndex(*it);
+        assert(treeItem);
+        if (treeItem) {
+            outList->insert(treeItem);
+        }
+    }
+}
 
-            if (command & QItemSelectionModel::Clear) {
-                unitedSelection.clear();
-            }
 
-            unitedSelection.merge(finalSelection, command);
+static void
+addItemToSelection(AnimationModuleTreeView* treeView, QTreeWidgetItem* item, QItemSelection *selection)
+{
+    int cc = item->columnCount();
+    QModelIndex indexCol0 = treeView->indexFromItemPublic(item);
+    QModelIndex indexColLast = treeView->model()->index(indexCol0.row(), cc - 1, indexCol0.parent());
+    selection->select(indexCol0, indexColLast);
+}
 
-            QTreeWidgetItem* treeItem = _view->getTreeItemForModelIndex(index);
-            assert(treeItem);
-            if (treeItem) {
-                // If there's a parent for the item and the item itself is not a node,
-                // check if we should add the parent to the selection
+
+static void
+treeItemsSetToItemSelection(AnimationModuleTreeView* treeView, const std::set<QTreeWidgetItem*>& itemSet, QItemSelection* selection)
+{
+    for (std::set<QTreeWidgetItem*>::const_iterator it = itemSet.begin(); it != itemSet.end(); ++it) {
+        addItemToSelection(treeView, *it, selection);
+    }
+}
+
+
+void
+AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates(QTreeWidgetItem* item, QItemSelectionModel::SelectionFlags flags, std::set<QTreeWidgetItem*>* selection) const
+{
+    assert(item);
+    // Recursively fills the list of parents until we hit a parent node
+    std::list<QTreeWidgetItem*> parentItems;
+    {
+        QTreeWidgetItem* parentItem = item->parent();
+        while (parentItem) {
+            parentItems.push_back(parentItem);
+            {
                 AnimatedItemTypeEnum type;
                 KnobAnimPtr isKnob;
                 TableItemAnimPtr isTableItem;
                 NodeAnimPtr isNodeItem;
                 ViewSetSpec view;
                 DimSpec dim;
-                bool found = _model.lock()->findItem(treeItem, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-                if ( found && !isNodeItem && index.parent().isValid() ) {
-                    checkParentsSelectedStates(index, command, unitedSelection, &finalSelection);
+                bool found = _model.lock()->findItem(parentItem, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+                (void)found;
+                if (isNodeItem) {
+                    // We recurse until we found the immediate parent node.
+                    // We don't recurse on parent group nodes
+                    break;
                 }
             }
+            parentItem = parentItem->parent();
+
         }
     }
-    QItemSelectionModel::select(finalSelection, command);
-} // selectInternal
 
-void
-AnimationModuleTreeViewSelectionModel::selectWithRecursion(const QItemSelection &userSelection,
-                                                 QItemSelectionModel::SelectionFlags command,
-                                                 bool recurse)
-{
-    selectInternal(userSelection, command, recurse);
-}
-
-void
-AnimationModuleTreeViewSelectionModel::select(const QItemSelection &userSelection,
-                                    QItemSelectionModel::SelectionFlags command)
-{
-    selectInternal(userSelection, command, true);
-}
-
-void
-AnimationModuleTreeViewSelectionModel::selectChildren(const QModelIndex &index,
-                                            QItemSelection *selection) const
-{
-    int row = 0;
-    QModelIndex childIndex = index.child(row, 0);
-
-    while ( childIndex.isValid() ) {
-        if ( !selection->contains(childIndex) ) {
-            selection->select(childIndex, childIndex);
-        }
-
-        // /!\ recursion
-        {
-            selectChildren(childIndex, selection);
-        }
-
-        ++row;
-        childIndex = index.child(row, 0);
-    }
-}
-
-void
-AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index,
-                                                        QItemSelectionModel::SelectionFlags flags,
-                                                        const QItemSelection &unitedSelection,
-                                                        QItemSelection *finalSelection) const
-{
-    // Recursively fills the list of parents until we hit a parent node
-    std::list<QTreeWidgetItem*> parentItems;
-    {
-
-
-        QModelIndex pIndex = index.parent();
-        QTreeWidgetItem* parentItem = 0;
-        do {
-            // Check if the parent index corresponds to an item in the model
-            parentItem = _view->getTreeItemForModelIndex(pIndex);
-            if (parentItem) {
-                parentItems.push_back(parentItem);
-                pIndex = pIndex.parent();
-
-                {
-                    AnimatedItemTypeEnum type;
-                    KnobAnimPtr isKnob;
-                    TableItemAnimPtr isTableItem;
-                    NodeAnimPtr isNodeItem;
-                    ViewSetSpec view;
-                    DimSpec dim;
-                    bool found = _model.lock()->findItem(parentItem, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-                    (void)found;
-                    if (isNodeItem) {
-                        // We recurse until we found the immediate parent node.
-                        // We don't recurse on parent group nodes
-                        break;
-                    }
-                }
-                
-            }
-        } while (pIndex.isValid() && parentItem );
-    }
-
-    QItemSelection uuSelec = unitedSelection;
-
-    // If all children are selected, select the parent
+    // For each parent item, If all children are selected, select the item
     for (std::list<QTreeWidgetItem*>::const_iterator it = parentItems.begin(); it != parentItems.end(); ++it) {
         bool selectParent = true;
         {
@@ -211,35 +168,99 @@ AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates(const QModelIn
                     continue;
                 }
 
+                if (child->isHidden()) {
+                    continue;
+                }
+
                 // If one of the children is deselected, don't select the parent
-                if (!child->isHidden()) {
-                    QModelIndex childIndex = _view->indexFromItemPublic(child);
-                    assert(childIndex.isValid());
-                    if (childIndex.isValid()) {
-                        bool isChildSelected = uuSelec.contains(childIndex);
-                        if (!isChildSelected) {
-                            selectParent = false;
-                            break;
-                        }
-                    }
+                bool isChildSelected = selection->find(child) != selection->end();
+                if (!isChildSelected) {
+                    selectParent = false;
+                    break;
                 }
             }
         }
-        if ( (flags & QItemSelectionModel::Select && selectParent) ) {
-            finalSelection->select(index, index);
-            uuSelec.select(index, index);
-        } else if (flags & QItemSelectionModel::Deselect && !selectParent) {
-            finalSelection->select(index, index);
-            uuSelec.merge(QItemSelection(index, index),
-                          QItemSelectionModel::Deselect);
+        if ( ((flags & QItemSelectionModel::Select) && selectParent) ) {
+            selection->insert(*it);
+        } else if ((flags & QItemSelectionModel::Deselect) && !selectParent) {
+            std::set<QTreeWidgetItem*>::iterator found = selection->find(*it);
+            if (found != selection->end()) {
+                selection->erase(found);
+            }
         }
     }
 } // AnimationModuleTreeViewSelectionModel::checkParentsSelectedStates
 
 
 
-AnimationModuleTreeViewItemDelegate::AnimationModuleTreeViewItemDelegate(QObject *parent)
-    : QStyledItemDelegate(parent)
+void
+AnimationModuleTreeViewSelectionModel::selectInternal(const QItemSelection &userSelection, QItemSelectionModel::SelectionFlags command, bool recurse)
+{
+
+
+
+    // Add currently selected items to selection, unless command has clear flag
+    std::set<QTreeWidgetItem*> currentlySelectedItems;
+    itemSelectionToTreeItemsSet(_view, selection(), &currentlySelectedItems);
+    if (command & QItemSelectionModel::Clear) {
+        currentlySelectedItems.clear();
+    }
+
+    // Add new items in selection and their children if we need to recurse
+    {
+        std::set<QTreeWidgetItem*> itemsToAddSet;
+        itemSelectionToTreeItemsSet(_view, userSelection, &itemsToAddSet);
+
+        for (std::set<QTreeWidgetItem*>::const_iterator it = itemsToAddSet.begin(); it != itemsToAddSet.end(); ++it) {
+            addItemToItemsSet(*it, recurse, &currentlySelectedItems);
+        }
+    }
+
+    // If we need to recurse, also check if parent items need to be selected
+
+    if (recurse) {
+        for (std::set<QTreeWidgetItem*> ::const_iterator it = currentlySelectedItems.begin(); it != currentlySelectedItems.end(); ++it) {
+
+            // If there's a parent for the item and the item itself is not a node,
+            // check if we should add the parent to the selection
+            AnimatedItemTypeEnum type;
+            KnobAnimPtr isKnob;
+            TableItemAnimPtr isTableItem;
+            NodeAnimPtr isNodeItem;
+            ViewSetSpec view;
+            DimSpec dim;
+            bool found = _model.lock()->findItem(*it, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+            if ( found && !isNodeItem && (*it)->parent() ) {
+                checkParentsSelectedStates(*it, command, &currentlySelectedItems);
+            }
+        }
+
+    }
+
+    QItemSelection finalSelection;
+    treeItemsSetToItemSelection(_view, currentlySelectedItems, &finalSelection);
+
+    QItemSelectionModel::select(finalSelection, command);
+    _view->update();
+
+} // selectInternal
+
+void
+AnimationModuleTreeViewSelectionModel::selectWithRecursion(const QItemSelection &userSelection, QItemSelectionModel::SelectionFlags command, bool recurse)
+{
+    selectInternal(userSelection, command, recurse);
+}
+
+void
+AnimationModuleTreeViewSelectionModel::select(const QItemSelection &userSelection, QItemSelectionModel::SelectionFlags command)
+{
+    selectInternal(userSelection, command, true /*recurse*/);
+}
+
+
+AnimationModuleTreeViewItemDelegate::AnimationModuleTreeViewItemDelegate(AnimationModuleTreeView* treeView)
+    : QStyledItemDelegate(treeView)
+    ,  _treeView(treeView)
 {}
 
 
@@ -271,25 +292,60 @@ AnimationModuleTreeViewItemDelegate::sizeHint(const QStyleOptionViewItem &option
 }
 
 void
-AnimationModuleTreeViewItemDelegate::paint(QPainter *painter,
-                                 const QStyleOptionViewItem &option,
-                                 const QModelIndex &index) const
+AnimationModuleTreeViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,const QModelIndex &index) const
 {
-    painter->save();
 
-    double r, g, b;
 
-    // Selection color is hard-coded : Todo make this a setting
-    if (option.state & QStyle::State_Selected) {
-        r = g = b = 0.941f;
+    if (index.column() == ANIMATION_MODULE_TREE_VIEW_COL_LABEL) {
+        painter->save();
+
+        double r, g, b;
+
+        // Selection color is hard-coded : Todo make this a setting
+        if (option.state & QStyle::State_Selected) {
+            appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+        } else {
+            r = g = b = 0.11f;
+        }
+        QColor c;
+        c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+        painter->setPen(c);
+        QString str = index.data().toString();
+        painter->drawText( option.rect, Qt::AlignVCenter,  str);
+        painter->restore();
     } else {
-        r = g = b = 0.11f;
+        // Don't draw selected state by default
+       
+        if (index.column() == ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
+            // Draw a background color
+            double r,g,b;
+            appPTR->getCurrentSettings()->getBaseColor(&r, &g, &b);
+            QColor c;
+            c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+            painter->fillRect(option.rect, QBrush(c));
+        } else if (index.column() == ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+            // Draw a small transparant bg color in case the row color does not contrast with the icon
+            QColor c(70,70,70);
+            painter->save();
+            painter->setClipRect(option.rect);
+            painter->setOpacity(0.2);
+
+            QStyleOptionViewItemV4 newOpt = option;
+            newOpt.features |= QStyleOptionViewItemV2::HasDecoration;
+            newOpt.decorationSize = option.rect.size();
+
+            QRect iconBgRect = _treeView->style()->subElementRect(QStyle::SE_ItemViewItemDecoration, &newOpt);
+            painter->fillRect(iconBgRect, QBrush(c));
+            painter->setOpacity(1.);
+            painter->restore();
+        }
+
+        QStyleOptionViewItemV4 newOpt = option;
+        newOpt.state &= ~QStyle::State_Selected;
+        QStyledItemDelegate::paint(painter, newOpt, index);
     }
 
-    painter->setPen( QColor::fromRgbF(r, g, b) );
-    painter->drawText( option.rect, Qt::AlignVCenter, index.data().toString() );
 
-    painter->restore();
 }
 
 ////////////////////////// AnimationModuleTreeView //////////////////////////
@@ -316,8 +372,6 @@ public:
 
     NodeAnimPtr itemBelowIsNode(QTreeWidgetItem *item) const;
 
-    // item painting
-    void drawPluginIconArea(QPainter *p, const std::string& iconFilePath, const QRect &rowRect, bool drawPluginIcon) const;
     void drawParentContainerContour(QPainter *p, const NodeAnimPtr& parentNode, const QRect &itemRect);
     void drawNodeTopSeparation(QPainter *p, const QRect &itemRect) const;
 
@@ -378,53 +432,7 @@ NodeAnimPtr AnimationModuleTreeViewPrivate::itemBelowIsNode(QTreeWidgetItem *ite
     return ret;
 }
 
-void
-AnimationModuleTreeViewPrivate::drawPluginIconArea(QPainter *p,
-                                                   const std::string& iconFilePath,
-                                                   const QRect &rowRect,
-                                                   bool drawPluginIcon) const
-{
 
-    if ( iconFilePath.empty() ) {
-        return;
-    }
-
-    QString fileName = QString::fromUtf8( iconFilePath.c_str() );
-
-    QPixmap pix;
-
-    if (!QPixmapCache::find(fileName, pix) ) {
-        if (!pix.load(fileName)) {
-            return;
-        }
-        QPixmapCache::insert(fileName, pix);
-
-    }
-
-
-    if (std::max( pix.width(), pix.height() ) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
-        pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
-                         Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
-
-    QRect areaRect = rowRect;
-    areaRect.setWidth(pix.width() + 4);
-    areaRect.moveRight( rowRect.right() );
-
-    int r, g, b;
-    appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
-    p->fillRect( areaRect, QColor(r, g, b) );
-
-    QRect pluginAreaRect = rowRect;
-    pluginAreaRect.setSize( pix.size() );
-    pluginAreaRect.moveCenter( QPoint( areaRect.center().x(),
-                                      rowRect.center().y() ) );
-
-    if (drawPluginIcon) {
-        p->drawPixmap(pluginAreaRect, pix);
-    }
-
-} // drawPluginIconArea
 
 void
 AnimationModuleTreeViewPrivate::drawParentContainerContour(QPainter *p,
@@ -523,16 +531,32 @@ AnimationModuleTreeView::AnimationModuleTreeView(const AnimationModulePtr& model
 
     header()->close();
 
+
     AnimationModuleTreeViewSelectionModel* selectionModel = new AnimationModuleTreeViewSelectionModel(model, this, this->model(), this);
     setSelectionModel(selectionModel);
 
     setSelectionMode(QAbstractItemView::ExtendedSelection);
-    setColumnCount(1);
+    setSelectionBehavior(QAbstractItemView::SelectRows);
+    setColumnCount(3);
+
+    header()->setStretchLastSection(false);
+#if QT_VERSION < 0x050000
+    header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_LABEL, QHeaderView::Stretch);
+    header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, QHeaderView::Fixed);
+    header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QHeaderView::Fixed);
+#else
+    header()->setSectionResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_LABEL, QHeaderView::Stretch);
+    header()->setSectionResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, QHeaderView::Fixed);
+    header()->setSectionResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QHeaderView::Fixed);
+#endif
+    header()->resizeSection(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE + 4));
+    header()->resizeSection(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE + 4));
+
     setExpandsOnDoubleClick(false);
 
     setItemDelegate( new AnimationModuleTreeViewItemDelegate(this) );
 
-    // Very import otherwise on macOS a bug makes the whole UI refresh
+    // Very important otherwise on macOS a bug makes the whole UI refresh
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
     setStyleSheet( QString::fromUtf8("AnimationModuleTreeView { border: 0px; }") );
@@ -574,7 +598,7 @@ static bool isItemVisibleRecursiveInternal(QTreeWidgetItem* item, bool checkExpa
 }
 
 bool
-AnimationModuleTreeView::isItemVisibleRecursive(QTreeWidgetItem *item) const
+AnimationModuleTreeView::isItemVisibleRecursive(QTreeWidgetItem *item) 
 {
     return isItemVisibleRecursiveInternal(item, false);
 }
@@ -663,12 +687,12 @@ AnimationModuleTreeView::getTreeItemForModelIndex(const QModelIndex& index) cons
 
 void
 AnimationModuleTreeView::drawRow(QPainter *painter,
-                       const QStyleOptionViewItem &option,
-                       const QModelIndex &index) const
+                                 const QStyleOptionViewItem &option,
+                                 const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-
-
+    
+    
     // Check if this is the first row
     bool isTreeViewTopItem = !itemAbove(item);
 
@@ -757,24 +781,55 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
         // Draw the background with the fill color, add 1 pixel on the left
         painter->fillRect(itemRect.adjusted(TO_DPIX(-1), 0, 0, 0), fillColor);
 
-        // Draw the item text
-        QStyleOptionViewItemV4 newOpt = viewOptions();
-        newOpt.rect = itemRect;
+        bool itemSelected = selectionModel()->isSelected(index);
 
-        if ( selectionModel()->isSelected(index) ) {
-            newOpt.state |= QStyle::State_Selected;
+        {
+            QAbstractItemDelegate* delegate = itemDelegate();
+            QStyleOptionViewItemV4 newOpt = option;
+
+            if (itemSelected) {
+                newOpt.state |= QStyle::State_Selected;
+            }
+
+            int xOffset = itemRect.x();
+
+            for (int c = 0; c < item->columnCount(); ++c) {
+                QModelIndex modelIndex = model()->index(index.row(), c, index.parent());
+
+                int colX = columnViewportPosition(c);
+                int colW = header()->sectionSize(c);
+
+                int x;
+                if (c == 0) {
+                    x = xOffset + colX;
+                } else {
+                    x = colX;
+                }
+                newOpt.rect.setRect(x, option.rect.y(), colW, option.rect.height());
+                // Call the paint function of our AnimationModuleTreeViewItemDelegate class
+                delegate->paint(painter, newOpt, modelIndex);
+            }
         }
-        // Call the paint function of our AnimationModuleTreeViewItemDelegate class
-        itemDelegate()->paint(painter, newOpt, index);
+        
+        
+        
 
         // Draw recursively the parent border on the left
         _imp->drawParentContainerContour(painter, closestEnclosingNode, itemRect);
 
+        if (itemSelected) {
+            double sR,sG,sB;
+            appPTR->getCurrentSettings()->getSelectionColor(&sR, &sG, &sB);
+            QColor c;
+            c.setRgbF(Image::clamp(sR, 0., 1.), Image::clamp(sG, 0., 1.), Image::clamp(sB, 0., 1.));
+            c.setAlphaF(0.3);
+            painter->setOpacity(0.3);
+            painter->fillRect(rowRect, c);
+            painter->setOpacity(1.);
+        }
+        
         // Fill the branch rect with color and indicator
         drawBranch(painter, branchRect, closestEnclosingNode, nodeColor, item);
-
-        // Draw the plug-in or item icon
-        _imp->drawPluginIconArea(painter, iconFilePath, rowRect, drawPluginIconToo);
 
         // Separate each node row
         if (isNodeItem && !isTreeViewTopItem) {
@@ -999,6 +1054,71 @@ AnimationModuleTreeViewPrivate::openSettingsPanelForNode(const NodeAnimPtr& node
 
 } // openSettingsPanelForNode
 
+
+void
+AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
+{
+    AnimationModuleTreeViewSelectionModel *mySelecModel = dynamic_cast<AnimationModuleTreeViewSelectionModel *>( selectionModel() );
+
+    assert(mySelecModel);
+    if (!mySelecModel) {
+        return;
+    }
+
+    // Automatically select items in the tree according to the selection made by the user
+
+    // Retrieve the knob anim with selected keyframes
+
+    AnimationModuleSelectionModelPtr selModel = getModel()->getSelectionModel();
+
+    const AnimItemDimViewKeyFramesMap& selectedKeys = selModel->getCurrentKeyFramesSelection();
+    const std::list<NodeAnimPtr >& selectedNodes = selModel->getCurrentNodesSelection();
+    const std::list<TableItemAnimPtr>& tableItems = selModel->getCurrentTableItemsSelection();
+
+
+    // Prevent recursion
+    disconnect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+               this, SLOT(onTreeSelectionModelSelectionChanged()) );
+
+
+    // For each knob/dim/view, if all keyframes are selected, add the item to the selection
+    std::set<QTreeWidgetItem*> toSelect;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
+        bool selectItem = true;
+
+        KeyFrameWithStringSet allKeys;
+        it->first.item->getKeyframes(it->first.dim, it->first.view, AnimItemBase::eGetKeyframesTypeMerged, &allKeys);
+
+        if (allKeys.size() != it->second.size()) {
+            selectItem = false;
+        }
+
+        QTreeWidgetItem *treeItem = it->first.item->getTreeItem(it->first.dim, it->first.view);
+
+        if (selectItem) {
+            toSelect.insert(treeItem);
+        }
+    }
+
+    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+        toSelect.insert((*it)->getTreeItem());
+    }
+
+    for (std::list<TableItemAnimPtr>::const_iterator it = tableItems.begin(); it != tableItems.end(); ++it) {
+        toSelect.insert((*it)->getRootItem());
+    }
+
+    QItemSelection selection;
+    treeItemsSetToItemSelection(this, toSelect, &selection);
+
+    QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
+    mySelecModel->selectWithRecursion(selection, flags, recurse);
+
+
+    connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+            this, SLOT(onTreeSelectionModelSelectionChanged()) );
+} // onSelectionModelKeyframeSelectionChanged
+
 void
 AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
                                    int column)
@@ -1046,6 +1166,29 @@ void
 AnimationModuleTreeView::keyPressEvent(QKeyEvent* e)
 {
     return QTreeWidget::keyPressEvent(e);
+}
+
+void
+AnimationModuleTreeView::setItemIcon(const QString& iconFilePath, QTreeWidgetItem* item)
+{
+    if (iconFilePath.isEmpty()) {
+        return;
+    }
+    QPixmap pix;
+    if (!QPixmapCache::find(iconFilePath, pix) ) {
+        if (!pix.load(iconFilePath)) {
+            return;
+        }
+        QPixmapCache::insert(iconFilePath, pix);
+    }
+
+
+    if (std::max( pix.width(), pix.height() ) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+        pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
+                         Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+
+    item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, QIcon(pix));
 }
 
 NATRON_NAMESPACE_EXIT;

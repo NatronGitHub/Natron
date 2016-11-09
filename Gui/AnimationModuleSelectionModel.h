@@ -62,6 +62,11 @@ public:
     void selectAll();
 
     /**
+     * @brief Select all items keyframes
+     **/
+    void selectAllKeyframes();
+
+    /**
      * @brief Return all items in the model.
      * @param withKeyFrames if true, the keyframes will have each of the item/dim/view associated to the keyframes for this particular item.
      **/

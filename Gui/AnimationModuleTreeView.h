@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <set>
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -51,6 +52,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 #define NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX 4
+
+#define ANIMATION_MODULE_TREE_VIEW_COL_LABEL 0
+#define ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE 1
+#define ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON 2
+
 NATRON_NAMESPACE_ENTER;
 
 class AnimationModuleTreeViewPrivate;
@@ -105,17 +111,12 @@ private: /* functions */
                         bool recurse);
 
 
-    /**
-     * @brief Selects recursively all children of 'index' and put them in
-     * 'selection'.
-     */
-    void selectChildren(const QModelIndex &index, QItemSelection *selection) const;
+
 
     /**
      * @brief Selects parents of 'index' and put them in 'selection'.
      */
-    void checkParentsSelectedStates(const QModelIndex &index, QItemSelectionModel::SelectionFlags flags,
-                                    const QItemSelection &unitedSelection, QItemSelection *finalSelection) const;
+    void checkParentsSelectedStates(QTreeWidgetItem* item, QItemSelectionModel::SelectionFlags flags, std::set<QTreeWidgetItem*>* selection) const;
 
 private:
 
@@ -150,7 +151,7 @@ public:
      *
      * If one of its parents is collapsed, returns false.
      */
-    bool isItemVisibleRecursive(QTreeWidgetItem *item) const;
+    static bool isItemVisibleRecursive(QTreeWidgetItem *item);
 
     /**
      * @brief Returns the height occuped in the view by 'item' and its
@@ -175,6 +176,8 @@ public:
 
     int getTreeBottomYWidgetCoords() const;
 
+    static void setItemIcon(const QString& iconFilePath, QTreeWidgetItem* item);
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     void drawBranch(QPainter *painter, const QRect &rect, const NodeAnimPtr& closestEnclosingNodeItem, const QColor& nodeColor, QTreeWidgetItem* item) const;
@@ -198,40 +201,16 @@ protected:
     void reparentItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent);
 
 private Q_SLOTS:
-    /**
-     * @brief Inserts the item associated with 'NodeAnim' in the hierarchy view.
-     *
-     * This slot is automatically called after the dope sheet model
-     * created 'NodeAnim'.
-     */
-    void onNodeAdded(const NodeAnimPtr& NodeAnim);
 
-    /**
-     * @brief Removes the item associated with 'NodeAnim' from the hierarchy
-     * view.
-     *
-     * This slot is automatically called just before the dope sheet model
-     * remove 'NodeAnim'.
-     */
+    void onNodeAdded(const NodeAnimPtr& NodeAnim);
+    
     void onNodeAboutToBeRemoved(const NodeAnimPtr& NodeAnim);
 
-
-    /**
-     * @brief Puts the settings panel associated with 'item' on top of the
-     * others.
-     *
-     * This slot is automatically called when an item is double cliccked.
-     */
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 
-    /**
-     * @brief Selects all keyframes associated with the current selected
-     * items.
-     *
-     * This slot is automatically called when an item selection is performed
-     * by the user.
-     */
     void onTreeSelectionModelSelectionChanged();
+
+    void onSelectionModelKeyframeSelectionChanged(bool recurse);
 
 private:
 
@@ -255,8 +234,9 @@ private:
 class AnimationModuleTreeViewItemDelegate
     : public QStyledItemDelegate
 {
+    AnimationModuleTreeView* _treeView;
 public:
-    explicit AnimationModuleTreeViewItemDelegate(QObject *parent = 0);
+    explicit AnimationModuleTreeViewItemDelegate(AnimationModuleTreeView *treeView);
 
     virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

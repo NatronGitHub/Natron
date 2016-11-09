@@ -27,6 +27,7 @@
 #include "Engine/KnobItemsTable.h"
 
 #include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleTreeView.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
@@ -84,32 +85,47 @@ AnimationModuleSelectionModel::addAnimatedItemKeyframes(const AnimItemBasePtr& i
 
             if (dim.isAll()) {
                 for (int i = 0; i < nDims; ++i) {
-                    AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
-                    KeyFrameWithStringSet &keysForItem = (*result)[key];
-                    item->getKeyframes(DimIdx(i), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+
+                    QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(i), *it3);
+                    if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                        AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
+                        KeyFrameWithStringSet &keysForItem = (*result)[key];
+                        item->getKeyframes(DimIdx(i), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+                    }
                 }
             } else {
-                AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
-                KeyFrameWithStringSet &keysForItem = (*result)[key];
-                item->getKeyframes(DimIdx(dim), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+
+                QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(dim), *it3);
+                if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                    AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
+                    KeyFrameWithStringSet &keysForItem = (*result)[key];
+                    item->getKeyframes(DimIdx(dim), *it3, AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+                }
             }
         }
 
     } else {
         if (dim.isAll()) {
             for (int i = 0; i < nDims; ++i) {
-                AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
-                KeyFrameWithStringSet &keysForItem = (*result)[key];
-                item->getKeyframes(DimIdx(i), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+
+                QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(i), ViewIdx(viewSpec));
+                if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                    AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
+                    KeyFrameWithStringSet &keysForItem = (*result)[key];
+                    item->getKeyframes(DimIdx(i), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged, &keysForItem);
+                }
             }
         } else {
-            AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
-            KeyFrameWithStringSet &keysForItem = (*result)[key];
-            item->getKeyframes(DimIdx(dim), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged,&keysForItem);
+            QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(dim), ViewIdx(viewSpec));
+            if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
+                KeyFrameWithStringSet &keysForItem = (*result)[key];
+                item->getKeyframes(DimIdx(dim), ViewIdx(viewSpec), AnimItemBase::eGetKeyframesTypeMerged,&keysForItem);
+            }
         }
     }
 
-}
+} // addAnimatedItemKeyframes
 
 void
 AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(const AnimItemBasePtr& item,
@@ -117,6 +133,9 @@ AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(const AnimItemBa
                                                         ViewSetSpec viewSpec,
                                                         AnimItemDimViewKeyFramesMap* result)
 {
+    if (!result) {
+        return;
+    }
     std::list<ViewIdx> views = item->getViewsList();
     int nDims = item->getNDimensions();
     if (viewSpec.isAll()) {
@@ -124,32 +143,43 @@ AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(const AnimItemBa
 
             if (dim.isAll()) {
                 for (int i = 0; i < nDims; ++i) {
-                    AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
+                    QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(i), *it3);
+                    if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                        AnimItemDimViewIndexID key(item, *it3, DimIdx(i));
+                        KeyFrameWithStringSet &keysForItem = (*result)[key];
+                        (void)keysForItem;
+                    }
+                }
+            } else {
+                QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(dim), *it3);
+                if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                    AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
                     KeyFrameWithStringSet &keysForItem = (*result)[key];
                     (void)keysForItem;
                 }
-            } else {
-                AnimItemDimViewIndexID key(item, *it3, DimIdx(dim));
-                KeyFrameWithStringSet &keysForItem = (*result)[key];
-                (void)keysForItem;
             }
         }
 
     } else {
         if (dim.isAll()) {
             for (int i = 0; i < nDims; ++i) {
-                AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
+                QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(i), ViewIdx(viewSpec));
+                if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                    AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(i));
+                    KeyFrameWithStringSet &keysForItem = (*result)[key];
+                    (void)keysForItem;
+                }
+            }
+        } else {
+            QTreeWidgetItem* treeItem = item->getTreeItem(DimIdx(dim), ViewIdx(viewSpec));
+            if (AnimationModuleTreeView::isItemVisibleRecursive(treeItem)) {
+                AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
                 KeyFrameWithStringSet &keysForItem = (*result)[key];
                 (void)keysForItem;
             }
-        } else {
-            AnimItemDimViewIndexID key(item, ViewIdx(viewSpec), DimIdx(dim));
-            KeyFrameWithStringSet &keysForItem = (*result)[key];
-            (void)keysForItem;
         }
     }
-    
-}
+} // addAnimatedItemsWithoutKeyframes
 
 
 void
@@ -162,7 +192,9 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
                                                      AnimItemDimViewKeyFramesMap* result)
 {
     if (item->isRangeDrawingEnabled()) {
-        selectedTableItems->push_back(item);
+        if (selectedTableItems) {
+            selectedTableItems->push_back(item);
+        }
     }
 
     if (withKeyFrames) {
@@ -204,7 +236,6 @@ AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKe
     model->getTopLevelTableItems(&topLevelTableItems);
 
 
-
     for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {
 
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
@@ -223,7 +254,9 @@ AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKe
             addTableItemKeyframes(*it2, withKeyFrames, true, DimSpec::all(), ViewSetSpec::all(), selectedTableItems, selectedKeyframes);
         }
         if ((*it)->isRangeDrawingEnabled()) {
-            selectedNodes->push_back(*it);
+            if (selectedNodes) {
+                selectedNodes->push_back(*it);
+            }
         }
 
 
@@ -259,6 +292,25 @@ AnimationModuleSelectionModel::selectAll()
                                                                AnimationModuleSelectionModel::SelectionTypeRecurse) );
 }
 
+void
+AnimationModuleSelectionModel::selectAllKeyframes()
+{
+    AnimItemDimViewKeyFramesMap selectedKeys = getCurrentKeyFramesSelection();
+    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<TableItemAnimPtr> selectedTableItems;
+
+    for (AnimItemDimViewKeyFramesMap::iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
+        KeyFrameWithStringSet keys;
+        it->first.item->getKeyframes(it->first.dim, it->first.view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
+        it->second = keys;
+    }
+
+    makeSelection( selectedKeys, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
+                                                                          AnimationModuleSelectionModel::SelectionTypeClear |
+                                                                          AnimationModuleSelectionModel::SelectionTypeRecurse) );
+
+}
+
 
 void
 AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items)
@@ -281,15 +333,14 @@ AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items
 
         if (isKnob) {
 
-            AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isKnob, dim, view, &keys);
-            // Commented-out: this would select all keyframes for the curve
-            // AnimationModuleSelectionModel::addAnimatedItemKeyframes(isKnob, dim, view, &keys);
+            //AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isKnob, dim, view, &keys);
+            AnimationModuleSelectionModel::addAnimatedItemKeyframes(isKnob, dim, view, &keys);
         } else if (isNodeItem) {
             nodes.push_back(isNodeItem);
         } else if (isTableItem) {
             tableItems.push_back(isTableItem);
-            AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isTableItem, dim, view, &keys);
-            //AnimationModuleSelectionModel::addTableItemKeyframes(isTableItem, false, dim, view, &tableItems, &keys);
+            //AnimationModuleSelectionModel::addAnimatedItemsWithoutKeyframes(isTableItem, dim, view, &keys);
+            AnimationModuleSelectionModel::addTableItemKeyframes(isTableItem, true, false, dim, view, &tableItems, &keys);
         }
     }
 

@@ -134,6 +134,11 @@ CurveGui::getDimension() const
     return _imp->dimension;
 }
 
+AnimItemDimViewIndexID
+CurveGui::getCurveID() const
+{
+    return AnimItemDimViewIndexID(getItem(), getView(), getDimension());
+}
 
 QString
 CurveGui::getName() const
@@ -550,8 +555,6 @@ CurveGui::drawCurve(int curveIndex,
         k.view = _imp->view;
         AnimItemDimViewKeyFramesMap::const_iterator foundDimView = selectedKeys.find(k);
 
-        // The curve draw function should only be called if it is selected in the selection model...
-        assert(foundDimView != selectedKeys.end());
         if (foundDimView != selectedKeys.end()) {
             foundThisCurveSelectedKeys = &foundDimView->second;
         }

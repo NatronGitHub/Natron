@@ -728,12 +728,8 @@ AnimationModuleViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
     return ret;
 }
 
-
-std::vector<CurveGuiPtr>
-AnimationModuleViewPrivate::getSelectedCurves() const
+static std::vector<CurveGuiPtr> animItemDimViewKeyframeMapToCurveList(const AnimItemDimViewKeyFramesMap& keys)
 {
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-
     std::vector<CurveGuiPtr> curves;
     for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
@@ -744,6 +740,31 @@ AnimationModuleViewPrivate::getSelectedCurves() const
     return curves;
 }
 
+std::vector<CurveGuiPtr>
+AnimationModuleViewPrivate::getSelectedCurves() const
+{
+    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
+    return animItemDimViewKeyframeMapToCurveList(keys);
+}
+
+std::vector<CurveGuiPtr>
+AnimationModuleViewPrivate::getVisibleCurves() const
+{
+    AnimItemDimViewKeyFramesMap keys;
+    AnimationModuleBasePtr model = _model.lock();
+    model->getSelectionModel()->getAllItems(false, &keys, 0, 0);
+    std::vector<CurveGuiPtr> curves;
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        if (!model->isCurveVisible(it->first.item, it->first.dim, it->first.view)) {
+            continue;
+        }
+        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
+        if (guiCurve) {
+            curves.push_back(guiCurve);
+        }
+    }
+    return curves;
+}
 
 
 void
@@ -1032,7 +1053,6 @@ AnimationModuleViewPrivate::transformSelectedKeyFrames(const QPointF & oldPosCan
             sy *= ratio;
         }
     }
-    qDebug() << "sx=" << sx << "sy=" << sy << "center=" << center.x() << center.y() << "oldPos" << oldPosCanonical.x() << oldPosCanonical.y() << "newPos" << newPosCanonical.x() << newPosCanonical.y();
     Transform::Matrix3x3 transform =  Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y());
     _model.lock()->transformSelectedKeys(transform);
 

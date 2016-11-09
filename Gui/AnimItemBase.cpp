@@ -233,4 +233,5 @@ AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimens
    
 }
 
+
 NATRON_NAMESPACE_EXIT;

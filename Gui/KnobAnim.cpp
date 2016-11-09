@@ -34,6 +34,7 @@
 #include "Engine/Project.h"
 
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleTreeView.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
@@ -113,6 +114,12 @@ createKnobNameItem(const AnimItemBasePtr& anim,
 
     ret->setText(0, text);
 
+    if (anim->getModel()->getTreeColumnsCount() > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+        ret->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
+
+        ret->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+    }
+    
     ret->setExpanded(true);
 
     if ( (itemType == eAnimatedItemTypeKnobRoot) || (itemType == eAnimatedItemTypeKnobDim) || (itemType == eAnimatedItemTypeKnobView) ) {

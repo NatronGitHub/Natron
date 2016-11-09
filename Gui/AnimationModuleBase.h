@@ -40,6 +40,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -58,6 +59,25 @@ CLANG_DIAG_ON(uninitialized)
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
 NATRON_NAMESPACE_ENTER;
+
+// typedefs
+
+const int QT_ROLE_CONTEXT_TYPE = Qt::UserRole + 1;
+
+// Stores a value corresponding to a dimension index in a Knob
+const int QT_ROLE_CONTEXT_DIM = Qt::UserRole + 2;
+
+// Stores a value corresponding to a view index in a Knob
+const int QT_ROLE_CONTEXT_VIEW = Qt::UserRole + 3;
+
+// Stores a value indicating whether an item is animated
+const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 4;
+
+// Stores a pointer to the corresponding model item for fast access
+const int QT_ROLE_CONTEXT_ITEM_POINTER = Qt::UserRole + 5;
+
+// Stores a boolean indicating whether the visible icon is chechked
+const int QT_ROLE_CONTEXT_ITEM_VISIBLE = Qt::UserRole + 6;
 
 class AnimationModuleSelectionProvider
 {
@@ -122,6 +142,16 @@ public:
      * @brief Refresh selected keyframes bbox from the selection
      **/
     virtual void refreshSelectionBboxAndUpdateView() = 0;
+
+    /**
+     * @brief Returns the number of columns used by the tree representing the items
+     **/
+    virtual int getTreeColumnsCount() const = 0;
+
+    /**
+     * @brief Should determine whether the curve should be drawn for the given item or not
+     **/
+    virtual bool isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const = 0;
 
     /**
      * @brief Return a pointer to the view
@@ -191,6 +221,11 @@ public:
      * @brief Transform selected keys by transform
      **/
     void transformSelectedKeys(const Transform::Matrix3x3& transform);
+
+    /**
+     * @brief Helper function to get the visibility icon for an item
+     **/
+    static QIcon getItemVisibilityIcon(bool visible);
 
 
 private:

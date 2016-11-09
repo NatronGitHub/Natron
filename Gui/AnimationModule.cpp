@@ -422,8 +422,11 @@ AnimationModule::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type,
 void
 AnimationModule::getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
 {
+    AnimationModuleTreeView* treeView = _imp->editor->getTreeView();
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        nodes->push_back(*it);
+        if (treeView->isItemVisibleRecursive((*it)->getTreeItem())) {
+            nodes->push_back(*it);
+        }
     }
 }
 
@@ -608,6 +611,40 @@ AnimationModuleView*
 AnimationModule::getView() const
 {
     return _imp->editor->getView();
+}
+
+static bool getCurveVisibleRecursive(QTreeWidgetItem* item)
+{
+
+    int nc = item->columnCount();
+    bool thisItemVisible = true;
+    if (nc > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+        thisItemVisible = item->data(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
+    }
+    if (!thisItemVisible) {
+        return false;
+    }
+    QTreeWidgetItem* parentItem = item->parent();
+    if (parentItem) {
+        return getCurveVisibleRecursive(parentItem);
+    }
+    return true;
+}
+
+bool
+AnimationModule::isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const
+{
+    QTreeWidgetItem* treeItem = item->getTreeItem(dimension, view);
+    if (!item) {
+        return false;
+    }
+    return getCurveVisibleRecursive(treeItem);
+}
+
+int
+AnimationModule::getTreeColumnsCount() const
+{
+    return _imp->editor->getTreeView()->columnCount();
 }
 
 NATRON_NAMESPACE_EXIT;

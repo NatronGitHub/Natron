@@ -191,6 +191,8 @@ public Q_SLOTS:
 
     void onTimelineTimeChanged(SequenceTime time, int reason);
 
+    void onTreeItemClicked(QTreeWidgetItem* item ,int col);
+
 private:
 
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;

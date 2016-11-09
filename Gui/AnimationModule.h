@@ -47,20 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 
-// typedefs
 
-const int QT_ROLE_CONTEXT_TYPE = Qt::UserRole + 1;
-
-// Stores a value corresponding to a dimension index in a Knob
-const int QT_ROLE_CONTEXT_DIM = Qt::UserRole + 2;
-
-// Stores a value corresponding to a view index in a Knob
-const int QT_ROLE_CONTEXT_VIEW = Qt::UserRole + 3;
-
-// Stores a value indicating whether an item is animated
-const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 4;
-
-const int QT_ROLE_CONTEXT_ITEM_POINTER = Qt::UserRole + 5;
 
 class AnimationModulePrivate;
 class AnimationModule
@@ -126,6 +113,8 @@ public:
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
     virtual AnimationModuleView* getView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getTreeColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     NodeAnimPtr findNodeAnim(const NodePtr& node) const;
     NodeAnimPtr findNodeAnim(const KnobIPtr &knob) const;

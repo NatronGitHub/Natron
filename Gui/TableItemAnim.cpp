@@ -43,6 +43,7 @@
 
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleView.h"
+#include "Gui/AnimationModuleTreeView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobAnim.h"
@@ -295,6 +296,16 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
     _imp->nameItem->setText(0, itemLabel);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemRoot);
+
+    int nCols = getModel()->getTreeColumnsCount();
+    if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+        _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
+        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+    }
+    if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
+        QString iconFilePath = QString::fromUtf8(item->getIconLabelFilePath().c_str());
+        AnimationModuleTreeView::setItemIcon(iconFilePath, _imp->nameItem);
+    }
     assert(parentItem);
     parentItem->addChild(_imp->nameItem);
 
@@ -339,6 +350,15 @@ TableItemAnim::createViewItems()
         animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
         animationItem->setText(0, itemLabel);
         animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
+
+        int nCols = getModel()->getTreeColumnsCount();
+        if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+            animationItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
+            animationItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+        }
+
+
+
         ItemCurve& ic = _imp->animationItems[*it];
         ic.item = animationItem;
         if (curveWidget) {

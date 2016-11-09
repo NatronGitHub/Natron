@@ -39,8 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h" // Curve
-
-#include "Gui/CurveGui.h" // Curves
+#include "Gui/AnimItemBase.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -65,6 +64,9 @@ public:
     ViewIdx getView() const;
     
     DimIdx getDimension() const;
+
+    // Convenience for calling getItem + getView + getDimension
+    AnimItemDimViewIndexID getCurveID() const;
 
     QString getName() const;
 

@@ -198,6 +198,8 @@ public:
 
     std::vector<CurveGuiPtr> getSelectedCurves() const;
 
+    std::vector<CurveGuiPtr> getVisibleCurves() const;
+
     /**
      * @brief Returns whether the click at position pt is nearby the curve.
      * If so then the value x and y will be set to the position on the curve

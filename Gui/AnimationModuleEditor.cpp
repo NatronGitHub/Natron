@@ -254,43 +254,59 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     _imp->keyframeLeftSlopeLabel = new Label(_imp->buttonsContainer);
     _imp->keyframeLeftSlopeLabel->setAltered(true);
+    QString leftSlopeTT = convertFromPlainText(tr("Left tangent of the currently selected keyframe"), WhiteSpaceNormal);
+    _imp->keyframeLeftSlopeLabel->setToolTip(leftSlopeTT);
     _imp->keyframeLeftSlopeLabel->setText(tr("L"));
     QColor slopeColor;
     slopeColor.setRgbF(1., 0.35, 0.35);
     _imp->keyframeLeftSlopeLabel->setTextColor(slopeColor);
 
-    _imp->keyframeLeftSlopeSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeLeftSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->keyframeLeftSlopeSpinBox->setUseLineColor(true, slopeColor);
+    _imp->keyframeLeftSlopeSpinBox->setToolTip(leftSlopeTT);
     QObject::connect(_imp->keyframeLeftSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onLeftSlopeSpinBoxValueChanged(double)));
 
     _imp->keyframeTimeLabel = new Label(_imp->buttonsContainer);
     _imp->keyframeTimeLabel->setAltered(true);
+    QString timeTT = convertFromPlainText(tr("Frame number of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeTimeLabel->setText(tr("Frame"));
+    _imp->keyframeTimeLabel->setToolTip(timeTT);
 
-    _imp->keyframeTimeSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeTimeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeInt);
+    _imp->keyframeTimeSpinBox->setToolTip(timeTT);
     QObject::connect(_imp->keyframeTimeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onKeyframeTimeSpinBoxValueChanged(double)));
 
+    QString valueTT = convertFromPlainText(tr("Value of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeValueLabel = new Label(_imp->buttonsContainer);
+    _imp->keyframeValueLabel->setToolTip(valueTT);
     _imp->keyframeValueLabel->setAltered(true);
     _imp->keyframeValueLabel->setText(tr("Value"));
 
     _imp->keyframeValueSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeValueSpinBox->setToolTip(valueTT);
     QObject::connect(_imp->keyframeValueSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onKeyframeValueSpinBoxValueChanged(double)));
 
     _imp->keyframeValueLineEdit = new LineEdit(_imp->buttonsContainer);
     _imp->keyframeValueLineEdit->setText(tr("Enter Text..."));
+    _imp->keyframeValueLineEdit->setToolTip(valueTT);
     QObject::connect(_imp->keyframeValueLineEdit, SIGNAL(editingFinished()), this, SLOT(onKeyframeValueLineEditEditFinished()));
 
     _imp->keyframeRightSlopeLabel = new Label(_imp->buttonsContainer);
     _imp->keyframeRightSlopeLabel->setAltered(true);
     _imp->keyframeRightSlopeLabel->setText(tr("R"));
+    QString rightSlopeTT = convertFromPlainText(tr("Right slope of the currently selected keyframe"), WhiteSpaceNormal);
+    _imp->keyframeRightSlopeLabel->setToolTip(rightSlopeTT);
     _imp->keyframeRightSlopeLabel->setTextColor(slopeColor);
 
-    _imp->keyframeRightSlopeSpinBox = new SpinBox(_imp->buttonsContainer);
+    _imp->keyframeRightSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
+    _imp->keyframeRightSlopeSpinBox->setToolTip(rightSlopeTT);
     _imp->keyframeRightSlopeSpinBox->setUseLineColor(true, slopeColor);
     QObject::connect(_imp->keyframeRightSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onRightSlopeSpinBoxValueChanged(double)));
 
+    QString interpTT = convertFromPlainText(tr("Interpolation of the curve between the currently selected keyframe and the next keyframe"), WhiteSpaceNormal);
     _imp->keyframeInterpolationChoice = new ComboBox(_imp->buttonsContainer);
+    _imp->keyframeInterpolationChoice->setToolTip(interpTT);
+    _imp->keyframeInterpolationChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->keyframeInterpolationChoice->setFixedWidth(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE) * 3);
     QObject::connect(_imp->keyframeInterpolationChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onKeyfameInterpolationChoiceMenuChanged(int)));
 
@@ -380,7 +396,6 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->knobExpressionLineEdit->setReadOnly_NoFocusRect(true);
     QObject::connect( _imp->knobExpressionLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()) );
     _imp->expressionResultLabel = new Label(_imp->buttonsContainer);
-    _imp->expressionResultLabel->setAltered(true);
     _imp->expressionResultLabel->setText( QString::fromUtf8("= ") );
 
     _imp->buttonsLayout->addWidget(_imp->keyframeLabel);
@@ -442,6 +457,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->view, SLOT(onSelectionModelKeyframeSelectionChanged()) );
 
+    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
+
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
              _imp->treeView, SLOT(onNodeAdded(NodeAnimPtr)) );
 
@@ -457,6 +474,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     connect( _imp->treeView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
              _imp->view, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
+    connect( _imp->treeView, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onTreeItemClicked(QTreeWidgetItem*,int)));
     onSelectionModelSelectionChanged(false);
 
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
@@ -919,7 +937,7 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
     if (showKeyframeWidgets) {
         _imp->keyframeLeftSlopeSpinBox->setValue(keyData.key.getLeftDerivative());
         _imp->keyframeRightSlopeSpinBox->setValue(keyData.key.getRightDerivative());
-
+        _imp->keyframeValueSpinBox->setType(dataType == AnimatingObjectI::eKeyframeDataTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
         KeyframeTypeEnum interp = keyData.key.getInterpolation();
         KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
         _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
@@ -1034,6 +1052,17 @@ AnimationModuleEditor::onKeyframeValueSpinBoxValueChanged(double value)
     _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), 0, dv));
 }
 
+void
+AnimationModuleEditor::onTreeItemClicked(QTreeWidgetItem* item ,int col)
+{
+    if (col == ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+        bool isItemVisible = item->data(col, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
+        item->setData(col, QT_ROLE_CONTEXT_ITEM_VISIBLE, !isItemVisible);
+        item->setIcon(col, AnimationModuleBase::getItemVisibilityIcon(!isItemVisible));
+        _imp->view->redraw();
+        _imp->treeView->update();
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING

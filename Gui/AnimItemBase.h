@@ -168,7 +168,6 @@ public:
      **/
     virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const = 0;
 
-
     /**
      * @brief Returns true if the given dimension/view has an expression set
      **/

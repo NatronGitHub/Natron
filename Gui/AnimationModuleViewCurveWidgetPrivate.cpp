@@ -65,7 +65,7 @@ AnimationModuleViewPrivate::drawCurves()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     //now draw each curve
-    std::vector<CurveGuiPtr> curves = getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
     int i = 0;
     int nCurves = (int)curves.size();
     for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it, ++i) {
@@ -194,19 +194,15 @@ AnimationModuleViewPrivate::isNearbyCurve(const QPoint &pt, double* x, double *y
 {
     QPointF curvePos = curveEditorZoomContext.toZoomCoordinates( pt.x(), pt.y() );
 
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
 
-        
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+        AnimItemBasePtr item = (*it)->getItem();
         double yCurve = 0;
         
         try {
-            yCurve = it->first.item->evaluateCurve( true /*useExpression*/, curvePos.x(), guiCurve->getDimension(), guiCurve->getView());
+            yCurve = item->evaluateCurve( true /*useExpression*/, curvePos.x(), (*it)->getDimension(), (*it)->getView());
         } catch (...) {
         }
         
@@ -219,7 +215,7 @@ AnimationModuleViewPrivate::isNearbyCurve(const QPoint &pt, double* x, double *y
                 *y = yCurve;
             }
             
-            return guiCurve;
+            return *it;
         }
     }
 
@@ -231,13 +227,11 @@ AnimationModuleViewPrivate::isNearbyKeyFrame(const ZoomContext& ctx, const QPoin
 {
     AnimItemDimViewKeyFrame ret;
     
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
-        KeyFrameSet set = guiCurve->getKeyFrames();
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
+
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+        KeyFrameSet set = (*it)->getKeyFrames();
 
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             QPointF keyFramewidgetPos = ctx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
@@ -245,11 +239,11 @@ AnimationModuleViewPrivate::isNearbyKeyFrame(const ZoomContext& ctx, const QPoin
                 (std::abs( pt.x() - keyFramewidgetPos.x() ) < TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 
                 ret.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.key.string);
                 }
-                ret.id = it->first;
+                ret.id = (*it)->getCurveID();
                 
                 return ret;
             }
@@ -266,15 +260,12 @@ AnimationModuleViewPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     AnimItemDimViewKeyFrame ret;
     
     QFontMetrics fm( _publicInterface->font() );
-    int yOffset = 4;
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
+    int yOffset = TO_DPIY(4);
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
 
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
-        KeyFrameSet set = guiCurve->getKeyFrames();
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+        KeyFrameSet set = (*it)->getKeyFrames();
         // Bail if multiple selection because text is not visible
         if (set.size() > 1) {
             return ret;
@@ -291,11 +282,11 @@ AnimationModuleViewPrivate::isNearbyKeyFrameText(const QPoint& pt) const
             if ( (pt.x() >= topLeftWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRightWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
                 ( pt.y() >= topLeftWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRightWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 ret.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.key.string);
                 }
-                ret.id = it->first;
+                ret.id = (*it)->getCurveID();
                 
                 return ret;
             }
@@ -313,13 +304,12 @@ AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
     
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > ret;
 
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
-        KeyFrameSet set = guiCurve->getKeyFrames();
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
+
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+
+        KeyFrameSet set = (*it)->getKeyFrames();
         
         for (KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             
@@ -333,11 +323,11 @@ AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
                 ( pt.y() >= (leftTanPt.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) ) {
                 
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
                 }
-                ret.second.id = it->first;
+                ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentLeft;
                 return ret;
             } else if ( ( pt.x() >= (rightTanPt.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
@@ -345,11 +335,11 @@ AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
                        ( pt.y() <= (rightTanPt.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
                        ( pt.y() >= (rightTanPt.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) ) {
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
                 }
-                ret.second.id = it->first;
+                ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentRight;
                 return ret;
             }
@@ -367,14 +357,11 @@ AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     int yOffset = 4;
     std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame > ret;
     
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
-        KeyFrameSet set = guiCurve->getKeyFrames();
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
+
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+        KeyFrameSet set = (*it)->getKeyFrames();
         // Bail if multiple selection because text is not visible
         if (set.size() > 1) {
             return ret;
@@ -398,20 +385,20 @@ AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
             if ( (pt.x() >= topLeft_LeftTanWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRight_LeftTanWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
                 ( pt.y() >= topLeft_LeftTanWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRight_LeftTanWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
                 }
-                ret.second.id = it->first;
+                ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentLeft;
             } else if ( (pt.x() >= topLeft_RightTanWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRight_RightTanWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
                        ( pt.y() >= topLeft_RightTanWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRight_RightTanWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
                 }
-                ret.second.id = it->first;
+                ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentRight;
             }
             
@@ -430,23 +417,19 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     
-    const AnimItemDimViewKeyFramesMap& selectedKeys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!guiCurve) {
-            continue;
-        }
-        
-        KeyFrameSet set = guiCurve->getKeyFrames();
+    std::vector<CurveGuiPtr> curves = getVisibleCurves();
+
+    for (std::vector<CurveGuiPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+
+        KeyFrameSet set = (*it)->getKeyFrames();
         if ( set.empty() ) {
             continue;
         }
+
+        AnimItemDimViewIndexID curveID = (*it)->getCurveID();
+        StringAnimationManagerPtr stringAnim = curveID.item->getInternalAnimItem()->getStringAnimation();
         
-        StringAnimationManagerPtr stringAnim = it->first.item->getInternalAnimItem()->getStringAnimation();
-        
-        
-        KeyFrameWithStringSet& outKeys = (*keys)[it->first];
+        KeyFrameWithStringSet& outKeys = (*keys)[curveID];
         
         for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             double y = it2->getValue();
@@ -456,7 +439,7 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
                 KeyFrameWithString k;
                 k.key = *it2;
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), it->first.view, &k.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), curveID.view, &k.string);
                 }
                 outKeys.insert(k);
             }

@@ -32,6 +32,7 @@
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
 
@@ -387,5 +388,12 @@ AnimationModuleBase::transformSelectedKeys(const Transform::Matrix3x3& transform
     pushUndoCommand(new WarpKeysCommand(selectedKeyframes, shared_from_this(), transform));
 }
 
+QIcon
+AnimationModuleBase::getItemVisibilityIcon(bool visible)
+{
+    QPixmap pix;
+    appPTR->getIcon(visible ? NATRON_PIXMAP_VISIBLE : NATRON_PIXMAP_UNVISIBLE, &pix);
+    return QIcon(pix);
+}
 
 NATRON_NAMESPACE_EXIT;

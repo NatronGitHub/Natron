@@ -25,6 +25,7 @@
 #include "NodeAnim.h"
 
 #include <QTreeWidgetItem>
+#include <QPixmapCache>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobItemsTable.h"
@@ -39,6 +40,7 @@
 #include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/TableItemAnim.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -137,6 +139,16 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
     _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, nodeType);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
+
+    int nCols = getModel()->getTreeColumnsCount();
+    if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
+        _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
+        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+    }
+    if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
+        QString iconFilePath = QString::fromUtf8(internalNode->getPluginIconFilePath().c_str());
+        AnimationModuleTreeView::setItemIcon(iconFilePath, _imp->nameItem.get());
+    }
 
     connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
 
