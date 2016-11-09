@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/AnimItemBase.h"
 #include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -151,9 +152,11 @@ public:
 
     virtual QIcon getIcon() const OVERRIDE FINAL;
 
-public Q_SLOTS:
-
     void refreshKeyframeWidgetsFromSelection();
+
+    AnimItemDimViewIndexID getCurrentlySelectedKeyFrame() const;
+
+public Q_SLOTS:
 
     void onExprLineEditFinished();
 
@@ -194,6 +197,8 @@ public Q_SLOTS:
     void onTreeItemClicked(QTreeWidgetItem* item ,int col);
 
 private:
+
+    void refreshKeyFrameWidgetsEnabledNess();
 
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;

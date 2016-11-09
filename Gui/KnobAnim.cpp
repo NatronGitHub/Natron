@@ -370,8 +370,11 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
 
     _imp->rootItem->setHidden(!showItem);
 
+    AnimationModuleBasePtr model = getModel();
+    AnimationModulePtr isAnimModule = toAnimationModule(model);
+
     // Post a redraw, this will concatenate
-    getModel()->getView()->redraw();
+    model->getView()->redraw();
 
 
 }

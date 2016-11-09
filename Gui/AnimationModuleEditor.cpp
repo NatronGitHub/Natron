@@ -153,6 +153,9 @@ public:
     SpinBox* keyframeRightSlopeSpinBox;
     ComboBox* keyframeInterpolationChoice;
 
+    AnimItemDimViewIndexID selectedKeyID;
+    KeyFrameWithString selectedKey;
+
     Splitter *treeAndViewSplitter;
 
 
@@ -189,6 +192,8 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , keyframeRightSlopeLabel(0)
 , keyframeRightSlopeSpinBox(0)
 , keyframeInterpolationChoice(0)
+, selectedKeyID()
+, selectedKey()
 , treeAndViewSplitter(0)
 , treeView(0)
 , view(0)
@@ -894,22 +899,21 @@ AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFram
     return true;
 }
 
-void
-AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
+AnimItemDimViewIndexID
+AnimationModuleEditor::getCurrentlySelectedKeyFrame() const
 {
-    bool showKeyframeWidgets = true;
+    return _imp->selectedKeyID;
+}
 
-    AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
-    showKeyframeWidgets = _imp->getKeyframe(&id, &keyData);
-
+void
+AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
+{
     AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
-    if (showKeyframeWidgets) {
-        dataType = id.item->getInternalAnimItem()->getKeyFrameDataType();
+    bool showKeyframeWidgets = _imp->selectedKeyID.item;
+    if (_imp->selectedKeyID.item) {
+        dataType = _imp->selectedKeyID.item->getInternalAnimItem()->getKeyFrameDataType();
     }
-
     bool canHaveTangents = dataType == AnimatingObjectI::eKeyframeDataTypeInt || dataType == AnimatingObjectI::eKeyframeDataTypeDouble;
-
     if (dataType == AnimatingObjectI::eKeyframeDataTypeBool) {
         _imp->keyframeValueSpinBox->setMinimum(0);
         _imp->keyframeValueSpinBox->setMaximum(1);
@@ -931,18 +935,49 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
     _imp->keyframeRightSlopeLabel->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeRightSlopeSpinBox->setEnabled(showKeyframeWidgets && canHaveTangents);
     _imp->keyframeInterpolationChoice->setEnabled(showKeyframeWidgets && canHaveTangents);
+}
 
+void
+AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
+{
+    bool showKeyframeWidgets = true;
+
+
+    bool selectedKeyChanged = false;
+    {
+        AnimItemDimViewIndexID selectedKeyID;
+        KeyFrameWithString selectedKey;
+        showKeyframeWidgets = _imp->getKeyframe(&selectedKeyID, &selectedKey);
+        if (selectedKeyID.item != _imp->selectedKeyID.item ||
+            selectedKeyID.view != _imp->selectedKeyID.view ||
+            selectedKeyID.dim != _imp->selectedKeyID.dim) {
+            _imp->selectedKeyID = selectedKeyID;
+            selectedKeyChanged = true;
+        }
+        _imp->selectedKey = selectedKey;
+    }
+
+    AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
     if (showKeyframeWidgets) {
-        _imp->keyframeLeftSlopeSpinBox->setValue(keyData.key.getLeftDerivative());
-        _imp->keyframeRightSlopeSpinBox->setValue(keyData.key.getRightDerivative());
+        dataType = _imp->selectedKeyID.item->getInternalAnimItem()->getKeyFrameDataType();
+    }
+
+
+    if (selectedKeyChanged) {
+        refreshKeyFrameWidgetsEnabledNess();
+    }
+#pragma message WARN("Also refresh widgets when the curve of the item changed")
+    if (showKeyframeWidgets) {
+        _imp->keyframeLeftSlopeSpinBox->setValue(_imp->selectedKey.key.getLeftDerivative());
+        _imp->keyframeRightSlopeSpinBox->setValue(_imp->selectedKey.key.getRightDerivative());
         _imp->keyframeValueSpinBox->setType(dataType == AnimatingObjectI::eKeyframeDataTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
-        KeyframeTypeEnum interp = keyData.key.getInterpolation();
+        KeyframeTypeEnum interp = _imp->selectedKey.key.getInterpolation();
         KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
         _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
 
-        _imp->keyframeTimeSpinBox->setValue(keyData.key.getTime());
-        _imp->keyframeValueSpinBox->setValue(keyData.key.getValue());
-        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(keyData.string.c_str()));
+        _imp->keyframeTimeSpinBox->setValue(_imp->selectedKey.key.getTime());
+        _imp->keyframeValueSpinBox->setValue(_imp->selectedKey.key.getValue());
+        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(_imp->selectedKey.string.c_str()));
     }
 } // refreshKeyframeWidgetsFromSelection
 
