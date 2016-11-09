@@ -472,7 +472,7 @@ AnimationModuleView::onApplyLoopExpressionOnSelectedCurveActionTriggered()
         return;
     }
 
-    std::vector<CurveGuiPtr> curves = _imp->getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if (curves.empty() || curves.size() > 1) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select exactly one parmaeter curve to apply an expression").toStdString() );
         return;
@@ -499,7 +499,7 @@ AnimationModuleView::onApplyLoopExpressionOnSelectedCurveActionTriggered()
         if (viewName.empty()) {
             viewName = "Main";
         }
-        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", " << curve->getDimension() << ", " <<  viewName << ")";
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", " << curve->getDimension() << ", \"" <<  viewName << "\")";
         std::string script = ss.str();
         try {
             isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
@@ -519,7 +519,7 @@ AnimationModuleView::onApplyNegateExpressionOnSelectedCurveActionTriggered()
         return;
     }
 
-    std::vector<CurveGuiPtr> curves = _imp->getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if (curves.empty() || curves.size() > 1) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select exactly one parmaeter curve to apply an expression").toStdString() );
         return;
@@ -536,7 +536,7 @@ AnimationModuleView::onApplyNegateExpressionOnSelectedCurveActionTriggered()
         viewName = "Main";
     }
     std::stringstream ss;
-    ss << "-curve(frame, " << curve->getDimension() << ", " <<  viewName << ")";
+    ss << "-curve(frame, " << curve->getDimension() << ", \"" <<  viewName << "\")";
     std::string script = ss.str();
     try {
         isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
@@ -554,7 +554,7 @@ AnimationModuleView::onApplyReverseExpressionOnSelectedCurveActionTriggered()
         return;
     }
 
-    std::vector<CurveGuiPtr> curves = _imp->getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if (curves.empty() || curves.size() > 1) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select exactly one parmaeter curve to apply an expression").toStdString() );
         return;
@@ -571,7 +571,7 @@ AnimationModuleView::onApplyReverseExpressionOnSelectedCurveActionTriggered()
         viewName = "Main";
     }
     std::stringstream ss;
-    ss << "curve(-frame, " << curve->getDimension() << ", " <<  viewName << ")";
+    ss << "curve(-frame, " << curve->getDimension() << ", \"" <<  viewName << "\")";
     std::string script = ss.str();
     try {
         isAnimModule->getEditor()->setSelectedCurveExpression( QString::fromUtf8( script.c_str() ) );
@@ -584,10 +584,12 @@ AnimationModuleView::onApplyReverseExpressionOnSelectedCurveActionTriggered()
 void
 AnimationModuleView::onExportCurveToAsciiActionTriggered()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+    AnimationModulePtr isAnimModule = toAnimationModule(_imp->_model.lock());
+    if (!isAnimModule) {
+        return;
+    }
 
-    std::vector<CurveGuiPtr > curves = _imp->getSelectedCurves();
+    std::vector<CurveGuiPtr > curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if ( curves.empty() ) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select an item first").toStdString() );
         return;
@@ -655,12 +657,15 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
 void
 AnimationModuleView::onImportCurveFromAsciiActionTriggered()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+    AnimationModulePtr isAnimModule = toAnimationModule(_imp->_model.lock());
+    if (!isAnimModule) {
+        return;
+    }
 
-    std::vector<CurveGuiPtr > curves = _imp->getSelectedCurves();
+
+    std::vector<CurveGuiPtr > curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if ( curves.empty() ) {
-        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select an item first").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first").toStdString() );
         return;
     }
     for (std::size_t i = 0; i < curves.size(); ++i) {

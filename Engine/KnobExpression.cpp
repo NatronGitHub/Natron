@@ -292,7 +292,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 std::string
 KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
                                           DimIdx dimension,
-                                          ViewIdx view)
+                                          ViewIdx /*view*/)
 {
     KnobHolderPtr h = holder.lock();
     assert(h);
@@ -369,9 +369,6 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
     // Define dimension variable
     ss << tabStr << "dimension = " << dimension << "\n";
 
-    // Define view variable
-    ss << tabStr << "view = " << view << "\n";
-
     // Declare common functions
     ss << tabStr << "random = thisParam.random\n";
     ss << tabStr << "randomInt = thisParam.randomInt\n";
@@ -439,7 +436,7 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     // Make up the internal expression
     std::stringstream ss;
     ss << "frame=0\n";
-    ss << "view=0\n";
+    ss << "view=\"Main\"\n";
     ss << declarations << '\n';
     ss << expressionCopy << '\n';
     ss << listenersRegistrationScript;
@@ -555,8 +552,16 @@ KnobHelper::validateExpression(const std::string& expression,
             throw std::runtime_error(error);
         }
 
+        std::string viewName;
+        if (getHolder() && getHolder()->getApp()) {
+            viewName = getHolder()->getApp()->getProject()->getViewName(view);
+        }
+        if (viewName.empty()) {
+            viewName = "Main";
+        }
+
         std::stringstream ss;
-        ss << funcExecScript << '(' << getCurrentTime() << ", " <<  getCurrentView() << ")\n";
+        ss << funcExecScript << '(' << getCurrentTime() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
         }
@@ -1150,7 +1155,7 @@ KnobHelper::executeExpression(double time,
         viewName = "Main";
     }
 
-    ss << expr << '(' << time << ", " << viewName << ")\n";
+    ss << expr << '(' << time << ", \"" << viewName << "\")\n";
     std::string script = ss.str();
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);

@@ -261,6 +261,10 @@ public:
      * if there is any.
      **/
     double curve(double time, int dimension = 0, const QString& thisView = QLatin1String(kPyParamViewIdxMain)) const;
+    double curve(int time, int dimension = 0, const QString& thisView = QLatin1String(kPyParamViewIdxMain)) const
+    {
+        return curve((double)time, dimension, thisView);
+    }
 
     bool setAsAlias(Param* other);
 

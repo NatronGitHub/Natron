@@ -393,7 +393,6 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->knobLabel->setText( tr("No curve selected") );
     _imp->knobExpressionLineEdit = new LineEdit(_imp->buttonsContainer);
     _imp->knobExpressionLineEdit->setPlaceholderText(tr("curve (No Expression)"));
-    _imp->knobExpressionLineEdit->setReadOnly_NoFocusRect(true);
     QObject::connect( _imp->knobExpressionLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()) );
     _imp->expressionResultLabel = new Label(_imp->buttonsContainer);
     _imp->expressionResultLabel->setText( QString::fromUtf8("= ") );
@@ -654,14 +653,10 @@ AnimationModuleEditor::loadProjection(const SERIALIZATION_NAMESPACE::ViewportDat
 void
 AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
 {
-    const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->model->getSelectionModel()->getCurrentKeyFramesSelection();
-    std::list<CurveGuiPtr> curves;
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (guiCurve) {
-            curves.push_back(guiCurve);
-        }
-    }
+
+
+
+    std::vector<CurveGuiPtr> curves = _imp->treeView->getSelectedCurves();
 
     if (curves.empty() || curves.size() > 1) {
         throw std::invalid_argument(tr("Cannot set an expression on multiple items").toStdString());
@@ -675,6 +670,10 @@ AnimationModuleEditor::setSelectedCurveExpression(const QString& expression)
     DimIdx dimension = curve->getDimension();
     ViewIdx view = curve->getView();
     std::string exprResult;
+    std::string curExpr = knob->getExpression(dimension, view);
+    if (curExpr == expression.toStdString()) {
+        return;
+    }
     if ( !expression.isEmpty() ) {
         try {
             knob->validateExpression(expression.toStdString(), dimension, view, false /*hasRetVariable*/, &exprResult);
@@ -707,32 +706,31 @@ AnimationModuleEditor::onDisplayViewClicked(bool clicked)
 void
 AnimationModuleEditor::onSelectionModelSelectionChanged(bool /*recurse*/)
 {
-    const AnimItemDimViewKeyFramesMap& selectedKeys = _imp->model->getSelectionModel()->getCurrentKeyFramesSelection();
+    std::vector<CurveGuiPtr> curves = _imp->treeView->getSelectedCurves();
     bool expressionFieldsEnabled = true;
-    if (selectedKeys.size() > 1 || selectedKeys.size() == 0) {
+    if (curves.size() > 1 || curves.size() == 0) {
         expressionFieldsEnabled = false;
     }
     QString knobLabel, currentExpression;
     if (expressionFieldsEnabled) {
-        for (AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin(); it!=selectedKeys.end(); ++it) {
-            KnobAnimPtr knob = toKnobAnim(it->first.item);
-            if (!knob) {
-                expressionFieldsEnabled = false;
-                break;
-            } else {
-                knobLabel = knob->getViewDimensionLabel(it->first.dim, it->first.view);
-                NamedKnobHolderPtr isHolderNamed = boost::dynamic_pointer_cast<NamedKnobHolder>(knob->getInternalKnob()->getHolder());
-                if (isHolderNamed) {
-                    QString holderName = QString::fromUtf8(isHolderNamed->getScriptName_mt_safe().c_str());
-                    holderName += QLatin1Char('.');
-                    knobLabel.prepend(holderName);
-                }
-                KnobIPtr internalKnob = knob->getInternalKnob();
-
-                currentExpression = QString::fromUtf8(internalKnob->getExpression(it->first.dim, it->first.view).c_str());
-
+        CurveGuiPtr curve = curves.front();
+        KnobAnimPtr knob = toKnobAnim(curve->getItem());
+        if (!knob) {
+            expressionFieldsEnabled = false;
+        } else {
+            knobLabel = knob->getViewDimensionLabel(curve->getDimension(), curve->getView());
+            NamedKnobHolderPtr isHolderNamed = boost::dynamic_pointer_cast<NamedKnobHolder>(knob->getInternalKnob()->getHolder());
+            if (isHolderNamed) {
+                QString holderName = QString::fromUtf8(isHolderNamed->getScriptName_mt_safe().c_str());
+                holderName += QLatin1Char('.');
+                knobLabel.prepend(holderName);
             }
+            KnobIPtr internalKnob = knob->getInternalKnob();
+
+            currentExpression = QString::fromUtf8(internalKnob->getExpression(curve->getDimension(), curve->getView()).c_str());
+
         }
+
     }
     _imp->knobLabel->setVisible(expressionFieldsEnabled);
     if (expressionFieldsEnabled) {
@@ -756,11 +754,11 @@ AnimationModuleEditorPrivate::refreshExpressionResult()
     if (!expressionResultLabel->isVisible()) {
         return;
     }
-    const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
-    if (selectedKeys.size() > 1 || selectedKeys.size() == 0) {
+    std::vector<CurveGuiPtr> curves = treeView->getSelectedCurves();
+    if (curves.size() > 1 || curves.size() == 0) {
         return;
     }
-    AnimItemDimViewIndexID id = selectedKeys.begin()->first;
+    AnimItemDimViewIndexID id = curves.front()->getCurveID();
     KnobAnimPtr knob = toKnobAnim(id.item);
     if (!knob) {
         return;

@@ -1031,6 +1031,30 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_FREEZE_DISABLED", (long) NATRON_NAMESPACE::NATRON_PIXMAP_FREEZE_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_CURVE_EDITOR", (long) NATRON_NAMESPACE::NATRON_PIXMAP_CURVE_EDITOR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_DOPE_SHEET", (long) NATRON_NAMESPACE::NATRON_PIXMAP_DOPE_SHEET))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_NODE_GRAPH", (long) NATRON_NAMESPACE::NATRON_PIXMAP_NODE_GRAPH))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PROGRESS_PANEL", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PROGRESS_PANEL))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_SCRIPT_EDITOR", (long) NATRON_NAMESPACE::NATRON_PIXMAP_SCRIPT_EDITOR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PROPERTIES_PANEL", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PROPERTIES_PANEL))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_ANIMATION_MODULE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_ANIMATION_MODULE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_PANEL", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_PANEL))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_VIEWER_ICON", (long) NATRON_NAMESPACE::NATRON_PIXMAP_VIEWER_ICON))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],

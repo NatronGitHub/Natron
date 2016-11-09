@@ -667,7 +667,7 @@ CurveGui::drawCurve(int curveIndex,
                 if (!drawKeySelected) {
                     // Also draw the keyframe as selected if it is inside the selection rectangle (but not yet selected)
                     RectD selectionRect = _imp->curveWidget->getSelectionRectangle();
-                    drawKeySelected |= (!selectionRect.isNull() && selectionRect.contains(key.getTime(), key.getValue()));
+                    drawKeySelected |= _imp->curveWidget->_imp->eventTriggeredFromCurveEditor && (!selectionRect.isNull() && selectionRect.contains(key.getTime(), key.getValue()));
                 }
             }
             // If the key is selected change its color

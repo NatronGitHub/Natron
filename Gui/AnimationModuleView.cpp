@@ -662,7 +662,7 @@ void
 AnimationModuleView::centerOnSelection()
 {
 
-    std::vector<CurveGuiPtr > selection = _imp->getSelectedCurves();
+    std::vector<CurveGuiPtr > selection;// = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if ( selection.empty() ) {
         centerOnAllItems();
     } else {
@@ -886,7 +886,7 @@ AnimationModuleView::mousePressEvent(QMouseEvent* e)
 
     // default behaviour: unselect selected keyframes, if any, and start a new selection
     if ( !modCASIsControl(e) ) {
-        model->getSelectionModel()->clearKeyframesFromSelection();
+        model->getSelectionModel()->clearSelection();
     }
 
 

@@ -315,14 +315,26 @@ AnimationModuleTreeViewItemDelegate::paint(QPainter *painter, const QStyleOption
         painter->restore();
     } else {
         // Don't draw selected state by default
-       
+        QStyleOptionViewItemV4 paintOptions = option;
+        paintOptions.state &= ~QStyle::State_Selected;
+
         if (index.column() == ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
+
+            paintOptions.decorationAlignment = Qt::AlignLeft | Qt::AlignVCenter;
+
             // Draw a background color
             double r,g,b;
             appPTR->getCurrentSettings()->getBaseColor(&r, &g, &b);
             QColor c;
             c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
-            painter->fillRect(option.rect, QBrush(c));
+
+            QStyleOptionViewItemV4 newOpt = paintOptions;
+
+            newOpt.features |= QStyleOptionViewItemV2::HasDecoration;
+            newOpt.decorationSize = option.rect.size();
+            QRect iconBgRect = _treeView->style()->subElementRect(QStyle::SE_ItemViewItemDecoration, &newOpt);
+
+            painter->fillRect(iconBgRect, QBrush(c));
         } else if (index.column() == ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
             // Draw a small transparant bg color in case the row color does not contrast with the icon
             QColor c(70,70,70);
@@ -340,9 +352,8 @@ AnimationModuleTreeViewItemDelegate::paint(QPainter *painter, const QStyleOption
             painter->restore();
         }
 
-        QStyleOptionViewItemV4 newOpt = option;
-        newOpt.state &= ~QStyle::State_Selected;
-        QStyledItemDelegate::paint(painter, newOpt, index);
+
+        QStyledItemDelegate::paint(painter, paintOptions, index);
     }
 
 
@@ -357,6 +368,7 @@ public:
     : publicInterface(publicInterface)
     , model()
     , gui(0)
+    , selectionRecursionCounter(0)
     {}
 
 
@@ -383,6 +395,7 @@ public:
     AnimationModuleTreeView *publicInterface;
     AnimationModuleWPtr model;
     Gui *gui;
+    int selectionRecursionCounter;
 };
 
 
@@ -822,8 +835,8 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
             appPTR->getCurrentSettings()->getSelectionColor(&sR, &sG, &sB);
             QColor c;
             c.setRgbF(Image::clamp(sR, 0., 1.), Image::clamp(sG, 0., 1.), Image::clamp(sB, 0., 1.));
-            c.setAlphaF(0.3);
-            painter->setOpacity(0.3);
+            c.setAlphaF(0.4);
+            painter->setOpacity(0.4);
             painter->fillRect(rowRect, c);
             painter->setOpacity(1.);
         }
@@ -1065,6 +1078,10 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
         return;
     }
 
+    if (_imp->selectionRecursionCounter) {
+        return;
+    }
+
     // Automatically select items in the tree according to the selection made by the user
 
     // Retrieve the knob anim with selected keyframes
@@ -1074,11 +1091,6 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     const AnimItemDimViewKeyFramesMap& selectedKeys = selModel->getCurrentKeyFramesSelection();
     const std::list<NodeAnimPtr >& selectedNodes = selModel->getCurrentNodesSelection();
     const std::list<TableItemAnimPtr>& tableItems = selModel->getCurrentTableItemsSelection();
-
-
-    // Prevent recursion
-    disconnect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-               this, SLOT(onTreeSelectionModelSelectionChanged()) );
 
 
     // For each knob/dim/view, if all keyframes are selected, add the item to the selection
@@ -1111,12 +1123,13 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     QItemSelection selection;
     treeItemsSetToItemSelection(this, toSelect, &selection);
 
+    ++_imp->selectionRecursionCounter;
+
     QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::ClearAndSelect;
     mySelecModel->selectWithRecursion(selection, flags, recurse);
 
+    --_imp->selectionRecursionCounter;
 
-    connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-            this, SLOT(onTreeSelectionModelSelectionChanged()) );
 } // onSelectionModelKeyframeSelectionChanged
 
 void
@@ -1148,11 +1161,7 @@ AnimationModuleTreeView::onItemDoubleClicked(QTreeWidgetItem *item,
     if (isNodeItem) {
         _imp->openSettingsPanelForNode(isNodeItem);
     }
-    if (isKnob) {
-        getModel()->getSelectionModel()->selectKeyframes(isKnob, dim, view);
-    } else if (isTableItem && foundType == eAnimatedItemTypeTableItemAnimation) {
-        getModel()->getSelectionModel()->selectKeyframes(isTableItem, dim, view);
-    }
+
 }
 
 
@@ -1189,6 +1198,40 @@ AnimationModuleTreeView::setItemIcon(const QString& iconFilePath, QTreeWidgetIte
     }
 
     item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, QIcon(pix));
+}
+
+std::vector<CurveGuiPtr>
+AnimationModuleTreeView::getSelectedCurves() const
+{
+    QList<QTreeWidgetItem*> items = selectedItems();
+    std::vector<CurveGuiPtr> curves;
+    AnimationModulePtr model = getModel();
+    for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        AnimatedItemTypeEnum foundType;
+        KnobAnimPtr isKnob;
+        TableItemAnimPtr isTableItem;
+        NodeAnimPtr isNodeItem;
+        ViewSetSpec view;
+        DimSpec dim;
+        bool found = model->findItem(*it, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+        if (!found) {
+            continue;
+        }
+        AnimItemBasePtr isAnimItem;
+        if (isKnob) {
+            isAnimItem = isKnob;
+        } else if (isTableItem) {
+            isAnimItem = isTableItem;
+        }
+        if (!isAnimItem || dim.isAll() || view.isAll()) {
+            continue;
+        }
+        CurveGuiPtr curve = isAnimItem->getCurveGui(DimIdx(dim), ViewIdx(view));
+        if (curve) {
+            curves.push_back(curve);
+        }
+    }
+    return curves;
 }
 
 NATRON_NAMESPACE_EXIT;

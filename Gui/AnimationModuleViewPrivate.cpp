@@ -740,12 +740,6 @@ static std::vector<CurveGuiPtr> animItemDimViewKeyframeMapToCurveList(const Anim
     return curves;
 }
 
-std::vector<CurveGuiPtr>
-AnimationModuleViewPrivate::getSelectedCurves() const
-{
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
-    return animItemDimViewKeyframeMapToCurveList(keys);
-}
 
 std::vector<CurveGuiPtr>
 AnimationModuleViewPrivate::getVisibleCurves() const

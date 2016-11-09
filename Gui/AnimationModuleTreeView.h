@@ -178,6 +178,8 @@ public:
 
     static void setItemIcon(const QString& iconFilePath, QTreeWidgetItem* item);
 
+    std::vector<CurveGuiPtr> getSelectedCurves() const;
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     void drawBranch(QPainter *painter, const QRect &rect, const NodeAnimPtr& closestEnclosingNodeItem, const QColor& nodeColor, QTreeWidgetItem* item) const;

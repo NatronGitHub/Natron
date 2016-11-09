@@ -117,8 +117,9 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
         return;
     }
 
-
-    node->getNodeGui()->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
+    if (!keysAdded.empty() || !keysRemoved.empty()) {
+        node->getNodeGui()->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
+    }
 
     // Refresh the knob anim visibility in a queued connection
     knobAnim->emit_s_refreshKnobVisibilityLater();
@@ -753,6 +754,11 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     }
     onHelpChanged();
     foundView->second.widgets->updateGUI();
+
+
+    // Refresh the animation curve
+    onCurveAnimationChangedInternally(std::list<double>(), std::list<double>(), view, dimension);
+
 } // KnobGui::onExprChanged
 
 void

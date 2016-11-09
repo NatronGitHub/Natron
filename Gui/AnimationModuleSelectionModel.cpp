@@ -361,7 +361,7 @@ AnimationModuleSelectionModel::selectKeyframes(const AnimItemBasePtr& item, DimS
 void
 AnimationModuleSelectionModel::clearSelection()
 {
-    if ( _imp->selectedKeyframes.empty() && _imp->selectedNodes.empty() ) {
+    if ( _imp->selectedKeyframes.empty() && _imp->selectedNodes.empty() && _imp->selectedTableItems.empty() ) {
         return;
     }
 
@@ -410,6 +410,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
         AnimItemDimViewKeyFramesMap::iterator exists = _imp->selectedKeyframes.find(it->first);
         if (exists == _imp->selectedKeyframes.end()) {
             _imp->selectedKeyframes[it->first] = it->second;
+            hasChanged = true;
         } else {
             for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 KeyFrameWithStringSet::iterator timeExist = exists->second.find(*it2);
@@ -562,8 +563,10 @@ AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, D
     if (curvesToProcess.empty()) {
         return false;
     }
+
+    bool checkForKeyFrameExistence = curvesToProcess.size() > 1;
     for (std::list<DimensionViewPair>::iterator it = curvesToProcess.begin(); it != curvesToProcess.end(); ++it) {
-        if (!isKeyframeSelectedOnCurve(item, it->dimension, it->view, time)) {
+        if (!isKeyframeSelectedOnCurve(item, it->dimension, it->view, time, checkForKeyFrameExistence)) {
             return false;
         }
     }
@@ -571,7 +574,7 @@ AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, D
 } // isKeyframeSelected
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, double time) const
+AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, double time, bool alsoCheckForExistence) const
 {
     AnimItemDimViewIndexID key(anim, view, dimension);
     AnimItemDimViewKeyFramesMap::const_iterator found = _imp->selectedKeyframes.find(key);
@@ -582,7 +585,22 @@ AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &
     k.key.setTime(time);
     KeyFrameWithStringSet::const_iterator foundKey = found->second.find(k);
     if (foundKey == found->second.end()) {
-        return false;
+        if (!alsoCheckForExistence) {
+            return false;
+        }
+        // If the given keyframe is not in the selection model, chec if the keyframe exists.
+        // If it does not exists return true, otherwise return false
+        CurvePtr internalCurve = found->first.item->getCurve(dimension, view);
+        if (!internalCurve) {
+            return false;
+        }
+
+        KeyFrame k;
+        bool hasKeyframe = internalCurve->getKeyFrameWithTime(time, &k);
+        if (hasKeyframe) {
+            return false;
+        }
+        return true;
     }
     return true;
 }

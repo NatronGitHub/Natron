@@ -258,7 +258,8 @@ static PyObject* Sbk_ParamFunc_curve(PyObject* self, PyObject* args, PyObject* k
 
     // Overloaded function decisor
     // 0: curve(double,int,QString)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+    // 1: curve(int,int,QString)const
+    if (PyFloat_Check(pyArgs[0]) && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
             overloadId = 0; // curve(double,int,QString)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
@@ -268,44 +269,94 @@ static PyObject* Sbk_ParamFunc_curve(PyObject* self, PyObject* args, PyObject* k
                 overloadId = 0; // curve(double,int,QString)const
             }
         }
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 1; // curve(int,int,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            if (numArgs == 2) {
+                overloadId = 1; // curve(int,int,QString)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+                overloadId = 1; // curve(int,int,QString)const
+            }
+        }
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_ParamFunc_curve_TypeError;
 
     // Call function/method
-    {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "dimension");
-            if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'dimension'.");
-                return 0;
-            } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
-                    goto Sbk_ParamFunc_curve_TypeError;
+    switch (overloadId) {
+        case 0: // curve(double time, int dimension, const QString & thisView) const
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "dimension");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'dimension'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                        goto Sbk_ParamFunc_curve_TypeError;
+                }
+                value = PyDict_GetItemString(kwds, "thisView");
+                if (value && pyArgs[2]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'thisView'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[2] = value;
+                    if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                        goto Sbk_ParamFunc_curve_TypeError;
+                }
             }
-            value = PyDict_GetItemString(kwds, "thisView");
-            if (value && pyArgs[2]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'thisView'.");
-                return 0;
-            } else if (value) {
-                pyArgs[2] = value;
-                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
-                    goto Sbk_ParamFunc_curve_TypeError;
-            }
-        }
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1 = 0;
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
-        ::QString cppArg2 = QLatin1String("Main");
-        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1 = 0;
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+            ::QString cppArg2 = QLatin1String("Main");
+            if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
-        if (!PyErr_Occurred()) {
-            // curve(double,int,QString)const
-            double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->curve(cppArg0, cppArg1, cppArg2);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            if (!PyErr_Occurred()) {
+                // curve(double,int,QString)const
+                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->curve(cppArg0, cppArg1, cppArg2);
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            }
+            break;
+        }
+        case 1: // curve(int time, int dimension, const QString & thisView) const
+        {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "dimension");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'dimension'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                        goto Sbk_ParamFunc_curve_TypeError;
+                }
+                value = PyDict_GetItemString(kwds, "thisView");
+                if (value && pyArgs[2]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'thisView'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[2] = value;
+                    if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                        goto Sbk_ParamFunc_curve_TypeError;
+                }
+            }
+            int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1 = 0;
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+            ::QString cppArg2 = QLatin1String("Main");
+            if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+
+            if (!PyErr_Occurred()) {
+                // curve(int,int,QString)const
+                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->curve(cppArg0, cppArg1, cppArg2);
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            }
+            break;
         }
     }
 
@@ -316,7 +367,7 @@ static PyObject* Sbk_ParamFunc_curve(PyObject* self, PyObject* args, PyObject* k
     return pyResult;
 
     Sbk_ParamFunc_curve_TypeError:
-        const char* overloads[] = {"float, int = 0, unicode = QLatin1String(\"Main\")", 0};
+        const char* overloads[] = {"float, int = 0, unicode = QLatin1String(\"Main\")", "int, int = 0, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.curve", overloads);
         return 0;
 }

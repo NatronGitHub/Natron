@@ -428,8 +428,9 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
 
         AnimItemDimViewIndexID curveID = (*it)->getCurveID();
         StringAnimationManagerPtr stringAnim = curveID.item->getInternalAnimItem()->getStringAnimation();
-        
-        KeyFrameWithStringSet& outKeys = (*keys)[curveID];
+
+
+        KeyFrameWithStringSet outKeys;
         
         for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
             double y = it2->getValue();
@@ -443,6 +444,9 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
                 }
                 outKeys.insert(k);
             }
+        }
+        if (!outKeys.empty()) {
+            (*keys)[curveID] = outKeys;
         }
         
     }
@@ -479,7 +483,7 @@ AnimationModuleViewPrivate::makeSelectionFromCurveEditorSelectionRectangle(bool 
     AnimationModuleSelectionModel::SelectionTypeFlags sFlags = ( toggleSelection )
     ? AnimationModuleSelectionModel::SelectionTypeToggle
     : AnimationModuleSelectionModel::SelectionTypeAdd;
-
+    sFlags |= AnimationModuleSelectionModel::SelectionTypeRecurse;
 
     selectModel->makeSelection( selectedKeys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), sFlags );
     _publicInterface->refreshSelectionBoundingBox();

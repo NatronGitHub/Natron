@@ -706,7 +706,13 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
         RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, keyTime, rowCenterYCanonical);
 
         bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, keyTime);
-        bool drawSelected = isKeyFrameSelected || (!selectionRect.isNull() && selectionRect.intersects(zoomKfRect));
+        bool drawSelected = isKeyFrameSelected;
+        if (!drawSelected) {
+            // If not selected but within the selection rectangle, draw also selected
+            if (!dimension.isAll() && !view.isAll()) {
+                drawSelected = !eventTriggeredFromCurveEditor && !selectionRect.isNull() && selectionRect.intersects(zoomKfRect);
+            }
+        }
 
         AnimationModuleViewPrivate::KeyframeTexture texType;
         if (dimension.isAll() || view.isAll()) {
@@ -946,10 +952,9 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
     StringAnimationManagerPtr stringAnim = knob->getInternalAnimItem()->getStringAnimation();
 
     AnimItemDimViewIndexID id(knob, view, dimension);
-    KeyFrameWithStringSet& outKeys = (*result)[id];
 
     double visualRectCenterYCanonical = dopeSheetZoomContext.toZoomCoordinates(0, treeView->visualItemRect(item).center().y()).y();
-
+    KeyFrameWithStringSet outKeys;
     for ( KeyFrameSet::const_iterator it2 = set.begin(); it2 != set.end(); ++it2) {
         double x = it2->getTime();
         RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, x, visualRectCenterYCanonical);
@@ -963,6 +968,10 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
             outKeys.insert(k);
         }
     }
+    if (!outKeys.empty()) {
+        (*result)[id] = outKeys;
+    }
+
 } // checkAnimItemInRectInternal
 
 void
@@ -1093,6 +1102,7 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangle(bool to
     AnimationModuleSelectionModel::SelectionTypeFlags sFlags = ( toggleSelection )
     ? AnimationModuleSelectionModel::SelectionTypeToggle
     : AnimationModuleSelectionModel::SelectionTypeAdd;
+    sFlags |= AnimationModuleSelectionModel::SelectionTypeRecurse;
 
     _model.lock()->getSelectionModel()->makeSelection(selectedKeys, tableItemSelection, nodesSelection, sFlags);
 
