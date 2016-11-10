@@ -53,27 +53,31 @@ platform darwin {
             long_description ${description}: \
                 This port follows the release version of GLFW, which is typically updated every 6 months. If for some reason this port does not build or function as desired, try the ${name}-devel port.
 
+            # patch to fix install directory for cmake files and docs
+
+            patchfiles-append patch-CMakeLists.txt.release.diff
+
         } else {
 
             # devel
 
-            github.setup    glfw glfw 8d6f265441959d0eff2d3fd97edfb99b98ce2777
-            version         20161019
-            checksums       rmd160 43b59ba3be7d03b23536db3628021f4dda8d3147 \
-                            sha256 6a9cc3d0f8effac9978613523fd5c5f1b81c8577ed13f206fa177678619cb445
+            github.setup    glfw glfw a90ee65f7b0264a672634fc4f5891a2ab57a47ae
+            version         20161108
+            checksums       rmd160 927f518ffbd6ae9a35d7c51c3b44e1905325605d \
+                            sha256 95abb482bd698c92bc747c4e397b1c64b880d521d0a9664bd78d81a8f68f089e
 
             conflicts       glfw
             long_description ${description}: \
                 This port follows the GIT master version of GLFW, which is typically updated every few days to weeks.
+
+            # patch to fix install directory for cmake files and docs
+
+            patchfiles-append patch-CMakeLists.txt.devel.diff
         }
 
         # patch to fix install name of library
 
         patchfiles-append patch-src_CMakeLists.txt.diff
-
-        # patch to fix install directory for cmake files and docs
-
-        patchfiles-append patch-CMakeLists.txt.diff
 
     }
 }

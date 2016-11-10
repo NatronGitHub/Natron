@@ -1,0 +1,10 @@
+--- configure.orig	2016-10-31 04:41:43.000000000 -0500
++++ configure	2016-11-03 02:55:47.000000000 -0500
+@@ -19233,7 +19233,6 @@
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $min set" >&5
+ $as_echo "$min set" >&6; }
+     fi
+-    CFLAGS="$CFLAGS -Werror=partial-availability"
+   fi
+ 
+ 

@@ -1,10 +1,9 @@
-# $Id$
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem      1.0
 
 name            jasper
-version         1.900.16
-revision        1
+version         1.900.21
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -19,14 +18,12 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 16599535d20434aba8b13fa4c0b94ccfaded37af \
-                sha256 349f2261767c51a9e59e37025a027686f45f55cfbb8c46fd55c8697092f9f971
+checksums       rmd160 f082cb4febf1670cb234d03fab6f04a38544855b \
+                sha256 e9c8a241f80d1cc190c308f5efc6669a98776ed27458643553abee823fadd7b3
 
 depends_lib     port:jpeg
 
-patchfiles      configure.patch
-
-configure.args  --disable-opengl
+configure.args  --disable-opengl --disable-strict
 
 test.run        yes
 test.target     check
@@ -45,4 +42,4 @@ variant jiv description {build a basic viewer as well} {
 }
 
 livecheck.type   regex
-livecheck.regex  "JasPer version (.*) source distribution \\\(current version\\\)."
+livecheck.regex  "JasPer (.*) \\\(current version\\\)."

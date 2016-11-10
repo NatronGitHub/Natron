@@ -29,9 +29,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    checksums       rmd160 2b9a04eec4964302ddb0e3b48060407cbdab8455 \
-                    sha256 189ae32a6ac398bb2f523ae77f70d463a6549926cde1544cd9cc7c6609f8b346
+    version         ${branch}.3
+    checksums       rmd160 44e853d1661ef27508ce3707057ec4147d7e9031 \
+                    sha256 7d73ee4fae572eb2d7cd3feb48971aea903bb30a20ea5ae8b4da826d8ccad5fe
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -58,12 +58,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20161031
+    version         20161107
     set dist_branch 3.7
-    set dist_date   20161031
-    set dist_hash   gd3c45a8
-    checksums       rmd160 3174a717d73007f7e5983ae5a0ebb4af1b736d86 \
-                    sha256 753959362678de5134ab67f8d9069e08794c3911146156fa98f1f1931a10576d
+    set dist_date   20161105
+    set dist_hash   g998cb
+    checksums       rmd160 23b22f127f1bf9fbec93739469af79dc90a1ab22 \
+                    sha256 a99c96cf6630b7401eb9a64fd45b688ada3903f8a99b88e749b84cd937ecd1ef
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -123,7 +123,8 @@ configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
                     --system-libs \
-                    --no-system-jsoncpp
+                    --no-system-jsoncpp \
+                    --no-system-librhash
 
 configure.universal_args
 configure.post_args
