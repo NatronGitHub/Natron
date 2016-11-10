@@ -1525,7 +1525,7 @@ template <typename T>
 void
 Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
 {
-    if (!visible) {
+    if (visible) {
         return;
     }
     int nDims = getNDimensions();

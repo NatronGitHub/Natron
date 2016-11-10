@@ -106,6 +106,10 @@ struct KnobGuiValuePrivate
     Button *dimensionSwitchButton;
     bool rectangleFormatIsWidthHeight;
 
+    // When true, the  dimension switch will be automatically expended/folded
+    // according to the knob values
+    bool autoExpandEnabled;
+
     KnobGuiValuePrivate(KnobGuiValue *publicInterface, const KnobIPtr& knob)
         : publicInterface(publicInterface)
         , knob(knob)
@@ -117,6 +121,7 @@ struct KnobGuiValuePrivate
         , rectangleFormatButton(0)
         , dimensionSwitchButton(0)
         , rectangleFormatIsWidthHeight(true)
+        , autoExpandEnabled(true)
     {
     }
 
@@ -487,7 +492,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_imp->rectangleFormatButton);
     }
 
-    if ( (nDims > 1) && !isSliderDisabled() && sliderVisible ) {
+    if (nDims > 1) {
         _imp->dimensionSwitchButton = new Button(QIcon(), QString::number(nDims), _imp->container);
         _imp->dimensionSwitchButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->dimensionSwitchButton->setFixedSize(medSize);
@@ -587,7 +592,9 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
     onDimensionsMadeVisible(visible);
 
     if (visible) {
-        _imp->slider->hide();
+        if (_imp->slider) {
+            _imp->slider->hide();
+        }
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
                 _imp->spinBoxes[i].first->show();
@@ -597,7 +604,9 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
             }
         }
     } else {
-        _imp->slider->show();
+        if (_imp->slider) {
+            _imp->slider->show();
+        }
 
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
@@ -614,6 +623,8 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
 void
 KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 {
+    // User clicked once on the dimension switch, disable auto switch
+    _imp->autoExpandEnabled = false;
     getKnobGui()->getKnob()->setAllDimensionsVisible(getView(), clicked);
 }
 
@@ -756,7 +767,7 @@ KnobGuiValue::updateGUI()
             break;
         }
     }
-    if (_imp->dimensionSwitchButton) {
+    if (_imp->dimensionSwitchButton && _imp->autoExpandEnabled) {
         bool hasDimAnimated = false;
         for (int i = 0; i < knobDim; ++i) {
             hasDimAnimated = knob->isAnimated(DimIdx(i), getView());

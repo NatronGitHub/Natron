@@ -249,7 +249,11 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
-        _imp->allDimensionsVisible[view] = visible;
+        bool& curValue = _imp->allDimensionsVisible[view];
+        if (curValue == visible) {
+            return;
+        }
+        curValue = visible;
     }
     onAllDimensionsMadeVisible(view, visible);
 }
