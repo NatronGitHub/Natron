@@ -815,7 +815,7 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     QAction* linearInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleLinear,
                                                    kShortcutDescActionAnimationModuleLinear, interpMenu);
     linearInterp->setShortcut( QKeySequence(Qt::Key_L) );
-    constantInterp->setData((int)eKeyframeTypeLinear);
+    linearInterp->setData((int)eKeyframeTypeLinear);
     QObject::connect( linearInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(linearInterp);
 
@@ -823,7 +823,7 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     QAction* smoothInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSmooth,
                                                    kShortcutDescActionAnimationModuleSmooth, interpMenu);
     smoothInterp->setShortcut( QKeySequence(Qt::Key_Z) );
-    constantInterp->setData((int)eKeyframeTypeSmooth);
+    smoothInterp->setData((int)eKeyframeTypeSmooth);
     QObject::connect( smoothInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(smoothInterp);
 
@@ -831,7 +831,7 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     QAction* catmullRomInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCatmullrom,
                                                        kShortcutDescActionAnimationModuleCatmullrom, interpMenu);
     catmullRomInterp->setShortcut( QKeySequence(Qt::Key_R) );
-    constantInterp->setData((int)eKeyframeTypeCatmullRom);
+    catmullRomInterp->setData((int)eKeyframeTypeCatmullRom);
     QObject::connect( catmullRomInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(catmullRomInterp);
 
@@ -839,14 +839,14 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     QAction* cubicInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCubic,
                                                   kShortcutDescActionAnimationModuleCubic, interpMenu);
     cubicInterp->setShortcut( QKeySequence(Qt::Key_C) );
-    constantInterp->setData((int)eKeyframeTypeCubic);
+    cubicInterp->setData((int)eKeyframeTypeCubic);
     QObject::connect( cubicInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(cubicInterp);
 
     QAction* horizontalInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleHorizontal,
                                                        kShortcutDescActionAnimationModuleHorizontal, interpMenu);
     horizontalInterp->setShortcut( QKeySequence(Qt::Key_H) );
-    constantInterp->setData((int)eKeyframeTypeHorizontal);
+    horizontalInterp->setData((int)eKeyframeTypeHorizontal);
     QObject::connect( horizontalInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(horizontalInterp);
 
@@ -854,7 +854,7 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     QAction* breakDerivatives = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleBreak,
                                                        kShortcutDescActionAnimationModuleBreak, interpMenu);
     breakDerivatives->setShortcut( QKeySequence(Qt::Key_X) );
-    constantInterp->setData((int)eKeyframeTypeBroken);
+    breakDerivatives->setData((int)eKeyframeTypeBroken);
     QObject::connect( breakDerivatives, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(breakDerivatives);
 
