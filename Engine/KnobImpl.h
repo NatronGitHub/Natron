@@ -1178,7 +1178,7 @@ Knob<T>::copyKnob(const KnobIPtr& other,
                   const RangeD* range,
                   double offset)
 {
-    if (!other || other.get() == this) {
+    if (!other || (other.get() == this && dimension == otherDimension && view == otherView)) {
         // Cannot clone itself
         return false;
     }
@@ -1521,6 +1521,21 @@ Knob<T>::getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) 
     map = foundView->second;
 }
 
+template <typename T>
+void
+Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
+{
+    if (!visible) {
+        return;
+    }
+    int nDims = getNDimensions();
+    beginChanges();
+    for (int i = 1; i < nDims; ++i) {
+        copyKnob(shared_from_this(), view, DimIdx(i), view, DimIdx(0));
+    }
+    endChanges();
+
+}
 
 NATRON_NAMESPACE_EXIT;
 

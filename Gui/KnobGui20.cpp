@@ -856,4 +856,21 @@ KnobGui::onDimensionNameChanged(DimIdx dimension)
     }
 }
 
+void
+KnobGui::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view)
+{
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (!view.isAll() && it->first != view) {
+            continue;
+        }
+        if (it->second.widgets) {
+            it->second.widgets->setAllDimensionsVisible(knob->getAllDimensionsVisible(it->first));
+        }
+    }
+}
+
 NATRON_NAMESPACE_EXIT;

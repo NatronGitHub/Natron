@@ -215,7 +215,6 @@ void
 KnobGuiColor::connectKnobSignalSlots()
 {
     KnobColorPtr knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions(ViewSetSpec)), this, SLOT(onMustShowAllDimension(ViewSetSpec)) );
     QObject::connect( knob.get(), SIGNAL(pickingEnabled(ViewSetSpec,bool)), this, SLOT(onInternalKnobPickingEnabled(ViewSetSpec,bool)) );
 }
 
@@ -372,41 +371,35 @@ KnobGuiColor::updateExtraGui(const std::vector<double>& values)
 }
 
 void
-KnobGuiColor::onDimensionsFolded()
+KnobGuiColor::onDimensionsMadeVisible(bool visible)
 {
     KnobColorPtr knob = _knob.lock();
     int nDims = knob->getNDimensions();
 
-    for (int i = 0; i < nDims; ++i) {
-        SpinBox* sb = 0;
-        getSpinBox(DimIdx(i), &sb);
-        assert(sb);
-        sb->setUseLineColor(false, Qt::red);
-    }
-    knob->onDimensionSwitchToggled(getView(), false);
-}
-
-void
-KnobGuiColor::onDimensionsExpanded()
-{
     QColor colors[4];
-
     colors[0].setRgbF(0.851643, 0.196936, 0.196936);
     colors[1].setRgbF(0, 0.654707, 0);
     colors[2].setRgbF(0.345293, 0.345293, 1);
     colors[3].setRgbF(0.398979, 0.398979, 0.398979);
 
-    KnobColorPtr knob = _knob.lock();
-    int nDims = knob->getNDimensions();
+
+    if (!visible) {
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
-        Label* label = 0;
-        getSpinBox(DimIdx(i), &sb, &label);
+        getSpinBox(DimIdx(i), &sb);
         assert(sb);
-        sb->setUseLineColor(true, colors[i]);
+        if (!visible) {
+            sb->setUseLineColor(false, Qt::red);
+        } else {
+            sb->setUseLineColor(true, colors[i]);
+        }
     }
-    knob->onDimensionSwitchToggled(getView(), true);
+    } else {
+
+    }
+
 }
+
 
 void
 KnobGuiColor::setEnabledExtraGui(bool enabled)

@@ -730,19 +730,6 @@ AnimationModuleViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType,
     return ret;
 }
 
-static std::vector<CurveGuiPtr> animItemDimViewKeyframeMapToCurveList(const AnimItemDimViewKeyFramesMap& keys)
-{
-    std::vector<CurveGuiPtr> curves;
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        CurveGuiPtr guiCurve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (guiCurve) {
-            curves.push_back(guiCurve);
-        }
-    }
-    return curves;
-}
-
-
 std::vector<CurveGuiPtr>
 AnimationModuleViewPrivate::getVisibleCurves() const
 {

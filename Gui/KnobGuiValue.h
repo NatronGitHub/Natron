@@ -71,9 +71,10 @@ public:
     virtual ~KnobGuiValue() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
-
+    
     bool getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const;
+
+    virtual void setAllDimensionsVisible(bool visible) OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -129,9 +130,7 @@ protected:
 
     virtual void setEnabledExtraGui(bool /*enabled*/) {}
 
-    virtual void onDimensionsFolded() {}
-
-    virtual void onDimensionsExpanded() {}
+    virtual void onDimensionsMadeVisible(bool visible) { Q_UNUSED(visible); }
 
     virtual void updateExtraGui(const std::vector<double>& /*values*/)
     {
@@ -156,8 +155,6 @@ protected:
     double valueAccordingToType(bool normalize, DimIdx dimension, double value) WARN_UNUSED_RETURN;
 
 
-    void expandAllDimensions();
-    void foldAllDimensions();
 
     void sliderEditingEnd(double d);
 

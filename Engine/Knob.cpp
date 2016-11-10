@@ -226,24 +226,49 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
     if (nDims == 1) {
         *dimOut = DimSpec(0);
     }
-    if ( (*dimOut == 0) && nDims > 1 && !viewOut->isAll() && !getAllDimensionVisible(ViewIdx(*viewOut)) ) {
+    if ( (*dimOut == 0) && nDims > 1 && !viewOut->isAll() && !getAllDimensionsVisible(ViewIdx(*viewOut)) ) {
         *dimOut = DimSpec::all();
     }
-
-
-
-    
 }
 
 
 bool
-KnobHelper::getAllDimensionVisible(ViewIdx view) const
+KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
 {
-    if ( getKnobGuiPointer() ) {
-        return getKnobGuiPointer()->getAllDimensionsVisible(view);
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    QMutexLocker k(&_imp->stateMutex);
+    PerViewAllDimensionsVisible::const_iterator foundView = _imp->allDimensionsVisible.find(view_i);
+    if (foundView == _imp->allDimensionsVisible.end()) {
+        return true;
     }
+    return foundView->second;
+}
 
-    return true;
+void
+KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->allDimensionsVisible[view] = visible;
+    }
+    onAllDimensionsMadeVisible(view, visible);
+}
+
+void
+KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
+{
+    beginChanges();
+    if (view.isAll()) {
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            setAllDimensionsVisibleInternal(*it, visible);
+        }
+    } else {
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        setAllDimensionsVisibleInternal(view_i, visible);
+    }
+    endChanges();
+    _signalSlotHandler->s_dimensionsVisibilityChanged(view);
 }
 
 #ifdef DEBUG
@@ -441,6 +466,10 @@ KnobHelper::splitView(ViewIdx view)
             QMutexLocker k(&_imp->stateMutex);
             _imp->enabled[i][view] = _imp->enabled[i][ViewIdx(0)];
         }
+        {
+            QMutexLocker k(&_imp->stateMutex);
+            _imp->allDimensionsVisible[view] = _imp->allDimensionsVisible[ViewIdx(0)];
+        }
     }
 
     _signalSlotHandler->s_availableViewsChanged();
@@ -495,6 +524,13 @@ KnobHelper::unSplitView(ViewIdx view)
             PerViewEnabledMap::iterator foundView = _imp->enabled[i].find(view);
             if (foundView != _imp->enabled[i].end()) {
                 _imp->enabled[i].erase(foundView);
+            }
+        }
+        {
+            QMutexLocker k(&_imp->stateMutex);
+            PerViewAllDimensionsVisible::iterator foundView = _imp->allDimensionsVisible.find(view);
+            if (foundView != _imp->allDimensionsVisible.end()) {
+                _imp->allDimensionsVisible.erase(foundView);
             }
         }
     }

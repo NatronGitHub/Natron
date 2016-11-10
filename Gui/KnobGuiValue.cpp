@@ -533,12 +533,6 @@ KnobGuiValue::getSpinBox(DimIdx dim,
 }
 
 bool
-KnobGuiValue::getAllDimensionsVisible() const
-{
-    return !_imp->dimensionSwitchButton || _imp->dimensionSwitchButton->isChecked();
-}
-
-bool
 KnobGuiValue::getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const
 {
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
@@ -578,7 +572,7 @@ KnobGuiValue::onRectangleFormatButtonClicked()
 }
 
 void
-KnobGuiValue::onDimensionSwitchClicked(bool clicked)
+KnobGuiValue::setAllDimensionsVisible(bool visible)
 {
     if (!_imp->dimensionSwitchButton) {
         if (_imp->slider) {
@@ -587,93 +581,44 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 
         return;
     }
-    _imp->dimensionSwitchButton->setDown(clicked);
-    _imp->dimensionSwitchButton->setChecked(clicked);
-    if (clicked) {
-        expandAllDimensions();
+    _imp->dimensionSwitchButton->setDown(visible);
+    _imp->dimensionSwitchButton->setChecked(visible);
+
+    onDimensionsMadeVisible(visible);
+
+    if (visible) {
+        _imp->slider->hide();
+        for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
+            if (i > 0) {
+                _imp->spinBoxes[i].first->show();
+            }
+            if (_imp->spinBoxes[i].second) {
+                _imp->spinBoxes[i].second->show();
+            }
+        }
     } else {
-        foldAllDimensions();
+        _imp->slider->show();
 
-        KnobIPtr knob = _imp->getKnob();
-        KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
-        KnobIntBasePtr intKnob = _imp->getKnobAsInt();
-        const int nDims = knob->getNDimensions();
-        if (nDims > 1) {
-            SequenceTime time = knob->getCurrentTime();
-            double firstDimensionValue = _imp->spinBoxes[0].first->value();
-            if (getNormalizationPolicy(DimIdx(0)) != eValueIsNormalizedNone) {
-                firstDimensionValue = denormalize(DimIdx(0), time, firstDimensionValue);
+        for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
+            if (i > 0) {
+                _imp->spinBoxes[i].first->hide();
             }
-            ViewIdx view = getView();
-            knob->beginChanges();
-            for (int i = 1; i < nDims; ++i) {
-                double v = firstDimensionValue;
-                if (getNormalizationPolicy(DimIdx(i)) != eValueIsNormalizedNone) {
-                    v = normalize(DimIdx(i), time, v);
-                }
-                if (doubleKnob) {
-                    doubleKnob->setValue(v, view, DimIdx(i));
-                } else {
-                    assert(intKnob);
-                    intKnob->setValue(v, view, DimIdx(i));
-                }
+            if (_imp->spinBoxes[i].second) {
+                _imp->spinBoxes[i].second->hide();
             }
-            knob->endChanges();
         }
+
     }
-
-}
-
-
-
-void
-KnobGuiValue::expandAllDimensions()
-{
-    if (!_imp->dimensionSwitchButton) {
-        return;
-    }
-
-    if (!_imp->dimensionSwitchButton->isChecked()) {
-        _imp->dimensionSwitchButton->setChecked(true);
-        _imp->dimensionSwitchButton->setDown(true);
-    }
-    _imp->slider->hide();
-
-    for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (i > 0) {
-            _imp->spinBoxes[i].first->show();
-
-        }
-        if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->show();
-        }
-    }
-    onDimensionsExpanded();
 }
 
 void
-KnobGuiValue::foldAllDimensions()
+KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 {
-    if (!_imp->dimensionSwitchButton) {
-        return;
-    }
-
-    if (_imp->dimensionSwitchButton->isChecked()) {
-        _imp->dimensionSwitchButton->setChecked(false);
-        _imp->dimensionSwitchButton->setDown(false);
-    }
-    _imp->slider->show();
-
-    for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (i > 0) {
-            _imp->spinBoxes[i].first->hide();
-        }
-        if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->hide();
-        }
-    }
-    onDimensionsFolded();
+    getKnobGui()->getKnob()->setAllDimensionsVisible(getView(), clicked);
 }
+
+
+
 
 void
 KnobGuiValue::onMinMaxChanged(DimSpec dimension)
@@ -812,10 +757,16 @@ KnobGuiValue::updateGUI()
         }
     }
     if (_imp->dimensionSwitchButton) {
-        if (allValuesEqual) {
-            foldAllDimensions();
-        } else {
-            expandAllDimensions();
+        bool hasDimAnimated = false;
+        for (int i = 0; i < knobDim; ++i) {
+            hasDimAnimated = knob->isAnimated(DimIdx(i), getView());
+            if (hasDimAnimated) {
+                break;
+            }
+        }
+        // If not animated, automatically fold/unfold dimensions
+        if (!hasDimAnimated) {
+            knob->setAllDimensionsVisible(getView(), !allValuesEqual);
         }
     }
     // If spinbox values did not change, just don't do anything

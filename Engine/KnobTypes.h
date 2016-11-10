@@ -937,13 +937,6 @@ public:
 
     static const std::string & typeNameStatic();
 
-    bool areAllDimensionsEnabled(ViewGetSpec view) const;
-
-    void activateAllDimensions(ViewSetSpec view)
-    {
-        Q_EMIT mustActivateAllDimensions(view);
-    }
-
     void setPickingEnabled(ViewSetSpec view, bool enabled)
     {
         Q_EMIT pickingEnabled(view, enabled);
@@ -965,9 +958,6 @@ public:
         return true;
     }
 
-public Q_SLOTS:
-
-    void onDimensionSwitchToggled(ViewSetSpec view, bool b);
 
 Q_SIGNALS:
 
@@ -977,8 +967,6 @@ Q_SIGNALS:
 
     void displayMinMaxChanged(double mini, double maxi, int index = 0);
 
-    void mustActivateAllDimensions(ViewSetSpec view);
-
 private:
 
 
@@ -986,7 +974,6 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
-    std::map<ViewIdx, bool> _allDimensionsEnabled;
     bool _simplifiedMode;
     static const std::string _typeNameStr;
 };

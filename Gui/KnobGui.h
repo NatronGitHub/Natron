@@ -211,7 +211,6 @@ public:
     virtual void copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
     virtual void copyValuesToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
     virtual void copyLinkToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
-    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL;
 
     bool getAllViewsVisible() const;
 
@@ -254,6 +253,8 @@ public Q_SLOTS:
     void onUnlinkActionTriggered();
 
     void onDimensionNameChanged(DimIdx dimension);
+
+    void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
     void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            const std::list<double>& keysRemoved,

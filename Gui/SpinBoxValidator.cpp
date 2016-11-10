@@ -84,17 +84,9 @@ NumericKnobValidator::validateInput(const QString& userText,
                                     double* valueToDisplay) const
 {
     DimSpec dimension;
-    bool allDimsVisible = true;
+    KnobGuiWidgetsPtr knobWidgets = _imp->knobGui.lock();
+    bool allDimsVisible = knobWidgets->getKnobGui()->getKnob()->getAllDimensionsVisible(_imp->view);
 
-    if (_imp->isDoubleGui) {
-        allDimsVisible = _imp->isDoubleGui->getAllDimensionsVisible();
-    } else if (_imp->isIntGui) {
-        allDimsVisible = _imp->isIntGui->getAllDimensionsVisible();
-    } else if (_imp->isColorGui) {
-        allDimsVisible = _imp->isColorGui->getAllDimensionsVisible();
-    } else {
-        assert(0);
-    }
     if (!allDimsVisible) {
         dimension = DimSpec::all();
     } else {
@@ -109,7 +101,6 @@ NumericKnobValidator::validateInput(const QString& userText,
         simplifiedUserText.remove(0, 1);
     }
     std::string expr = simplifiedUserText.toStdString();
-    KnobGuiWidgetsPtr knobWidgets = _imp->knobGui.lock();
     if (!expr.empty() && knobWidgets) {
         KnobIPtr internalKnob = knobWidgets->getKnobGui()->getKnob();
         try {

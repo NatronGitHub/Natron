@@ -170,8 +170,7 @@ private:
 
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
-    virtual void onDimensionsFolded() OVERRIDE FINAL;
-    virtual void onDimensionsExpanded() OVERRIDE FINAL;
+    virtual void onDimensionsMadeVisible(bool visible) OVERRIDE FINAL;
 
 private:
 

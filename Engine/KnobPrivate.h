@@ -98,6 +98,10 @@ typedef std::vector<PerViewHasModificationMap> PerDimensionModificationMap;
 typedef std::map<ViewIdx, bool> PerViewEnabledMap;
 typedef std::vector<PerViewEnabledMap> PerDimensionEnabledMap;
 
+
+typedef std::map<ViewIdx, bool> PerViewAllDimensionsVisible;
+
+
 struct KnobHelperPrivate
 {
     // Ptr to the public class, can not be a smart ptr
@@ -187,6 +191,10 @@ struct KnobHelperPrivate
 
     // The number of dimensions in this knob (e.g: an RGBA KnobColor is 4-dimensional)
     int dimension;
+
+    // For each view, a boolean indicating whether all dimensions are controled at once
+    // protected by stateMutex
+    PerViewAllDimensionsVisible allDimensionsVisible;
 
     // Protect curves
     mutable QMutex curvesMutex;
@@ -304,6 +312,7 @@ struct KnobHelperPrivate
     , hintIsMarkdown(false)
     , isAnimationEnabled(true)
     , dimension(nDims)
+    , allDimensionsVisible()
     , curves()
     , mastersMutex()
     , masters()
@@ -344,6 +353,7 @@ struct KnobHelperPrivate
         expressions.resize(dimension);
         dimensionNames.resize(dimension);
         hasModifications.resize(dimension);
+        allDimensionsVisible[ViewIdx(0)] = true;
         for (int i = 0; i < nDims; ++i) {
             enabled[i][ViewIdx(0)] = true;
             curves[i][ViewIdx(0)] = CurvePtr();

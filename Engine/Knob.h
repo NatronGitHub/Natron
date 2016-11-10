@@ -189,7 +189,10 @@ public:
         Q_EMIT availableViewsChanged();
     }
 
-
+    void s_dimensionsVisibilityChanged(ViewSetSpec view)
+    {
+        Q_EMIT dimensionsVisibilityChanged(view);
+    }
 Q_SIGNALS:
 
     // Called whenever the evaluateOnChange property changed
@@ -254,6 +257,9 @@ Q_SIGNALS:
 
     // Called when knob split/unsplit views
     void availableViewsChanged();
+
+    // Called when all dimensions are folded/unfolded
+    void dimensionsVisibilityChanged(ViewSetSpec views);
 };
 
 struct KnobChange
@@ -367,7 +373,16 @@ public:
     virtual void populate() = 0;
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) = 0;
     virtual KnobGuiIPtr getKnobGuiPointer() const = 0;
-    virtual bool getAllDimensionVisible(ViewIdx view) const = 0;
+
+    /**
+     * @brief Return whether all dimensions are folded or not, when folded all dimensions have the same value/animation
+     **/
+    virtual bool getAllDimensionsVisible(ViewGetSpec view) const = 0;
+
+    /**
+     * @brief Set whether all dimensions are folded or not, when folded all dimensions have the same value/animation
+     **/
+    virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible) = 0;
 
     /**
      * @brief Given the dimension and view in input, if the knob has all its dimensions folded or is not multi-view,
@@ -1344,7 +1359,17 @@ public:
 
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getAllDimensionVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getAllDimensionsVisible(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
+private:
+    void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);
+
+protected:
+
+    virtual void onAllDimensionsMadeVisible(ViewIdx view, bool visible) = 0;
+
+public:
+
     virtual void convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const OVERRIDE FINAL;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
@@ -2170,6 +2195,8 @@ protected:
 
 
 private:
+
+    virtual void onAllDimensionsMadeVisible(ViewIdx view, bool visible) OVERRIDE FINAL;
 
     void setValueOnCurveInternal(double time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
 

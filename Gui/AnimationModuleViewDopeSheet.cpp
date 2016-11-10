@@ -99,6 +99,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 bool
 AnimationModuleViewPrivate::setDopeSheetCursor(const QPoint& eventPos)
 {
+    if (!treeView) {
+        return false;
+    }
 
     if ( isNearbySelectedKeyFramesCrossWidget(dopeSheetZoomContext, dopeSheetSelectedKeysBRect, eventPos) ) {
         _publicInterface->setCursor(Qt::OpenHandCursor);

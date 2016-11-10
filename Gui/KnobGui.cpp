@@ -127,7 +127,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(dimensionNameChanged(DimIdx)), this, SLOT(onDimensionNameChanged(DimIdx)) );
         QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
         QObject::connect( handler, SIGNAL(availableViewsChanged()), this, SLOT(onInternalKnobAvailableViewsChanged()) );
-
+        QObject::connect( handler, SIGNAL(dimensionsVisibilityChanged(ViewSetSpec)), this, SLOT(onInternalKnobDimensionsVisibilityChanged(ViewSetSpec)) );
     }
     KnobHolderPtr holder = knob->getHolder();
     AppInstancePtr app;
@@ -843,15 +843,6 @@ KnobGui::getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimS
     *view = ViewSetSpec(it->toInt());
 }
 
-bool
-KnobGui::getAllDimensionsVisible(ViewIdx view) const
-{
-    KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
-    if (foundView == _imp->views.end()) {
-        return false;
-    }
-    return foundView->second.widgets ? foundView->second.widgets->getAllDimensionsVisible() : false;
-}
 
 bool
 KnobGui::getAllViewsVisible() const

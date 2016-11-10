@@ -150,6 +150,7 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(enabledChanged()), this, SLOT(emit_s_refreshKnobVisibilityLater()) );
     QObject::connect( this, SIGNAL(s_refreshKnobVisibilityLater()), this, SLOT(onDoRefreshKnobVisibilityLaterTriggered()), Qt::QueuedConnection);
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(availableViewsChanged()), this, SLOT(onKnobAvailableViewsChanged()));
+    QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(dimensionsVisibilityChanged(ViewSetSpec)), this, SLOT(onInternalKnobDimensionsVisibilityChanged(ViewSetSpec)));
 
 }
 
@@ -186,7 +187,6 @@ KnobAnim::initialize()
         _imp->createItemForView(projectViews, views, *it);
     }
 
-    assert(_imp->dimViewItems.size() == nDims * views.size());
 } // initialize
 
 void
@@ -217,7 +217,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
     }
 
     // Now create an item per dimension if the knob is multi-dimensional
-    if (nDims > 1) {
+    if (nDims > 1 && internalKnob->getAllDimensionsVisible(view)) {
         for (int i = 0; i < nDims; ++i) {
             QString dimName = QString::fromUtf8( internalKnob->getDimensionName(DimIdx(i)).c_str() );
             QTreeWidgetItem *dimItem = createKnobNameItem(thisShared,
@@ -251,7 +251,7 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
 } // createItemForView
 
 void
-KnobAnim::onKnobAvailableViewsChanged()
+KnobAnim::destroyAndRecreate()
 {
     delete _imp->rootItem;
     _imp->dimViewItems.clear();
@@ -262,8 +262,19 @@ KnobAnim::onKnobAvailableViewsChanged()
     refreshKnobVisibilityNow();
 
     getModel()->refreshSelectionBboxAndUpdateView();
-} // onKnobAvailableViewsChanged
+}
 
+void
+KnobAnim::onKnobAvailableViewsChanged()
+{
+    destroyAndRecreate();
+}
+
+void
+KnobAnim::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec /*view*/)
+{
+    destroyAndRecreate();
+}
 
 void
 KnobAnim::refreshViewLabels(const std::vector<std::string>& projectViewNames)

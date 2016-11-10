@@ -1187,38 +1187,12 @@ KnobColor::KnobColor(const KnobHolderPtr& holder,
                      int dimension,
                      bool declaredByPlugin)
     : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _allDimensionsEnabled()
     , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
 }
 
-void
-KnobColor::onDimensionSwitchToggled(ViewSetSpec view, bool b)
-{
-    if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!= views.end(); ++it) {
-            _allDimensionsEnabled[*it] = b;
-        }
-    } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-        _allDimensionsEnabled[view_i] = b;
-    }
-
-}
-
-bool
-KnobColor::areAllDimensionsEnabled(ViewGetSpec view) const
-{
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-    std::map<ViewIdx, bool>::const_iterator found = _allDimensionsEnabled.find(view_i);
-    if (found == _allDimensionsEnabled.end()) {
-        return false;
-    }
-    return found->second;
-}
 
 bool
 KnobColor::canAnimate() const

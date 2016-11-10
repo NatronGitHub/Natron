@@ -108,14 +108,6 @@ public:
     virtual void setDirty(bool dirty) = 0;
 
     /**
-     * @brief Implement to return whether all dimensions of the knob are visible or folded
-     **/
-    virtual bool getAllDimensionsVisible() const
-    {
-        return true;
-    }
-
-    /**
      * @brief Returns whether to create a label or not. If not, the label will never be shown
      **/
     virtual bool mustCreateLabelWidget() const
@@ -184,6 +176,11 @@ public:
      * @brief Can be implemented to set the tooltip
      **/
     virtual void updateToolTip() {}
+
+    /**
+     * @brief If this parameter is multi-dimensional, implement it to reflect the fact that all dimensions are folded/unfolded
+     **/
+    virtual void setAllDimensionsVisible(bool /*visible*/) {}
 
     /**
      * @brief Can be implemented to set the sub dimension label

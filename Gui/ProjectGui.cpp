@@ -466,8 +466,8 @@ ProjectGui::setPickersColor(ViewIdx view,
 
 
     for (PickerKnobSet::iterator it = _colorPickersEnabled.begin(); it != _colorPickersEnabled.end(); ++it) {
-        if ( !it->knob->areAllDimensionsEnabled(view) ) {
-            it->knob->activateAllDimensions(view);
+        if ( !it->knob->getAllDimensionsVisible(view) ) {
+            it->knob->setAllDimensionsVisible(view, true);
         }
         if (it->knob->getNDimensions() == 3) {
             std::vector<double> values(3);
