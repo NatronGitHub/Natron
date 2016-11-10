@@ -1232,7 +1232,7 @@ public:
 
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 
-    void computeFrameRangeForReader(const KnobIPtr& fileKnob);
+    void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
 
     bool canHandleRenderScaleForOverlays() const;

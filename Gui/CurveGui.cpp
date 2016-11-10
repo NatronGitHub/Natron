@@ -728,7 +728,7 @@ CurveGui::drawCurve(int curveIndex,
                 GL_GPU::glEnd();
 
                 // If only one keyframe is selected, also draw the coordinates
-                if (foundThisCurveSelectedKeys->size() == 1) {
+                if (selectedKeys.size() == 1 && foundThisCurveSelectedKeys && foundThisCurveSelectedKeys->size() == 1) {
                     double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor( (key.getLeftDerivative() * rounding) + 0.5 ) / rounding);
                     QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor( (key.getRightDerivative() * rounding) + 0.5 ) / rounding);

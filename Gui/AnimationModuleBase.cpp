@@ -291,6 +291,8 @@ AnimationModuleBase::slipReader(const NodeAnimPtr &reader,
     dt = std::min( dt, (double)(currentFirstFrame - originalFirstFrame) );
     dt = std::max( dt, (double)(currentLastFrame - originalLastFrame) );
 
+    
+
     if (dt != 0) {
 
         if (_imp->gui) {

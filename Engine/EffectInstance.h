@@ -115,6 +115,8 @@
 #define PLUGINID_NATRON_STUB       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Stub")
 
 #define kReaderParamNameOriginalFrameRange "originalFrameRange"
+#define kReaderParamNameFirstFrame "firstFrame"
+#define kReaderParamNameLastFrame "lastFrame"
 
 NATRON_NAMESPACE_ENTER;
 

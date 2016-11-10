@@ -635,7 +635,7 @@ AnimationModuleView::centerOnAllItems()
                 ret.x2 = frameRange.max;
             } else {
                 ret.x1 = std::min(ret.x1, frameRange.min);
-                ret.x2 = std::min(ret.x2, frameRange.max);
+                ret.x2 = std::max(ret.x2, frameRange.max);
             }
         }
     }
@@ -649,14 +649,17 @@ AnimationModuleView::centerOnAllItems()
                 ret.x2 = frameRange.max;
             } else {
                 ret.x1 = std::min(ret.x1, frameRange.min);
-                ret.x2 = std::min(ret.x2, frameRange.max);
+                ret.x2 = std::max(ret.x2, frameRange.max);
             }
         }
     }
 
-    if (!ret.isNull()) {
+    if (ret.y2 > ret.y1) {
         centerOn(ret.x1, ret.x2, ret.y1, ret.y2);
+    } else {
+        centerOn(ret.x1, ret.x2);
     }
+
 }
 
 void
@@ -685,10 +688,14 @@ AnimationModuleView::centerOn(double xmin,
         QMutexLocker k(&_imp->zoomCtxMutex);
 
         if ( (_imp->dopeSheetZoomContext.screenWidth() > 0) && (_imp->dopeSheetZoomContext.screenHeight() > 0) ) {
-            _imp->dopeSheetZoomContext.fill(xmin, xmax, ymin, ymax);
+            if (xmax > xmin) {
+                _imp->dopeSheetZoomContext.fill(xmin, xmax, _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top() );
+            }
         }
         if ( (_imp->curveEditorZoomContext.screenWidth() > 0) && (_imp->curveEditorZoomContext.screenHeight() > 0) ) {
-            _imp->curveEditorZoomContext.fill(xmin, xmax, ymin, ymax);
+            if (xmax > xmin && ymax > ymin) {
+                _imp->curveEditorZoomContext.fill(xmin, xmax, ymin, ymax);
+            }
         }
         _imp->zoomOrPannedSinceLastFit = false;
     }
@@ -700,7 +707,9 @@ AnimationModuleView::centerOn(double xmin,  double xmax)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    if (xmax <= xmin) {
+        return;
+    }
     {
         QMutexLocker k(&_imp->zoomCtxMutex);
         if ( (_imp->dopeSheetZoomContext.screenWidth() > 0) && (_imp->dopeSheetZoomContext.screenHeight() > 0) ) {
@@ -1113,10 +1122,13 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
             break;
         }
         case eEventStateReaderSlip: {
-            QPointF newClick_opengl, oldClick_opengl;
-            newClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( e->x(), e->y() );
-            oldClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( _imp->lastMousePos.x(), _imp->lastMousePos.y() );
-            double dt = newClick_opengl.x() - oldClick_opengl.x();
+            QPointF newClick_opengl = _imp->dopeSheetZoomContext.toZoomCoordinates( e->x(), e->y() );
+            QPointF dragStartPointOpenGL = _imp->dopeSheetZoomContext.toZoomCoordinates( _imp->dragStartPoint.x(), _imp->dragStartPoint.y() );
+
+            double deltaSinceDragStart = std::floor(newClick_opengl.x() - dragStartPointOpenGL.x() + 0.5);
+            double dt = deltaSinceDragStart - _imp->keyDragLastMovement.x();
+            // And update _keyDragLastMovement
+            _imp->keyDragLastMovement.rx() = deltaSinceDragStart;
             model->slipReader(_imp->currentEditedReader, dt);
             e->accept();
             update();

@@ -1552,6 +1552,9 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
                             ViewSetSpec /*view*/,
                             bool /*originatedFromMainThread*/)
 {
+    if (reason == eValueChangedReasonRestoreDefault) {
+        return false;
+    }
     bool ret = true;
 
     if ( knob == _imp->viewsList ) {

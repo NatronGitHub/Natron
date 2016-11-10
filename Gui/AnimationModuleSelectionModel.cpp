@@ -498,7 +498,7 @@ AnimationModuleSelectionModel::hasSingleKeyFrameTimeSelected(double* time) const
     }
 
     for (AnimItemDimViewKeyFramesMap::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
-        if (itemSet) {
+        if (!itemSet) {
             itemSet = it->first.item;
         } else {
             if (it->first.item != itemSet) {

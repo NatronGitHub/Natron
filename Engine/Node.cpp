@@ -458,7 +458,7 @@ Node::load(const CreateNodeArgsPtr& args)
     // Setup default-metadata
     _imp->effect->setDefaultMetadata();
 
-    // For OpenFX we crate the image effect now
+    // For OpenFX we create the image effect now
     _imp->effect->createInstanceAction();
 
     // For readers, set their original frame range when creating them
@@ -1701,7 +1701,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
     if (filenameParam) {
-        computeFrameRangeForReader(filenameParam);
+        computeFrameRangeForReader(filenameParam, false);
     }
 
     // now restore the roto context if the node has a roto context
@@ -7639,7 +7639,7 @@ void
 Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
 {
     if ( _imp->effect->isReader() ) {
-        computeFrameRangeForReader(fileKnob);
+        computeFrameRangeForReader(fileKnob, true);
 
         ///Refresh the preview automatically if the filename changed
 
@@ -7718,7 +7718,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
 }
 
 void
-Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
+Node::computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange)
 {
     /*
        We compute the original frame range of the sequence for the plug-in
@@ -7741,10 +7741,11 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
-    KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
-    if (knob) {
-        KnobIntPtr originalFrameRange = toKnobInt(knob);
-        if ( originalFrameRange && (originalFrameRange->getNDimensions() == 2) ) {
+    KnobIntPtr originalFrameRangeKnob = toKnobInt(getKnobByName(kReaderParamNameOriginalFrameRange));
+    KnobIntPtr firstFrameKnob = toKnobInt(getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(getKnobByName(kReaderParamNameLastFrame));
+    if (originalFrameRangeKnob) {
+        if (originalFrameRangeKnob->getNDimensions() == 2){
             KnobFilePtr isFile = toKnobFile(fileKnob);
             assert(isFile);
             if (!isFile) {
@@ -7756,7 +7757,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::vector<int> frameRange(2);
                 frameRange[0] = INT_MIN;
                 frameRange[1] = INT_MAX;
-                originalFrameRange->setValueAcrossDimensions(frameRange);
+                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -7772,8 +7773,18 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                 std::vector<int> frameRange(2);
                 frameRange[0] = leftBound;
                 frameRange[1] = rightBound;
-                originalFrameRange->setValueAcrossDimensions(frameRange);
+                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
             }
+        }
+    }
+    if (setFrameRange) {
+        if (firstFrameKnob) {
+            firstFrameKnob->setValue(leftBound);
+            firstFrameKnob->setRange(leftBound, rightBound);
+        }
+        if (lastFrameKnob) {
+            lastFrameKnob->setValue(rightBound);
+            lastFrameKnob->setRange(leftBound, rightBound);
         }
     }
 }
@@ -8221,6 +8232,8 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
     QString value = QString::fromUtf8( availableViewsKnob->getValue().c_str() );
     QStringList views = value.split( QLatin1Char(',') );
 
+    bool isSingleView = views.size() == 1 && views.front().compare(QString::fromUtf8("Main"), Qt::CaseInsensitive) == 0;
+
     _imp->createdViews.clear();
 
     const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
@@ -8230,11 +8243,13 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
     }
 
     QStringList missingViews;
-    for (QStringList::Iterator it = views.begin(); it != views.end(); ++it) {
-        if ( !qProjectViews.contains(*it, Qt::CaseInsensitive) && !it->isEmpty() ) {
-            missingViews.push_back(*it);
+    if (!isSingleView) {
+        for (QStringList::Iterator it = views.begin(); it != views.end(); ++it) {
+            if ( !qProjectViews.contains(*it, Qt::CaseInsensitive) && !it->isEmpty() ) {
+                missingViews.push_back(*it);
+            }
+            _imp->createdViews.push_back( it->toStdString() );
         }
-        _imp->createdViews.push_back( it->toStdString() );
     }
 
     if ( !missingViews.isEmpty() ) {

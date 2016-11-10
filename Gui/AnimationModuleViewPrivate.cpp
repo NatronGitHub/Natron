@@ -917,8 +917,6 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
         }
         if (curve->areKeyFramesTimeClampedToIntegers()) {
             clampXToIntegers = true;
-            // Round to the nearest integer the keyframes total motion (in X only)
-            deltaSinceDragStart.rx() = std::floor(deltaSinceDragStart.x() + 0.5);
         }
         if (!curve->isYComponentMovable()) {
             canMoveY = false;
@@ -929,7 +927,6 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
             deltaSinceDragStart.ry() = std::max( 0., std::min(std::floor(deltaSinceDragStart.y() + 0.5), 1.) );
         } else if ( curve->areKeyFramesValuesClampedToIntegers() ) {
             clampYToIntegers = true;
-            deltaSinceDragStart.ry() = std::floor(deltaSinceDragStart.y() + 0.5);
         }
     }
 
@@ -941,6 +938,14 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
                 break;
             }
         }
+    }
+
+    if (clampXToIntegers) {
+        // Round to the nearest integer the keyframes total motion (in X only)
+        deltaSinceDragStart.rx() = std::floor(deltaSinceDragStart.x() + 0.5);
+    }
+    if (clampYToIntegers) {
+        deltaSinceDragStart.ry() = std::floor(deltaSinceDragStart.y() + 0.5);
     }
 
     // Dopesheet can only move X

@@ -1197,10 +1197,18 @@ AnimationModuleViewPrivate::drawDopeSheetView()
     }
 
     if ( !dopeSheetSelectedKeysBRect.isNull()) {
-        drawSelectedKeyFramesBbox(false);
+        AnimationModuleBasePtr model = _model.lock();
+        AnimationModuleSelectionModelPtr selectionModel = model->getSelectionModel();
+        bool drawBbox = false;
+        if (selectionModel->getSelectedKeyframesCount() > 1) {
+            drawBbox = true;
+        } else {
+            drawBbox = !selectionModel->getCurrentTableItemsSelection().empty() || !selectionModel->getCurrentNodesSelection().empty();
+        }
+        if (drawBbox) {
+            drawSelectedKeyFramesBbox(false);
+        }
     }
-
-
 }
 
 bool
