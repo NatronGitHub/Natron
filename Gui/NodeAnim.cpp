@@ -477,14 +477,15 @@ NodeAnim::refreshVisibility()
             }
         }
     }
-    
+
+    refreshFrameRange();
+
     refreshKnobsVisibility();
 
     nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
 
     nodeItem->setHidden(!showNode);
 
-    refreshFrameRange();
 
 } // refreshVisibility
 

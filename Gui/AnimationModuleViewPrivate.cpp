@@ -374,10 +374,11 @@ AnimationModuleViewPrivate::drawSelectionRect() const
 }
 
 void
-AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect) const
+AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect, bool drawDimed) const
 {
 
-    GL_GPU::glColor4f(1, 1, 1, 1);
+    double alpha = drawDimed ? 0.5 : 1.;
+    GL_GPU::glColor4f(1, 1, 1, alpha);
 
     GL_GPU::glEnable(GL_TEXTURE_2D);
     GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
@@ -397,6 +398,7 @@ AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::Key
 
     GL_GPU::glDisable(GL_TEXTURE_2D);
     glCheckErrorIgnoreOSXBug(GL_GPU);
+    GL_GPU::glColor4f(1, 1, 1, 1);
 
 }
 
@@ -902,8 +904,9 @@ void
 AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPos,  const QPointF & newCanonicalPos)
 {
 
-
-    const AnimItemDimViewKeyFramesMap& keys = _model.lock()->getSelectionModel()->getCurrentKeyFramesSelection();
+    AnimationModuleBasePtr model = _model.lock();
+    const AnimItemDimViewKeyFramesMap& keys = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
 
     // Animation curves can only be moved on integer X values, hence clamp the motion
     bool clampXToIntegers = false;
@@ -940,6 +943,16 @@ AnimationModuleViewPrivate::moveSelectedKeyFrames(const QPointF & oldCanonicalPo
         } else if ( curve->areKeyFramesValuesClampedToIntegers() ) {
             clampYToIntegers = true;
             deltaSinceDragStart.ry() = std::floor(deltaSinceDragStart.y() + 0.5);
+        }
+    }
+
+    if (!clampXToIntegers) {
+        // Check if there's a node that needs clamping to integers aswell
+        for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+            if ((*it)->isRangeDrawingEnabled()) {
+                clampXToIntegers = true;
+                break;
+            }
         }
     }
 

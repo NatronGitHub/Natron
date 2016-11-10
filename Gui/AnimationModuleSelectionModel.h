@@ -64,7 +64,7 @@ public:
     /**
      * @brief Select all items keyframes
      **/
-    void selectAllKeyframes();
+    void selectAllVisibleCurvesKeyFrames();
 
     /**
      * @brief Return all items in the model.

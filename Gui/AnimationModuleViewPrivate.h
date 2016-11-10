@@ -144,7 +144,7 @@ public:
         return 14;
     }
 
-    void drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect) const;
+    void drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect, bool drawDimed) const;
 
     void drawKeyFrameTime(const ZoomContext& ctx,  double time, const QColor& textColor, const RectD& rect) const;
 
@@ -174,7 +174,7 @@ public:
     void drawDopeSheetNodeRowSeparation(const NodeAnimPtr NodeAnim) const;
 
     void drawDopeSheetRange(const NodeAnimPtr &NodeAnim) const;
-    void drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view) const;
+    void drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, bool drawdimed) const;
 
     void generateKeyframeTextures();
 

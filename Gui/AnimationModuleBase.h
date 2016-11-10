@@ -115,6 +115,18 @@ public:
      * @brief Return a pointer to the selection model
      **/
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const = 0;
+
+
+    /**
+     * @brief Should determine whether the curve should be drawn for the given item or not
+     **/
+    virtual bool isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const = 0;
+
+    /**
+     * @brief Return true if at least of of the curves in the given dimension/view is visible
+     **/
+    bool isCurveVisible(const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const;
+
 };
 
 struct AnimationModuleBasePrivate;
@@ -147,11 +159,6 @@ public:
      * @brief Returns the number of columns used by the tree representing the items
      **/
     virtual int getTreeColumnsCount() const = 0;
-
-    /**
-     * @brief Should determine whether the curve should be drawn for the given item or not
-     **/
-    virtual bool isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const = 0;
 
     /**
      * @brief Return a pointer to the view

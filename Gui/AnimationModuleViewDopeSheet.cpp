@@ -534,7 +534,9 @@ AnimationModuleViewPrivate::drawDopeSheetAnimItemRow(QTreeWidgetItem* treeItem, 
     GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
     GL_GPU::glEnd();
 
-    drawDopeSheetKeyframes(treeItem, item, dimension, view);
+    AnimationModuleBasePtr model = _model.lock();
+    bool drawdimed = !model->isCurveVisible(item, dimension, view);
+    drawDopeSheetKeyframes(treeItem, item, dimension, view, drawdimed);
 }
 
 
@@ -678,7 +680,7 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
 
 
 void
-AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view) const
+AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, bool drawdimed) const
 {
 
     QColor selectionColor;
@@ -722,7 +724,7 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
         }
 
         if (texType != AnimationModuleViewPrivate::kfTextureNone) {
-            drawTexturedKeyframe(texType, zoomKfRect);
+            drawTexturedKeyframe(texType, zoomKfRect, drawdimed);
             if (hasSingleKfTimeSelected && isKeyFrameSelected) {
                 // Also draw time if single key selected
                 drawKeyFrameTime(dopeSheetZoomContext, keyTime, selectionColor, zoomKfRect);

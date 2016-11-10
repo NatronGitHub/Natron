@@ -156,6 +156,18 @@ public:
 
     AnimItemDimViewIndexID getCurrentlySelectedKeyFrame() const;
 
+    /**
+     * @brief Set all tree items in the model to the given visibility except for the item passed
+     * in argument.
+     **/
+    void setOtherItemsVisibility(QTreeWidgetItem* item, bool visibile);
+
+    /**
+     * @brief Same as  setOtherItemsVisibility except that the visibility of other items
+     * is computed from the first item different than the given item.
+     **/
+    void setOtherItemsVisibilityAuto(QTreeWidgetItem* item);
+
 public Q_SLOTS:
 
     void onExprLineEditFinished();

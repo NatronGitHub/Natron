@@ -396,4 +396,43 @@ AnimationModuleBase::getItemVisibilityIcon(bool visible)
     return QIcon(pix);
 }
 
+bool
+AnimationModuleSelectionProvider::isCurveVisible(const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const
+{
+    if (dimension.isAll()) {
+        int nDims = item->getNDimensions();
+        if (view.isAll()) {
+            std::list<ViewIdx> views = item->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                for (int i = 0; i < nDims; ++i) {
+                    if (isCurveVisible(item, DimIdx(i), *it)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } else {
+            for (int i = 0; i < nDims; ++i) {
+                if (isCurveVisible(item, DimIdx(i), ViewIdx(view))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    } else {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = item->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                if (isCurveVisible(item, DimIdx(dimension), *it)) {
+                    return true;
+                }
+            }
+            return false;
+
+        } else {
+            return isCurveVisible(item, DimIdx(dimension), ViewIdx(view));
+        }
+    }
+}
+
 NATRON_NAMESPACE_EXIT;

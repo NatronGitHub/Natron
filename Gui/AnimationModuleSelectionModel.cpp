@@ -293,18 +293,23 @@ AnimationModuleSelectionModel::selectAll()
 }
 
 void
-AnimationModuleSelectionModel::selectAllKeyframes()
+AnimationModuleSelectionModel::selectAllVisibleCurvesKeyFrames()
 {
-    AnimItemDimViewKeyFramesMap selectedKeys = getCurrentKeyFramesSelection();
+    AnimItemDimViewKeyFramesMap selectedKeys;
     std::vector<NodeAnimPtr > selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
 
-    for (AnimItemDimViewKeyFramesMap::iterator it = selectedKeys.begin(); it != selectedKeys.end(); ++it) {
-        KeyFrameWithStringSet keys;
-        it->first.item->getKeyframes(it->first.dim, it->first.view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
-        it->second = keys;
-    }
+    AnimationModuleSelectionProviderPtr model = getModel();
 
+
+    AnimItemDimViewKeyFramesMap allKeys;
+    getAllItems(false, &allKeys, &selectedNodes, &selectedTableItems);
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = allKeys.begin(); it != allKeys.end(); ++it) {
+        if (model->isCurveVisible(it->first.item, it->first.dim, it->first.view)) {
+            KeyFrameWithStringSet& keys = selectedKeys[it->first];
+            it->first.item->getKeyframes(it->first.dim, it->first.view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
+        }
+    }
     makeSelection( selectedKeys, selectedTableItems, selectedNodes, (AnimationModuleSelectionModel::SelectionTypeAdd |
                                                                           AnimationModuleSelectionModel::SelectionTypeClear |
                                                                           AnimationModuleSelectionModel::SelectionTypeRecurse) );

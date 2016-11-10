@@ -30,6 +30,7 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QSplitter>
+#include <QApplication>
 #include <QKeyEvent>
 
 #include "Serialization/WorkspaceSerialization.h"
@@ -479,7 +480,9 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
              _imp->view, SLOT(onAnimationTreeViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
     connect( _imp->treeView, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onTreeItemClicked(QTreeWidgetItem*,int)));
+    
     onSelectionModelSelectionChanged(false);
+    refreshKeyFrameWidgetsEnabledNess();
 
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
 }
@@ -838,7 +841,11 @@ AnimationModuleEditor::onPasteClipBoardKeyFramesAbsoluteActionTriggered()
 void
 AnimationModuleEditor::onSelectAllKeyFramesActionTriggered()
 {
-    _imp->model->getSelectionModel()->selectAll();
+
+    // select keyframes of visible curves only
+    _imp->model->getSelectionModel()->selectAllVisibleCurvesKeyFrames();
+
+
 }
 
 void
@@ -1085,13 +1092,106 @@ AnimationModuleEditor::onKeyframeValueSpinBoxValueChanged(double value)
     _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), 0, dv));
 }
 
+static void setItemVisibilityInternal(QTreeWidgetItem* item, bool visible)
+{
+    item->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, visible);
+    item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModuleBase::getItemVisibilityIcon(visible));
+}
+
+static void invertItemVisibility(QTreeWidgetItem* item)
+{
+    bool isItemVisible = item->data(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
+    setItemVisibilityInternal(item, !isItemVisible);
+}
+
+static bool setItemVisibilityRecursive(QTreeWidgetItem* item, bool visible, QTreeWidgetItem* itemToIgnore)
+{
+    if (itemToIgnore == item) {
+        return true;
+    }
+
+    bool foundItemToIgnoreInChildren = false;
+    int nChildren = item->childCount();
+    for (int i = 0; i < nChildren; ++i) {
+        QTreeWidgetItem* child = item->child(i);
+        if (child) {
+            foundItemToIgnoreInChildren |= setItemVisibilityRecursive(child, visible, itemToIgnore);
+        }
+    }
+
+    if (!foundItemToIgnoreInChildren) {
+        setItemVisibilityInternal(item, visible);
+    }
+    return foundItemToIgnoreInChildren;
+}
+
+void
+AnimationModuleEditor::setOtherItemsVisibility(QTreeWidgetItem* item, bool visibile)
+{
+
+    int nItems = _imp->treeView->topLevelItemCount();
+    for (int i = 0; i < nItems; ++i) {
+        QTreeWidgetItem* child = _imp->treeView->topLevelItem(i);
+        if (child) {
+            setItemVisibilityRecursive(child, visibile, item);
+        }
+    }
+
+}
+
+static QTreeWidgetItem* findFirstDifferentItemRecursive(QTreeWidgetItem* item, QTreeWidgetItem* originalItem)
+{
+    if (item != originalItem) {
+        return item;
+    }
+    int nChildren = item->childCount();
+    for (int i = 0; i < nChildren; ++i) {
+        QTreeWidgetItem* child = item->child(i);
+        if (!child) {
+            continue;
+        }
+        QTreeWidgetItem* ret = findFirstDifferentItemRecursive(child, originalItem);
+        if (ret) {
+            return ret;
+        }
+    }
+    return 0;
+}
+
+void
+AnimationModuleEditor::setOtherItemsVisibilityAuto(QTreeWidgetItem* item)
+{
+    int nItems = _imp->treeView->topLevelItemCount();
+    QTreeWidgetItem* foundOtherItem = 0;
+    for (int i = 0; i < nItems; ++i) {
+        QTreeWidgetItem* child = _imp->treeView->topLevelItem(i);
+        if (!child) {
+            continue;
+        }
+        foundOtherItem = findFirstDifferentItemRecursive(child, item);
+        if (foundOtherItem) {
+            break;
+        }
+    }
+
+    if (foundOtherItem) {
+        bool otherCurrentVisibility = foundOtherItem->data(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
+        setOtherItemsVisibility(item, !otherCurrentVisibility);
+    }
+
+}
+
 void
 AnimationModuleEditor::onTreeItemClicked(QTreeWidgetItem* item ,int col)
 {
     if (col == ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
-        bool isItemVisible = item->data(col, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
-        item->setData(col, QT_ROLE_CONTEXT_ITEM_VISIBLE, !isItemVisible);
-        item->setIcon(col, AnimationModuleBase::getItemVisibilityIcon(!isItemVisible));
+
+        bool toggleOthers = qApp->keyboardModifiers().testFlag(Qt::ControlModifier);
+        if (toggleOthers) {
+            setOtherItemsVisibilityAuto(item);
+        } else {
+            invertItemVisibility(item);
+        }
         _imp->view->redraw();
         _imp->treeView->update();
     }

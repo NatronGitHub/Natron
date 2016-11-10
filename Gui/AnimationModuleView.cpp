@@ -573,7 +573,7 @@ AnimationModuleView::onPasteClipBoardKeyFramesAbsoluteActionTriggered()
 void
 AnimationModuleView::onSelectAllKeyFramesActionTriggered()
 {
-    _imp->_model.lock()->getSelectionModel()->selectAll();
+    _imp->_model.lock()->getSelectionModel()->selectAllVisibleCurvesKeyFrames();
 }
 
 void
