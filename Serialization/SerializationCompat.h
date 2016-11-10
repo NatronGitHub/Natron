@@ -630,7 +630,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
             if (convertOldFileKeyframesToPattern) {
                 SequenceParsing::FileNameContent content(_value.isString);
                 content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1,
-                                                              content.getNumPrependingZeroes() + 1,
+                                                              content.getLeadingZeroes() + 1,
                                                               &_value.isString);
             }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
