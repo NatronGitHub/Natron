@@ -720,7 +720,15 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
         }
 
         AnimationModuleViewPrivate::KeyframeTexture texType;
-        if (dimension.isAll() || view.isAll()) {
+        bool drawMaster;
+        if (view.isAll()) {
+            drawMaster = true;
+        } else if (dimension.isAll()) {
+            drawMaster = item->getAllDimensionsVisible(ViewIdx(view));
+        } else {
+            drawMaster = false;
+        }
+        if (drawMaster) {
             texType = drawSelected ? AnimationModuleViewPrivate::kfTextureMasterSelected : AnimationModuleViewPrivate::kfTextureMaster;
         } else {
             texType = AnimationModuleViewPrivate::kfTextureFromKeyframeType( it->key.getInterpolation(), drawSelected);

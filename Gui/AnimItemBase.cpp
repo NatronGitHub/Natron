@@ -96,15 +96,31 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, GetKeyframes
     std::list<DimensionViewPair> curvesToProcess;
     if (dimension.isAll()) {
         int nDims = getNDimensions();
+
         for (int i = 0; i < nDims; ++i) {
             if (viewSpec.isAll()) {
                 std::list<ViewIdx> views = getViewsList();
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                    if (i > 0) {
+                        bool allDimensionsVisible = getAllDimensionsVisible(*it);
+                        if (!allDimensionsVisible) {
+                            continue;
+                        }
+                    }
+
                     DimensionViewPair p = {DimIdx(i), *it};
                     curvesToProcess.push_back(p);
                 }
             } else {
                 assert(viewSpec.isViewIdx());
+                if (i > 0) {
+                    bool allDimensionsVisible = getAllDimensionsVisible(ViewIdx(viewSpec));
+                    if (!allDimensionsVisible) {
+                        continue;
+                    }
+                }
+
+
                 DimensionViewPair p = {DimIdx(i), ViewIdx(viewSpec)};
                 curvesToProcess.push_back(p);
             }
@@ -180,6 +196,12 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
         for (int i = 0; i < nDims; ++i) {
             if (viewSpec.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+                    if (i > 0) {
+                        bool allDimensionsVisible = getAllDimensionsVisible(*it);
+                        if (!allDimensionsVisible) {
+                            continue;
+                        }
+                    }
                     AnimItemDimViewIndexID id;
                     id.item = thisShared;
                     id.dim = DimIdx(i);
@@ -189,6 +211,12 @@ AnimItemBase::getKeyframes(DimSpec dimension, ViewSetSpec viewSpec, AnimItemDimV
                 }
             } else {
                 assert(viewSpec.isViewIdx());
+                if (i > 0) {
+                    bool allDimensionsVisible = getAllDimensionsVisible(ViewIdx(viewSpec));
+                    if (!allDimensionsVisible) {
+                        continue;
+                    }
+                }
                 AnimItemDimViewIndexID id;
                 id.item = thisShared;
                 id.dim = DimIdx(i);

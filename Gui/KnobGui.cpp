@@ -888,6 +888,9 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         for (int i = 0; i < nDims; ++i) {
 
+            if (i > 0 && !knob->getAllDimensionsVisible(*it)) {
+                continue;
+            }
             AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), *it);
             if (lvl != eAnimationLevelOnKeyframe) {
                 hasAllKeyframesAtTime = false;
@@ -896,11 +899,12 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             }
 
             if ( knob->isSlave(DimIdx(i), *it) ) {
-                hasDimensionSlaved = true;
 
+                hasDimensionSlaved = true;
                 if (i == dimension) {
                     dimensionIsSlaved = true;
                 }
+
             }
             if (knob->getKeyFramesCount(*it, DimIdx(i)) > 0) {
                 hasAnimation = true;

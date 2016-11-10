@@ -169,6 +169,11 @@ public:
     virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const = 0;
 
     /**
+     * @brief Returns true if all dimensions are visible for the given view
+     **/
+    virtual bool getAllDimensionsVisible(ViewIdx view) const = 0;
+
+    /**
      * @brief Returns true if the given dimension/view has an expression set
      **/
     virtual bool hasExpression(DimIdx dimension, ViewIdx view) const

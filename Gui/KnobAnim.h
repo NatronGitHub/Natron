@@ -82,7 +82,8 @@ public:
     virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getNDimensions() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasExpression(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;;
+    virtual double evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ////
 
     void refreshVisibilityConditional(bool refreshHolder);

@@ -1562,7 +1562,7 @@ KnobHelper::setMastersPersistenceIgnore(bool ignored)
 bool
 KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView)
 {
-    if (!otherKnob || otherKnob.get() == this) {
+    if (!otherKnob || (otherKnob.get() == this && (thisDimension == otherDimension) && (view == otherView))) {
         return false;
     }
     if (thisDimension < 0 || thisDimension >= (int)_imp->masters.size()) {
@@ -1637,7 +1637,7 @@ KnobHelper::slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension, DimSpec o
     if ((!thisView.isAll() || !otherView.isAll()) && (!thisView.isViewIdx() || !otherView.isViewIdx())) {
         throw std::invalid_argument("KnobHelper::slaveTo: invalid view argument");
     }
-    if (!otherKnob || otherKnob.get() == this) {
+    if (!otherKnob || (otherKnob.get() == this && (thisDimension == otherDimension || thisDimension.isAll() || otherDimension.isAll()) && (thisView == otherView || thisView.isAll() || otherView.isAll()))) {
         return false;
     }
     bool ok = false;
@@ -1990,7 +1990,7 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
     double time = getCurrentTime();
     for (ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
         KnobHelper* slaveKnob = dynamic_cast<KnobHelper*>( it->first.lock().get() );
-        if (!slaveKnob) {
+        if (!slaveKnob || slaveKnob == this) {
             continue;
         }
 
@@ -2691,7 +2691,14 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
         MasterKnobLink linkData;
         KnobIPtr masterKnob;
         if (knob->getMaster(dimension, view, &linkData)) {
-            masterKnob = linkData.masterKnob.lock();
+
+            // Don't save the knob slave state if it is slaved because the user folded the dimensions
+            if (dimension > 0 && !knob->getAllDimensionsVisible(view)) {
+                masterKnob.reset();
+            } else {
+                masterKnob = linkData.masterKnob.lock();
+            }
+
         }
 
         // Only serialize master link if:

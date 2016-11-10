@@ -196,7 +196,7 @@ public:
     bool isNearbyBboxMidTop(const ZoomContext& ctx, const RectD& rect, const QPoint& pt) const;
 
 
-
+    std::vector<CurveGuiPtr> getSelectedCurves() const;
     std::vector<CurveGuiPtr> getVisibleCurves() const;
 
     /**

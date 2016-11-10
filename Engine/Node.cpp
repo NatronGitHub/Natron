@@ -7238,6 +7238,9 @@ Node::onKnobSlaved(const KnobIPtr& slave,
         }
     }
 
+    if (slave == master) {
+        return;
+    }
 
     ///If the holder isn't an effect, ignore it too
     EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );

@@ -1268,7 +1268,9 @@ Knob<T>::computeHasModifications()
             if (!hasModif) {
                 MasterKnobLink linkData;
                 if (getMaster(DimIdx(i), *it, &linkData)) {
-                    hasModif = true;
+                    if (i == 0 || getAllDimensionsVisible(*it)) {
+                        hasModif = true;
+                    }
                 }
             }
 
@@ -1525,13 +1527,16 @@ template <typename T>
 void
 Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
 {
-    if (visible) {
-        return;
-    }
+
     int nDims = getNDimensions();
     beginChanges();
     for (int i = 1; i < nDims; ++i) {
-        copyKnob(shared_from_this(), view, DimIdx(i), view, DimIdx(0));
+        // Unslave if already slaved
+        unSlave(DimIdx(i), view, true);
+        if (!visible) {
+            // When folding, slave other dimensions to the first one
+            slaveTo(shared_from_this(), DimIdx(i), DimIdx(0), view, view);
+        }
     }
     endChanges();
 

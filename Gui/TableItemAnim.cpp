@@ -455,6 +455,12 @@ TableItemAnim::onInternalItemAvailableViewsChanged()
     getModel()->refreshSelectionBboxAndUpdateView();
 }
 
+bool
+TableItemAnim::getAllDimensionsVisible(ViewIdx /*view*/) const
+{
+    return true;
+}
+
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
 #include "moc_TableItemAnim.cpp"

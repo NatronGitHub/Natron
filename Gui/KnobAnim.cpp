@@ -216,8 +216,9 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
         viewItems[view] = viewItem;
     }
 
+    bool dimensionsExpanded = internalKnob->getAllDimensionsVisible(view);
     // Now create an item per dimension if the knob is multi-dimensional
-    if (nDims > 1 && internalKnob->getAllDimensionsVisible(view)) {
+    if (nDims > 1 && dimensionsExpanded) {
         for (int i = 0; i < nDims; ++i) {
             QString dimName = QString::fromUtf8( internalKnob->getDimensionName(DimIdx(i)).c_str() );
             QTreeWidgetItem *dimItem = createKnobNameItem(thisShared,
@@ -544,6 +545,11 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
     
 }
 
+bool
+KnobAnim::getAllDimensionsVisible(ViewIdx view) const
+{
+    return _imp->knob.lock()->getAllDimensionsVisible(view);
+}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

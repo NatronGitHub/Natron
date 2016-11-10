@@ -132,6 +132,12 @@ KnobSerialization::encode(YAML::Emitter& em) const
                             em << YAML::Key << "V";
                             em << YAML::Value << val._slaveMasterLink.masterViewName;
                         }
+                        // Also serialize the curve in case the expression fails to restore correctly
+                        if (!val._animationCurve.keys.empty()) {
+                            em << YAML::Key << "Curve" << YAML::Value;
+                            val._animationCurve.encode(em);
+                        }
+
                         em << YAML::EndMap;
                     } else if (!val._expression.empty()) {
                         // Wrap the expression in a sequence of 1 element to distinguish with regular string knobs values
@@ -144,6 +150,13 @@ KnobSerialization::encode(YAML::Emitter& em) const
                             em << YAML::Key << "Expr";
                         }
                         em << YAML::Value << val._expression;
+
+                        // Also serialize the curve in case the expression fails to restore correctly
+                        if (!val._animationCurve.keys.empty()) {
+                            em << YAML::Key << "Curve" << YAML::Value;
+                            val._animationCurve.encode(em);
+                        }
+
                         em << YAML::EndMap;
                     } else if (!val._animationCurve.keys.empty()) {
                         em << YAML::Flow << YAML::BeginMap;
@@ -509,7 +522,8 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
             if (dimNode["Curve"]) {
                 // Curve
                 dimVec[i]._animationCurve.decode(dimNode["Curve"]);
-            } else if (dimNode["MultiExpr"]) {
+            }
+            if (dimNode["MultiExpr"]) {
                 dimVec[i]._expression = dimNode["MultiExpr"].as<std::string>();
                 dimVec[i]._expresionHasReturnVariable = true;
             } else if (dimNode["Expr"]) {

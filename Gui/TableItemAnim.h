@@ -85,6 +85,7 @@ public:
     virtual CurveGuiPtr getCurveGui(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::list<ViewIdx> getViewsList() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getNDimensions() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ////
 
     virtual void refreshVisibility() OVERRIDE FINAL;

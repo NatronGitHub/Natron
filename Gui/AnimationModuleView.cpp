@@ -603,6 +603,63 @@ AnimationModuleView::onCenterOnSelectedCurvesActionTriggered()
     centerOnSelection();
 }
 
+void
+AnimationModuleView::centerOnItemsInternal(const std::vector<CurveGuiPtr>& curves,
+                                           const std::vector<NodeAnimPtr >& nodes,
+                                           const std::vector<TableItemAnimPtr>& tableItems)
+{
+    RectD ret;
+
+
+    // First get the bbox of all curves keyframes
+    // If we don't have a display range for curves, then
+    // use the keyframes bbox that we pad of a few pixels
+    bool gotCurvesWithDisplayRange = false;
+    ret = getCurvesDisplayRangesBbox(curves);
+    if (ret.isNull()) {
+        ret = getCurvesKeyframeBbox(curves);
+    } else {
+        gotCurvesWithDisplayRange = true;
+    }
+
+    // Then merge nodes ranges
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+        if (nodes[i]->isRangeDrawingEnabled()) {
+            RangeD frameRange = nodes[i]->getFrameRange();
+            if (ret.isNull()) {
+                ret.x1 = frameRange.min;
+                ret.x2 = frameRange.max;
+            } else {
+                ret.x1 = std::min(ret.x1, frameRange.min);
+                ret.x2 = std::max(ret.x2, frameRange.max);
+            }
+        }
+    }
+
+    // Then merge table items ranges
+    for (std::size_t i = 0; i < tableItems.size(); ++i) {
+        if (tableItems[i]->isRangeDrawingEnabled()) {
+            RangeD frameRange = tableItems[i]->getFrameRange();
+            if (ret.isNull()) {
+                ret.x1 = frameRange.min;
+                ret.x2 = frameRange.max;
+            } else {
+                ret.x1 = std::min(ret.x1, frameRange.min);
+                ret.x2 = std::max(ret.x2, frameRange.max);
+            }
+        }
+    }
+
+    if (ret.y2 > ret.y1) {
+        if (!gotCurvesWithDisplayRange) {
+            ret.addPaddingPercentage(0.1, 0.1);
+        }
+        centerOn(ret.x1, ret.x2, ret.y1, ret.y2);
+    } else {
+        centerOn(ret.x1, ret.x2);
+    }
+
+}
 
 void
 AnimationModuleView::centerOnAllItems()
@@ -616,61 +673,26 @@ AnimationModuleView::centerOnAllItems()
     model->getSelectionModel()->getAllItems(false, 0, &allNodes, &allTableItems);
     allVisibleCurves = _imp->getVisibleCurves();
 
-
-    RectD ret;
-
-
-    // First get the bbox of all curves keyframes
-    ret = getCurvesDisplayRangesBbox(allVisibleCurves);
-    if (ret.isNull()) {
-        ret = getCurvesKeyframeBbox(allVisibleCurves);
-    }
-
-    // Then merge nodes ranges
-    for (std::size_t i = 0; i < allNodes.size(); ++i) {
-        if (allNodes[i]->isRangeDrawingEnabled()) {
-            RangeD frameRange = allNodes[i]->getFrameRange();
-            if (ret.isNull()) {
-                ret.x1 = frameRange.min;
-                ret.x2 = frameRange.max;
-            } else {
-                ret.x1 = std::min(ret.x1, frameRange.min);
-                ret.x2 = std::max(ret.x2, frameRange.max);
-            }
-        }
-    }
-
-    // Then merge table items ranges
-    for (std::size_t i = 0; i < allTableItems.size(); ++i) {
-        if (allTableItems[i]->isRangeDrawingEnabled()) {
-            RangeD frameRange = allTableItems[i]->getFrameRange();
-            if (ret.isNull()) {
-                ret.x1 = frameRange.min;
-                ret.x2 = frameRange.max;
-            } else {
-                ret.x1 = std::min(ret.x1, frameRange.min);
-                ret.x2 = std::max(ret.x2, frameRange.max);
-            }
-        }
-    }
-
-    if (ret.y2 > ret.y1) {
-        centerOn(ret.x1, ret.x2, ret.y1, ret.y2);
-    } else {
-        centerOn(ret.x1, ret.x2);
-    }
+    centerOnItemsInternal(allVisibleCurves, allNodes, allTableItems);
 
 }
 
 void
 AnimationModuleView::centerOnSelection()
 {
+    AnimationModuleBasePtr model = _imp->_model.lock();
+    std::vector<CurveGuiPtr > selectedCurves =  _imp->getSelectedCurves();
+    const std::list<NodeAnimPtr >& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
+    const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
 
-    std::vector<CurveGuiPtr > selection;// = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
-    if ( selection.empty() ) {
+    if ( selectedCurves.empty() && selectedNodes.empty() && selectedTableItems.empty() ) {
         centerOnAllItems();
     } else {
-        centerOnCurves(selection, false /*useDisplayRange*/);
+        std::vector<NodeAnimPtr> nodes;
+        nodes.insert(nodes.end(), selectedNodes.begin(), selectedNodes.end());
+        std::vector<TableItemAnimPtr> tableItems;
+        tableItems.insert(tableItems.end(), selectedTableItems.begin(), selectedTableItems.end());
+        centerOnItemsInternal(selectedCurves, nodes, tableItems);
     }
 }
 
