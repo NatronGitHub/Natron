@@ -781,6 +781,9 @@ AnimationModuleViewPrivate::drawDopeSheetGroupOverlay(const NodeAnimPtr &item,
 void
 AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
 {
+    if (!treeView) {
+        return;
+    }
     if (dopeSheetZoomContext.screenHeight() == 0 || dopeSheetZoomContext.screenWidth() == 0) {
         return;
     }
@@ -1120,7 +1123,9 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangleInternal
                                                                                  std::vector<NodeAnimPtr >* nodes,
                                                                                  std::vector<TableItemAnimPtr >* tableItems)
 {
-
+    if (canonicalRect.isNull()) {
+        return;
+    }
     int nTopLevelTreeItems = treeView->topLevelItemCount();
     for (int i = 0; i < nTopLevelTreeItems; ++i) {
         QTreeWidgetItem* topLevelItem = treeView->topLevelItem(i);

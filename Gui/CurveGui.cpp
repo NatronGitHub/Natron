@@ -282,12 +282,12 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // We're between 2 keyframes or the curve is periodic, get the upper and lower keyframes widget coordinates
 
     // Points to the first keyframe with a greater time (in widget coords) than x1
-    KeyFrameSet::const_iterator upperIt = keys.end();;
+    KeyFrameSet::const_iterator upperIt = keys.end();
 
     // If periodic, bring back x in the period range (in widget coordinates)
     double xClamped = x;
     double period = parametricXMax - parametricXMin;
-    if (x < parametricXMin || x > parametricXMax) {
+    if ((x < parametricXMin || x > parametricXMax) && isPeriodic) {
         xClamped = std::fmod(x - parametricXMin, period) + parametricXMin;
         if (xClamped < parametricXMin) {
             xClamped += period;
@@ -306,7 +306,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
             // Otherwise start from the begining
             itKeys = keys.begin();
         }
-
+        *lastUpperIt = keys.end();
         for (; itKeys != keys.end(); ++itKeys) {
             if (itKeys->getTime() > xClamped) {
                 upperIt = itKeys;

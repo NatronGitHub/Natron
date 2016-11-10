@@ -2645,32 +2645,10 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double 
 ValueChangedReturnCodeEnum
 KnobParametric::setKeyFrameInternal(double time, double value, const CurvePtr& curve, KeyFrame* newKey)
 {
-    KeyFrame existingKey;
-    ValueChangedReturnCodeEnum ret;
-    bool hasExistingKey = curve->getKeyFrameWithTime(time, &existingKey);
-    if (hasExistingKey) {
-        if (newKey) {
-            *newKey = existingKey;
-        }
-        if (existingKey.getValue() == value) {
-            ret = eValueChangedReturnCodeNothingChanged;
-        } else {
-            ret = eValueChangedReturnCodeKeyframeModified;
-        }
-    } else {
-        KeyFrame k(time, 0);
-        k.setInterpolation(eKeyframeTypeLinear);
-        if (newKey) {
-            *newKey = k;
-        }
-        bool newKeyFrame = curve->addKeyFrame(k);
-        if (newKeyFrame) {
-            ret = eValueChangedReturnCodeKeyframeAdded;
-        } else {
-            ret = eValueChangedReturnCodeNothingChanged;
-        }
+    ValueChangedReturnCodeEnum ret = curve->setOrAddKeyframe(KeyFrame(time, value));
+    if (newKey) {
+        (void)curve->getKeyFrameWithTime(time, newKey);
     }
-
     return ret;
 }
 

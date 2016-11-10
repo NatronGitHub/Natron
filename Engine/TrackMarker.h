@@ -140,8 +140,6 @@ public:
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 
 
-    void setLabel(const std::string& label);
-    std::string getLabel() const;
     KnobDoublePtr getSearchWindowBottomLeftKnob() const;
     KnobDoublePtr getSearchWindowTopRightKnob() const;
     KnobDoublePtr getPatternTopLeftKnob() const;

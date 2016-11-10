@@ -416,6 +416,9 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if (canonicalRect.isNull()) {
+        return;
+    }
     
     std::vector<CurveGuiPtr> curves = getVisibleCurves();
 

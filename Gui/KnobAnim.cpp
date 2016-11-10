@@ -332,7 +332,8 @@ KnobAnim::getViewsList() const
 static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& knob, KnobAnim* self)
 {
 
-    bool curveIsAnimated = knob->isAnimated(dim, view) || !knob->getExpression(dim, view).empty();
+    CurvePtr curve = knob->getAnimationCurve(view, dim);
+    bool curveIsAnimated = (curve && curve->isAnimated()) || !knob->getExpression(dim, view).empty();
     QTreeWidgetItem *dimItem = self->getTreeItem(dim, view);
     if (dimItem) {
         bool enabled = knob->isEnabled(dim, view);

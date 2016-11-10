@@ -197,6 +197,8 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     _imp->tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _imp->tree->setColumnCount(1);
     _imp->tree->header()->close();
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
+
     if ( knobUI->hasToolTip() ) {
         knobUI->toolTip(_imp->tree, getView());
     }
@@ -225,7 +227,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     layout->addWidget(_imp->curveWidget);
 
     ViewIdx view = getView();
-    std::vector<CurveGuiPtr > visibleCurves;
+
     for (int i = 0; i < knob->getNDimensions(); ++i) {
         QString curveName = QString::fromUtf8( knob->getDimensionName(DimIdx(i)).c_str() );
         double color[4];
@@ -247,12 +249,10 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
         }
         _imp->tree->addTopLevelItem(treeItem);
         _imp->curves.push_back(desc);
-        visibleCurves.push_back(curve);
     }
+    _imp->tree->selectAll();
     _imp->animRoot->emit_s_refreshKnobVisibilityLater();
-    _imp->selectionModel->selectAll();
-    _imp->curveWidget->centerOnCurves(visibleCurves, true);
-    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
+
 } // createWidget
 
 TimeLinePtr
