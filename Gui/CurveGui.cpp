@@ -287,12 +287,18 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // If periodic, bring back x in the period range (in widget coordinates)
     double xClamped = x;
     double period = parametricXMax - parametricXMin;
-    if ((x < parametricXMin || x > parametricXMax) && isPeriodic) {
-        xClamped = std::fmod(x - parametricXMin, period) + parametricXMin;
-        if (xClamped < parametricXMin) {
-            xClamped += period;
+
+    {
+        //KeyFrameSet::const_iterator start = keys.begin();
+        const double xMin = parametricXMin;// + start->getTime();
+        const double xMax = parametricXMax;// + start->getTime();
+        if ((x < xMin || x > xMax) && isPeriodic) {
+            xClamped = std::fmod(x - xMin, period) + parametricXMin;
+            if (xClamped < xMin) {
+                xClamped += period;
+            }
+            assert(xClamped >= xMin && xClamped <= xMax);
         }
-        assert(xClamped >= parametricXMin && xClamped <= parametricXMax);
     }
     {
 
@@ -327,7 +333,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
         tprev = last->getTime();
         vprev = last->getValue();
         vprevDerivRight = last->getRightDerivative();
-        tnext = start->getTime() + period;
+        tnext = std::fmod(last->getTime() - start->getTime(), period) + tprev;
         //xClamped += period;
         vnext = start->getValue();
         vnextDerivLeft = start->getLeftDerivative();
@@ -338,11 +344,11 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
         // from the widget border to the first/last keyframe
         assert(isPeriodic);
         KeyFrameSet::const_reverse_iterator last = keys.rbegin();
-        tprev = last->getTime() - period;
+        tprev = last->getTime();
         //xClamped -= period;
         vprev = last->getValue();
         vprevDerivRight = last->getRightDerivative();
-        tnext = upperIt->getTime();
+        tnext = std::fmod(last->getTime() - upperIt->getTime(), period) + tprev;
         vnext = upperIt->getValue();
         vnextDerivLeft = upperIt->getLeftDerivative();
 

@@ -187,7 +187,7 @@ AnimationModuleView::centerOnCurves(const std::vector<CurveGuiPtr> & curves, boo
         RectD bbox = getCurvesDisplayRangesBbox(curvesToFrame);
 
         if (!bbox.isNull()) {
-            bbox.addPaddingPercentage(0.2, 0.2);
+            //bbox.addPaddingPercentage(0.2, 0.2);
             AnimationModuleView::centerOn(bbox.x1, bbox.x2, bbox.y1, bbox.y2);
             return;
         }

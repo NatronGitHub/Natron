@@ -542,6 +542,8 @@ NodeGui::createGui()
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
             _pluginIcon->setPixmap(pix);
+        } else {
+            _pluginIcon->hide();
         }
         
     }
@@ -800,7 +802,7 @@ NodeGui::adjustSizeToContent(int* /*w*/,
 int
 NodeGui::getPluginIconWidth() const
 {
-    return _pluginIcon ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
+    return _pluginIcon  && _pluginIcon->isVisible() ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
 }
 
 double

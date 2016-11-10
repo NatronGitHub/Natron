@@ -92,6 +92,9 @@ AnimationModuleView::initialize(Gui* gui, const AnimationModuleBasePtr& model)
     }
     _imp.reset(new AnimationModuleViewPrivate(gui, this, model));
 
+    connect( model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), this, SLOT(onSelectionModelKeyframeSelectionChanged()) );
+
+
     TimeLinePtr timeline = model->getTimeline();
     AnimationModulePtr isAnimModule = toAnimationModule(model);
     if (timeline) {
@@ -606,24 +609,22 @@ AnimationModuleView::centerOnAllItems()
 {
     AnimationModuleBasePtr model = _imp->_model.lock();
 
-    AnimItemDimViewKeyFramesMap allCurves;
+    std::vector<CurveGuiPtr> allVisibleCurves;
     std::vector<NodeAnimPtr > allNodes;
     std::vector<TableItemAnimPtr> allTableItems;
-    model->getSelectionModel()->getAllItems(false, &allCurves, &allNodes, &allTableItems);
+
+    model->getSelectionModel()->getAllItems(false, 0, &allNodes, &allTableItems);
+    allVisibleCurves = _imp->getVisibleCurves();
+
 
     RectD ret;
-    // Get a list of all curve guis from the AnimItemDimViewKeyFramesMap
-    std::vector<CurveGuiPtr > allCurveGuis;
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = allCurves.begin(); it != allCurves.end(); ++it) {
-        CurveGuiPtr curve = it->first.item->getCurveGui(it->first.dim, it->first.view);
-        if (!curve) {
-            continue;
-        }
-        allCurveGuis.push_back(curve);
-    }
+
 
     // First get the bbox of all curves keyframes
-    ret = getCurvesKeyframeBbox(allCurveGuis);
+    ret = getCurvesDisplayRangesBbox(allVisibleCurves);
+    if (ret.isNull()) {
+        ret = getCurvesKeyframeBbox(allVisibleCurves);
+    }
 
     // Then merge nodes ranges
     for (std::size_t i = 0; i < allNodes.size(); ++i) {
@@ -816,20 +817,20 @@ AnimationModuleView::mousePressEvent(QMouseEvent* e)
 
     // Need to set focus otherwise some of the keypress handlers will not be called
     setFocus();
-    
+
     AnimationModuleBasePtr model = _imp->_model.lock();
-    {
-        
-        AnimationModulePtr isAnimModule = toAnimationModule(model);
-        if (isAnimModule) {
-            isAnimModule->getEditor()->onInputEventCalled();
-        }
+    AnimationModulePtr isAnimModule = toAnimationModule(model);
+    if (isAnimModule) {
+        isAnimModule->getEditor()->onInputEventCalled();
     }
+
 
     _imp->lastMousePos = e->pos();
     _imp->dragStartPoint = e->pos();
     _imp->keyDragLastMovement.ry() = _imp->keyDragLastMovement.rx() = 0;
+
     _imp->mustSetDragOrientation = true;
+
 
 
 
@@ -907,11 +908,11 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
 
 
     AnimationModuleBasePtr model = _imp->_model.lock();
+    AnimationModulePtr isAnimModule = toAnimationModule(model);
     if (_imp->state == eEventStateNone) {
 
         // nothing else to do
         TabWidget* tab = 0;
-        AnimationModulePtr isAnimModule = toAnimationModule(model);
         if (isAnimModule) {
             tab = isAnimModule->getEditor()->getParentPane();
         }
@@ -930,15 +931,21 @@ AnimationModuleView::mouseMoveEvent(QMouseEvent* e)
         QPointF diff(e->pos() - _imp->dragStartPoint);
         double dist = diff.manhattanLength();
         if (dist > 5) {
-            if ( std::abs( diff.x() ) > std::abs( diff.y() ) ) {
-                _imp->mouseDragOrientation.setX(1);
-                _imp->mouseDragOrientation.setY(0);
+            if (isAnimModule || modCASIsControl(e)) {
+                if ( std::abs( diff.x() ) > std::abs( diff.y() ) ) {
+                    _imp->mouseDragOrientation.setX(1);
+                    _imp->mouseDragOrientation.setY(0);
+                } else {
+                    _imp->mouseDragOrientation.setX(0);
+                    _imp->mouseDragOrientation.setY(1);
+                }
             } else {
-                _imp->mouseDragOrientation.setX(0);
-                _imp->mouseDragOrientation.setY(1);
+                _imp->mouseDragOrientation.rx() = _imp->mouseDragOrientation.ry() = 1;
             }
             _imp->mustSetDragOrientation = false;
-        }
+
+            }
+
     }
 
     switch (_imp->state) {

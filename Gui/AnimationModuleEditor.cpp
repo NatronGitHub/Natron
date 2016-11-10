@@ -464,8 +464,6 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), this, SLOT(onSelectionModelSelectionChanged(bool)) );
 
-    connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->view, SLOT(onSelectionModelKeyframeSelectionChanged()) );
-
     connect( _imp->model->getSelectionModel().get(), SIGNAL(selectionChanged(bool)), _imp->treeView, SLOT(onSelectionModelKeyframeSelectionChanged(bool)) );
 
     connect( _imp->model.get(), SIGNAL(nodeAdded(NodeAnimPtr)),
