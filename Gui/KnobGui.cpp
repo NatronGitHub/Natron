@@ -1041,6 +1041,10 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
 
     if (hasAnimation && isAppKnob) {
         QAction* showInCurveEditorAction = new QAction(tr("Show in Animation Editor"), menu);
+        QList<QVariant> actionData;
+        actionData.push_back((int)dimension);
+        actionData.push_back((int)view);
+        showInCurveEditorAction->setData(actionData);
         QObject::connect( showInCurveEditorAction, SIGNAL(triggered()), this, SLOT(onShowInCurveEditorActionTriggered()) );
         menu->addAction(showInCurveEditorAction);
         if (hasDimensionDisabled) {

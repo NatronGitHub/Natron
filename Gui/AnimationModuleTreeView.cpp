@@ -48,6 +48,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/KnobGui.h"
 #include "Gui/NodeGui.h"
@@ -1175,6 +1176,21 @@ void
 AnimationModuleTreeView::keyPressEvent(QKeyEvent* e)
 {
     return QTreeWidget::keyPressEvent(e);
+}
+
+void
+AnimationModuleTreeView::mouseReleaseEvent(QMouseEvent* e)
+{
+    QModelIndex index = indexAt( e->pos() );
+    QTreeWidgetItem* item = itemAt( e->pos() );
+
+    if ( triggerButtonIsRight(e) && index.isValid() ) {
+        Q_EMIT itemRightClicked(e->globalPos(), item);
+    } else {
+        QTreeWidget::mouseReleaseEvent(e);
+    }
+
+
 }
 
 void

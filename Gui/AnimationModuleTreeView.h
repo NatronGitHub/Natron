@@ -202,6 +202,10 @@ protected:
      */
     void reparentItem(QTreeWidgetItem *child, QTreeWidgetItem *newParent);
 
+Q_SIGNALS:
+
+    void itemRightClicked(QPoint pos, QTreeWidgetItem* item);
+
 private Q_SLOTS:
 
     void onNodeAdded(const NodeAnimPtr& NodeAnim);
@@ -217,6 +221,7 @@ private Q_SLOTS:
 private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
 
     boost::scoped_ptr<AnimationModuleTreeViewPrivate> _imp;
 };

@@ -268,8 +268,16 @@ KnobGui::isSecretRecursive() const
 void
 KnobGui::onShowInCurveEditorActionTriggered()
 {
-    KnobIPtr knob = getKnob();
 
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    KnobIPtr knob = getKnob();
     assert( knob->getHolder()->getApp() );
     getGui()->setAnimationEditorOnTop();
 
@@ -302,18 +310,33 @@ KnobGui::onShowInCurveEditorActionTriggered()
 
 
     std::vector<CurveGuiPtr> curves;
+    std::list<QTreeWidgetItem*> treeItems;
     int nDims = knob->getNDimensions();
     std::list<ViewIdx> views = knob->getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
         for (int i = 0; i < nDims; ++i) {
-            CurveGuiPtr curve = knobAnim->getCurveGui(DimIdx(i), *it);
-            if ( curve->getInternalCurve()->isAnimated() ) {
-                curves.push_back(curve);
+            if (!dimension.isAll() && dimension != i) {
+                continue;
             }
+            CurveGuiPtr curve = knobAnim->getCurveGui(DimIdx(i), *it);
+            if ( curve && curve->getInternalCurve()->isAnimated() ) {
+                curves.push_back(curve);
+                QTreeWidgetItem* item = knobAnim->getTreeItem(DimIdx(i), *it);
+                if (item) {
+                    treeItems.push_back(item);
+                }
+            }
+
         }
     }
 
     if ( !curves.empty() ) {
+        model->getEditor()->setOtherItemsVisibility(treeItems, false);
+        AnimationModuleEditor::setItemsVisibility(treeItems, true, true /*recurseOnParent*/);
+
         AnimItemDimViewKeyFramesMap keys;
         std::vector<TableItemAnimPtr> tableItems;
         std::vector<NodeAnimPtr> nodes;

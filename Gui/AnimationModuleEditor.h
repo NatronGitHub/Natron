@@ -160,13 +160,19 @@ public:
      * @brief Set all tree items in the model to the given visibility except for the item passed
      * in argument.
      **/
-    void setOtherItemsVisibility(QTreeWidgetItem* item, bool visibile);
+    void setOtherItemsVisibility(const std::list<QTreeWidgetItem*>& items, bool visibile);
 
     /**
      * @brief Same as  setOtherItemsVisibility except that the visibility of other items
      * is computed from the first item different than the given item.
      **/
-    void setOtherItemsVisibilityAuto(QTreeWidgetItem* item);
+    void setOtherItemsVisibilityAuto(const std::list<QTreeWidgetItem*>& items);
+
+    /**
+     * @brief Set the given item visible
+     **/
+    static void setItemVisibility(QTreeWidgetItem* item, bool visible, bool recurseOnParent);
+    static void setItemsVisibility(const std::list<QTreeWidgetItem*>& items, bool visible, bool recurseOnParent);
 
 public Q_SLOTS:
 
@@ -207,6 +213,10 @@ public Q_SLOTS:
     void onTimelineTimeChanged(SequenceTime time, int reason);
 
     void onTreeItemClicked(QTreeWidgetItem* item ,int col);
+
+    void onTreeItemRightClicked(const QPoint& globalPos, QTreeWidgetItem* item);
+
+    void onShowHideOtherItemsRightClickMenuActionTriggered();
 
 private:
 
