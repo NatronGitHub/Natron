@@ -420,8 +420,8 @@ drawLineStrip(const std::vector<float>& vertices,
     bool prevTooAbove = false;
     bool prevTooBelow = false;
     for (int i = 0; i < (int)vertices.size(); i += 2) {
-        const bool isAbove = vertices[i + 1] > topRight.y();
-        const bool isBelow = vertices[i + 1] < btmLeft.y();
+        const bool isAbove = i > 0 && vertices[i + 1] > topRight.y();
+        const bool isBelow = i > 0 && vertices[i + 1] < btmLeft.y();
         const bool vertexVisible = vertices[i] >= btmLeft.x() && vertices[i] <= topRight.x() && !isAbove && !isBelow;
         const bool previousWasVisible = prevVisible;
         const bool previousWasTooAbove = prevTooAbove;
@@ -682,7 +682,7 @@ CurveGui::drawCurve(int curveIndex,
             {
                 AnimationModuleViewPrivate::KeyframeTexture texType = AnimationModuleViewPrivate::kfTextureFromKeyframeType( key.getInterpolation(), drawKeySelected);
                 if (texType != AnimationModuleViewPrivate::kfTextureNone) {
-                    _imp->curveWidget->_imp->drawTexturedKeyframe(texType, keyframeBbox);
+                    _imp->curveWidget->_imp->drawTexturedKeyframe(texType, keyframeBbox, false /*drawdimed*/);
                 }
             }
 
