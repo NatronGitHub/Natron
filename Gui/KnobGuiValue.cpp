@@ -125,7 +125,7 @@ struct KnobGuiValuePrivate
     {
         // Don't auto-expand if the knob is animated by default
         // or if its dimensions are already folded
-        if (knob->getAllDimensionsVisible(publicInterface->getView())) {
+        if (!knob->getAllDimensionsVisible(publicInterface->getView())) {
             autoExpandEnabled = false;
         } else {
             int nDims = knob->getNDimensions();

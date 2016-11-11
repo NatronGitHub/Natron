@@ -2390,6 +2390,7 @@ KnobParametric::setDefaultCurvesFromCurves()
     for (std::size_t i = 0; i < _curves.size(); ++i) {
         _defaultCurves[i]->clone(*_curves[i]);
     }
+    computeHasModifications();
 }
 
 bool
