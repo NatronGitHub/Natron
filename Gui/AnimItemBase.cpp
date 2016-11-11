@@ -24,6 +24,8 @@
 
 #include "AnimItemBase.h"
 
+#include <stdexcept>
+
 #include "Engine/AnimatingObjectI.h"
 #include "Engine/Curve.h"
 #include "Engine/StringAnimationManager.h"
