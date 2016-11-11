@@ -6,8 +6,11 @@
 
 ## Version 2.1.8
 
+- Fix a bug where several images with file names that contain two numbers would be be considered as a sequence even if both numbers differed.
+
 ### Plugins
 
+- Merge: fix a bug where the "A" checkbox of the B input would always be turned off when an RGB clip is connected. This is now done only if the user never toggled that checkbox.
 - (beta feature) EdgeDetect: Perform edge detection by computing the image gradient magnitude.
 
 ## Version 2.1.7
