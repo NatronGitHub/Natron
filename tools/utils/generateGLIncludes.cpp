@@ -209,15 +209,17 @@ writeImplementationCppFile(const QString& namespaceName,
             "#include <GL/glu_mangle.h>\n"
             "#include <GL/osmesa.h>\n"
             "#endif // HAVE_OSMESA\n";
+        ots << "\n\n";
     }
-    ots << "\n\n";
-
+    if (includeDebug) {
+        ots << "#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG\n\n";
+    }
     if (templateValue) {
         ots << "extern \"C\" {\n";
         for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
             if (includeDebug) {
                 ots <<
-                    "#ifdef DEBUG\n"
+                    "#ifdef GLAD_DEBUG\n"
                     "extern " << it->funcPNType << " glad_debug_" << it->funcName << ";\n"
                     "#else\n";
             }
@@ -251,7 +253,7 @@ writeImplementationCppFile(const QString& namespaceName,
             // OpenGL functions are directly pointing to the ones loaded by glad
             if (includeDebug) {
                 ots <<
-                    "#ifdef DEBUG\n"
+                    "#ifdef GLAD_DEBUG\n"
                     "    _" << it->funcName << " = glad_debug_" << it->funcName << ";\n"
                     "#else\n";
             }
