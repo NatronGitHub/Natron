@@ -24,6 +24,8 @@ CONFIG += boost opengl qt cairo python shiboken pyside
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
+CONFIG += glad-flags
+
 include(../global.pri)
 
 precompile_header {
@@ -58,8 +60,6 @@ INCLUDEPATH += $$PWD/../libs/qhttpserver/src
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
-
-CONFIG += glad-flags
 
 win32-msvc* {
         CONFIG(64bit) {
