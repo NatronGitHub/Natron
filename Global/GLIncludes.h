@@ -19,7 +19,7 @@
 #ifndef NATRON_GLOBAL_GLINCLUDES_H
 #define NATRON_GLOBAL_GLINCLUDES_H
 
-#include "glad_include.h"
+#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
 
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)
