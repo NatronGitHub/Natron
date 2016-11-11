@@ -72,7 +72,7 @@
 #include "Global/QtCompat.h" // removeFileExtension
 #include "Global/StrUtils.h"
 
-#include <SequenceParsing.h> // for removePath
+#include <SequenceParsing.h> // for SequenceParsing::removePath
 
 #define NAMED_PLUGIN_GROUP_NO 15
 

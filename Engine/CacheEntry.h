@@ -51,7 +51,7 @@
 #endif
 
 #ifdef DEBUG
-#include <SequenceParsing.h> // for removePath
+#include <SequenceParsing.h> // for SequenceParsing::removePath
 #endif
 
 #include "Engine/Hash64.h"

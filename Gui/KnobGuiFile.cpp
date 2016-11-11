@@ -57,7 +57,7 @@
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TableModelView.h"
 
-#include <SequenceParsing.h>
+#include <SequenceParsing.h> // for SequenceParsing::removePath
 
 NATRON_NAMESPACE_ENTER;
 

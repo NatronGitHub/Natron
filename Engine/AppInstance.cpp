@@ -73,7 +73,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/NodeSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 
-#include <SequenceParsing.h>
+#include <SequenceParsing.h> // for SequenceParsing::removePath
 
 
 NATRON_NAMESPACE_ENTER;

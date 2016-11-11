@@ -54,6 +54,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+#include <SequenceParsing.h>
+
 #include "Global/MemoryInfo.h"
 
 #include "Engine/NodePrivate.h"
