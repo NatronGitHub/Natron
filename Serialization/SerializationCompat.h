@@ -811,10 +811,6 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
     // With boost, value was always serialized
     _serializeValue = true;
 
-    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-        _serializeDefaultValue = false;
-    }
-
     _mustSerialize = true;
 
     bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
@@ -836,7 +832,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
         convertOldFileKeyframesToPattern = isFile && getKnobName() == kOfxImageEffectFileParamName;
     }
 
-    _type = ValueSerialization::eSerializationValueVariantTypeNone;
+    _type = eSerializationValueVariantTypeNone;
 
     bool loadValue = true;
     if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
@@ -853,13 +849,13 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
 
 
         if (isInt) {
-            _type = ValueSerialization::eSerializationValueVariantTypeInteger;
+            _type = eSerializationValueVariantTypeInteger;
         } else if (isDouble || isColor) {
-            _type = ValueSerialization::eSerializationValueVariantTypeDouble;
+            _type = eSerializationValueVariantTypeDouble;
         } else if (isBool) {
-            _type = ValueSerialization::eSerializationValueVariantTypeBoolean;
+            _type = eSerializationValueVariantTypeBoolean;
         } else if (isString || isOutputFile || isPath || isLayers || isFile || isChoice) {
-            _type = ValueSerialization::eSerializationValueVariantTypeString;
+            _type = eSerializationValueVariantTypeString;
         }
 
         if (isChoice) {
@@ -874,11 +870,11 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
                 }
             }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
+                ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isInt);
             }
         } else if (isFile) {
             loadValue = false;
-            ar & ::boost::serialization::make_nvp("Value", _value.isString);
+            ar & ::boost::serialization::make_nvp("Value", _serialization->_defaultValues[_dimension].value.isString);
 
             ///Convert the old keyframes stored in the file parameter by analysing one keyframe
             ///and deducing the pattern from it and setting it as a value instead
@@ -889,42 +885,47 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
                                                               &_value.isString);
             }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
+                ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isString);
             }
         }
 
     }
 
+    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+        _serialization->_defaultValues[_dimension].type = _type;
+        _serialization->_defaultValues[_dimension].serializeDefaultValue = false;
+    }
+
     if (loadValue) {
         switch (_type) {
-            case ValueSerialization::eSerializationValueVariantTypeNone:
+            case eSerializationValueVariantTypeNone:
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeInteger:
+            case eSerializationValueVariantTypeInteger:
                 ar & ::boost::serialization::make_nvp("Value", _value.isInt);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isInt);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeDouble:
+            case eSerializationValueVariantTypeDouble:
                 ar & ::boost::serialization::make_nvp("Value", _value.isDouble);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isDouble);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isDouble);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeString:
+            case eSerializationValueVariantTypeString:
                 ar & ::boost::serialization::make_nvp("Value", _value.isString);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isString);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeBoolean:
+            case eSerializationValueVariantTypeBoolean:
                 ar & ::boost::serialization::make_nvp("Value", _value.isBool);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isBool);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isBool);
                 }
 
                 break;
@@ -1027,6 +1028,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         _extraData.reset(new TextExtraData);
     }
 
+    _defaultValues.resize(_dimension);
     KnobSerialization::PerDimensionValueSerializationVec& values = _values["Main"];
 
     values.resize(_dimension);

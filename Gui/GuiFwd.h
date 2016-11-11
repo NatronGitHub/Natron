@@ -194,7 +194,7 @@ class Label;
 class Menu;
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
-bool isHighDPIInternal(const QWidget* w);
+double getHighDPIScaleFactorInternal(const QWidget* w);
 }
 
 //typedef boost::shared_ptr<AnimKeyFrame> AnimKeyFramePtr;

@@ -256,7 +256,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         continue;
                     }
 
-                    internalKnob->restoreValueFromSerialization(foundFromView->second[fromDim], DimIdx(i), *it, false /*restoreDefaultValue*/);
+                    internalKnob->restoreValueFromSerialization(foundFromView->second[fromDim], DimIdx(i), *it);
 
                     break;
                 }

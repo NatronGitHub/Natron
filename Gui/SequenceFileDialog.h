@@ -219,7 +219,7 @@ class SequenceDialogView
     SequenceFileDialog* _fd;
 
 public:
-    explicit SequenceDialogView(SequenceFileDialog* fd);
+    explicit SequenceDialogView(Gui* gui, SequenceFileDialog* fd);
 
     void updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > > & nameMapping);
 

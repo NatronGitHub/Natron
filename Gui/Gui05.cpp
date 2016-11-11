@@ -135,7 +135,7 @@ Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
 
-    _imp->_aboutWindow = new AboutWindow(this);
+    _imp->_aboutWindow = new AboutWindow(this, this);
     _imp->_aboutWindow->hide();
 
 

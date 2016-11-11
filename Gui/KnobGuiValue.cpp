@@ -123,6 +123,15 @@ struct KnobGuiValuePrivate
         , rectangleFormatIsWidthHeight(true)
         , autoExpandEnabled(true)
     {
+        // Don't auto-expand if the knob is animated by default
+        int nDims = knob->getNDimensions();
+        for (int i = 0; i < nDims; ++i) {
+            if (knob->isAnimated(DimIdx(i), publicInterface->getView())) {
+                autoExpandEnabled = false;
+                break;
+            }
+        }
+
     }
 
     KnobIntBasePtr getKnobAsInt() const

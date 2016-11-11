@@ -33,6 +33,7 @@ SERIALIZATION_NAMESPACE_ENTER;
 
 class BezierSerialization;
 class CurveSerialization;
+struct DefaultValueSerialization;
 class ImageComponentsSerialization;
 class ImageKeySerialization;
 class ImageParamsSerialization;

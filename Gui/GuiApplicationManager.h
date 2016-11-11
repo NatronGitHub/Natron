@@ -197,6 +197,7 @@ public:
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
 
+   
 public Q_SLOTS:
 
     void onFontconfigCacheUpdateFinished();

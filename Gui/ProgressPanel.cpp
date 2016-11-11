@@ -176,7 +176,7 @@ ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
     headerData.push_back(std::make_pair(tr("Task"), QIcon()));
 
 
-    _imp->view = new TableView(this);
+    _imp->view = new TableView(getGui(), this);
     _imp->view->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _imp->model = TableModel::create(headerData.size(), TableModel::eTableModelTypeTable);
     _imp->view->setSortingEnabled(false);

@@ -41,6 +41,7 @@
 #include <QPainter>
 #include <QVariant>
 
+#include "Gui/Gui.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/Label.h"
 #include "Gui/AnimatedCheckBox.h"
@@ -1301,7 +1302,7 @@ TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
 }
 
 /////////////// TableView
-TableView::TableView(QWidget* parent)
+TableView::TableView(Gui* gui, QWidget* parent)
     : QTreeView(parent)
     , _imp( new TableViewPrivate() )
 {
@@ -1321,6 +1322,17 @@ TableView::TableView(QWidget* parent)
     setAttribute(Qt::WA_MacShowFocusRect, 0);
     setAcceptDrops(true);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+#if QT_VERSION < 0x050000
+    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    double scale = gui->getHighDPIScaleFactor();
+    if (scale > 1) {
+        QSize iconSize = header()->iconSize();
+        iconSize.setHeight(iconSize.height() / scale);
+        header()->setIconSize(iconSize);
+    }
+#endif
 }
 
 TableView::~TableView()

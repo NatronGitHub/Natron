@@ -395,8 +395,8 @@ class KnobItemsTableView : public TableView
     KnobItemsTableGuiPrivate* _imp;
 public:
 
-    KnobItemsTableView(KnobItemsTableGuiPrivate* imp, QWidget* parent)
-    : TableView(parent)
+    KnobItemsTableView(KnobItemsTableGuiPrivate* imp, Gui* gui, QWidget* parent)
+    : TableView(gui, parent)
     , _imp(imp)
     {
     }
@@ -424,7 +424,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
     setContainerWidget(panel);
 
-    _imp->tableView = new TableView(parent);
+    _imp->tableView = new KnobItemsTableView(_imp.get(), panel->getGui(), parent);
 
     // Very important or else a bug in Qt selection frame will ask to redraw the whole interface, making everything laggy
     _imp->tableView->setAttribute(Qt::WA_MacShowFocusRect, 0);

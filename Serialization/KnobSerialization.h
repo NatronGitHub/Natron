@@ -260,38 +260,56 @@ public:
 
 class KnobSerializationBase;
 
+// Enum indicating what's the data-type saved by the Knob
+enum SerializationValueVariantTypeEnum
+{
+    eSerializationValueVariantTypeNone,
+    eSerializationValueVariantTypeBoolean,
+    eSerializationValueVariantTypeInteger,
+    eSerializationValueVariantTypeDouble,
+    eSerializationValueVariantTypeString
+
+};
+
+
+struct DefaultValueSerialization
+{
+    SerializationValueVariant value;
+    SerializationValueVariantTypeEnum type;
+    bool serializeDefaultValue;
+
+    DefaultValueSerialization()
+    : value()
+    , type(eSerializationValueVariantTypeNone)
+    , serializeDefaultValue(false)
+    {
+
+    }
+};
+
 /**
  * @brief This class is used by KnobSerialization itself
  **/
 struct ValueSerialization
 {
-    // Enum indicating what's the data-type saved by the Knob
-    enum SerializationValueVariantTypeEnum
-    {
-        eSerializationValueVariantTypeNone,
-        eSerializationValueVariantTypeBoolean,
-        eSerializationValueVariantTypeInteger,
-        eSerializationValueVariantTypeDouble,
-        eSerializationValueVariantTypeString
-
-    };
 
     // If true, at least one of the fields below needs to be serialized
     bool _mustSerialize;
 
     int _dimension;
 
-    // Pointer to the actual KnobSerialization
-    KnobSerializationBase* _serialization;
+    // Pointer to the actual KnobSerialization, this is for compatibility only
+    // when loading an old serialization with boost
+    KnobSerialization* _serialization;
 
     // Control which type member holds the current value of the variant
     SerializationValueVariantTypeEnum _type;
 
     // Serialization of the value and default value as a variant
-    SerializationValueVariant _value, _defaultValue;
+    SerializationValueVariant _value;
 
-    // Whether we should save the value and default value
-    bool _serializeValue, _serializeDefaultValue;
+    // Whether we should save the value
+    bool _serializeValue;
 
     // Serialization of the animation curve
     CurveSerialization _animationCurve;
@@ -312,9 +330,7 @@ struct ValueSerialization
     , _serialization(0)
     , _type(eSerializationValueVariantTypeNone)
     , _value()
-    , _defaultValue()
     , _serializeValue(false)
-    , _serializeDefaultValue(false)
     , _animationCurve()
     , _expression()
     , _expresionHasReturnVariable(false)
@@ -367,7 +383,10 @@ public:
     typedef std::vector<ValueSerialization> PerDimensionValueSerializationVec;
     typedef std::map<std::string, PerDimensionValueSerializationVec> PerViewValueSerializationMap;
 
+    typedef std::vector<DefaultValueSerialization> PerDimensionDefaultValueSerializationVec;
+
     PerViewValueSerializationMap _values;
+    PerDimensionDefaultValueSerializationVec _defaultValues;
 
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
@@ -398,6 +417,7 @@ public:
     , _disabled(false)
     , _masterIsAlias(false)
     , _values()
+    , _defaultValues()
     , _extraData()
     , _isUserKnob(false)
     , _label()

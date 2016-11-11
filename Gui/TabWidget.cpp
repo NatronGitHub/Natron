@@ -282,6 +282,16 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addSpacing(10);
 
     _imp->tabBar = new TabBar(this, _imp->header);
+#if QT_VERSION < 0x050000
+    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    double scale = gui->getHighDPIScaleFactor();
+    if (scale > 1) {
+        QSize iconSize = _imp->tabBar->iconSize();
+        iconSize.setHeight(iconSize.height() / scale);
+        _imp->tabBar->setIconSize(iconSize);
+    }
+#endif
     _imp->tabBar->setShape(QTabBar::RoundedNorth);
     _imp->tabBar->setDrawBase(false);
     QObject::connect( _imp->tabBar, SIGNAL(currentChanged(int)), this, SLOT(setCurrentIndex(int)) );
@@ -984,6 +994,7 @@ TabWidget::appendTab(PanelWidget* widget,
         _imp->tabs.push_back( std::make_pair(widget, object) );
         //widget->setParent(this);
         _imp->modifyingTabBar = true;
+
         _imp->tabBar->addTab( icon, title );
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
@@ -1024,6 +1035,9 @@ TabWidget::insertTab(int index,
 
         _imp->tabs.insert( _imp->tabs.begin() + index, std::make_pair(widget, object) );
         _imp->modifyingTabBar = true;
+
+
+
         _imp->tabBar->insertTab(index, icon, title);
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
@@ -1355,6 +1369,28 @@ TabBar::TabBar(TabWidget* tabWidget,
     QObject::connect( this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)) );
 }
 
+QSize
+TabBar::sizeHint() const
+{
+    return QTabBar::sizeHint();
+#if 0
+    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
+    s.setHeight(s.height() / scale);
+    return s;
+#endif
+}
+
+QSize
+TabBar::minimumSizeHint() const
+{
+    return QTabBar::minimumSizeHint();
+#if 0
+    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
+    s.setHeight(s.height() / scale);
+    return s;
+#endif
+}
+
 void
 TabBar::setMouseOverFocus(bool focus)
 {
@@ -1525,14 +1561,11 @@ TabBar::makePixmapForDrag(int index)
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
 
-#if QT_VERSION < 0x050000
-    ///Prevent a bug with grabWidget and retina display on Qt4
-    bool isHighDPI = _tabWidget->getGui()->isHighDPI();
-    if (isHighDPI) {
-        tabBarImg = tabBarImg.scaled(tabBarImg.width() / 2., tabBarImg.height() / 2.);
-        currentTabImg = currentTabImg.scaled(currentTabImg.width() / 2., currentTabImg.height() / 2.);
-    }
-#endif
+    // Prevent a bug with grabWidget and retina display on Qt4
+    // See https://bugreports.qt.io/browse/QTBUG-23870
+    _tabWidget->getGui()->scaleImageToAdjustDPI(&tabBarImg);
+    _tabWidget->getGui()->scaleImageToAdjustDPI(&currentTabImg);
+
 
     //now we just put together the 2 pixmaps and set it with mid transparancy
     QImage ret(currentTabImg.width(), currentTabImg.height() + tabBarImg.height(), QImage::Format_ARGB32_Premultiplied);

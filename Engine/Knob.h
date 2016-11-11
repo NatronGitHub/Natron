@@ -1212,7 +1212,11 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&  serializationBase) OVERRIDE = 0;
 
-    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view, bool restoreDefaultValue) = 0;
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view) = 0;
+
+    virtual void restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::DefaultValueSerialization& defObj,
+                                                      bool applyDefaultValue,
+                                                      DimIdx targetDimension) = 0;
 
 private:
 
@@ -1712,7 +1716,11 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
-    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj, DimIdx targetDimension, ViewIdx view, bool restoreDefaultValue) OVERRIDE FINAL;
+    virtual void restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSerialization& obj,
+                                               DimIdx targetDimension,
+                                               ViewIdx view) OVERRIDE FINAL;
+
+    virtual void restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::DefaultValueSerialization& defObj, bool applyDefaultValue, DimIdx targetDimension) OVERRIDE FINAL;
 
     virtual bool splitView(ViewIdx view) OVERRIDE;
 

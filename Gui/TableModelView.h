@@ -329,7 +329,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TableView(QWidget* parent = 0);
+    TableView(Gui* gui, QWidget* parent = 0);
 
     virtual ~TableView();
 

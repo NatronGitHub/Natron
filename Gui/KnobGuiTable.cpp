@@ -178,7 +178,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     QVBoxLayout* mainLayout = new QVBoxLayout(_imp->mainContainer);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    _imp->table = new TableView(_imp->mainContainer);
+    _imp->table = new TableView(knobUI->getGui(), _imp->mainContainer);
     QObject::connect( _imp->table, SIGNAL(aboutToDrop()), this, SLOT(onItemAboutToDrop()) );
     QObject::connect( _imp->table, SIGNAL(itemDropped()), this, SLOT(onItemDropped()) );
     QObject::connect( _imp->table, SIGNAL(itemDoubleClicked(TableItemPtr)), this, SLOT(onItemDoubleClicked(TableItemPtr)) );

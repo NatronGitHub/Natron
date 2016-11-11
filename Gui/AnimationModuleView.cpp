@@ -1244,6 +1244,7 @@ AnimationModuleView::wheelEvent(QWheelEvent *e)
     if ( _imp->_gui->isTripleSyncEnabled() ) {
         _imp->_gui->centerOpenedViewersOn( _imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right() );
     }
+    _imp->zoomOrPannedSinceLastFit = true;
 
     update();
 } // wheelEvent

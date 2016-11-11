@@ -232,6 +232,18 @@ public:
      **/
     static QIcon getItemVisibilityIcon(bool visible);
 
+    /**
+     * @brief Notify that the whole model is about to tear-down. As a result of it, any item
+     * in the model should not delete their tree items.
+     **/
+    void setAboutToBeDestroyed(bool d);
+
+    /**
+     * @brief Returns the whole model is about to tear-down. As a result of it, any item
+     * in the model should not delete their tree items.
+     **/
+    bool isAboutToBeDestroyed() const;
+
 
 private:
     

@@ -42,10 +42,12 @@ struct AnimationModuleBasePrivate
 {
     AnimItemDimViewKeyFramesMap keyframesClipboard;
     Gui* gui;
+    bool aboutToBeDestroyed;
 
     AnimationModuleBasePrivate(Gui* gui)
     : keyframesClipboard()
     , gui(gui)
+    , aboutToBeDestroyed(false)
     {
 
     }
@@ -435,6 +437,18 @@ AnimationModuleSelectionProvider::isCurveVisible(const AnimItemBasePtr& item, Di
             return isCurveVisible(item, DimIdx(dimension), ViewIdx(view));
         }
     }
+}
+
+void
+AnimationModuleBase::setAboutToBeDestroyed(bool d)
+{
+    _imp->aboutToBeDestroyed = d;
+}
+
+bool
+AnimationModuleBase::isAboutToBeDestroyed() const
+{
+    return _imp->aboutToBeDestroyed;
 }
 
 NATRON_NAMESPACE_EXIT;

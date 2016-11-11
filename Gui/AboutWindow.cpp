@@ -60,7 +60,7 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-AboutWindow::AboutWindow(QWidget* parent)
+AboutWindow::AboutWindow(Gui* gui, QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -434,7 +434,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     thidPartyLayout->setContentsMargins(0, 0, 0, 0);
     QSplitter *splitter = new QSplitter();
 
-    _view = new TableView(thirdPartyContainer);
+    _view = new TableView(gui,thirdPartyContainer);
     _model = TableModel::create(1, TableModel::eTableModelTypeTable);
     _view->setTableModel(_model);
 

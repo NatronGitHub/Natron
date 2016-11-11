@@ -746,7 +746,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     _imp->mainLayout->addWidget(_imp->filterContainer);
 
-    _imp->view = new TableView(this);
+    _imp->view = new TableView(_imp->gui, this);
 
 
     QStringList dimensionNames;

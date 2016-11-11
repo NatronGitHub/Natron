@@ -156,6 +156,9 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 
 KnobAnim::~KnobAnim()
 {
+
+    getModel();
+    
     delete _imp->rootItem;
     _imp->rootItem = 0;
 }

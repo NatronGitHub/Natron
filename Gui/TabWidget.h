@@ -110,6 +110,8 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     QPixmap makePixmapForDrag(int index);
 
     QPoint _dragPos;

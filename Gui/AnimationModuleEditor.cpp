@@ -492,7 +492,8 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()
-{}
+{
+}
 
 AnimationModuleEditor::AnimationModuleDisplayViewMode
 AnimationModuleEditor::getDisplayMode() const

@@ -35,6 +35,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QUndoGroup>
 #include <QDesktopServices>
+#include <QImage>
+#include <QPixmap>
 #include <QtCore/QUrl>
 
 #include "Engine/Node.h"
@@ -751,6 +753,43 @@ Gui::dockClicked()
     setWindowState(windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
 }
 #endif
+
+template <class IMG>
+void scaleImageToAdjustDPIInternal(double scale, IMG* pix)
+{
+
+    if (scale <= 1) {
+        return;
+    }
+    int newWidth = pix->width() / scale;
+    int newHeight = pix->height() / scale;
+
+    *pix = pix->scaled(newWidth, newHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+}
+
+
+
+void
+Gui::scaleImageToAdjustDPI(QImage* pix)
+{
+#if QT_VERSION > 0x050000
+    Q_UNUSED(pix);
+    return;
+#endif
+    double highDPIFactor = getHighDPIScaleFactor();
+    scaleImageToAdjustDPIInternal<QImage>(highDPIFactor, pix);
+}
+
+void
+Gui::scalePixmapToAdjustDPI(QPixmap* pix)
+{
+#if QT_VERSION > 0x050000
+    Q_UNUSED(pix);
+    return;
+#endif
+    double highDPIFactor = getHighDPIScaleFactor();
+    scaleImageToAdjustDPIInternal<QPixmap>(highDPIFactor, pix);
+}
 
 NATRON_NAMESPACE_EXIT;
 

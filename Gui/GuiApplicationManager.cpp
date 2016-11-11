@@ -1155,6 +1155,7 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,
     _imp->dpiY = dpiY;
 }
 
+
 void
 GuiApplicationManager::updateAboutWindowLibrariesVersion()
 {

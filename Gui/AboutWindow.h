@@ -59,7 +59,7 @@ class AboutWindow
 
 public:
 
-    AboutWindow(QWidget* parent = 0);
+    AboutWindow(Gui* gui, QWidget* parent = 0);
 
     void updateLibrariesVersions();
 

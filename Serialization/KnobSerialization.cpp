@@ -66,19 +66,19 @@ KnobSerialization::encode(YAML::Emitter& em) const
     int nDimsWithValue = 0;
     int nDimsWithDefValue = 0;
     for (PerViewValueSerializationMap::const_iterator it = _values.begin(); it != _values.end(); ++it) {
-        assert((int)it->second.size() == _dimension);
         for (PerDimensionValueSerializationVec::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if (it2->_mustSerialize && _isPersistent) {
                 ++nDimsToSerialize;
                 if (it2->_serializeValue || !it2->_animationCurve.keys.empty() || it2->_slaveMasterLink.hasLink || !it2->_expression.empty()) {
                     ++nDimsWithValue;
                 }
-                if (it2->_serializeDefaultValue) {
-                    ++nDimsWithDefValue;
-                }
             }
         }
-
+    }
+    for (std::size_t i = 0; i < _defaultValues.size(); ++i) {
+        if (_defaultValues[i].serializeDefaultValue) {
+            ++nDimsWithDefValue;
+        }
     }
 
 
@@ -99,7 +99,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
                     em << YAML::Key << it->first << YAML::Value;
                 }
 
-                // Starting dimensions
+                // Starting dimensions, make a sequence if multiple dimensions are serialized
                 if (it->second.size() > 1) {
                     em << YAML::Flow << YAML::BeginSeq;
                 }
@@ -164,18 +164,20 @@ KnobSerialization::encode(YAML::Emitter& em) const
                         val._animationCurve.encode(em);
                         em << YAML::EndMap;
                     } else {
-                        assert(val._type != ValueSerialization::eSerializationValueVariantTypeNone);
+                        // No animation or link, directly write the value without a map
+                        // This is the general case so we keep it tight
+                        assert(val._type != eSerializationValueVariantTypeNone);
                         switch (val._type) {
-                            case ValueSerialization::eSerializationValueVariantTypeBoolean:
+                            case eSerializationValueVariantTypeBoolean:
                                 em << val._value.isBool;
                                 break;
-                            case ValueSerialization::eSerializationValueVariantTypeInteger:
+                            case eSerializationValueVariantTypeInteger:
                                 em << val._value.isInt;
                                 break;
-                            case ValueSerialization::eSerializationValueVariantTypeDouble:
+                            case eSerializationValueVariantTypeDouble:
                                 em << val._value.isDouble;
                                 break;
-                            case ValueSerialization::eSerializationValueVariantTypeString:
+                            case eSerializationValueVariantTypeString:
                                 em << val._value.isString;
                                 break;
                             default:
@@ -199,33 +201,31 @@ KnobSerialization::encode(YAML::Emitter& em) const
         if (nDimsWithDefValue > 0) {
             em << YAML::Key << "Default" << YAML::Value;
 
-            // Only encode default value for the main view
-            const PerDimensionValueSerializationVec& mainViewValues = _values.begin()->second;
             // Starting dimensions
-            if (mainViewValues.size() > 1) {
+            if (_defaultValues.size() > 1) {
                 em << YAML::Flow << YAML::BeginSeq;
             }
-            for (PerDimensionValueSerializationVec::const_iterator it2 = mainViewValues.begin(); it2 != mainViewValues.end(); ++it2) {
-                const ValueSerialization& val = *it2;
-                switch (val._type) {
-                    case ValueSerialization::eSerializationValueVariantTypeBoolean:
-                        em << val._defaultValue.isBool;
+            for (std::size_t i = 0; i < _defaultValues.size(); ++i) {
+
+                switch (_defaultValues[i].type) {
+                    case eSerializationValueVariantTypeBoolean:
+                        em << _defaultValues[i].value.isBool;
                         break;
-                    case ValueSerialization::eSerializationValueVariantTypeInteger:
-                        em << val._defaultValue.isInt;
+                    case eSerializationValueVariantTypeInteger:
+                        em << _defaultValues[i].value.isInt;
                         break;
-                    case ValueSerialization::eSerializationValueVariantTypeDouble:
-                        em << val._defaultValue.isDouble;
+                    case eSerializationValueVariantTypeDouble:
+                        em << _defaultValues[i].value.isDouble;
                         break;
-                    case ValueSerialization::eSerializationValueVariantTypeString:
-                        em << val._defaultValue.isString;
+                    case eSerializationValueVariantTypeString:
+                        em << _defaultValues[i].value.isString;
                         break;
                     default:
                         break;
                 }
 
             } // for all dimensions
-            if (mainViewValues.size() > 1) {
+            if (_defaultValues.size() > 1) {
                 em << YAML::EndSeq;
             }
 
@@ -465,23 +465,23 @@ static T* getOrCreateExtraData(boost::scoped_ptr<TypeExtraData>& extraData)
 }
 
 static void decodeValueFromNode(const YAML::Node& node,
-                                SerializationValueVariant& variant, ValueSerialization::SerializationValueVariantTypeEnum* type)
+                                SerializationValueVariant& variant, SerializationValueVariantTypeEnum* type)
 {
     // yaml-cpp looses the original type information and does not seem to make a difference whether
     // the value was a string or a POD scalar. All functions as<T>() will succeed.
     // See https://github.com/jbeder/yaml-cpp/issues/261
 
     try {
-        *type = ValueSerialization::eSerializationValueVariantTypeDouble;
+        *type = eSerializationValueVariantTypeDouble;
         variant.isDouble = node.as<double>();
         variant.isInt = (int)variant.isDouble; //node.as<int>();
     } catch (const YAML::BadConversion&) {
         try {
             variant.isBool = node.as<bool>();
-            *type = ValueSerialization::eSerializationValueVariantTypeBoolean;
+            *type = eSerializationValueVariantTypeBoolean;
         } catch (const YAML::BadConversion&) {
             variant.isString = node.as<std::string>();
-            *type = ValueSerialization::eSerializationValueVariantTypeString;
+            *type = eSerializationValueVariantTypeString;
 
         }
     }
@@ -519,10 +519,14 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
             decodeValueFromNode(dimNode, dimVec[i]._value, &dimVec[i]._type);
             dimVec[i]._serializeValue = true;
         } else { // !isMap
+
+            // Always look for an animation curve
             if (dimNode["Curve"]) {
                 // Curve
                 dimVec[i]._animationCurve.decode(dimNode["Curve"]);
             }
+
+            // Look for a link or expression
             if (dimNode["MultiExpr"]) {
                 dimVec[i]._expression = dimNode["MultiExpr"].as<std::string>();
                 dimVec[i]._expresionHasReturnVariable = true;
@@ -566,12 +570,24 @@ KnobSerialization::decode(const YAML::Node& node)
     _scriptName = node["ScriptName"].as<std::string>();
 
     if (node["Value"]) {
+        // We need to figure out of the knob is multi-view and if multi-dimensional
         YAML::Node valueNode = node["Value"];
 
         if (valueNode.IsMap()) {
-            // Multi-view
-            for (YAML::const_iterator it = valueNode.begin(); it != valueNode.end(); ++it) {
-                decodeValueNode(it->first.as<std::string>(), it->second);
+
+            // If the "Value" is a map, this can be either a multi-view knob or a single-view
+            // and single-dimensional knob with animation.
+            // Check to find any of the keys of a single dimension map. If we find it, that means
+            // this is not the multi-view map and that this is a single-dimensional knob
+
+            if (valueNode["Curve"] || valueNode["MultiExpr"] || valueNode["Expr"] || valueNode["N"] || valueNode["T"] ||
+                valueNode["K"] || valueNode["D"] || valueNode["V"]) {
+                decodeValueNode("Main", valueNode);
+            } else {
+                // Multi-view
+                for (YAML::const_iterator it = valueNode.begin(); it != valueNode.end(); ++it) {
+                    decodeValueNode(it->first.as<std::string>(), it->second);
+                }
             }
         } else {
             decodeValueNode("Main", valueNode);
@@ -582,14 +598,12 @@ KnobSerialization::decode(const YAML::Node& node)
 
         YAML::Node defNode = node["Default"];
         int nDims = defNode.IsSequence() ? defNode.size() : 1;
-        PerDimensionValueSerializationVec& dimVec = _values["Main"];
-        initValuesVec(this, &dimVec, nDims);
+        _defaultValues.resize(nDims);
         for (int i = 0; i < nDims; ++i) {
-            dimVec[i]._serializeDefaultValue = true;
+            _defaultValues[i].serializeDefaultValue = true;
             YAML::Node dimNode = defNode.IsSequence() ? defNode[i] : defNode;
-            decodeValueFromNode(dimNode, dimVec[i]._defaultValue, &dimVec[i]._type);
+            decodeValueFromNode(dimNode, _defaultValues[i].value, &_defaultValues[i].type);
         }
-
 
     }
 

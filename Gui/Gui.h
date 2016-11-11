@@ -452,12 +452,19 @@ public:
      * @brief Returns true on OS X if on a High DPI (Retina) Display.
      **/
 #ifndef Q_OS_MAC
-    bool isHighDPI() const { return false; }
+    double getHighDPIScaleFactor() const { return 1.; }
 
 #else
-    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
-
+    double getHighDPIScaleFactor() const { return QtMac::getHighDPIScaleFactorInternal(this); }
 #endif
+
+    /**
+     * @brief Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+     * https://bugreports.qt.io/browse/QTBUG-23870
+     **/
+    void scalePixmapToAdjustDPI(QPixmap* pix);
+    void scaleImageToAdjustDPI(QImage* pix);
+
 
     AppInstancePtr createNewProject();
 
