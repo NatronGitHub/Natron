@@ -2757,7 +2757,11 @@ Node::getPreferredInputInternal(bool connected) const
             }
         }
     }
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    bool useInputA = false;
+    if (!connected) {
+        // For the merge node, use the preference (only when not connected)
+        useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
