@@ -3483,7 +3483,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         // If the knob has multiple dimensions but only a single one was serialized, assume the dimensions
         // were folded
         bool dimensionsFolded = it->second.size() == 1 && getNDimensions() > 1;
-        setAllDimensionsVisible(view_i, dimensionsFolded);
+        setAllDimensionsVisible(view_i, !dimensionsFolded);
 
 
     }

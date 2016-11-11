@@ -189,7 +189,11 @@ ViewerGL::resizeGL(int w,
     glCheckError(GL_GPU);
     _imp->ms = eMouseStateUndefined;
     assert(_imp->viewerTab);
-    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode()->getInternalViewerNode();
+    ViewerNodePtr viewerNode = _imp->viewerTab->getInternalNode();
+    if (!viewerNode) {
+        return;
+    }
+    ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
     if (!viewer) {
         return;
     }

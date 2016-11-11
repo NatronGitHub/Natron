@@ -264,7 +264,7 @@ AnimationModuleViewPrivate::curveEditorDoubleClickEvent(QMouseEvent* e)
 
         // Check if we're nearby a selected keyframe's tangent text
         std::pair<MoveTangentCommand::SelectedTangentEnum, AnimItemDimViewKeyFrame> tangentText = isNearbySelectedTangentText( e->pos() );
-        if (keyText.id.item) {
+        if (tangentText.second.id.item) {
             if (tangentText.first == MoveTangentCommand::eSelectedTangentLeft) {
                 mode = EditKeyFrameDialog::eEditModeLeftDerivative;
             } else {
@@ -321,8 +321,7 @@ AnimationModuleView::onEditKeyFrameDialogFinished(bool /*accepted*/)
     EditKeyFrameDialog* dialog = qobject_cast<EditKeyFrameDialog*>( sender() );
 
     if (dialog) {
-        //QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        dialog->deleteLater();
+        dialog->close();
     }
 }
 

@@ -103,7 +103,17 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
 
 TableItemAnim::~TableItemAnim()
 {
-    delete _imp->nameItem;
+    AnimationModuleBasePtr model = getModel();
+    bool isTearingDown;
+    if (model) {
+        isTearingDown = model->isAboutToBeDestroyed();
+    } else {
+        isTearingDown = true;
+    }
+
+    if (!isTearingDown) {
+        delete _imp->nameItem;
+    }
     _imp->nameItem = 0;
 }
 
@@ -291,6 +301,7 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     QString itemLabel = QString::fromUtf8( item->getLabel().c_str() );
 
     AnimItemBasePtr thisShared = shared_from_this();
+    AnimationModuleBasePtr model = getModel();
 
     _imp->nameItem = new QTreeWidgetItem;
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
@@ -300,7 +311,7 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     int nCols = getModel()->getTreeColumnsCount();
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
         _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
-        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, model->getItemVisibilityIcon(true));
     }
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
         QString iconFilePath = QString::fromUtf8(item->getIconLabelFilePath().c_str());
@@ -314,7 +325,6 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
         createViewItems();
     }
 
-    AnimationModuleBasePtr model = getModel();
     KnobItemsTableGuiPtr table = _imp->table.lock();
     NodeAnimPtr parentNode = _imp->parentNode.lock();
     std::vector<KnobTableItemPtr> children = item->getChildren();
@@ -330,8 +340,9 @@ void
 TableItemAnim::createViewItems()
 {
     KnobTableItemPtr item = getInternalItem();
+    AnimationModuleBasePtr model = getModel();
 
-    AnimationModuleView* curveWidget = getModel()->getView();
+    AnimationModuleView* curveWidget = model->getView();
     AnimItemBasePtr thisShared = shared_from_this();
 
     std::list<ViewIdx> views = item->getViewsList();
@@ -354,7 +365,7 @@ TableItemAnim::createViewItems()
         int nCols = getModel()->getTreeColumnsCount();
         if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
             animationItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
-            animationItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+            animationItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, model->getItemVisibilityIcon(true));
         }
 
 

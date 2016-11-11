@@ -111,24 +111,29 @@ struct KnobGuiValuePrivate
     bool autoExpandEnabled;
 
     KnobGuiValuePrivate(KnobGuiValue *publicInterface, const KnobIPtr& knob)
-        : publicInterface(publicInterface)
-        , knob(knob)
-        , intKnob( boost::dynamic_pointer_cast<KnobIntBase >(knob) )
-        , doubleKnob( toKnobDoubleBase(knob) )
-        , spinBoxes()
-        , container(0)
-        , slider(0)
-        , rectangleFormatButton(0)
-        , dimensionSwitchButton(0)
-        , rectangleFormatIsWidthHeight(true)
-        , autoExpandEnabled(true)
+    : publicInterface(publicInterface)
+    , knob(knob)
+    , intKnob( boost::dynamic_pointer_cast<KnobIntBase >(knob) )
+    , doubleKnob( toKnobDoubleBase(knob) )
+    , spinBoxes()
+    , container(0)
+    , slider(0)
+    , rectangleFormatButton(0)
+    , dimensionSwitchButton(0)
+    , rectangleFormatIsWidthHeight(true)
+    , autoExpandEnabled(true)
     {
         // Don't auto-expand if the knob is animated by default
-        int nDims = knob->getNDimensions();
-        for (int i = 0; i < nDims; ++i) {
-            if (knob->isAnimated(DimIdx(i), publicInterface->getView())) {
-                autoExpandEnabled = false;
-                break;
+        // or if its dimensions are already folded
+        if (knob->getAllDimensionsVisible(publicInterface->getView())) {
+            autoExpandEnabled = false;
+        } else {
+            int nDims = knob->getNDimensions();
+            for (int i = 0; i < nDims; ++i) {
+                if (knob->isAnimated(DimIdx(i), publicInterface->getView())) {
+                    autoExpandEnabled = false;
+                    break;
+                }
             }
         }
 
@@ -515,6 +520,11 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     addExtraWidgets(containerLayout);
 
     updateGUI();
+
+    if (!_imp->autoExpandEnabled) {
+        // Refresh widgets state if auto-expand is not enabled
+        setAllDimensionsVisible(knob->getAllDimensionsVisible(getView()));
+    }
 
 } // createWidget
 

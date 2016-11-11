@@ -166,6 +166,8 @@ public Q_SLOTS:
 
 private:
 
+    void refreshSelectedKey();
+
     void moveKeyTo(double newX, double newY);
     void moveDerivativeTo(double d);
 

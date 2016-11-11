@@ -335,7 +335,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
 
     if ( !curves.empty() ) {
         model->getEditor()->setOtherItemsVisibility(treeItems, false);
-        AnimationModuleEditor::setItemsVisibility(treeItems, true, true /*recurseOnParent*/);
+        getGui()->getAnimationModuleEditor()->setItemsVisibility(treeItems, true, true /*recurseOnParent*/);
 
         AnimItemDimViewKeyFramesMap keys;
         std::vector<TableItemAnimPtr> tableItems;

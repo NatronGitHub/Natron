@@ -43,6 +43,7 @@
 
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -332,6 +333,7 @@ AnimationModuleTreeViewItemDelegate::paint(QPainter *painter, const QStyleOption
             QStyleOptionViewItemV4 newOpt = paintOptions;
 
             newOpt.features |= QStyleOptionViewItemV2::HasDecoration;
+
             newOpt.decorationSize = option.rect.size();
             QRect iconBgRect = _treeView->style()->subElementRect(QStyle::SE_ItemViewItemDecoration, &newOpt);
 

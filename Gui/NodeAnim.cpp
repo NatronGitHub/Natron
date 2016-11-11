@@ -66,7 +66,7 @@ public:
     AnimationModuleWPtr model;
     AnimatedItemTypeEnum nodeType;
     NodeGuiWPtr nodeGui;
-    boost::scoped_ptr<QTreeWidgetItem> nameItem;
+    QTreeWidgetItem* nameItem;
     std::vector<KnobAnimPtr> knobs;
     std::vector<TableItemAnimPtr> topLevelTableItems;
 
@@ -124,7 +124,19 @@ NodeAnim::~NodeAnim()
     // Kill sub items first before killing the top level item
     _imp->knobs.clear();
     _imp->topLevelTableItems.clear();
-    _imp->nameItem.reset();
+
+    AnimationModuleBasePtr model = getModel();
+    bool isTearingDown;
+    if (model) {
+        isTearingDown = model->isAboutToBeDestroyed();
+    } else {
+        isTearingDown = true;
+    }
+
+    if (!isTearingDown) {
+        delete _imp->nameItem;
+    }
+    _imp->nameItem = 0;
 }
 
 void
@@ -133,8 +145,9 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
     _imp->nodeType = nodeType;
     NodePtr internalNode = getNodeGui()->getNode();
 
+    AnimationModuleBasePtr model = getModel();
     NodeAnimPtr thisShared = shared_from_this();
-    _imp->nameItem.reset(new QTreeWidgetItem);
+    _imp->nameItem = new QTreeWidgetItem;
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
     _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, nodeType);
@@ -143,11 +156,11 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
     int nCols = getModel()->getTreeColumnsCount();
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
         _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
-        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+        _imp->nameItem->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, model->getItemVisibilityIcon(true));
     }
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON) {
         QString iconFilePath = QString::fromUtf8(internalNode->getPluginIconFilePath().c_str());
-        AnimationModuleTreeView::setItemIcon(iconFilePath, _imp->nameItem.get());
+        AnimationModuleTreeView::setItemIcon(iconFilePath, _imp->nameItem);
     }
 
     connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
@@ -157,7 +170,7 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
     initializeTableItems();
 
     // Connect signals/slots to knobs to compute the frame range
-    AnimationModulePtr animModel = toAnimationModule(_imp->model.lock());
+    AnimationModulePtr animModel = toAnimationModule(model);
     assert(animModel);
 
     if (nodeType == eAnimatedItemTypeCommon) {
@@ -240,7 +253,7 @@ NodeAnim::initializeKnobsAnim()
         }
         assert(knob->getNDimensions() >= 1);
 
-        KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem.get(), knobGui));
+        KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem, knobGui));
         _imp->knobs.push_back(knobAnimObject);
         
     } // for all knobs
@@ -268,7 +281,7 @@ NodeAnim::initializeTableItems()
 
     std::vector<KnobTableItemPtr> allItems = internalTable->getTopLevelItems();
     for (std::size_t i = 0; i < allItems.size(); ++i) {
-        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, thisShared, allItems[i], _imp->nameItem.get()));
+        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, thisShared, allItems[i], _imp->nameItem));
         _imp->topLevelTableItems.push_back(anim);
     }
 
@@ -321,7 +334,7 @@ NodeAnim::onTableItemInserted(int index, const KnobTableItemPtr& item, TableChan
         parentAnim = findTableItem(parentItem);
     }
     KnobItemsTableGuiPtr table = getNodeGui()->getKnobItemsTable();
-    TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, _imp->nameItem.get()));
+    TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, _imp->nameItem));
     if (parentItem) {
         parentAnim->insertChild(index, anim);
     } else {
@@ -352,7 +365,7 @@ NodeAnim::getModel() const
 QTreeWidgetItem *
 NodeAnim::getTreeItem() const
 {
-    return _imp->nameItem.get();
+    return _imp->nameItem;
 }
 
 NodeGuiPtr

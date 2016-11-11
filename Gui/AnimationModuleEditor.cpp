@@ -1101,7 +1101,7 @@ void
 AnimationModuleEditor::setItemVisibility(QTreeWidgetItem* item, bool visible, bool recurseOnParent)
 {
     item->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, visible);
-    item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModuleBase::getItemVisibilityIcon(visible));
+    item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, _imp->model->getItemVisibilityIcon(visible));
 
     if (recurseOnParent) {
         QTreeWidgetItem* parent = item->parent();
@@ -1121,13 +1121,15 @@ AnimationModuleEditor::setItemsVisibility(const std::list<QTreeWidgetItem*>& ite
     }
 }
 
-static void invertItemVisibility(QTreeWidgetItem* item)
+void
+AnimationModuleEditor::invertItemVisibility(QTreeWidgetItem* item)
 {
     bool isItemVisible = item->data(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE).toBool();
-    AnimationModuleEditor::setItemVisibility(item, !isItemVisible, false);
+    setItemVisibility(item, !isItemVisible, false);
 }
 
-static bool setItemVisibilityRecursive(QTreeWidgetItem* item, bool visible, const std::list<QTreeWidgetItem*>& itemsToIgnore)
+bool
+AnimationModuleEditor::setItemVisibilityRecursive(QTreeWidgetItem* item, bool visible, const std::list<QTreeWidgetItem*>& itemsToIgnore)
 {
     if (std::find(itemsToIgnore.begin(), itemsToIgnore.end(), item) != itemsToIgnore.end()) {
         return true;
@@ -1248,6 +1250,12 @@ AnimationModuleEditor::onShowHideOtherItemsRightClickMenuActionTriggered()
     std::list<QTreeWidgetItem*> items;
     items.push_back(_imp->rightClickedItem);
     setOtherItemsVisibilityAuto(items);
+}
+
+void
+AnimationModuleEditor::notifyGuiClosing()
+{
+    _imp->model->setAboutToBeDestroyed(true);
 }
 
 NATRON_NAMESPACE_EXIT;

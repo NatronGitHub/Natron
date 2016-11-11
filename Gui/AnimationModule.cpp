@@ -635,7 +635,7 @@ bool
 AnimationModule::isCurveVisible(const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view) const
 {
     QTreeWidgetItem* treeItem = item->getTreeItem(dimension, view);
-    if (!item) {
+    if (!treeItem) {
         return false;
     }
     return getCurveVisibleRecursive(treeItem);

@@ -32,6 +32,7 @@
 #include <QtCore/QTimer>
 
 #include <QHBoxLayout>
+#include <QMenuBar>
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
@@ -336,6 +337,9 @@ Gui::getLastSelectedNodeCollection() const
 void
 Gui::wipeLayout()
 {
+    // Delete the menu bar as it can hold actions (undo/Redo) that may not be valid anymore
+    _imp->menubar->deleteLater();
+
     std::list<TabWidgetI*> panesCpy = getApp()->getTabWidgetsSerialization();
     getApp()->clearTabWidgets();
     std::list<SerializableWindow*> floatingWidgets = getApp()->getFloatingWindowsSerialization();
@@ -399,6 +403,9 @@ Gui::wipeLayout()
     _imp->_mainLayout->addWidget(newSplitter);
 
     getApp()->registerSplitter(newSplitter);
+
+    // Re-create new menu actions
+    createMenuActions();
  
 } // Gui::wipeLayout
 

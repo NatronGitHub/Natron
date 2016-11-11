@@ -230,7 +230,7 @@ public:
     /**
      * @brief Helper function to get the visibility icon for an item
      **/
-    static QIcon getItemVisibilityIcon(bool visible);
+    QIcon getItemVisibilityIcon(bool visible);
 
     /**
      * @brief Notify that the whole model is about to tear-down. As a result of it, any item

@@ -171,9 +171,10 @@ public:
     /**
      * @brief Set the given item visible
      **/
-    static void setItemVisibility(QTreeWidgetItem* item, bool visible, bool recurseOnParent);
-    static void setItemsVisibility(const std::list<QTreeWidgetItem*>& items, bool visible, bool recurseOnParent);
-
+    void setItemVisibility(QTreeWidgetItem* item, bool visible, bool recurseOnParent);
+    void setItemsVisibility(const std::list<QTreeWidgetItem*>& items, bool visible, bool recurseOnParent);
+    void invertItemVisibility(QTreeWidgetItem* item);
+    
 public Q_SLOTS:
 
     void onExprLineEditFinished();
@@ -220,8 +221,10 @@ public Q_SLOTS:
 
 private:
 
+    bool setItemVisibilityRecursive(QTreeWidgetItem* item, bool visible, const std::list<QTreeWidgetItem*>& itemsToIgnore);
     void refreshKeyFrameWidgetsEnabledNess();
 
+    virtual void notifyGuiClosing() OVERRIDE FINAL;
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

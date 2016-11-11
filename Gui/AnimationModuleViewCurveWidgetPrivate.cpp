@@ -263,38 +263,37 @@ AnimationModuleViewPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     int yOffset = TO_DPIY(4);
     AnimationModuleBasePtr model = _model.lock();
     const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
-    if (selectedKeys.size() > 1) {
+    if (selectedKeys.empty() || selectedKeys.size() > 1) {
         return ret;
     }
 
     AnimItemDimViewKeyFramesMap::const_iterator curveIT = selectedKeys.begin();
     const KeyFrameWithStringSet& keys = curveIT->second;
-    if (keys.size() > 1) {
+    if (keys.empty() || keys.size() > 1) {
         return ret;
     }
 
-    for (KeyFrameWithStringSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+    const KeyFrameWithString& key = *keys.begin();
 
-        QPointF topLeftWidget = curveEditorZoomContext.toWidgetCoordinates( it->key.getTime(), it->key.getValue() );
-        topLeftWidget.ry() += yOffset;
 
-        QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( it->key.getTime() ).arg( it->key.getValue() );
-        QPointF btmRightWidget( topLeftWidget.x() + fm.width(coordStr), topLeftWidget.y() + fm.height() );
+    QPointF topLeftWidget = curveEditorZoomContext.toWidgetCoordinates( key.key.getTime(), key.key.getValue() );
+    topLeftWidget.ry() += yOffset;
 
-        if ( (pt.x() >= topLeftWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRightWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
-            ( pt.y() >= topLeftWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRightWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
-            ret.key.key = it->key;
-            StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation();
-            if (stringAnim) {
-                stringAnim->stringFromInterpolatedIndex(it->key.getValue(), curveIT->first.view, &ret.key.string);
-            }
-            ret.id = curveIT->first;
+    QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( key.key.getTime() ).arg( key.key.getValue() );
+    QPointF btmRightWidget( topLeftWidget.x() + fm.width(coordStr), topLeftWidget.y() + fm.height() );
 
-            return ret;
+    if ( (pt.x() >= topLeftWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRightWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
+        ( pt.y() >= topLeftWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRightWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
+        ret.key.key = key.key;
+        StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation();
+        if (stringAnim) {
+            stringAnim->stringFromInterpolatedIndex(key.key.getValue(), curveIT->first.view, &ret.key.string);
         }
+        ret.id = curveIT->first;
 
-
+        return ret;
     }
+
 
     return ret;
 }
@@ -360,13 +359,13 @@ AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
     
     AnimationModuleBasePtr model = _model.lock();
     const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
-    if (selectedKeys.size() > 1) {
+    if (selectedKeys.empty() || selectedKeys.size() > 1) {
         return ret;
     }
 
     AnimItemDimViewKeyFramesMap::const_iterator curveIT = selectedKeys.begin();
     const KeyFrameWithStringSet& keys = curveIT->second;
-    if (keys.size() > 1) {
+    if (keys.empty() || keys.size() > 1) {
         return ret;
     }
 

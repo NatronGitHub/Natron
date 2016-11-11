@@ -117,7 +117,7 @@ createKnobNameItem(const AnimItemBasePtr& anim,
     if (anim->getModel()->getTreeColumnsCount() > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
         ret->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
 
-        ret->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, AnimationModule::getItemVisibilityIcon(true));
+        ret->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, anim->getModel()->getItemVisibilityIcon(true));
     }
     
     ret->setExpanded(true);
@@ -157,9 +157,17 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 KnobAnim::~KnobAnim()
 {
 
-    getModel();
-    
-    delete _imp->rootItem;
+    AnimationModuleBasePtr model = getModel();
+    bool isTearingDown;
+    if (model) {
+        isTearingDown = model->isAboutToBeDestroyed();
+    } else {
+        isTearingDown = true;
+    }
+
+    if (!isTearingDown) {
+        delete _imp->rootItem;
+    }
     _imp->rootItem = 0;
 }
 

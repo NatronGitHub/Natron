@@ -32,6 +32,7 @@
 #include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeAnim.h"
 #include "Gui/TableItemAnim.h"
@@ -395,8 +396,12 @@ AnimationModuleBase::transformSelectedKeys(const Transform::Matrix3x3& transform
 QIcon
 AnimationModuleBase::getItemVisibilityIcon(bool visible)
 {
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     QPixmap pix;
-    appPTR->getIcon(visible ? NATRON_PIXMAP_VISIBLE : NATRON_PIXMAP_UNVISIBLE, &pix);
+    appPTR->getIcon(visible ? NATRON_PIXMAP_VISIBLE : NATRON_PIXMAP_UNVISIBLE, iconSize, &pix);
+    if (_imp->gui) {
+        //_imp->gui->scalePixmapToAdjustDPI(&pix);
+    }
     return QIcon(pix);
 }
 

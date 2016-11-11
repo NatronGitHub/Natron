@@ -42,6 +42,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/AppManager.h" // appPTR
 
 #include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleSelectionModel.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/LineEdit.h" // LineEdit
@@ -482,7 +483,21 @@ EditKeyFrameDialog::moveKeyTo(double newX, double newY)
         std::vector<NodeAnimPtr > nodesToMove;
         std::vector<TableItemAnimPtr> tableItemsToMove;
         model->pushUndoCommand( new WarpKeysCommand(keysToMove, model, nodesToMove, tableItemsToMove, newX - curX, newY - curY) );
+        refreshSelectedKey();
     }
+
+}
+
+void
+EditKeyFrameDialog::refreshSelectedKey()
+{
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
+    const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    assert(!selectedKeys.empty() && selectedKeys.size() == 1);
+    AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin();
+    _imp->key.id = it->first;
+    assert(!it->second.empty() && it->second.size() == 1);
+    _imp->key.key = *it->second.begin();
 
 }
 
@@ -498,6 +513,7 @@ EditKeyFrameDialog::moveDerivativeTo(double d)
     }
     AnimationModuleBasePtr model = _imp->key.id.item->getModel();
     model->pushUndoCommand( new MoveTangentCommand(_imp->key.id.item->getModel(), deriv, _imp->key.id.item, _imp->key.id.dim, _imp->key.id.view, _imp->key.key.key, d) );
+    refreshSelectedKey();
 }
 
 void
