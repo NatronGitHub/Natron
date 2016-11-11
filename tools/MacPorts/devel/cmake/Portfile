@@ -85,6 +85,9 @@ if {${subport} eq ${name}} {
     depends_lib-append \
         path:lib/pkgconfig/libuv.pc:libuv
 
+    # for just devel until the next release
+    configure.args-append --no-system-librhash
+
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
     livecheck.version ${distname}
@@ -123,8 +126,7 @@ configure.args-append --docdir=share/doc/cmake \
                     --parallel=${build.jobs} \
                     --init=${worksrcpath}/macports.cmake \
                     --system-libs \
-                    --no-system-jsoncpp \
-                    --no-system-librhash
+                    --no-system-jsoncpp
 
 configure.universal_args
 configure.post_args
