@@ -26,14 +26,22 @@ INCLUDEPATH += $$PWD/libs/libmv
 }
 
 glad-flags {
-CONFIG(debug, debug|release): INCLUDEPATH += $$PWD/Global/gladDeb/include
-CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
+    CONFIG(debug) {
+        INCLUDEPATH += $$PWD/Global/gladDeb/include
+    } else {
+        INCLUDEPATH += $$PWD/Global/gladRel/include
+    }
 }
 
 openmvg-flags {
 CONFIG += ceres-flags boost
 # Make openMVG use openmp
-#DEFINES += OPENMVG_USE_OPENMP
+!macx:*g++* {
+    CONFIG += openmp
+}
+openmp {
+    DEFINES += OPENMVG_USE_OPENMP
+}
 
 DEFINES += OPENMVG_HAVE_BOOST
 
@@ -370,7 +378,7 @@ win32-msvc*{
 # ceres
 static-ceres {
 CONFIG += static-glog
-*g++* {
+!macx:*g++* {
     CONFIG += openmp
 }
 win32-msvc*{
