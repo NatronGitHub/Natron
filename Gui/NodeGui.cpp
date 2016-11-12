@@ -3878,7 +3878,8 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
         boost::shared_ptr<GroupKnobDialog> dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
         _activeNodeCustomModalDialog = dialog;
         dialog->move( QCursor::pos() );
-        dialog->exec();
+        int accepted = dialog->exec();
+        Q_UNUSED(accepted);
         // Notify dialog closed
         group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
         _activeNodeCustomModalDialog.reset();
