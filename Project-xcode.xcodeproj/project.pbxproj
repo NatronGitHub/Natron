@@ -85,13 +85,6 @@
 			remoteGlobalIDString = 923D21C3763E39C9804AEAFB;
 			remoteInfo = NatronProjectConverter;
 		};
-		1E1178161D8BD50E00024C91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1E1178031D8BD49C00024C91;
-			remoteInfo = "libyaml-cpp-natron";
-		};
 		1E12F4BA1CC6593300105A34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
@@ -281,6 +274,13 @@
 			remoteGlobalIDString = F1893DC41316C2EF4D083C17;
 			remoteInfo = "yaml-cpp-natron";
 		};
+		1EE90EF61DD79AB400FA7BFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1EE90EEB1DD79A9400FA7BFE;
+			remoteInfo = "yaml-cpp-natron";
+		};
 		AC07FAD91D6F65BE00A5A9D8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
@@ -374,20 +374,12 @@
 		1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = LibMV.xcodeproj; path = libs/libmv/LibMV.xcodeproj; sourceTree = "<group>"; };
 		1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openMVG.xcodeproj; path = libs/openMVG/openMVG.xcodeproj; sourceTree = "<group>"; };
 		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
-		1E1FB6201DA7BBD1009F547D /* AngleBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = AngleBlur.py; sourceTree = "<group>"; };
 		1E1FB6211DA7BBD1009F547D /* DropShadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = DropShadow.png; sourceTree = "<group>"; };
-		1E1FB6221DA7BBD1009F547D /* DropShadow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = DropShadow.py; sourceTree = "<group>"; };
 		1E1FB6231DA7BBD1009F547D /* Fill.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Fill.png; sourceTree = "<group>"; };
-		1E1FB6241DA7BBD1009F547D /* Fill.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Fill.py; sourceTree = "<group>"; };
 		1E1FB6251DA7BBD1009F547D /* Glow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Glow.png; sourceTree = "<group>"; };
-		1E1FB6261DA7BBD1009F547D /* Glow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Glow.py; sourceTree = "<group>"; };
 		1E1FB6271DA7BBD2009F547D /* LightWrap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LightWrap.png; sourceTree = "<group>"; };
-		1E1FB6281DA7BBD2009F547D /* LightWrap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = LightWrap.py; sourceTree = "<group>"; };
-		1E1FB6291DA7BBD2009F547D /* PIKColor.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = PIKColor.py; sourceTree = "<group>"; };
 		1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = SplitAndJoin.py; sourceTree = "<group>"; };
-		1E1FB62B1DA7BBD2009F547D /* ZMask.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZMask.py; sourceTree = "<group>"; };
 		1E1FB62C1DA7BBD2009F547D /* ZRemap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ZRemap.png; sourceTree = "<group>"; };
-		1E1FB62D1DA7BBD2009F547D /* ZRemap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZRemap.py; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
 		1E5EBABC1D4DF2640005A5A8 /* ofx_plugin_programming_guide.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; name = ofx_plugin_programming_guide.html; path = Documentation/ofx_plugin_programming_guide.html; sourceTree = "<group>"; };
 		1E5EBABD1D4DF2640005A5A8 /* ofxActionsSupported.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = ofxActionsSupported.rtf; path = Documentation/ofxActionsSupported.rtf; sourceTree = "<group>"; };
@@ -419,6 +411,16 @@
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
 		1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "yaml-cpp-natron.xcodeproj"; path = "libs/yaml-cpp/yaml-cpp-natron.xcodeproj"; sourceTree = "<group>"; };
+		1EE90EED1DD79AB400FA7BFE /* AngleBlur.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = AngleBlur.nps; sourceTree = "<group>"; };
+		1EE90EEE1DD79AB400FA7BFE /* DropShadow.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = DropShadow.nps; sourceTree = "<group>"; };
+		1EE90EEF1DD79AB400FA7BFE /* Fill.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Fill.nps; sourceTree = "<group>"; };
+		1EE90EF01DD79AB400FA7BFE /* Glow.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Glow.nps; sourceTree = "<group>"; };
+		1EE90EF11DD79AB400FA7BFE /* LightWrap.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LightWrap.nps; sourceTree = "<group>"; };
+		1EE90EF21DD79AB400FA7BFE /* PIKColor.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PIKColor.nps; sourceTree = "<group>"; };
+		1EE90EF31DD79AB400FA7BFE /* ViewerOCIO.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ViewerOCIO.nps; sourceTree = "<group>"; };
+		1EE90EF41DD79AB400FA7BFE /* ZMask.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ZMask.nps; sourceTree = "<group>"; };
+		1EE90EF51DD79AB400FA7BFE /* ZRemap.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ZRemap.nps; sourceTree = "<group>"; };
+		1EE90F1C1DD79F0C00FA7BFE /* EdgeBlur.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = EdgeBlur.nps; sourceTree = "<group>"; };
 		1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-AGPL-3.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Apache-2.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Boost.txt"; sourceTree = "<group>"; };
@@ -476,11 +478,10 @@
 		1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-webp.txt"; sourceTree = "<group>"; };
 		1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-zlib.txt"; sourceTree = "<group>"; };
 		1EEB0B931D1ADF4D00F0D43D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Serialization.xcodeproj; path = Serialization/Serialization.xcodeproj; sourceTree = "<group>"; };
-		AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronProjectConverter.xcodeproj; path = ProjectConverter/NatronProjectConverter.xcodeproj; sourceTree = "<group>"; };
-		1EF958A81DD798AD00245C3F /* EdgeBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = EdgeBlur.py; sourceTree = "<group>"; };
 		1EF958A91DD798AD00245C3F /* PIKColor.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PIKColor.png; sourceTree = "<group>"; };
 		1EF958AA1DD798AD00245C3F /* PIKColor.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PIKColor.svg; sourceTree = "<group>"; };
+		AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Serialization.xcodeproj; path = Serialization/Serialization.xcodeproj; sourceTree = "<group>"; };
+		AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronProjectConverter.xcodeproj; path = ProjectConverter/NatronProjectConverter.xcodeproj; sourceTree = "<group>"; };
 		AC77629C1D1ACE460006A58E /* tess.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = tess.xcodeproj; path = libs/libtess/tess.xcodeproj; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
@@ -546,23 +547,24 @@
 		1E1FB61F1DA7BB8B009F547D /* PyPlugs */ = {
 			isa = PBXGroup;
 			children = (
-				1E1FB6201DA7BBD1009F547D /* AngleBlur.py */,
+				1EE90EED1DD79AB400FA7BFE /* AngleBlur.nps */,
+				1EE90EEE1DD79AB400FA7BFE /* DropShadow.nps */,
 				1E1FB6211DA7BBD1009F547D /* DropShadow.png */,
-				1E1FB6221DA7BBD1009F547D /* DropShadow.py */,
-				1EF958A81DD798AD00245C3F /* EdgeBlur.py */,
+				1EE90F1C1DD79F0C00FA7BFE /* EdgeBlur.nps */,
+				1EE90EEF1DD79AB400FA7BFE /* Fill.nps */,
 				1E1FB6231DA7BBD1009F547D /* Fill.png */,
-				1E1FB6241DA7BBD1009F547D /* Fill.py */,
+				1EE90EF01DD79AB400FA7BFE /* Glow.nps */,
 				1E1FB6251DA7BBD1009F547D /* Glow.png */,
-				1E1FB6261DA7BBD1009F547D /* Glow.py */,
+				1EE90EF11DD79AB400FA7BFE /* LightWrap.nps */,
 				1E1FB6271DA7BBD2009F547D /* LightWrap.png */,
-				1E1FB6281DA7BBD2009F547D /* LightWrap.py */,
-				1E1FB6291DA7BBD2009F547D /* PIKColor.py */,
+				1EE90EF21DD79AB400FA7BFE /* PIKColor.nps */,
 				1EF958A91DD798AD00245C3F /* PIKColor.png */,
 				1EF958AA1DD798AD00245C3F /* PIKColor.svg */,
 				1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */,
-				1E1FB62B1DA7BBD2009F547D /* ZMask.py */,
+				1EE90EF31DD79AB400FA7BFE /* ViewerOCIO.nps */,
+				1EE90EF41DD79AB400FA7BFE /* ZMask.nps */,
+				1EE90EF51DD79AB400FA7BFE /* ZRemap.nps */,
 				1E1FB62C1DA7BBD2009F547D /* ZRemap.png */,
-				1E1FB62D1DA7BBD2009F547D /* ZRemap.py */,
 			);
 			name = PyPlugs;
 			path = Gui/Resources/PyPlugs;
@@ -580,14 +582,6 @@
 			isa = PBXGroup;
 			children = (
 				1E70D1611CF33A0C000D2932 /* README.md */,
-				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
-				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
-				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
-				1E70D1531CF33A0C000D2932 /* CONTRIBUTORS.txt */,
-				1E70D1551CF33A0C000D2932 /* INSTALL_FREEBSD.md */,
-				1E70D1561CF33A0C000D2932 /* INSTALL_LINUX.md */,
-				1E70D1571CF33A0C000D2932 /* INSTALL_OSX.md */,
-				1E70D1581CF33A0C000D2932 /* INSTALL_WINDOWS.md */,
 				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
 				1EEB0B211D1ADC9A00F0D43D /* components */,
 			);
@@ -686,7 +680,7 @@
 		1EDADF2B1D8B0C4D00D47689 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1E1178171D8BD50E00024C91 /* libyaml-cpp-natron.dylib */,
+				1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -899,13 +893,6 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		1E1178171D8BD50E00024C91 /* libyaml-cpp-natron.dylib */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.dylib";
-			path = "libyaml-cpp-natron.dylib";
-			remoteRef = 1E1178161D8BD50E00024C91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		1E12F4BB1CC6593300105A34 /* libqhttpserver.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -981,6 +968,13 @@
 			fileType = "compiled.mach-o.executable";
 			path = Tests;
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libyaml-cpp-natron.a";
+			remoteRef = 1EE90EF61DD79AB400FA7BFE /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */ = {
