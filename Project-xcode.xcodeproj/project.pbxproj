@@ -433,6 +433,9 @@
 		1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-webp.txt"; sourceTree = "<group>"; };
 		1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-zlib.txt"; sourceTree = "<group>"; };
 		1EEB0B931D1ADF4D00F0D43D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1EF958A81DD798AD00245C3F /* EdgeBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = EdgeBlur.py; sourceTree = "<group>"; };
+		1EF958A91DD798AD00245C3F /* PIKColor.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PIKColor.png; sourceTree = "<group>"; };
+		1EF958AA1DD798AD00245C3F /* PIKColor.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PIKColor.svg; sourceTree = "<group>"; };
 		AC77629C1D1ACE460006A58E /* tess.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = tess.xcodeproj; path = libs/libtess/tess.xcodeproj; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
@@ -501,6 +504,7 @@
 				1E1FB6201DA7BBD1009F547D /* AngleBlur.py */,
 				1E1FB6211DA7BBD1009F547D /* DropShadow.png */,
 				1E1FB6221DA7BBD1009F547D /* DropShadow.py */,
+				1EF958A81DD798AD00245C3F /* EdgeBlur.py */,
 				1E1FB6231DA7BBD1009F547D /* Fill.png */,
 				1E1FB6241DA7BBD1009F547D /* Fill.py */,
 				1E1FB6251DA7BBD1009F547D /* Glow.png */,
@@ -508,6 +512,8 @@
 				1E1FB6271DA7BBD2009F547D /* LightWrap.png */,
 				1E1FB6281DA7BBD2009F547D /* LightWrap.py */,
 				1E1FB6291DA7BBD2009F547D /* PIKColor.py */,
+				1EF958A91DD798AD00245C3F /* PIKColor.png */,
+				1EF958AA1DD798AD00245C3F /* PIKColor.svg */,
 				1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */,
 				1E1FB62B1DA7BBD2009F547D /* ZMask.py */,
 				1E1FB62C1DA7BBD2009F547D /* ZRemap.png */,
