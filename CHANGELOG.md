@@ -7,6 +7,7 @@
 ## Version 2.1.8
 
 - Fix a bug where several images with file names that contain two numbers would be be considered as a sequence even if both numbers differed.
+- Fix a bug where a disabled Merge node would pas input A if the preferences say Merge should ato-connect to B (#1484)
 
 ### Plugins
 
