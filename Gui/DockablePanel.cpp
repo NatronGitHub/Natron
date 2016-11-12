@@ -985,33 +985,35 @@ DockablePanel::setClosedInternal(bool c)
 
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
 
-        if (!c) {
-            gui->addNodeGuiToCurveEditor(nodeGui);
-            gui->addNodeGuiToDopeSheetEditor(nodeGui);
+        if (gui) {
+            if (!c) {
+                gui->addNodeGuiToCurveEditor(nodeGui);
+                gui->addNodeGuiToDopeSheetEditor(nodeGui);
 
-            NodesList children;
-            internalNode->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(childGui);
-                gui->addNodeGuiToCurveEditor(childGui);
-                gui->addNodeGuiToDopeSheetEditor(childGui);
-            }
-        } else {
-            gui->removeNodeGuiFromCurveEditor(nodeGui);
-            gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
+                NodesList children;
+                internalNode->getChildrenMultiInstance(&children);
+                for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
+                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    assert(gui_i);
+                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    assert(childGui);
+                    gui->addNodeGuiToCurveEditor(childGui);
+                    gui->addNodeGuiToDopeSheetEditor(childGui);
+                }
+            } else {
+                gui->removeNodeGuiFromCurveEditor(nodeGui);
+                gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
 
-            NodesList children;
-            internalNode->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(childGui);
-                gui->removeNodeGuiFromCurveEditor(childGui);
-                gui->removeNodeGuiFromDopeSheetEditor(childGui);
+                NodesList children;
+                internalNode->getChildrenMultiInstance(&children);
+                for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
+                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    assert(gui_i);
+                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    assert(childGui);
+                    gui->removeNodeGuiFromCurveEditor(childGui);
+                    gui->removeNodeGuiFromDopeSheetEditor(childGui);
+                }
             }
         }
 
