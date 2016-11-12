@@ -681,7 +681,9 @@ KnobHelper::setDimensionName(int dim,
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->dimensionNames[dim] = name;
-    _signalSlotHandler->s_dimensionNameChanged(dim);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_dimensionNameChanged(dim);
+    }
 }
 
 template <typename T>
@@ -1699,7 +1701,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
 
     if (!_imp->holder) {
         computeHasModifications();
-        if (refreshWidget) {
+        if (refreshWidget && _signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
         }
         if ( !isListenersNotificationBlocked() ) {
@@ -1772,7 +1774,9 @@ KnobHelper::setInViewerContextLabel(const QString& label)
 
         _imp->inViewerContextLabel = label.toStdString();
     }
-    _signalSlotHandler->s_inViewerContextLabelChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_inViewerContextLabelChanged();
+    }
 }
 
 void
@@ -1830,7 +1834,9 @@ KnobHelper::setInViewerContextSecret(bool secret)
         QMutexLocker k(&_imp->stateMutex);
         _imp->inViewerContextSecret = secret;
     }
-    _signalSlotHandler->s_viewerContextSecretChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_viewerContextSecretChanged();
+    }
 }
 
 bool
@@ -1849,7 +1855,9 @@ KnobHelper::setEnabled(int dimension,
         QMutexLocker k(&_imp->stateMutex);
         _imp->enabled[dimension] = b;
     }
-    _signalSlotHandler->s_enabledChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_enabledChanged();
+    }
 }
 
 void
@@ -3070,7 +3078,9 @@ KnobHelper::isDefaultEnabled(int dimension) const
 void
 KnobHelper::setDirty(bool d)
 {
-    _signalSlotHandler->s_setDirty(d);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_setDirty(d);
+    }
 }
 
 void
@@ -3440,7 +3450,7 @@ KnobHelper::slaveToInternal(int dimension,
 
     if (_signalSlotHandler) {
         ///Notify we want to refresh
-        if (reason == eValueChangedReasonNatronInternalEdited) {
+        if (reason == eValueChangedReasonNatronInternalEdited && _signalSlotHandler) {
             _signalSlotHandler->s_knobSlaved(dimension, true);
         }
     }
@@ -3935,7 +3945,7 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
         for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
             oldKeysList.push_back( it->getTime() );
         }
-        if ( !oldKeysList.empty() ) {
+        if ( !oldKeysList.empty() && _signalSlotHandler) {
             _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
         }
 
@@ -3949,7 +3959,7 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
         for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
             keysList.push_back( it->getTime() );
         }
-        if ( !keysList.empty() ) {
+        if ( !keysList.empty() && _signalSlotHandler) {
             _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
         }
         checkAnimationLevel(ViewIdx(0), dimension);
