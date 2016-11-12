@@ -769,31 +769,25 @@ SetKeysInterpolationCommand::redo()
 
 MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
                                        SelectedTangentEnum deriv,
-                                       const AnimItemBasePtr& object,
-                                       DimIdx dimension,
-                                       ViewIdx view,
-                                       const KeyFrame& k,
+                                       const AnimItemDimViewKeyFrame& keyframe,
                                        double dx,
                                        double dy,
                                        QUndoCommand *parent)
 : QUndoCommand(parent)
 , _model(model)
-, _object(object)
-, _dimension(dimension)
-, _view(view)
-, _keyTime(k.getTime())
+, _oldKey(keyframe)
+, _newKey(keyframe)
 , _deriv(deriv)
-, _oldInterp( k.getInterpolation() )
-, _oldLeft( k.getLeftDerivative() )
-, _oldRight( k.getRightDerivative() )
 , _setBoth(false)
 , _isFirstRedo(true)
 {
-    CurvePtr curve = object->getCurve(dimension,view);
+
+    // Compute derivative
+    CurvePtr curve = keyframe.id.item->getCurve(keyframe.id.dim,keyframe.id.view);
     assert(curve);
 
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-    KeyFrameSet::const_iterator cur = keys.find(k);
+    KeyFrameSet::const_iterator cur = keys.find(keyframe.key.key);
 
     assert( cur != keys.end() );
 
@@ -812,7 +806,7 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
     // handle first and last keyframe correctly:
     // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
     // - in all other cases it becomes eKeyframeTypeBroken
-    KeyframeTypeEnum interp = k.getInterpolation();
+    KeyframeTypeEnum interp = keyframe.key.key.getInterpolation();
     bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
     bool interpIsNotBroken = (interp != eKeyframeTypeBroken);
     bool interpIsCatmullRomOrCubicOrFree = (interp == eKeyframeTypeCatmullRom ||
@@ -820,35 +814,30 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
                                             interp == eKeyframeTypeFree);
     _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree  || curve->isCurvePeriodic() : interpIsNotBroken;
 
-    bool isLeft;
     if (deriv == eSelectedTangentLeft) {
         //if dx is not of the good sign it would make the curve uncontrollable
         if (dx <= 0) {
             dx = 0.0001;
         }
-        isLeft = true;
     } else {
         //if dx is not of the good sign it would make the curve uncontrollable
         if (dx >= 0) {
             dx = -0.0001;
         }
-        isLeft = false;
     }
     double derivative = dy / dx;
 
     if (_setBoth) {
-        _newInterp = eKeyframeTypeFree;
-        _newLeft = derivative;
-        _newRight = derivative;
+        _newKey.key.key.setInterpolation(eKeyframeTypeFree);
+        _newKey.key.key.setLeftDerivative(derivative);
+        _newKey.key.key.setRightDerivative(derivative);
     } else {
-        if (isLeft) {
-            _newLeft = derivative;
-            _newRight = _oldRight;
+        if (deriv == eSelectedTangentLeft) {
+            _newKey.key.key.setLeftDerivative(derivative);
         } else {
-            _newLeft = _oldLeft;
-            _newRight = derivative;
+            _newKey.key.key.setRightDerivative(derivative);
         }
-        _newInterp = eKeyframeTypeBroken;
+        _newKey.key.key.setInterpolation(eKeyframeTypeBroken);
     }
 
     setText( tr("Move KeyFrame Slope") );
@@ -857,73 +846,59 @@ MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
 
 MoveTangentCommand::MoveTangentCommand(const AnimationModuleBasePtr& model,
                                        SelectedTangentEnum deriv,
-                                       const AnimItemBasePtr& object,
-                                       DimIdx dimension,
-                                       ViewIdx view,
-                                       const KeyFrame& k,
+                                       const AnimItemDimViewKeyFrame& keyframe,
                                        double derivative,
                                        QUndoCommand *parent)
 : QUndoCommand(parent)
 , _model(model)
-, _object(object)
-, _dimension(dimension)
-, _view(view)
-, _keyTime(k.getTime())
+, _oldKey(keyframe)
+, _newKey(keyframe)
 , _deriv(deriv)
-, _oldInterp( k.getInterpolation() )
-, _oldLeft( k.getLeftDerivative() )
-, _oldRight( k.getRightDerivative() )
 , _setBoth(true)
 , _isFirstRedo(true)
 {
-    _newInterp = _oldInterp == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
-    _setBoth = _newInterp == eKeyframeTypeFree;
+    KeyframeTypeEnum newInterp = _newKey.key.key.getInterpolation() == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
+    _newKey.key.key.setInterpolation(newInterp);
+    _oldKey.key.key.setInterpolation(newInterp);
+    _setBoth = newInterp == eKeyframeTypeFree;
 
     switch (deriv) {
         case eSelectedTangentLeft:
-        _newLeft = derivative;
-        if (_newInterp == eKeyframeTypeBroken) {
-            _newRight = _oldRight;
-        } else {
-            _newRight = derivative;
-        }
-        break;
-    case eSelectedTangentRight:
-        _newRight = derivative;
-        if (_newInterp == eKeyframeTypeBroken) {
-            _newLeft = _oldLeft;
-        } else {
-            _newLeft = derivative;
-        }
-    default:
-        break;
+            _newKey.key.key.setLeftDerivative(derivative);
+            if (newInterp != eKeyframeTypeBroken) {
+                _newKey.key.key.setRightDerivative(derivative);
+            }
+            break;
+        case eSelectedTangentRight:
+            _newKey.key.key.setRightDerivative(derivative);
+            if (newInterp != eKeyframeTypeBroken) {
+               _newKey.key.key.setLeftDerivative(derivative);
+            }
+        default:
+            break;
     }
     setText( tr("Move KeyFrame Slope") );
-
+    
 }
 
 void
 MoveTangentCommand::setNewDerivatives(bool undo)
 {
-    AnimItemBasePtr item = _object.lock();
-    if (!item) {
-        return;
-    }
-    AnimatingObjectIPtr obj = item->getInternalAnimItem();
+    AnimatingObjectIPtr obj = _oldKey.id.item->getInternalAnimItem();
     if (!obj) {
         return;
     }
 
-    double left = undo ? _oldLeft : _newLeft;
-    double right = undo ? _oldRight : _newRight;
-    KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
+    double left = undo ? _oldKey.key.key.getLeftDerivative() : _newKey.key.key.getLeftDerivative();
+    double right = undo ? _oldKey.key.key.getRightDerivative() : _newKey.key.key.getRightDerivative();
+    KeyframeTypeEnum interp = undo ? _oldKey.key.key.getInterpolation() : _newKey.key.key.getInterpolation();
     if (_setBoth) {
-        obj->setLeftAndRightDerivativesAtTime(_view, _dimension, _keyTime, left, right);
+        obj->setLeftAndRightDerivativesAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(), left, right);
     } else {
         bool isLeft = _deriv == eSelectedTangentLeft;
-        obj->setDerivativeAtTime(_view, _dimension, _keyTime, isLeft ? left : right, isLeft);
+        obj->setDerivativeAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(),  isLeft ? left : right, isLeft);
     }
-    obj->setInterpolationAtTime(_view, _dimension, _keyTime, interp);
+    obj->setInterpolationAtTime(_oldKey.id.view, _oldKey.id.dim, _oldKey.key.key.getTime(),  interp);
 
 }
 
@@ -934,7 +909,7 @@ MoveTangentCommand::undo()
     AnimationModuleBasePtr model = _model.lock();
     if (model) {
         AnimItemDimViewKeyFramesMap newSelection;
-        AnimationModuleSelectionModel::addAnimatedItemKeyframes(_object.lock(), _dimension, _view, &newSelection);
+        newSelection[_oldKey.id].insert(_oldKey.key);
         model->setCurrentSelection(newSelection, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
   
     }
@@ -944,14 +919,13 @@ void
 MoveTangentCommand::redo()
 {
     setNewDerivatives(false);
-    if (!_isFirstRedo) {
-        AnimationModuleBasePtr model = _model.lock();
-        if (model) {
-            AnimItemDimViewKeyFramesMap newSelection;
-            AnimationModuleSelectionModel::addAnimatedItemKeyframes(_object.lock(), _dimension, _view, &newSelection);
-            model->setCurrentSelection(newSelection, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
-        }
+    AnimationModuleBasePtr model = _model.lock();
+    if (model) {
+        AnimItemDimViewKeyFramesMap newSelection;
+        newSelection[_newKey.id].insert(_newKey.key);
+        model->setCurrentSelection(newSelection, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>());
     }
+
     _isFirstRedo = true;
 }
 
@@ -969,14 +943,13 @@ MoveTangentCommand::mergeWith(const QUndoCommand * command)
         return false;
     }
 
-    if (cmd->_object.lock() != _object.lock() || cmd->_dimension != _dimension || cmd->_keyTime != _keyTime) {
+    if (cmd->_newKey.id.item != _newKey.id.item || cmd->_newKey.id.dim != _newKey.id.dim || cmd->_newKey.id.view != _newKey.id.view || cmd->_newKey.key.key.getTime() != _newKey.key.key.getTime()) {
         return false;
     }
 
-
-    _newInterp = cmd->_newInterp;
-    _newLeft = cmd->_newLeft;
-    _newRight = cmd->_newRight;
+    _newKey.key.key.setInterpolation(cmd->_newKey.key.key.getInterpolation());
+    _newKey.key.key.setLeftDerivative(cmd->_newKey.key.key.getLeftDerivative());
+    _newKey.key.key.setRightDerivative(cmd->_newKey.key.key.getRightDerivative());
 
     return true;
 

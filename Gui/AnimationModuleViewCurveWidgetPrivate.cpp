@@ -480,13 +480,38 @@ AnimationModuleViewPrivate::moveSelectedTangent(const QPointF & pos)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
 
+
     AnimItemDimViewKeyFrame& key = selectedDerivative.second;
-    double dy = key.key.key.getValue() - pos.y();
-    double dx = key.key.key.getTime() - pos.x();
+    double dx,dy;
+
+    /*
+     CurvePtr curve = key.id.item->getCurve(key.id.dim, key.id.view);
+     if (!curve) {
+     return;
+     }
+     KeyFrameSet keysSet = curve->getKeyFrames_mt_safe();
+     KeyFrameSet::iterator foundKey = keysSet.find(key.key.key);
+     assert(foundKey != keysSet.end());
+     if (foundKey == keysSet.end()) {
+     return;
+     }
+
+     QPointF leftTanPos, rightTanPos;
+     _publicInterface->getKeyTangentPoints(foundKey, keysSet, &leftTanPos, &rightTanPos);
+     if (selectedDerivative.first == MoveTangentCommand::eSelectedTangentLeft) {
+        dx = pos.x() - leftTanPos.x();
+        dy = pos.y() - leftTanPos.y();
+    } else {
+        dx = pos.x() - rightTanPos.x();
+        dy = pos.y() - rightTanPos.y();
+    }*/
+
+    dy = key.key.key.getValue() - pos.y();
+    dx = key.key.key.getTime() - pos.x();
 
 
     AnimationModuleBasePtr model = _model.lock();
-    model->pushUndoCommand(new MoveTangentCommand(model, selectedDerivative.first, key.id.item, key.id.dim, key.id.view, key.key.key, dx, dy));
+    model->pushUndoCommand(new MoveTangentCommand(model, selectedDerivative.first, key, dx, dy));
 } // moveSelectedTangent
 
 void

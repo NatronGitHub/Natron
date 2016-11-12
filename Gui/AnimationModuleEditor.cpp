@@ -155,8 +155,7 @@ public:
     SpinBox* keyframeRightSlopeSpinBox;
     ComboBox* keyframeInterpolationChoice;
 
-    AnimItemDimViewIndexID selectedKeyID;
-    KeyFrameWithString selectedKey;
+    AnimItemDimViewKeyFrame selectedKeyFrame;
 
     Splitter *treeAndViewSplitter;
 
@@ -196,8 +195,7 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , keyframeRightSlopeLabel(0)
 , keyframeRightSlopeSpinBox(0)
 , keyframeInterpolationChoice(0)
-, selectedKeyID()
-, selectedKey()
+, selectedKeyFrame()
 , treeAndViewSplitter(0)
 , treeView(0)
 , view(0)
@@ -321,15 +319,16 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     QObject::connect(_imp->keyframeInterpolationChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onKeyfameInterpolationChoiceMenuChanged(int)));
 
     {
+        int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         QPixmap pixConstant, pixLinear, pixSmooth, pixHorizontal, pixCubic, pixCatmullRom, pixBroken, pixFree;
-        pixConstant.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_constant.png"));
-        pixLinear.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_linear.png"));
-        pixSmooth.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_z.png"));
-        pixHorizontal.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_h.png"));
-        pixCubic.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_c.png"));
-        pixCatmullRom.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve_r.png"));
-        pixBroken.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_break.png"));
-        pixFree.load(QString::fromUtf8(NATRON_IMAGES_PATH "interp_curve.png"));
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CONSTANT, iconSize, &pixConstant);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_LINEAR, iconSize, &pixLinear);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_Z, iconSize, &pixSmooth);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_H, iconSize, &pixHorizontal);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_C, iconSize, &pixCubic);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE_R, iconSize, &pixCatmullRom);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_BREAK, iconSize, &pixBroken);
+        appPTR->getIcon(NATRON_PIXMAP_INTERP_CURVE, iconSize, &pixFree);
 
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
@@ -911,19 +910,19 @@ AnimationModuleEditorPrivate::getKeyframe(AnimItemDimViewIndexID* curve, KeyFram
     return true;
 }
 
-AnimItemDimViewIndexID
+AnimItemDimViewKeyFrame
 AnimationModuleEditor::getCurrentlySelectedKeyFrame() const
 {
-    return _imp->selectedKeyID;
+    return _imp->selectedKeyFrame;
 }
 
 void
 AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
 {
     AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
-    bool showKeyframeWidgets = _imp->selectedKeyID.item;
-    if (_imp->selectedKeyID.item) {
-        dataType = _imp->selectedKeyID.item->getInternalAnimItem()->getKeyFrameDataType();
+    bool showKeyframeWidgets = _imp->selectedKeyFrame.id.item;
+    if (_imp->selectedKeyFrame.id.item) {
+        dataType = _imp->selectedKeyFrame.id.item->getInternalAnimItem()->getKeyFrameDataType();
     }
     bool canHaveTangents = dataType == AnimatingObjectI::eKeyframeDataTypeInt || dataType == AnimatingObjectI::eKeyframeDataTypeDouble;
     if (dataType == AnimatingObjectI::eKeyframeDataTypeBool) {
@@ -960,36 +959,35 @@ AnimationModuleEditor::refreshKeyframeWidgetsFromSelection()
         AnimItemDimViewIndexID selectedKeyID;
         KeyFrameWithString selectedKey;
         showKeyframeWidgets = _imp->getKeyframe(&selectedKeyID, &selectedKey);
-        if (selectedKeyID.item != _imp->selectedKeyID.item ||
-            selectedKeyID.view != _imp->selectedKeyID.view ||
-            selectedKeyID.dim != _imp->selectedKeyID.dim) {
-            _imp->selectedKeyID = selectedKeyID;
+        if (selectedKeyID.item != _imp->selectedKeyFrame.id.item ||
+            selectedKeyID.view != _imp->selectedKeyFrame.id.view ||
+            selectedKeyID.dim != _imp->selectedKeyFrame.id.dim) {
+            _imp->selectedKeyFrame.id = selectedKeyID;
             selectedKeyChanged = true;
         }
-        _imp->selectedKey = selectedKey;
+        _imp->selectedKeyFrame.key = selectedKey;
     }
 
     AnimatingObjectI::KeyframeDataTypeEnum dataType = AnimatingObjectI::eKeyframeDataTypeNone;
     if (showKeyframeWidgets) {
-        dataType = _imp->selectedKeyID.item->getInternalAnimItem()->getKeyFrameDataType();
+        dataType = _imp->selectedKeyFrame.id.item->getInternalAnimItem()->getKeyFrameDataType();
     }
 
 
     if (selectedKeyChanged) {
         refreshKeyFrameWidgetsEnabledNess();
     }
-#pragma message WARN("Also refresh widgets when the curve of the item changed")
     if (showKeyframeWidgets) {
-        _imp->keyframeLeftSlopeSpinBox->setValue(_imp->selectedKey.key.getLeftDerivative());
-        _imp->keyframeRightSlopeSpinBox->setValue(_imp->selectedKey.key.getRightDerivative());
+        _imp->keyframeLeftSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getLeftDerivative());
+        _imp->keyframeRightSlopeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getRightDerivative());
         _imp->keyframeValueSpinBox->setType(dataType == AnimatingObjectI::eKeyframeDataTypeDouble ? SpinBox::eSpinBoxTypeDouble : SpinBox::eSpinBoxTypeInt);
-        KeyframeTypeEnum interp = _imp->selectedKey.key.getInterpolation();
+        KeyframeTypeEnum interp = _imp->selectedKeyFrame.key.key.getInterpolation();
         KeyFrameInterpolationChoiceMenuEnum menuVal = fromKeyFrameType(interp);
         _imp->keyframeInterpolationChoice->setCurrentIndex_no_emit((int)menuVal);
 
-        _imp->keyframeTimeSpinBox->setValue(_imp->selectedKey.key.getTime());
-        _imp->keyframeValueSpinBox->setValue(_imp->selectedKey.key.getValue());
-        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(_imp->selectedKey.string.c_str()));
+        _imp->keyframeTimeSpinBox->setValue(_imp->selectedKeyFrame.key.key.getTime());
+        _imp->keyframeValueSpinBox->setValue(_imp->selectedKeyFrame.key.key.getValue());
+        _imp->keyframeValueLineEdit->setText(QString::fromUtf8(_imp->selectedKeyFrame.key.string.c_str()));
     }
 } // refreshKeyframeWidgetsFromSelection
 
@@ -1017,34 +1015,27 @@ void
 AnimationModuleEditor::onLeftSlopeSpinBoxValueChanged(double value)
 {
 
-    AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
-    if (!_imp->getKeyframe(&id, &keyData)) {
+    AnimItemDimViewKeyFrame keyframe;
+    if (!_imp->getKeyframe(&keyframe.id, &keyframe.key)) {
         return;
     }
+
     _imp->model->pushUndoCommand(new MoveTangentCommand(_imp->model,
                                                         MoveTangentCommand::eSelectedTangentLeft,
-                                                        id.item,
-                                                        id.dim,
-                                                        id.view,
-                                                        keyData.key,
+                                                        keyframe,
                                                         value));
 }
 
 void
 AnimationModuleEditor::onRightSlopeSpinBoxValueChanged(double value)
 {
-    AnimItemDimViewIndexID id;
-    KeyFrameWithString keyData;
-    if (!_imp->getKeyframe(&id, &keyData)) {
+    AnimItemDimViewKeyFrame keyframe;
+    if (!_imp->getKeyframe(&keyframe.id, &keyframe.key)) {
         return;
     }
     _imp->model->pushUndoCommand(new MoveTangentCommand(_imp->model,
                                                         MoveTangentCommand::eSelectedTangentRight,
-                                                        id.item,
-                                                        id.dim,
-                                                        id.view,
-                                                        keyData.key,
+                                                        keyframe,
                                                         value));
 
 }

@@ -512,7 +512,7 @@ EditKeyFrameDialog::moveDerivativeTo(double d)
         deriv = MoveTangentCommand::eSelectedTangentRight;
     }
     AnimationModuleBasePtr model = _imp->key.id.item->getModel();
-    model->pushUndoCommand( new MoveTangentCommand(_imp->key.id.item->getModel(), deriv, _imp->key.id.item, _imp->key.id.dim, _imp->key.id.view, _imp->key.key.key, d) );
+    model->pushUndoCommand( new MoveTangentCommand(_imp->key.id.item->getModel(), deriv, _imp->key, d) );
     refreshSelectedKey();
 }
 

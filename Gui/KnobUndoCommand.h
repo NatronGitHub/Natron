@@ -235,6 +235,11 @@ private:
 
 private:
 
+    void refreshAnimationModuleSelectedKeyframe()
+    {
+
+    }
+
     // If all, _oldValue.size() and _newValue.size() is expected to be of the number of
     // dimensions of the knob
     DimSpec _dimension;

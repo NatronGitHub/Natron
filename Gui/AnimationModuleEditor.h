@@ -154,7 +154,7 @@ public:
 
     void refreshKeyframeWidgetsFromSelection();
 
-    AnimItemDimViewIndexID getCurrentlySelectedKeyFrame() const;
+    AnimItemDimViewKeyFrame getCurrentlySelectedKeyFrame() const;
 
     /**
      * @brief Set all tree items in the model to the given visibility except for the item passed

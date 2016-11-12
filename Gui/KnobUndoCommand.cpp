@@ -51,6 +51,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Serialization/KnobSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
+
 struct PasteKnobClipBoardUndoCommandPrivate
 {
     // The knob on which we paste

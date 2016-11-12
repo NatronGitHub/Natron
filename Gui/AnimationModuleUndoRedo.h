@@ -281,20 +281,14 @@ public:
 
     MoveTangentCommand(const AnimationModuleBasePtr& model,
                        SelectedTangentEnum deriv,
-                       const AnimItemBasePtr& object,
-                       DimIdx dimension,
-                       ViewIdx view,
-                       const KeyFrame& k,
+                       const AnimItemDimViewKeyFrame& keyframe,
                        double dx,
                        double dy,
                        QUndoCommand *parent = 0);
 
     MoveTangentCommand(const AnimationModuleBasePtr& model,
                        SelectedTangentEnum deriv,
-                       const AnimItemBasePtr& object,
-                       DimIdx dimension,
-                       ViewIdx view,
-                       const KeyFrame& k,
+                       const AnimItemDimViewKeyFrame& keyframe,
                        double derivative,
                        QUndoCommand *parent = 0);
 
@@ -314,13 +308,8 @@ private:
 private:
 
     AnimationModuleBaseWPtr _model;
-    AnimItemBaseWPtr _object;
-    DimIdx _dimension;
-    ViewIdx _view;
-    double _keyTime;
+    AnimItemDimViewKeyFrame _oldKey, _newKey;
     SelectedTangentEnum _deriv;
-    KeyframeTypeEnum _oldInterp, _newInterp;
-    double _oldLeft, _oldRight, _newLeft, _newRight;
     bool _setBoth;
     bool _isFirstRedo;
 };
