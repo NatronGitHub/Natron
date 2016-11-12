@@ -1427,21 +1427,29 @@ RotoShapeRenderCairo::renderFeather_cairo(const RotoBezierTriangulation::Polygon
             }
             if (next->isInner) {
                 assert(innerIndex <= 1);
-                innerVertices[innerIndex] = &(*next);
-                ++innerIndex;
+                if (innerIndex <= 1) {
+                    innerVertices[innerIndex] = &(*next);
+                    ++innerIndex;
+                }
             } else {
                 assert(outterIndex <= 1);
-                outterVertices[outterIndex] = &(*next);
-                ++outterIndex;
+                if (outterIndex <= 1) {
+                    outterVertices[outterIndex] = &(*next);
+                    ++outterIndex;
+                }
             }
             if (nextNext->isInner) {
                 assert(innerIndex <= 1);
-                innerVertices[innerIndex] = &(*nextNext);
-                ++innerIndex;
+                if (innerIndex <= 1) {
+                    innerVertices[innerIndex] = &(*nextNext);
+                    ++innerIndex;
+                }
             } else {
                 assert(outterIndex <= 1);
-                outterVertices[outterIndex] = &(*nextNext);
-                ++outterIndex;
+                if (outterIndex <= 1) {
+                    outterVertices[outterIndex] = &(*nextNext);
+                    ++outterIndex;
+                }
             }
             assert((outterIndex == 1 && innerIndex == 2) || (innerIndex == 1 && outterIndex == 2));
         }
