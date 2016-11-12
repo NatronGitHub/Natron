@@ -486,15 +486,13 @@ CurveGui::drawCurve(int curveIndex,
     }
 
     std::vector<float> vertices, exprVertices;
-    double x1 = 0;
-    double x2;
     const double widgetWidth = _imp->curveWidget->width();
     KeyFrameSet keyframes;
     bool hasDrawnExpr = false;
     if (item->hasExpression(_imp->dimension, _imp->view)) {
 
         //we have no choice but to evaluate the expression at each time
-        for (int i = x1; i < widgetWidth; ++i) {
+        for (int i = 0; i < widgetWidth; ++i) {
             double x = _imp->curveWidget->toZoomCoordinates(i, 0).x();
             double y = evaluate(true /*useExpr*/, x);
             exprVertices.push_back(x);
@@ -513,6 +511,9 @@ CurveGui::drawCurve(int curveIndex,
 
     if ( !keyframes.empty() ) {
         try {
+            double x1 = 0;
+            double x2;
+
             bool isX1AKey = false;
             KeyFrame x1Key;
             KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
