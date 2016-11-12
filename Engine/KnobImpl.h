@@ -1070,7 +1070,9 @@ Knob<T>::setValue(const T & v,
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
-                _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, true, false);
+                if (_signalSlotHandler) {
+                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, true, false);
+                }
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -1088,7 +1090,9 @@ Knob<T>::setValue(const T & v,
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
-                _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, false, false);
+                if (_signalSlotHandler) {
+                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, false, false);
+                }
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -1107,7 +1111,9 @@ Knob<T>::setValue(const T & v,
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                _signalSlotHandler->s_setValueWithUndoStack(vari, view, dimension);
+                if (_signalSlotHandler) {
+                    _signalSlotHandler->s_setValueWithUndoStack(vari, view, dimension);
+                }
 
                 return ret;
             }
@@ -1476,7 +1482,9 @@ Knob<T>::setValueAtTime(double time,
                 Variant vari;
                 valueToVariant(v, &vari);
                 holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
-                _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
+                if (_signalSlotHandler) {
+                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
+                }
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -1495,7 +1503,9 @@ Knob<T>::setValueAtTime(double time,
 
                 Variant vari;
                 valueToVariant(v, &vari);
-                _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, false, true);
+                if (_signalSlotHandler) {
+                    _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, false, true);
+                }
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -1770,7 +1780,7 @@ Knob<T>::unSlaveInternal(int dimension,
     }
 
     if (_signalSlotHandler) {
-        if (reason == eValueChangedReasonPluginEdited) {
+        if (reason == eValueChangedReasonPluginEdited && _signalSlotHandler) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
         }
     }
@@ -2320,7 +2330,9 @@ Knob<T>::onTimeChanged(bool isPlayback,
 
     if (shouldRefresh) {
         checkAnimationLevel(ViewIdx(0), -1);
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), -1, eValueChangedReasonTimeChanged);
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_valueChanged(ViewSpec::all(), -1, eValueChangedReasonTimeChanged);
+        }
     }
     if (evaluateValueChangeOnTimeChange() && !isPlayback) {
         KnobHolderPtr holder = getHolder();
@@ -2739,7 +2751,7 @@ Knob<T>::clone(const KnobIPtr& other,
     cloneExpressions(other, dimension, otherDimension);
     cloneCurves(other, 0, 0, dimension, otherDimension);
 
-    if ( !isValueChangesBlocked() ) {
+    if ( !isValueChangesBlocked() && _signalSlotHandler ) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
     if ( !isListenersNotificationBlocked() ) {
@@ -2776,7 +2788,9 @@ Knob<T>::cloneAndCheckIfChanged(const KnobIPtr& other,
         computeHasModifications();
     }
     if (hasChanged) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        }
         if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
@@ -2804,7 +2818,9 @@ Knob<T>::clone(const KnobIPtr& other,
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
-    _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+    }
     if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
@@ -2833,7 +2849,9 @@ Knob<T>::cloneAndUpdateGui(const KnobIPtr& other,
         computeHasModifications();
     }
     if (hasChanged) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        }
         if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }

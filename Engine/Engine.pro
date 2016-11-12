@@ -443,7 +443,6 @@ HEADERS += \
     WriteNode.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
-    ../Global/glad_include.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
