@@ -13,6 +13,7 @@
 
 - Merge: fix a bug where the "A" checkbox of the B input would always be turned off when an RGB clip is connected. This is now done only if the user never toggled that checkbox.
 - (beta feature) EdgeDetect: Perform edge detection by computing the image gradient magnitude.
+- (beta feature) EdgeBlur: Blur the image where there are edges in the alpha/matte channel.
 
 ## Version 2.1.7
 
