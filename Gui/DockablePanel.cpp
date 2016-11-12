@@ -971,7 +971,6 @@ DockablePanel::setClosedInternal(bool c)
             }
         }
 
-
         if (gui) {
             if (!c) {
                 gui->addNodeGuiToCurveEditor(nodeGui);
