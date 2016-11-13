@@ -37,7 +37,7 @@ def createInstance(app,group):
     lastNode = group
 
     # Create the user parameters
-    lastNode.controls = lastNode.createPageParam("controls", "Controls")
+    lastNode.controlsPage = lastNode.createPageParam("controlsPage", "Controls")
     param = lastNode.createDoubleParam("size", "Size")
     param.setMinimum(0, 0)
     param.setDisplayMinimum(0, 0)
@@ -46,11 +46,12 @@ def createInstance(app,group):
     param.restoreDefaultValue(0)
 
     # Add the param to the page
-    lastNode.controls.addParam(param)
+    lastNode.controlsPage.addParam(param)
 
     # Set param properties
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
+    param.setValue(3, 0)
     lastNode.size = param
     del param
 
@@ -59,7 +60,7 @@ def createInstance(app,group):
     param.restoreDefaultValue()
 
     # Add the param to the page
-    lastNode.controls.addParam(param)
+    lastNode.controlsPage.addParam(param)
 
     # Set param properties
     param.setAddNewLine(True)
@@ -72,7 +73,7 @@ def createInstance(app,group):
     param.restoreDefaultValue()
 
     # Add the param to the page
-    lastNode.controls.addParam(param)
+    lastNode.controlsPage.addParam(param)
 
     # Set param properties
     param.setAddNewLine(False)
@@ -89,7 +90,7 @@ def createInstance(app,group):
     param.restoreDefaultValue(0)
 
     # Add the param to the page
-    lastNode.controls.addParam(param)
+    lastNode.controlsPage.addParam(param)
 
     # Set param properties
     param.setHelp("Sharpness of the borders of the blur area.")
@@ -98,8 +99,25 @@ def createInstance(app,group):
     lastNode.edgeMult = param
     del param
 
+    param = lastNode.createDoubleParam("Blur1mix", "Mix")
+    param.setMinimum(0, 0)
+    param.setMaximum(1, 0)
+    param.setDisplayMinimum(0, 0)
+    param.setDisplayMaximum(1, 0)
+    param.setDefaultValue(1, 0)
+    param.restoreDefaultValue(0)
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(True)
+    param.setAnimationEnabled(True)
+    lastNode.Blur1mix = param
+    del param
+
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controls', 'Node', 'Info'])
+    lastNode.setPagesOrder(['controlsPage', 'Node', 'Info'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -189,7 +207,7 @@ def createInstance(app,group):
     lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("Blur1")
     lastNode.setLabel("Blur1")
-    lastNode.setPosition(676, 284)
+    lastNode.setPosition(676, 349)
     lastNode.setSize(104, 34)
     lastNode.setColor(0.8, 0.5, 0.3)
     groupBlur1 = lastNode
@@ -277,7 +295,7 @@ def createInstance(app,group):
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
     lastNode.setLabel("Output")
-    lastNode.setPosition(676, 374)
+    lastNode.setPosition(676, 430)
     lastNode.setSize(104, 34)
     lastNode.setColor(0.7, 0.7, 0.7)
     groupOutput1 = lastNode
@@ -285,14 +303,55 @@ def createInstance(app,group):
     del lastNode
     # End of node "Output1"
 
+    # Start of node "Mask"
+    lastNode = app.createNode("fr.inria.built-in.Input", 1, group)
+    lastNode.setScriptName("Mask")
+    lastNode.setLabel("Mask")
+    lastNode.setPosition(1084, 349)
+    lastNode.setSize(104, 34)
+    lastNode.setColor(0.3, 0.5, 0.2)
+    groupMask = lastNode
+
+    param = lastNode.getParam("optional")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    param = lastNode.getParam("isMask")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    del lastNode
+    # End of node "Mask"
+
+    # Start of node "KeyMix1"
+    lastNode = app.createNode("net.sf.openfx.KeyMix", 1, group)
+    lastNode.setScriptName("KeyMix1")
+    lastNode.setLabel("KeyMix1")
+    lastNode.setPosition(907, 349)
+    lastNode.setSize(80, 34)
+    lastNode.setColor(0.3, 0.37, 0.776)
+    groupKeyMix1 = lastNode
+
+    param = lastNode.getParam("enableMask_Mask")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    del lastNode
+    # End of node "KeyMix1"
+
     # Now that all nodes are created we can connect them together, restore expressions
     groupEdgeDetect1.connectInput(0, groupShuffle1)
     groupGamma1.connectInput(0, groupEdgeDetect1)
     groupBlur1.connectInput(0, groupDot1)
-    groupBlur1.connectInput(1, groupGamma1)
+    groupBlur1.connectInput(1, groupKeyMix1)
     groupShuffle1.connectInput(1, groupDot1)
     groupDot1.connectInput(0, groupSource)
     groupOutput1.connectInput(0, groupBlur1)
+    groupKeyMix1.connectInput(1, groupGamma1)
+    groupKeyMix1.connectInput(2, groupMask)
 
     param = groupEdgeDetect1.getParam("filter")
     group.getParam("filter").setAsAlias(param)
@@ -312,6 +371,9 @@ def createInstance(app,group):
     del param
     param = groupBlur1.getParam("cropToFormat")
     group.getParam("cropToFormat").setAsAlias(param)
+    del param
+    param = groupBlur1.getParam("mix")
+    group.getParam("Blur1mix").setAsAlias(param)
     del param
 
     try:
