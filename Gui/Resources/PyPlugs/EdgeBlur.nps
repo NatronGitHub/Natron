@@ -18,7 +18,7 @@ Params:
     Props: [MasterIsAlias]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    ScriptName: controlsPage
     Label: Controls
     Params:
       - ScriptName: size
@@ -53,7 +53,16 @@ UserPages:
         Max: 2147483647
         DisplayMin: 0.1
         DisplayMax: 10
-PagesOrder: [controls, nodePage, pyPlugPage]
+      - ScriptName: Blur1mix
+        Default: 1
+        NDims: 1
+        TypeName: Double
+        Label: Mix
+        Min: 0
+        Max: 1
+        DisplayMin: 0
+        DisplayMax: 1
+PagesOrder: [controlsPage, nodePage, pyPlugPage]
 Children:
   - PluginID: eu.cimg.EdgeDetect
     ScriptName: EdgeDetect1
@@ -98,17 +107,20 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur1
     Version: [4, 0]
-    Inputs: {Mask: Gamma1, Source: Dot1}
+    Inputs: {Mask: KeyMix1, Source: Dot1}
     Params:
       - ScriptName: size
         Value: [{N: EdgeDetect1, K: blurSize}, {N: EdgeDetect1, K: blurSize}]
       - ScriptName: cropToFormat
         Value: {N: "@thisGroup", K: cropToFormat}
         Props: [MasterIsAlias]
+      - ScriptName: mix
+        Value: {N: "@thisGroup", K: Blur1mix}
+        Props: [MasterIsAlias]
       - ScriptName: enableMask_Mask
         Value: true
     PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [676, 284]
+    Pos: [676, 349]
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: Shuffle1
     Version: [2, 0]
@@ -140,4 +152,18 @@ Children:
     ScriptName: Output
     Inputs: {Source: Blur1}
     PagesOrder: [nodePage, infoPage]
-    Pos: [676, 374]
+    Pos: [676, 430]
+  - PluginID: fr.inria.built-in.Input
+    ScriptName: Mask
+    Params:
+      - ScriptName: optional
+        Value: true
+      - ScriptName: isMask
+        Value: true
+    PagesOrder: [controls, nodePage, infoPage]
+    Pos: [1084, 349]
+  - PluginID: net.sf.openfx.KeyMix
+    ScriptName: KeyMix1
+    Inputs: {A: Gamma1, Mask: Mask}
+    PagesOrder: [Controls, nodePage, infoPage]
+    Pos: [907, 349]
