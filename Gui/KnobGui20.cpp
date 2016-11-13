@@ -624,7 +624,7 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   bool setKeyFrame)
 {
     KnobIPtr knob = getKnob();
-    if (knob) {
+    if (!knob) {
         return;
     }
     KnobHolderPtr holder = knob->getHolder();

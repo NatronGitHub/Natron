@@ -219,9 +219,29 @@ private:
     void warpKeys();
 
 private:
+
+    struct KeyFrameWithStringIndex
+    {
+        KeyFrameWithString k;
+        int index;
+    };
+    struct KeyFrameWithStringIndex_CompareLess
+    {
+        bool operator()(const KeyFrameWithStringIndex& lhs, const KeyFrameWithStringIndex& rhs) const
+        {
+            return lhs.k.key.getTime() < rhs.k.key.getTime();
+        }
+    };
+
+    typedef std::set<KeyFrameWithStringIndex, KeyFrameWithStringIndex_CompareLess> KeyFrameWithStringIndexSet;
+    typedef std::map<AnimItemDimViewIndexID, KeyFrameWithStringIndexSet, AnimItemDimViewIndexID_CompareLess> KeyFramesWithStringIndicesMap;
+
+    static void animMapToInternalMap(const AnimItemDimViewKeyFramesMap& keys, KeyFramesWithStringIndicesMap* internalMap);
+    static void internalMapToKeysMap(const KeyFramesWithStringIndicesMap& internalMap, AnimItemDimViewKeyFramesMap* keys);
+
     AnimationModuleBaseWPtr _model;
     boost::scoped_ptr<Curve::KeyFrameWarp> _warp;
-    AnimItemDimViewKeyFramesMap _keys;
+    KeyFramesWithStringIndicesMap _keys;
     std::vector<NodeAnimPtr> _nodes;
     std::vector<TableItemAnimPtr> _tableItems;
 };

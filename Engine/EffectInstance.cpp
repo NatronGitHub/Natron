@@ -75,6 +75,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RenderValuesCache.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
@@ -242,6 +243,21 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     args->stats = inArgs->stats;
     args->openGLContext = inArgs->glContext;
     args->cpuOpenGLContext = inArgs->cpuGlContext;
+    args->valuesCache.reset(new RenderValuesCache);
+    {
+        // Cache the meta-datas now
+        QMutexLocker k(&_imp->metadatasMutex);
+        args->valuesCache->setCachedNodeMetadatas(_imp->metadatas);
+    }
+    {
+        // Also cache all inputs
+        NodePtr node = getNode();
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            args->valuesCache->setCachedInput(i, node->getInput(i));
+        }
+    }
+    // Rest of values are cached on demand.
+    
     argsList.push_back(args);
 }
 
@@ -278,6 +294,101 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 }
 
+
+static double
+getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs, const AppInstancePtr& app)
+{
+    if (!app) {
+        return 0.;
+    }
+
+    if (args.validArgs) {
+        return args.time;
+    }
+
+    if ( !frameArgs.empty() ) {
+        return frameArgs.back()->time;
+    }
+
+    return app->getTimeLine()->currentFrame();
+}
+
+
+double
+EffectInstance::getCurrentTime() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    AppInstancePtr app = getApp();
+    if (!app) {
+        return 0.;
+    }
+    if (!tls) {
+        return app->getTimeLine()->currentFrame();
+    }
+    return getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
+}
+
+static ViewIdx
+getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs)
+{
+    if (args.validArgs) {
+        return args.view;
+    }
+    if ( !frameArgs.empty() ) {
+        return frameArgs.back()->view;
+    }
+    return ViewIdx(0);
+}
+
+ViewIdx
+EffectInstance::getCurrentView() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if (!tls) {
+        return ViewIdx(0);
+    }
+    return getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+}
+
+void
+EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    AppInstancePtr app = getApp();
+    if (!tls) {
+        *view = ViewIdx(0);
+        *time = app ? app->getTimeLine()->currentFrame() : 0.;
+        return;
+    }
+    *time = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
+    *view = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+}
+
+SequenceTime
+EffectInstance::getFrameRenderArgsCurrentTime() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return getApp()->getTimeLine()->currentFrame();
+    }
+
+    return tls->frameArgs.back()->time;
+}
+
+ViewIdx
+EffectInstance::getFrameRenderArgsCurrentView() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return ViewIdx(0);
+    }
+
+    return tls->frameArgs.back()->view;
+}
+
 ParallelRenderArgsPtr
 EffectInstance::getParallelRenderArgsTLS() const
 {
@@ -288,6 +399,27 @@ EffectInstance::getParallelRenderArgsTLS() const
     }
 
     return tls->frameArgs.back();
+}
+
+RenderValuesCachePtr
+EffectInstance::getRenderValuesCacheTLS(double* currentRenderTime, ViewIdx* currentRenderView) const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return RenderValuesCachePtr();
+    }
+    ParallelRenderArgsPtr args = tls->frameArgs.back();
+    if (args) {
+        if (currentRenderTime) {
+            *currentRenderTime = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, getApp());
+        }
+        if (currentRenderView) {
+            *currentRenderView = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+        }
+        return args->valuesCache;
+    }
+    return RenderValuesCachePtr();
 }
 
 void
@@ -5310,99 +5442,6 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
     }
 }
 
-static double
-getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs, const AppInstancePtr& app)
-{
-    if (!app) {
-        return 0.;
-    }
-
-    if (args.validArgs) {
-        return args.time;
-    }
-
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->time;
-    }
-
-    return app->getTimeLine()->currentFrame();
-}
-
-
-double
-EffectInstance::getCurrentTime() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!app) {
-        return 0.;
-    }
-    if (!tls) {
-        return app->getTimeLine()->currentFrame();
-    }
-    return getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
-}
-
-static ViewIdx
-getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs)
-{
-    if (args.validArgs) {
-        return args.view;
-    }
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->view;
-    }
-    return ViewIdx(0);
-}
-
-ViewIdx
-EffectInstance::getCurrentView() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    
-    if (!tls) {
-        return ViewIdx(0);
-    }
-    return getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-}
-
-void
-EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!tls) {
-        *view = ViewIdx(0);
-        *time = app ? app->getTimeLine()->currentFrame() : 0.;
-        return;
-    }
-    *time = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
-    *view = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-}
-
-SequenceTime
-EffectInstance::getFrameRenderArgsCurrentTime() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return getApp()->getTimeLine()->currentFrame();
-    }
-
-    return tls->frameArgs.back()->time;
-}
-
-ViewIdx
-EffectInstance::getFrameRenderArgsCurrentView() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return ViewIdx(0);
-    }
-
-    return tls->frameArgs.back()->view;
-}
 
 #ifdef DEBUG
 void

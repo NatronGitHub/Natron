@@ -27,6 +27,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Knob.h"
+#include "Engine/RenderValuesCache.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -210,24 +211,50 @@ Knob<T>::getValue(DimIdx dimension,
     }
 
 
+
+    // Figure out the view to read
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
+
+    RenderValuesCachePtr valuesCache;
+    double tlsCurrentTime = 0;
+    // Check if value is already in TLS when rendering
+    {
+        KnobHolderPtr holder = getHolder();
+        if (holder) {
+            EffectInstancePtr isEffect = toEffectInstance(holder);
+            if (isEffect) {
+                valuesCache = isEffect->getRenderValuesCacheTLS(&tlsCurrentTime, 0);
+                if (valuesCache) {
+                    T ret;
+                    if (valuesCache->getCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, &ret)) {
+                        return ret;
+                    }
+                }
+            }
+        }
+    }
+
     // If an expression is set, read from expression
     std::string hasExpr = getExpression(dimension);
     if ( !hasExpr.empty() ) {
         T ret;
-        double time = getCurrentTime();
+        double time = valuesCache ? tlsCurrentTime : getCurrentTime();
         if ( getValueFromExpression(time, view, dimension, clamp, &ret) ) {
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
+            }
             return ret;
         }
     }
 
     // If animated, call getValueAtTime instead
     if ( isAnimated(dimension, view) ) {
-        return getValueAtTime(getCurrentTime(), dimension, view, clamp);
+        double time = valuesCache ? tlsCurrentTime : getCurrentTime();
+        return getValueAtTime(time, dimension, view, clamp);
     }
 
-
-    // Figure out the view to read
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
 
     // If the knob is slaved to another knob, returns the other knob value
     {
@@ -247,10 +274,17 @@ Knob<T>::getValue(DimIdx dimension,
             return T();
         }
         if (clamp) {
-            const T& ret = foundView->second;
-            return clampToMinMax(ret, dimension);
+            T ret = clampToMinMax(foundView->second, dimension);
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
+            }
+            return ret;
         } else {
-            return foundView->second;
+            const T& ret = foundView->second;
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
+            }
+            return ret;
         }
     } // QMutexLocker k(&_valueMutex);
 
@@ -469,16 +503,40 @@ Knob<T>::getValueAtTime(double time,
         throw std::invalid_argument("Knob::getValueAtTime: dimension out of range");
     }
 
+
+    // Figure out the view to read
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
+
+    RenderValuesCachePtr valuesCache;
+    // Check if value is already in TLS when rendering
+    {
+        KnobHolderPtr holder = getHolder();
+        if (holder) {
+            EffectInstancePtr isEffect = toEffectInstance(holder);
+            if (isEffect) {
+                valuesCache = isEffect->getRenderValuesCacheTLS();
+                if (valuesCache) {
+                    T ret;
+                    if (valuesCache->getCachedKnobValue<T>(thisShared, time, dimension, view_i, &ret)) {
+                        return ret;
+                    }
+                }
+            }
+        }
+    }
+
     std::string hasExpr = getExpression(dimension);
     if ( !hasExpr.empty() ) {
         T ret;
         if ( getValueFromExpression(time, /*view*/ ViewIdx(0), dimension, clamp, &ret) ) {
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+            }
             return ret;
         }
     }
-
-    // Figure out the view to read
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
 
     // If the knob is slaved to another knob, returns the other knob value
     MasterKnobLink linkData;
@@ -496,6 +554,10 @@ Knob<T>::getValueAtTime(double time,
 
     T ret;
     if ( getValueFromCurve(time, view_i, dimension, byPassMaster, clamp, &ret) ) {
+        if (valuesCache) {
+            valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+        }
+
         return ret;
     }
 
@@ -511,10 +573,17 @@ Knob<T>::getValueAtTime(double time,
             return T();
         }
         if (clamp) {
-            const T& ret = foundView->second;
-            return clampToMinMax(ret, dimension);
+            T ret = clampToMinMax(foundView->second, dimension);
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+            }
+            return ret;
         } else {
-            return foundView->second;
+            const T& ret = foundView->second;
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+            }
+            return ret;
         }
     } // QMutexLocker k(&_valueMutex);
 } // getValueAtTime
@@ -639,13 +708,8 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
         return curve->getIntegrateFromTo(time1, time2);
     } else {
         // if the knob as no keys at this dimension, the integral is trivial
-        QMutexLocker l(&_valueMutex);
-        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
-        if (foundView == _values[dimension].end()) {
-            return T();
-        }
-
-        return foundView->second * (time2 - time1);
+        T value = getValue(dimension, view_i);
+        return value * (time2 - time1);
     }
 } // getIntegrateFromTimeToTime
 

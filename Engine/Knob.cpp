@@ -4706,13 +4706,18 @@ KnobHolder::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
 void
 KnobHolder::beginMultipleEdits(const std::string& commandName)
 {
+    bool mustCallBeginChanges;
     {
         QMutexLocker l(&_imp->paramsEditLevelMutex);
         KnobHolderPrivate::MultipleParamsEditData data;
         data.commandName = commandName;
+        mustCallBeginChanges = _imp->paramsEditStack.empty();
         _imp->paramsEditStack.push_back(data);
+
     }
-    beginChanges();
+    if (mustCallBeginChanges) {
+        beginChanges();
+    }
 }
 
 KnobHolder::MultipleParamsEditEnum

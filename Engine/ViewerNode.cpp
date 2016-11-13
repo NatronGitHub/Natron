@@ -4165,9 +4165,13 @@ void
 ViewerNode::setRefreshButtonDown(bool down)
 {
     KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
+    beginChanges();
     knob->blockValueChanges();
     knob->setValue(down);
     knob->unblockValueChanges();
+
+    // Ignore evaluation
+    endChanges(true);
 }
 
 bool

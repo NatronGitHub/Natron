@@ -85,6 +85,7 @@ public:
            const std::string& baseName,
            bool isOpenBezier);
 
+    Bezier(const Bezier& other);
 
     virtual ~Bezier();
 

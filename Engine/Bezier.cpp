@@ -202,6 +202,12 @@ Bezier::Bezier(const KnobItemsTablePtr& model,
 {
 }
 
+Bezier::Bezier(const Bezier& other)
+: RotoDrawableItem(other.getModel())
+, _imp( new BezierPrivate(other.getBaseItemName(), other.isOpenBezier()) )
+{
+
+}
 
 bool
 Bezier::isOpenBezier() const

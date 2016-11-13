@@ -627,12 +627,11 @@ public:
 
     int getViewerIndexThreadLocal() const;
 
-    /**
-     *@returns whether the effect was flagged with canSetValue = true or false
-     **/
     void invalidateParallelRenderArgsTLS();
 
     ParallelRenderArgsPtr getParallelRenderArgsTLS() const;
+
+    RenderValuesCachePtr getRenderValuesCacheTLS(double* currentRenderTime = 0, ViewIdx* currentRenderView = 0) const;
 
     //Implem in ParallelRenderArgs.cpp
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,

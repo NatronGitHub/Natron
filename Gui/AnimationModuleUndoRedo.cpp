@@ -500,6 +500,34 @@ moveGroupNode(const NodePtr& node,
 } // moveGroupNode
 
 
+void
+WarpKeysCommand::animMapToInternalMap(const AnimItemDimViewKeyFramesMap& keys, KeyFramesWithStringIndicesMap* internalMap)
+{
+    for (AnimItemDimViewKeyFramesMap::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
+        CurvePtr curve = it->first.item->getCurve(it->first.dim, it->first.view);
+        assert(curve);
+        KeyFrameWithStringIndexSet& newSet = (*internalMap)[it->first];
+        for (KeyFrameWithStringSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            KeyFrameWithStringIndex k;
+            k.k = *it2;
+            k.index = curve->keyFrameIndex(it2->key.getTime());
+            assert(k.index != -1);
+            newSet.insert(k);
+        }
+    }
+}
+
+void
+WarpKeysCommand::internalMapToKeysMap(const KeyFramesWithStringIndicesMap& internalMap, AnimItemDimViewKeyFramesMap* keys)
+{
+    for (KeyFramesWithStringIndicesMap::const_iterator it = internalMap.begin(); it!=internalMap.end(); ++it) {
+        KeyFrameWithStringSet& newSet = (*keys)[it->first];
+        for (KeyFrameWithStringIndexSet::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            newSet.insert(it2->k);
+        }
+    }
+}
+
 WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
                                  const AnimationModuleBasePtr& model,
                                  const std::vector<NodeAnimPtr >& nodes,
@@ -509,13 +537,15 @@ WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
                                  QUndoCommand *parent )
 : QUndoCommand(parent)
 , _model(model)
-, _keys(keys)
+, _keys()
 , _nodes(nodes)
 , _tableItems(tableItems)
 {
     _warp.reset(new Curve::TranslationKeyFrameWarp(dt, dv));
+    animMapToInternalMap(keys, &_keys);
     setText( tr("Move KeyFrame(s)") );
 }
+
 
 WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
                                  const AnimationModuleBasePtr& model,
@@ -523,9 +553,10 @@ WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
                                  QUndoCommand *parent)
 : QUndoCommand(parent)
 , _model(model)
-, _keys(keys)
+, _keys()
 {
     _warp.reset(new Curve::AffineKeyFrameWarp(matrix));
+    animMapToInternalMap(keys, &_keys);
     setText( tr("Transform KeyFrame(s)") );
 }
 
@@ -594,33 +625,40 @@ WarpKeysCommand::warpKeys()
     }
     
     
-    for (AnimItemDimViewKeyFramesMap::iterator it = _keys.begin(); it!=_keys.end();++it) {
+    for (KeyFramesWithStringIndicesMap::iterator it = _keys.begin(); it!=_keys.end();++it) {
         AnimatingObjectIPtr obj = it->first.item->getInternalAnimItem();
         if (!obj) {
             continue;
         }
 
-        const KeyFrameWithStringSet& keyStringSet = it->second;
+        const KeyFrameWithStringIndexSet& keyStringSet = it->second;
 
         // Make-up keyframe times to warp for this item/view/dim
         std::list<double> keyTimes;
-        for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
-            keyTimes.push_back(it2->key.getTime());
+        for (KeyFrameWithStringIndexSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
+            keyTimes.push_back(it2->k.key.getTime());
         }
 
         // Warp keys...
         std::vector<KeyFrame> newKeyframe;
         if (obj->warpValuesAtTime(keyTimes, it->first.view, it->first.dim, *_warp, &newKeyframe)) {
 
+            assert(newKeyframe.size() == keyStringSet.size());
+
             // Modify original keys by warped keys
             StringAnimationManagerPtr stringAnim = obj->getStringAnimation();
-            KeyFrameWithStringSet newKeyStringSet;
-            for (std::size_t i = 0; i < newKeyframe.size(); ++i) {
-                KeyFrameWithString k;
-                k.key = newKeyframe[i];
-                if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(k.key.getValue(), it->first.view, &k.string);
-                }
+            KeyFrameWithStringIndexSet newKeyStringSet;
+            KeyFrameWithStringIndexSet::const_iterator keysIt = keyStringSet.begin();
+            for (std::size_t i = 0; i < newKeyframe.size(); ++i, ++keysIt) {
+
+                // Copy the new key, it's time and Y value may have changed
+                KeyFrameWithStringIndex k;
+                k.k.key = newKeyframe[i];
+
+                // Copy index and string - they did not change
+                k.k.string = keysIt->k.string;
+                k.index = keysIt->index;
+
                 newKeyStringSet.insert(k);
             }
 
@@ -630,7 +668,9 @@ WarpKeysCommand::warpKeys()
 
     AnimationModuleBasePtr model = _model.lock();
     if (model) {
-        model->setCurrentSelection(_keys, _tableItems, _nodes);
+        AnimItemDimViewKeyFramesMap keys;
+        internalMapToKeysMap(_keys, &keys);
+        model->setCurrentSelection(keys, _tableItems, _nodes);
     }
 
 } // warpKeys
@@ -653,31 +693,41 @@ bool
 WarpKeysCommand::mergeWith(const QUndoCommand * command)
 {
     const WarpKeysCommand* cmd = dynamic_cast<const WarpKeysCommand*>(command);
-    if (!cmd || cmd->id() != id()) {
+    if (!cmd) {
         return false;
     }
+
+    // Not the same number of curves, bail
     if ( cmd->_keys.size() != _keys.size() ) {
         return false;
     }
 
-    AnimItemDimViewKeyFramesMap::const_iterator itother = cmd->_keys.begin();
-    for (AnimItemDimViewKeyFramesMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
-        if (itother->first.item != it->first.item || itother->first.view != it->first.view || itother->first.dim != it->first.dim) {
-            return false;
-        }
-
-        if ( itother->second.size() != it->second.size() ) {
-            return false;
-        }
-
-        KeyFrameWithStringSet::const_iterator itOtherKey = itother->second.begin();
-        for (KeyFrameWithStringSet::const_iterator itKey = it->second.begin(); itKey != it->second.end(); ++itKey, ++itOtherKey) {
-            if (itKey->key.getTime() != itOtherKey->key.getTime()) {
+    // Check if all curves are the same, and for each of them check that keyframes indices are the same
+    {
+        KeyFramesWithStringIndicesMap::const_iterator itother = cmd->_keys.begin();
+        for (KeyFramesWithStringIndicesMap::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
+            if (itother->first.item != it->first.item || itother->first.view != it->first.view || itother->first.dim != it->first.dim) {
                 return false;
+            }
+
+            if ( itother->second.size() != it->second.size() ) {
+                return false;
+            }
+
+            CurvePtr thisCurve = it->first.item->getCurve(it->first.dim, it->first.view);
+            assert(thisCurve && thisCurve == itother->first.item->getCurve(itother->first.dim, itother->first.view));
+
+
+            KeyFrameWithStringIndexSet::const_iterator itOtherKey = itother->second.begin();
+            for (KeyFrameWithStringIndexSet::const_iterator itKey = it->second.begin(); itKey != it->second.end(); ++itKey, ++itOtherKey) {
+                if (itKey->index != itOtherKey->index) {
+                    return false;
+                }
             }
         }
     }
-    
+
+    // Check that nodes are the same
     if ( cmd->_nodes.size() != _nodes.size() ) {
         return false;
     }
@@ -690,7 +740,8 @@ WarpKeysCommand::mergeWith(const QUndoCommand * command)
             }
         }
     }
-    
+
+    // Check that table items are the same
     if ( cmd->_tableItems.size() != _tableItems.size() ) {
         return false;
     }
@@ -705,7 +756,19 @@ WarpKeysCommand::mergeWith(const QUndoCommand * command)
     }
 
 
-    return _warp->mergeWith(*cmd->_warp);
+    // Check that the warp was merged OK
+    bool warpMerged = _warp->mergeWith(*cmd->_warp);
+    if (!warpMerged) {
+        return false;
+    }
+
+
+    // Merge keyframes
+    KeyFramesWithStringIndicesMap::const_iterator itother = cmd->_keys.begin();
+    for (KeyFramesWithStringIndicesMap::iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
+        it->second = itother->second;
+    }
+    return warpMerged;
 
 } // WarpKeysCommand::mergeWith
 

@@ -176,6 +176,7 @@ SOURCES += \
     PySideCompat.cpp \
     PyTracker.cpp \
     ReadNode.cpp \
+    RenderValuesCache.cpp \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
@@ -409,6 +410,7 @@ HEADERS += \
     RectD.h \
     RectI.h \
     RenderStats.h \
+    RenderValuesCache.h \
     RotoBezierTriangulation.h \
     RotoDrawableItem.h \
     RotoLayer.h \
