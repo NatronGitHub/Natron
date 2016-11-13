@@ -8809,7 +8809,8 @@ Node::onEffectKnobValueChanged(KnobI* what,
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
         refreshCreatedViews(what);
-    } else if ( what == _imp->refreshInfoButton.lock().get() ) {
+    } else if ( what == _imp->refreshInfoButton.lock().get() ||
+               (what == _imp->infoPage.lock().get() && reason == eValueChangedReasonUserEdited) ) {
         std::stringstream ssinfo;
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
