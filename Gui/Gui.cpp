@@ -219,6 +219,8 @@ Gui::abortProject(bool quitApp,
             if ( !saveProject() ) {
                 return false;
             }
+        } else if (ret == 1) {
+            getApp()->getProject()->removeLastAutosave();
         } else if (ret == 2) {
             return false;
         }
