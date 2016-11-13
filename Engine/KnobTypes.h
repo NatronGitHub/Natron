@@ -339,10 +339,7 @@ public:
         _valueIsNormalized[dimension] = state;
     }
 
-    void setSpatial(bool spatial)
-    {
-        _spatial = spatial;
-    }
+    void setSpatial(bool spatial);
 
     bool getIsSpatial() const
     {

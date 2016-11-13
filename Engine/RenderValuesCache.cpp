@@ -138,6 +138,8 @@ struct RenderValuesCachePrivate
     }
 
 
+    CurvePtr setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve);
+    BezierPtr setCachedBezier(const BezierPtr& bezier);
 };
 
 RenderValuesCache::RenderValuesCache()
@@ -245,43 +247,44 @@ RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<std::string> 
 
 
 CurvePtr
-RenderValuesCache::getCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension) const
+RenderValuesCache::getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension) const
 {
     std::map<KnobParametricPtr, PerDimensionParametricCurve>::const_iterator foundKnob = _imp->parametricKnobCurves.find(knob);
     if (foundKnob == _imp->parametricKnobCurves.end()) {
-        return CurvePtr();
+        return _imp->setCachedParametricKnobCurve(knob, dimension, knob->getParametricCurve(dimension));
     }
     PerDimensionParametricCurve::const_iterator foundCurve = foundKnob->second.find(dimension);
     if (foundCurve == foundKnob->second.end()) {
-        return CurvePtr();
+        return _imp->setCachedParametricKnobCurve(knob, dimension, knob->getParametricCurve(dimension));
     }
     return foundCurve->second;
 }
 
-void
-RenderValuesCache::setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve) const
+CurvePtr
+RenderValuesCachePrivate::setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve)
 {
     CurvePtr copy(new Curve);
     copy->clone(*curve);
-    _imp->parametricKnobCurves[knob][dimension] = copy;
+    parametricKnobCurves[knob][dimension] = copy;
+    return copy;
 }
 
 BezierPtr
-RenderValuesCache::getCachedBezier(const BezierPtr& bezier) const
+RenderValuesCache::getOrCreateCachedBezier(const BezierPtr& bezier) const
 {
     std::map<BezierPtr, BezierPtr>::const_iterator foundBezier = _imp->bezierShapes.find(bezier);
     if (foundBezier == _imp->bezierShapes.end()) {
-        return BezierPtr();
+        return _imp->setCachedBezier(bezier);
     }
     return foundBezier->second;
 }
 
-void
-RenderValuesCache::setCachedBezier(const BezierPtr& bezier)
+BezierPtr
+RenderValuesCachePrivate::setCachedBezier(const BezierPtr& bezier)
 {
     BezierPtr copy(new Bezier(*bezier));
-    _imp->bezierShapes[bezier] = copy;
-
+    bezierShapes[bezier] = copy;
+    return copy;
 }
 
 NATRON_NAMESPACE_EXIT;

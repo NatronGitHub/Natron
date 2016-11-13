@@ -282,15 +282,6 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     }
 }
 
-void
-KnobGuiColor::onMustShowAllDimension(ViewSetSpec view)
-{
-    if (!view.isAll() && (int)view != (int)getView()) {
-        return;
-    }
-
-    onDimensionSwitchClicked(true);
-}
 
 void
 KnobGuiColor::updateLabel(double r,

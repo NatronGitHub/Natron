@@ -132,8 +132,6 @@ public Q_SLOTS:
 
     void onColorLabelPickingEnabled(bool enabled);
 
-    void onMustShowAllDimension(ViewSetSpec view);
-
     void onDialogCurrentColorChanged(const QColor & color);
 
 

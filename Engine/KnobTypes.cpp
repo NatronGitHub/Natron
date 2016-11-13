@@ -246,6 +246,16 @@ KnobDouble::canAnimate() const
     return true;
 }
 
+void
+KnobDouble::setSpatial(bool spatial)
+{
+    // Since the knob express a Position 2D, it is extremely unlikely that the users wants
+    // x = y so explicitly show all dimensions by default.
+    setAllDimensionsVisible(ViewSetSpec::all(), true);
+    _spatial = spatial;
+}
+
+
 const std::string KnobDouble::_typeNameStr(kKnobDoubleTypeName);
 const std::string &
 KnobDouble::typeNameStatic()
