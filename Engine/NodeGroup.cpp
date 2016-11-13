@@ -2641,7 +2641,12 @@ exportGroupInternal(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = app.createNode(") + ESC(nodeName) + QString::fromUtf8(", ") +
                                                  NUM_INT( (*it)->getPlugin()->getMajorVersion() ) + QString::fromUtf8(", ") + groupName +
                                                  QString::fromUtf8(")") );
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+        if ( !dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
+            // Do not set script name of Output nodes:
+            // it triggers an exception in Node::setScriptName()
+            // see https://github.com/MrKepzie/Natron/issues/1452
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+        }
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(") + ESC( (*it)->getLabel_mt_safe() ) + QString::fromUtf8(")") );
         double x, y;
         (*it)->getPosition(&x, &y);
