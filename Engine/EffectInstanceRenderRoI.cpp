@@ -48,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
-#include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
@@ -1734,7 +1733,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 
     // If we reach here, it can be either because the planes are cached or not, either way
     // the planes are NOT a total identity, and they may have some content left to render.
-    EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
+    EffectInstance::RenderRoIStatusEnum renderRetCode = hasSomethingToRender ? eRenderRoIStatusImageRendered : eRenderRoIStatusImageAlreadyRendered;
 
     assert(renderAborted);
     *renderAborted = _publicInterface->aborted();

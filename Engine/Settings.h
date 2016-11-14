@@ -190,10 +190,6 @@ public:
 
     void setMaxPanelsOpened(int maxPanels);
 
-    void setConnectionHintsEnabled(bool enabled);
-
-    bool isConnectionHintEnabled() const;
-
     bool loadBundledPlugins() const;
 
     bool preferBundledPlugins() const;
@@ -525,7 +521,6 @@ private:
     KnobPagePtr _nodegraphTab;
     KnobBoolPtr _autoScroll;
     KnobBoolPtr _autoTurbo;
-    KnobBoolPtr _useNodeGraphHints;
     KnobBoolPtr _snapNodesToConnections;
     KnobBoolPtr _useBWIcons;
     KnobIntPtr _maxUndoRedoNodeGraph;
@@ -534,6 +529,7 @@ private:
     KnobBoolPtr _useInputAForMergeAutoConnect;
     KnobBoolPtr _usePluginIconsInNodeGraph;
     KnobBoolPtr _useAntiAliasing;
+
 
     // Plugins
     KnobPagePtr _pluginsTab;

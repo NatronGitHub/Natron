@@ -421,6 +421,23 @@ KnobHelper::setDimensionName(DimIdx dimension,
     }
     _imp->dimensionNames[dimension] = name;
     _signalSlotHandler->s_dimensionNameChanged(dimension);
+
+}
+
+template <typename T>
+const std::string &
+Knob<T>::typeName() const
+{
+    static std::string knobNoTypeName("NoType");
+
+    return knobNoTypeName;
+}
+
+template <typename T>
+bool
+Knob<T>::canAnimate() const
+{
+    return false;
 }
 
 void
@@ -522,6 +539,7 @@ KnobHelper::unSplitView(ViewIdx view)
             PerViewCurveMap::iterator foundView = _imp->curves[i].find(view);
             if (foundView != _imp->curves[i].end()) {
                 _imp->curves[i].erase(foundView);
+
             }
         }
         {
@@ -1260,7 +1278,9 @@ KnobHelper::isEnabled(DimIdx dimension, ViewGetSpec view) const
 void
 KnobHelper::setDirty(bool d)
 {
-    _signalSlotHandler->s_setDirty(d);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_setDirty(d);
+    }
 }
 
 void
@@ -2056,6 +2076,10 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
             slaveKnob->endChanges();
         }
 
+        for (int i = 0; i < slaveKnob->getDimension(); ++i) {
+            slaveKnob->clearExpressionsResults(i);
+        }
+
 
         /*if (mustClone) {
             ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
@@ -2126,7 +2150,6 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
         } else {
             hasChanged |= cloneExpressionInternal(other, ViewIdx(view), ViewIdx(otherView), DimIdx(dimension) , DimIdx(otherDimension));
         }
-
     }
 
     if (hasChanged) {
@@ -3127,16 +3150,16 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_masterIsAlias = getAliasMaster().get() != 0;
 
         // User knobs bits
-        serialization->_label = getLabel();
-        serialization->_triggerNewLine = isNewLineActivated();
-        serialization->_evaluatesOnChange = getEvaluateOnChange();
-        serialization->_isPersistent = getIsPersistent();
-        serialization->_animatesChanged = (isAnimationEnabled() != isAnimatedByDefault());
-        serialization->_tooltip = getHintToolTip();
-        serialization->_iconFilePath[0] = getIconLabel(false);
-        serialization->_iconFilePath[1] = getIconLabel(true);
-
         if (serialization->_isUserKnob) {
+            serialization->_label = getLabel();
+            serialization->_triggerNewLine = isNewLineActivated();
+            serialization->_evaluatesOnChange = getEvaluateOnChange();
+            serialization->_isPersistent = getIsPersistent();
+            serialization->_animatesChanged = (isAnimationEnabled() != isAnimatedByDefault());
+            serialization->_tooltip = getHintToolTip();
+            serialization->_iconFilePath[0] = getIconLabel(false);
+            serialization->_iconFilePath[1] = getIconLabel(true);
+
             serialization->_isSecret = getIsSecret();
 
             int nDimsDisabled = 0;

@@ -34,6 +34,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 #include <QtCore/QReadWriteLock>
@@ -46,11 +47,14 @@
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/AppManager.h" // for AppManager::createKnob
 #include "Engine/HashableObject.h"
 #include "Engine/OverlaySupport.h"
-#include "Serialization/SerializationBase.h"
+#include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+
+#include "Serialization/SerializationBase.h"
 
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"

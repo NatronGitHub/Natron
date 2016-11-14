@@ -485,9 +485,6 @@ public:
     static bool isFocusStealingPossible();
     PanelWidget* getCurrentPanelFocus() const;
 
-    void setCurrentKnobWidgetFocus(const boost::shared_ptr<KnobWidgetDnD>& widget);
-    boost::shared_ptr<KnobWidgetDnD> getCurrentKnobWidgetFocus() const;
-
     void setLastKeyPressVisitedClickFocus(bool visited);
     void setLastKeyUpVisitedClickFocus(bool visited);
 

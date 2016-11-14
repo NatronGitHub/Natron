@@ -28,8 +28,6 @@ CONFIG += boost qt python
 CONFIG += yaml-cpp-flags
 
 include(../global.pri)
-include(../libs.pri)
-include(../config.pri)
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global

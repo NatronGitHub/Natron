@@ -54,6 +54,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+#include <SequenceParsing.h>
+
 #include "Global/MemoryInfo.h"
 
 #include "Engine/NodePrivate.h"
@@ -1449,7 +1451,19 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (!knobs[i]->getIsPersistent()) {
+        bool hasExpr = false;
+        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+            if (!knobs[i]->getExpression(d).empty()) {
+                hasExpr = true;
+                break;
+            }
+            std::pair<int, KnobIPtr > master = knobs[i]->getMaster(d);
+            if (master.second) {
+                hasExpr = true;
+                break;
+            }
+        }
+        if (!knobs[i]->getIsPersistent() && !hasExpr) {
             // Don't serialize non persistant knobs
             continue;
         }
@@ -2600,7 +2614,11 @@ Node::getPreferredInputInternal(bool connected) const
             }
         }
     }
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    bool useInputA = false;
+    if (!connected) {
+        // For the merge node, use the preference (only when not connected)
+        useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
@@ -8442,7 +8460,8 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
         refreshCreatedViews(what);
-    } else if ( what == _imp->refreshInfoButton.lock() ) {
+    } else if ( what == _imp->refreshInfoButton.lock() ||
+                (what == _imp->infoPage.lock() && reason == eValueChangedReasonUserEdited) ) {
         std::stringstream ssinfo;
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {

@@ -67,11 +67,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 NATRON_NAMESPACE_ENTER;
-void
-NodeGraph::toggleConnectionHints()
-{
-    appPTR->getCurrentSettings()->setConnectionHintsEnabled( !appPTR->getCurrentSettings()->isConnectionHintEnabled() );
-}
+
 
 void
 NodeGraph::toggleAutoHideInputs(bool setSettings)

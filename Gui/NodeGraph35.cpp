@@ -38,8 +38,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include <SequenceParsing.h>
-
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -421,13 +419,6 @@ NodeGraph::showMenu(const QPoint & pos)
             _imp->_menu->addAction(openNodePanelAction);
         }
     }
-
-    QAction* connectionHints = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints,
-                                                      kShortcutDescActionGraphEnableHints, _imp->_menu);
-    connectionHints->setCheckable(true);
-    connectionHints->setChecked( appPTR->getCurrentSettings()->isConnectionHintEnabled() );
-    QObject::connect( connectionHints, SIGNAL(triggered()), this, SLOT(toggleConnectionHints()) );
-    _imp->_menu->addAction(connectionHints);
 
     QAction* autoHideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs,
                                                      kShortcutDescActionGraphAutoHideInputs, _imp->_menu);

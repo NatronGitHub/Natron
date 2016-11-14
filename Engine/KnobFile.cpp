@@ -41,7 +41,8 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/AppInstance.h"
 
-#include <SequenceParsing.h>
+#include <SequenceParsing.h> // for SequenceParsing::generateFileNameFromPattern
+
 #include "Global/QtCompat.h"
 
 #include "Serialization/KnobSerialization.h"

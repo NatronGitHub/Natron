@@ -93,7 +93,6 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionGraphSelectDown);
     (void)QT_TR_NOOP(kShortcutDescActionGraphSelectAll);
     (void)QT_TR_NOOP(kShortcutDescActionGraphSelectAllVisible);
-    (void)QT_TR_NOOP(kShortcutDescActionGraphEnableHints);
     (void)QT_TR_NOOP(kShortcutDescActionGraphAutoHideInputs);
     (void)QT_TR_NOOP(kShortcutDescActionGraphHideInputs);
     (void)QT_TR_NOOP(kShortcutDescActionGraphSwitchInputs);

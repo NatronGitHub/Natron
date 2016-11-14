@@ -770,8 +770,8 @@ Knob<T>::setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx di
 
     }
     computeHasModifications();
-
 } // setDefaultValuesWithoutApplying
+
 
 template <typename T>
 void initDefaultValue(T* value)
@@ -1176,6 +1176,7 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
             _exprRes[dimension][ViewIdx(view)] = results;
         }
 
+
     }
 }
 
@@ -1207,6 +1208,7 @@ Knob<T>::copyKnob(const KnobIPtr& other,
     hasChanged |= cloneExpressions(other, view, otherView, dimension, otherDimension);
     hasChanged |= cloneCurves(other, view, otherView, dimension, otherDimension, offset, range);
     hasChanged |= cloneExtraData(other, view, otherView, dimension, otherDimension, offset, range);
+
 
 
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);

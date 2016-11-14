@@ -1044,21 +1044,6 @@ Gui::getCurrentPanelFocus() const
     return _imp->currentPanelFocus;
 }
 
-void
-Gui::setCurrentKnobWidgetFocus(const boost::shared_ptr<KnobWidgetDnD>& widget)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->currentKnobFocus = widget;
-}
-
-boost::shared_ptr<KnobWidgetDnD>
-Gui::getCurrentKnobWidgetFocus() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->currentKnobFocus.lock();
-}
 
 static PanelWidget*
 isPaneChild(QWidget* w,

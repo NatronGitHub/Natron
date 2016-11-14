@@ -297,7 +297,7 @@ win32-msvc*{
 # ceres
 static-ceres {
 CONFIG += static-glog
-*g++* {
+!macx:*g++* {
     CONFIG += openmp
 }
 win32-msvc*{
@@ -595,14 +595,22 @@ INCLUDEPATH += $$PWD/libs/libmv
 }
 
 glad-flags {
-CONFIG(debug, debug|release): INCLUDEPATH += $$PWD/Global/gladDeb/include
-CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
+    CONFIG(debug) {
+        INCLUDEPATH += $$PWD/Global/gladDeb/include
+    } else {
+        INCLUDEPATH += $$PWD/Global/gladRel/include
+    }
 }
 
 openmvg-flags {
 CONFIG += ceres-flags boost
 # Make openMVG use openmp
-#DEFINES += OPENMVG_USE_OPENMP
+!macx:*g++* {
+    CONFIG += openmp
+}
+openmp {
+    DEFINES += OPENMVG_USE_OPENMP
+}
 
 DEFINES += OPENMVG_HAVE_BOOST
 
@@ -639,7 +647,7 @@ CONFIG += glog-flags
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
 # Comment to make ceres use a lapack library
 DEFINES += CERES_NO_LAPACK
-*g++* {
+!macx:*g++* {
     CONFIG += openmp
 }
 openmp {

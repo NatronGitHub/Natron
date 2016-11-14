@@ -533,8 +533,7 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
     return ret;
 }
 
-#endif \
-    // ifdef __NATRON_WIN32__
+#endif // ifdef __NATRON_WIN32__
 
 FileSystemModel::~FileSystemModel()
 {

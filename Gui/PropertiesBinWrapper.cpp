@@ -74,17 +74,6 @@ PropertiesBinWrapper::mouseMoveEvent(QMouseEvent* e)
 void
 PropertiesBinWrapper::enterEvent(QEvent* e)
 {
-    if (enterEventBase()) {
-        if (getGui()) {
-            boost::shared_ptr<KnobWidgetDnD> currentKnobWidget = getGui()->getCurrentKnobWidgetFocus();
-            if (currentKnobWidget) {
-                QWidget* internalWidget = currentKnobWidget->getWidget();
-                if (internalWidget) {
-                    internalWidget->setFocus();
-                }
-            }
-        }
-    }
     QWidget::enterEvent(e);
 }
 

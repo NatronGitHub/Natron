@@ -985,6 +985,10 @@ NodeGui::refreshPosition(double x,
                          bool skipMagnet,
                          const QPointF & mouseScenePos)
 {
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
     if (appPTR->getCurrentSettings()->isSnapToNodeEnabled() && !skipMagnet) {
         QSize size = getSize();
         ///handle magnetic grid
@@ -1075,7 +1079,7 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const NodesWList & outputs = getNode()->getOutputs();
+                const NodesWList & outputs = node->getOutputs();
                 for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     NodePtr output = it->lock();
                     if (!output) {

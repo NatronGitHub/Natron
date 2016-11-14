@@ -932,9 +932,6 @@ DockablePanel::setClosedInternal(bool closed)
                 }
             }
         }
-
-
-
     }
 
     Q_EMIT closeChanged(closed);

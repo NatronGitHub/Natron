@@ -234,10 +234,7 @@ public:
     std::map<ActionWithShortcut*, std::string> pythonCommands;
     RenderStatsDialog* statsDialog;
     PanelWidget* currentPanelFocus;
-
-    // If we steal the focus from the user, give it back when entering
-    boost::weak_ptr<KnobWidgetDnD> currentKnobFocus;
-
+    
     // List of keyframes that should be visible on all timeline GUI
     TimeLineKeysSet keyframesVisibleOnTimeline;
 

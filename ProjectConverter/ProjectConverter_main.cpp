@@ -57,46 +57,66 @@
 
 NATRON_NAMESPACE_USING
 
-
-static void convertNodeGuiSerializationToNodeSerialization(const std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>& nodeGuis, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+static const SERIALIZATION_NAMESPACE::NodeGuiSerialization* matchNodeGuiRecursive(const SERIALIZATION_NAMESPACE::NodeGuiSerialization& nodeGui, const std::string& nodeScriptName, const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
-    for (std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>::const_iterator it = nodeGuis.begin(); it != nodeGuis.end(); ++it) {
-        const std::string& fullName = (it)->_nodeName;
-        std::string groupMasterName;
-        std::string nodeName;
-        {
-            std::size_t foundDot = fullName.find_last_of(".");
-            if (foundDot != std::string::npos) {
-                groupMasterName = fullName.substr(0, foundDot);
-                nodeName = fullName.substr(foundDot + 1);
-            } else {
-                nodeName = fullName;
-            }
-        }
-        if (groupMasterName == serialization->_groupFullyQualifiedScriptName && nodeName == serialization->_nodeScriptName) {
-            serialization->_nodePositionCoords[0] = it->_posX;
-            serialization->_nodePositionCoords[1] = it->_posY;
-            serialization->_nodeSize[0] = it->_width;
-            serialization->_nodeSize[1] = it->_height;
-            if (it->_colorWasFound) {
-                serialization->_nodeColor[0] = it->_r;
-                serialization->_nodeColor[1] = it->_g;
-                serialization->_nodeColor[2] = it->_b;
-            } else {
-                serialization->_nodeColor[0] = serialization->_nodeColor[1] = serialization->_nodeColor[2] = -1;
-            }
-            if (it->_hasOverlayColor) {
-                serialization->_overlayColor[0] = it->_r;
-                serialization->_overlayColor[1] = it->_g;
-                serialization->_overlayColor[2] = it->_b;
-            } else {
-                serialization->_overlayColor[0] = serialization->_overlayColor[1] = serialization->_overlayColor[2] = -1;
-            }
-            break;
+    if (nodeGui._nodeName == nodeScriptName) {
+        return &nodeGui;
+    }
+    const std::list< boost::shared_ptr<SERIALIZATION_NAMESPACE::NodeGuiSerialization> >& children = nodeGui.getChildren();
+    for (std::list< boost::shared_ptr<SERIALIZATION_NAMESPACE::NodeGuiSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        const SERIALIZATION_NAMESPACE::NodeGuiSerialization* childRet = matchNodeGuiRecursive(**it, nodeScriptName, serialization);
+        if (childRet) {
+            return childRet;
         }
     }
+
+
+    return 0;
+}
+
+static const SERIALIZATION_NAMESPACE::NodeGuiSerialization* matchNodeGuiRecursive(const std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>& nodeGuis, const std::string& nodeScriptName, const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
+{
+    for (std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>::const_iterator it = nodeGuis.begin(); it != nodeGuis.end(); ++it) {
+        const SERIALIZATION_NAMESPACE::NodeGuiSerialization* foundNodeGui = matchNodeGuiRecursive(*it, nodeScriptName, serialization);
+        if (foundNodeGui) {
+            return foundNodeGui;
+        }
+    }
+    return 0;
+}
+
+
+static void convertNodeGuiSerializationToNodeSerialization(const std::list<SERIALIZATION_NAMESPACE::NodeGuiSerialization>& nodeGuis, const std::string& nodeScriptName, SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
+{
+
+    const SERIALIZATION_NAMESPACE::NodeGuiSerialization* foundNodeGui = matchNodeGuiRecursive(nodeGuis, nodeScriptName, *serialization);
+
+    if (foundNodeGui) {
+        serialization->_nodePositionCoords[0] = foundNodeGui->_posX;
+        serialization->_nodePositionCoords[1] = foundNodeGui->_posY;
+        serialization->_nodeSize[0] = foundNodeGui->_width;
+        serialization->_nodeSize[1] = foundNodeGui->_height;
+        if (foundNodeGui->_colorWasFound) {
+            serialization->_nodeColor[0] = foundNodeGui->_r;
+            serialization->_nodeColor[1] = foundNodeGui->_g;
+            serialization->_nodeColor[2] = foundNodeGui->_b;
+        } else {
+            serialization->_nodeColor[0] = serialization->_nodeColor[1] = serialization->_nodeColor[2] = -1;
+        }
+        if (foundNodeGui->_hasOverlayColor) {
+            serialization->_overlayColor[0] = foundNodeGui->_r;
+            serialization->_overlayColor[1] = foundNodeGui->_g;
+            serialization->_overlayColor[2] = foundNodeGui->_b;
+        } else {
+            serialization->_overlayColor[0] = serialization->_overlayColor[1] = serialization->_overlayColor[2] = -1;
+        }
+    }
+
     for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it2 = serialization->_children.begin(); it2!=serialization->_children.end(); ++it2) {
-        convertNodeGuiSerializationToNodeSerialization(nodeGuis, it2->get());
+        std::string childScriptName = nodeScriptName;
+        childScriptName += ".";
+        childScriptName += (*it2)->_nodeScriptName;
+        convertNodeGuiSerializationToNodeSerialization(nodeGuis, childScriptName, it2->get());
     }
 } // convertNodeGuiSerializationToNodeSerialization
 
@@ -194,7 +214,7 @@ convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerializa
     }
 
     for (std::list<SERIALIZATION_NAMESPACE::NodeSerializationPtr>::iterator it = serialization->_nodes.begin(); it!=serialization->_nodes.end(); ++it) {
-        convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, it->get());
+        convertNodeGuiSerializationToNodeSerialization(original._serializedNodes, (*it)->_nodeScriptName, it->get());
     }
 
     convertWorkspaceSerialization(original._layoutSerialization, serialization->_projectWorkspace.get());

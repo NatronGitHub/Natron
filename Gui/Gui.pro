@@ -31,9 +31,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 CONFIG += glad-flags yaml-cpp-flags
 
-
 include(../global.pri)
-include(../libs.pri)
 
 precompile_header {
   # Use Precompiled headers (PCH)
@@ -68,7 +66,6 @@ INCLUDEPATH += $$PWD/../libs/qhttpserver/src
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
-
 
 win32-msvc* {
         CONFIG(64bit) {

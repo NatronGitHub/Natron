@@ -1159,8 +1159,9 @@ ViewerGL::refreshFormatFromMetadata()
             RectD inputCanonicalFormat;
             double inputPar = input->getAspectRatio(-1);
             inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
-
-            getViewerTab()->setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
+            if (!inputCanonicalFormat.isNull()) {
+                getViewerTab()->setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
+            }
 
         }
         

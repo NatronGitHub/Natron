@@ -62,8 +62,11 @@ NodeGraph::checkForHints(bool shiftdown,
                          const QRectF& visibleSceneR)
 {
     NodePtr internalNode = selectedNode->getNode();
+    if (!internalNode) {
+        return;
+    }
     bool doMergeHints = shiftdown && controlDown;
-    bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
+    bool doConnectionHints = controlDown;
 
     //Ignore hints for backdrops
     BackdropGuiPtr isBd = toBackdropGui( selectedNode );

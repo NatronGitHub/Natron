@@ -37,7 +37,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags yaml-cpp-flags
 
 include(../global.pri)
-include(../libs.pri)
 
 log {
     DEFINES += NATRON_LOG
@@ -465,7 +464,6 @@ HEADERS += \
     WriteNode.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
-    ../Global/glad_include.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
