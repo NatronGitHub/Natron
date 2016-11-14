@@ -5042,16 +5042,16 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_masterIsAlias = getAliasMaster().get() != 0;
 
         // User knobs bits
-        serialization->_label = getLabel();
-        serialization->_triggerNewLine = isNewLineActivated();
-        serialization->_evaluatesOnChange = getEvaluateOnChange();
-        serialization->_isPersistent = getIsPersistent();
-        serialization->_animatesChanged = (isAnimationEnabled() != isAnimatedByDefault());
-        serialization->_tooltip = getHintToolTip();
-        serialization->_iconFilePath[0] = getIconLabel(false);
-        serialization->_iconFilePath[1] = getIconLabel(true);
-
         if (serialization->_isUserKnob) {
+            serialization->_label = getLabel();
+            serialization->_triggerNewLine = isNewLineActivated();
+            serialization->_evaluatesOnChange = getEvaluateOnChange();
+            serialization->_isPersistent = getIsPersistent();
+            serialization->_animatesChanged = (isAnimationEnabled() != isAnimatedByDefault());
+            serialization->_tooltip = getHintToolTip();
+            serialization->_iconFilePath[0] = getIconLabel(false);
+            serialization->_iconFilePath[1] = getIconLabel(true);
+
             serialization->_isSecret = getIsSecret();
 
             int nDimsDisabled = 0;
