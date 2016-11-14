@@ -143,7 +143,6 @@ GCC_DIAG_OFF(unused-parameter)
 #define NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS 13
 #define NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX 14
 #define NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT 15
-#define NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION 16
 #define NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME 17
 #define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_CHANGE_PYTHON_MODULE_TO_ONLY_NAME
 
@@ -1089,9 +1088,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
     }
 
     ar & ::boost::serialization::make_nvp("Plugin_label", _nodeLabel);
-    if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
-        ar & ::boost::serialization::make_nvp("GroupName", _groupFullyQualifiedScriptName);
-    }
+
     if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
         ar & ::boost::serialization::make_nvp("Plugin_script_name", _nodeScriptName);
     } else {
@@ -1218,22 +1215,6 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("CacheID", cacheID);
     }
 
-    if (version >= NODE_SERIALIZATION_EXTERNALIZE_SERIALIZATION) {
-        ar & ::boost::serialization::make_nvp("PosX", _nodePositionCoords[0]);
-        ar & ::boost::serialization::make_nvp("PosY", _nodePositionCoords[1]);
-        ar & ::boost::serialization::make_nvp("Width", _nodeSize[0]);
-        ar & ::boost::serialization::make_nvp("Height", _nodeSize[1]);
-        ar & ::boost::serialization::make_nvp("NodeColor_R", _nodeColor[0]);
-        ar & ::boost::serialization::make_nvp("NodeColor_G", _nodeColor[1]);
-        ar & ::boost::serialization::make_nvp("NodeColor_B", _nodeColor[2]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_R", _overlayColor[0]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_G", _overlayColor[1]);
-        ar & ::boost::serialization::make_nvp("OverlayColor_B", _overlayColor[2]);
-        bool selected;
-        ar & ::boost::serialization::make_nvp("IsSelected", selected);
-        ar & ::boost::serialization::make_nvp("ViewerKnobsOrder", _viewerUIKnobsOrder);
-
-    }
 }
 
 

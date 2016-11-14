@@ -62,6 +62,9 @@ NodeGraph::checkForHints(bool shiftdown,
                          const QRectF& visibleSceneR)
 {
     NodePtr internalNode = selectedNode->getNode();
+    if (!internalNode) {
+        return;
+    }
     bool doMergeHints = shiftdown && controlDown;
     bool doConnectionHints = controlDown;
 
