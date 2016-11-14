@@ -261,8 +261,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         decloneSelectedNodes();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, modifiers, key) ) {
         centerOnAllNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints, modifiers, key) ) {
-        toggleConnectionHints();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSwitchInputs, modifiers, key) ) {
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();

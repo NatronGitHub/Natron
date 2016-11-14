@@ -60,7 +60,7 @@ NodeGraph::checkForHints(bool shiftdown,
 {
     NodePtr internalNode = selectedNode->getNode();
     bool doMergeHints = shiftdown && controlDown;
-    bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
+    bool doConnectionHints = controlDown;
 
     //Ignore hints for backdrops
     BackdropGui* isBd = dynamic_cast<BackdropGui*>( selectedNode.get() );

@@ -182,10 +182,6 @@ public:
 
     void setMaxPanelsOpened(int maxPanels);
 
-    void setConnectionHintsEnabled(bool enabled);
-
-    bool isConnectionHintEnabled() const;
-
     bool loadBundledPlugins() const;
 
     bool preferBundledPlugins() const;
@@ -519,7 +515,6 @@ private:
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoScroll;
     boost::shared_ptr<KnobBool> _autoTurbo;
-    boost::shared_ptr<KnobBool> _useNodeGraphHints;
     boost::shared_ptr<KnobBool> _snapNodesToConnections;
     boost::shared_ptr<KnobBool> _useBWIcons;
     boost::shared_ptr<KnobInt> _maxUndoRedoNodeGraph;

@@ -8,6 +8,8 @@
 
 - Fix a bug where several images with file names that contain two numbers would be be considered as a sequence even if both numbers differed.
 - Fix a bug where a disabled Merge node would pas input A if the preferences say Merge should ato-connect to B (#1484)
+- Node Graph: hints for possible links between nodes are now only active when holding the Control key (Command on macOS)
+- 
 
 ### Plugins
 

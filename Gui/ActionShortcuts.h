@@ -436,9 +436,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionGraphSelectAllVisible "selectAllVisible"
 #define kShortcutDescActionGraphSelectAllVisible "Select All Visible Nodes"
 
-#define kShortcutIDActionGraphEnableHints "hints"
-#define kShortcutDescActionGraphEnableHints "Enable Connection Hints"
-
 #define kShortcutIDActionGraphAutoHideInputs "autoHideInputs"
 #define kShortcutDescActionGraphAutoHideInputs "Auto-Hide Optional Inputs"
 
