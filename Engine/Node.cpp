@@ -1463,7 +1463,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Check if pages ordering changed, if not do not serialize
     bool pageOrderChanged = true;
-    if (serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
+    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
         pageOrderChanged = hasPageOrderChangedSinceDefault();
     }
 
