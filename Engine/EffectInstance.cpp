@@ -5930,35 +5930,36 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
     ImageBitDepthEnum outputDepth = md.getBitDepth(-1);
     double outputPAR = md.getPixelAspectRatio(-1);
-    double inputPar = 1.;
-    bool inputParSet = false;
-    bool mustWarnPar = false;
     bool outputFrameRateSet = false;
     double outputFrameRate = md.getOutputFrameRate();
     bool mustWarnFPS = false;
+    bool mustWarnPAR = false;
 
+    int nbConnectedInputs = 0;
     for (int i = 0; i < nInputs; ++i) {
         //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
         if ( !supportsMultipleClipDepths && (md.getBitDepth(i) != outputDepth) ) {
             md.setBitDepth(i, outputDepth);
         }
 
+        const double pixelAspect = md.getPixelAspectRatio(i);
+
+        if (!supportsMultipleClipPARs) {
+            if (pixelAspect != outputPAR) {
+                mustWarnPAR = true;
+                md.setPixelAspectRatio(i, outputPAR);
+            }
+        }
+
         if (!inputs[i]) {
             continue;
         }
 
-        const double pixelAspect = md.getPixelAspectRatio(i);
+        ++nbConnectedInputs;
+
         const double fps = inputs[i]->getFrameRate();
 
-        if (!supportsMultipleClipPARs) {
-            if (!inputParSet) {
-                inputPar = pixelAspect;
-                inputParSet = true;
-            } else if (inputPar != pixelAspect) {
-                // We have several inputs with different aspect ratio, which should be forbidden by the host.
-                mustWarnPar = true;
-            }
-        }
+
 
         if (!supportsMultipleClipFPSs) {
             if (!outputFrameRateSet) {
@@ -6000,17 +6001,17 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         warnings[Node::eStreamWarningBitdepth] = QString();
     }
 
-    if (mustWarnFPS) {
-        QString fpsWarning = tr("Several input with different frame rates "
-                                "is not handled correctly by this node. To remove this warning make sure all inputs have "
+    if (mustWarnFPS && nbConnectedInputs > 1) {
+        QString fpsWarning = tr("One or multiple inputs have a frame rate different of the output. "
+                                "It is not handled correctly by this node. To remove this warning make sure all inputs have "
                                 "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
     } else {
         warnings[Node::eStreamWarningFrameRate] = QString();
     }
 
-    if (mustWarnPar) {
-        QString parWarnings = tr("Several input with different pixel aspect ratio is not "
+    if (mustWarnPAR && nbConnectedInputs > 1) {
+        QString parWarnings = tr("One or multiple input have a pixel aspect ratio different of the output. It is not "
                                  "handled correctly by this node and may yield unwanted results. Please adjust the "
                                  "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
