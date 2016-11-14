@@ -101,11 +101,11 @@ INCLUDEPATH += $$PWD/libs/ceres/include
 INCLUDEPATH += $$PWD/libs/ceres/internal
 INCLUDEPATH += $$PWD/libs/Eigen3
 win32-msvc* {
-	CONFIG(64bit) {
-		QMAKE_LFLAGS += /MACHINE:X64
-	} else {
-		QMAKE_LFLAGS += /MACHINE:X86
-	}
+    CONFIG(64bit) {
+        QMAKE_LFLAGS += /MACHINE:X64
+    } else {
+        QMAKE_LFLAGS += /MACHINE:X86
+    }
 }
 }
 
@@ -129,11 +129,11 @@ win32* {
     INCLUDEPATH += $$PWD/libs/glog/src
 }
 win32-msvc* {
-	CONFIG(64bit) {
-		QMAKE_LFLAGS += /MACHINE:X64
-	} else {
-		QMAKE_LFLAGS += /MACHINE:X86
-	}
+    CONFIG(64bit) {
+        QMAKE_LFLAGS += /MACHINE:X64
+    } else {
+        QMAKE_LFLAGS += /MACHINE:X86
+    }
 }
 }
 
