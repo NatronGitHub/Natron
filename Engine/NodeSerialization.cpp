@@ -81,17 +81,35 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                     userPages.push_back(knobs[i]);
                 }
             }
-
-            if ( !knobs[i]->isUserKnob() &&
-                 knobs[i]->getIsPersistent() &&
-                 !isGroup && !isPage
-                 && knobs[i]->hasModificationsForSerialization() ) {
-                ///For choice do a deepclone because we need entries
-                //bool doCopyKnobs = isChoice ? true : copyKnobs;
-
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
-                _knobsValues.push_back(newKnobSer);
+            if (knobs[i]->isUserKnob()) {
+                continue;
             }
+            if (isGroup || isPage) {
+                continue;
+            }
+            bool hasExpr = false;
+            for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+                if (!knobs[i]->getExpression(d).empty()) {
+                    hasExpr = true;
+                    break;
+                }
+                std::pair<int, KnobPtr > master = knobs[i]->getMaster(d);
+                if (master.second) {
+                    hasExpr = true;
+                    break;
+                }
+            }
+            if (!knobs[i]->getIsPersistent() && !hasExpr) {
+                continue;
+            }
+
+            if (!knobs[i]->hasModificationsForSerialization()) {
+                continue;
+            }
+
+            boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+            _knobsValues.push_back(newKnobSer);
+
         }
 
         _nbKnobs = (int)_knobsValues.size();
