@@ -1532,7 +1532,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///If we reach here, it can be either because the planes are cached or not, either way
     ///the planes are NOT a total identity, and they may have some content left to render.
-    EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
+    EffectInstance::RenderRoIStatusEnum renderRetCode = hasSomethingToRender ? eRenderRoIStatusImageRendered : eRenderRoIStatusImageAlreadyRendered;
     bool renderAborted;
 
     renderAborted = aborted();
