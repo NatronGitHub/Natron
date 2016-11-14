@@ -3906,6 +3906,10 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
             dimChanged = *dimensionsToEvaluate.begin();
         }
 
+        for (int i = 0; i < slaveKnob->getDimension(); ++i) {
+            slaveKnob->clearExpressionsResults(i);
+        }
+
 
 
         slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);

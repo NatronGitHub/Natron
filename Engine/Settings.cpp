@@ -1212,14 +1212,8 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
 
-    _useNodeGraphHints = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Use connection hints") );
-    _useNodeGraphHints->setName("useHints");
-    _useNodeGraphHints->setHintToolTip( tr("When checked, moving a node which is not connected to anything to arrows "
-                                           "nearby displays a hint for possible connections. Releasing the mouse when "
-                                           "hints are shown connects the node.") );
-    _nodegraphTab->addKnob(_useNodeGraphHints);
-
     _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum undo/redo for the node graph") );
+
     _maxUndoRedoNodeGraph->setName("maxUndoRedo");
     _maxUndoRedoNodeGraph->disableSlider();
     _maxUndoRedoNodeGraph->setMinimum(0);
@@ -1494,7 +1488,6 @@ Settings::setDefaultValues()
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
     _loadProjectsWorkspace->setDefaultValue(false);
-    _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0, 0);
 
 
@@ -2736,18 +2729,6 @@ Settings::setMaxPanelsOpened(int maxPanels)
 {
     _maxPanelsOpened->setValue(maxPanels);
     saveSetting( _maxPanelsOpened );
-}
-
-void
-Settings::setConnectionHintsEnabled(bool enabled)
-{
-    _useNodeGraphHints->setValue(enabled);
-}
-
-bool
-Settings::isConnectionHintEnabled() const
-{
-    return _useNodeGraphHints->getValue();
 }
 
 bool

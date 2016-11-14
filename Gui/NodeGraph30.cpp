@@ -134,8 +134,6 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     ///and push a connect command to the selected node.
     pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected, isASide ? 0 : 1) );
 
-    ///Set the viewer as the selected node (also wipe the current selection)
-    selectNode(gui, false);
 } // connectCurrentViewerToSelection
 
 void

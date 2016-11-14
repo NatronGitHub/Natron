@@ -126,10 +126,6 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
         dragDim = -1;
     }
 
-    if (guiKnob->getGui()) {
-        guiKnob->getGui()->setCurrentKnobWidgetFocus(shared_from_this());
-    }
-
     dragDim = dragDim == -1 ? 0 : dragDim;
     if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim) ) ) {
         _imp->dragPos = e->pos();
@@ -149,9 +145,7 @@ KnobWidgetDnD::keyPress(QKeyEvent* e)
     if (!guiKnob) {
         return;
     }
-    if (guiKnob->getGui()) {
-        guiKnob->getGui()->setCurrentKnobWidgetFocus(shared_from_this());
-    }
+
     //_imp->userInputSinceFocusIn = true;
     if ( modCASIsControl(e) ) {
         _imp->widget->setCursor( appPTR->getLinkToCursor() );
@@ -480,16 +474,7 @@ KnobWidgetDnD::mouseLeave(QEvent* /*e*/)
         if (!knob) {
             return;
         }
-        if (knob->getGui()) {
-            boost::shared_ptr<KnobWidgetDnD> currentKnobWidget = knob->getGui()->getCurrentKnobWidgetFocus();
-            if (currentKnobWidget) {
-                QWidget* internalWidget = currentKnobWidget->getWidget();
-                if (internalWidget) {
-                    internalWidget->setFocus();
-                    return;
-                }
-            }
-        }
+
         _imp->widget->clearFocus();
     }
 }

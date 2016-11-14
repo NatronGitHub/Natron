@@ -420,13 +420,6 @@ NodeGraph::showMenu(const QPoint & pos)
         }
     }
 
-    QAction* connectionHints = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints,
-                                                      kShortcutDescActionGraphEnableHints, _imp->_menu);
-    connectionHints->setCheckable(true);
-    connectionHints->setChecked( appPTR->getCurrentSettings()->isConnectionHintEnabled() );
-    QObject::connect( connectionHints, SIGNAL(triggered()), this, SLOT(toggleConnectionHints()) );
-    _imp->_menu->addAction(connectionHints);
-
     QAction* autoHideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs,
                                                      kShortcutDescActionGraphAutoHideInputs, _imp->_menu);
     autoHideInputs->setCheckable(true);

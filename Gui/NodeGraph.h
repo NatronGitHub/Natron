@@ -226,8 +226,6 @@ public Q_SLOTS:
 
     void centerOnAllNodes();
 
-    void toggleConnectionHints();
-
     void toggleAutoHideInputs(bool setSettings = true);
 
     void toggleHideInputs();

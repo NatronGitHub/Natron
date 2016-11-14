@@ -1494,7 +1494,19 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (!knobs[i]->getIsPersistent()) {
+        bool hasExpr = false;
+        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+            if (!knobs[i]->getExpression(d).empty()) {
+                hasExpr = true;
+                break;
+            }
+            std::pair<int, KnobIPtr > master = knobs[i]->getMaster(d);
+            if (master.second) {
+                hasExpr = true;
+                break;
+            }
+        }
+        if (!knobs[i]->getIsPersistent() && !hasExpr) {
             // Don't serialize non persistant knobs
             continue;
         }
