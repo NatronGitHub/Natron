@@ -424,21 +424,6 @@ KnobHelper::setDimensionName(DimIdx dimension,
 
 }
 
-template <typename T>
-const std::string &
-Knob<T>::typeName() const
-{
-    static std::string knobNoTypeName("NoType");
-
-    return knobNoTypeName;
-}
-
-template <typename T>
-bool
-Knob<T>::canAnimate() const
-{
-    return false;
-}
 
 void
 KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> & handler)
@@ -2069,15 +2054,12 @@ KnobHelper::refreshListenersAfterValueChange(ViewSetSpec view,
         }
 
         for (DimensionViewPairSet::iterator it = dimViewPairToEvaluate.begin(); it != dimViewPairToEvaluate.end(); ++it) {
+            slaveKnob->clearExpressionsResults(it->dimension, it->view);
             slaveKnob->evaluateValueChangeInternal(it->dimension, time, it->view, eValueChangedReasonSlaveRefresh, reason);
         }
 
         if (dimViewPairToEvaluate.size() > 1) {
             slaveKnob->endChanges();
-        }
-
-        for (int i = 0; i < slaveKnob->getDimension(); ++i) {
-            slaveKnob->clearExpressionsResults(i);
         }
 
 

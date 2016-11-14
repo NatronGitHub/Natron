@@ -1452,15 +1452,23 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
 
         bool hasExpr = false;
-        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
-            if (!knobs[i]->getExpression(d).empty()) {
-                hasExpr = true;
-                break;
-            }
-            std::pair<int, KnobIPtr > master = knobs[i]->getMaster(d);
-            if (master.second) {
-                hasExpr = true;
-                break;
+        {
+            std::list<ViewIdx> views = knobs[i]->getViewsList();
+            for (int d = 0; d < knobs[i]->getNDimensions(); ++d) {
+                for (std::list<ViewIdx>::const_iterator itV = views.begin(); itV != views.end(); ++itV) {
+                    if (!knobs[i]->getExpression(DimIdx(d), *itV).empty()) {
+                        hasExpr = true;
+                        break;
+                    }
+                    MasterKnobLink linkData;
+                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                        hasExpr = true;
+                        break;
+                    }
+                }
+                if (hasExpr) {
+                    break;
+                }
             }
         }
         if (!knobs[i]->getIsPersistent() && !hasExpr) {
