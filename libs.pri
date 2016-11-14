@@ -26,7 +26,7 @@ INCLUDEPATH += $$PWD/libs/libmv
 }
 
 glad-flags {
-    CONFIG(debug) {
+    CONFIG(debug, debug|release) { # does not trigger on CONFIG+=relwithdebinfo
         INCLUDEPATH += $$PWD/Global/gladDeb/include
     } else {
         INCLUDEPATH += $$PWD/Global/gladRel/include
