@@ -196,6 +196,10 @@ struct KnobHelperPrivate
     // protected by stateMutex
     PerViewAllDimensionsVisible allDimensionsVisible;
 
+    // When true, setAllDimensionsVisible will be called by the KnobGui according to the knob
+    // values.
+    bool autoFoldAllDimensionsEnabled;
+
     // Protect curves
     mutable QMutex curvesMutex;
 
@@ -313,6 +317,7 @@ struct KnobHelperPrivate
     , isAnimationEnabled(true)
     , dimension(nDims)
     , allDimensionsVisible()
+    , autoFoldAllDimensionsEnabled(true)
     , curves()
     , mastersMutex()
     , masters()

@@ -1442,12 +1442,15 @@ AnimationModuleViewPrivate::dopeSheetDoubleClickEvent(QMouseEvent *e)
                             }
                         }
                     } else {
-                        AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(dim));
-                        KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                        KeyFrameWithString k;
-                        double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
-                        k.key = KeyFrame(keyframeTime, yCurve);
-                        keys.insert(k);
+                        int nDims = isKnob->getNDimensions();
+                        for (int i = 0; i < nDims; ++i) {
+                            AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(i));
+                            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                            KeyFrameWithString k;
+                            double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), ViewIdx(view));
+                            k.key = KeyFrame(keyframeTime, yCurve);
+                            keys.insert(k);
+                        }
                     }
                 } else {
                     if (view.isAll()) {

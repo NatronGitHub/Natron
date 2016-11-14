@@ -247,11 +247,29 @@ KnobDouble::canAnimate() const
 }
 
 void
+KnobDouble::setValueIsNormalized(DimIdx dimension,
+                          ValueIsNormalizedEnum state)
+{
+    if (dimension < 0 || dimension >= (int)_valueIsNormalized.size()) {
+        throw std::invalid_argument("KnobDouble::setValueIsNormalized: dimension out of range");
+    }
+    _valueIsNormalized[dimension] = state;
+
+}
+
+void
+KnobDouble::setDefaultValuesAreNormalized(bool normalized)
+{
+    _defaultValuesAreNormalized = normalized;
+
+    // Knobs with default values that are normalized are positions hence disable auto dimensions folding
+    //setAutoAllDimensionsVisibleSwitchEnabled(false);
+}
+
+void
 KnobDouble::setSpatial(bool spatial)
 {
-    // Since the knob express a Position 2D, it is extremely unlikely that the users wants
-    // x = y so explicitly show all dimensions by default.
-    setAllDimensionsVisible(ViewSetSpec::all(), true);
+  
     _spatial = spatial;
 }
 

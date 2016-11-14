@@ -331,14 +331,7 @@ public:
     }
 
     void setValueIsNormalized(DimIdx dimension,
-                              ValueIsNormalizedEnum state)
-    {
-        if (dimension < 0 || dimension >= (int)_valueIsNormalized.size()) {
-            throw std::invalid_argument("KnobDouble::setValueIsNormalized: dimension out of range");
-        }
-        _valueIsNormalized[dimension] = state;
-    }
-
+                              ValueIsNormalizedEnum state);
     void setSpatial(bool spatial);
 
     bool getIsSpatial() const
@@ -373,10 +366,7 @@ public:
      * see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
      * and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
      **/
-    void setDefaultValuesAreNormalized(bool normalized)
-    {
-        _defaultValuesAreNormalized = normalized;
-    }
+    void setDefaultValuesAreNormalized(bool normalized);
 
     /**
      * @brief Returns whether the default values are stored normalized or not.

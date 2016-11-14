@@ -197,6 +197,8 @@ struct KnobGuiPrivate
     // Used to concatenate onAnimationLevelChanged() request
     int refreshAnimationLevelRequests;
 
+    // used to concatenate onInternalKnobDimensionsVisibilityChanged
+    std::list<ViewSetSpec> refreshDimensionVisibilityRequests;
 
     // True if this KnobGui is used in the viewer
     KnobGui::KnobLayoutTypeEnum layoutType;

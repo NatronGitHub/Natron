@@ -203,7 +203,8 @@ template <typename T>
 T
 Knob<T>::getValue(DimIdx dimension,
                   ViewGetSpec view,
-                  bool clamp)
+                  bool clamp,
+                  bool byPassMaster)
 {
 
     if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
@@ -259,7 +260,7 @@ Knob<T>::getValue(DimIdx dimension,
     // If the knob is slaved to another knob, returns the other knob value
     {
         MasterKnobLink linkData;
-        if (getMaster(dimension, view_i, &linkData)) {
+        if (!byPassMaster && getMaster(dimension, view_i, &linkData)) {
             KnobIPtr masterKnob = linkData.masterKnob.lock();
             if (masterKnob) {
                 return getValueFromMaster(linkData.masterView, linkData.masterDimension, masterKnob, clamp);

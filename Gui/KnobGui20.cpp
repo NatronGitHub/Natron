@@ -856,21 +856,48 @@ KnobGui::onDimensionNameChanged(DimIdx dimension)
     }
 }
 
+
+
 void
-KnobGui::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view)
+KnobGui::onRefreshDimensionsVisibilityLaterReceived()
 {
+    if (_imp->refreshDimensionVisibilityRequests.empty()) {
+        return;
+    }
     KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
-    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        if (!view.isAll() && it->first != view) {
-            continue;
-        }
-        if (it->second.widgets) {
-            it->second.widgets->setAllDimensionsVisible(knob->getAllDimensionsVisible(it->first));
+    std::set<ViewIdx> views;
+    for (std::list<ViewSetSpec>::const_iterator it = _imp->refreshDimensionVisibilityRequests.begin(); it != _imp->refreshDimensionVisibilityRequests.end(); ++it) {
+        if (it->isAll()) {
+            std::list<ViewIdx> allViews = knob->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it != allViews.end(); ++it) {
+                views.insert(*it);
+            }
+            break;
+        } else {
+            assert(!it->isCurrent());
+            views.insert(ViewIdx(*it));
         }
     }
+    for (std::set<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        KnobGuiPrivate::PerViewWidgetsMap::const_iterator found = _imp->views.find(*it);
+        if (found == _imp->views.end()) {
+            continue;
+        }
+        if (found->second.widgets) {
+            found->second.widgets->setAllDimensionsVisible(knob->getAllDimensionsVisible(found->first));
+        }
+    }
+}
+
+void
+KnobGui::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view)
+{
+    _imp->refreshDimensionVisibilityRequests.push_back(view);
+    Q_EMIT s_refreshDimensionsVisibilityLater();
+
 }
 
 NATRON_NAMESPACE_EXIT;

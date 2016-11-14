@@ -100,9 +100,13 @@ public Q_SLOTS:
 
     void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
+    void onDoRefreshDimensionsVisibilitylaterTriggered();
+
 Q_SIGNALS:
 
     void s_refreshKnobVisibilityLater();
+
+    void s_refreshDimensionsVisibilityLater();
 
 private:
 

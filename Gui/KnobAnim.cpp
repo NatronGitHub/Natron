@@ -61,6 +61,7 @@ public:
     , knobGui()
     , knob()
     , nRefreshRequestsPending(0)
+    , nDimVisibilityRequestsPending(0)
     {
 
     }
@@ -85,6 +86,7 @@ public:
 
     // To avoid refreshing knob visibility too much from knob signals
     int nRefreshRequestsPending;
+    int nDimVisibilityRequestsPending;
 };
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -151,7 +153,7 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
     QObject::connect( this, SIGNAL(s_refreshKnobVisibilityLater()), this, SLOT(onDoRefreshKnobVisibilityLaterTriggered()), Qt::QueuedConnection);
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(availableViewsChanged()), this, SLOT(onKnobAvailableViewsChanged()));
     QObject::connect( knob->getSignalSlotHandler().get(), SIGNAL(dimensionsVisibilityChanged(ViewSetSpec)), this, SLOT(onInternalKnobDimensionsVisibilityChanged(ViewSetSpec)));
-
+    QObject::connect( this, SIGNAL(s_refreshDimensionsVisibilityLater()), this, SLOT(onDoRefreshDimensionsVisibilitylaterTriggered()), Qt::QueuedConnection);
 }
 
 KnobAnim::~KnobAnim()
@@ -285,6 +287,18 @@ KnobAnim::onKnobAvailableViewsChanged()
 void
 KnobAnim::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec /*view*/)
 {
+    ++_imp->nDimVisibilityRequestsPending;
+    Q_EMIT s_refreshDimensionsVisibilityLater();
+}
+
+
+void
+KnobAnim::onDoRefreshDimensionsVisibilitylaterTriggered()
+{
+    if (_imp->nDimVisibilityRequestsPending == 0) {
+        return;
+    }
+    _imp->nDimVisibilityRequestsPending = 0;
     destroyAndRecreate();
 }
 

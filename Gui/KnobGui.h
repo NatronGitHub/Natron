@@ -350,6 +350,8 @@ public Q_SLOTS:
 
     void onDoUpdateModificationsStateLaterReceived();
 
+    void onRefreshDimensionsVisibilityLaterReceived();
+
 Q_SIGNALS:
 
     // Emitted when the description label is clicked
@@ -360,6 +362,8 @@ Q_SIGNALS:
     void s_updateAnimationLevelLater();
 
     void s_updateModificationsStateLater();
+
+    void s_refreshDimensionsVisibilityLater();
 
 private:
 

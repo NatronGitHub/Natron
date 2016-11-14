@@ -146,8 +146,7 @@ KnobGui::initialize()
     QObject::connect( this, SIGNAL(s_doUpdateGuiLater()), this, SLOT(onDoUpdateGuiLaterReceived()), Qt::QueuedConnection );
     QObject::connect( this, SIGNAL(s_updateAnimationLevelLater()), this, SLOT(onDoUpdateAnimationLevelLaterReceived()), Qt::QueuedConnection );
     QObject::connect( this, SIGNAL(s_updateModificationsStateLater()), this, SLOT(onDoUpdateModificationsStateLaterReceived()), Qt::QueuedConnection );
-
-
+    QObject::connect( this, SIGNAL( s_refreshDimensionsVisibilityLater()), this, SLOT(onRefreshDimensionsVisibilityLaterReceived()), Qt::QueuedConnection);
 }
 
 KnobGuiContainerI*
@@ -414,10 +413,10 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
 
     // createViewContainers must have been called before
     assert(it->second.widgets);
+    KnobIPtr k = knob.lock();
 
     // Create per-view label
     {
-        KnobIPtr k = knob.lock();
         std::vector<std::string> projectViews;
         if (k->getHolder() && k->getHolder()->getApp()) {
             projectViews = k->getHolder()->getApp()->getProject()->getProjectViewNames();
@@ -446,6 +445,10 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
     it->second.widgets->createWidget(it->second.fieldLayout);
     it->second.widgets->updateToolTip();
 
+    bool autoDimSwitchEnabled = k->isAutoAllDimensionsVisibleSwitchEnabled();
+    if (autoDimSwitchEnabled) {
+        k->autoExpandOrFoldDimensions(it->first);
+    }
 }
 
 

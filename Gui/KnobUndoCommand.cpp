@@ -191,6 +191,12 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
         if ( ( !_imp->targetView.isAll()) && ( *it != _imp->targetView) ) {
             continue;
         }
+
+        // If dimensions are folded, expand them when linking
+        if (_imp->targetDimension.isAll() && !internalKnob->getAllDimensionsVisible(*it)) {
+            internalKnob->setAllDimensionsVisible(*it, true);
+        }
+        
         for (int i = 0; i < internalKnob->getNDimensions(); ++i) {
             if ( ( !_imp->targetDimension.isAll()) && ( i != _imp->targetDimension) ) {
                 continue;

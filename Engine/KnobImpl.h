@@ -565,8 +565,19 @@ Knob<T>::unSlaveInternal(DimIdx dimension,
 
     bool hasChanged = false;
     if (copyState) {
-        // Clone the master
-        hasChanged |= copyKnob( masterHelper, view, dimension, linkData.masterView, linkData.masterDimension );
+        // Recurse until we find the top level master then copy its state
+        KnobIPtr masterKnobToCopy = masterHelper;
+        for (;;) {
+            if (!masterKnobToCopy->getMaster(linkData.masterDimension, linkData.masterView, &linkData)) {
+                break;
+            }
+            KnobIPtr masterKnob = linkData.masterKnob.lock();
+            if (!masterKnob) {
+                break;
+            }
+            masterKnobToCopy = masterKnob;
+        }
+        hasChanged |= copyKnob( masterKnobToCopy, view, dimension, linkData.masterView, linkData.masterDimension );
     }
 
     _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
@@ -1540,6 +1551,93 @@ Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
     }
     endChanges();
 
+}
+
+template <typename T>
+void
+Knob<T>::autoExpandOrFoldDimensions(ViewIdx view)
+{
+    int nDims = getNDimensions();
+    if (nDims == 1 || !isAutoAllDimensionsVisibleSwitchEnabled()) {
+        return;
+    }
+    // This is a private method, we got the recursive _valuesMutex
+
+    bool valuesEqual = true;
+    {
+        // First check if there's an expression
+        std::string dim0Expr = getExpression(DimIdx(0), view);
+        for (int i = 1; i < nDims; ++i) {
+            std::string dimExpr = getExpression(DimIdx(i), view);
+            valuesEqual = dimExpr == dim0Expr;
+            if (!valuesEqual) {
+                break;
+            }
+        }
+    }
+
+    // Check if there's a master knob
+    if (valuesEqual) {
+        MasterKnobLink dim0Link;
+        KnobIPtr dim0Master;
+        (void)getMaster(DimIdx(0), view, &dim0Link);
+        dim0Master = dim0Link.masterKnob.lock();
+
+
+        for (int i = 1; i < nDims; ++i) {
+            MasterKnobLink dimLink;
+            KnobIPtr dimMaster;
+            (void)getMaster(DimIdx(i), view, &dimLink);
+            dimMaster = dimLink.masterKnob.lock();
+            if (dimMaster.get() == this) {
+                // If the dimension is linked to dimension 0, assume it is not linked
+                dimMaster.reset();
+            }
+            if (dimMaster != dim0Master || dimLink.masterDimension != dim0Link.masterDimension || dimLink.masterView != dim0Link.masterDimension) {
+                valuesEqual = false;
+                break;
+            }
+        }
+    }
+
+    // Check animation curves
+    if (valuesEqual) {
+        CurvePtr curve0 = getCurve(view, DimIdx(0));
+        for (int i = 1; i < nDims; ++i) {
+            CurvePtr dimCurve = getCurve(view, DimIdx(i));
+            if (dimCurve && curve0) {
+                if (*dimCurve != *curve0) {
+                    valuesEqual = false;
+                    break;
+                }
+            }
+        }
+    }
+    // Check if values are equal
+    if (valuesEqual) {
+        T val0 = getValue(DimIdx(0), view, true /*doClamp*/, true /*byPassMaster*/);
+        for (int i = 1; i < nDims; ++i) {
+            T val = getValue(DimIdx(i), view, true /*doClamp*/, true /*byPassMaster*/);
+            if (val0 != val) {
+                valuesEqual = false;
+                break;
+            }
+        }
+
+    }
+
+    
+    // Dimension values are different, expand, else fold
+    bool curVisible = getAllDimensionsVisible(view);
+    if (!valuesEqual) {
+        if (!curVisible) {
+            setAllDimensionsVisible(view, true);
+        }
+    } else {
+        if (curVisible) {
+            setAllDimensionsVisible(view, false);
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

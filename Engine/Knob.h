@@ -385,6 +385,20 @@ public:
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible) = 0;
 
     /**
+     * @brief When enabled, the knob gui will automatically set all dimensions
+     * expanded/folded if all knob values are the same. When disabled it does not
+     * attempt to do so
+     **/
+    virtual void setAutoAllDimensionsVisibleSwitchEnabled(bool enabled) = 0;
+    virtual bool isAutoAllDimensionsVisibleSwitchEnabled() const = 0;
+
+    /**
+     * @brief Check the knob state across all dimensions and if they have the same values
+     * it folds the dimensions, otherwise they are made all visible.
+     **/
+    virtual void autoExpandOrFoldDimensions(ViewIdx view) = 0;
+
+    /**
      * @brief Given the dimension and view in input, if the knob has all its dimensions folded or is not multi-view,
      * adjust the arguments so that they best fit PasteKnobClipBoardUndoCommand
      **/
@@ -1365,6 +1379,9 @@ public:
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getAllDimensionsVisible(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
+    virtual void setAutoAllDimensionsVisibleSwitchEnabled(bool enabled) OVERRIDE FINAL ;
+    virtual bool isAutoAllDimensionsVisibleSwitchEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
     void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);
 
@@ -1865,7 +1882,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    T getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
+    T getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true, bool byPassMaster = false) WARN_UNUSED_RETURN;
 
 
     /**
@@ -2194,6 +2211,12 @@ public:
 
     virtual bool unSplitView(ViewIdx view) OVERRIDE;
 
+
+    /**
+     * @brief Called after a call to setValue/setValueAtTime to check if we need to expand all dimensions or not
+     **/
+    virtual void autoExpandOrFoldDimensions(ViewIdx view) OVERRIDE FINAL;
+
 protected:
 
 
@@ -2203,6 +2226,7 @@ protected:
 
 
 private:
+
 
     virtual void onAllDimensionsMadeVisible(ViewIdx view, bool visible) OVERRIDE FINAL;
 

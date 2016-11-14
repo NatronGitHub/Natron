@@ -106,9 +106,6 @@ struct KnobGuiValuePrivate
     Button *dimensionSwitchButton;
     bool rectangleFormatIsWidthHeight;
 
-    // When true, the  dimension switch will be automatically expended/folded
-    // according to the knob values
-    bool autoExpandEnabled;
 
     KnobGuiValuePrivate(KnobGuiValue *publicInterface, const KnobIPtr& knob)
     : publicInterface(publicInterface)
@@ -121,21 +118,7 @@ struct KnobGuiValuePrivate
     , rectangleFormatButton(0)
     , dimensionSwitchButton(0)
     , rectangleFormatIsWidthHeight(true)
-    , autoExpandEnabled(true)
     {
-        // Don't auto-expand if the knob is animated by default
-        // or if its dimensions are already folded
-        if (!knob->getAllDimensionsVisible(publicInterface->getView())) {
-            autoExpandEnabled = false;
-        } else {
-            int nDims = knob->getNDimensions();
-            for (int i = 0; i < nDims; ++i) {
-                if (knob->isAnimated(DimIdx(i), publicInterface->getView())) {
-                    autoExpandEnabled = false;
-                    break;
-                }
-            }
-        }
 
     }
 
@@ -521,10 +504,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     updateGUI();
 
-    if (!_imp->autoExpandEnabled) {
-        // Refresh widgets state if auto-expand is not enabled
-        setAllDimensionsVisible(knob->getAllDimensionsVisible(getView()));
-    }
+    // Refresh widgets state if auto-expand is not enabled
+    setAllDimensionsVisible(knob->getAllDimensionsVisible(getView()));
 
 } // createWidget
 
@@ -643,8 +624,9 @@ void
 KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 {
     // User clicked once on the dimension switch, disable auto switch
-    _imp->autoExpandEnabled = false;
-    getKnobGui()->getKnob()->setAllDimensionsVisible(getView(), clicked);
+    KnobIPtr knob = getKnobGui()->getKnob();
+    knob->setAutoAllDimensionsVisibleSwitchEnabled(false);
+    knob->setAllDimensionsVisible(getView(), clicked);
 }
 
 
@@ -779,26 +761,6 @@ KnobGuiValue::updateGUI()
     refValue = values[0];
     refExpresion = expressions[0];
 
-    bool allValuesEqual = true;
-    for (int i = 0; i < knobDim; ++i) {
-        if ( (values[i] != refValue) || (expressions[i] != refExpresion) ) {
-            allValuesEqual = false;
-            break;
-        }
-    }
-    if (_imp->dimensionSwitchButton && _imp->autoExpandEnabled) {
-        bool hasDimAnimated = false;
-        for (int i = 0; i < knobDim; ++i) {
-            hasDimAnimated = knob->isAnimated(DimIdx(i), getView());
-            if (hasDimAnimated) {
-                break;
-            }
-        }
-        // If not animated, automatically fold/unfold dimensions
-        if (!hasDimAnimated) {
-            knob->setAllDimensionsVisible(getView(), !allValuesEqual);
-        }
-    }
     // If spinbox values did not change, just don't do anything
     if (!isGuiDifferentFromInternalValues) {
         return;
