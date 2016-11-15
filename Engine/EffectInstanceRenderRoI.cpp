@@ -1178,11 +1178,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
+    RenderSafetyEnum safety = frameArgs->currentThreadSafety;
+    if (safety == eRenderSafetyFullySafeFrame) {
+        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+        // If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
+        // but if the effect doesn't support tiles it won't work.
+        // Also check that the number of threads indicating by the settings are appropriate for this render mode.
+        if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
+            ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
+            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() )) {
+            safety = eRenderSafetyFullySafe;
+        }
+    }
+
+
     if (tryIdentityOptim) {
         optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
     } else {
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
-        if (frameArgs->currentThreadSafety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1) {
+        if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
             QThreadPool* tp = QThreadPool::globalInstance();
             int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
 
@@ -1558,7 +1572,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
             boost::scoped_ptr<QMutexLocker> locker;
-            RenderSafetyEnum safety = frameArgs->currentThreadSafety;
+
 
             EffectInstPtr renderInstance;
             /**
@@ -1940,23 +1954,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
         renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
     }
 
-    ///depending on the thread-safety of the plug-in we render with a different
-    ///amount of threads.
-    ///If the project lock is already locked at this point, don't start any other thread
-    ///as it would lead to a deadlock when the project is loading.
-    ///Just fall back to Fully_safe
-    int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-    if (safety == eRenderSafetyFullySafeFrame) {
-        ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
-        ///but if the effect doesn't support tiles it won't work.
-        ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
-        if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
-             ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
-             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
-             self->isRotoPaintNode() ) {
-            safety = eRenderSafetyFullySafe;
-        }
-    }
 
 
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;

@@ -430,6 +430,13 @@ private:
                                               const boost::shared_ptr<RenderStats>& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
+    virtual void getRegionsOfInterest(double time,
+                                     const RenderScale & scale,
+                                     const RectD & outputRoD,   //!< the RoD of the effect, in canonical coordinates
+                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                     ViewIdx view,
+                                     RoIMap* ret) OVERRIDE FINAL;
+
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
 

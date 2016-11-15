@@ -955,6 +955,23 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
+void
+ViewerInstance::getRegionsOfInterest(double /*time*/,
+                                     const RenderScale & /*scale*/,
+                                     const RectD & /*outputRoD*/,   //!< the RoD of the effect, in canonical coordinates
+                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                     ViewIdx /*view*/,
+                                     RoIMap* ret)
+{
+#pragma message WARN("2.2: fix this and only add RoI for thread local input")
+    for (int i = 0; i < getMaxInputCount(); ++i) {
+        EffectInstPtr input = getInput(i);
+        if (input) {
+            ret->insert( std::make_pair(input, renderWindow) );
+        }
+    }
+}
+
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                                        const U64 viewerHash,
