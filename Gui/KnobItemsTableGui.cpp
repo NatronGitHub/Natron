@@ -39,6 +39,7 @@
 #include <QMimeData>
 #include <QUndoCommand>
 #include <QClipboard>
+#include <QPixmapCache>
 #include <QWidget>
 
 #include "Engine/Utils.h"
@@ -58,6 +59,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/TableModelView.h"
@@ -171,6 +173,12 @@ struct KnobItemsTableGuiPrivate
     void createTableItems(const KnobTableItemPtr& item);
 
     void removeTableItem(const KnobTableItemPtr& item);
+
+    void recreateItemsFromModel();
+
+    void createItemsVecRecursive(const std::vector<KnobTableItemPtr>& items);
+
+    void setItemIcon(const TableItemPtr& tableItem, int col, const KnobTableItemPtr& item);
 };
 
 bool
@@ -179,17 +187,6 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     DimSpec dim;
     KnobIPtr knob = item->getColumnKnob(col, &dim);
     if (!knob) {
-        return false;
-    }
-    
-    // For these kind of knobs, create a knob GUI. For all others, the default line-edit provided by the view is enough to display numbers/strings
-    KnobChoicePtr isChoice = toKnobChoice(knob);
-    KnobColorPtr isColor = toKnobColor(knob);
-    KnobButtonPtr isButton = toKnobButton(knob);
-    KnobBoolPtr isBoolean = toKnobBool(knob);
-    
-    // Create a KnobGui just for these kinds of parameters, for all others, use default interface
-    if (!isChoice && (!isColor || !dim.isAll()) && !isButton && !isBoolean) {
         return false;
     }
 
@@ -205,13 +202,12 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
 
     // Create the Knob Gui
     KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeTableItemWidget, _publicInterface);
+    if (!dim.isAll()) {
+        ret->setSingleDimensionalEnabled(true, DimIdx(dim));
+    }
 
-    QWidget* rowContainer = new QWidget;
-    QHBoxLayout* rowLayout = new QHBoxLayout(rowContainer);
-    rowLayout->setContentsMargins(0, 0, 0, 0);
-    rowLayout->setSpacing(0);
-    std::vector<KnobIPtr> knobsOnSameLine;
-    ret->createGUI(rowContainer);
+
+    ret->createGUI(tableView);
 
     foundItem->columnItems[col].guiKnob = ret;
     
@@ -219,19 +215,9 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     {
         ModelItemsVec::iterator foundItem = findItem(item);
         assert((int)foundItem->columnItems.size() == tableModel->columnCount());
-        tableView->setCellWidget(row, col, rowContainer);
+        tableView->setCellWidget(row, col, ret->getFieldContainer());
     }
     
-    // We must call this otherwise this is never called by Qt for custom widgets in an item view (this is a Qt bug)
-    KnobGuiChoice* isChoiceGui = dynamic_cast<KnobGuiChoice*>(ret.get());
-    if (isChoiceGui) {
-#pragma message WARN("Check if in Qt5 this hack is still needed")
-        ComboBox* combobox = isChoiceGui->getCombobox();
-        combobox->setProperty("ComboboxColumn", col);
-        QObject::connect(combobox, SIGNAL(minimumSizeChanged(QSize)), _publicInterface, SLOT(onComboBoxMinimumSizeChanged(QSize)));
-        QSize s = combobox->minimumSizeHint();
-        Q_UNUSED(s);
-    }
     return true;
 } // createItemCustomWidgetAtCol
 
@@ -436,8 +422,6 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 #endif
     _imp->tableView->header()->setStretchLastSection(true);
 
-    QObject::connect( _imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItemPtr)), this, SLOT(onTableItemRightClicked(QPoint,TableItemPtr)) );
-
     AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate(_imp.get());
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
@@ -456,7 +440,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
             break;
     }
     _imp->tableModel = TableModel::create(nCols, type);
-    QObject::connect( _imp->tableModel.get(), SIGNAL(itemDataChanged(TableItemPtr,int)), this, SLOT(onTableItemDataChanged(TableItemPtr,int)) );
+    QObject::connect( _imp->tableModel.get(), SIGNAL(itemDataChanged(TableItemPtr,int, int)), this, SLOT(onTableItemDataChanged(TableItemPtr,int, int)) );
     _imp->tableView->setTableModel(_imp->tableModel);
 
     QItemSelectionModel *selectionModel = _imp->tableView->selectionModel();
@@ -514,14 +498,14 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     }
 
     
-    
+    _imp->recreateItemsFromModel();
+
     connect(table.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
     connect(table.get(), SIGNAL(itemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelItemRemoved( KnobTableItemPtr,TableChangeReasonEnum)));
     connect(table.get(), SIGNAL(itemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
-    
-    /*connect(table.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onItemLabelChanged(QString,TableChangeReasonEnum)));
-    connect(table.get(), SIGNAL(childRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onItemChildRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
-    connect(table.get(), SIGNAL(childInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(childInserted(int, KnobTableItemPtr,TableChangeReasonEnum)));*/
+
+
+
 } // KnobItemsTableGui::KnobItemsTableGui
 
 KnobItemsTableGui::~KnobItemsTableGui()
@@ -770,7 +754,7 @@ public:
     {
         KnobItemsTablePtr table = _table->internalModel.lock();
         for (std::list<Item>::const_iterator it = _items.begin(); it!=_items.end(); ++it) {
-            table->removeItem(it->item, eTableChangeReasonInternal);
+            table->insertItem(it->indexInParent, it->item, it->parent, eTableChangeReasonInternal);
         }
     }
     
@@ -778,8 +762,9 @@ public:
     {
         KnobItemsTablePtr table = _table->internalModel.lock();
         for (std::list<Item>::const_iterator it = _items.begin(); it!=_items.end(); ++it) {
-            table->insertItem(it->indexInParent, it->item, it->parent, eTableChangeReasonInternal);
+            table->removeItem(it->item, eTableChangeReasonInternal);
         }
+
     }
 
 private:
@@ -1049,7 +1034,6 @@ public:
                          const KnobTableItemPtr& target,
                          const SERIALIZATION_NAMESPACE::KnobItemsTableSerialization& source)
     : QUndoCommand()
-    , _table(table)
     , _targetItem(target)
     , _originalTargetItemSerialization()
     , _sourceItemsCopies()
@@ -1090,7 +1074,6 @@ public:
 
 private:
 
-    KnobItemsTableGuiPrivate* _table;
     KnobTableItemPtr _targetItem;
     SERIALIZATION_NAMESPACE::KnobTableItemSerialization _originalTargetItemSerialization;
     
@@ -1310,17 +1293,13 @@ KnobItemsTableGui::onDuplicateItemsActionTriggered()
     pushUndoCommand(new DuplicateItemUndoCommand(_imp.get(), selection));
 }
 
-
 void
-KnobItemsTableGui::onTableItemRightClicked(const QPoint& globalPos, const TableItemPtr& item)
-{
-#pragma message WARN("Check if right click works correctly directly from KnobGui, otherwise implement it here")
-}
-
-void
-KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item, int col)
+KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item, int col, int role)
 {
     if (!item) {
+        return;
+    }
+    if (role != Qt::DisplayRole) {
         return;
     }
     ModelItemsVec::iterator found = _imp->findItem(item);
@@ -1433,7 +1412,7 @@ KnobItemsTableGui::onModelSelectionChanged(const QItemSelection& selected,const 
     // Select the items in the model internally
     KnobItemsTablePtr model = _imp->internalModel.lock();
     model->beginEditSelection();
-    model->removeFromSelection(selectedItems, eTableChangeReasonPanel);
+    model->removeFromSelection(deselectedItems, eTableChangeReasonPanel);
     model->addToSelection(selectedItems, eTableChangeReasonPanel);
     model->endEditSelection(eTableChangeReasonPanel);
 }
@@ -1495,6 +1474,61 @@ KnobItemsTableGui::onItemLabelChanged(const QString& label, TableChangeReasonEnu
     tableItem->setText(labelColIndex, label);
 }
 
+void
+KnobItemsTableGuiPrivate::setItemIcon(const TableItemPtr& tableItem, int col, const KnobTableItemPtr& item)
+{
+    QString iconFilePath = QString::fromUtf8(item->getIconLabelFilePath().c_str());
+    if (iconFilePath.isEmpty()) {
+        return;
+    }
+    QPixmap pix;
+    if (!QPixmapCache::find(iconFilePath, pix) ) {
+        if (!pix.load(iconFilePath)) {
+            return;
+        }
+        QPixmapCache::insert(iconFilePath, pix);
+    }
+
+
+    if (std::max( pix.width(), pix.height() ) != NATRON_MEDIUM_BUTTON_ICON_SIZE) {
+        pix = pix.scaled(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE,
+                         Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    tableItem->setIcon(col, QIcon(pix));
+
+}
+
+void
+KnobItemsTableGui::onItemIconChanged(TableChangeReasonEnum reason)
+{
+    if (reason == eTableChangeReasonPanel) {
+        return;
+    }
+
+    KnobTableItem* item = dynamic_cast<KnobTableItem*>(sender());
+    if (!item) {
+        return;
+    }
+    KnobTableItemPtr itemShared = toKnobTableItem(item->shared_from_this());
+
+    int labelColIndex = item->getLabelColumnIndex();
+    if (labelColIndex == -1) {
+        return;
+    }
+
+    TableItemPtr tableItem;
+    for (ModelItemsVec::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        if (it->internalItem.lock().get() == item) {
+            tableItem = it->item;
+            break;
+        }
+    }
+    if (!tableItem) {
+        return;
+    }
+
+    _imp->setItemIcon(tableItem, labelColIndex, itemShared);
+}
 
 void
 KnobItemsTableGui::onModelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
@@ -1514,24 +1548,26 @@ KnobItemsTableGui::onModelItemInserted(int /*index*/, const KnobTableItemPtr& it
     _imp->createTableItems(item);
 }
 
-
 void
-KnobItemsTableGui::onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTableGuiPrivate::createItemsVecRecursive(const std::vector<KnobTableItemPtr>& items)
 {
-    if (reason == eTableChangeReasonPanel) {
-        return;
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        createTableItems(items[i]);
+        const std::vector<KnobTableItemPtr>& children = items[i]->getChildren();
+        if (!children.empty()) {
+            createItemsVecRecursive(children);
+        }
     }
-    _imp->removeTableItem(item);
 }
 
 void
-KnobItemsTableGui::onItemChildInserted(int /*index*/, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTableGuiPrivate::recreateItemsFromModel()
 {
-    if (reason == eTableChangeReasonPanel) {
-        return;
-    }
-    _imp->createTableItems(item);
+    assert(items.empty());
+    const std::vector<KnobTableItemPtr>& items = internalModel.lock()->getTopLevelItems();
+    createItemsVecRecursive(items);
 }
+
 
 static QString
 labelToolTipFromScriptName(const KnobTableItemPtr& item)
@@ -1608,7 +1644,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
             mitem.item->setToolTip(i, labelToolTipFromScriptName(item) );
             mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
             mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
-            
+            setItemIcon(mitem.item, i, item);
         }
         
         tableView->resizeColumnToContents(i);
@@ -1619,6 +1655,10 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     // Create custom widgets for knobs
     createCustomWidgetRecursively(item);
 
+    QObject::connect(item.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), _publicInterface, SLOT(onItemLabelChanged(QString,TableChangeReasonEnum)), Qt::UniqueConnection);
+    QObject::connect(item.get(), SIGNAL(labelIconChanged(TableChangeReasonEnum)), _publicInterface, SLOT(onItemIconChanged(TableChangeReasonEnum)), Qt::UniqueConnection);
+
+    
 }
 
 NATRON_NAMESPACE_EXIT;

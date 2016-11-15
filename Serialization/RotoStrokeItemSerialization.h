@@ -31,6 +31,8 @@
 #define kRotoStrokeItemSerializationBrushTypeDodge "Dodge"
 #define kRotoStrokeItemSerializationBrushTypeBurn "Burn"
 
+#define kSerializationStrokeTag "Stroke"
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 
@@ -54,6 +56,7 @@ public:
         , _brushType()
         , _subStrokes()
     {
+        verbatimTag = kSerializationStrokeTag;
         _emitMap = false;
     }
 

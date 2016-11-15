@@ -1650,6 +1650,7 @@ TrackerKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE
     {
         marker = TrackMarker::create(shared_from_this());
     }
+    marker->initializeKnobsPublic();
     marker->fromSerialization(*serialization);
     return marker;
 }
@@ -1823,7 +1824,11 @@ TrackerNodePrivate::refreshVisibilityFromTransformType()
 {
     KnobChoicePtr transformTypeKnob = transformType.lock();
 
-    assert(transformTypeKnob);
+    // The transform page may not be created yet
+    if (!transformTypeKnob) {
+        return;
+    }
+
     int transformType_i = transformTypeKnob->getValue();
     TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
     refreshVisibilityFromTransformTypeInternal(transformType);
@@ -1832,7 +1837,13 @@ TrackerNodePrivate::refreshVisibilityFromTransformType()
 void
 TrackerNodePrivate::setSolverParamsEnabled(bool enabled)
 {
-    motionType.lock()->setEnabled(enabled);
+    KnobChoicePtr motionTypeKnob = motionType.lock();
+
+    // The transform page may not be created yet
+    if (!motionTypeKnob) {
+        return;
+    }
+    motionTypeKnob->setEnabled(enabled);
     setCurrentFrameButton.lock()->setEnabled(enabled);
     robustModel.lock()->setEnabled(enabled);
     referenceFrame.lock()->setEnabled(enabled);

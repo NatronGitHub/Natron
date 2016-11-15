@@ -242,6 +242,20 @@ KnobGui::getOrCreateTabWidget()
 }
 
 void
+KnobGui::setSingleDimensionalEnabled(bool enabled, DimIdx dimension)
+{
+    _imp->singleDimensionEnabled = enabled;
+    _imp->singleDimension = dimension;
+}
+
+bool
+KnobGui::isSingleDimensionalEnabled(DimIdx* dimension) const
+{
+    *dimension = _imp->singleDimension;
+    return _imp->singleDimensionEnabled;
+}
+
+void
 KnobGuiPrivate::refreshIsOnNewLineFlag()
 {
     KnobIPtr  k = knob.lock();
@@ -455,7 +469,9 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
 void
 KnobGuiPrivate::createLabel(QWidget* parentWidget)
 {
-
+    if (layoutType == KnobGui::eKnobLayoutTypeTableItemWidget) {
+        return;
+    }
     // createViewContainers must have been called
     assert(!views.empty());
     KnobGuiWidgetsPtr firstViewWidgets = views.begin()->second.widgets;

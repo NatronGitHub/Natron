@@ -1618,7 +1618,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
         setSubGraphEditedByUser(false);
 
 
-    } else if (projectSerialization) {
+    } else if (projectSerialization && isSubGraphUserVisible()) {
 
         // Ok if we are here that means we are loading a group that was edited.
         // Clear any initial nodes created and load the sub-graph

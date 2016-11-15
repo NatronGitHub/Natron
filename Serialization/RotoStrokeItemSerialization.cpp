@@ -60,6 +60,7 @@ RotoStrokeItemSerialization::encode(YAML::Emitter& em) const
 void
 RotoStrokeItemSerialization::decode(const YAML::Node& node)
 {
+
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }

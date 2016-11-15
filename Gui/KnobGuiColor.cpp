@@ -207,8 +207,15 @@ ColorPickerLabel::setColor(const QColor & color)
 KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     : KnobGuiValue(knobUI, view)
     , _knob( toKnobColor(knobUI->getKnob()) )
-    , _useSimplifiedUI( knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI || _knob.lock()->isSimplified() )
+    , _useSimplifiedUI( _knob.lock()->isSimplified() )
 {
+    if (!_useSimplifiedUI) {
+        DimIdx singleDim;
+        bool singleDimEnabled = knobUI->isSingleDimensionalEnabled(&singleDim);
+        if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI && !singleDimEnabled) {
+            _useSimplifiedUI = true;
+        }
+    }
 }
 
 void

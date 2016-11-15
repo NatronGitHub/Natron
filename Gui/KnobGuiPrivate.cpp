@@ -33,6 +33,8 @@ NATRON_NAMESPACE_ENTER;
 KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
 : _publicInterface(publicInterface)
 , knob(knob)
+, singleDimensionEnabled(false)
+, singleDimension(DimIdx(0))
 , isOnNewLine(false)
 , widgetCreated(false)
 , container(container)

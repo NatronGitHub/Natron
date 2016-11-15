@@ -337,8 +337,6 @@ Gui::getLastSelectedNodeCollection() const
 void
 Gui::wipeLayout()
 {
-    // Delete the menu bar as it can hold actions (undo/Redo) that may not be valid anymore
-    _imp->menubar->deleteLater();
 
     std::list<TabWidgetI*> panesCpy = getApp()->getTabWidgetsSerialization();
     getApp()->clearTabWidgets();

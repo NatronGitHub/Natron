@@ -971,7 +971,9 @@ KnobHelper::setEnabled(bool b, DimSpec dimension, ViewSetSpec view)
             }
         }
     }
-    _signalSlotHandler->s_enabledChanged();
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_enabledChanged();
+    }
 }
 
 
@@ -4843,6 +4845,9 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
     }
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
         _imp->knobs[i]->onTimeChanged(isPlayback, time);
+    }
+    if (_imp->knobsTable) {
+        _imp->knobsTable->refreshAfterTimeChange(isPlayback, time);
     }
     refreshExtraStateAfterTimeChanged(isPlayback, time);
 }

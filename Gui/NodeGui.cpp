@@ -3793,8 +3793,10 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
         }
         _activeNodeCustomModalDialog.reset();
     } else {
-        _activeNodeCustomModalDialog->close();
-        _activeNodeCustomModalDialog.reset();
+        if (_activeNodeCustomModalDialog) {
+            _activeNodeCustomModalDialog->close();
+            _activeNodeCustomModalDialog.reset();
+        }
     }
 }
 

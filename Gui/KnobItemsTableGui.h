@@ -76,6 +76,7 @@ public:
 
 public Q_SLOTS:
 
+
     void onComboBoxMinimumSizeChanged(const QSize& size);
 
     void onDeleteItemsActionTriggered();
@@ -86,8 +87,7 @@ public Q_SLOTS:
 
     void onSelectAllItemsActionTriggered();
 
-    void onTableItemRightClicked(const QPoint& globalPos, const TableItemPtr& item);
-    void onTableItemDataChanged(const TableItemPtr& item, int col);
+    void onTableItemDataChanged(const TableItemPtr& item, int col, int role);
     void onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected);
     
     void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);
@@ -95,8 +95,8 @@ public Q_SLOTS:
     void onModelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
     void onItemLabelChanged(const QString& label, TableChangeReasonEnum reason);
-    void onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
-    void onItemChildInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void onItemIconChanged(TableChangeReasonEnum reason);
+
 private:
 
     boost::scoped_ptr<KnobItemsTableGuiPrivate> _imp;

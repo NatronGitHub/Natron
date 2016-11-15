@@ -119,7 +119,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
     }
 
     if (_tableModel) {
-        em << YAML::Key << "Items" << YAML::Value;
+        em << YAML::Key << "TableItems" << YAML::Value;
         _tableModel->encode(em);
     }
 
@@ -253,9 +253,9 @@ NodeSerialization::decode(const YAML::Node& node)
             _children.push_back(s);
         }
     }
-    if (node["Items"]) {
+    if (node["TableItems"]) {
         _tableModel.reset(new KnobItemsTableSerialization);
-        _tableModel->decode(node["Items"]);
+        _tableModel->decode(node["TableItems"]);
     }
 
     if (node["CloneMaster"]) {

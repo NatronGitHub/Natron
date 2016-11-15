@@ -58,7 +58,6 @@ public:
     , holder(holder)
     , rootItem(0)
     , parentItem(0)
-    , knobGui()
     , knob()
     , nRefreshRequestsPending(0)
     , nDimVisibilityRequestsPending(0)
@@ -81,7 +80,6 @@ public:
     QTreeWidgetItem *rootItem;
     QTreeWidgetItem *parentItem;
 
-    KnobGuiWPtr knobGui;
     KnobIWPtr knob;
 
     // To avoid refreshing knob visibility too much from knob signals
@@ -137,14 +135,11 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
                    const KnobsHolderAnimBasePtr& holder,
                    QTreeWidgetItem *parentItem,
-                   const KnobGuiPtr& knobGui)
+                   const KnobIPtr& knob)
 : AnimItemBase(model)
 , _imp(new KnobAnimPrivate(this, holder))
 {
-    assert(knobGui);
-
-    _imp->knobGui = knobGui;
-    KnobIPtr knob = knobGui->getKnob();
+    assert(knob);
     _imp->knob = knob;
     _imp->parentItem = parentItem;
     
@@ -159,7 +154,7 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 KnobAnim::~KnobAnim()
 {
 
-    AnimationModuleBasePtr model = getModel();
+    /*AnimationModuleBasePtr model = getModel();
     bool isTearingDown;
     if (model) {
         isTearingDown = model->isAboutToBeDestroyed();
@@ -170,7 +165,7 @@ KnobAnim::~KnobAnim()
     if (!isTearingDown) {
         delete _imp->rootItem;
     }
-    _imp->rootItem = 0;
+    _imp->rootItem = 0;*/
 }
 
 void
@@ -378,11 +373,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
         return;
     }
 
-    KnobGuiPtr knobGui = _imp->knobGui.lock();
-    if (!knobGui) {
-        return;
-    }
-    KnobIPtr knob = knobGui->getKnob();
+    KnobIPtr knob = getInternalKnob();
     if (!knob) {
         return;
     }
@@ -506,13 +497,6 @@ KnobAnim::getViewDimensionLabel(DimIdx dimension, ViewIdx view) const
         prependItemNameRecursive(item, &ret);
     }
     return ret;
-}
-
-
-KnobGuiPtr
-KnobAnim::getKnobGui() const
-{
-    return _imp->knobGui.lock();
 }
 
 KnobIPtr

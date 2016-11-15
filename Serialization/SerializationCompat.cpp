@@ -52,7 +52,7 @@ Compat::RotoLayerSerialization::convertRotoLayerSerialization(SERIALIZATION_NAME
         Compat::RotoLayerSerialization* isLayer = dynamic_cast<Compat::RotoLayerSerialization*>(it->get());
         Compat::RotoStrokeItemSerialization* isStroke = dynamic_cast<Compat::RotoStrokeItemSerialization*>(it->get());
         if (isBezier) {
-            SERIALIZATION_NAMESPACE::BezierSerializationPtr bezier(new SERIALIZATION_NAMESPACE::BezierSerialization);
+            SERIALIZATION_NAMESPACE::BezierSerializationPtr bezier(new SERIALIZATION_NAMESPACE::BezierSerialization(isBezier->_isOpenBezier));
             isBezier->convertBezierSerialization(bezier.get());
             outSerialization->children.push_back(bezier);
         } else if (isLayer) {

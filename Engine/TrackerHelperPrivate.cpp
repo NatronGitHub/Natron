@@ -46,6 +46,7 @@ NATRON_NAMESPACE_ENTER;
 TrackerHelperPrivate::TrackerHelperPrivate(TrackerHelper* publicInterface,
                                             const TrackerParamsProviderPtr &provider)
     : _publicInterface(publicInterface)
+    , provider(provider)
     , scheduler()
 {
     scheduler.reset(new TrackScheduler(provider));

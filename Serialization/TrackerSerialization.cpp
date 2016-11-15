@@ -28,7 +28,7 @@ void
 TrackSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-
+    KnobTableItemSerialization::encode(em);
     std::list<std::string> props;
     if (_isPM) {
         props.push_back("PM");
@@ -58,9 +58,12 @@ TrackSerialization::encode(YAML::Emitter& em) const
 void
 TrackSerialization::decode(const YAML::Node& node)
 {
+   
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
+
+    KnobTableItemSerialization::decode(node);
 
     if (node["Properties"]) {
         YAML::Node propsNode = node["Properties"];

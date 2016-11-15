@@ -283,6 +283,7 @@ TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjec
     if (!s) {
         return;
     }
+    KnobTableItem::fromSerialization(obj);
     QMutexLocker k(&_imp->trackMutex);
 
     for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
@@ -297,10 +298,12 @@ TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* o
     if (!s) {
         return;
     }
-    QMutexLocker k(&_imp->trackMutex);
-    s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
-    for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-        s->_userKeys.push_back(*it);
+    {
+        QMutexLocker k(&_imp->trackMutex);
+        s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
+        for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
+            s->_userKeys.push_back(*it);
+        }
     }
     KnobTableItem::toSerialization(obj);
 }

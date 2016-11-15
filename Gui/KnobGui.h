@@ -135,6 +135,14 @@ public:
 
     bool hasWidgetBeenCreated() const;
 
+    /**
+     * @brief When enabled, only the given dimension will be created for the knob.
+     * This should be called before calling createGUI otherwise this will not be taken
+     * into account.
+     **/
+    void setSingleDimensionalEnabled(bool enabled, DimIdx dimension);
+    bool isSingleDimensionalEnabled(DimIdx* dimension) const;
+
     void createGUI(QWidget* parentWidget);
 
 

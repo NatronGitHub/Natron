@@ -24,6 +24,8 @@
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
+#define kSerializationRotoLayerTag "Layer"
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 
@@ -38,6 +40,9 @@ protected:
     bool _emitMap;
 public:
 
+    // Tag type to uniquely identify the item type to YAML
+    std::string verbatimTag;
+
     std::string scriptName;
     std::string label;
 
@@ -47,6 +52,7 @@ public:
 
     KnobTableItemSerialization()
     : _emitMap(true)
+    , verbatimTag()
     , scriptName()
     , label()
     , knobs()

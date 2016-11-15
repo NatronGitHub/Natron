@@ -596,7 +596,7 @@ Q_SIGNALS:
     void s_itemChanged(TableItemPtr);
 
     // This hacks the dataChanged by making it more convenient, but essentially does the same
-    void itemDataChanged(TableItemPtr item, int col);
+    void itemDataChanged(TableItemPtr item, int col, int role);
 
 
 private:
@@ -605,7 +605,7 @@ private:
 
     virtual bool removeColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 
-    void onItemChanged(const TableItemPtr& item, int col, bool valuesChanged);
+    void onItemChanged(const TableItemPtr& item, int col, int role, bool valuesChanged);
 
     void refreshTopLevelItemIndices();
 

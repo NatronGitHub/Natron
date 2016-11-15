@@ -331,7 +331,7 @@ TableItem::setFlags(int col, Qt::ItemFlags flags)
     _imp->columns[col].itemFlags = flags;
     TableModelPtr model = getModel();
     if (model) {
-        model->onItemChanged(shared_from_this(), col, false);
+        model->onItemChanged(shared_from_this(), col, Qt::DisplayRole, false);
     }
 }
 
@@ -364,7 +364,7 @@ TableItem::setData(int col, int role, const QVariant &value)
 
     TableModelPtr model = getModel();
     if (model) {
-        model->onItemChanged(shared_from_this(), col, true);
+        model->onItemChanged(shared_from_this(), col, role, true);
     }
 }
 
@@ -1066,7 +1066,7 @@ TableModel::setItemData(const QModelIndex &index, const QMap<int, QVariant> &rol
         }
         itm->_imp->setModelAndInitColumns(shared_from_this());
         if (changed) {
-            onItemChanged(itm, index.column(), true);
+            onItemChanged(itm, index.column(), Qt::DisplayRole, true);
         }
     } else {
         // For tables, create a dummy item if it doesn't exist already.
@@ -1131,7 +1131,7 @@ TableModel::clear()
 }
 
 void
-TableModel::onItemChanged(const TableItemPtr& item, int col, bool valuesChanged)
+TableModel::onItemChanged(const TableItemPtr& item, int col, int role, bool valuesChanged)
 {
     if (!item) {
         return;
@@ -1148,7 +1148,7 @@ TableModel::onItemChanged(const TableItemPtr& item, int col, bool valuesChanged)
 
             // Emit our convenience signal if values have changed
             if (valuesChanged) {
-                Q_EMIT itemDataChanged(item, col);
+                Q_EMIT itemDataChanged(item, col, role);
             }
         }
     }

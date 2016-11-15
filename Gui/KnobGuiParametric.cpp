@@ -215,7 +215,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     _imp->selectionModel.reset(new AnimationModuleSelectionModel(_imp->model));
     _imp->curveWidget = new AnimationModuleView(layout->parentWidget());
 
-    _imp->animRoot = KnobAnim::create(_imp->model, KnobsHolderAnimBasePtr(), 0 /*parentTreeItem*/, knobUI);
+    _imp->animRoot = KnobAnim::create(_imp->model, KnobsHolderAnimBasePtr(), 0 /*parentTreeItem*/, knob);
     _imp->curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _imp->curveWidget->initialize(knobUI->getGui(), _imp->model);
     if (interact) {

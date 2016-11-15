@@ -110,6 +110,11 @@ struct KnobGuiPrivate
     // The internal knob
     KnobIWPtr knob;
 
+    // When enabled, only the dimension indicated by singleDimension will be created for the knob
+    bool singleDimensionEnabled;
+
+    DimIdx singleDimension;
+
     // Whether we place the knob on a new line in a vertical layout
     bool isOnNewLine;
 

@@ -461,11 +461,12 @@ NodeAnimPtr AnimationModule::findNodeAnim(const KnobIPtr &knob) const
 
 KnobAnimPtr AnimationModule::findKnobAnim(const KnobGuiConstPtr& knobGui) const
 {
+    KnobIPtr internalKnob = knobGui->getKnob();
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         const std::vector<KnobAnimPtr>& knobs = (*it)->getKnobs();
 
         for (std::vector<KnobAnimPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ((*it2)->getKnobGui() == knobGui) {
+            if ((*it2)->getInternalKnob() == internalKnob) {
                 return *it2;
             }
         }

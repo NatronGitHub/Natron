@@ -224,7 +224,7 @@ struct AddKnobDialogPrivate
 
     void setVisibleDefaultValues(bool visible, AddKnobDialogPrivate::DefaultValueType type, int dimensions);
 
-    void createKnobFromSelection(int type, int optionalGroupIndex = -1);
+    void createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum type, int optionalGroupIndex = -1);
 
     KnobGroupPtr getSelectedGroup() const;
 
@@ -1382,10 +1382,9 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
 }
 
 void
-AddKnobDialogPrivate::createKnobFromSelection(int index,
+AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t,
                                               int optionalGroupIndex)
 {
-    AddKnobDialog::ParamDataTypeEnum t = (AddKnobDialog::ParamDataTypeEnum)index;
 
     assert(!knob);
     std::string label = labelLineEdit->text().toStdString();
@@ -1404,7 +1403,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeFloatingPoint2D:
     case AddKnobDialog::eParamDataTypeFloatingPoint3D: {
         //double
-        int dim = index - 2;
+        int dim = (int)t - 2;
         KnobDoublePtr k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>(k);
         knob = k;
@@ -1413,7 +1412,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeColorRGB:
     case AddKnobDialog::eParamDataTypeColorRGBA: {
         // color
-        int dim = index - 3;
+        int dim = (int)t - 3;
         KnobColorPtr k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>(k);
         knob = k;
@@ -1484,7 +1483,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
                 k->setUsesRichText(true);
             }
         } else {
-            if (index == 10) {
+            if (t == AddKnobDialog::eParamDataTypeLabel) {
                 k->setAsLabel();
             }
         }
@@ -1578,7 +1577,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     }
 
 
-    if ( (index != 16) && parentPage && !addedInGrp ) {
+    if ( (t != AddKnobDialog::eParamDataTypePage) && parentPage && !addedInGrp ) {
 
         // Ensure the knob is in a page
         KnobPagePtr page = getSelectedPage();
@@ -1808,7 +1807,7 @@ AddKnobDialog::onOkClicked()
         }
     } else if (!_imp->isKnobAlias) {
         try {
-            _imp->createKnobFromSelection( (int)t, oldIndexInParent );
+            _imp->createKnobFromSelection(t, oldIndexInParent );
         }   catch (const std::exception& e) {
             Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 

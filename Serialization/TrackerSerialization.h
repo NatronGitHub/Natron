@@ -22,6 +22,9 @@
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
 
+#define kSerializationTrackTag "Track"
+
+
 SERIALIZATION_NAMESPACE_ENTER;
 
 class TrackSerialization
@@ -39,6 +42,7 @@ public:
         , _isPM(false)
         , _userKeys()
     {
+        verbatimTag = kSerializationTrackTag;
         _emitMap = false;
     }
 

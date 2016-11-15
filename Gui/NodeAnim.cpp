@@ -230,30 +230,20 @@ void
 NodeAnim::initializeKnobsAnim()
 {
     // Create dope sheet knobs
-    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = _imp->nodeGui.lock()->getKnobs();
-    std::vector<KnobGuiPtr> knobsVec;
-    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        knobsVec.push_back(it->second);
-    }
+    NodeGuiPtr nodeUI = _imp->nodeGui.lock();
+    assert(nodeUI);
+    const KnobsVec& knobs = nodeUI->getNode()->getKnobs();
 
     NodeAnimPtr thisShared = shared_from_this();
 
-    for (std::vector<KnobGuiPtr>::const_iterator it = knobsVec.begin();
-         it != knobsVec.end(); ++it) {
-
-        const KnobGuiPtr &knobGui = *it;
-        KnobIPtr knob = knobGui->getKnob();
-        if (!knob) {
-            continue;
-        }
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         // If the knob is not animted, don't create an item
-        if ( !knob->canAnimate() || !knob->isAnimationEnabled() ) {
+        if ( !(*it)->canAnimate() || !(*it)->isAnimationEnabled() ) {
             continue;
         }
-        assert(knob->getNDimensions() >= 1);
 
-        KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem, knobGui));
+        KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem, *it));
         _imp->knobs.push_back(knobAnimObject);
         
     } // for all knobs
@@ -616,7 +606,9 @@ NodeAnimPrivate::computeReaderRange()
 
     NodeGuiPtr nodeUI = nodeGui.lock();
     NodePtr node = nodeUI->getNode();
-
+    if (!node) {
+        return;
+    }
     KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
     if (!startingTimeKnob) {
         return;

@@ -423,6 +423,10 @@ protected:
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
+    /**
+     * @brief Refresh all animated knobs and recurses on children items
+     **/
+    void refreshAfterTimeChange(bool isPlayback, double time);
 
 Q_SIGNALS:
 
@@ -714,6 +718,11 @@ public:
     bool hasAnimation() const;
 
     /**
+     * @brief Refresh all animated knob gui
+     **/
+    void refreshAfterTimeChange(bool isPlayback, double time);
+
+    /**
      * @brief  Implement to create an item from a serialization object.
      * The item will not yet be part of the model and must be added either as a top level item with addTopLevelItem
      * or to another item with addChild
@@ -730,6 +739,12 @@ public:
      **/
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
+
+public Q_SLOTS:
+
+    void onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
+
+    void onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
 
 Q_SIGNALS:
 

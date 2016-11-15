@@ -386,8 +386,13 @@ Gui::eventFilter(QObject *target,
 void
 Gui::createMenuActions()
 {
-    _imp->menubar = new QMenuBar(this);
-    setMenuBar(_imp->menubar);
+    if (!_imp->menubar) {
+        _imp->menubar = new QMenuBar(this);
+        setMenuBar(_imp->menubar);
+    } else {
+        _imp->menubar->clear();
+    }
+
 
     _imp->menuFile = new Menu(tr("File"), _imp->menubar);
     _imp->menuRecentFiles = new Menu(tr("Open Recent"), _imp->menuFile);

@@ -42,7 +42,7 @@ class KnobAnim : public QObject, public AnimItemBase
     KnobAnim(const AnimationModuleBasePtr& model,
              const KnobsHolderAnimBasePtr& holder,
              QTreeWidgetItem *parentItem,
-             const KnobGuiPtr& knobGui);
+             const KnobIPtr& knob);
 
 public:
 
@@ -50,9 +50,9 @@ public:
     static KnobAnimPtr create(const AnimationModuleBasePtr& model,
                               const KnobsHolderAnimBasePtr& holder,
                               QTreeWidgetItem *parentItem,
-                              const KnobGuiPtr& knobGui)
+                              const KnobIPtr& knob)
     {
-        KnobAnimPtr ret(new KnobAnim(model, holder, parentItem, knobGui));
+        KnobAnimPtr ret(new KnobAnim(model, holder, parentItem, knob));
         ret->initialize();
         return ret;
     }
@@ -62,12 +62,7 @@ public:
     virtual AnimatingObjectIPtr getInternalAnimItem() const OVERRIDE FINAL;
 
     KnobsHolderAnimBasePtr getHolder() const;
-
-    /**
-     * @brief Returns the associated knob GUI
-     **/
-    KnobGuiPtr getKnobGui() const;
-
+    
     /**
      * @brief Returns the associated internal Knob
      **/

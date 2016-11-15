@@ -356,8 +356,8 @@ TableItemAnim::createViewItems()
         QString itemLabel;
         if (views.size() > 1) {
             itemLabel += viewName + QString::fromUtf8(" ");
-            itemLabel += tr("Animation");
         }
+        itemLabel += tr("Animation");
         animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
         animationItem->setText(0, itemLabel);
         animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
@@ -385,26 +385,18 @@ void
 TableItemAnim::initializeKnobsAnim()
 {
     KnobTableItemPtr item = _imp->tableItem.lock();
-    std::vector<KnobGuiPtr> knobs = _imp->table.lock()->getKnobsForItem(item);
+    const KnobsVec& knobs = item->getKnobs();
     TableItemAnimPtr thisShared = toTableItemAnim(shared_from_this());
     AnimationModuleBasePtr model = getModel();
 
-    for (std::vector<KnobGuiPtr>::const_iterator it = knobs.begin();
-         it != knobs.end(); ++it) {
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
-        const KnobGuiPtr &knobGui = *it;
-        KnobIPtr knob = knobGui->getKnob();
-        if (!knob) {
-            continue;
-        }
 
         // If the knob is not animted, don't create an item
-        if ( !knob->canAnimate() || !knob->isAnimationEnabled() ) {
+        if ( !(*it)->canAnimate() || !(*it)->isAnimationEnabled() ) {
             continue;
         }
-        assert(knob->getNDimensions() >= 1);
-
-        KnobAnimPtr knobAnimObject(KnobAnim::create(model, thisShared, _imp->nameItem, knobGui));
+        KnobAnimPtr knobAnimObject(KnobAnim::create(model, thisShared, _imp->nameItem, *it));
         _imp->knobs.push_back(knobAnimObject);
 
     } // for all knobs

@@ -2595,18 +2595,21 @@ RotoPaintKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPA
     SERIALIZATION_NAMESPACE::BezierSerializationPtr isBezier = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::BezierSerialization>(data);
     if (isBezier) {
         BezierPtr ret(new Bezier(_imp->knobsTable, std::string(), isBezier->_isOpenBezier));
+        ret->initializeKnobsPublic();
         ret->fromSerialization(*isBezier);
         return ret;
     }
     SERIALIZATION_NAMESPACE::RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization>(data);
     if (isStroke) {
         RotoStrokeItemPtr ret(new RotoStrokeItem(RotoStrokeItem::strokeTypeFromSerializationString(isStroke->_brushType), _imp->knobsTable));
+        ret->initializeKnobsPublic();
         ret->fromSerialization(*isStroke);
         return ret;
     }
     
     // By default, assume this is a layer
     RotoLayerPtr ret(new RotoLayer(_imp->knobsTable));
+    ret->initializeKnobsPublic();
     ret->fromSerialization(*data);
     return ret;
     
@@ -2621,10 +2624,11 @@ RotoPaintKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& ite
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
     if (isLayer) {
         SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+        ret->verbatimTag = "Layer";
         isLayer->toSerialization(ret.get());
         return ret;
     } else if (isBezier) {
-        SERIALIZATION_NAMESPACE::BezierSerializationPtr ret(new SERIALIZATION_NAMESPACE::BezierSerialization);
+        SERIALIZATION_NAMESPACE::BezierSerializationPtr ret(new SERIALIZATION_NAMESPACE::BezierSerialization(isBezier->isOpenBezier()));
         isBezier->toSerialization(ret.get());
         return ret;
     } else if (isStroke) {

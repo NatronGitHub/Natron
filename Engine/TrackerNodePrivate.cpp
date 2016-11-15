@@ -48,7 +48,8 @@ NATRON_NAMESPACE_ENTER;
 
 
 TrackerNodePrivate::TrackerNodePrivate(TrackerNode* publicInterface)
-    : publicInterface(publicInterface)
+    : TrackerParamsProvider()
+    , publicInterface(publicInterface)
     , ui( new TrackerNodeInteract(this) )
 {
 }
