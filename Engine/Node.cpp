@@ -4069,9 +4069,15 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         for (KnobsVec::iterator it = mainPageChildren.begin(); it != mainPageChildren.end(); ++it, ++i) {
             if (*it == lastKnobBeforeAdvancedOption) {
                 if (i > 0) {
+                    int j = i - 1;
                     KnobsVec::iterator prev = it;
                     --prev;
-                    if ( !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
+                    while (j >= 0 && (*prev)->getIsSecret()) {
+                        --j;
+                        --prev;
+                    }
+
+                    if ( j >= 0 && !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
                         boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
