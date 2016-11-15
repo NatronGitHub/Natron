@@ -5445,7 +5445,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
         metadata.setPixelAspectRatio(i, par);
 
-        bool isOptional = i > 0 && isInputOptional(i);
+        bool isOptional = i >= 0 && isInputOptional(i);
         if (i >= 0) {
             if (isOptional) {
                 if (!firstOptionalInputFormatSet && effect) {
