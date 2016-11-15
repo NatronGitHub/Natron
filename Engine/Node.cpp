@@ -4085,7 +4085,11 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
 
     createNodePage(settingsPage);
-    createInfoPage();
+
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->effect.get());
+    if (!isGroup && !isBackdropNode) {
+        createInfoPage();
+    }
 
     if (_imp->effect->isWriter()
 #ifdef NATRON_ENABLE_IO_META_NODES
