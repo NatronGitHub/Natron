@@ -51,7 +51,6 @@ def createInstance(app,group):
     # Set param properties
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(3, 0)
     lastNode.size = param
     del param
 
@@ -99,6 +98,17 @@ def createInstance(app,group):
     lastNode.edgeMult = param
     del param
 
+    param = lastNode.createBooleanParam("Merge1maskInvert", "Invert Mask")
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(True)
+    param.setAnimationEnabled(False)
+    lastNode.Merge1maskInvert = param
+    del param
+
     param = lastNode.createDoubleParam("Blur1mix", "Mix")
     param.setMinimum(0, 0)
     param.setMaximum(1, 0)
@@ -117,7 +127,7 @@ def createInstance(app,group):
     del param
 
     # Refresh the GUI with the newly created parameters
-    lastNode.setPagesOrder(['controlsPage', 'Node', 'Info'])
+    lastNode.setPagesOrder(['controlsPage', 'Node'])
     lastNode.refreshUserParamsGUI()
     del lastNode
 
@@ -294,7 +304,7 @@ def createInstance(app,group):
 
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
-    lastNode.setLabel("Output")
+    lastNode.setLabel("Output1")
     lastNode.setPosition(676, 430)
     lastNode.setSize(104, 34)
     lastNode.setColor(0.7, 0.7, 0.7)
@@ -325,14 +335,29 @@ def createInstance(app,group):
     del lastNode
     # End of node "Mask"
 
-    # Start of node "KeyMix1"
-    lastNode = app.createNode("net.sf.openfx.KeyMix", 1, group)
-    lastNode.setScriptName("KeyMix1")
-    lastNode.setLabel("KeyMix1")
-    lastNode.setPosition(907, 349)
-    lastNode.setSize(80, 34)
+    # Start of node "Merge1"
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode.setScriptName("Merge1")
+    lastNode.setLabel("Merge1")
+    lastNode.setPosition(895, 341)
+    lastNode.setSize(104, 51)
     lastNode.setColor(0.3, 0.37, 0.776)
-    groupKeyMix1 = lastNode
+    groupMerge1 = lastNode
+
+    param = lastNode.getParam("NatronOfxParamStringSublabelName")
+    if param is not None:
+        param.setValue("copy")
+        del param
+
+    param = lastNode.getParam("operation")
+    if param is not None:
+        param.set("copy")
+        del param
+
+    param = lastNode.getParam("bbox")
+    if param is not None:
+        param.set("A")
+        del param
 
     param = lastNode.getParam("enableMask_Mask")
     if param is not None:
@@ -340,18 +365,18 @@ def createInstance(app,group):
         del param
 
     del lastNode
-    # End of node "KeyMix1"
+    # End of node "Merge1"
 
     # Now that all nodes are created we can connect them together, restore expressions
     groupEdgeDetect1.connectInput(0, groupShuffle1)
     groupGamma1.connectInput(0, groupEdgeDetect1)
     groupBlur1.connectInput(0, groupDot1)
-    groupBlur1.connectInput(1, groupKeyMix1)
+    groupBlur1.connectInput(1, groupMerge1)
     groupShuffle1.connectInput(1, groupDot1)
     groupDot1.connectInput(0, groupSource)
     groupOutput1.connectInput(0, groupBlur1)
-    groupKeyMix1.connectInput(1, groupGamma1)
-    groupKeyMix1.connectInput(2, groupMask)
+    groupMerge1.connectInput(1, groupGamma1)
+    groupMerge1.connectInput(2, groupMask)
 
     param = groupEdgeDetect1.getParam("filter")
     group.getParam("filter").setAsAlias(param)
@@ -374,6 +399,9 @@ def createInstance(app,group):
     del param
     param = groupBlur1.getParam("mix")
     group.getParam("Blur1mix").setAsAlias(param)
+    del param
+    param = groupMerge1.getParam("maskInvert")
+    group.getParam("Merge1maskInvert").setAsAlias(param)
     del param
 
     try:
