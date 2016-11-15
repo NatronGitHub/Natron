@@ -518,6 +518,8 @@ public:
     }
 
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+    
+    virtual SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr createSerializationFromItem(const KnobTableItemPtr& item) OVERRIDE FINAL;
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
 

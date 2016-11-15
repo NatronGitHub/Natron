@@ -76,6 +76,8 @@
 
 #define CORRELATION_ERROR_MAX_DISPLAY 0.2
 
+#define TRACKER_KNOBITEMSTABLE_N_COLS 8
+
 #define kTrackerUIParamAddTrack "addTrack"
 #define kTrackerUIParamAddTrackLabel "Add Track"
 #define kTrackerUIParamAddTrackHint "When enabled you can add new tracks " \
@@ -784,6 +786,8 @@ public:
     }
 
     virtual KnobTableItemPtr createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data) OVERRIDE FINAL;
+    
+    virtual SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr createSerializationFromItem(const KnobTableItemPtr& item) OVERRIDE FINAL;
 
     void getAllMarkers(std::vector<TrackMarkerPtr >* markers) const;
 

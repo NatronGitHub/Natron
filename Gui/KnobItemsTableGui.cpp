@@ -79,12 +79,12 @@ struct ModelItem {
     {
         KnobIWPtr knob;
         KnobGuiPtr guiKnob;
-        int knobDimension;
+        DimSpec knobDimension;
         
         ColumnData()
         : knob()
         , guiKnob()
-        , knobDimension(-1)
+        , knobDimension(DimSpec::all())
         {
             
         }
@@ -176,7 +176,7 @@ struct KnobItemsTableGuiPrivate
 bool
 KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& item, int row, int col)
 {
-    int dim;
+    DimSpec dim;
     KnobIPtr knob = item->getColumnKnob(col, &dim);
     if (!knob) {
         return false;
@@ -189,7 +189,7 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     KnobBoolPtr isBoolean = toKnobBool(knob);
     
     // Create a KnobGui just for these kinds of parameters, for all others, use default interface
-    if (!isChoice && (!isColor || dim != -1) && !isButton && !isBoolean) {
+    if (!isChoice && (!isColor || !dim.isAll()) && !isButton && !isBoolean) {
         return false;
     }
 
@@ -327,7 +327,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
         return;
     }
 
-    int knobDimensionIndex;
+    DimSpec knobDimensionIndex;
     KnobIPtr knob = internalItem->getColumnKnob(col, &knobDimensionIndex);
     if (!knob) {
         QStyledItemDelegate::paint(painter, option, index);
@@ -339,7 +339,7 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
 
     // Get the animation level
-    AnimationLevelEnum level = knob->getAnimationLevel(DimIdx(knobDimensionIndex), ViewIdx(0));
+    AnimationLevelEnum level = knob->getAnimationLevel(knobDimensionIndex.isAll() ? DimIdx(0) : DimIdx(knobDimensionIndex), ViewIdx(0));
 
 
     // Figure out the background color depending on the animation level
@@ -516,8 +516,8 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     
     
     connect(table.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
-    connect(table.get(), SIGNAL(topLevelItemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelTopLevelItemRemoved( KnobTableItemPtr,TableChangeReasonEnum)));
-    connect(table.get(), SIGNAL(topLevelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelTopLevelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(itemRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelItemRemoved( KnobTableItemPtr,TableChangeReasonEnum)));
+    connect(table.get(), SIGNAL(itemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onModelItemInserted(int,KnobTableItemPtr,TableChangeReasonEnum)));
     
     /*connect(table.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), this, SLOT(onItemLabelChanged(QString,TableChangeReasonEnum)));
     connect(table.get(), SIGNAL(childRemoved(KnobTableItemPtr,TableChangeReasonEnum)), this, SLOT(onItemChildRemoved(KnobTableItemPtr,TableChangeReasonEnum)));
@@ -1333,7 +1333,7 @@ KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item, int col)
     }
 
     // If the column is handled by a knob GUI, then we do not bother handling interfacing with the knob here since everything is handled in the KnobGui side
-    int knobDim;
+    DimSpec knobDim;
     KnobIPtr knob = internalItem->getColumnKnob(col, &knobDim);
     if (knob) {
         return;
@@ -1497,7 +1497,7 @@ KnobItemsTableGui::onItemLabelChanged(const QString& label, TableChangeReasonEnu
 
 
 void
-KnobItemsTableGui::onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTableGui::onModelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
     if (reason == eTableChangeReasonPanel) {
         return;
@@ -1506,7 +1506,7 @@ KnobItemsTableGui::onModelTopLevelItemRemoved(const KnobTableItemPtr& item, Tabl
 }
 
 void
-KnobItemsTableGui::onModelTopLevelItemInserted(int /*index*/, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
+KnobItemsTableGui::onModelItemInserted(int /*index*/, const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
     if (reason == eTableChangeReasonPanel) {
         return;
@@ -1571,6 +1571,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     ModelItem &mitem = items.back();
     mitem.columnItems.resize(nCols);
     mitem.item = TableItem::create(tableModel);
+    mitem.internalItem = item;
     
     TableItemPtr parentItem;
     KnobTableItemPtr knobParentItem = item->getParent();

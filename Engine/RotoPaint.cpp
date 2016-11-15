@@ -29,6 +29,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Serialization/BezierSerialization.h"
+#include "Serialization/RotoStrokeItemSerialization.h"
+
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Image.h"
@@ -2589,9 +2592,48 @@ RotoPaint::setIsDoingNeatRender(bool doing)
 KnobTableItemPtr
 RotoPaintKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data)
 {
-
+    SERIALIZATION_NAMESPACE::BezierSerializationPtr isBezier = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::BezierSerialization>(data);
+    if (isBezier) {
+        BezierPtr ret(new Bezier(_imp->knobsTable, std::string(), isBezier->_isOpenBezier));
+        ret->fromSerialization(*isBezier);
+        return ret;
+    }
+    SERIALIZATION_NAMESPACE::RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization>(data);
+    if (isStroke) {
+        RotoStrokeItemPtr ret(new RotoStrokeItem(RotoStrokeItem::strokeTypeFromSerializationString(isStroke->_brushType), _imp->knobsTable));
+        ret->fromSerialization(*isStroke);
+        return ret;
+    }
+    
+    // By default, assume this is a layer
+    RotoLayerPtr ret(new RotoLayer(_imp->knobsTable));
+    ret->fromSerialization(*data);
+    return ret;
+    
 }
 
+
+SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr
+RotoPaintKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
+{
+    RotoLayerPtr isLayer = toRotoLayer(item);
+    BezierPtr isBezier = toBezier(item);
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
+    if (isLayer) {
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+        isLayer->toSerialization(ret.get());
+        return ret;
+    } else if (isBezier) {
+        SERIALIZATION_NAMESPACE::BezierSerializationPtr ret(new SERIALIZATION_NAMESPACE::BezierSerialization);
+        isBezier->toSerialization(ret.get());
+        return ret;
+    } else if (isStroke) {
+        SERIALIZATION_NAMESPACE::RotoStrokeItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization);
+        isStroke->toSerialization(ret.get());
+        return ret;
+    }
+    return KnobItemsTable::createSerializationFromItem(item);
+}
 
 bool
 RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,  int* blendingMode) const

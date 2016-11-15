@@ -86,6 +86,12 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
                                            ViewIdx /*view*/,
                                            DimIdx /*dimension*/)
 {
+    if (!getGui()) {
+        return;
+    }
+    if (!getGui()->getAnimationModuleEditor()) {
+        return;
+    }
     AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
     if (!model) {
         return;

@@ -2609,6 +2609,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobIPtr& master,
     for (int i = 0; i < getNDimensions(); ++i) {
         if (doAlias) {
             //master->clone(this, i);
+            unSlave(DimIdx(i), ViewSetSpec::all(), false);
             bool ok = slaveTo(master);
             assert(ok);
             Q_UNUSED(ok);

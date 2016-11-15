@@ -188,17 +188,17 @@ public:
      * Otherwise this can be kKnobTableItemColumnLabel to indicate that the column should display the label.
      * @param dimension If set columnName is the script-name of a knob, dimension is the index of the dimension to represent 
      * of the knob in the case it is multi-dimensional. 
-     * If dimension is -1, the column should represent all dimensions (Currently -1 is only supported for KnobColor)
+     * If dimension is all, the column should represent all dimensions (Currently -1 is only supported for KnobColor)
      *
      * Note: if a column if not set to anything, it will be empty in the user interface
      **/
-    void setColumn(int col, const std::string& columnName, int dimension);
+    void setColumn(int col, const std::string& columnName, DimSpec dimension);
 
     /**
      * @brief Return a knob that was previously set by setColumn at the given column col.
      * @param dimensionIndex[out] Set the dimension of the knob the given column should represent.
      **/
-    KnobIPtr getColumnKnob(int col, int *dimensionIndex) const;
+    KnobIPtr getColumnKnob(int col, DimSpec *dimensionIndex) const;
 
     /**
      * @brief Return the column name that was previously set by setColumn

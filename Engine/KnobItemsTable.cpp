@@ -165,8 +165,8 @@ struct ColumnDesc
     // If the columnName is the script-name of a knob, we hold a weak ref to the knob for faster access later on
     KnobIWPtr knob;
 
-    // The dimension in the knob or -1
-    int dimensionIndex;
+    // The dimension in the knob
+    DimSpec dimensionIndex;
 };
 
 typedef std::map<ViewIdx, CurvePtr> PerViewAnimationCurveMap;
@@ -933,7 +933,7 @@ KnobTableItem::getChild(int index) const
 }
 
 void
-KnobTableItem::setColumn(int col, const std::string& columnName, int dimension)
+KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimension)
 {
     QMutexLocker k(&_imp->lock);
     if (col < 0 || col >= (int)_imp->columns.size()) {
@@ -948,7 +948,7 @@ KnobTableItem::setColumn(int col, const std::string& columnName, int dimension)
 }
 
 KnobIPtr
-KnobTableItem::getColumnKnob(int col, int *dimensionIndex) const
+KnobTableItem::getColumnKnob(int col, DimSpec *dimensionIndex) const
 {
     QMutexLocker k(&_imp->lock);
     if (col < 0 || col >= (int)_imp->columns.size()) {

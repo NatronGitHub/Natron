@@ -192,6 +192,10 @@ TrackerNode::setupInitialSubGraphState()
         tNode->connectInput(cpNode, 0);
         cpNode->connectInput(input, 0);
     }
+    
+    // Initialize transform nodes now because they need to link to some of the Transform/CornerPin node
+    // knobs.
+    initializeTransformPageKnobs(_imp->transformPageKnob.lock());
 } // setupInitialSubGraphState
 
 void
@@ -1327,9 +1331,18 @@ TrackerNode::initializeKnobs()
 {
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
-    const int colsCount = 6;
-    _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable, colsCount));
-
+    _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable, TRACKER_KNOBITEMSTABLE_N_COLS));
+    _imp->knobsTable->setColumnText(0, tr(kTrackerParamEnabledLabel).toStdString());
+    _imp->knobsTable->setColumnText(1, tr("Label").toStdString());
+    _imp->knobsTable->setColumnText(2, tr(kTrackerParamMotionModelLabel).toStdString());
+    _imp->knobsTable->setColumnText(3, tr("%1 X").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());
+    _imp->knobsTable->setColumnText(4, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());
+    _imp->knobsTable->setColumnText(5, tr("%1 X").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
+    _imp->knobsTable->setColumnText(6, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
+    _imp->knobsTable->setColumnText(7, tr(kTrackerParamErrorLabel).toStdString());
+    
+    _imp->knobsTable->setColumnIcon(2, NATRON_IMAGES_PATH "motionTypeAffine.png");
+    
     _imp->tracker.reset(new TrackerHelper(_imp));
     
     KnobPagePtr trackingPage = AppManager::createKnob<KnobPage>(thisShared, tr("Tracking"), 1, false);
@@ -1342,7 +1355,6 @@ TrackerNode::initializeKnobs()
     initializeTrackingPageKnobs(trackingPage);
     initializeTrackRangeDialogKnobs(trackingPage);
     initializeViewerUIKnobs(trackingPage);
-    initializeTransformPageKnobs(transformPage);
 
     // Add a separator before the table
     {
@@ -1610,6 +1622,16 @@ TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
     if (_imp->ui->showMarkerTexture && !isPlayback && !getApp()->isDraftRenderEnabled()) {
         _imp->ui->refreshSelectedMarkerTexture();
     }
+}
+
+SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr
+TrackerKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
+{
+    TrackMarkerPtr isTrack = toTrackMarker(item);
+    assert(isTrack);
+    SERIALIZATION_NAMESPACE::TrackSerializationPtr ret(new SERIALIZATION_NAMESPACE::TrackSerialization);
+    isTrack->toSerialization(ret.get());
+    return ret;
 }
 
 KnobTableItemPtr

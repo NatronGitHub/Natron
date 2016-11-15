@@ -91,8 +91,8 @@ public Q_SLOTS:
     void onModelSelectionChanged(const QItemSelection& selected,const QItemSelection& deselected);
     
     void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);
-    void onModelTopLevelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
-    void onModelTopLevelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void onModelItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
+    void onModelItemInserted(int index, const KnobTableItemPtr& item, TableChangeReasonEnum reason);
 
     void onItemLabelChanged(const QString& label, TableChangeReasonEnum reason);
     void onItemChildRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
