@@ -452,14 +452,20 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
 
     // Group changes under the same undo/redo action if possible
     KnobHolderPtr holder = getHolder();
+    EffectInstancePtr effect;
     bool doEditEnd = false;
+    
     if (holder) {
-        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-            doEditEnd = true;
+        effect = toEffectInstance(holder);
+        if (effect) {
+            
+            if (effect->isDoingInteractAction()) {
+                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
+                doEditEnd = true;
+            }
         }
     }
-
+    
     typename std::list<TimeValuePair<T> >::const_iterator next = keys.begin();
     ++next;
     KeyFrame k;
@@ -524,11 +530,17 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
 
     // Group changes under the same undo/redo action if possible
     KnobHolderPtr holder = getHolder();
+    EffectInstancePtr effect;
     bool doEditEnd = false;
+    
     if (holder) {
-        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-            doEditEnd = true;
+        effect = toEffectInstance(holder);
+        if (effect) {
+            
+            if (effect->isDoingInteractAction()) {
+                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
+                doEditEnd = true;
+            }
         }
     }
 
@@ -593,11 +605,17 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     // Group changes under the same undo/redo action if possible
     KnobHolderPtr holder = getHolder();
+    EffectInstancePtr effect;
     bool doEditEnd = false;
+    
     if (holder) {
-        if (holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOff) {
-            holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-            doEditEnd = true;
+        effect = toEffectInstance(holder);
+        if (effect) {
+            
+            if (effect->isDoingInteractAction()) {
+                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
+                doEditEnd = true;
+            }
         }
     }
 
