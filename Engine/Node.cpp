@@ -7803,19 +7803,21 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange)
                 frameRange[0] = leftBound;
                 frameRange[1] = rightBound;
                 originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
+
+                if (setFrameRange) {
+                    if (firstFrameKnob) {
+                        firstFrameKnob->setValue(leftBound);
+                        firstFrameKnob->setRange(leftBound, rightBound);
+                    }
+                    if (lastFrameKnob) {
+                        lastFrameKnob->setValue(rightBound);
+                        lastFrameKnob->setRange(leftBound, rightBound);
+                    }
+                }
             }
         }
     }
-    if (setFrameRange) {
-        if (firstFrameKnob) {
-            firstFrameKnob->setValue(leftBound);
-            firstFrameKnob->setRange(leftBound, rightBound);
-        }
-        if (lastFrameKnob) {
-            lastFrameKnob->setValue(rightBound);
-            lastFrameKnob->setRange(leftBound, rightBound);
-        }
-    }
+
 }
 
 bool

@@ -885,10 +885,11 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
 
-    double overlayColor[3];
+    double overlayColor[4];
     if ( !_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
+    overlayColor[3] = 1.;
 
     const TextureRect& texRect = selectedMarkerTexture->getTextureRect();
     RectD texCoords;
@@ -1304,7 +1305,7 @@ TrackerNodeInteract::onTrackingEnded()
 }
 
 void
-TrackerNodeInteract::onModelSelectionChanged(TableChangeReasonEnum reason)
+TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& /*addedToSelection*/, const std::list<KnobTableItemPtr>& /*removedFromSelection*/, TableChangeReasonEnum reason)
 {
     std::list<TrackMarkerPtr > selection;
 
@@ -1432,7 +1433,7 @@ TrackerNodeInteract::rebuildMarkerTextures()
             makeMarkerKeyTexture(*it2, *it);
         }
     }
-    onModelSelectionChanged(eTableChangeReasonInternal);
+    onModelSelectionChanged(std::list<KnobTableItemPtr>(),std::list<KnobTableItemPtr>(), eTableChangeReasonInternal);
 }
 
 /**

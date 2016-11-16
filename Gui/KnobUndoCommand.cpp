@@ -391,27 +391,7 @@ PasteKnobClipBoardUndoCommand::makeLinkExpression(const std::vector<std::string>
     return ss.str();
 } // makeLinkExpression
 
-static void setVariant(const KnobIntBasePtr& isInt,
-                       const KnobBoolBasePtr& isBool,
-                       const KnobDoubleBasePtr& isDouble,
-                       const KnobStringBasePtr& isString,
-                       double time,
-                       DimIdx dim,
-                       ViewIdx view_i,
-                       MultipleKnobEditsUndoCommand::PerDimViewVariantMap* ret)
-{
-    DimensionViewPair k = {dim, view_i};
-    Variant& p = (*ret)[k];
-    if (isInt) {
-        p.setValue( isInt->getValueAtTime(time, dim, view_i) );
-    } else if (isBool) {
-        p.setValue( isBool->getValueAtTime(time, dim, view_i) );
-    } else if (isDouble) {
-        p.setValue( isDouble->getValueAtTime(time, dim, view_i) );
-    } else if (isString) {
-        p.setValue( isString->getValueAtTime(time, dim, view_i) );
-    }
-}
+
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                                            const QString& commandName,
@@ -419,7 +399,8 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                                            ValueChangedReturnCodeEnum setValueRetCode,
                                                            bool createNew,
                                                            bool setKeyFrame,
-                                                           const Variant & value,
+                                                           const PerDimViewVariantMap& oldValue,
+                                                           const Variant & newValue,
                                                            DimSpec dimension,
                                                            double time,
                                                            ViewSetSpec view)
@@ -434,7 +415,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
 
     // Add the new value to set to the list (which may be not empty)
     ValueToSet &v = vlist.back();
-    v.newValue = value;
+    v.newValue = newValue;
     v.dimension = dimension;
     assert(dimension != -1);
 
@@ -448,38 +429,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
     v.view = view;
     v.setValueRetCode = setValueRetCode;
     v.reason = reason;
-
-    KnobIntBasePtr isInt = toKnobIntBase(knob);
-    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
-    KnobStringBasePtr isString = toKnobStringBase(knob);
-
-    int nDims = knob->getNDimensions();
-    std::list<ViewIdx> allViews = knob->getViewsList();
-    if (dimension.isAll()) {
-        for (int i = 0; i < nDims; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
-                    setVariant(isInt, isBool, isDouble, isString, time, DimIdx(i), *it, &v.oldValues);
-                }
-            } else {
-                ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-                setVariant(isInt, isBool, isDouble, isString, time, DimIdx(i), view_i, &v.oldValues);
-            }
-        }
-
-    } else {
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
-                setVariant(isInt, isBool, isDouble, isString, time, DimIdx(dimension), *it, &v.oldValues);
-            }
-        } else {
-            ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(view));
-            setVariant(isInt, isBool, isDouble, isString, time, DimIdx(dimension), view_i, &v.oldValues);
-        }
-    }
-
-
+    v.oldValues = oldValue;
 
     KnobHolderPtr holder = knob->getHolder();
     EffectInstancePtr effect = toEffectInstance(holder);
@@ -512,11 +462,11 @@ static ValueChangedReturnCodeEnum setOldValueForDimView(const KnobIntBasePtr& is
                                                         ValueChangedReturnCodeEnum retCode,
                                                         DimIdx dim,
                                                         ViewIdx view_i,
-                                                        const MultipleKnobEditsUndoCommand::PerDimViewVariantMap& oldValues)
+                                                        const PerDimViewVariantMap& oldValues)
 {
     ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
     DimensionViewPair key = {dim, view_i};
-    MultipleKnobEditsUndoCommand::PerDimViewVariantMap::const_iterator foundDimView = oldValues.find(key);
+    PerDimViewVariantMap::const_iterator foundDimView = oldValues.find(key);
     if (foundDimView == oldValues.end()) {
         return ret;
     }
@@ -585,7 +535,7 @@ MultipleKnobEditsUndoCommand::undo()
             knob->blockValueChanges();
         }
 
-        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (std::list<ValueToSet>::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
 
             if (next == it->second.end() && it->second.size() > 1) {
                 // Re-enable knobChanged for the last change on this knob
@@ -740,11 +690,12 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
      */
 
     const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
-    assert(knobs.size() >= 1 && knobCommand->knobs.size() == 1);
 
     if (!knobCommand) {
         return false;
     }
+
+    assert(knobs.size() >= 1 && knobCommand->knobs.size() == 1);
 
 
     // Check that the holder is the same, otherwise don't merge
@@ -760,6 +711,8 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     // If all knobs are the same between the old and new command, ignore the createNew flag and merge them anyway
     bool ignoreCreateNew = false;
     if ( knobs.size() == knobCommand->knobs.size() ) {
+
+        // Only 1 iteration will be made because the knobCommand in parameter only has 1 knob anyway
         ParamsMap::const_iterator thisIt = knobs.begin();
         ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
         bool oneDifferent = false;
@@ -768,6 +721,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
                 oneDifferent = true;
                 break;
             }
+            
         }
         if (!oneDifferent) {
             ignoreCreateNew = true;

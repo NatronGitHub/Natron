@@ -31,46 +31,118 @@
 NATRON_NAMESPACE_ENTER
 
 template <typename T>
+AddToUndoRedoStackHelper<T>::AddToUndoRedoStackHelper(Knob<T>* k)
+: _knob(k)
+, _mustEndEdits(false)
+, _isUndoRedoStackOpened(false)
+{
+    KnobHolderPtr holder = k->getHolder();
+    if (holder) {
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleEditsLevel();
+
+        // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
+        if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && holder->isDoingInteractAction()) {
+            holder->beginMultipleEdits(k->tr("%1 changed").arg(QString::fromUtf8(k->getName().c_str())).toStdString());
+            _mustEndEdits = true;
+            _isUndoRedoStackOpened = true;
+        } else if (paramEditLevel != KnobHolder::eMultipleParamsEditOff) {
+            _isUndoRedoStackOpened = true;
+        }
+    }
+}
+
+template <typename T>
+bool
+AddToUndoRedoStackHelper<T>::canAddValueToUndoStack() const
+{
+    return _isUndoRedoStackOpened;
+}
+
+template <typename T>
+AddToUndoRedoStackHelper<T>::~AddToUndoRedoStackHelper()
+{
+    if (_mustEndEdits) {
+        _knob->getHolder()->endMultipleEdits();
+    }
+}
+
+template <typename T>
 void
-Knob<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, double time, bool setKeyFrame)
+AddToUndoRedoStackHelper<T>::prepareOldValueToUndoRedoStack(ViewSetSpec view, DimSpec dimension, double time, ValueChangedReasonEnum reason, bool setKeyFrame)
+{
+    // Should be checked first before calling this function.
+    assert(canAddValueToUndoStack());
+
+    // Ensure the state has not been changed while this object is alive.
+    assert(_knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
+           _knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
+
+    ValueToPush data;
+    data.view = view;
+    data.dimension = dimension;
+    data.time = time;
+    data.reason = reason;
+    data.setKeyframe = setKeyFrame;
+
+    int nDims = _knob->getNDimensions();
+    std::list<ViewIdx> allViews = _knob->getViewsList();
+    if (dimension.isAll()) {
+        for (int i = 0; i < nDims; ++i) {
+            if (view.isAll()) {
+                for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
+                    DimensionViewPair k = {DimIdx(i), *it};
+                    Variant& p = data.oldValues[k];
+                    p.setValue(_knob->getValueAtTime(time, DimIdx(i), *it));
+                }
+            } else {
+                ViewIdx view_i = _knob->getViewIdxFromGetSpec(ViewGetSpec(view));
+                DimensionViewPair k = {DimIdx(i), view_i};
+                Variant& p = data.oldValues[k];
+                p.setValue(_knob->getValueAtTime(time, DimIdx(i), view_i));
+            }
+        }
+
+    } else {
+        if (view.isAll()) {
+            for (std::list<ViewIdx>::const_iterator it = allViews.begin(); it!=allViews.end(); ++it) {
+                DimensionViewPair k = {DimIdx(dimension), *it};
+                Variant& p = data.oldValues[k];
+                p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), *it));
+            }
+        } else {
+            ViewIdx view_i = _knob->getViewIdxFromGetSpec(ViewGetSpec(view));
+            DimensionViewPair k = {DimIdx(dimension), view_i};
+            Variant& p = data.oldValues[k];
+            p.setValue(_knob->getValueAtTime(time, DimIdx(dimension), view_i));
+        }
+    }
+
+    _valuesToPushQueue.push_back(data);
+} // prepareOldValueToUndoRedoStack
+
+template <typename T>
+void
+AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReturnCodeEnum setValueRetCode)
 {
 
-    // If the user called beginMultipleEdits to group undo/redo, then use the undo/stack
-    // This can only be done if the knob has a GUI though...
-    KnobHolderPtr holder = getHolder();
-    if (!holder) {
-        return;
-    }
-    KnobGuiIPtr guiPtr = getKnobGuiPointer();
-    if (!guiPtr) {
-        return;
-    }
-    KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleEditsLevel();
+    // Should be checked first before calling this function.
+    assert(canAddValueToUndoStack());
 
-    // If we are under an overlay interact, the plug-in is going to do setValue calls, make sure the user can undo/redo
-    bool mustEndEdits = false;
-    if (paramEditLevel == KnobHolder::eMultipleParamsEditOff && holder->isDoingInteractAction()) {
-        holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-        mustEndEdits = true;
-    }
-    switch (paramEditLevel) {
-        case KnobHolder::eMultipleParamsEditOnCreateNewCommand:
-        case KnobHolder::eMultipleParamsEditOn: {
-            // Add the set value using the undo/redo stack
-            Variant vari;
-            valueToVariant(value, &vari);
-            _signalSlotHandler->s_appendParamEditChange(reason, setValueRetCode, vari, view, dimension, time, setKeyFrame);
-            break;
-        }
-        case KnobHolder::eMultipleParamsEditOff:
-        default:
-            // Multiple params undo/redo is disabled, don't do anything special
-            break;
-    } // switch
+    // Ensure the state has not been changed while this object is alive.
+    assert(_knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand ||
+           _knob->getHolder()->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOn);
 
-    if (mustEndEdits) {
-        holder->endMultipleEdits();
-    }
+    // prepareOldValueToUndoRedoStack must have been called.
+    assert(!_valuesToPushQueue.empty());
+
+    const ValueToPush& data = _valuesToPushQueue.back();
+
+    // Add the set value using the undo/redo stack
+    Variant newVariant;
+    newVariant.setValue(value);
+
+    _knob->getSignalSlotHandler()->s_appendParamEditChange(data.reason, setValueRetCode, data.oldValues, newVariant, data.view, data.dimension, data.time, data.setKeyframe);
+
 }
 
 template <typename T>
@@ -114,6 +186,18 @@ Knob<T>::setValue(const T & v,
     bool hasChanged = forceHandlerEvenIfNoChange;
 
     int nDims = getNDimensions();
+
+    double time = getCurrentTime();
+
+    // Check if we can add automatically a new keyframe
+    if (isAutoKeyingEnabled(dimension, view, reason)) {
+        return setValueAtTime(time, v, view, dimension, reason, newKey);
+    }
+
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
+    if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
+        undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, false /*setKeyframe*/);
+    }
 
     bool autoDimSwitchEnabled = isAutoAllDimensionsVisibleSwitchEnabled();
     {
@@ -185,28 +269,23 @@ Knob<T>::setValue(const T & v,
         }
     } // QMutexLocker
 
-
-    // Check if we can add automatically a new keyframe
-    if (isAutoKeyingEnabled(dimension, view, reason)) {
-        double time = getCurrentTime();
-        return setValueAtTime(time, v, view, dimension, reason, newKey);
+    ValueChangedReturnCodeEnum ret;
+    if (hasChanged) {
+        ret = eValueChangedReturnCodeNoKeyframeAdded;
     } else {
-        double time = getCurrentTime();
-
-        ValueChangedReturnCodeEnum ret;
-        if (hasChanged) {
-            ret = eValueChangedReturnCodeNoKeyframeAdded;
-        } else {
-            ret = eValueChangedReturnCodeNothingChanged;
-        }
-
-        // Add this action to the undo/redo stack if needed
-        addSetValueToUndoRedoStackIfNeeded(v, reason, ret, view, dimension, time, false);
-
-        // Evaluate the change
-        evaluateValueChange(dimension, time, view, reason);
-        return ret;
+        ret = eValueChangedReturnCodeNothingChanged;
     }
+
+
+    if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
+        undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(v, ret);
+    }
+
+    // Evaluate the change
+    evaluateValueChange(dimension, time, view, reason);
+
+    return ret;
+
 
 } // setValue
 
@@ -230,18 +309,8 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     }
     
     KnobHolderPtr holder = getHolder();
-    EffectInstancePtr effect;
-    bool doEditEnd = false;
 
-    if (holder) {
-        effect = toEffectInstance(holder);
-        if (effect) {
-            if ( effect->isDoingInteractAction() ) {
-                effect->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-                doEditEnd = true;
-            }
-        }
-    }
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
@@ -290,9 +359,6 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     }
 
 
-    if (doEditEnd) {
-        effect->endMultipleEdits();
-    }
 } // setValueAcrossDimensions
 
 
@@ -362,6 +428,12 @@ Knob<T>::setValueAtTime(double time,
     }
 #endif
 
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
+    if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
+        undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, true /*setKeyframe*/);
+    }
+
+
     ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
     bool autoDimSwitchEnabled = isAutoAllDimensionsVisibleSwitchEnabled();
@@ -420,9 +492,13 @@ Knob<T>::setValueAtTime(double time,
 
 
     if (ret != eValueChangedReturnCodeNothingChanged) {
-        addSetValueToUndoRedoStackIfNeeded(v, reason, ret, view, dimension, time, true);
+
+        if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
+            undoRedoStackHelperRAII.addSetValueToUndoRedoStackIfNeeded(v, ret);
+        }
+
         evaluateValueChange(dimension, time, view, reason);
-    } 
+    }
 
     return ret;
 } // setValueAtTime
@@ -451,20 +527,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
     }
 
     // Group changes under the same undo/redo action if possible
-    KnobHolderPtr holder = getHolder();
-    EffectInstancePtr effect;
-    bool doEditEnd = false;
-    
-    if (holder) {
-        effect = toEffectInstance(holder);
-        if (effect) {
-            
-            if (effect->isDoingInteractAction()) {
-                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-                doEditEnd = true;
-            }
-        }
-    }
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
     
     typename std::list<TimeValuePair<T> >::const_iterator next = keys.begin();
     ++next;
@@ -489,9 +552,6 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         }
     }
 
-    if (doEditEnd) {
-        holder->endMultipleEdits();
-    }
     if (mustTurnOnAutoDimSwitch) {
         setAutoAllDimensionsVisibleSwitchEnabled(true);
     }
@@ -529,20 +589,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     }
 
     // Group changes under the same undo/redo action if possible
-    KnobHolderPtr holder = getHolder();
-    EffectInstancePtr effect;
-    bool doEditEnd = false;
-    
-    if (holder) {
-        effect = toEffectInstance(holder);
-        if (effect) {
-            
-            if (effect->isDoingInteractAction()) {
-                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-                doEditEnd = true;
-            }
-        }
-    }
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
@@ -571,9 +618,6 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
             (*retCodes)[i] = ret;
         }
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
-    }
-    if (doEditEnd) {
-        holder->endMultipleEdits();
     }
     if (mustTurnOnAutoDimSwitch) {
         setAutoAllDimensionsVisibleSwitchEnabled(true);
@@ -604,20 +648,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
     }
 
     // Group changes under the same undo/redo action if possible
-    KnobHolderPtr holder = getHolder();
-    EffectInstancePtr effect;
-    bool doEditEnd = false;
-    
-    if (holder) {
-        effect = toEffectInstance(holder);
-        if (effect) {
-            
-            if (effect->isDoingInteractAction()) {
-                holder->beginMultipleEdits(tr("%1 changed").arg(QString::fromUtf8(getName().c_str())).toStdString());
-                doEditEnd = true;
-            }
-        }
-    }
+    AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
     bool hasChanged = false;
     ValueChangedReturnCodeEnum ret;
@@ -656,10 +687,6 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
                 ++next;
             }
         }
-    }
-
-    if (doEditEnd) {
-        holder->endMultipleEdits();
     }
     if (mustTurnOnAutoDimSwitch) {
         setAutoAllDimensionsVisibleSwitchEnabled(true);

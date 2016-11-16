@@ -283,7 +283,6 @@ class MultipleKnobEditsUndoCommand
 
 public:
     
-    typedef std::map<DimensionViewPair, Variant, DimensionViewPairCompare> PerDimViewVariantMap;
 
     struct ValueToSet
     {
@@ -332,7 +331,8 @@ public:
                                  ValueChangedReturnCodeEnum setValueRetCode,
                                  bool createNew,
                                  bool setKeyFrame,
-                                 const Variant & value,
+                                 const PerDimViewVariantMap& oldValue,
+                                 const Variant & newValue,
                                  DimSpec dimension,
                                  double time,
                                  ViewSetSpec view);

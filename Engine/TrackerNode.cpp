@@ -1332,6 +1332,9 @@ TrackerNode::initializeKnobs()
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
     _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable, TRACKER_KNOBITEMSTABLE_N_COLS));
+    QObject::connect(_imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)),
+                     _imp->ui.get(), SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
+
     _imp->knobsTable->setColumnText(0, tr(kTrackerParamEnabledLabel).toStdString());
     _imp->knobsTable->setColumnText(1, tr("Label").toStdString());
     _imp->knobsTable->setColumnText(2, tr(kTrackerParamMotionModelLabel).toStdString());

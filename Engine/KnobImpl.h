@@ -466,35 +466,6 @@ Knob<T>::evaluateExpression_pod(double time,
     return true;
 }
 
-
-
-template <typename T>
-void
-Knob<T>::valueToVariant(const T & v,
-                        Variant* vari)
-{
-    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(this);
-    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(this);
-    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(this);
-    if (isInt) {
-        vari->setValue(v);
-    } else if (isBool) {
-        vari->setValue(v);
-    } else if (isDouble) {
-        vari->setValue(v);
-    }
-}
-
-template <>
-void
-KnobStringBase::valueToVariant(const std::string & v,
-                                  Variant* vari)
-{
-    KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
-    if (isString) {
-        vari->setValue<QString>( QString::fromUtf8( v.c_str() ) );
-    }
-}
 template <typename T>
 void
 Knob<T>::makeKeyFrame(double time,

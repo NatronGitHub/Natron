@@ -623,7 +623,8 @@ KnobGui::onInternalKnobAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dim
 void
 KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
-                                  Variant v,
+                                  const PerDimViewVariantMap& oldValue,
+                                  Variant newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
                                   double time,
@@ -639,7 +640,7 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
     }
     bool createNewCommand = holder->getMultipleEditsLevel() == KnobHolder::eMultipleParamsEditOnCreateNewCommand;
     QString commandName = QString::fromUtf8(holder->getCurrentMultipleEditsCommandName().c_str());
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, v, dim, time, view) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, oldValue, newValue, dim, time, view) );
 }
 
 void

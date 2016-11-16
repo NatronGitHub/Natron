@@ -5356,6 +5356,11 @@ template class Knob<double>;
 template class Knob<bool>;
 template class Knob<std::string>;
 
+template class AddToUndoRedoStackHelper<int>;
+template class AddToUndoRedoStackHelper<double>;
+template class AddToUndoRedoStackHelper<bool>;
+template class AddToUndoRedoStackHelper<std::string>;
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

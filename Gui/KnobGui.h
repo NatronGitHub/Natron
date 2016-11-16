@@ -319,15 +319,16 @@ public Q_SLOTS:
     void onInternalKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
 
     void onAppendParamEditChanged(ValueChangedReasonEnum reason,
-                              ValueChangedReturnCodeEnum setValueRetCode,
-                              Variant v,
-                              ViewSetSpec view,
-                              DimSpec dim,
-                              double time,
-                              bool setKeyFrame);
+                                  ValueChangedReturnCodeEnum setValueRetCode,
+                                  const PerDimViewVariantMap& oldValue,
+                                  Variant newValue,
+                                  ViewSetSpec view,
+                                  DimSpec dim,
+                                  double time,
+                                  bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
-
+    
     void onSetExprActionTriggered();
 
     void onClearExprActionTriggered();

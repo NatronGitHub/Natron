@@ -30,6 +30,7 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -144,6 +145,9 @@ struct DimensionViewPairCompare
     }
 };
 typedef std::set<DimensionViewPair, DimensionViewPairCompare> DimensionViewPairSet;
+
+typedef std::map<DimensionViewPair, Variant, DimensionViewPairCompare> PerDimViewVariantMap;
+
 
 struct AnimatingObjectIPrivate;
 class AnimatingObjectI

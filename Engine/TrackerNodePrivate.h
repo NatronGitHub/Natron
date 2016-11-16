@@ -880,7 +880,7 @@ public:
 
     TrackerNodeInteract(TrackerNodePrivate* p);
 
-    ~TrackerNodeInteract();
+    virtual ~TrackerNodeInteract();
 
     void onAddTrackClicked(bool clicked);
 
@@ -994,7 +994,7 @@ public Q_SLOTS:
     void onTrackingEnded();
 
 
-    void onModelSelectionChanged(TableChangeReasonEnum reason);
+    void onModelSelectionChanged(const std::list<KnobTableItemPtr>& addedToSelection, const std::list<KnobTableItemPtr>& removedFromSelection, TableChangeReasonEnum reason);
     void onKeyframeSetOnTrack(const TrackMarkerPtr &marker, int key);
     void onKeyframeRemovedOnTrack(const TrackMarkerPtr &marker, int key);
     void onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker);

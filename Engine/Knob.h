@@ -123,13 +123,14 @@ public:
 
     void s_appendParamEditChange(ValueChangedReasonEnum reason,
                                  ValueChangedReturnCodeEnum setValueRetCode,
-                                 Variant v,
+                                 PerDimViewVariantMap oldValue,
+                                 Variant newValue,
                                  ViewSetSpec view,
                                  DimSpec dim,
                                  double time,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange(reason, setValueRetCode, v, view,  dim, time, setKeyFrame);
+        Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, time, setKeyFrame);
     }
 
     void s_setDirty(bool b)
@@ -230,7 +231,7 @@ Q_SIGNALS:
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
-    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, Variant v, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
+    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewVariantMap oldValue, Variant newValue, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
 
     // Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -2236,7 +2237,7 @@ private:
 
     void setValueOnCurveInternal(double time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
 
-    void addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, double time, bool setKeyFrame);
+    void addSetValueToUndoRedoStackIfNeeded(const T& oldValue, const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, double time, bool setKeyFrame);
 
     virtual void copyValuesFromCurve(DimSpec dim, ViewSetSpec view) OVERRIDE FINAL;
 
@@ -2255,9 +2256,6 @@ private:
                                          ViewSetSpec otherView,
                                          DimSpec dimension,
                                          DimSpec otherDimension) OVERRIDE FINAL;
-
-    void valueToVariant(const T & v, Variant* vari);
-
 
     void makeKeyFrame(double time, const T& v, ViewIdx view, KeyFrame* key);
 
@@ -2301,7 +2299,46 @@ private:
 
 };
 
+/**
+ * @brief Helper class that helps in the implementation of all setValue-like functions to determine if we need to add a value to the undo/redo stack.
+ **/
+template <typename T>
+class AddToUndoRedoStackHelper
+{
+    Knob<T>* _knob;
+    bool _mustEndEdits;
+    bool _isUndoRedoStackOpened;
 
+    struct ValueToPush {
+        PerDimViewVariantMap oldValues;
+        ViewSetSpec view;
+        DimSpec dimension;
+        double time;
+        bool setKeyframe;
+        ValueChangedReasonEnum reason;
+    };
+
+    std::list<ValueToPush> _valuesToPushQueue;
+
+public:
+
+    AddToUndoRedoStackHelper(Knob<T>* k);
+
+    ~AddToUndoRedoStackHelper();
+
+    bool canAddValueToUndoStack() const;
+
+    /**
+     * @brief Must be called to prepare the old value per dimension/view map before a call to addSetValueToUndoRedoStackIfNeeded.
+     * each call to this function must match a following call of addSetValueToUndoRedoStackIfNeeded.
+     **/
+    void prepareOldValueToUndoRedoStack(ViewSetSpec view, DimSpec dimension, double time, ValueChangedReasonEnum reason, bool setKeyFrame);
+
+    /**
+     * @brief Must be called after prepareOldValueToUndoRedoStack to finalize the value in the undo/redo stack.
+     **/
+    void addSetValueToUndoRedoStackIfNeeded(const T& value, ValueChangedReturnCodeEnum setValueRetCode);
+};
 
 typedef Knob<bool> KnobBoolBase;
 typedef Knob<double> KnobDoubleBase;
