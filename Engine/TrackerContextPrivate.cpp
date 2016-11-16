@@ -728,30 +728,34 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
 
     // Blender also adds 0.5 to coordinates
     Point center;
-    center.x = (double)mvMarker.center(0) + 0.5;
-    center.y = mvMarker.center(1) + 0.5; //(double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
+    center.x = (double)mvMarker.center(0);
+    center.y = (double)mvMarker.center(1);
 
     boost::shared_ptr<KnobDouble> offsetKnob = natronMarker->getOffsetKnob();
     Point offset;
     offset.x = offsetKnob->getValueAtTime(time, 0);
     offset.y = offsetKnob->getValueAtTime(time, 1);
 
+    Point centerPlusOffset;
+    centerPlusOffset.x = center.x + offset.x;
+    centerPlusOffset.y = center.y + offset.y;
+
     // Set the center
     boost::shared_ptr<KnobDouble> centerKnob = natronMarker->getCenterKnob();
-    centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    centerKnob->setValuesAtTime(time, center.x + 0.5, center.y + 0.5, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 
     Point topLeftCorner, topRightCorner, btmRightCorner, btmLeftCorner;
-    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;//mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
-    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - offset.y - center.y; //TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
+    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - centerPlusOffset.x;
+    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - centerPlusOffset.y;
 
-    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;//mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
-    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
+    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - centerPlusOffset.x;
+    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - centerPlusOffset.y;
 
-    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;// mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
-    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
+    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - centerPlusOffset.x;
+    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - centerPlusOffset.y;
 
-    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x; //mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
-    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
+    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - centerPlusOffset.x;
+    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - centerPlusOffset.y;
 
     boost::shared_ptr<KnobDouble> pntTopLeftKnob = natronMarker->getPatternTopLeftKnob();
     boost::shared_ptr<KnobDouble> pntTopRightKnob = natronMarker->getPatternTopRightKnob();
