@@ -861,7 +861,11 @@ Curve::getValueAt(double t,
     QMutexLocker l(&_imp->_lock);
 
     if ( _imp->keyFrames.empty() ) {
-        throw std::runtime_error("Curve has no control points!");
+        //throw std::runtime_error("Curve has no control points!");
+
+        // A curve with no control points is considered to be 0
+        // this is to avoid returning StatFailed when KnobParametric::getValue() is called on a parametric curve without control point.
+        return 0.;
     } else if (_imp->keyFrames.size() == 1) {
         return _imp->keyFrames.begin()->getValue();
     }

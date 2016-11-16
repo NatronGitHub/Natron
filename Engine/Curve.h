@@ -153,11 +153,13 @@ public:
 
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
+     * An empty curve has a value of zero everywhere (@see getValueAt()).
      **/
     Curve();
 
     /**
      * @brief An empty curve, held by owner. This is the "normal" constructor.
+     * An empty curve has a value of zero everywhere (@see getValueAt()).
      **/
     Curve(const KnobIPtr& owner,
           int dimensionInOwner);
@@ -258,6 +260,10 @@ public:
 
     double getMaximumTimeCovered() const WARN_UNUSED_RETURN;
 
+    /*
+     * The interpolated curve value.
+     * An empty curve has a value of zero everywhere/
+     */
     double getValueAt(double t, bool clamp = true) const WARN_UNUSED_RETURN;
 
     double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
