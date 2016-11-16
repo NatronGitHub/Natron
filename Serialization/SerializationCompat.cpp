@@ -19,7 +19,6 @@
 #include "SerializationCompat.h"
 
 #include "Serialization/KnobTableItemSerialization.h"
-#include "Serialization/TrackerSerialization.h"
 #include "Serialization/BezierSerialization.h"
 #include "Serialization/RotoStrokeItemSerialization.h"
 
@@ -97,12 +96,17 @@ Compat::RotoStrokeItemSerialization::convertStrokeSerialization(SERIALIZATION_NA
 } // convertStrokeSerialization
 
 void
-Compat::TrackSerialization::convertTrackSerialization(SERIALIZATION_NAMESPACE::TrackSerialization* outSerialization)
+Compat::TrackSerialization::convertTrackSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization)
 {
     outSerialization->scriptName = _scriptName;
     outSerialization->label = _label;
-    outSerialization->_isPM = _isPM;
-    outSerialization->_userKeys = _userKeys;
+    CurveSerialization& userKeys = outSerialization->animationCurves["Main"];
+    for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
+        KeyFrameSerialization k;
+        k.time = *it;
+        userKeys.keys.push_back(k);
+
+    }
     outSerialization->knobs = _knobs;
 } // convertTrackSerialization
 
@@ -119,7 +123,7 @@ void
 Compat::TrackerContextSerialization::convertTrackerContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization)
 {
     for (std::list<Compat::TrackSerialization>::iterator it = _tracks.begin(); it!=_tracks.end(); ++it) {
-        boost::shared_ptr<SERIALIZATION_NAMESPACE::TrackSerialization> s(new SERIALIZATION_NAMESPACE::TrackSerialization);
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobTableItemSerialization> s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
         it->convertTrackSerialization(s.get());
         outSerialization->items.push_back(s);
     }

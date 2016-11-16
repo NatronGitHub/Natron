@@ -135,10 +135,6 @@ public:
 
     virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
-
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
-
 
     KnobDoublePtr getSearchWindowBottomLeftKnob() const;
     KnobDoublePtr getSearchWindowTopRightKnob() const;
@@ -155,7 +151,7 @@ public:
     KnobChoicePtr getMotionModelKnob() const;
     KnobBoolPtr getEnabledKnob() const;
 
-    int getReferenceFrame(int time, int frameStep) const;
+    int getReferenceFrame(double time, int frameStep) const;
 
     void getCenterKeyframes(std::set<double>* keyframes) const;
 

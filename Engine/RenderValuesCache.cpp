@@ -247,15 +247,15 @@ RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<std::string> 
 
 
 CurvePtr
-RenderValuesCache::getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension) const
+RenderValuesCache::getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const
 {
     std::map<KnobParametricPtr, PerDimensionParametricCurve>::const_iterator foundKnob = _imp->parametricKnobCurves.find(knob);
     if (foundKnob == _imp->parametricKnobCurves.end()) {
-        return _imp->setCachedParametricKnobCurve(knob, dimension, knob->getParametricCurve(dimension));
+        return _imp->setCachedParametricKnobCurve(knob, dimension, curve);
     }
     PerDimensionParametricCurve::const_iterator foundCurve = foundKnob->second.find(dimension);
     if (foundCurve == foundKnob->second.end()) {
-        return _imp->setCachedParametricKnobCurve(knob, dimension, knob->getParametricCurve(dimension));
+        return _imp->setCachedParametricKnobCurve(knob, dimension, curve);
     }
     return foundCurve->second;
 }

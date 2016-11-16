@@ -1480,7 +1480,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
                 std::vector<double> values(2);
                 values[0] = patternCorners[i]->getValueAtTime(time, DimIdx(0));
                 values[1] = patternCorners[i]->getValueAtTime(time, DimIdx(1));
-                patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
+                patternCorners[i]->setValueAcrossDimensions(values);
             }
             if (createkey) {
                 (*it)->setKeyFrame(time, ViewSetSpec(0), 0);
@@ -1757,7 +1757,7 @@ TrackerNodeInteract::transformPattern(double time,
             values[1] = patternPoints[i].y();
 
             if ( patternCorners[i]->hasAnimation() ) {
-                patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
+                patternCorners[i]->setValueAcrossDimensions(values);
             } else {
                 patternCorners[i]->setValueAcrossDimensions(values);
             }
@@ -1774,7 +1774,7 @@ TrackerNodeInteract::transformPattern(double time,
         values[0] = searchPoints[1].x();
         values[1] = searchPoints[1].y();
         if ( searchWndBtmLeft->hasAnimation() ) {
-            searchWndBtmLeft->setValueAtTimeAcrossDimensions(time, values);
+            searchWndBtmLeft->setValueAcrossDimensions(values);
         } else {
             searchWndBtmLeft->setValueAcrossDimensions(values);
         }
@@ -1785,7 +1785,7 @@ TrackerNodeInteract::transformPattern(double time,
         values[0] = searchPoints[3].x();
         values[1] = searchPoints[3].y();
         if ( searchWndTopRight->hasAnimation() ) {
-            searchWndTopRight->setValueAtTimeAcrossDimensions(time, values);
+            searchWndTopRight->setValueAcrossDimensions(values);
         } else {
             searchWndTopRight->setValueAcrossDimensions(values);
         }
@@ -2921,7 +2921,7 @@ TrackerNode::onOverlayPenMotion(double time,
                         std::vector<double> values(2);
                         values[0] = patternCorners[i]->getValueAtTime(time, DimIdx(0));
                         values[1] = patternCorners[i]->getValueAtTime(time, DimIdx(1));
-                        patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
+                        patternCorners[i]->setValueAcrossDimensions(values);
                     }
                 }
                 _imp->ui->refreshSelectedMarkerTexture();
@@ -3023,7 +3023,7 @@ TrackerNode::onOverlayPenMotion(double time,
                     std::vector<double> values(2);
                     values[0] = cur.x;
                     values[1] = cur.y;
-                    patternCorners[index]->setValueAtTimeAcrossDimensions(time, values);
+                    patternCorners[index]->setValueAcrossDimensions(values);
                 }
 
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
@@ -3369,7 +3369,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 for (int i = 0; i < 4; ++i) {
                     values[0] = patternCorners[i]->getValueAtTime(time, DimIdx(0));
                     values[1] = patternCorners[i]->getValueAtTime(time, DimIdx(1));
-                    patternCorners[i]->setValueAtTimeAcrossDimensions(time, values);
+                    patternCorners[i]->setValueAcrossDimensions(values);
                 }
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
                     _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);

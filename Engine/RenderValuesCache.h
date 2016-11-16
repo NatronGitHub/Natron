@@ -67,7 +67,7 @@ public:
     template <typename T>
     void setCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, double time, DimIdx dimension, ViewIdx view, const T& value);
 
-    CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension) const;
+    CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const;
 
     BezierPtr getOrCreateCachedBezier(const BezierPtr& bezier) const;
 

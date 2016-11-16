@@ -35,6 +35,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/TrackArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -137,6 +138,28 @@ TrackerHelper::onSchedulerTrackingProgress(double progress)
     }
 }
 
+static mv::TrackRegionOptions::Mode
+motionModelIndexToLivMVMode(int mode_i)
+{
+
+    switch (mode_i) {
+        case 0:
+            return mv::TrackRegionOptions::TRANSLATION;
+        case 1:
+            return mv::TrackRegionOptions::TRANSLATION_ROTATION;
+        case 2:
+            return mv::TrackRegionOptions::TRANSLATION_SCALE;
+        case 3:
+            return mv::TrackRegionOptions::TRANSLATION_ROTATION_SCALE;
+        case 4:
+            return mv::TrackRegionOptions::AFFINE;
+        case 5:
+            return mv::TrackRegionOptions::HOMOGRAPHY;
+        default:
+            return mv::TrackRegionOptions::AFFINE;
+    }
+}
+
 
 void
 TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
@@ -212,8 +235,33 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         TrackMarkerAndOptionsPtr t(new TrackMarkerAndOptions);
         t->natronMarker = *it;
 
+        int mode_i = (*it)->getMotionModelKnob()->getValue();
+        mvOptions.mode = motionModelIndexToLivMVMode(mode_i);
+
         // Set a keyframe on the marker to initialize its position
-        (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
+        {
+            KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+            std::vector<double> values(2);
+            values[0] = centerKnob->getValueAtTime(start, DimIdx(0));
+            values[1] = centerKnob->getValueAtTime(start, DimIdx(1));
+            centerKnob->setValueAtTimeAcrossDimensions(start, values);
+        }
+
+        // For a translation warp, we do not need to add an animation curve for the pattern which stays constant.
+        if (mvOptions.mode != libmv::TrackRegionOptions::TRANSLATION) {
+            KnobDoublePtr patternCorners[4];
+            patternCorners[0] = (*it)->getPatternBtmLeftKnob();
+            patternCorners[1] = (*it)->getPatternBtmRightKnob();
+            patternCorners[2] = (*it)->getPatternTopRightKnob();
+            patternCorners[3] = (*it)->getPatternTopLeftKnob();
+            for (int c = 0; c < 4; ++c) {
+                KnobDoublePtr k = patternCorners[c];
+                std::vector<double> values(2);
+                values[0] = k->getValueAtTime(start, DimIdx(0));
+                values[1] = k->getValueAtTime(start, DimIdx(1));
+                k->setValueAcrossDimensions(values);
+            }
+        }
 
         std::set<double> userKeys;
         t->natronMarker->getMasterKeyFrameTimes(ViewIdx(0), &userKeys);
@@ -324,7 +372,6 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
 
         t->mvOptions = mvOptions;
-        _imp->endLibMVOptionsForTrack(*t->natronMarker, &t->mvOptions);
         trackAndOptions.push_back(t);
     }
     

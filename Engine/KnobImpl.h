@@ -1516,7 +1516,7 @@ Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
     beginChanges();
     for (int i = 1; i < nDims; ++i) {
         // Unslave if already slaved
-        unSlave(DimIdx(i), view, true);
+        unSlave(DimIdx(i), view, false /*copyState*/);
         if (!visible) {
             // When folding, slave other dimensions to the first one
             slaveTo(shared_from_this(), DimIdx(i), DimIdx(0), view, view);
@@ -1527,14 +1527,13 @@ Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
 }
 
 template <typename T>
-void
-Knob<T>::autoExpandOrFoldDimensions(ViewIdx view)
+bool
+Knob<T>::areDimensionsEqual(ViewIdx view)
 {
     int nDims = getNDimensions();
-    if (nDims == 1 || !isAutoAllDimensionsVisibleSwitchEnabled()) {
-        return;
+    if (nDims == 1) {
+        return true;
     }
-    // This is a private method, we got the recursive _valuesMutex
 
     bool valuesEqual = true;
     {
@@ -1596,21 +1595,49 @@ Knob<T>::autoExpandOrFoldDimensions(ViewIdx view)
                 break;
             }
         }
-
+        
     }
+    return valuesEqual;
+}
 
+template <typename T>
+void
+Knob<T>::autoExpandDimensions(ViewIdx view)
+{
     
-    // Dimension values are different, expand, else fold
+
     bool curVisible = getAllDimensionsVisible(view);
-    if (!valuesEqual) {
-        if (!curVisible) {
-            setAllDimensionsVisible(view, true);
-        }
-    } else {
-        if (curVisible) {
-            setAllDimensionsVisible(view, false);
-        }
+
+    // If already expanded, don't do anything
+    if (curVisible) {
+        return;
     }
+
+    bool allEquals = areDimensionsEqual(view);
+    if (!allEquals) {
+        setAllDimensionsVisible(view, true);
+    }
+
+}
+
+template <typename T>
+void
+Knob<T>::autoFoldDimensions(ViewIdx view)
+{
+
+
+    bool curVisible = getAllDimensionsVisible(view);
+
+    // If already folded, don't do anything
+    if (!curVisible) {
+        return;
+    }
+
+    bool allEquals = areDimensionsEqual(view);
+    if (allEquals) {
+        setAllDimensionsVisible(view, false);
+    }
+    
 }
 
 NATRON_NAMESPACE_EXIT;

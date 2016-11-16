@@ -33,6 +33,7 @@
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Serialization/KnobTableItemSerialization.h"
@@ -567,7 +568,16 @@ KnobTableItem::copyItem(const KnobTableItemPtr& other)
     for (; it != thisKnobs.end(); ++it, ++otherIt) {
         (*it)->copyKnob(*otherIt);
     }
-
+    {
+        QMutexLocker k(&_imp->lock);
+        _imp->animationCurves.clear();
+        for (PerViewAnimationCurveMap::const_iterator it = other->_imp->animationCurves.begin(); it != other->_imp->animationCurves.end(); ++it) {
+            CurvePtr& c = _imp->animationCurves[it->first];
+            c.reset(new Curve());
+            c->setYComponentMovable(false);
+            c->clone(*it->second);
+        }
+    }
 }
 
 void
@@ -948,8 +958,7 @@ KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimensi
         KnobIPtr knob = getKnobByName(columnName);
         assert(knob);
         // Prevent-auto dimension switching for table items knobs.
-        knob->setAutoAllDimensionsVisibleSwitchEnabled(false);
-        knob->setAllDimensionsVisible(ViewSetSpec::all(), true);
+        knob->setCanAutoFoldDimensions(false);
         _imp->columns[col].knob = knob;
     }
     _imp->columns[col].columnName = columnName;
@@ -1122,10 +1131,22 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
     }
 
 
+    std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
         QMutexLocker k(&_imp->lock);
         serialization->scriptName = _imp->scriptName;
         serialization->label = _imp->label;
+
+        for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it != _imp->animationCurves.end(); ++it) {
+            std::string viewName;
+            if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
+                viewName = projectViewNames[it->first];
+            } else {
+                viewName = "Main";
+            }
+            SERIALIZATION_NAMESPACE::CurveSerialization &c = serialization->animationCurves[viewName];
+            it->second->toSerialization(&c);
+        }
     }
 
     KnobsVec knobs = getKnobs_mt_safe();
@@ -1172,10 +1193,21 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
         return;
     }
 
+    std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
         QMutexLocker k(&_imp->lock);
         _imp->label = serialization->label;
         _imp->scriptName = serialization->scriptName;
+        for (std::map<std::string, SERIALIZATION_NAMESPACE::CurveSerialization>::const_iterator it = serialization->animationCurves.begin(); it != serialization->animationCurves.end(); ++it) {
+            ViewIdx view_i(0);
+            getApp()->getProject()->getViewIndex(projectViewNames, it->first, &view_i);
+            CurvePtr& c = _imp->animationCurves[view_i];
+            if (!c) {
+                c.reset(new Curve);
+                c->setYComponentMovable(false);
+            }
+            c->fromSerialization(it->second);
+        }
     }
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->knobs.begin(); it != serialization->knobs.end(); ++it) {

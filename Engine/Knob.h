@@ -390,18 +390,33 @@ public:
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible) = 0;
 
     /**
-     * @brief When enabled, the knob gui will automatically set all dimensions
-     * expanded/folded if all knob values are the same. When disabled it does not
-     * attempt to do so
+     * @brief When enabled, the knob can be automatically folded if 2 dimensions have equal values.
      **/
-    virtual void setAutoAllDimensionsVisibleSwitchEnabled(bool enabled) = 0;
-    virtual bool isAutoAllDimensionsVisibleSwitchEnabled() const = 0;
+    virtual void setCanAutoFoldDimensions(bool enabled) = 0;
+    virtual bool isAutoFoldDimensionsEnabled() const = 0;
+
+    /**
+     * @brief Check the knob state across all dimensions and if they have different values,  they are made all visible.
+     **/
+    virtual void autoExpandDimensions(ViewIdx view) = 0;
 
     /**
      * @brief Check the knob state across all dimensions and if they have the same values
-     * it folds the dimensions, otherwise they are made all visible.
+     * it folds the dimensions.
      **/
-    virtual void autoExpandOrFoldDimensions(ViewIdx view) = 0;
+    virtual void autoFoldDimensions(ViewIdx view) = 0;
+
+    /**
+     * @brief Returns whether 2 dimensions are equal.
+     * It checks their expression, animation curve and value.
+     * This can be potentially expensive as it compares all animation if needed.
+     **/
+    virtual bool areDimensionsEqual(ViewIdx view) = 0;
+
+    /**
+     * @brief Calls areDimensionsEqual to figure out if all dimensions should be made visible or not.
+     **/
+    void autoAdjustFoldExpandDimensions(ViewIdx view);
 
     /**
      * @brief Given the dimension and view in input, if the knob has all its dimensions folded or is not multi-view,
@@ -1384,8 +1399,8 @@ public:
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getAllDimensionsVisible(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
-    virtual void setAutoAllDimensionsVisibleSwitchEnabled(bool enabled) OVERRIDE FINAL ;
-    virtual bool isAutoAllDimensionsVisibleSwitchEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCanAutoFoldDimensions(bool enabled) OVERRIDE FINAL ;
+    virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
     void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);
@@ -2220,9 +2235,17 @@ public:
     /**
      * @brief Called after a call to setValue/setValueAtTime to check if we need to expand all dimensions or not
      **/
-    virtual void autoExpandOrFoldDimensions(ViewIdx view) OVERRIDE FINAL;
+    virtual void autoExpandDimensions(ViewIdx view) OVERRIDE FINAL;
+    virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
+
+    /**
+     * @brief Returns whether 2 dimensions are equal.
+     * It checks their expression, animation curve and value.
+     **/
+    virtual bool areDimensionsEqual(ViewIdx view) OVERRIDE FINAL;
 
 protected:
+
 
 
     virtual void resetExtraToDefaultValue(DimSpec /*dimension*/, ViewSetSpec /*view*/) {}

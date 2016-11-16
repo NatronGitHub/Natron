@@ -125,13 +125,6 @@ public:
     /// Make all calls to getValue() that are global to the tracker context in here
     void beginLibMVOptionsForTrack(mv::TrackRegionOptions* options) const;
 
-    /// Make all calls to getValue() that are local to the track in here
-    void endLibMVOptionsForTrack(const TrackMarker& marker,
-                                 mv::TrackRegionOptions* options) const;
-
-
-
-
     static void natronTrackerToLibMVTracker(bool isReferenceMarker,
                                             bool trackChannels[3],
                                             const TrackMarker &marker,
@@ -140,10 +133,10 @@ public:
                                             int frameStep,
                                             double formatHeight,
                                             mv::Marker * mvMarker);
-    static void setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
-                                           int formatHeight,
+    static void setKnobKeyframesFromMarker(int formatHeight,
                                            const libmv::TrackRegionResult* result,
-                                           const TrackMarkerPtr& natronMarker);
+                                           const TrackMarkerAndOptionsPtr& options);
+
     static bool trackStepLibMV(int trackIndex, const TrackArgs& args, int time);
     static bool trackStepTrackerPM(const TrackMarkerPMPtr& tracker, const TrackArgs& args, int time);
 

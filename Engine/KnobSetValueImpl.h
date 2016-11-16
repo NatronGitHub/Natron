@@ -199,7 +199,6 @@ Knob<T>::setValue(const T & v,
         undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, false /*setKeyframe*/);
     }
 
-    bool autoDimSwitchEnabled = isAutoAllDimensionsVisibleSwitchEnabled();
     {
         QMutexLocker l(&_valueMutex);
         if (dimension.isAll()) {
@@ -214,8 +213,8 @@ Knob<T>::setValue(const T & v,
                             hasChanged = true;
                             _values[i][*it] = v;
                             // If dimensions are folded but a setValue call is made on one of them, expand them
-                            if (autoDimSwitchEnabled && i == 0 && nDims > 1) {
-                                autoExpandOrFoldDimensions(*it);
+                            if (i == nDims - 1 && nDims > 1) {
+                                autoExpandDimensions(*it);
                             }
                         }
                     }
@@ -228,8 +227,8 @@ Knob<T>::setValue(const T & v,
                         _values[i][view_i] = v;
 
                         // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (autoDimSwitchEnabled && i == 0 && nDims > 1) {
-                            autoExpandOrFoldDimensions(view_i);
+                        if (i == nDims - 1 && nDims > 1) {
+                            autoExpandDimensions(view_i);
                         }
                     }
                 }
@@ -249,8 +248,8 @@ Knob<T>::setValue(const T & v,
                         hasChanged = true;
                         _values[dimension][*it] = v;
                         // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (autoDimSwitchEnabled && nDims > 1) {
-                            autoExpandOrFoldDimensions(*it);
+                        if (nDims > 1) {
+                            autoExpandDimensions(*it);
                         }
                     }
                 }
@@ -260,8 +259,8 @@ Knob<T>::setValue(const T & v,
                     hasChanged = true;
                     _values[dimension][view_i] = v;
                     // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (autoDimSwitchEnabled && nDims > 1) {
-                        autoExpandOrFoldDimensions(view_i);
+                    if (nDims > 1) {
+                        autoExpandDimensions(view_i);
                     }
                 }
             }
@@ -315,18 +314,11 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
-    bool mustTurnOnAutoDimSwitch = false;
     if (values.size() > 1) {
         beginChanges();
 
         // Prevent multiple calls to knobChanged
         blockValueChanges();
-
-        // Disable auto-dimension switch while setting multiple values
-        mustTurnOnAutoDimSwitch = isAutoAllDimensionsVisibleSwitchEnabled();
-        if (mustTurnOnAutoDimSwitch) {
-            setAutoAllDimensionsVisibleSwitchEnabled(false);
-        }
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -342,19 +334,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
         }
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     }
-    if (mustTurnOnAutoDimSwitch) {
-        setAutoAllDimensionsVisibleSwitchEnabled(true);
-    }
     if (values.size() > 1) {
-        if (view.isAll()) {
-            std::list<ViewIdx> views = getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                autoExpandOrFoldDimensions(*it);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-            autoExpandOrFoldDimensions(view_i);
-        }
         endChanges();
     }
 
@@ -436,8 +416,6 @@ Knob<T>::setValueAtTime(double time,
 
     ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
-    bool autoDimSwitchEnabled = isAutoAllDimensionsVisibleSwitchEnabled();
-
     int nDims = getNDimensions();
 
     if (dimension.isAll()) {
@@ -446,8 +424,8 @@ Knob<T>::setValueAtTime(double time,
             for (int i = 0; i < nDims; ++i) {
                 for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
                     // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (autoDimSwitchEnabled && i == 0 && nDims > 1) {
-                        autoExpandOrFoldDimensions(*it);
+                    if (i == nDims - 1 && nDims > 1) {
+                        autoExpandDimensions(*it);
                     }
                     setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
                 }
@@ -457,8 +435,8 @@ Knob<T>::setValueAtTime(double time,
             for (int i = 0; i < nDims; ++i) {
                 setValueOnCurveInternal(time, v, DimIdx(i), view_i, newKey, &ret);
                 // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (autoDimSwitchEnabled && i == 0 && nDims > 1) {
-                    autoExpandOrFoldDimensions(view_i);
+                if (i == nDims - 1 && nDims > 1) {
+                    autoExpandDimensions(view_i);
                 }
             }
         }
@@ -469,8 +447,8 @@ Knob<T>::setValueAtTime(double time,
             for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
                 setValueOnCurveInternal(time, v, DimIdx(dimension), *it, newKey, &ret);
                 // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (autoDimSwitchEnabled && nDims > 1) {
-                    autoExpandOrFoldDimensions(*it);
+                if (nDims > 1) {
+                    autoExpandDimensions(*it);
                 }
             }
         } else {
@@ -478,8 +456,8 @@ Knob<T>::setValueAtTime(double time,
 
             setValueOnCurveInternal(time, v, DimIdx(dimension), view_i, newKey, &ret);
             // If dimensions are folded but a setValue call is made on one of them, expand them
-            if (autoDimSwitchEnabled && nDims > 1) {
-                autoExpandOrFoldDimensions(view_i);
+            if (nDims > 1) {
+                autoExpandDimensions(view_i);
             }
         }
     }
@@ -512,18 +490,11 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         return;
     }
 
-    bool mustTurnOnAutoDimSwitch = false;
     if (keys.size() > 1) {
         beginChanges();
 
         // Prevent multiple calls to knobChanged
         blockValueChanges();
-
-        // Disable auto-dimension switch while setting multiple values
-        mustTurnOnAutoDimSwitch = isAutoAllDimensionsVisibleSwitchEnabled();
-        if (mustTurnOnAutoDimSwitch) {
-            setAutoAllDimensionsVisibleSwitchEnabled(false);
-        }
     }
 
     // Group changes under the same undo/redo action if possible
@@ -552,19 +523,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         }
     }
 
-    if (mustTurnOnAutoDimSwitch) {
-        setAutoAllDimensionsVisibleSwitchEnabled(true);
-    }
     if (keys.size() > 1) {
-        if (view.isAll()) {
-            std::list<ViewIdx> views = getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                autoExpandOrFoldDimensions(*it);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-            autoExpandOrFoldDimensions(view_i);
-        }
         endChanges();
     }
 
@@ -595,16 +554,9 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
 
-    bool mustTurnOnAutoDimSwitch = false;
     if (values.size() > 1) {
         beginChanges();
         blockValueChanges();
-
-        // Disable auto-dimension switch while setting multiple values
-        mustTurnOnAutoDimSwitch = isAutoAllDimensionsVisibleSwitchEnabled();
-        if (mustTurnOnAutoDimSwitch) {
-            setAutoAllDimensionsVisibleSwitchEnabled(false);
-        }
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -619,20 +571,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
         }
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     }
-    if (mustTurnOnAutoDimSwitch) {
-        setAutoAllDimensionsVisibleSwitchEnabled(true);
-    }
     if (values.size() > 1) {
-        if (view.isAll()) {
-            std::list<ViewIdx> views = getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                autoExpandOrFoldDimensions(*it);
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-            autoExpandOrFoldDimensions(view_i);
-        }
-
         endChanges();
     }
     
@@ -655,12 +594,6 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     beginChanges();
     blockValueChanges();
-
-    // Disable auto-dimension switch while setting multiple values
-    bool mustTurnOnAutoDimSwitch = getNDimensions() > 1 && isAutoAllDimensionsVisibleSwitchEnabled();
-    if (mustTurnOnAutoDimSwitch) {
-        setAutoAllDimensionsVisibleSwitchEnabled(false);
-    }
 
 
     for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
@@ -687,13 +620,6 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
                 ++next;
             }
         }
-    }
-    if (mustTurnOnAutoDimSwitch) {
-        setAutoAllDimensionsVisibleSwitchEnabled(true);
-    }
-    std::list<ViewIdx> views = getViewsList();
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-        autoExpandOrFoldDimensions(*it);
     }
 
     endChanges();
@@ -729,6 +655,16 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
         setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
     } else {
         ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+    }
+
+    if (view.isAll()) {
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            autoAdjustFoldExpandDimensions(*it);
+        }
+    } else {
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        autoAdjustFoldExpandDimensions(view_i);
     }
 
 }

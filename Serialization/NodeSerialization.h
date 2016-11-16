@@ -22,7 +22,6 @@
 #include <climits>
 
 #include "Serialization/KnobSerialization.h"
-#include "Serialization/TrackerSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/SerializationBase.h"

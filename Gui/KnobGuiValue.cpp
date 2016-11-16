@@ -647,7 +647,6 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 {
     // User clicked once on the dimension switch, disable auto switch
     KnobIPtr knob = getKnobGui()->getKnob();
-    knob->setAutoAllDimensionsVisibleSwitchEnabled(false);
     knob->setAllDimensionsVisible(getView(), clicked);
 }
 

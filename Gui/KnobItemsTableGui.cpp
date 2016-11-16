@@ -43,6 +43,7 @@
 #include <QWidget>
 
 #include "Engine/Utils.h"
+#include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
@@ -248,12 +249,10 @@ KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& 
 class AnimatedKnobItemDelegate
 : public QStyledItemDelegate
 {
-    KnobItemsTableGuiPrivate* _imp;
 public:
 
-    explicit AnimatedKnobItemDelegate(KnobItemsTableGuiPrivate* imp)
+    explicit AnimatedKnobItemDelegate()
     : QStyledItemDelegate()
-    , _imp(imp)
     {
 
     }
@@ -261,119 +260,20 @@ public:
 private:
 
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
-    
+
 };
+
 
 void
 AnimatedKnobItemDelegate::paint(QPainter * painter,
                                 const QStyleOptionViewItem & option,
                                 const QModelIndex & index) const
 {
-    assert( index.isValid() );
-    if ( !index.isValid() ) {
-        QStyledItemDelegate::paint(painter, option, index);
+    QStyleOptionViewItemV4 optionsCpy(option);
+    // Remove the selected bit so that we draw our custom selection highlight instead of the default one.
+    optionsCpy.state &= ~QStyle::State_Selected;
+    QStyledItemDelegate::paint(painter, optionsCpy, index);
 
-        return;
-    }
-    int col = index.column();
-
-
-    TableItemPtr item = _imp->tableModel->getItem(index);
-    assert(item);
-    if (!item) {
-        // coverity[dead_error_line]
-        QStyledItemDelegate::paint(painter, option, index);
-
-        return;
-    }
-    // If the item is being edited, do not draw it
-    if (_imp->tableView->editedItem() == item) {
-        QStyledItemDelegate::paint(painter, option, index);
-
-        return;
-    }
-
-    // If there's a widget, don't draw on top of it
-    if (_imp->tableView->cellWidget(index.row(), index.column())) {
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-
-    // Find from the internal Engine item the associated knob
-    ModelItemsVec::iterator foundItem = _imp->findItem(item);;
-    assert(foundItem != _imp->items.end());
-    if (foundItem == _imp->items.end()) {
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-
-    KnobTableItemPtr internalItem = foundItem->internalItem.lock();
-    if (!internalItem) {
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-
-    DimSpec knobDimensionIndex;
-    KnobIPtr knob = internalItem->getColumnKnob(col, &knobDimensionIndex);
-    if (!knob) {
-        QStyledItemDelegate::paint(painter, option, index);
-        return;
-    }
-
-    // get the proper subrect from the style
-    QStyle *style = QApplication::style();
-    QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
-
-    // Get the animation level
-    AnimationLevelEnum level = knob->getAnimationLevel(knobDimensionIndex.isAll() ? DimIdx(0) : DimIdx(knobDimensionIndex), ViewIdx(0));
-
-
-    // Figure out the background color depending on the animation level
-    bool fillRect = true;
-    QBrush brush;
-    if (option.state & QStyle::State_Selected) {
-        brush = option.palette.highlight();
-    } else if (level == eAnimationLevelInterpolatedValue) {
-        double r, g, b;
-        appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
-        QColor col;
-        col.setRgbF(r, g, b);
-        brush = col;
-    } else if (level == eAnimationLevelOnKeyframe) {
-        double r, g, b;
-        appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
-        QColor col;
-        col.setRgbF(r, g, b);
-        brush = col;
-    } else {
-        fillRect = false;
-    }
-
-    // No special animation, do not fill the rect, default will do it
-    if (fillRect) {
-        painter->fillRect( geom, brush);
-    }
-
-    // Figure out text color
-    QPen pen = painter->pen();
-    if ( !item->getFlags(col).testFlag(Qt::ItemIsEditable) ) {
-        // Paint non editable items text in black
-        pen.setColor(Qt::black);
-    } else {
-        double r, g, b;
-        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        QColor col;
-        col.setRgbF(r, g, b);
-        pen.setColor(col);
-    }
-    painter->setPen(pen);
-
-    QRect textRect( geom.x() + 5, geom.y(), geom.width() - 5, geom.height() );
-    QRect r;
-    QVariant var = item->getData(col, Qt::DisplayRole);
-    double d = var.toDouble();
-    QString dataStr = QString::number(d, 'f', 6);
-    painter->drawText(textRect, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignLeft, dataStr, &r);
 } // paint
 
 class KnobItemsTableView : public TableView
@@ -402,6 +302,8 @@ private:
                                         const QModelIndexList& rows,
                                         Qt::DropActions supportedActions,
                                         Qt::DropAction defaultAction) OVERRIDE FINAL;
+
+    virtual void drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
 };
 
 KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePanel* panel, QWidget* parent)
@@ -422,7 +324,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 #endif
     _imp->tableView->header()->setStretchLastSection(true);
 
-    AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate(_imp.get());
+    AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate();
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->tableView->setItemDelegate(delegate);
@@ -533,6 +435,41 @@ KnobItemsTableGui::getKnobsForItem(const KnobTableItemPtr& item) const
         }
     }
     return ret;
+}
+
+static void drawSelectionHighlight(QPainter * painter,
+                                   const QRect & rect,
+                                   QColor selectionColor)
+{
+
+    painter->setOpacity(0.5);
+    painter->fillRect(rect, selectionColor);
+    painter->setOpacity(1.);
+
+}
+
+void
+KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
+{
+    TableView::drawRow(painter, option, index);
+
+    QColor selectionColor;
+    {
+        double sR,sG,sB;
+        appPTR->getCurrentSettings()->getSelectionColor(&sR, &sG, &sB);
+        selectionColor.setRgbF(Image::clamp(sR, 0., 1.), Image::clamp(sG, 0., 1.), Image::clamp(sB, 0., 1.));
+        selectionColor.setAlphaF(1);
+    }
+    TableItemPtr item = _imp->tableModel->getItem(index);
+    ModelItemsVec::iterator foundItem = _imp->findItem(item);
+    if (foundItem != _imp->items.end()) {
+        KnobTableItemPtr internalItem = foundItem->internalItem.lock();
+        bool isSelected = _imp->internalModel.lock()->isItemSelected(internalItem);
+        if (isSelected) {
+            drawSelectionHighlight(painter, option.rect, selectionColor);
+        }
+    }
+
 }
 
 void
@@ -1590,6 +1527,7 @@ KnobItemsTableGuiPrivate::removeTableItem(const KnobTableItemPtr& item)
         return;
     }
     tableModel->removeItem(tableItem);
+    items.erase(foundItem);
 }
 
 void

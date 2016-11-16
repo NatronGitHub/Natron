@@ -54,6 +54,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobFile.h"
 #include "Engine/Hash64.h"
 #include "Engine/Node.h"
+#include "Engine/RenderValuesCache.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -261,15 +262,11 @@ void
 KnobDouble::setDefaultValuesAreNormalized(bool normalized)
 {
     _defaultValuesAreNormalized = normalized;
-
-    // Knobs with default values that are normalized are positions hence disable auto dimensions folding
-    //setAutoAllDimensionsVisibleSwitchEnabled(false);
 }
 
 void
 KnobDouble::setSpatial(bool spatial)
 {
-  
     _spatial = spatial;
 }
 
@@ -1947,7 +1944,7 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
     , _defaultCurves(dimension)
     , _curvesColor(dimension)
 {
-
+    setCanAutoFoldDimensions(false);
 }
 
 void
@@ -2096,12 +2093,19 @@ CurvePtr KnobParametric::getParametricCurve(DimIdx dimension) const
     MasterKnobLink linkData;
     if (getMaster(dimension, ViewIdx(0), &linkData)) {
         KnobParametricPtr masterKnob = toKnobParametric(linkData.masterKnob.lock());
-        if (masterKnob) {
+        if (masterKnob && masterKnob.get() != this) {
             return masterKnob->getParametricCurve(dimension);
         }
     }
 
-
+    EffectInstancePtr holder = toEffectInstance(getHolder());
+    if (holder) {
+        RenderValuesCachePtr cache = holder->getRenderValuesCacheTLS();
+        if (cache) {
+            KnobParametricPtr thisShared = boost::const_pointer_cast<KnobParametric>(boost::dynamic_pointer_cast<const KnobParametric>(shared_from_this()));
+            return cache->getOrCreateCachedParametricKnobCurve(thisShared, _curves[dimension], dimension);
+        }
+    }
     return _curves[dimension];
 
 }

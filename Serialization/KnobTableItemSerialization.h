@@ -25,6 +25,7 @@
 #include "Serialization/SerializationFwd.h"
 
 #define kSerializationRotoLayerTag "Layer"
+#define kSerializationTrackTag "Track"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -50,6 +51,10 @@ public:
 
     std::list<KnobTableItemSerializationPtr> children;
 
+
+    // For each view, the animation of the user keyframes.
+    std::map<std::string, CurveSerialization> animationCurves;
+
     KnobTableItemSerialization()
     : _emitMap(true)
     , verbatimTag()
@@ -57,6 +62,7 @@ public:
     , label()
     , knobs()
     , children()
+    , animationCurves()
     {
 
     }
@@ -77,8 +83,9 @@ public:
     
     // A unique identifier for the table so that one does not attempt to deserialize a table of one type to another one
     std::string tableIdentifier;
-    
+
     std::list<KnobTableItemSerializationPtr> items;
+
     
     KnobItemsTableSerialization()
     : nodeScriptName()

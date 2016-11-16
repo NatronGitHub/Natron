@@ -459,10 +459,6 @@ KnobGuiPrivate::createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it
     it->second.widgets->createWidget(it->second.fieldLayout);
     it->second.widgets->updateToolTip();
 
-    bool autoDimSwitchEnabled = k->isAutoAllDimensionsVisibleSwitchEnabled();
-    if (autoDimSwitchEnabled) {
-        k->autoExpandOrFoldDimensions(it->first);
-    }
 }
 
 

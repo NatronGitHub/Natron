@@ -770,19 +770,22 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
         _imp->_isGUIFrozen = clicked;
     }
+    std::list<ViewerTab*> allViewers;
     {
         QMutexLocker k(&_imp->_viewerTabsMutex);
-        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            ViewerNodePtr viewer = (*it)->getInternalNode();
-            if (!viewer) {
-                continue;
-            }
-            viewer->getTurboModeButtonKnob()->setValue(clicked);
-            if (!clicked) {
-                (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
-            }
+        allViewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+        ViewerNodePtr viewer = (*it)->getInternalNode();
+        if (!viewer) {
+            continue;
+        }
+        viewer->getTurboModeButtonKnob()->setValue(clicked);
+        if (!clicked) {
+            (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
         }
     }
+
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {

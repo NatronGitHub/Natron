@@ -245,32 +245,41 @@ KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
 }
 
 void
-KnobHelper::setAutoAllDimensionsVisibleSwitchEnabled(bool enabled)
+KnobI::autoAdjustFoldExpandDimensions(ViewIdx view)
 {
-    QMutexLocker k(&_imp->stateMutex);
-    _imp->autoFoldAllDimensionsEnabled = enabled;
+    if (!isAutoFoldDimensionsEnabled()) {
+        return;
+    }
+    bool currentVisibility = getAllDimensionsVisible(view);
+    bool allEqual = areDimensionsEqual(view);
+    if (allEqual) {
+        if (currentVisibility) {
+            setAllDimensionsVisible(view, false);
+        }
+    } else {
+        if (!currentVisibility) {
+            setAllDimensionsVisible(view, true);
+        }
+    }
 }
 
-bool
-KnobHelper::isAutoAllDimensionsVisibleSwitchEnabled() const
+void
+KnobHelper::setCanAutoFoldDimensions(bool enabled)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
-        bool autoSwitchEnabled =  _imp->autoFoldAllDimensionsEnabled;
-        if (autoSwitchEnabled) {
-            return true;
-        }
+        _imp->autoFoldEnabled = enabled;
     }
-    KnobHolderPtr  holder = getHolder();
-    if (!holder) {
-        return false;
+    if (!enabled) {
+        setAllDimensionsVisible(ViewSetSpec::all(), true);
     }
+}
 
-    // During interact actions always allow auto-expanding of dimensions
-    // Think of the transform interact: the user expects that dimensions be automatically
-    // expanded
-    bool duringInteract = holder->isDoingInteractAction();
-    return duringInteract;
+bool
+KnobHelper::isAutoFoldDimensionsEnabled() const
+{
+    QMutexLocker k(&_imp->stateMutex);
+    return _imp->autoFoldEnabled;
 }
 
 void
@@ -301,7 +310,9 @@ KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
         setAllDimensionsVisibleInternal(view_i, visible);
     }
     endChanges();
-    _signalSlotHandler->s_dimensionsVisibilityChanged(view);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_dimensionsVisibilityChanged(view);
+    }
 }
 
 #ifdef DEBUG
@@ -3516,27 +3527,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
         }
 
-
-        // If the knob has multiple dimensions but only a single one was serialized, assume the dimensions
-        // were folded
-        bool dimensionsFolded = it->second.size() == 1 && getNDimensions() > 1;
-        setAllDimensionsVisible(view_i, !dimensionsFolded);
-
-        // Don't auto-expand if the knob is animated by default
-        // or if its dimensions are already folded
-        if (dimensionsFolded) {
-            setAutoAllDimensionsVisibleSwitchEnabled(false);
-        } else {
-            int nDims = getNDimensions();
-            for (int i = 0; i < nDims; ++i) {
-                if (isAnimated(DimIdx(i), view_i)) {
-                    setAutoAllDimensionsVisibleSwitchEnabled(false);
-                    break;
-                }
-            }
-        }
-        
-
+        autoAdjustFoldExpandDimensions(view_i);
     }
 
 

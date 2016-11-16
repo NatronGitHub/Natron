@@ -26,7 +26,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/BezierSerialization.h"
 #include "Serialization/RotoStrokeItemSerialization.h"
-#include "Serialization/TrackerSerialization.h"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -46,7 +45,7 @@ static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const s
         RotoStrokeItemSerializationPtr ret(new RotoStrokeItemSerialization);
         return ret;
     } else if (tag == kSerializationTrackTag) {
-        TrackSerializationPtr ret(new TrackSerialization);
+        KnobTableItemSerializationPtr ret(new KnobTableItemSerialization);
         return ret;
     } else {
         std::cerr << "Unknown YAML tag " << tag << std::endl;
@@ -82,6 +81,21 @@ KnobTableItemSerialization::encode(YAML::Emitter& em) const
             (*it)->encode(em);
         }
         em << YAML::EndSeq;
+    }
+    if (!animationCurves.empty()) {
+        em << YAML::Key << "Animation" << YAML::Value;
+        if (animationCurves.size() > 1) {
+            em << YAML::BeginMap;
+        }
+        for (std::map<std::string, CurveSerialization>::const_iterator it = animationCurves.begin(); it != animationCurves.end(); ++it) {
+            if (animationCurves.size() > 1) {
+                em << YAML::Key << it->first << YAML::Value;
+            }
+            it->second.encode(em);
+        }
+        if (animationCurves.size() > 1) {
+            em << YAML::EndMap;
+        }
     }
     
     if (_emitMap) {
@@ -121,6 +135,23 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
             child->decode(paramsNode[i]);
             knobs.push_back(child);
         }
+    }
+    if (node["Animation"]) {
+        YAML::Node animNode = node["Animation"];
+        if (animNode.IsMap()) {
+            // multi-view
+            for (YAML::const_iterator it = animNode.begin(); it!=animNode.end(); ++it) {
+                std::string viewName = it->first.as<std::string>();
+                CurveSerialization c;
+                c.decode(it->second);
+                animationCurves.insert(std::make_pair(viewName, c));
+            }
+        } else {
+            CurveSerialization c;
+            c.decode(animNode);
+            animationCurves.insert(std::make_pair("Main", c));
+        }
+
     }
 }
 

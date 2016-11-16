@@ -43,7 +43,7 @@
 
 #include "Global/GLIncludes.h"
 
-#include "Serialization/TrackerSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 
 
 #define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
@@ -1632,7 +1632,8 @@ TrackerKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
 {
     TrackMarkerPtr isTrack = toTrackMarker(item);
     assert(isTrack);
-    SERIALIZATION_NAMESPACE::TrackSerializationPtr ret(new SERIALIZATION_NAMESPACE::TrackSerialization);
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+    ret->verbatimTag = kSerializationTrackTag;
     isTrack->toSerialization(ret.get());
     return ret;
 }
@@ -1640,16 +1641,11 @@ TrackerKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
 KnobTableItemPtr
 TrackerKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data)
 {
-    const SERIALIZATION_NAMESPACE::TrackSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackSerialization*>(data.get());
+    const SERIALIZATION_NAMESPACE::KnobTableItemSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobTableItemSerialization*>(data.get());
     if (!serialization) {
         return KnobTableItemPtr();
     }
     TrackMarkerPtr marker;
-#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    if (serialization->_isPM) {
-        marker = TrackMarkerPM::create(shared_from_this());
-    } else
-#endif
     {
         marker = TrackMarker::create(shared_from_this());
     }

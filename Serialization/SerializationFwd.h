@@ -55,7 +55,6 @@ class RectISerialization;
 class RotoContextSerialization;
 class RotoStrokeItemSerialization;
 class TabWidgetSerialization;
-class TrackSerialization;
 struct ValueSerialization;
 class ViewportData;
 class WidgetSplitterSerialization;
@@ -72,7 +71,6 @@ typedef boost::shared_ptr<KnobItemsTableSerialization> KnobItemsTableSerializati
 typedef boost::shared_ptr<NodeSerialization> NodeSerializationPtr;
 typedef boost::shared_ptr<ProjectSerialization> ProjectSerializationPtr;
 typedef boost::shared_ptr<RotoStrokeItemSerialization> RotoStrokeItemSerializationPtr;
-typedef boost::shared_ptr<TrackSerialization> TrackSerializationPtr;
 
 typedef std::list<NodeSerializationPtr> NodeSerializationList;
 typedef std::list<KnobSerializationPtr> KnobSerializationList;

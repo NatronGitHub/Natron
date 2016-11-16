@@ -42,7 +42,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
 
-#include "Serialization/TrackerSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 
 
 #include <ofxNatron.h>
@@ -94,7 +94,6 @@ struct TrackMarkerPrivate
 #endif
     KnobChoiceWPtr motionModel;
     mutable QMutex trackMutex;
-    std::set<int> userKeyframes;
     KnobBoolWPtr enabled;
 
     // Only used by the TrackScheduler thread
@@ -117,7 +116,6 @@ struct TrackMarkerPrivate
 #endif
         , motionModel()
         , trackMutex()
-        , userKeyframes()
         , enabled()
         , trackingStartedCount(0)
         , keyframesAddedWhileTracking()
@@ -269,43 +267,8 @@ TrackMarker::copyItem(const KnobTableItemPtr& other)
     if (!otherMarker) {
         return;
     }
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        _imp->userKeyframes = otherMarker->_imp->userKeyframes;
-    }
+
     KnobTableItem::copyItem(other);
-}
-
-void
-TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
-{
-    const SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackSerialization*>(&obj);
-    if (!s) {
-        return;
-    }
-    KnobTableItem::fromSerialization(obj);
-    QMutexLocker k(&_imp->trackMutex);
-
-    for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
-        _imp->userKeyframes.insert(*it);
-    }
-}
-
-void
-TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
-{
-    SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TrackSerialization*>(obj);
-    if (!s) {
-        return;
-    }
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
-        for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-            s->_userKeys.push_back(*it);
-        }
-    }
-    KnobTableItem::toSerialization(obj);
 }
 
 
@@ -423,22 +386,26 @@ TrackMarker::getEnabledNessAnimationLevel() const
 }
 
 int
-TrackMarker::getReferenceFrame(int time,
+TrackMarker::getReferenceFrame(double time,
                                int frameStep) const
 {
     QMutexLocker k(&_imp->trackMutex);
-    std::set<int>::iterator upper = _imp->userKeyframes.upper_bound(time);
 
-    if ( upper == _imp->userKeyframes.end() ) {
+    std::set<double> userKeyframes;
+    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+
+    std::set<double>::iterator upper = userKeyframes.upper_bound(time);
+
+    if ( upper == userKeyframes.end() ) {
         //all keys are lower than time, pick the last one
-        if ( !_imp->userKeyframes.empty() ) {
-            return *_imp->userKeyframes.rbegin();
+        if ( !userKeyframes.empty() ) {
+            return *userKeyframes.rbegin();
         }
 
         // no keyframe - use the previous/next as reference
         return time - frameStep;
     } else {
-        if ( upper == _imp->userKeyframes.begin() ) {
+        if ( upper == userKeyframes.begin() ) {
             ///all keys are greater than time
             return *upper;
         }
@@ -662,7 +629,7 @@ TrackMarker::setKeyFrameOnCenterAndPatternAtTime(double time)
         std::vector<double> values(2);
         values[0] = k->getValueAtTime(time, DimIdx(0));
         values[1] = k->getValueAtTime(time, DimIdx(1));
-        k->setValueAtTimeAcrossDimensions(time, values);
+        k->setValueAcrossDimensions(values);
     }
 }
 void
@@ -1011,10 +978,12 @@ TrackMarkerPM::initializeKnobs()
 
     KnobChoicePtr scoreType = getNodeKnob<KnobChoice>(node, kTrackerPMParamScore);
     if (effect) {
+#ifdef kTrackerParamPatternMatchingScoreType
         KnobIPtr modelKnob = effect->getKnobByName(kTrackerParamPatternMatchingScoreType);
         if (modelKnob) {
             scoreType->slaveTo(modelKnob);
         }
+#endif
     }
 
     scoreTypeKnob = scoreType;

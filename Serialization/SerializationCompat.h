@@ -47,7 +47,6 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
-#include "Serialization/TrackerSerialization.h"
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGroupSerialization.h"
 #include "Serialization/SerializationFwd.h"
@@ -359,7 +358,7 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
-    void convertTrackSerialization(SERIALIZATION_NAMESPACE::TrackSerialization* outSerialization);
+    void convertTrackSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
 
 };
 

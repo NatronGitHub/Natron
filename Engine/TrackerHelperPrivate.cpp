@@ -61,11 +61,13 @@ TrackerHelperPrivate::TrackerHelperPrivate(TrackerHelper* publicInterface,
  * @brief Set keyframes on knobs from Marker data
  **/
 void
-TrackerHelperPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
-                                                  int /*formatHeight*/,
-                                                  const libmv::TrackRegionResult* result,
-                                                  const TrackMarkerPtr& natronMarker)
+TrackerHelperPrivate::setKnobKeyframesFromMarker(int /*formatHeight*/,
+                                                 const libmv::TrackRegionResult* result,
+                                                 const TrackMarkerAndOptionsPtr& options)
 {
+    const mv::Marker& mvMarker = options->mvMarker;
+    const TrackMarkerPtr& natronMarker = options->natronMarker;
+    
     int time = mvMarker.frame;
     KnobDoublePtr errorKnob = natronMarker->getErrorKnob();
 
@@ -79,38 +81,43 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
         errorKnob->setValueAtTime(time, 0.);
     }
 
-    // Blender also adds 0.5 to coordinates
     Point center;
-    center.x = (double)mvMarker.center(0) + 0.5;
-    center.y = mvMarker.center(1) + 0.5; //(double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
+    center.x = (double)mvMarker.center(0);
+    center.y = (double)mvMarker.center(1);
+
 
     KnobDoublePtr offsetKnob = natronMarker->getOffsetKnob();
     Point offset;
     offset.x = offsetKnob->getValueAtTime(time, DimIdx(0));
     offset.y = offsetKnob->getValueAtTime(time, DimIdx(1));
 
+    Point centerPlusOffset;
+    centerPlusOffset.x = center.x + offset.x;
+    centerPlusOffset.y = center.y + offset.y;
+
     // Set the center
     KnobDoublePtr centerKnob = natronMarker->getCenterKnob();
     {
         std::vector<double> values(2);
-        values[0] = center.x;
-        values[1] = center.y;
+        // Blender also adds 0.5 to coordinates
+        values[0] = center.x + 0.5;
+        values[1] = center.y + 0.5;
         centerKnob->setValueAtTimeAcrossDimensions(time, values);
     }
 
 
     Point topLeftCorner, topRightCorner, btmRightCorner, btmLeftCorner;
-    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;//mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
-    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - offset.y - center.y; //TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
+    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - centerPlusOffset.x;
+    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - centerPlusOffset.y;
 
-    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;//mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
-    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
+    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - centerPlusOffset.x;
+    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - centerPlusOffset.y;
 
-    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;// mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
-    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
+    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - centerPlusOffset.x;
+    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - centerPlusOffset.y;
 
-    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x; //mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
-    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
+    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - centerPlusOffset.x;
+    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - centerPlusOffset.y;
 
     KnobDoublePtr pntTopLeftKnob = natronMarker->getPatternTopLeftKnob();
     KnobDoublePtr pntTopRightKnob = natronMarker->getPatternTopRightKnob();
@@ -118,19 +125,34 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     KnobDoublePtr pntBtmRightKnob = natronMarker->getPatternBtmRightKnob();
 
     // Set the pattern Quad
-    std::vector<double> values(2);
-    values[0] = topLeftCorner.x;
-    values[1] = topLeftCorner.y;
-    pntTopLeftKnob->setValueAtTimeAcrossDimensions(time, values);
-    values[0] = topRightCorner.x;
-    values[1] = topRightCorner.y;
-    pntTopRightKnob->setValueAtTimeAcrossDimensions(time, values);
-    values[0] = btmLeftCorner.x;
-    values[1] = btmLeftCorner.y;
-    pntBtmLeftKnob->setValueAtTimeAcrossDimensions(time, values);
-    values[0] = btmRightCorner.x;
-    values[1] = btmRightCorner.y;
-    pntBtmRightKnob->setValueAtTimeAcrossDimensions(time, values);
+    std::vector<double> topLeftValues(2);
+    std::vector<double> topRightValues(2);
+    std::vector<double> btmLeftValues(2);
+    std::vector<double> btmRightValues(2);
+    topLeftValues[0] = topLeftCorner.x;
+    topLeftValues[1] = topLeftCorner.y;
+    topRightValues[0] = topRightCorner.x;
+    topRightValues[1] = topRightCorner.y;
+    btmLeftValues[0] = btmLeftCorner.x;
+    btmLeftValues[1] = btmLeftCorner.y;
+    btmRightValues[0] = btmRightCorner.x;
+    btmRightValues[1] = btmRightCorner.y;
+
+    // When tracking translation only, do not set a keyframe if a keyframe was not set already to avoid
+    // creating an animation curve with constant data.
+    if (options->mvOptions.mode != libmv::TrackRegionOptions::TRANSLATION) {
+        pntTopLeftKnob->setValueAtTimeAcrossDimensions(time, topLeftValues);
+        pntTopRightKnob->setValueAtTimeAcrossDimensions(time, topRightValues);
+        pntBtmLeftKnob->setValueAtTimeAcrossDimensions(time, btmLeftValues);
+        pntBtmRightKnob->setValueAtTimeAcrossDimensions(time, btmRightValues);
+    } else {
+        pntTopLeftKnob->setValueAcrossDimensions(topLeftValues);
+        pntTopRightKnob->setValueAcrossDimensions(topRightValues);
+        pntBtmLeftKnob->setValueAcrossDimensions(btmLeftValues);
+        pntBtmRightKnob->setValueAcrossDimensions(btmRightValues);
+
+    }
+
 } // TrackerHelperPrivate::setKnobKeyframesFromMarker
 
 /// Converts a Natron track marker to the one used in LibMV. This is expensive: many calls to getValue are made
@@ -272,8 +294,10 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     offsetAtTrackedTime.y = offsetKnob->getValueAtTime(trackedTime, DimIdx(1));
 
     // Blender also substracts 0.5 to coordinates
-    mvMarker->center(0) = centerAtTrackedTime.x - 0.5;
-    mvMarker->center(1) = centerAtTrackedTime.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(centerAtTrackedTime.y, formatHeight);
+    centerAtTrackedTime.x -= 0.5;
+    centerAtTrackedTime.y -= 0.5;
+    mvMarker->center(0) = centerAtTrackedTime.x;
+    mvMarker->center(1) = centerAtTrackedTime.y;
 
     Point centerPlusOffset;
     centerPlusOffset.x = centerAtTrackedTime.x + offsetAtTrackedTime.x;
@@ -297,23 +321,23 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     bl.x += centerPlusOffset.x;
     bl.y += centerPlusOffset.y;
 
-    mvMarker->search_region.min(0) = searchWndBtmLeft.x - 0.5;
-    mvMarker->search_region.min(1) = searchWndBtmLeft.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndTopRight.y, formatHeight);
-    mvMarker->search_region.max(0) = searchWndTopRight.x - 0.5;
-    mvMarker->search_region.max(1) = searchWndTopRight.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndBtmLeft.y, formatHeight);
+    mvMarker->search_region.min(0) = searchWndBtmLeft.x;
+    mvMarker->search_region.min(1) = searchWndBtmLeft.y;
+    mvMarker->search_region.max(0) = searchWndTopRight.x;
+    mvMarker->search_region.max(1) = searchWndTopRight.y;
 
 
-    mvMarker->patch.coordinates(0, 0) = bl.x - 0.5; //tl.x;
-    mvMarker->patch.coordinates(0, 1) = bl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tl.y, formatHeight);
+    mvMarker->patch.coordinates(0, 0) = bl.x;
+    mvMarker->patch.coordinates(0, 1) = bl.y;
 
-    mvMarker->patch.coordinates(1, 0) = br.x - 0.5; //tr.x;
-    mvMarker->patch.coordinates(1, 1) = br.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tr.y, formatHeight);
+    mvMarker->patch.coordinates(1, 0) = br.x;
+    mvMarker->patch.coordinates(1, 1) = br.y;
 
-    mvMarker->patch.coordinates(2, 0) = tr.x - 0.5; //br.x;
-    mvMarker->patch.coordinates(2, 1) = tr.y - 0.5 ;//TrackerFrameAccessor::invertYCoordinate(br.y, formatHeight);
+    mvMarker->patch.coordinates(2, 0) = tr.x;
+    mvMarker->patch.coordinates(2, 1) = tr.y;
 
-    mvMarker->patch.coordinates(3, 0) = tl.x - 0.5; //bl.x;
-    mvMarker->patch.coordinates(3, 1) = tl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(bl.y, formatHeight);
+    mvMarker->patch.coordinates(3, 0) = tl.x;
+    mvMarker->patch.coordinates(3, 1) = tl.y;
 } // TrackerHelperPrivate::natronTrackerToLibMVTracker
 
 void
@@ -331,36 +355,7 @@ TrackerHelperPrivate::beginLibMVOptionsForTrack(mv::TrackRegionOptions* options)
     options->use_esm = false;
 }
 
-void
-TrackerHelperPrivate::endLibMVOptionsForTrack(const TrackMarker& marker,
-                                               mv::TrackRegionOptions* options) const
-{
-    int mode_i = marker.getMotionModelKnob()->getValue();
 
-    switch (mode_i) {
-    case 0:
-        options->mode = mv::TrackRegionOptions::TRANSLATION;
-        break;
-    case 1:
-        options->mode = mv::TrackRegionOptions::TRANSLATION_ROTATION;
-        break;
-    case 2:
-        options->mode = mv::TrackRegionOptions::TRANSLATION_SCALE;
-        break;
-    case 3:
-        options->mode = mv::TrackRegionOptions::TRANSLATION_ROTATION_SCALE;
-        break;
-    case 4:
-        options->mode = mv::TrackRegionOptions::AFFINE;
-        break;
-    case 5:
-        options->mode = mv::TrackRegionOptions::HOMOGRAPHY;
-        break;
-    default:
-        options->mode = mv::TrackRegionOptions::AFFINE;
-        break;
-    }
-}
 
 /*
  * @brief This is the internal tracking function that makes use of TrackerPM to do 1 track step
@@ -426,7 +421,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "TrackStep:" << trackTime << "is a keyframe";
 #endif
-        setKnobKeyframesFromMarker(track->mvMarker, args.getFormatHeight(), 0, track->natronMarker);
+        setKnobKeyframesFromMarker(args.getFormatHeight(), 0, track);
     } else {
         // Make sure the reference frame is in the auto-track: the mv::Marker struct is filled with the values of the Natron TrackMarker at the reference_frame
         {
@@ -466,7 +461,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 #endif
 
         //Extract the marker to the knob keyframes
-        setKnobKeyframesFromMarker(track->mvMarker, args.getFormatHeight(), &result, track->natronMarker);
+        setKnobKeyframesFromMarker(args.getFormatHeight(), &result, track);
 
         //Add the marker to the autotrack
         /*{
