@@ -326,6 +326,7 @@
 		1E1FB62C1DA7BBD2009F547D /* ZRemap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ZRemap.png; sourceTree = "<group>"; };
 		1E1FB62D1DA7BBD2009F547D /* ZRemap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZRemap.py; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
+		1E5FBCF91DDCAD4800348B8B /* Natron.spec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Natron.spec; sourceTree = "<group>"; };
 		1E70D14F1CF33A0C000D2932 /* BUGS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = BUGS.md; sourceTree = "<group>"; };
 		1E70D1501CF33A0C000D2932 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
 		1E70D1511CF33A0C000D2932 /* config.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.pri; sourceTree = "<group>"; };
@@ -566,6 +567,7 @@
 				1EB1215E1D87F6B5009646F7 /* ofxPropSupported.rtf */,
 				1EB1215F1D87F6B5009646F7 /* Presentation.md */,
 				1EB121601D87F6B5009646F7 /* TuttleOFX-README.txt */,
+				1E5FBCF91DDCAD4800348B8B /* Natron.spec */,
 				1EB121611D87F6BF009646F7 /* source */,
 				1EEB0B211D1ADC9A00F0D43D /* components */,
 			);
