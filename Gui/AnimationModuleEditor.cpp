@@ -97,6 +97,7 @@ inline KeyframeTypeEnum toKeyFrameType(KeyFrameInterpolationChoiceMenuEnum v)
         case eKeyFrameInterpolationChoiceMenuLinear:
             return eKeyframeTypeLinear;
         case eKeyFrameInterpolationChoiceMenuSmooth:
+        default:
             return eKeyframeTypeSmooth;
     }
 }

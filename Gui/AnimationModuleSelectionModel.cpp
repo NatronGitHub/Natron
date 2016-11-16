@@ -711,7 +711,7 @@ AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const NodeAnimPtr
 void
 AnimationModuleSelectionModel::removeAnyReferenceFromSelection(const TableItemAnimPtr& removed)
 {
-    for (std::list<TableItemAnimPtr>::const_iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
+    for (std::list<TableItemAnimPtr>::iterator it = _imp->selectedTableItems.begin(); it != _imp->selectedTableItems.end(); ++it) {
  
         if (*it == removed) {
             _imp->selectedTableItems.erase(it);
