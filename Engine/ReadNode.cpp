@@ -533,8 +533,9 @@ ReadNodePrivate::checkDecoderCreated(double time,
                                      ViewIdx view)
 {
     KnobFilePtr fileKnob = inputFileKnob.lock();
-
-    assert(fileKnob);
+    if (!fileKnob) {
+        return false;
+    }
     std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
