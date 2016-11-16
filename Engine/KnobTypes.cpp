@@ -1914,7 +1914,7 @@ KnobParametric::getValue(int dimension,
     }
     try {
         *returnValue = getParametricCurve(dimension)->getValueAt(parametricPosition);
-    }catch (...) {
+    } catch (...) {
         return eStatusFailed;
     }
 
