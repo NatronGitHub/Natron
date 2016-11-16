@@ -4,6 +4,14 @@
 
 # History
 
+## Version 2.1.9
+
+- Fix a bug where removing all control points from ColorLookup would crash the application
+
+### Plugins
+
+- ColorWheel: antialiased rendering
+
 ## Version 2.1.8
 
 - Fix a bug where several images with file names that contain two numbers would be be considered as a sequence even if both numbers differed.
