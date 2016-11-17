@@ -69,7 +69,10 @@ CLANG_DIAG_ON(deprecated)
 #define kInputChannelKnobName "inputChannel"
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
+
 #define kHostMixingKnobName "hostMix"
+#define kHostMixingKnobLabel "Mix"
+#define kHostMixingKnobHint "Mix between the source image at 0 and the full effect at 1"
 
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"

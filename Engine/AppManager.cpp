@@ -1644,6 +1644,7 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     registerPlugin(DiskCacheNode::createPlugin());
     registerPlugin(RotoPaint::createPlugin());
     registerPlugin(RotoNode::createPlugin());
+    registerPlugin(LayeredCompNode::createPlugin());
     registerPlugin(RotoShapeRenderNode::createPlugin());
     registerPlugin(PrecompNode::createPlugin());
     registerPlugin(TrackerNode::createPlugin());

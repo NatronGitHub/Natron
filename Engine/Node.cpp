@@ -3704,16 +3704,20 @@ Node::createPythonPage()
 KnobDoublePtr
 Node::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
 {
-    KnobDoublePtr mixKnob = AppManager::checkIfKnobExistsWithNameOrCreate<KnobDouble>(_imp->effect, kHostMixingKnobName, tr("Mix"));
-    mixKnob->setDeclaredByPlugin(false);
-    mixKnob->setName(kHostMixingKnobName);
-    mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
-    mixKnob->setRange(0., 1.);
-    mixKnob->setDefaultValue(1.);
-    if (mainPage) {
-        mainPage->addKnob(mixKnob);
+    KnobDoublePtr mixKnob = _imp->mixWithSource.lock();
+    if (!mixKnob) {
+        mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect, tr(kHostMixingKnobLabel));
+        mixKnob->setName(kHostMixingKnobName);
+        mixKnob->setDeclaredByPlugin(false);
+        mixKnob->setHintToolTip( tr(kHostMixingKnobHint) );
+        mixKnob->setRange(0., 1.);
+        mixKnob->setDefaultValue(1.);
+        if (mainPage) {
+            mainPage->addKnob(mixKnob);
+        }
+        _imp->mixWithSource = mixKnob;
     }
-    _imp->mixWithSource = mixKnob;
+
     return mixKnob;
 }
 

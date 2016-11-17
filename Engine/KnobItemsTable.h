@@ -195,6 +195,16 @@ public:
     void setColumn(int col, const std::string& columnName, DimSpec dimension);
 
     /**
+     * @brief Convenience function: same as setColumn(-1, columnName, dimension)
+     **/
+    void addColumn(const std::string& columnName, DimSpec dimension);
+
+    /**
+     * @brief Returns the number of columns for this item
+     **/
+    int getColumnsCount() const;
+
+    /**
      * @brief Return a knob that was previously set by setColumn at the given column col.
      * @param dimensionIndex[out] Set the dimension of the knob the given column should represent.
      **/
@@ -498,7 +508,7 @@ public:
 
 public:
     
-    KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount);
+    KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type);
 
 
     virtual ~KnobItemsTable();
@@ -553,11 +563,6 @@ public:
     bool getRowsHaveUniformHeight() const;
 
     /**
-     * @brief Returns the number of columns
-     **/
-    int getColumnsCount() const;
-
-    /**
      * @brief Set the column header text.
      **/
     void setColumnText(int col, const std::string& text);
@@ -568,6 +573,11 @@ public:
      **/
     void setColumnIcon(int col, const std::string& iconFilePath);
     std::string getColumnIcon(int col) const;
+
+    /**
+     * @brief Returns the number of columns
+     **/
+    int getColumnsCount() const;
 
     /**
      * @brief Set the selection mode. By default selection is eTableSelectionModeExtendedSelection

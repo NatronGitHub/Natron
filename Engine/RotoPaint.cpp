@@ -75,6 +75,26 @@
 #define kFilterNotch "Notch"
 #define kFilterNotchHint "Flat smoothing (which tends to hide moire' patterns) (+)"
 
+//KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "generalPage", tr("General"));
+
+#define kRotoPaintGeneralPageParam "generalPage"
+#define kRotoPaintGeneralPageParamLabel "General"
+
+#define kRotoPaintShapePageParam "shapePage"
+#define kRotoPaintShapePageParamLabel "Shape"
+
+#define kRotoPaintStrokePageParam "strokePage"
+#define kRotoPaintStrokePageParamLabel "Stroke"
+
+#define kRotoPaintClonePageParam "clonePage"
+#define kRotoPaintClonePageParamLabel "Clone"
+
+#define kRotoPaintTransformPageParam "transformPage"
+#define kRotoPaintTransformPageParamLabel "Transform"
+
+#define kRotoPaintMotionBlurPageParam "motionBlurPage"
+#define kRotoPaintMotionBlurPageParamLabel "Motion-Blur"
+
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
 #define ROTO_DEFAULT_FEATHERFALLOFF 1.
@@ -161,12 +181,28 @@ RotoNode::createPlugin()
     return ret;
 }
 
+PluginPtr
+LayeredCompNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_MERGE);
+    PluginPtr ret = Plugin::create((void*)LayeredCompNode::create, PLUGINID_NATRON_LAYEREDCOMP, "LayeredComp", 1, 0, grouping);
 
+    QString desc = tr("A node that emulates a layered composition.\n"
+                      "Each item in the table is a layer that is blended with previous layers.\n"
+                      "For each item you may select the node name that should be used as source "
+                      "and optionnally the node name that should be used as a mask. These nodes "
+                      "must be connected to the Source inputs and Mask inputs of the LayeredComp node itself.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafe);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, std::string("Images/") + std::string(PLUGIN_GROUP_MERGE_ICON_PATH));
+    return ret;
+}
 
 RotoPaint::RotoPaint(const NodePtr& node,
-                     bool isPaintByDefault)
+                     RotoPaintTypeEnum type)
     : NodeGroup(node)
-    , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
+    , _imp( new RotoPaintPrivate(this, type) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -181,10 +217,10 @@ RotoPaint::isSubGraphUserVisible() const
     return false;
 }
 
-bool
-RotoPaint::isDefaultBehaviourPaintContext() const
+RotoPaint::RotoPaintTypeEnum
+RotoPaint::getRotoPaintNodeType() const
 {
-    return _imp->isPaintByDefault;
+    return _imp->nodeType;
 }
 
 
@@ -253,31 +289,33 @@ RotoPaint::initGeneralPageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "generalPage", tr("General"));
+    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintGeneralPageParam, tr(kRotoPaintGeneralPageParam));
 
-    bool isPaintNode = isDefaultBehaviourPaintContext();
-    {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoOpacityParamLabel), 1);
-        param->setHintToolTip( tr(kRotoOpacityHint) );
-        param->setName(kRotoOpacityParam);
-        param->setRange(0., 1.);
-        param->setDisplayRange(0., 1.);
-        param->setDefaultValue(ROTO_DEFAULT_OPACITY, DimSpec(0));
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        generalPage->addKnob(param);
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        {
+            KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoOpacityParamLabel), 1);
+            param->setHintToolTip( tr(kRotoOpacityHint) );
+            param->setName(kRotoOpacityParam);
+            param->setRange(0., 1.);
+            param->setDisplayRange(0., 1.);
+            param->setDefaultValue(ROTO_DEFAULT_OPACITY, DimSpec(0));
+            _imp->knobsTable->addPerItemKnobMaster(param);
+            generalPage->addKnob(param);
+        }
+
+        {
+            KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 3);
+            param->setHintToolTip( tr(kRotoColorHint) );
+            param->setName(kRotoColorParam);
+            std::vector<double> def(3);
+            def[0] = def[1] = def[2] = 1.;
+            param->setDefaultValues(def, DimIdx(0));
+            _imp->knobsTable->addPerItemKnobMaster(param);
+            generalPage->addKnob(param);
+        }
     }
 
-    {
-        KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 3);
-        param->setHintToolTip( tr(kRotoColorHint) );
-        param->setName(kRotoColorParam);
-        std::vector<double> def(3);
-        def[0] = def[1] = def[2] = 1.;
-        param->setDefaultValues(def, DimIdx(0));
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        generalPage->addKnob(param);
-    }
-
+    RotoPaintItemLifeTimeTypeEnum defaultLifeTime = _imp->nodeType == eRotoPaintTypeRotoPaint ? eRotoPaintItemLifeTimeTypeSingle : eRotoPaintItemLifeTimeTypeAll;
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemLifeTimeParamLabel), 1);
         param->setHintToolTip( tr(kRotoDrawableItemLifeTimeParamHint) );
@@ -286,17 +324,25 @@ RotoPaint::initGeneralPageKnobs()
         param->setAnimationEnabled(false);
         {
             std::vector<std::string> choices, helps;
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeAll);
+            choices.push_back(kRotoDrawableItemLifeTimeAll);
+            helps.push_back( tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() );
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeSingle);
             choices.push_back(kRotoDrawableItemLifeTimeSingle);
             helps.push_back( tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString() );
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeFromStart);
             choices.push_back(kRotoDrawableItemLifeTimeFromStart);
             helps.push_back( tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString() );
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeToEnd);
             choices.push_back(kRotoDrawableItemLifeTimeToEnd);
             helps.push_back( tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString() );
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeCustom);
             choices.push_back(kRotoDrawableItemLifeTimeCustom);
             helps.push_back( tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString() );
             param->populateChoices(choices, helps);
         }
-        param->setDefaultValue(isPaintNode ? 0 : 3, DimSpec(0));
+        // Default to single frame lifetime, otherwise default to
+        param->setDefaultValue(defaultLifeTime, DimSpec(0));
         _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
         _imp->lifeTimeKnob = param;
@@ -306,7 +352,7 @@ RotoPaint::initGeneralPageKnobs()
         KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1);
         param->setHintToolTip( tr(kRotoDrawableItemLifeTimeFrameParamHint) );
         param->setName(kRotoDrawableItemLifeTimeFrameParam);
-        param->setSecret(!isPaintNode);
+        param->setSecret(defaultLifeTime != eRotoPaintItemLifeTimeTypeFromStart && defaultLifeTime != eRotoPaintItemLifeTimeTypeToEnd);
         param->setAddNewLine(false);
         param->setAnimationEnabled(false);
         _imp->knobsTable->addPerItemKnobMaster(param);
@@ -315,15 +361,15 @@ RotoPaint::initGeneralPageKnobs()
     }
 
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoActivatedParamLabel), 1);
-        param->setHintToolTip( tr(kRotoActivatedHint) );
-        param->setName(kRotoActivatedParam);
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoLifeTimeCustomRangeParamLabel), 1);
+        param->setHintToolTip( tr(kRotoLifeTimeCustomRangeParamHint) );
+        param->setName(kRotoLifeTimeCustomRangeParam);
         param->setAddNewLine(true);
-        param->setSecret(isPaintNode);
+        param->setSecret(defaultLifeTime != eRotoPaintItemLifeTimeTypeCustom);
         param->setDefaultValue(true);
         _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
-        _imp->activatedKnob = param;
+        _imp->customRangeKnob = param;
     }
 
     {
@@ -342,7 +388,7 @@ RotoPaint::initShapePageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr shapePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "shapePage", tr("Shape"));
+    KnobPagePtr shapePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintShapePageParam, tr(kRotoPaintShapePageParamLabel));
 
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoFeatherParamLabel), 1);
@@ -398,7 +444,7 @@ RotoPaint::initStrokePageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr strokePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "strokePage", tr("Stroke"));
+    KnobPagePtr strokePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintStrokePageParam, tr(kRotoPaintStrokePageParamLabel));
 
 
     {
@@ -518,7 +564,7 @@ RotoPaint::initTransformPageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr transformPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "transformPage", tr("Transform"));
+    KnobPagePtr transformPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintTransformPageParam, tr(kRotoPaintTransformPageParamLabel));
 
     KnobDoublePtr translateKnob, scaleKnob, rotateKnob, skewXKnob, skewYKnob, centerKnob;
     KnobBoolPtr scaleUniformKnob;
@@ -677,28 +723,57 @@ RotoPaint::initTransformPageKnobs()
 } // initTransformPageKnobs
 
 void
+RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
+{
+    EffectInstancePtr effect = shared_from_this();
+
+    {
+        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(effect, tr("Per-Layer parameters"), 3);
+        param->setName("perLayerSeparator");
+        page->addKnob(param);
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
+        param->setName(kRotoDrawableItemMergeAInputParam);
+        param->setHintToolTip( tr(kRotoDrawableItemMergeAInputParamHint_CompNode) );
+        param->setDefaultValue(1);
+        param->setAddNewLine(false);
+        page->addKnob(param);
+        _imp->mergeInputAChoiceKnob = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
+        param->setName(kRotoDrawableItemMergeMaskParam);
+        param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
+        param->setDefaultValue(1);
+        page->addKnob(param);
+        _imp->mergeMaskChoiceKnob = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoBrushTimeOffsetParamLabel), 1);
+        param->setName(kRotoBrushTimeOffsetParam);
+        param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint_Comp) );
+        param->setDisplayRange(-100, 100);
+        page->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+    }
+
+} // initCompNodeKnobs
+
+void
 RotoPaint::initClonePageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr clonePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "clonePage", tr("Clone"));
+    KnobPagePtr clonePage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintClonePageParam, tr(kRotoPaintClonePageParamLabel));
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoBrushSourceColorLabel), 1);
-        param->setName(kRotoBrushSourceColor);
-        param->setHintToolTip( tr(kRotoBrushSourceColorHint) );
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
+        param->setName(kRotoDrawableItemMergeAInputParam);
+        param->setHintToolTip( tr(kRotoDrawableItemMergeAInputParamHint_RotoPaint) );
         param->setDefaultValue(1);
-        {
-            std::vector<std::string> choices;
-            choices.push_back("foreground");
-            choices.push_back("background");
-            for (int i = 1; i < 10; ++i) {
-                std::stringstream ss;
-                ss << "background " << i + 1;
-                choices.push_back( ss.str() );
-            }
-            param->populateChoices(choices);
-        }
         clonePage->addKnob(param);
+        _imp->mergeInputAChoiceKnob = param;
     }
 
     KnobDoublePtr cloneTranslateKnob, cloneRotateKnob, cloneScaleKnob, cloneSkewXKnob, cloneSkewYKnob, cloneCenterKnob;
@@ -881,7 +956,7 @@ RotoPaint::initClonePageKnobs()
     {
         KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoBrushTimeOffsetParamLabel), 1);
         param->setName(kRotoBrushTimeOffsetParam);
-        param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint) );
+        param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint_Clone) );
         param->setDisplayRange(-100, 100);
         param->setAddNewLine(false);
         clonePage->addKnob(param);
@@ -909,7 +984,7 @@ RotoPaint::initMotionBlurPageKnobs()
 {
     EffectInstancePtr effect = shared_from_this();
 
-    KnobPagePtr mbPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, "motionBlurPage", tr("Motion Blur"));
+    KnobPagePtr mbPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintMotionBlurPageParam, tr(kRotoPaintMotionBlurPageParamLabel));
 
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoMotionBlurModeParamLabel), 1);
@@ -1083,133 +1158,79 @@ RotoPaint::setupInitialSubGraphState()
         assert(outputNode);
     }
     NodePtr premultNode;
-    {
-        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
-        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        // Set premult node to be identity by default
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
-        args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
-        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
-
-        premultNode = getApp()->createNode(args);
-        _imp->premultNode = premultNode;
-
-        KnobBoolPtr disablePremultKnob = premultNode->getDisabledKnob();
-        try {
-            disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not thisGroup.premultiply.get()", false, true);
-        } catch (...) {
-            assert(false);
-        }
-
-    }
-
-    // Make a no-op that fixes the output premultiplication state
     NodePtr noopNode;
-    {
-        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_NOOP, thisShared));
-        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        // Set premult node to be identity by default
-        args->addParamDefaultValue<bool>("setPremult", true);
-        noopNode = getApp()->createNode(args);
-        _imp->premultFixerNode = noopNode;
+    if (_imp->nodeType == eRotoPaintTypeRoto || _imp->nodeType == eRotoPaintTypeRotoPaint) {
+        {
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            // Set premult node to be identity by default
+            args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
+            args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
+            args->addParamDefaultValue<bool>(kNatronOfxParamProcessB, false);
+            args->addParamDefaultValue<bool>(kNatronOfxParamProcessA, false);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "AlphaPremult");
 
-        KnobIPtr premultChoiceKnob = noopNode->getKnobByName("outputPremult");
-        try {
-            const char* premultChoiceExpr =
-            "premultChecked = thisGroup.premultiply.get()\n"
-            "rChecked = thisGroup.doRed.get()\n"
-            "gChecked = thisGroup.doGreen.get()\n"
-            "bChecked = thisGroup.doBlue.get()\n"
-            "aChecked = thisGroup.doAlpha.get()\n"
-            "hasColor = rChecked or gChecked or bChecked\n"
-            "ret = 0\n"
-            "if premultChecked or hasColor or not aChecked:\n"
-            "    ret = 1\n" // premult if there's one of RGB checked or none
-            "else:\n"
-            "    ret = 2\n"
-            ;
-            premultChoiceKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), premultChoiceExpr, true, true);
-        } catch (const std::exception& e) {
-            std::cerr << e.what() << std::endl;
-            assert(false);
+            premultNode = getApp()->createNode(args);
+            _imp->premultNode = premultNode;
+
+            if (_imp->premultKnob.lock()) {
+                KnobBoolPtr disablePremultKnob = premultNode->getDisabledKnob();
+                try {
+                    disablePremultKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), "not thisGroup.premultiply.get()", false, true);
+                } catch (...) {
+                    assert(false);
+                }
+            }
+
         }
 
+        // Make a no-op that fixes the output premultiplication state
+        {
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_NOOP, thisShared));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            // Set premult node to be identity by default
+            args->addParamDefaultValue<bool>("setPremult", true);
+            noopNode = getApp()->createNode(args);
+            _imp->premultFixerNode = noopNode;
+
+            KnobIPtr premultChoiceKnob = noopNode->getKnobByName("outputPremult");
+            try {
+                const char* premultChoiceExpr =
+                "premultChecked = thisGroup.premultiply.get()\n"
+                "rChecked = thisGroup.doRed.get()\n"
+                "gChecked = thisGroup.doGreen.get()\n"
+                "bChecked = thisGroup.doBlue.get()\n"
+                "aChecked = thisGroup.doAlpha.get()\n"
+                "hasColor = rChecked or gChecked or bChecked\n"
+                "ret = 0\n"
+                "if premultChecked or hasColor or not aChecked:\n"
+                "    ret = 1\n" // premult if there's one of RGB checked or none
+                "else:\n"
+                "    ret = 2\n"
+                ;
+                premultChoiceKnob->setExpression(DimSpec::all(), ViewSetSpec::all(), premultChoiceExpr, true, true);
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                assert(false);
+            }
+            
+        }
     }
-    noopNode->connectInput(premultNode, 0);
-    premultNode->connectInput(noopNode, 0);
+    if (noopNode && premultNode) {
+        noopNode->connectInput(premultNode, 0);
+        premultNode->connectInput(noopNode, 0);
+    }
 
     // Initialize default connections
     outputNode->connectInput(_imp->inputNodes[0].lock(), 0);
 } // setupInitialSubGraphState
 
 void
-RotoPaint::initializeKnobs()
+RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
 {
-    RotoPaintPtr thisShared = toRotoPaint(shared_from_this());
-    int colsCount = 6;
-    _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree, colsCount));
-
-    QObject::connect( _imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)) );
-
-    
-    //This page is created in the RotoContext, before initializeKnobs() is called.
-    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, "generalPage", tr("General"));
-
-    assert(generalPage);
-
-
-    initGeneralPageKnobs();
-    initShapePageKnobs();
-    initStrokePageKnobs();
-    initTransformPageKnobs();
-    initClonePageKnobs();
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-    initMotionBlurPageKnobs();
-#endif
-
-
-    KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(thisShared, tr("Output"), 1, false);
-    sep->setName("outputSeparator");
-    generalPage->addKnob(sep);
-
-
-    std::string channelNames[4] = {"doRed", "doGreen", "doBlue", "doAlpha"};
-    std::string channelLabels[4] = {"R", "G", "B", "A"};
-    bool defaultValues[4];
-    bool channelSelectorSupported = isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
-    Q_UNUSED(channelSelectorSupported);
-
-    for (int i = 0; i < 4; ++i) {
-        KnobBoolPtr enabled =  AppManager::createKnob<KnobBool>(thisShared, channelLabels[i], 1, false);
-        enabled->setName(channelNames[i]);
-        enabled->setAnimationEnabled(false);
-        enabled->setAddNewLine(i == 3);
-        enabled->setDefaultValue(defaultValues[i]);
-        enabled->setHintToolTip( tr("Enable drawing onto this channel") );
-        generalPage->addKnob(enabled);
-        _imp->enabledKnobs[i] = enabled;
-    }
-
-
-    KnobBoolPtr premultKnob = AppManager::createKnob<KnobBool>(thisShared, tr("Premultiply"), 1, false);
-    premultKnob->setName("premultiply");
-    premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
-                                    "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
-                                    "This should only be used if all the inputs are Opaque or UnPremultiplied, and only the Alpha channel "
-                                    "is selected to be drawn by this node.") );
-    premultKnob->setDefaultValue(false);
-    premultKnob->setAnimationEnabled(false);
-    premultKnob->setIsMetadataSlave(true);
-    _imp->premultKnob = premultKnob;
-    generalPage->addKnob(premultKnob);
-
-
-
-    /// Initializing the viewer interface
+    RotoPaintPtr thisShared = boost::dynamic_pointer_cast<RotoPaint>(shared_from_this());
     KnobButtonPtr autoKeyingEnabled = AppManager::createKnob<KnobButton>( thisShared, tr(kRotoUIParamAutoKeyingEnabledLabel) );
     autoKeyingEnabled->setName(kRotoUIParamAutoKeyingEnabled);
     autoKeyingEnabled->setHintToolTip( tr(kRotoUIParamAutoKeyingEnabledHint) );
@@ -1607,7 +1628,7 @@ RotoPaint::initializeKnobs()
     _imp->ui->paintBrushToolGroup = paintToolButton;
 
     KnobGroupPtr cloneToolButton, effectToolButton, mergeToolButton;
-    if (_imp->isPaintByDefault) {
+    if (_imp->nodeType == eRotoPaintTypeRotoPaint) {
         cloneToolButton = AppManager::createKnob<KnobGroup>( thisShared, tr(kRotoUIParamCloneBrushToolButtonLabel) );
         cloneToolButton->setName(kRotoUIParamCloneBrushToolButton);
         cloneToolButton->setAsToolButton(true);
@@ -1851,7 +1872,7 @@ RotoPaint::initializeKnobs()
         paintToolButton->addKnob(tool);
         _imp->ui->eraserAction = tool;
     }
-    if (_imp->isPaintByDefault) {
+    if (_imp->nodeType == eRotoPaintTypeRotoPaint) {
         {
             KnobButtonPtr tool = AppManager::createKnob<KnobButton>( thisShared, tr(kRotoUIParamCloneToolButtonActionLabel) );
             tool->setName(kRotoUIParamCloneToolButtonAction);
@@ -2053,7 +2074,7 @@ RotoPaint::initializeKnobs()
 
     KnobButtonPtr defaultAction;
     KnobGroupPtr defaultRole;
-    if (_imp->isPaintByDefault) {
+    if (_imp->nodeType == eRotoPaintTypeRotoPaint) {
         defaultAction = _imp->ui->brushAction.lock();
         defaultRole = _imp->ui->paintBrushToolGroup.lock();
     } else {
@@ -2063,6 +2084,105 @@ RotoPaint::initializeKnobs()
     _imp->ui->setCurrentTool(defaultAction);
     _imp->ui->onRoleChangedInternal(defaultRole);
     _imp->ui->onToolChangedInternal(defaultAction);
+} // initViewerUIKnobs
+
+void
+RotoPaint::initializeKnobs()
+{
+    RotoPaintPtr thisShared = toRotoPaint(shared_from_this());
+
+    _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree));
+    _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
+
+    QObject::connect( _imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)), this, SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)) );
+
+    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, kRotoPaintGeneralPageParam, tr(kRotoPaintGeneralPageParamLabel));
+    assert(generalPage);
+    setItemsTable(_imp->knobsTable, kRotoPaintGeneralPageParam);
+
+    initGeneralPageKnobs();
+    if (_imp->nodeType == eRotoPaintTypeComp) {
+        initCompNodeKnobs(generalPage);
+    } else {
+        initShapePageKnobs();
+        initStrokePageKnobs();
+        initTransformPageKnobs();
+        initClonePageKnobs();
+#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+        initMotionBlurPageKnobs();
+#endif
+    }
+    
+    // The mix knob is per-item
+    {
+        KnobDoublePtr mixKnob = getNode()->getOrCreateHostMixKnob(generalPage);
+        _imp->knobsTable->addPerItemKnobMaster(mixKnob);
+    }
+
+
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(thisShared, tr("Output"), 1, false);
+        sep->setName("outputSeparator");
+        generalPage->addKnob(sep);
+    }
+
+
+    std::string channelNames[4] = {"doRed", "doGreen", "doBlue", "doAlpha"};
+    std::string channelLabels[4] = {"R", "G", "B", "A"};
+    bool defaultValues[4];
+    bool channelSelectorSupported = isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
+    Q_UNUSED(channelSelectorSupported);
+
+    for (int i = 0; i < 4; ++i) {
+        KnobBoolPtr enabled =  AppManager::createKnob<KnobBool>(thisShared, channelLabels[i], 1, false);
+        enabled->setName(channelNames[i]);
+        enabled->setAnimationEnabled(false);
+        enabled->setAddNewLine(i == 3);
+        enabled->setDefaultValue(defaultValues[i]);
+        enabled->setHintToolTip( tr("Enable drawing onto this channel") );
+        generalPage->addKnob(enabled);
+        _imp->enabledKnobs[i] = enabled;
+    }
+
+
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        KnobBoolPtr premultKnob = AppManager::createKnob<KnobBool>(thisShared, tr("Premultiply"), 1, false);
+        premultKnob->setName("premultiply");
+        premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
+                                        "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
+                                        "This should only be used if all the inputs are Opaque or UnPremultiplied, and only the Alpha channel "
+                                        "is selected to be drawn by this node.") );
+        premultKnob->setDefaultValue(false);
+        premultKnob->setAnimationEnabled(false);
+        premultKnob->setIsMetadataSlave(true);
+        _imp->premultKnob = premultKnob;
+        generalPage->addKnob(premultKnob);
+    }
+
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        initViewerUIKnobs(generalPage);
+    }
+
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
+        _imp->knobsTable->setColumnIcon(1, "visible.png");
+        _imp->knobsTable->setColumnIcon(2, "locked.png");
+        _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
+        _imp->knobsTable->setColumnIcon(4, "colorwheel_overlay.png");
+        _imp->knobsTable->setColumnIcon(5, "colorwheel.png");
+    } else {
+        _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
+        _imp->knobsTable->setColumnIcon(1, "visible.png");
+        _imp->knobsTable->setColumnIcon(2, "roto_merge.png");
+        _imp->knobsTable->setColumnText(3, tr(kHostMixingKnobLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(4, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(5, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(6, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(7, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
+    }
+
+    _imp->refreshSourceKnobs();
+
 } // RotoPaint::initializeKnobs
 
 
@@ -2094,6 +2214,8 @@ RotoPaint::onKnobsLoaded()
     _imp->ui->setCurrentTool(defaultAction);
     _imp->ui->onRoleChangedInternal(defaultRole);
     _imp->ui->onToolChangedInternal(defaultAction);
+
+    _imp->refreshSourceKnobs();
 }
 
 bool
@@ -2236,7 +2358,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->ui->lockSelectedCurves();
     } else if (k == _imp->lifeTimeKnob.lock()) {
         int lifetime_i = _imp->lifeTimeKnob.lock()->getValue();
-        _imp->activatedKnob.lock()->setSecret(lifetime_i != 3);
+        _imp->customRangeKnob.lock()->setSecret(lifetime_i != 3);
         KnobIntPtr frame = _imp->lifeTimeFrameKnob.lock();
         frame->setSecret(lifetime_i == 3);
         if (lifetime_i != 3) {
@@ -2320,6 +2442,7 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 void
 RotoPaint::onInputChanged(int inputNb)
 {
+    _imp->refreshSourceKnobs();
     refreshRotoPaintTree();
     NodeGroup::onInputChanged(inputNb);
 }
@@ -2415,6 +2538,9 @@ RotoPaintPrivate::resetTransformsCenter(bool doClone,
                 continue;
             }
             RectD thisShapeBox = drawable->getBoundingBox(time, view);
+            if (thisShapeBox.isNull()) {
+                continue;
+            }
             if (!bboxSet) {
                 bbox = thisShapeBox;
             } else {
@@ -2788,15 +2914,17 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 
 static void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
 {
-    if (treeOutputNode->getInput(0) != noOpNode) {
+    NodePtr treeOutputNodeInput = noOpNode ? noOpNode : mergeNode;
+    if (treeOutputNode->getInput(0) != treeOutputNodeInput) {
         treeOutputNode->disconnectInput(0);
-        treeOutputNode->connectInput(noOpNode, 0);
+        treeOutputNode->connectInput(treeOutputNodeInput, 0);
     }
-    if (noOpNode->getInput(0) != premultNode) {
+
+    if (noOpNode && premultNode && noOpNode->getInput(0) != premultNode) {
         noOpNode->disconnectInput(0);
         noOpNode->connectInput(premultNode, 0);
     }
-    if (premultNode->getInput(0) != mergeNode) {
+    if (premultNode && premultNode->getInput(0) != mergeNode) {
         premultNode->disconnectInput(0);
         premultNode->connectInput(mergeNode, 0);
     }
@@ -2881,7 +3009,7 @@ RotoPaint::refreshRotoPaintTree()
     NodePtr premultNode = rotoPaintEffect->getPremultNode();
     NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
     NodePtr treeOutputNode = rotoPaintEffect->getOutputNode();
-    if (!premultNode || !noOpNode || !treeOutputNode) {
+    if (!treeOutputNode) {
         return;
     }
 
@@ -2901,7 +3029,7 @@ RotoPaint::refreshRotoPaintTree()
         }
     }
 
-    {
+    if (premultNode) {
         // Make sure the premult node has its RGB checkbox checked
         premultNode->getEffectInstance()->beginChanges();
         KnobBoolPtr process[3];
@@ -3147,6 +3275,50 @@ RotoPaint::makeSquare(double x,
     
     return curve;
 }
+
+KnobChoicePtr
+RotoPaint::getMergeAInputChoiceKnob() const
+{
+    return _imp->mergeInputAChoiceKnob.lock();
+}
+
+void
+RotoPaintPrivate::refreshSourceKnobs()
+{
+    KnobChoicePtr inputAKnob = mergeInputAChoiceKnob.lock();
+    KnobChoicePtr maskChoicesKnob = mergeMaskChoiceKnob.lock();
+    if (!inputAKnob && !maskChoicesKnob) {
+        return;
+    }
+    std::vector<std::string> inputAChoices, maskChoices;
+    maskChoices.push_back("None");
+    if (nodeType != RotoPaint::eRotoPaintTypeComp) {
+        inputAChoices.push_back("Foreground");
+    } else {
+        inputAChoices.push_back("None");
+    }
+    int maxInputs = publicInterface->getMaxInputCount();
+    for (int i = 0; i < maxInputs; ++i) {
+        EffectInstancePtr input = publicInterface->getInput(i);
+        if (!input) {
+            continue;
+        }
+        const std::string& inputLabel = input->getNode()->getLabel();
+        bool isMask = publicInterface->isInputMask(i);
+        if (!isMask) {
+            inputAChoices.push_back(inputLabel);
+        } else {
+            maskChoices.push_back(inputLabel);
+        }
+    }
+    if (inputAKnob) {
+        inputAKnob->populateChoices(inputAChoices);
+    }
+    if (maskChoicesKnob) {
+        maskChoicesKnob->populateChoices(maskChoices);
+    }
+
+} // refreshSourceKnobs
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

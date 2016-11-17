@@ -45,18 +45,17 @@
 NATRON_NAMESPACE_ENTER;
 
 RotoPaintKnobItemsTable::RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
-                        KnobItemsTableTypeEnum type,
-                        int colsCount)
-: KnobItemsTable(imp->publicInterface->shared_from_this(), type, colsCount)
+                        KnobItemsTableTypeEnum type)
+: KnobItemsTable(imp->publicInterface->shared_from_this(), type)
 , _imp(imp)
 {
 
 }
 
 RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
-                                   bool isPaintByDefault)
+                                   RotoPaint::RotoPaintTypeEnum type)
     : publicInterface(publicInterface)
-    , isPaintByDefault(isPaintByDefault)
+    , nodeType(type)
     , premultKnob()
     , enabledKnobs()
     , doingNeatRender(false)
@@ -1056,7 +1055,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     KnobBoolPtr pressureHardnessKnob = strokeBeingPaint->getPressureHardnessKnob();
     KnobBoolPtr buildUpKnob = strokeBeingPaint->getBuildupKnob();
     KnobChoicePtr timeOffsetModeKnob = strokeBeingPaint->getTimeOffsetModeKnob();
-    KnobChoicePtr sourceTypeKnob = strokeBeingPaint->getBrushSourceTypeKnob();
+    KnobChoicePtr sourceTypeKnob = strokeBeingPaint->getMergeInputAChoiceKnob();
     KnobIntPtr timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
     KnobDoublePtr translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
     KnobDoublePtr effectKnob = strokeBeingPaint->getBrushEffectKnob();
@@ -2216,7 +2215,7 @@ RotoPaint::drawOverlay(double time,
 
 
 
-        if ( _imp->isPaintByDefault &&
+        if ( _imp->nodeType == RotoPaint::eRotoPaintTypeRotoPaint &&
             ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||
              ( _imp->ui->selectedRole == eRotoRolePaintBrush) ||
              ( _imp->ui->selectedRole == eRotoRoleEffectBrush) ||
@@ -2441,7 +2440,7 @@ RotoPaint::onOverlayPenDown(double time,
     double cpSelectionTolerance = kControlPointSelectionTolerance * pixelScale.first;
 
     _imp->ui->lastTabletDownTriggeredEraser = false;
-    if ( _imp->isPaintByDefault && ( (pen == ePenTypeEraser) || (pen == ePenTypePen) || (pen == ePenTypeCursor) ) ) {
+    if ( _imp->nodeType == RotoPaint::eRotoPaintTypeRotoPaint && ( (pen == ePenTypeEraser) || (pen == ePenTypePen) || (pen == ePenTypeCursor) ) ) {
         if ( (pen == ePenTypeEraser) && (_imp->ui->selectedTool != eRotoToolEraserBrush) ) {
             _imp->ui->setCurrentTool( _imp->ui->eraserAction.lock() );
             _imp->ui->lastTabletDownTriggeredEraser = true;
@@ -2852,7 +2851,7 @@ RotoPaint::onOverlayPenMotion(double time,
     bool cursorSet = false;
     double cpTol = kControlPointSelectionTolerance * pixelScale.first;
 
-    if ( _imp->isPaintByDefault &&
+    if ( _imp->nodeType == RotoPaint::eRotoPaintTypeRotoPaint &&
         ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||
          ( _imp->ui->selectedRole == eRotoRoleCloneBrush) ||
          ( _imp->ui->selectedRole == eRotoRolePaintBrush) ||

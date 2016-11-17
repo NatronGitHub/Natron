@@ -220,6 +220,12 @@ Bezier::~Bezier()
 {
 }
 
+RotoStrokeType
+Bezier::getBrushType() const
+{
+    return eRotoStrokeTypeSolid;
+}
+
 bool
 Bezier::isAutoKeyingEnabled() const
 {

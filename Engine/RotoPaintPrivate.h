@@ -499,8 +499,7 @@ public:
     RotoPaintPrivate* _imp;
 
     RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
-                            KnobItemsTableTypeEnum type,
-                            int colsCount);
+                            KnobItemsTableTypeEnum type);
 
     virtual ~RotoPaintKnobItemsTable()
     {
@@ -541,7 +540,7 @@ class RotoPaintInteract;
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface; // can not be a smart ptr
-    bool isPaintByDefault;
+    RotoPaint::RotoPaintTypeEnum nodeType;
     KnobBoolWPtr premultKnob;
     KnobBoolWPtr enabledKnobs[4];
 
@@ -565,7 +564,7 @@ struct RotoPaintPrivate
     // Recursive counter to prevent refreshing of the node tree
     int treeRefreshBlocked;
 
-    KnobBoolWPtr activatedKnob;
+    KnobBoolWPtr customRangeKnob;
     KnobChoiceWPtr lifeTimeKnob;
     KnobIntWPtr lifeTimeFrameKnob;
 
@@ -580,6 +579,8 @@ struct RotoPaintPrivate
     KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
     KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
 
+    KnobChoiceWPtr mergeInputAChoiceKnob;
+    KnobChoiceWPtr mergeMaskChoiceKnob;
     KnobDoubleWPtr cloneTranslateKnob;
     KnobDoubleWPtr cloneRotateKnob;
     KnobDoubleWPtr cloneScaleKnob;
@@ -599,34 +600,8 @@ struct RotoPaintPrivate
     KnobDoubleWPtr extraMatrixKnob;
     KnobDoubleWPtr centerKnob;
 
-    /*KnobDoubleWPtr opacityKnob;
-    KnobDoubleWPtr featherKnob;
-    KnobDoubleWPtr featherFallOffKnob;
-    KnobChoiceWPtr fallOffTypeKnob;
-    KnobBoolWPtr invertedKnob;
-    KnobColorWPtr colorKnob;
-    KnobDoubleWPtr brushSizeKnob;
-    KnobDoubleWPtr brushSpacingKnob;
-    KnobDoubleWPtr brushHardnessKnob;
-    KnobDoubleWPtr brushEffectKnob;
-    KnobSeparatorWPtr pressureLabelKnob;
-    KnobBoolWPtr pressureOpacityKnob;
-    KnobBoolWPtr pressureSizeKnob;
-    KnobBoolWPtr pressureHardnessKnob;
-    KnobBoolWPtr buildUpKnob;
-    KnobDoubleWPtr brushVisiblePortionKnob;
-    
-    KnobChoiceWPtr cloneFilterKnob;
-    KnobBoolWPtr cloneBlackOutsideKnob;
-    KnobBoolWPtr transformInteractiveKnob;
-    
-    KnobChoiceWPtr sourceTypeKnob;
-    KnobIntWPtr timeOffsetKnob;
-    KnobChoiceWPtr timeOffsetModeKnob;
-*/
-
     RotoPaintPrivate(RotoPaint* publicInterface,
-                     bool isPaintByDefault);
+                     RotoPaint::RotoPaintTypeEnum type);
 
     NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
@@ -658,6 +633,8 @@ struct RotoPaintPrivate
                                 const KnobBoolPtr& scaleUniform,
                                 const KnobChoicePtr& skewOrder,
                                 const KnobDoublePtr& extraMatrix);
+
+    void refreshSourceKnobs();
 
     void createBaseLayer();
 

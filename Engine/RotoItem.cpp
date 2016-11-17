@@ -64,13 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 
 
-#define kParamRotoItemEnabled "enabled"
-#define kParamRotoItemEnabledLabel "Enabled"
-#define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered nor visible in the viewer."
-
-#define kParamRotoItemLocked "locked"
-#define kParamRotoItemLockedLabel "Locked"
-#define kParamRotoItemLockedHint "When checked, the parameter is no longer editable in the viewer and its parameters are greyed out."
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */

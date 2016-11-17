@@ -89,6 +89,8 @@ public:
 
     virtual ~Bezier();
 
+    virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
+
     virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
     virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL { return true; }

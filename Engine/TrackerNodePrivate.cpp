@@ -112,8 +112,8 @@ TrackerNodeInteract::~TrackerNodeInteract()
     }
 }
 
-TrackerKnobItemsTable::TrackerKnobItemsTable(TrackerNodePrivate* imp, KnobItemsTableTypeEnum type, int colsCount)
-: KnobItemsTable(imp->publicInterface->shared_from_this(), type, colsCount)
+TrackerKnobItemsTable::TrackerKnobItemsTable(TrackerNodePrivate* imp, KnobItemsTableTypeEnum type)
+: KnobItemsTable(imp->publicInterface->shared_from_this(), type)
 , _imp(imp)
 {
 

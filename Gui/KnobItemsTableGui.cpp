@@ -1577,12 +1577,13 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
             // Ok the column must be kKnobTableItemColumnLabel
             // otherwise we don't know what the user want
             std::string columnID = item->getColumnName(i);
-            assert(columnID == kKnobTableItemColumnLabel);
-            mitem.labelColIndex = i;
-            mitem.item->setToolTip(i, labelToolTipFromScriptName(item) );
-            mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
-            mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
-            setItemIcon(mitem.item, i, item);
+            if (columnID == kKnobTableItemColumnLabel) {
+                mitem.labelColIndex = i;
+                mitem.item->setToolTip(i, labelToolTipFromScriptName(item) );
+                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
+                mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
+                setItemIcon(mitem.item, i, item);
+            }
         }
         
         tableView->resizeColumnToContents(i);

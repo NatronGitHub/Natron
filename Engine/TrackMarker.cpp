@@ -246,15 +246,15 @@ TrackMarker::initializeKnobs()
     enableKnob->setAnimationEnabled(true);
     enableKnob->setDefaultValue(true);
     _imp->enabled = enableKnob;
-    
-    setColumn(0, kTrackerParamEnabled, DimIdx(0));
-    setColumn(1, kKnobTableItemColumnLabel, DimIdx(0));
-    setColumn(2, kTrackerParamMotionModel, DimIdx(0));
-    setColumn(3, kTrackerParamCenter, DimIdx(0));
-    setColumn(4, kTrackerParamCenter, DimIdx(1));
-    setColumn(5, kTrackerParamOffset, DimIdx(0));
-    setColumn(6, kTrackerParamOffset, DimIdx(1));
-    setColumn(7, kTrackerParamError, DimIdx(0));
+
+    addColumn(kKnobTableItemColumnLabel, DimIdx(0));
+    addColumn(kTrackerParamEnabled, DimIdx(0));
+    addColumn(kTrackerParamMotionModel, DimIdx(0));
+    addColumn(kTrackerParamCenter, DimIdx(0));
+    addColumn(kTrackerParamCenter, DimIdx(1));
+    addColumn(kTrackerParamOffset, DimIdx(0));
+    addColumn(kTrackerParamOffset, DimIdx(1));
+    addColumn(kTrackerParamError, DimIdx(0));
 
 } // TrackMarker::initializeKnobs
 

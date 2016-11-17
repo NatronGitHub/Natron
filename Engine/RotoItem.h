@@ -65,6 +65,16 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+
+#define kParamRotoItemEnabled "enabled"
+#define kParamRotoItemEnabledLabel "Enabled"
+#define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered.\n" \
+"This is a global switch that is saved with the project and supersedes the life time parameter."
+
+#define kParamRotoItemLocked "locked"
+#define kParamRotoItemLockedLabel "Locked"
+#define kParamRotoItemLockedHint "When checked, the parameter is no longer editable in the viewer and its parameters are greyed out."
+
 NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;

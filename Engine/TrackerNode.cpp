@@ -1331,10 +1331,10 @@ TrackerNode::initializeKnobs()
 {
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
-    _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable, TRACKER_KNOBITEMSTABLE_N_COLS));
+    _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable));
     QObject::connect(_imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)),
                      _imp->ui.get(), SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
-
+    _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
     _imp->knobsTable->setColumnText(0, tr(kTrackerParamEnabledLabel).toStdString());
     _imp->knobsTable->setColumnText(1, tr("Label").toStdString());
     _imp->knobsTable->setColumnText(2, tr(kTrackerParamMotionModelLabel).toStdString());
@@ -1344,7 +1344,7 @@ TrackerNode::initializeKnobs()
     _imp->knobsTable->setColumnText(6, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
     _imp->knobsTable->setColumnText(7, tr(kTrackerParamErrorLabel).toStdString());
     
-    _imp->knobsTable->setColumnIcon(2, NATRON_IMAGES_PATH "motionTypeAffine.png");
+    _imp->knobsTable->setColumnIcon(2, "motionTypeAffine.png");
     
     _imp->tracker.reset(new TrackerHelper(_imp));
     
@@ -1951,7 +1951,7 @@ TrackerNodePrivate::createMarker()
         track = TrackMarkerPM::create( knobsTable );
     }
 #else
-    track = TrackMarker::create();
+    track = TrackMarker::create(knobsTable);
 #endif
 
     knobsTable->addItem(track, KnobTableItemPtr(), eTableChangeReasonInternal);

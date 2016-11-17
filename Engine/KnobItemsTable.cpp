@@ -70,7 +70,6 @@ struct KnobItemsTablePrivate
     KnobHolderWPtr holder;
     KnobItemsTable::KnobItemsTableTypeEnum type;
     KnobItemsTable::TableSelectionModeEnum selectionMode;
-    int colsCount;
     std::vector<ColumnHeader> headers;
     std::vector<KnobTableItemPtr> topLevelItems;
     std::list<KnobTableItemWPtr> selectedItems;
@@ -98,12 +97,11 @@ struct KnobItemsTablePrivate
 
     std::string pythonPrefix;
 
-    KnobItemsTablePrivate(const KnobHolderPtr& originalHolder, KnobItemsTable::KnobItemsTableTypeEnum type, int colsCount)
+    KnobItemsTablePrivate(const KnobHolderPtr& originalHolder, KnobItemsTable::KnobItemsTableTypeEnum type)
     : holder(originalHolder)
     , type(type)
     , selectionMode(KnobItemsTable::eTableSelectionModeExtendedSelection)
-    , colsCount(colsCount)
-    , headers(colsCount)
+    , headers()
     , topLevelItems()
     , selectedItems()
     , iconsPath()
@@ -203,7 +201,7 @@ struct KnobTableItemPrivate
     KnobTableItemPrivate(const KnobItemsTablePtr& model)
     : parent()
     , children()
-    , columns(model->getColumnsCount())
+    , columns()
     , model(model)
     , scriptName()
     , label()
@@ -219,8 +217,8 @@ struct KnobTableItemPrivate
 
 };
 
-KnobItemsTable::KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type, int colsCount)
-: _imp(new KnobItemsTablePrivate(originalHolder, type, colsCount))
+KnobItemsTable::KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type)
+: _imp(new KnobItemsTablePrivate(originalHolder, type))
 {
 }
 
@@ -304,19 +302,17 @@ KnobItemsTable::getRowsHaveUniformHeight() const
     return _imp->uniformRowsHeight;
 }
 
-int
-KnobItemsTable::getColumnsCount() const
-{
-    return _imp->colsCount;
-}
-
 void
 KnobItemsTable::setColumnText(int col, const std::string& text)
 {
+    ColumnHeader* header = 0;
     if (col < 0 || col >= (int)_imp->headers.size()) {
-        return;
+        _imp->headers.push_back(ColumnHeader());
+        header = &_imp->headers.back();
+    } else {
+        header = &_imp->headers[col];
     }
-    _imp->headers[col].text = text;
+    header->text = text;
 }
 
 std::string
@@ -331,10 +327,14 @@ KnobItemsTable::getColumnText(int col) const
 void
 KnobItemsTable::setColumnIcon(int col, const std::string& iconFilePath)
 {
+    ColumnHeader* header = 0;
     if (col < 0 || col >= (int)_imp->headers.size()) {
-        return;
+        _imp->headers.push_back(ColumnHeader());
+        header = &_imp->headers.back();
+    } else {
+        header = &_imp->headers[col];
     }
-    _imp->headers[col].iconFilePath = iconFilePath;
+    header->iconFilePath = iconFilePath;
 }
 
 std::string
@@ -344,6 +344,12 @@ KnobItemsTable::getColumnIcon(int col) const
         return std::string();
     }
     return _imp->headers[col].iconFilePath;
+}
+
+int
+KnobItemsTable::getColumnsCount() const
+{
+    return (int)_imp->headers.size();
 }
 
 void
@@ -947,11 +953,30 @@ KnobTableItem::getChild(int index) const
     return _imp->children[index];
 }
 
+int
+KnobTableItem::getColumnsCount() const
+{
+    return (int)_imp->columns.size();
+}
+
+void
+KnobTableItem::addColumn(const std::string& columnName, DimSpec dimension)
+{
+    setColumn(-1, columnName, dimension);
+}
+
 void
 KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimension)
 {
     QMutexLocker k(&_imp->lock);
+    ColumnDesc* column = 0;
     if (col < 0 || col >= (int)_imp->columns.size()) {
+        _imp->columns.push_back(ColumnDesc());
+        column = &_imp->columns.back();
+    } else {
+        column = &_imp->columns[col];
+    }
+    if (columnName.empty()) {
         return;
     }
     if (columnName != kKnobTableItemColumnLabel) {
@@ -959,10 +984,10 @@ KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimensi
         assert(knob);
         // Prevent-auto dimension switching for table items knobs.
         knob->setCanAutoFoldDimensions(false);
-        _imp->columns[col].knob = knob;
+        column->knob = knob;
     }
-    _imp->columns[col].columnName = columnName;
-    _imp->columns[col].dimensionIndex = dimension;
+    column->columnName = columnName;
+    column->dimensionIndex = dimension;
 }
 
 KnobIPtr

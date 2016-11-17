@@ -156,7 +156,7 @@ public:
 
     std::string getCompositingOperatorToolTip() const;
 
-    KnobBoolPtr getActivatedKnob() const;
+    KnobBoolPtr getCustomRangeKnob() const;
 
     KnobDoublePtr getOpacityKnob() const;
     KnobBoolPtr getInvertedKnob() const;
@@ -168,7 +168,7 @@ public:
 
     KnobIntPtr getTimeOffsetKnob() const;
     KnobChoicePtr getTimeOffsetModeKnob() const;
-    KnobChoicePtr getBrushSourceTypeKnob() const;
+    KnobChoicePtr getMergeInputAChoiceKnob() const;
 
     KnobDoublePtr getBrushSizeKnob() const;
     KnobDoublePtr getBrushHardnessKnob() const;
@@ -199,6 +199,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE;
 
+    virtual RotoStrokeType getBrushType() const = 0;
 
 Q_SIGNALS:
 
@@ -226,6 +227,31 @@ private:
     virtual void onItemRemovedFromModel() OVERRIDE FINAL;
 
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
+};
+
+
+class CompNodeItem : public RotoDrawableItem
+{
+public:
+
+    CompNodeItem(const KnobItemsTablePtr& model)
+    : RotoDrawableItem(model)
+    {
+
+    }
+
+
+    virtual ~CompNodeItem()
+    {
+
+    }
+
+    virtual RotoStrokeType getBrushType() const OVERRIDE FINAL
+    {
+        return eRotoStrokeTypeComp;
+    }
+
+    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

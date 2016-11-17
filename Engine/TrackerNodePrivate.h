@@ -76,8 +76,6 @@
 
 #define CORRELATION_ERROR_MAX_DISPLAY 0.2
 
-#define TRACKER_KNOBITEMSTABLE_N_COLS 8
-
 #define kTrackerUIParamAddTrack "addTrack"
 #define kTrackerUIParamAddTrackLabel "Add Track"
 #define kTrackerUIParamAddTrackHint "When enabled you can add new tracks " \
@@ -768,7 +766,7 @@ public:
 
     TrackerNodePrivate* _imp;
 
-    TrackerKnobItemsTable(TrackerNodePrivate* imp, KnobItemsTableTypeEnum type, int colsCount);
+    TrackerKnobItemsTable(TrackerNodePrivate* imp, KnobItemsTableTypeEnum type);
 
     virtual ~TrackerKnobItemsTable()
     {

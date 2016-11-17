@@ -78,12 +78,13 @@
 #define kRotoFeatherFallOffTypeSmooth "Smooth"
 #define kRotoFeatherFallOffTypeSmoothHint "Traditional smoothstep ramp"
 
-#define kRotoActivatedParam "activated"
-#define kRotoActivatedParamLabel "Activated"
-#define kRotoActivatedHint \
-"Controls whether the selected shape(s) should be rendered or not." \
-"Note that you can animate this parameter so you can activate/deactive the shape " \
-"throughout the time."
+#define kRotoLifeTimeCustomRangeParam "customRange"
+#define kRotoLifeTimeCustomRangeParamLabel "Custom Range"
+#define kRotoLifeTimeCustomRangeParamHint \
+"This is used to control whether the selected shape(s)/layer(s)/stroke(s) should be rendered or not.\n" \
+"Typically to set a custom range, you would set a keyframe at a given time with this parameter enabled and " \
+"set another keyframe further in time with the checkbox unchecked. This workflows allows to have multiple " \
+"distinct range where the item can be enabled/disabled."
 
 #define kRotoLockedHint \
 "Control whether the layer/curve is editable or locked."
@@ -110,12 +111,23 @@
 "Finally, the mask is composed with the source image, if connected, using the 'over' operator.\n" \
 "See http://cairographics.org/operators/ for a full description of available operators."
 
-#define kRotoBrushSourceColor "sourceType"
-#define kRotoBrushSourceColorLabel "Source"
-#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-"- foreground: the painted result at this point in the hierarchy\n" \
-"- background: the original image unpainted connected to bg\n" \
-"- backgroundN: the original image unpainted connected to bgN\n"
+
+#define kRotoDrawableItemMergeAInputParam "mergeASource"
+#define kRotoDrawableItemMergeAInputParamLabel "Source"
+#define kRotoDrawableItemMergeAInputParamHint_RotoPaint "Determine what image is used to blend on to the previous item in the hierarchy." \
+"- Foreground: used for Clone/Reveal to copy a portion of the image using the hand-drawn mask with a Transform applied.\n" \
+"- Otherwise it indicates the label of a node in the node-graph to use as foreground"
+
+#define kRotoDrawableItemMergeAInputParamHint_CompNode "Determine what node is used to blend on to the previous item in the hierarchy.\n" \
+"- None: the item will be a pass-through.\n" \
+"- Otherwise it indicates the label of a node in the node-graph to use as foreground. The node must be connected to a mask input of the LayeredComp node."
+
+#define kRotoDrawableItemMergeMaskParam "mergeMask"
+#define kRotoDrawableItemMergeMaskParamLabel "Mask"
+#define kRotoDrawableItemMergeMaskParamHint "Determine what node is used as mask for blending on to the previous item in the hierarchy.\n" \
+"- None: the merge operation will not be masked.\n" \
+"- Otherwise it indicates the label of a node in the node-graph to use as a mask. The node must be connected to a mask input of the LayeredComp node."
+
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -158,9 +170,11 @@
 #define kRotoBrushBuildupParamHint "When checked, the paint stroke builds up when painted over itself"
 
 #define kRotoBrushTimeOffsetParam "timeOffset"
-#define kRotoBrushTimeOffsetParamLabel "Clone time offset"
-#define kRotoBrushTimeOffsetParamHint "When the Clone tool is used, this determines depending on the time offset mode the source frame to " \
+#define kRotoBrushTimeOffsetParamLabel "Time Offset"
+#define kRotoBrushTimeOffsetParamHint_Clone "When the Clone tool is used, this determines depending on the time offset mode the source frame to " \
 "clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame."
+
+#define kRotoBrushTimeOffsetParamHint_Comp "The time offset applied to the source before blending it"
 
 #define kRotoBrushTimeOffsetModeParam "timeOffsetMode"
 #define kRotoBrushTimeOffsetModeParamLabel "Mode"
@@ -262,6 +276,15 @@
 #define kRotoDrawableItemLifeTimeCustom "Custom"
 #define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes"
 
+enum RotoPaintItemLifeTimeTypeEnum
+{
+    eRotoPaintItemLifeTimeTypeAll = 0,
+    eRotoPaintItemLifeTimeTypeSingle,
+    eRotoPaintItemLifeTimeTypeFromStart,
+    eRotoPaintItemLifeTimeTypeToEnd,
+    eRotoPaintItemLifeTimeTypeCustom
+};
+
 #define kRotoDrawableItemLifeTimeFrameParam "lifeTimeFrame"
 #define kRotoDrawableItemLifeTimeFrameParamLabel "Frame"
 #define kRotoDrawableItemLifeTimeFrameParamHint "Use this to specify the frame when in mode Single/From start/To end"
@@ -333,23 +356,31 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+public:
+    enum RotoPaintTypeEnum
+    {
+        eRotoPaintTypeRotoPaint,
+        eRotoPaintTypeRoto,
+        eRotoPaintTypeComp
+    };
+
 protected: // derives from EffectInstance, parent of RotoNode
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     RotoPaint(const NodePtr& node,
-              bool isPaintByDefault);
+              RotoPaintTypeEnum type);
 
 public:
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return EffectInstancePtr( new RotoPaint(node, true) );
+        return EffectInstancePtr( new RotoPaint(node, eRotoPaintTypeRotoPaint) );
     }
 
     static PluginPtr createPlugin() WARN_UNUSED_RETURN;
 
     virtual ~RotoPaint();
 
-    bool isDefaultBehaviourPaintContext() const;
+    RotoPaint::RotoPaintTypeEnum getRotoPaintNodeType() const;
 
     virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
 
@@ -431,6 +462,8 @@ public:
 
     RotoLayerPtr getLayerForNewItem();
 
+    KnobChoicePtr getMergeAInputChoiceKnob() const;
+
 
 public Q_SLOTS:
 
@@ -446,6 +479,10 @@ protected:
     void initTransformPageKnobs();
     void initClonePageKnobs();
     void initMotionBlurPageKnobs();
+
+    void initCompNodeKnobs(const KnobPagePtr& page);
+
+    void initViewerUIKnobs(const KnobPagePtr& generalPage);
 
 private:
 
@@ -504,14 +541,11 @@ private:
 class RotoNode
     : public RotoPaint
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     RotoNode(const NodePtr& node)
-        : RotoPaint(node, false) {}
+        : RotoPaint(node, eRotoPaintTypeRoto) {}
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
@@ -525,6 +559,28 @@ private:
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 
+/**
+ * @brief Same as RotoPaint except that items in the table are only CompNodeItem
+ **/
+class LayeredCompNode
+: public RotoPaint
+{
+
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    LayeredCompNode(const NodePtr& node)
+    : RotoPaint(node, eRotoPaintTypeComp) {}
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new LayeredCompNode(node) );
+    }
+
+    static PluginPtr createPlugin();
+
+
+};
+
 inline RotoPaintPtr
 toRotoPaint(const EffectInstancePtr& effect)
 {
@@ -535,6 +591,12 @@ inline RotoNodePtr
 toRotoNode(const EffectInstancePtr& effect)
 {
     return boost::dynamic_pointer_cast<RotoNode>(effect);
+}
+
+inline LayeredCompNodePtr
+toLayeredCompNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<LayeredCompNode>(effect);
 }
 
 NATRON_NAMESPACE_EXIT;

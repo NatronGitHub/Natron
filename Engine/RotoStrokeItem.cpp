@@ -1085,9 +1085,9 @@ RotoStrokeItem::computeBoundingBox(double time, ViewGetSpec view) const
 RectD
 RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
 {
-    bool isActivated = getActivatedKnob()->getValueAtTime(time);
+    bool enabled = isActivated(time, view);
 
-    if (!isActivated) {
+    if (!enabled) {
         return RectD();
     }
 
@@ -1205,6 +1205,7 @@ RotoStrokeItem::initializeKnobs()
         _imp->effectStrength = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushEffectParam);
     }
 
+    // This is global to any stroke
     _imp->pressureSize = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureSizeParam);
     _imp->pressureOpacity = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureOpacityParam);
     _imp->pressureHardness = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureHardnessParam);

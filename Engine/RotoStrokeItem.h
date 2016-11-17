@@ -77,7 +77,7 @@ public:
     virtual ~RotoStrokeItem();
 
 
-    RotoStrokeType getBrushType() const;
+    virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
 
     bool isEmpty() const;
 
