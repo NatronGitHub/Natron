@@ -154,7 +154,6 @@ ExistenceCheckerThread::run()
                 /*
                    We did not receive te acknowledgement, hence quit
                  */
-                appPTR->abortAnyProcessing();
                 Q_EMIT otherProcessUnreachable();
 
                 return;
