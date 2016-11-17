@@ -324,6 +324,20 @@ KnobGuiColor::onInternalKnobPickingEnabled(ViewSetSpec view, bool enabled)
 }
 
 void
+KnobGuiColor::onColorLabelPickingEnabled(bool enabled)
+{
+    KnobColorPtr knob = _knob.lock();
+    KnobGuiPtr knobUI = getKnobGui();
+    if ( knob->getHolder()->getApp() ) {
+        if (enabled) {
+            knobUI->getGui()->registerNewColorPicker( _knob.lock(), getView() );
+        } else {
+            knobUI->getGui()->removeColorPicker( _knob.lock(), getView());
+        }
+    }
+}
+
+void
 KnobGuiColor::setPickingEnabledInternal(bool enabled)
 {
     KnobColorPtr knob = _knob.lock();
