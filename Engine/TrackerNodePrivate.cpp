@@ -25,12 +25,10 @@
 
 #include "TrackerNodePrivate.h"
 
-#ifndef NDEBUG
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <boost/algorithm/clamp.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"

@@ -929,7 +929,7 @@ KnobGui::setEnabledSlot()
     }
     KnobIPtr knob = getKnob();
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setReadOnly( !knob->isEnabled(DimIdx(0)) );
+        _imp->descriptionLabel->setEnabled( knob->isEnabled(DimIdx(0)) );
     }
     if (_imp->tabGroup) {
         _imp->tabGroup->setEnabled( !knob->isEnabled(DimIdx(0)));

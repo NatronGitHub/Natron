@@ -49,7 +49,8 @@ RotoPaintKnobItemsTable::RotoPaintKnobItemsTable(RotoPaintPrivate* imp,
 : KnobItemsTable(imp->publicInterface->shared_from_this(), type)
 , _imp(imp)
 {
-
+    setSupportsDragAndDrop(true);
+    setDropSupportsExternalSources(true);
 }
 
 RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
@@ -1860,13 +1861,18 @@ RotoPaintInteract::removeCurve(const RotoDrawableItemPtr& curve)
     p->knobsTable->removeItem(curve, eTableChangeReasonViewer);
 }
 
-
+bool
+RotoPaint::hasOverlay() const
+{
+    return _imp->nodeType == eRotoPaintTypeRoto || _imp->nodeType == eRotoPaintTypeRotoPaint;
+}
 
 void
 RotoPaint::drawOverlay(double time,
                        const RenderScale & /*renderScale*/,
                        ViewIdx view)
 {
+    
     std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;

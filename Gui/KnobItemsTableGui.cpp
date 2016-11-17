@@ -207,8 +207,13 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
         ret->setSingleDimensionalEnabled(true, DimIdx(dim));
     }
 
-
-    ret->createGUI(tableView);
+    QWidget* container = new QWidget(tableView);
+    QHBoxLayout* containerLayout = new QHBoxLayout(container);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(0);
+    containerLayout->setAlignment(Qt::AlignCenter);
+    ret->createGUI(container);
+    containerLayout->addWidget(ret->getFieldContainer());
 
     foundItem->columnItems[col].guiKnob = ret;
     
@@ -216,7 +221,7 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     {
         ModelItemsVec::iterator foundItem = findItem(item);
         assert((int)foundItem->columnItems.size() == tableModel->columnCount());
-        tableView->setCellWidget(row, col, ret->getFieldContainer());
+        tableView->setCellWidget(row, col, container);
     }
     
     return true;
@@ -381,7 +386,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
 
     if (knobTableType == KnobItemsTable::eKnobItemsTableTypeTree) {
-        _imp->tableView->setItemsExpandable(false);
+        _imp->tableView->setItemsExpandable(true);
         _imp->tableView->setRootIsDecorated(true);
         _imp->tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
         _imp->tableView->setExpandsOnDoubleClick(true);
@@ -451,8 +456,12 @@ static void drawSelectionHighlight(QPainter * painter,
 void
 KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
 {
-    TableView::drawRow(painter, option, index);
-
+    {
+        QStyleOptionViewItem optionCpy = option;
+        // Remove the selected bit so that we draw our custom selection highlight instead of the default one.
+        optionCpy.state &= ~QStyle::State_Selected;
+        TableView::drawRow(painter, optionCpy, index);
+    }
     QColor selectionColor;
     {
         double sR,sG,sB;
@@ -1255,13 +1264,13 @@ KnobItemsTableGui::onTableItemDataChanged(const TableItemPtr& item, int col, int
         return;
     }
 
-    // The column is not a knob... this gotta be kKnobTableItemColumnLabel
     std::string colName = internalItem->getColumnName(col);
-    assert(colName == kKnobTableItemColumnLabel);
-    QString label = item->getText(col);
+    if (colName == kKnobTableItemColumnLabel) {
+        QString label = item->getText(col);
 
-    internalItem->setLabel(label.toStdString(), eTableChangeReasonPanel);
-
+        internalItem->setLabel(label.toStdString(), eTableChangeReasonPanel);
+    }
+    
 }
 
 
@@ -1546,7 +1555,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     mitem.columnItems.resize(nCols);
     mitem.item = TableItem::create(tableModel);
     mitem.internalItem = item;
-    
+
     TableItemPtr parentItem;
     KnobTableItemPtr knobParentItem = item->getParent();
     if (knobParentItem) {
@@ -1583,13 +1592,19 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
                 mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
                 mitem.item->setText(i, QString::fromUtf8( item->getLabel().c_str() ) );
                 setItemIcon(mitem.item, i, item);
+            } else {
+                mitem.item->setFlags(i, Qt::ItemIsEnabled | Qt::ItemIsSelectable);
             }
+
+
         }
         
         tableView->resizeColumnToContents(i);
         mitem.columnItems[i] = d;
 
     }
+
+    tableView->setExpanded(tableModel->getItemIndex(mitem.item), true);
 
     // Create custom widgets for knobs
     createCustomWidgetRecursively(item);

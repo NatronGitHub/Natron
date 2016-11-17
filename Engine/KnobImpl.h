@@ -1624,7 +1624,9 @@ template <typename T>
 void
 Knob<T>::autoFoldDimensions(ViewIdx view)
 {
-
+    if (!isAutoFoldDimensionsEnabled()) {
+        return;
+    }
 
     bool curVisible = getAllDimensionsVisible(view);
 

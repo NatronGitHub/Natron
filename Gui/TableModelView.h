@@ -67,6 +67,18 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
 
 public:
 
+    enum ChildIndicatorVisibilityEnum
+    {
+        // Child indicator always visible
+        eChildIndicatorVisibilityShowAlways,
+
+        // Child indicator never visible
+        eChildIndicatorVisibilityShowNever,
+
+        // Child indicator visible only if the item has children
+        eChildIndicatorVisibilityShowIfChildren
+    };
+
     /**
      * @brief Creates an item
      * @param parent If not NULL, this is a pointer to the parent row, otherwise
@@ -87,6 +99,13 @@ public:
      * The item may not co-exist in multiple models at once.
      **/
     TableModelPtr getModel() const;
+
+
+    /**
+     * @brief Controls whether the child indicator is visible or not.
+     **/
+    void setChildIndicatorVisibility(ChildIndicatorVisibilityEnum visibility);
+    ChildIndicatorVisibilityEnum getChildIndicatorVisibility() const;
 
     /**
      * @brief Returns the children of this item. The ownership of the children is handled by this item.
@@ -126,7 +145,6 @@ public:
      **/
     Qt::ItemFlags getFlags(int col) const;
     void setFlags(int col, Qt::ItemFlags flags);
-
 
     /**
      * @brief Get/Set data for the given role at the given column. If the column index is invalid an exception is thrown
@@ -476,6 +494,13 @@ public:
      * @brief Returns the parent index of the given child
      **/
     virtual QModelIndex parent(const QModelIndex &child) const OVERRIDE FINAL;
+
+    /**
+     * @brief Returns true if parent has any children; otherwise returns false.
+     * Use rowCount() on the parent to find out the number of children.
+     * See also parent() and index().
+     **/
+    virtual bool hasChildren(const QModelIndex & parent = QModelIndex()) const OVERRIDE FINAL;
 
     /**
      * @brief Returns the model index of the item

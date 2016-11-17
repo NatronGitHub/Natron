@@ -109,12 +109,16 @@ struct TableItemPrivate
     // Weak ref to column 0 item of the parent
     TableItemWPtr parent;
 
+    TableItem::ChildIndicatorVisibilityEnum childIndicatorPolicy;
+
+
     TableItemPrivate(const TableModelPtr& model)
     : columns()
     , model()
     , indexInParent(-1)
     , children()
     , parent()
+    , childIndicatorPolicy(TableItem::eChildIndicatorVisibilityShowIfChildren)
     {
         if (model) {
             setModelAndInitColumns(model);
@@ -311,6 +315,18 @@ TableItem::getModel() const
     return _imp->model.lock();
 }
 
+TableItem::ChildIndicatorVisibilityEnum
+TableItem::getChildIndicatorVisibility() const
+{
+    return _imp->childIndicatorPolicy;
+}
+
+void
+TableItem::setChildIndicatorVisibility(ChildIndicatorVisibilityEnum visibility)
+{
+    _imp->childIndicatorPolicy = visibility;
+}
+
 Qt::ItemFlags
 TableItem::getFlags(int col) const
 {
@@ -423,6 +439,7 @@ TableModel::getType() const
 {
     return _imp->type;
 }
+
 
 void
 TableItem::refreshChildrenIndices()
@@ -869,6 +886,32 @@ TableModel::parent(const QModelIndex &child) const
     TableItemPtr parent = itm->getParentItem();
     return getItemIndex(parent);
 
+}
+
+bool
+TableModel::hasChildren(const QModelIndex & parent) const
+{
+
+    if (_imp->type != eTableModelTypeTree) {
+        return false;
+    }
+    if (!parent.isValid()) {
+        return _imp->topLevelItems.size() > 0;
+    }
+    TableItemPtr itm = getItem(parent);
+    if (!itm) {
+        return false;
+    }
+    switch (itm->getChildIndicatorVisibility()) {
+        case TableItem::eChildIndicatorVisibilityShowAlways:
+            return true;
+        case TableItem::eChildIndicatorVisibilityShowIfChildren: {
+
+            return itm->getChildren().size() > 0;
+        }
+        case TableItem::eChildIndicatorVisibilityShowNever:
+            return false;
+    }
 }
 
 QModelIndex

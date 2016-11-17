@@ -720,6 +720,16 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     } else {
         ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
     }
+
+    if (view.isAll()) {
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            autoAdjustFoldExpandDimensions(*it);
+        }
+    } else {
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        autoAdjustFoldExpandDimensions(view_i);
+    }
 }
 
 

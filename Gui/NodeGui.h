@@ -563,6 +563,7 @@ private:
 
     void initializeInputsForInspector();
 
+    void initializeInputsLayeredComp();
 
     /*pointer to the dag*/
     NodeGraph* _graph;

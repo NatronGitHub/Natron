@@ -38,6 +38,13 @@
 #define ROTOPAINT_MAX_INPUTS_COUNT 11
 #define ROTOPAINT_MASK_INPUT_INDEX 10
 
+// Same number of masks than of sources
+#define LAYERED_COMP_MAX_SOURCE_COUNT 10
+
+// + 1 for the BG input
+#define LAYERED_COMP_MAX_INPUTS_COUNT (LAYERED_COMP_MAX_SOURCE_COUNT * 2 + 1)
+
+#define LAYERED_COMP_FIRST_MASK_INPUT_INDEX (LAYERED_COMP_MAX_SOURCE_COUNT + 1)
 
 
 #define kRotoOverlayColor "overlayColor"
@@ -81,7 +88,7 @@
 #define kRotoLifeTimeCustomRangeParam "customRange"
 #define kRotoLifeTimeCustomRangeParamLabel "Custom Range"
 #define kRotoLifeTimeCustomRangeParamHint \
-"This is used to control whether the selected shape(s)/layer(s)/stroke(s) should be rendered or not.\n" \
+"This is used to control whether the selected item(s) should be rendered or not.\n" \
 "Typically to set a custom range, you would set a keyframe at a given time with this parameter enabled and " \
 "set another keyframe further in time with the checkbox unchecked. This workflows allows to have multiple " \
 "distinct range where the item can be enabled/disabled."
@@ -89,12 +96,9 @@
 #define kRotoLockedHint \
 "Control whether the layer/curve is editable or locked."
 
-#define kRotoInvertedParam "inverted"
-#define kRotoInvertedParamLabel "Inverted"
-
-#define kRotoInvertedHint \
-"Controls whether the selected shape(s) should be inverted. When inverted everything " \
-"outside the shape will be set to 1 and everything inside the shape will be set to 0."
+#define kRotoInvertedParam "invertMask"
+#define kRotoInvertedParamLabel "Invert Mask"
+#define kRotoInvertedHint "Controls whether the selected item's mask should be inverted"
 
 #define kRotoOverlayHint "Color of the display overlay for this curve. Doesn't affect output."
 
@@ -116,11 +120,11 @@
 #define kRotoDrawableItemMergeAInputParamLabel "Source"
 #define kRotoDrawableItemMergeAInputParamHint_RotoPaint "Determine what image is used to blend on to the previous item in the hierarchy." \
 "- Foreground: used for Clone/Reveal to copy a portion of the image using the hand-drawn mask with a Transform applied.\n" \
-"- Otherwise it indicates the label of a node in the node-graph to use as foreground"
+"- Otherwise it indicates the label of a node in the node-graph to use as source. The node must be connected to a Bg input of the LayeredComp node."
 
 #define kRotoDrawableItemMergeAInputParamHint_CompNode "Determine what node is used to blend on to the previous item in the hierarchy.\n" \
 "- None: the item will be a pass-through.\n" \
-"- Otherwise it indicates the label of a node in the node-graph to use as foreground. The node must be connected to a mask input of the LayeredComp node."
+"- Otherwise it indicates the label of a node in the node-graph to use as source. The node must be connected to a Source input of the LayeredComp node."
 
 #define kRotoDrawableItemMergeMaskParam "mergeMask"
 #define kRotoDrawableItemMergeMaskParamLabel "Mask"
@@ -259,7 +263,7 @@
 
 #define kRotoDrawableItemLifeTimeParam "lifeTime"
 #define kRotoDrawableItemLifeTimeParamLabel "Life Time"
-#define kRotoDrawableItemLifeTimeParamHint "Controls the life-time of the shape/stroke"
+#define kRotoDrawableItemLifeTimeParamHint "Controls the life-time of the selected item(s)"
 
 #define kRotoDrawableItemLifeTimeAll "All"
 #define kRotoDrawableItemLifeTimeAllHelp "All frames"
@@ -274,7 +278,7 @@
 #define kRotoDrawableItemLifeTimeToEndHelp "From the specified frame to the end of the sequence"
 
 #define kRotoDrawableItemLifeTimeCustom "Custom"
-#define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes"
+#define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes to specify one or multiple life-time ranges"
 
 enum RotoPaintItemLifeTimeTypeEnum
 {
@@ -471,7 +475,11 @@ public Q_SLOTS:
 
     void onBreakMultiStrokeTriggered();
 
+    void onSourceNodeLabelChanged(const QString& label);
+
 protected:
+
+    void initLifeTimeKnobs(const KnobPagePtr& generalPage);
 
     void initGeneralPageKnobs();
     void initShapePageKnobs();
@@ -491,10 +499,7 @@ private:
 
     virtual bool shouldDrawHostOverlay() const OVERRIDE FINAL;
 
-    virtual bool hasOverlay() const OVERRIDE FINAL
-    {
-        return true;
-    }
+    virtual bool hasOverlay() const OVERRIDE FINAL;
 
 
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;

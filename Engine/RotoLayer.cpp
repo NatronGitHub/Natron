@@ -47,7 +47,7 @@ RotoLayer::isItemContainer() const
 std::string
 RotoLayer::getBaseItemName() const
 {
-    return tr(kRotoBezierBaseName).toStdString();
+    return tr(kRotoLayerBaseName).toStdString();
 }
 
 NATRON_NAMESPACE_EXIT;

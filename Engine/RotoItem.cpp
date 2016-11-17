@@ -52,6 +52,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
+#include "Engine/Node.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
 #include "Engine/KnobTypes.h"
@@ -152,13 +154,25 @@ RotoItem::initializeKnobs()
         param->setDefaultValue(true);
         _imp->activatedKnob = param;
     }
-    {
+    RotoPaintPtr effect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+    assert(effect);
+    RotoPaint::RotoPaintTypeEnum type = effect->getRotoPaintNodeType();
+
+    if (type == RotoPaint::eRotoPaintTypeRoto ||
+        type == RotoPaint::eRotoPaintTypeRotoPaint) {
         KnobBoolPtr param = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kParamRotoItemLockedLabel));
         param->setName(kParamRotoItemLocked);
         param->setHintToolTip(tr(kParamRotoItemLockedHint));
         param->setDefaultValue(true);
         param->setSecret(true);
         _imp->lockedKnob = param;
+    }
+
+    addColumn(kKnobTableItemColumnLabel, DimIdx(0));
+    addColumn(kParamRotoItemEnabled, DimIdx(0));
+    if (type == RotoPaint::eRotoPaintTypeRoto ||
+        type == RotoPaint::eRotoPaintTypeRotoPaint) {
+        addColumn(kParamRotoItemLocked, DimIdx(0));
     }
 
 }

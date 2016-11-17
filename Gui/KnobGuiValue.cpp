@@ -596,8 +596,10 @@ void
 KnobGuiValue::setAllDimensionsVisible(bool visible)
 {
     if (!_imp->dimensionSwitchButton) {
-        if (_imp->slider) {
-            _imp->slider->hide();
+        if (_imp->spinBoxes.size() > 1) {
+            if (_imp->slider) {
+                _imp->slider->hide();
+            }
         }
 
         return;
@@ -1049,7 +1051,7 @@ KnobGuiValue::setEnabled()
             _imp->spinBoxes[i].first->setReadOnly_NoFocusRect(!b);
         }
         if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setReadOnly(!b);
+            _imp->spinBoxes[i].second->setEnabled(b);
         }
     }
     if (_imp->slider) {

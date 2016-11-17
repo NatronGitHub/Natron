@@ -154,6 +154,11 @@ public:
      **/
     bool isActivated(double time, ViewGetSpec view) const;
 
+    /**
+     * @brief Get the frame-range(s) through which the item is activated
+     **/
+    std::vector<RangeD> getActivatedRanges(ViewGetSpec view) const;
+
     std::string getCompositingOperatorToolTip() const;
 
     KnobBoolPtr getCustomRangeKnob() const;
@@ -169,6 +174,7 @@ public:
     KnobIntPtr getTimeOffsetKnob() const;
     KnobChoicePtr getTimeOffsetModeKnob() const;
     KnobChoicePtr getMergeInputAChoiceKnob() const;
+    KnobChoicePtr getMergeMaskChoiceKnob() const;
 
     KnobDoublePtr getBrushSizeKnob() const;
     KnobDoublePtr getBrushHardnessKnob() const;

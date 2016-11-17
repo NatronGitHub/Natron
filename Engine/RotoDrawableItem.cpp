@@ -706,16 +706,6 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         return;
     }
 
-
-    // Refresh the merge A input choice from the choices on the RotoPaint node knob
-    {
-        KnobChoicePtr masterKnob = rotoPaintNode->getMergeAInputChoiceKnob();
-        KnobChoicePtr thisKnob = _imp->mergeAInputChoice.lock();
-        if (masterKnob) {
-            thisKnob->populateChoices(masterKnob->getEntries());
-        }
-    }
-
     RotoDrawableItemPtr previous = boost::dynamic_pointer_cast<RotoDrawableItem>(getNextNonContainerItem());
 
     NodePtr rotoPaintInput0 = rotoPaintNode->getInternalInputNode(0);
@@ -738,11 +728,31 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
          */
 
         assert(_imp->timeOffsetNode);
-        int mergeAInputChoice_i = _imp->mergeAInputChoice.lock()->getValue();
+        KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+
+        int mergeAInputChoice_i = mergeAKnob->getValue();
 
         NodePtr mergeInputAUpstreamNode;
-        if (mergeAInputChoice_i > 0) {
-            mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(mergeAInputChoice_i - 1);
+        if (mergeAInputChoice_i == 0) {
+            mergeInputAUpstreamNode = upstreamNode;
+        } else {
+            std::string inputAName = mergeAKnob->getEntry(mergeAInputChoice_i);
+            // For reveal & clone, the user can select a RotoPaint node's input.
+            // Find an input of the RotoPaint node with the given input label
+            int maxInputs = rotoPaintNode->getMaxInputCount();
+            for (int i = 0; i < maxInputs; ++i) {
+                EffectInstancePtr input = rotoPaintNode->getInput(i);
+                if (!input) {
+                    continue;
+                }
+                NodePtr inputNode = input->getNode();
+                if (inputNode->getLabel() == inputAName) {
+
+                    mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(i);;
+                    assert(mergeInputAUpstreamNode);
+                    break;
+                }
+            }
         }
 
         mergeInputB = upstreamNode;
@@ -805,12 +815,28 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         if (type != eRotoStrokeTypeSolid) {
             mergeAUpstreamInput = upstreamNode;
         } else if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
-            int reveal_i = _imp->mergeAInputChoice.lock()->getValue();
+            KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+            int reveal_i = mergeAKnob->getValue();
             if (reveal_i == 0) {
                 mergeAUpstreamInput = upstreamNode;
             } else {
+                std::string inputAName = mergeAKnob->getEntry(reveal_i);
                 // For reveal & clone, the user can select a RotoPaint node's input.
-                mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(reveal_i - 1);
+                // Find an input of the RotoPaint node with the given input label
+                int maxInputs = rotoPaintNode->getMaxInputCount();
+                for (int i = 0; i < maxInputs; ++i) {
+                    EffectInstancePtr input = rotoPaintNode->getInput(i);
+                    if (!input) {
+                        continue;
+                    }
+                    NodePtr inputNode = input->getNode();
+                    if (inputNode->getLabel() == inputAName) {
+
+                        mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(i);;
+                        assert(mergeAUpstreamInput);
+                        break;
+                    }
+                }
             }
         }
 
@@ -889,10 +915,39 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
         _imp->mergeNode->disconnectInput(2);
     }
 
+    // Connect to a mask if needed
     if (_imp->maskNode) {
         if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
             //Connect the merge node mask to the mask node
             _imp->mergeNode->replaceInput(_imp->maskNode, 2);
+        }
+    } else if (type == eRotoStrokeTypeComp) {
+        KnobChoicePtr knob = _imp->mergeMaskInputChoice.lock();
+        int maskInput_i = knob->getValue();
+        NodePtr maskInputNode;
+        if (maskInput_i > 0) {
+            std::string maskInputName;
+            maskInputName = knob->getEntry(maskInput_i);
+
+            // Find an input of the RotoPaint node with the given input label
+            int maxInputs = rotoPaintNode->getMaxInputCount();
+            for (int i = LAYERED_COMP_FIRST_MASK_INPUT_INDEX; i < maxInputs; ++i) {
+                EffectInstancePtr input = rotoPaintNode->getInput(i);
+                if (!input) {
+                    continue;
+                }
+                NodePtr inputNode = input->getNode();
+                if (inputNode->getLabel() == maskInputName) {
+
+                    maskInputNode = rotoPaintNode->getInternalInputNode(i);;
+                    assert(maskInputNode);
+                    break;
+                }
+            }
+        }
+        if ( _imp->mergeNode->getInput(2) != maskInputNode) {
+            //Connect the merge node mask to the mask node
+            _imp->mergeNode->replaceInput(maskInputNode, 2);
         }
     }
 
@@ -931,27 +986,101 @@ RotoDrawableItem::resetNodesThreadSafety()
 
 
 bool
-RotoDrawableItem::isActivated(double time, ViewGetSpec /*view*/) const
+RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
 {
     if ( !isGloballyActivated() ) {
         return false;
     }
     try {
-        int lifetime_i = _imp->lifeTime.lock()->getValue();
-        if (lifetime_i == 0) {
-            return time == _imp->lifeTimeFrame.lock()->getValue();
-        } else if (lifetime_i == 1) {
-            return time <= _imp->lifeTimeFrame.lock()->getValue();
-        } else if (lifetime_i == 2) {
-            return time >= _imp->lifeTimeFrame.lock()->getValue();
-        } else {
-            return _imp->customRange.lock()->getValueAtTime(time);
+        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
+        switch (lifetime) {
+            case eRotoPaintItemLifeTimeTypeAll:
+                return true;
+            case eRotoPaintItemLifeTimeTypeSingle:
+                return time == _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeFromStart:
+                return time <= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeToEnd:
+                return time >= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeCustom:
+                return _imp->customRange.lock()->getValueAtTime(time, DimIdx(0), view);
+
         }
+
     } catch (std::runtime_error) {
         return false;
     }
 }
 
+std::vector<RangeD>
+RotoDrawableItem::getActivatedRanges(ViewGetSpec view) const
+{
+    std::vector<RangeD> ret;
+    RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
+    switch (lifetime) {
+        case eRotoPaintItemLifeTimeTypeAll: {
+            RangeD r = {INT_MIN, INT_MAX};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeSingle: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {frame, frame};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeFromStart: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {frame, INT_MAX};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeToEnd: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {INT_MIN, frame};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeCustom: {
+            KnobBoolPtr customRangeKnob = _imp->customRange.lock();
+            CurvePtr curve = customRangeKnob->getCurve(view, DimIdx(0));
+            if (curve->isAnimated()) {
+                assert(curve);
+                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                assert(!keys.empty());
+                bool rangeOpened = keys.begin()->getValue() > 0;
+                RangeD r = {INT_MIN, INT_MAX};
+                for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                    if (it->getValue() > 0) {
+                        if (!rangeOpened) {
+                            r.min = it->getTime();
+                            rangeOpened = true;
+                        }
+                    } else {
+                        if (rangeOpened) {
+                            r.max = it->getTime();
+                            rangeOpened = false;
+                            ret.push_back(r);
+                        }
+                    }
+                }
+                if (rangeOpened) {
+                    r.max = INT_MAX;
+                    ret.push_back(r);
+                }
+            } else {
+                bool activated = customRangeKnob->getValue();
+                if (activated) {
+                    RangeD r = {INT_MIN, INT_MAX};
+                    ret.push_back(r);
+                }
+            }
+            break;
+        }
+
+    }
+    return ret;
+} // getActivatedRanges
 
 void
 RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
@@ -1009,6 +1138,12 @@ KnobChoicePtr
 RotoDrawableItem::getMergeInputAChoiceKnob() const
 {
     return _imp->mergeAInputChoice.lock();
+}
+
+KnobChoicePtr
+RotoDrawableItem::getMergeMaskChoiceKnob() const
+{
+    return _imp->mergeMaskInputChoice.lock();
 }
 
 
@@ -1287,19 +1422,15 @@ RotoDrawableItem::initializeKnobs()
     createNodes();
 
     if (type == eRotoStrokeTypeComp) {
-        addColumn(kKnobTableItemColumnLabel, DimIdx(0));
-        addColumn(kParamRotoItemEnabled, DimIdx(0));
         addColumn(kRotoCompOperatorParam, DimIdx(0));
         addColumn(kHostMixingKnobName, DimIdx(0));
         addColumn(kRotoDrawableItemLifeTimeParam, DimIdx(0));
         addColumn(kRotoBrushTimeOffsetParam, DimIdx(0));
+        addColumn(kRotoInvertedParam, DimIdx(0));
         addColumn(kRotoDrawableItemMergeAInputParam, DimIdx(0));
         addColumn(kRotoDrawableItemMergeMaskParam, DimIdx(0));
 
     } else {
-        addColumn(kKnobTableItemColumnLabel, DimIdx(0));
-        addColumn(kParamRotoItemEnabled, DimIdx(0));
-        addColumn(kParamRotoItemLocked, DimIdx(0));
         addColumn(kRotoCompOperatorParam, DimIdx(0));
         addColumn(kRotoOverlayColor, DimSpec::all());
         addColumn(kRotoColorParam, DimSpec::all());

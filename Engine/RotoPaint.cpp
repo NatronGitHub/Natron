@@ -285,36 +285,9 @@ RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b,
 }
 
 void
-RotoPaint::initGeneralPageKnobs()
+RotoPaint::initLifeTimeKnobs(const KnobPagePtr& generalPage)
 {
     EffectInstancePtr effect = shared_from_this();
-
-    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintGeneralPageParam, tr(kRotoPaintGeneralPageParam));
-
-    if (_imp->nodeType != eRotoPaintTypeComp) {
-        {
-            KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoOpacityParamLabel), 1);
-            param->setHintToolTip( tr(kRotoOpacityHint) );
-            param->setName(kRotoOpacityParam);
-            param->setRange(0., 1.);
-            param->setDisplayRange(0., 1.);
-            param->setDefaultValue(ROTO_DEFAULT_OPACITY, DimSpec(0));
-            _imp->knobsTable->addPerItemKnobMaster(param);
-            generalPage->addKnob(param);
-        }
-
-        {
-            KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 3);
-            param->setHintToolTip( tr(kRotoColorHint) );
-            param->setName(kRotoColorParam);
-            std::vector<double> def(3);
-            def[0] = def[1] = def[2] = 1.;
-            param->setDefaultValues(def, DimIdx(0));
-            _imp->knobsTable->addPerItemKnobMaster(param);
-            generalPage->addKnob(param);
-        }
-    }
-
     RotoPaintItemLifeTimeTypeEnum defaultLifeTime = _imp->nodeType == eRotoPaintTypeRotoPaint ? eRotoPaintItemLifeTimeTypeSingle : eRotoPaintItemLifeTimeTypeAll;
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemLifeTimeParamLabel), 1);
@@ -371,6 +344,40 @@ RotoPaint::initGeneralPageKnobs()
         generalPage->addKnob(param);
         _imp->customRangeKnob = param;
     }
+
+} // initLifeTimeKnobs
+
+void
+RotoPaint::initGeneralPageKnobs()
+{
+    EffectInstancePtr effect = shared_from_this();
+
+    KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(effect, kRotoPaintGeneralPageParam, tr(kRotoPaintGeneralPageParam));
+
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        {
+            KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoOpacityParamLabel), 1);
+            param->setHintToolTip( tr(kRotoOpacityHint) );
+            param->setName(kRotoOpacityParam);
+            param->setRange(0., 1.);
+            param->setDisplayRange(0., 1.);
+            param->setDefaultValue(ROTO_DEFAULT_OPACITY, DimSpec(0));
+            _imp->knobsTable->addPerItemKnobMaster(param);
+            generalPage->addKnob(param);
+        }
+
+        {
+            KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 3);
+            param->setHintToolTip( tr(kRotoColorHint) );
+            param->setName(kRotoColorParam);
+            std::vector<double> def(3);
+            def[0] = def[1] = def[2] = 1.;
+            param->setDefaultValues(def, DimIdx(0));
+            _imp->knobsTable->addPerItemKnobMaster(param);
+            generalPage->addKnob(param);
+        }
+    }
+    initLifeTimeKnobs(generalPage);
 
     {
         KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoInvertedParamLabel), 1);
@@ -732,31 +739,43 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
         param->setName("perLayerSeparator");
         page->addKnob(param);
     }
+    initLifeTimeKnobs(page);
+
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
         param->setName(kRotoDrawableItemMergeAInputParam);
         param->setHintToolTip( tr(kRotoDrawableItemMergeAInputParamHint_CompNode) );
-        param->setDefaultValue(1);
+        param->setDefaultValue(0);
         param->setAddNewLine(false);
         page->addKnob(param);
+        _imp->knobsTable->addPerItemKnobMaster(param);
         _imp->mergeInputAChoiceKnob = param;
     }
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
-        param->setName(kRotoDrawableItemMergeMaskParam);
-        param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
-        param->setDefaultValue(1);
-        page->addKnob(param);
-        _imp->mergeMaskChoiceKnob = param;
-    }
-
     {
         KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoBrushTimeOffsetParamLabel), 1);
         param->setName(kRotoBrushTimeOffsetParam);
         param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint_Comp) );
-        param->setDisplayRange(-100, 100);
         page->addKnob(param);
         _imp->knobsTable->addPerItemKnobMaster(param);
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
+        param->setName(kRotoDrawableItemMergeMaskParam);
+        param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
+        param->setDefaultValue(0);
+        param->setAddNewLine(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        page->addKnob(param);
+        _imp->mergeMaskChoiceKnob = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoInvertedParamLabel), 1);
+        param->setHintToolTip( tr(kRotoInvertedHint) );
+        param->setName(kRotoInvertedParam);
+        param->setDefaultValue(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        page->addKnob(param);
     }
 
 } // initCompNodeKnobs
@@ -1115,36 +1134,76 @@ RotoPaint::initMotionBlurPageKnobs()
         mbPage->addKnob(param);
         _imp->globalCustomOffsetKnob = param;
     }
-    
+
 } // void initMotionBlurPageKnobs();
 
 void
 RotoPaint::setupInitialSubGraphState()
 {
     RotoPaintPtr thisShared = boost::dynamic_pointer_cast<RotoPaint>(shared_from_this());
-    for (int i = 0; i < ROTOPAINT_MAX_INPUTS_COUNT; ++i) {
+    if (_imp->nodeType != eRotoPaintTypeComp) {
+        for (int i = 0; i < ROTOPAINT_MAX_INPUTS_COUNT; ++i) {
 
-        std::stringstream ss;
-        if (i == 0) {
-            ss << "Bg";
-        } else if (i == ROTOPAINT_MASK_INPUT_INDEX) {
-            ss << "Mask";
-        } else {
-            ss << "Bg" << i + 1;
-        }
-        {
-            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
-            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
-            args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
-            if (i == ROTOPAINT_MASK_INPUT_INDEX) {
-                args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
-
+            std::stringstream ss;
+            if (i == 0) {
+                ss << "Bg";
+            } else if (i == ROTOPAINT_MASK_INPUT_INDEX) {
+                ss << "Mask";
+            } else {
+                ss << "Bg" << i + 1;
             }
-            NodePtr input = getApp()->createNode(args);
-            assert(input);
-            _imp->inputNodes.push_back(input);
+            {
+                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
+                args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
+                if (i == ROTOPAINT_MASK_INPUT_INDEX) {
+                    args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
+
+                }
+                NodePtr input = getApp()->createNode(args);
+                assert(input);
+                _imp->inputNodes.push_back(input);
+            }
+        }
+    } else {
+        for (int i = 0; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
+            std::string inputName;
+            bool isMask = false;
+            {
+                std::stringstream ss;
+                if (i == 0) {
+                    ss << "Bg";
+                } else if (i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX) {
+                    ss << "Source";
+                    if (i > 1) {
+                        ss << i;
+                    }
+                } else {
+                    isMask = true;
+                    ss << "Mask";
+                    if (i > LAYERED_COMP_FIRST_MASK_INPUT_INDEX) {
+                        int nb = i - LAYERED_COMP_FIRST_MASK_INPUT_INDEX + 1;
+                        ss << nb;
+                    }
+                }
+                inputName = ss.str();
+            }
+            {
+                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName);
+                args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
+                if (isMask) {
+                    args->addParamDefaultValue<bool>(kNatronGroupInputIsMaskParamName, true);
+
+                }
+                NodePtr input = getApp()->createNode(args);
+                assert(input);
+                _imp->inputNodes.push_back(input);
+            }
         }
     }
     NodePtr outputNode;
@@ -2100,10 +2159,10 @@ RotoPaint::initializeKnobs()
     assert(generalPage);
     setItemsTable(_imp->knobsTable, kRotoPaintGeneralPageParam);
 
-    initGeneralPageKnobs();
     if (_imp->nodeType == eRotoPaintTypeComp) {
         initCompNodeKnobs(generalPage);
     } else {
+        initGeneralPageKnobs();
         initShapePageKnobs();
         initStrokePageKnobs();
         initTransformPageKnobs();
@@ -2175,13 +2234,16 @@ RotoPaint::initializeKnobs()
         _imp->knobsTable->setColumnIcon(1, "visible.png");
         _imp->knobsTable->setColumnIcon(2, "roto_merge.png");
         _imp->knobsTable->setColumnText(3, tr(kHostMixingKnobLabel).toStdString());
-        _imp->knobsTable->setColumnIcon(4, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
-        _imp->knobsTable->setColumnIcon(5, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
-        _imp->knobsTable->setColumnIcon(6, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
-        _imp->knobsTable->setColumnIcon(7, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(4, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(5, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(6, "uninverted.png");
+        _imp->knobsTable->setColumnText(7, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(8, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
     }
 
     _imp->refreshSourceKnobs();
+
+    (void)getOrCreateBaseLayer();
 
 } // RotoPaint::initializeKnobs
 
@@ -2478,8 +2540,7 @@ RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bo
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
 
     // Roto should have only a single top level layer
-    assert(topLevelItems.size() == 1);
-    if (topLevelItems.size() != 1) {
+    if (topLevelItems.size() < 1) {
         return ret;
     }
     RotoLayerPtr layer = toRotoLayer(topLevelItems.front());
@@ -3136,7 +3197,7 @@ RotoPaint::addLayerInternal()
     }
 
     RotoLayerPtr item(new RotoLayer(_imp->knobsTable));
-    _imp->knobsTable->insertItem(-1, item, parentLayer, eTableChangeReasonInternal);
+    _imp->knobsTable->addItem(item, parentLayer, eTableChangeReasonInternal);
     _imp->knobsTable->beginEditSelection();
     _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
     _imp->knobsTable->addToSelection(item, eTableChangeReasonInternal);
@@ -3297,14 +3358,14 @@ RotoPaintPrivate::refreshSourceKnobs()
     } else {
         inputAChoices.push_back("None");
     }
-    int maxInputs = publicInterface->getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
+    for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
         EffectInstancePtr input = publicInterface->getInput(i);
         if (!input) {
             continue;
         }
+        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString)), publicInterface, SLOT(onSourceNodeLabelChanged(QString)), Qt::UniqueConnection);
         const std::string& inputLabel = input->getNode()->getLabel();
-        bool isMask = publicInterface->isInputMask(i);
+        bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {
             inputAChoices.push_back(inputLabel);
         } else {
@@ -3313,12 +3374,65 @@ RotoPaintPrivate::refreshSourceKnobs()
     }
     if (inputAKnob) {
         inputAKnob->populateChoices(inputAChoices);
+        std::string activeEntryText;
+        int curIdx = inputAKnob->getValue();
+        if (curIdx >= 0 && curIdx < (int)inputAChoices.size()) {
+            activeEntryText = inputAChoices[curIdx];
+        } else {
+            activeEntryText = inputAKnob->getActiveEntryText();
+        }
     }
     if (maskChoicesKnob) {
         maskChoicesKnob->populateChoices(maskChoices);
+        std::string activeEntryText;
+        int curIdx = maskChoicesKnob->getValue();
+        if (curIdx >= 0 && curIdx < (int)maskChoices.size()) {
+            activeEntryText = maskChoices[curIdx];
+        } else {
+            activeEntryText = maskChoicesKnob->getActiveEntryText();
+        }
     }
 
+    // Refresh all items menus aswell
+    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0));
+    for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        {
+            KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
+            if (itemSourceKnob) {
+                itemSourceKnob->populateChoices(inputAChoices);
+                std::string activeEntryText;
+                int curIdx = itemSourceKnob->getValue();
+                if (curIdx >= 0 && curIdx < (int)inputAChoices.size()) {
+                    activeEntryText = inputAChoices[curIdx];
+                } else {
+                    activeEntryText = itemSourceKnob->getActiveEntryText();
+                }
+                itemSourceKnob->setActiveEntryText(activeEntryText);
+            }
+        }
+        {
+            KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
+            if (maskSourceKnob) {
+                maskSourceKnob->populateChoices(inputAChoices);
+                std::string activeEntryText;
+                int curIdx = maskSourceKnob->getValue();
+                if (curIdx >= 0 && curIdx < (int)maskChoices.size()) {
+                    activeEntryText = maskChoices[curIdx];
+                } else {
+                    activeEntryText = maskSourceKnob->getActiveEntryText();
+                }
+                maskSourceKnob->setActiveEntryText(activeEntryText);
+            }
+        }
+    }
 } // refreshSourceKnobs
+
+void
+RotoPaint::onSourceNodeLabelChanged(const QString& /*label*/)
+{
+
+    _imp->refreshSourceKnobs();
+}
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

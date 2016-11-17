@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/PyParameter.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -1373,7 +1374,28 @@ NodeGui::initializeInputsForInspector()
     }
 
     refreshEdgesVisility();
-}
+} // initializeInputsForInspector
+
+void
+NodeGui::initializeInputsLayeredComp()
+{
+    assert(_inputEdges.size() == LAYERED_COMP_MAX_INPUTS_COUNT);
+    // Place Bg
+    _inputEdges[0]->setAngle(M_PI_2);
+    _inputEdges[0]->initLine();
+
+    // Place all masks on the right side and sources on the left side
+    for (int i = 1; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
+        _inputEdges[i]->setAngle(M_PI);
+        _inputEdges[i]->initLine();
+    }
+    for (int i = LAYERED_COMP_FIRST_MASK_INPUT_INDEX; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
+        _inputEdges[i]->setAngle(0);
+        _inputEdges[i]->initLine();
+    }
+    refreshEdgesVisility();
+
+} // initializeInputsLayeredComp
 
 void
 NodeGui::initializeInputs()
@@ -1428,7 +1450,9 @@ NodeGui::initializeInputs()
 
     refreshDashedStateOfEdges();
 
-    if (node->isEntitledForInspectorInputsStyle()) {
+    if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
+        initializeInputsLayeredComp();
+    } else if (node->isEntitledForInspectorInputsStyle()) {
         initializeInputsForInspector();
     } else {
         double piDividedbyX = M_PI / (inputsCount + 1);
@@ -1531,7 +1555,41 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     }
 
 
-    if (node->isEntitledForInspectorInputsStyle()) {
+    if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
+        // only show 1 mask on the right and 1 source on the left
+        bool sourceDisplayed = false;
+        for (int i = 1; i < LAYERED_COMP_FIRST_MASK_INPUT_INDEX; ++i) {
+            if ( !edgesVisibility[i] ) {
+                continue;
+            }
+            if (!sourceDisplayed) {
+                if ( !_inputEdges[i]->getSource() ) {
+                    sourceDisplayed = true;
+                    edgesVisibility[i] = true;
+                }
+            } else {
+                if ( !_inputEdges[i]->getSource() ) {
+                    edgesVisibility[i] = false;
+                }
+            }
+        }
+        bool maskDisplayed = false;
+        for (int i = LAYERED_COMP_FIRST_MASK_INPUT_INDEX; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
+            if ( !edgesVisibility[i] ) {
+                continue;
+            }
+            if (!maskDisplayed) {
+                if ( !_inputEdges[i]->getSource() ) {
+                    maskDisplayed = true;
+                    edgesVisibility[i] = true;
+                }
+            } else {
+                if ( !_inputEdges[i]->getSource() ) {
+                    edgesVisibility[i] = false;
+                }
+            }
+        }
+    } else if (node->isEntitledForInspectorInputsStyle()) {
         bool isViewer = node->isEffectViewerNode() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
         bool inputAsideDisplayed = false;
