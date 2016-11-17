@@ -30,7 +30,7 @@
 #include <QThread>
 #include <QImage>
 
-#include "Engine/image.h"
+#include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
