@@ -43,6 +43,7 @@
 #include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/DockablePanel.h"
@@ -177,7 +178,7 @@ Gui::onPropertiesScrolled()
             (*it)->redrawGLWidgets();
         }
     }
-    _imp->_curveEditor->getCurveWidget()->update();
+    _imp->_animationModule->getView()->redraw();
 
     {
         QMutexLocker k (&_imp->_histogramsMutex);
