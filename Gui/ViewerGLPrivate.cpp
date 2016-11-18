@@ -876,7 +876,7 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     shaderRGB->setUniformValue("gain", (float)displayTextures[texIndex].gain);
     shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float gamma = (displayTextures[texIndex].gamma == 0.) ? 0.f : 1.f / (float)displayTextures[texIndex].gamma;
+    float gamma = displayTextures[texIndex].gamma;
     shaderRGB->setUniformValue("gamma", gamma);
 }
 
