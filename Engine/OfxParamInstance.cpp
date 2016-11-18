@@ -1969,7 +1969,7 @@ OfxRGBInstance::set(double r,
 {
     KnobColorPtr knob = _knob.lock();
 
-    std::vector<double> vals(4);
+    std::vector<double> vals(3);
     vals[0] = r;
     vals[1] = g;
     vals[2] = b;
@@ -1986,7 +1986,7 @@ OfxRGBInstance::set(OfxTime time,
 {
     KnobColorPtr knob = _knob.lock();
 
-    std::vector<double> vals(4);
+    std::vector<double> vals(3);
     vals[0] = r;
     vals[1] = g;
     vals[2] = b;
