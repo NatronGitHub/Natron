@@ -325,7 +325,7 @@ AnimationModuleViewPrivate::drawSelectedKeyFramesBbox(bool isCurveEditor)
         if (!ptsToDraw.empty()) {
             GL_GPU::glBegin(GL_POINTS);
             for (std::size_t i = 0; i < ptsToDraw.size(); ++i) {
-                glVertex2d(ptsToDraw[i].x, ptsToDraw[i].y);
+                GL_GPU::glVertex2d(ptsToDraw[i].x, ptsToDraw[i].y);
             }
             GL_GPU::glEnd();
         }
