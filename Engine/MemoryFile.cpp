@@ -78,7 +78,7 @@ struct MemoryFilePrivate
 
     void openInternal(MemoryFile::FileOpenModeEnum open_mode);
 
-    void closeMapping(bool dontneed);
+    void closeMapping(bool drop_pages);
 };
 
 MemoryFile::MemoryFile()
@@ -330,11 +330,36 @@ MemoryFile::resize(size_t new_size)
 }
 
 void
-MemoryFilePrivate::closeMapping(bool dontneed)
+MemoryFilePrivate::closeMapping(bool drop_pages)
 {
 #if defined(__NATRON_UNIX__)
-    if (dontneed) {
-        madvise(data, size, MADV_DONTNEED);
+    if (drop_pages) {
+        int rc;
+#ifdef MS_KILLPAGES
+        // Mac OS X always returns an error with MADV_FREE,
+        // so we'll use msync(MS_KILLPAGES) instead.
+        rc = msync(data, size, MS_KILLPAGES);
+        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MS_KILLPAGES) failed", rc);
+#else
+# ifdef MADV_FREE
+        rc = madvise(data, size, MADV_FREE);
+        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_FREE) failed", rc);
+# else
+#  ifdef POSIX_MADV_DONTNEED
+        // we just hope that DONTNEED will actually free
+        // the pages...
+        rc = posix_madvise(data, size, POSIX_MADV_DONTNEED);
+        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(POSIX_MADV_DONTNEED) failed", rc);
+#  else
+        rc = madvise(data, size, MADV_DONTNEED);
+        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_DONTNEED) failed", rc);
+        // end if POSIX_MADV_DONTNEED
+#  endif
+        // end if MADV_FREE
+# endif
+        // end if MS_KILLPAGES
+#endif
+        Q_UNUSED(rc);
     }
     if (::munmap(data, size) != 0) {
         std::stringstream ss;
