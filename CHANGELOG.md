@@ -7,10 +7,16 @@
 ## Version 2.1.9
 
 - Fix a bug where removing all control points from ColorLookup would crash the application
+- ctrl-click on a node in the nodegraph (cmd-click on Mac) now opens its control-panel (same as double-click)
+- Fix bugs in curves drawing.
+- Curves with a single keyframe can now have a slope.
+- Fix gamma=0 in the viewer
 
 ### Plugins
 
 - ColorWheel: antialiased rendering
+- PIKColor: fix black rims issue #1502, rework & optimize
+- Grade & Gamma: fix behaviour when gamma=0
 
 ## Version 2.1.8
 

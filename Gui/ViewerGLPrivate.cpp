@@ -832,14 +832,13 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     ViewerNodePtr node = _this->getInternalNode();
 
     double gain = node->getGain();
-    double gamma = node->getGain();
+    double gamma = node->getGamma();
 
     shaderRGB->setUniformValue("Tex", 0);
     shaderRGB->setUniformValue("gain", (float)gain);
     shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float shaderGamma = (gamma == 0.) ? 0.f : 1.f / (float)gamma;
-    shaderRGB->setUniformValue("gamma", shaderGamma);
+    shaderRGB->setUniformValue("gamma", (float)gamma);
 }
 
 

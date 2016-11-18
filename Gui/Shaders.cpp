@@ -51,14 +51,20 @@ const char* fragRGB =
     "       color_tmp.b = linear_to_srgb(color_tmp.b);\n"
 // << END TO SRGB
     "   }\n"
-    "   else if( lut == 2){ // Rec 709\n" // << TO REC 709
+    "   else if (lut == 2){ // Rec 709\n" // << TO REC 709
     "       color_tmp.r = linear_to_rec709(color_tmp.r);\n"
     "       color_tmp.g = linear_to_rec709(color_tmp.g);\n"
     "       color_tmp.b = linear_to_rec709(color_tmp.b);\n"
     "   }\n" // << END TO REC 709
-    "   color_tmp.r = gamma == 0. ? 0. : pow(color_tmp.r,gamma);\n" // gamma is in fact 1. / gamma at this point
-    "   color_tmp.g = gamma == 0. ? 0. : pow(color_tmp.g,gamma);\n"
-    "   color_tmp.b = gamma == 0. ? 0. : pow(color_tmp.b,gamma);\n"
+    "   if (gamma <= 0.) {\n"
+    "       color_tmp.r = (color_tmp.r >= 1.) ? 1. : 0.;\n"
+    "       color_tmp.g = (color_tmp.g >= 1.) ? 1. : 0.;\n"
+    "       color_tmp.b = (color_tmp.b >= 1.) ? 1. : 0.;\n"
+    "   } else {\n"
+    "       color_tmp.r = pow(color_tmp.r, 1./gamma);\n"
+    "       color_tmp.g = pow(color_tmp.g, 1./gamma);\n"
+    "       color_tmp.b = pow(color_tmp.b, 1./gamma);\n"
+    "   }\n"
     "	gl_FragColor = color_tmp;\n"
     "}\n"
 ;
