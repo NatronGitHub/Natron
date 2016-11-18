@@ -9,6 +9,8 @@
 
 #include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
 
+#include "Global/Macros.h"
+
 #ifdef GLAD_DEBUG
 #define glad_defined(glFunc) glad_debug_ ## glFunc
 #else
@@ -620,7 +622,8 @@
 #undef glIsVertexArrayAPPLE
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 template <bool USEOPENGL>
 class OSGLFunctions
 {
@@ -5196,6 +5199,7 @@ public:
 
 typedef OSGLFunctions<true> GL_GPU;
 typedef OSGLFunctions<false> GL_CPU;
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // OSGLFUNCTIONS_H

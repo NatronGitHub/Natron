@@ -20,15 +20,29 @@ writeHeader(QTextStream& ts)
         "\n"
         "#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG\n"
         "\n"
-    ;
+        "#include \"Global/Macros.h\"\n"
+        "\n"
+        "#ifdef GLAD_DEBUG\n"
+        "#define glad_defined(glFunc) glad_debug_ ## glFunc\n"
+        "#else\n"
+        "#define glad_defined(glFunc) glad_ ## glFunc\n"
+        "#endif\n"
+        "\n"
+        ;
 } // writeHeader
 
 static void
 writeStartClass(const QString& namespaceName,
                 QTextStream& ts)
 {
+    if (namespaceName == "Natron") {
+        ts <<
+            "NATRON_NAMESPACE_ENTER;\n\n";
+    } else {
+        ts <<
+            "namespace " << namespaceName << " {\n\n";
+    }
     ts <<
-        "namespace " << namespaceName << " {\n"
         "template <bool USEOPENGL>\n"
         "class OSGLFunctions\n"
         "{\n";
@@ -43,14 +57,21 @@ writeEndClass(const QString& namespaceName,
         "\n"
         "typedef OSGLFunctions<true> GL_GPU;\n"
         "typedef OSGLFunctions<false> GL_CPU;\n"
-        "} // namespace " << namespaceName << "\n"
         "\n";
+    if (namespaceName == "Natron") {
+        ots <<
+            "NATRON_NAMESPACE_EXIT;\n";
+    } else {
+        ots <<
+            "} // namespace " << namespaceName << "\n";
+    }
+
 }
 
 static void
 writeFooter(QTextStream& ts)
 {
-    ts << "#endif // OSGLFUNCTIONS_H\n";
+    ts << "\n#endif // OSGLFUNCTIONS_H\n";
 }
 
 struct FunctionSignature
@@ -116,7 +137,7 @@ writeImplementationCppFile(const QString& namespaceName,
             // OpenGL functions are directly pointing to the ones loaded by glad
             {
                 ots <<
-                    "    _" << it->funcName << " = glad_defined_" << it->funcName << ";\n";
+                    "    _" << it->funcName << " = glad_defined(" << it->funcName << ");\n";
             }
         } else {
             // Mesa functions are loaded
@@ -306,15 +327,7 @@ main(int argc,
 
     writeHeader(ots_header);
     ots_header <<
-        "// remove global macro definitions of OpenGL functions by glad.h, but first save them under a different name (for OSGLFunctions_gl.cpp)\n"
-        "\n"
-        "// fgrep \"#define gl\" glad.h |awk '{print $1, \"glad_defined_\" $2, $2}'\n";
-    // save glad's defines
-    for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
-      ots_header << "#define glad_defined_" << it->funcName << " " << it->funcName << '\n';
-    }
-    ots_header <<
-        "\n"
+        "// remove global macro definitions of OpenGL functions by glad.h\n"
         "// fgrep \"#define gl\" glad.h |sed -e 's/#define/#undef/g' |awk '{print $1, $2}'\n";
     // undef glad's defines
     for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
