@@ -3,6 +3,7 @@
  */
 
 #include "OSGLFunctions.h"
+#include "Global/Macros.h"
 
 #ifdef HAVE_OSMESA
 #include <GL/gl_mangle.h>
@@ -11,12 +12,11 @@
 #endif // HAVE_OSMESA
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 template <>
 void OSGLFunctions<false>::load_functions() {
 #ifdef HAVE_OSMESA
-
     _glCullFace = (PFNGLCULLFACEPROC)OSMesaGetProcAddress("glCullFace");
     _glFrontFace = (PFNGLFRONTFACEPROC)OSMesaGetProcAddress("glFrontFace");
     _glHint = (PFNGLHINTPROC)OSMesaGetProcAddress("glHint");
@@ -623,5 +623,5 @@ void OSGLFunctions<false>::load_functions() {
 
 template class OSGLFunctions<false>;
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
