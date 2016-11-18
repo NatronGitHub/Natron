@@ -275,12 +275,10 @@ enum SerializationValueVariantTypeEnum
 struct DefaultValueSerialization
 {
     SerializationValueVariant value;
-    SerializationValueVariantTypeEnum type;
     bool serializeDefaultValue;
 
     DefaultValueSerialization()
     : value()
-    , type(eSerializationValueVariantTypeNone)
     , serializeDefaultValue(false)
     {
 
@@ -301,9 +299,6 @@ struct ValueSerialization
     // Pointer to the actual KnobSerialization, this is for compatibility only
     // when loading an old serialization with boost
     KnobSerialization* _serialization;
-
-    // Control which type member holds the current value of the variant
-    SerializationValueVariantTypeEnum _type;
 
     // Serialization of the value and default value as a variant
     SerializationValueVariant _value;
@@ -328,7 +323,6 @@ struct ValueSerialization
     : _mustSerialize(false)
     , _dimension(-1)
     , _serialization(0)
-    , _type(eSerializationValueVariantTypeNone)
     , _value()
     , _serializeValue(false)
     , _animationCurve()
@@ -388,6 +382,9 @@ public:
     PerViewValueSerializationMap _values;
     PerDimensionDefaultValueSerializationVec _defaultValues;
 
+    // Control which type member holds the current value of the variant
+    SerializationValueVariantTypeEnum _dataType;
+
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
     bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
@@ -418,6 +415,7 @@ public:
     , _masterIsAlias(false)
     , _values()
     , _defaultValues()
+    , _dataType(eSerializationValueVariantTypeNone)
     , _extraData()
     , _isUserKnob(false)
     , _label()
@@ -458,6 +456,10 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
 private:
+
+    bool checkForValueNode(const YAML::Node& node, const std::string& nodeType);
+
+    bool checkForDefaultValueNode(const YAML::Node& node, const std::string& nodeType, bool dataTypeSet);
 
     void decodeValueNode(const std::string& viewName, const YAML::Node& node);
 
