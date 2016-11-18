@@ -48,12 +48,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 #define kShortcutGroupGlobal "Global"
-#define kShortcutGroupNodegraph "NodeGraph"
-#define kShortcutGroupCurveEditor "CurveEditor"
-#define kShortcutGroupDopeSheetEditor "DopeSheetEditor"
+#define kShortcutGroupNodegraph "Node Graph"
+#define kShortcutGroupAnimationModule "Animation Editor"
 #define kShortcutGroupPlayer "Player"
 #define kShortcutGroupNodes "Nodes"
-#define kShortcutGroupScriptEditor "ScriptEditor"
+#define kShortcutGroupScriptEditor "Script Editor"
 
 /////////GLOBAL SHORTCUTS
 #define kShortcutIDActionNewProject "newProject"
@@ -308,66 +307,51 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionGraphExpandGroup "Expand Group"
 
 ///////////CURVEEDITOR SHORTCUTS
-#define kShortcutIDActionCurveEditorRemoveKeys "remove"
-#define kShortcutDescActionCurveEditorRemoveKeys "Delete Keyframes"
+#define kShortcutIDActionAnimationModuleRemoveKeys "remove"
+#define kShortcutDescActionAnimationModuleRemoveKeys "Delete Keyframes"
 
-#define kShortcutIDActionCurveEditorConstant "constant"
-#define kShortcutDescActionCurveEditorConstant "Constant Interpolation"
+#define kShortcutIDActionAnimationModuleConstant "constant"
+#define kShortcutDescActionAnimationModuleConstant "Constant Interpolation"
 
-#define kShortcutIDActionCurveEditorLinear "linear"
-#define kShortcutDescActionCurveEditorLinear "Linear Interpolation"
+#define kShortcutIDActionAnimationModuleLinear "linear"
+#define kShortcutDescActionAnimationModuleLinear "Linear Interpolation"
 
-#define kShortcutIDActionCurveEditorSmooth "smooth"
-#define kShortcutDescActionCurveEditorSmooth "Smooth Interpolation"
+#define kShortcutIDActionAnimationModuleSmooth "smooth"
+#define kShortcutDescActionAnimationModuleSmooth "Smooth Interpolation"
 
-#define kShortcutIDActionCurveEditorCatmullrom "catmullrom"
-#define kShortcutDescActionCurveEditorCatmullrom "Catmull-Rom Interpolation"
+#define kShortcutIDActionAnimationModuleCatmullrom "catmullrom"
+#define kShortcutDescActionAnimationModuleCatmullrom "Catmull-Rom Interpolation"
 
-#define kShortcutIDActionCurveEditorCubic "cubic"
-#define kShortcutDescActionCurveEditorCubic "Cubic Interpolation"
+#define kShortcutIDActionAnimationModuleCubic "cubic"
+#define kShortcutDescActionAnimationModuleCubic "Cubic Interpolation"
 
-#define kShortcutIDActionCurveEditorHorizontal "horiz"
-#define kShortcutDescActionCurveEditorHorizontal "Horizontal Interpolation"
+#define kShortcutIDActionAnimationModuleHorizontal "horiz"
+#define kShortcutDescActionAnimationModuleHorizontal "Horizontal Interpolation"
 
-#define kShortcutIDActionCurveEditorBreak "break"
-#define kShortcutDescActionCurveEditorBreak "Break"
+#define kShortcutIDActionAnimationModuleBreak "break"
+#define kShortcutDescActionAnimationModuleBreak "Break Tangents"
 
-#define kShortcutIDActionCurveEditorSelectAll "selectAll"
-#define kShortcutDescActionCurveEditorSelectAll "Select All Keyframes"
+#define kShortcutIDActionAnimationModuleSelectAll "selectAll"
+#define kShortcutDescActionAnimationModuleSelectAll "Select All"
 
-#define kShortcutIDActionCurveEditorCenterAll "frameAll"
-#define kShortcutDescActionCurveEditorCenterAll "Frame All Curves"
+#define kShortcutIDActionAnimationModuleCenterAll "centerAll"
+#define kShortcutDescActionAnimationModuleCenterAll "Center on All Items"
 
-#define kShortcutIDActionCurveEditorCenter "center"
-#define kShortcutDescActionCurveEditorCenter "Center on Curve"
+#define kShortcutIDActionAnimationModuleCenter "center"
+#define kShortcutDescActionAnimationModuleCenter "Center on Selected Items"
 
-#define kShortcutIDActionCurveEditorCopy "copy"
-#define kShortcutDescActionCurveEditorCopy "Copy Keyframes"
+#define kShortcutIDActionAnimationModuleCopy "copy"
+#define kShortcutDescActionAnimationModuleCopy "Copy Selected Keyframes"
 
-#define kShortcutIDActionCurveEditorPaste "paste"
-#define kShortcutDescActionCurveEditorPaste "Paste Keyframes"
+#define kShortcutIDActionAnimationModulePasteKeyframes "pastekeyframes"
+#define kShortcutDescActionAnimationModulePasteKeyframes "Paste Keyframes"
 
-// Dope Sheet Editor shortcuts
-#define kShortcutIDActionDopeSheetEditorDeleteKeys "deleteKeys"
-#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete Selected Keyframes"
+#define kShortcutIDActionAnimationModulePasteKeyframesAbsolute "pastekeyframesAbs"
+#define kShortcutDescActionAnimationModulePasteKeyframesAbsolute "Paste Keyframes Absolute"
 
-#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
-#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on Selection"
+#define kShortcutIDActionAnimationModuleStackView "stackAnimView"
+#define kShortcutDescActionAnimationModuleStackView "Show Curve Editor + Dope Sheet"
 
-#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectall"
-#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select All"
-
-#define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
-#define kShortcutDescActionDopeSheetEditorRenameNode "Rename Node"
-
-#define kShortcutIDActionDopeSheetEditorCopySelectedKeyframes "copyselectedkeyframes"
-#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy Selected Keyframes"
-
-#define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
-#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste Keyframes"
-
-#define kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute "pastekeyframesAbs"
-#define kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute "Paste Keyframes Absolute"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

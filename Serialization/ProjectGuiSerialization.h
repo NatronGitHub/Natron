@@ -299,7 +299,7 @@ struct PaneLayout
             for (std::list<std::string>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
                 //Try to map the tab name to an old name
                 if (*it == "CurveEditor") {
-                    *it = kCurveEditorObjectName;
+                    *it = kAnimationModuleEditorObjectName;
                 } else if (*it == "NodeGraph") {
                     *it = kNodeGraphObjectName;
                 } else if (*it == "Properties") {

@@ -15,8 +15,8 @@ panel of a node. See :ref:`details here<details>`.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`copy<NatronEngine.Param.copy>` (param[, dimension=-1])
-*    def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1])
+*    def :meth:`copy<NatronEngine.Param.copy>` (param[, thisDimension=-1, otherDimension=-1, thisView="All", otherView="All"])
+*    def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1, view="Main"])
 *    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
 *    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
@@ -55,8 +55,8 @@ Functions
 *    def :meth:`setViewerUIIconFilePath<NatronEngine.Param.setViewerUIIconFilePath>` (filePath[, checked])
 *    def :meth:`setViewerUILabel<NatronEngine.Param.setViewerUILabel>` (label)
 *    def :meth:`setViewerUIVisible<NatronEngine.Param.setViewerUIVisible>` (visible)
-*    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam, thisDimension, otherDimension)
-*    def :meth:`unslave<NatronEngine.Param.unslave>` (dimension)
+*    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam[, thisDimension=-1, otherDimension=-1, thisView="All", otherView="All")
+*    def :meth:`unslave<NatronEngine.Param.unslave>` ([dimension=-1,view="All"])
 
 .. _details:
 
@@ -183,10 +183,11 @@ be copied.
 This function returns **True** upon success and **False** otherwise.
 
 
-.. method:: NatronEngine.Param.curve(time [, dimension=-1])
+.. method:: NatronEngine.Param.curve(time [, dimension=-1, view="Main"])
 
 	:param time: :class:`float<PySide.QtCore.float>`
 	:param dimension: :class:`int`
+	:param view: :class:`str<PySide.QtCore.QString>`
 	:rtype: :class:`float<PySide.QtCore.float>`
 	
 	If this parameter has an animation curve on the given *dimension*, then the value of
@@ -586,29 +587,43 @@ This is used generally to make user parameters on groups with the "Pick" option 
 	the function :func:`getHasViewerUI()<NatronEngine.Param.getHasViewerUI>` returns *True*.
 
 
-.. method:: NatronEngine.Param.slaveTo(otherParam, thisDimension, otherDimension)
+.. method:: NatronEngine.Param.slaveTo(otherParam[, thisDimension=-1, otherDimension=-1,thisView="All",otherView="All"])
 
 	:param otherParam: :class:`Param<NatronEngine.Param>`
 	:param thisDimension: :class:`int<PySide.QtCore.int>`
 	:param otherDimension: :class:`int<PySide.QtCore.int>`
+	:param thisView: :class:`str<PySide.QtCore.QString>`
+	:param otherView: :class:`str<PySide.QtCore.QString>`
 	:rtype: :class:`bool<PySide.QtCore.bool>`	
 	
 Set this parameter as a slave of *otherParam*. 
 They need to be both of the same *type* but may vary in dimension, as long as 
 *thisDimension* is valid according to the number of dimensions of this parameter and 
 *otherDimension* is valid according to the number of dimensions of *otherParam*.
+If *thisDimension* is -1 then it is expected that *otherDimension* is also -1 indicating
+that all dimensions should respectively be slaved.
+
+If this parameter has split views, then only view(s) specified by *thisView* will be slaved
+to the *otherView* of the other parameter.
+If *thisView* is "All" then it is expected that *otherView* is also "All" indicating that all
+views should be respectively slaved. If not set to "All" then the view parameters should 
+name valid views in the project settings.
+
 
 This parameter *thisDimension* will be controlled entirely by the *otherDimension* of
 *otherParam* until a call to :func:`unslave(thisDimension)<NatronEngine.Param.unslave>` is made
 
-.. method:: NatronEngine.Param.unslave(dimension)
+.. method:: NatronEngine.Param.unslave([dimension=-1,view="All"])
 
 	:param dimension: :class:`int<PySide.QtCore.int>`
-
+	:param view: :class:`str<PySide.QtCore.QString>`
 
 If the given *dimension* of this parameter was previously slaved, then this function will
 remove the link between parameters, and the user will be free again to use this parameter
 as any other.
+If *dimension* equals -1 then all dimensions will be unslaved.
+If *view* is set to "All" then all views will be unslaved, otherwise it should 
+name valid views in the project settings.
 
 .. note::
 

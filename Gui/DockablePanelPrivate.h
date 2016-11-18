@@ -104,8 +104,8 @@ struct DockablePanelPrivate
     QString _pluginID;
     unsigned _pluginVersionMajor, _pluginVersionMinor;
     bool _pagesEnabled;
-    TrackerPanel* _trackerPanel;
     Label* _iconLabel;
+
 
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,

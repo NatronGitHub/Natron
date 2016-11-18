@@ -587,7 +587,30 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
             path = NATRON_IMAGES_PATH "saveScript.png";
             break;
-
+        case NATRON_PIXMAP_CURVE_EDITOR:
+            path = NATRON_IMAGES_PATH "CurveEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_PROGRESS_PANEL:
+            path = NATRON_IMAGES_PATH "ProgressPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_SCRIPT_EDITOR:
+            path = NATRON_IMAGES_PATH "ScriptEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_ANIMATION_MODULE:
+            path = NATRON_IMAGES_PATH "DS_CE_Icon.png";
+            break;
+        case NATRON_PIXMAP_VIEWER_PANEL:
+            path = NATRON_IMAGES_PATH "ViewerPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_PROPERTIES_PANEL:
+            path = NATRON_IMAGES_PATH "PropertiesIcon.png";
+            break;
+        case NATRON_PIXMAP_DOPE_SHEET:
+            path = NATRON_IMAGES_PATH "DopeSheetIcon.png";
+            break;
+        case NATRON_PIXMAP_NODE_GRAPH:
+            path = NATRON_IMAGES_PATH "NodeGraphIcon.png";
+            break;
 
         case NATRON_PIXMAP_MERGE_ATOP:
             path = NATRON_IMAGES_PATH "merge_atop.png";
@@ -1078,21 +1101,25 @@ GuiApplicationManager::hideSplashScreen()
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
                                         const KnobIPtr& serialization,
-                                        int dimension)
+                                        DimSpec dimension,
+                                        ViewSetSpec view)
 {
     _imp->_knobsClipBoard->serialization = serialization;
     _imp->_knobsClipBoard->type = type;
     _imp->_knobsClipBoard->dimension = dimension;
+    _imp->_knobsClipBoard->view = view;
 }
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
                                         KnobIPtr *serialization,
-                                        int* dimension) const
+                                        DimSpec* dimension,
+                                        ViewSetSpec *view) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;
     *type = _imp->_knobsClipBoard->type;
     *dimension = _imp->_knobsClipBoard->dimension;
+    *view = _imp->_knobsClipBoard->view;
 }
 
 void
@@ -1127,6 +1154,7 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,
     _imp->dpiX = dpiX;
     _imp->dpiY = dpiY;
 }
+
 
 void
 GuiApplicationManager::updateAboutWindowLibrariesVersion()

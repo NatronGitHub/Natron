@@ -302,7 +302,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
             NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
-            const NodesWList & outputs = lastSelected->getNode()->getGuiOutputs();
+            const NodesWList & outputs = lastSelected->getNode()->getOutputs();
             if ( !outputs.empty() ) {
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {

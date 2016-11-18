@@ -163,6 +163,7 @@ public:
                             double r,
                             double g,
                             double b,
+                            double a,
                             int flags = 0) //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
     {
         Q_UNUSED(x);
@@ -171,6 +172,7 @@ public:
         Q_UNUSED(r);
         Q_UNUSED(g);
         Q_UNUSED(b);
+        Q_UNUSED(a);
         Q_UNUSED(flags);
 
         return false;

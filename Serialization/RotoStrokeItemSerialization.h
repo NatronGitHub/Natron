@@ -19,23 +19,8 @@
 #ifndef Engine_RotoStrokeItemSerialization_h
 #define Engine_RotoStrokeItemSerialization_h
 
-#include "Serialization/RotoDrawableItemSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/SerializationFwd.h"
-
-
-// Corresponds to RotoStrokeType enum
-enum RotoStrokeType
-{
-    eRotoStrokeTypeSolid,
-    eRotoStrokeTypeEraser,
-    eRotoStrokeTypeClone,
-    eRotoStrokeTypeReveal,
-    eRotoStrokeTypeBlur,
-    eRotoStrokeTypeSharpen,
-    eRotoStrokeTypeSmear,
-    eRotoStrokeTypeDodge,
-    eRotoStrokeTypeBurn,
-};
 
 #define kRotoStrokeItemSerializationBrushTypeSolid "Solid"
 #define kRotoStrokeItemSerializationBrushTypeEraser "Eraser"
@@ -46,20 +31,13 @@ enum RotoStrokeType
 #define kRotoStrokeItemSerializationBrushTypeDodge "Dodge"
 #define kRotoStrokeItemSerializationBrushTypeBurn "Burn"
 
+#define kSerializationStrokeTag "Stroke"
+
 SERIALIZATION_NAMESPACE_ENTER;
-
-struct StrokePoint
-{
-    double x, y, pressure;
-
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-
-};
 
 
 class RotoStrokeItemSerialization
-    : public RotoDrawableItemSerialization
+    : public KnobTableItemSerialization
 {
 
 public:
@@ -74,10 +52,12 @@ public:
 
 
     RotoStrokeItemSerialization()
-        : RotoDrawableItemSerialization()
+        : KnobTableItemSerialization()
         , _brushType()
         , _subStrokes()
     {
+        verbatimTag = kSerializationStrokeTag;
+        _emitMap = false;
     }
 
     virtual ~RotoStrokeItemSerialization()
@@ -88,8 +68,6 @@ public:
 
     virtual void decode(const YAML::Node& node) OVERRIDE;
 
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
 
 };
 

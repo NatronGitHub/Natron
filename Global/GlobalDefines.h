@@ -120,8 +120,7 @@ typedef OfxRangeD RangeD;
 
 
 #define kNodeGraphObjectName "nodeGraph"
-#define kCurveEditorObjectName "curveEditor"
-#define kDopeSheetEditorObjectName "dopeSheetEditor"
+#define kAnimationModuleEditorObjectName "animationModule"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
@@ -139,11 +138,10 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackdropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
-#define kDopeSheetEditorMoveKeysCommandCompressionID 18
-#define kDopeSheetEditorLeftTrimCommandCompressionID 19
-#define kDopeSheetEditorRightTrimCommandCompressionID 20
-#define kDopeSheetEditorTransformKeysCommandCompressionID 21
-#define kDopeSheetEditorSlipReaderCommandCompressionID 23
+#define kAnimationModuleEditorMoveKeysCommandCompressionID 18
+#define kAnimationModuleEditorLeftTrimCommandCompressionID 19
+#define kAnimationModuleEditorRightTrimCommandCompressionID 20
+#define kAnimationModuleEditorSlipReaderCommandCompressionID 23
 #define kNodeUndoChangeCommandCompressionID 24
 
 #define PY_VERSION_STRINGIZE_(major, minor) \

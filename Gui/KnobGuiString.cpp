@@ -70,6 +70,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobGui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
@@ -87,14 +88,15 @@ using std::make_pair;
 //=============================STRING_KNOB_GUI===================================
 
 AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob,
-                                     int dimension,
+                                     DimSpec dimension,
+                                     ViewIdx view,
                                      QWidget* parent)
     : QTextEdit(parent)
     , animation(0)
     , readOnlyNatron(false)
     , _hasChanged(false)
     , dirty(false)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
     setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
 }
@@ -250,10 +252,11 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 }
 
 KnobLineEdit::KnobLineEdit(const KnobGuiPtr& knob,
-                           int dimension,
+                           DimSpec dimension,
+                           ViewIdx view,
                            QWidget* parent)
     : LineEdit(parent)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {}
 
 KnobLineEdit::~KnobLineEdit()
@@ -349,9 +352,8 @@ KnobLineEdit::focusOutEvent(QFocusEvent* e)
     LineEdit::focusOutEvent(e);
 }
 
-KnobGuiString::KnobGuiString(KnobIPtr knob,
-                             KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiString::KnobGuiString(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _lineEdit(0)
     , _label(0)
     , _container(0)
@@ -365,7 +367,7 @@ KnobGuiString::KnobGuiString(KnobIPtr knob,
     , _fontSizeSpinBox(0)
     , _fontColorButton(0)
 {
-    _knob = toKnobString(knob);
+    _knob = toKnobString(knob->getKnob());
 }
 
 QFont
@@ -385,6 +387,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 {
     KnobStringPtr knob = _knob.lock();
 
+    KnobGuiPtr knobUI = getKnobGui();
     if ( knob->isMultiLine() ) {
         _container = new QWidget( layout->parentWidget() );
         _mainLayout = new QVBoxLayout(_container);
@@ -392,7 +395,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _mainLayout->setSpacing(0);
 
         bool useRichText = knob->usesRichText();
-        _textEdit = new AnimatingTextEdit(shared_from_this(), 0, _container);
+        _textEdit = new AnimatingTextEdit(knobUI, DimIdx(0), getView(), _container);
         _textEdit->setAcceptRichText(useRichText);
 
 
@@ -403,7 +406,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
         ///set the copy/link actions in the right click menu
-        enableRightClickMenu(_textEdit, 0);
+        KnobGuiWidgets::enableRightClickMenu(knobUI, _textEdit, DimIdx(0), getView());
 
         if ( knob->isCustomHTMLText() ) {
             _textEdit->setReadOnlyNatron(true);
@@ -413,7 +416,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _richTextOptions = new QWidget(_container);
             _richTextOptionsLayout = new QHBoxLayout(_richTextOptions);
             _richTextOptionsLayout->setContentsMargins(0, 0, 0, 0);
-            _richTextOptionsLayout->setSpacing(8);
+            _richTextOptionsLayout->setSpacing(TO_DPIX(8));
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont( makeFontFromState() );
@@ -488,16 +491,16 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         if ( !iconFilePath.empty() ) {
             _label = new Label( layout->parentWidget() );
 
-            if ( hasToolTip() ) {
-                toolTip(_label);
+            if ( knobUI->hasToolTip() ) {
+                knobUI->toolTip(_label, getView());
             }
             layout->addWidget(_label);
         }
     } else {
-        _lineEdit = new KnobLineEdit( shared_from_this(), 0, layout->parentWidget() );
+        _lineEdit = new KnobLineEdit( knobUI, DimIdx(0), getView(), layout->parentWidget() );
 
-        if ( hasToolTip() ) {
-            toolTip(_lineEdit);
+        if ( knobUI->hasToolTip() ) {
+            knobUI->toolTip(_lineEdit, getView());
         }
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -509,12 +512,19 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         }
 
         ///set the copy/link actions in the right click menu
-        enableRightClickMenu(_lineEdit, 0);
+        KnobGuiWidgets::enableRightClickMenu(knobUI, _lineEdit, DimIdx(0), getView());
     }
 } // createWidget
 
 KnobGuiString::~KnobGuiString()
 {
+}
+
+bool
+KnobGuiString::shouldAddStretch() const
+{
+    // Never add stretch after the line edits, text edit, they expand horizontally
+    return _label != 0;
 }
 
 bool
@@ -566,11 +576,13 @@ KnobGuiString::onLineChanged()
     if ( !_lineEdit->isEnabled() || _lineEdit->isReadOnly() ) {
         return;
     }
-    std::string oldText = _knob.lock()->getValue(0);
+    KnobStringPtr knob = _knob.lock();
+    std::string oldText = knob->getValue(DimIdx(0), getView());
     std::string newText = _lineEdit->text().toStdString();
 
     if (oldText != newText) {
-        pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), oldText, newText) );
+        KnobGuiPtr knobUI = getKnobGui();
+        knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldText, newText, DimIdx(0), getView()) );
     }
 
 }
@@ -579,7 +591,10 @@ void
 KnobGuiString::onTextChanged()
 {
     QString txt = _textEdit->toPlainText();
-    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), _knob.lock()->getValue(0), txt.toStdString() ) );
+    KnobGuiPtr knobUI = getKnobGui();
+    KnobStringPtr knob = _knob.lock();
+    std::string oldText = knob->getValue(DimIdx(0), getView());
+    knobUI->pushUndoCommand( new KnobUndoCommand<std::string>( knob, oldText, txt.toStdString(), DimIdx(0), getView() ) );
 }
 
 
@@ -597,7 +612,7 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setFontFamily(font.family().toStdString());
-    updateGUI(0);
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -608,7 +623,7 @@ KnobGuiString::onFontSizeChanged(double size)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setFontSize(size);
-    updateGUI(0);
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -617,7 +632,7 @@ KnobGuiString::boldChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setBoldActivated(toggled);
-    updateGUI(0);
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
@@ -656,7 +671,7 @@ KnobGuiString::colorFontButtonClicked()
         double g = currentColor.greenF();
         double b = currentColor.blueF();
         knob->setFontColor(r, g, b);
-        updateGUI(0);
+        updateGUI();
         Q_EMIT fontPropertyChanged();
 
     }
@@ -669,17 +684,17 @@ KnobGuiString::italicChanged(bool toggled)
 {
     KnobStringPtr knob = _knob.lock();
     knob->setItalicActivated(toggled);
-    updateGUI(0);
+    updateGUI();
     Q_EMIT fontPropertyChanged();
 }
 
 
 
 void
-KnobGuiString::updateGUI(int /*dimension*/)
+KnobGuiString::updateGUI()
 {
     KnobStringPtr knob = _knob.lock();
-    std::string value = knob->getValue(0);
+    std::string value = knob->getValue(DimIdx(0), getView());
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -692,9 +707,16 @@ KnobGuiString::updateGUI(int /*dimension*/)
         QString txt = QString::fromUtf8( value.c_str() );
 
         if ( knob->isCustomHTMLText() ) {
+            QString oldText = _textEdit->toHtml();
+            if (oldText == txt) {
+                return;
+            }
             _textEdit->setHtml(txt);
         } else {
-            //QString text = knob->decorateStringWithCurrentState(txt);
+            QString oldText = _textEdit->toPlainText();
+            if (oldText == txt) {
+                return;
+            }
             _textEdit->setPlainText(txt);
         }
 
@@ -718,55 +740,45 @@ KnobGuiString::updateGUI(int /*dimension*/)
         if ( _label && !iconFilePath.empty() ) {
             QString txt = QString::fromUtf8( knob->getValue().c_str() );
             txt.replace( QLatin1String("\n"), QLatin1String("<br>") );
+            if (_label->text() == txt) {
+                return;
+            }
             _label->setText(txt);
         }
     } else {
         assert(_lineEdit);
-        _lineEdit->setText( QString::fromUtf8( value.c_str() ) );
+        QString text = QString::fromUtf8( value.c_str() );
+        if (_lineEdit->text() == text) {
+            return;
+        }
+        _lineEdit->setText(text);
     }
 } // KnobGuiString::updateGUI
 
 void
-KnobGuiString::_hide()
+KnobGuiString::setWidgetsVisible(bool visible)
 {
     KnobStringPtr knob = _knob.lock();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
-        _textEdit->hide();
+        _textEdit->setVisible(visible);
     } else if ( knob->isLabel() ) {
         if (_label) {
-            _label->hide();
+            _label->setVisible(visible);
         }
     } else {
         assert(_lineEdit);
-        _lineEdit->hide();
+        _lineEdit->setVisible(visible);
     }
 }
 
-void
-KnobGuiString::_show()
-{
-    KnobStringPtr knob = _knob.lock();
-
-    if ( knob->isMultiLine() ) {
-        assert(_textEdit);
-        _textEdit->show();
-    } else if ( knob->isLabel() ) {
-        if (_label) {
-            _label->show();
-        }
-    } else {
-        assert(_lineEdit);
-        _lineEdit->show();
-    }
-}
 
 void
 KnobGuiString::setEnabled()
 {
     KnobStringPtr knob = _knob.lock();
-    bool b = knob->isEnabled(0)  &&  knob->getExpression(0).empty();
+    bool b = knob->isEnabled(DimIdx(0), getView())  &&  knob->getExpression(DimIdx(0), getView()).empty();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -789,7 +801,7 @@ KnobGuiString::setEnabled()
 }
 
 void
-KnobGuiString::reflectAnimationLevel(int /*dimension*/,
+KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     KnobStringPtr knob = _knob.lock();
@@ -824,7 +836,7 @@ KnobGuiString::reflectAnimationLevel(int /*dimension*/,
 
 void
 KnobGuiString::setReadOnly(bool readOnly,
-                           int /*dimension*/)
+                           DimSpec /*dimension*/)
 {
     if (_textEdit) {
         if ( !_knob.lock()->isCustomHTMLText() ) {
@@ -847,17 +859,11 @@ KnobGuiString::setDirty(bool dirty)
     }
 }
 
-KnobIPtr
-KnobGuiString::getKnob() const
-{
-    return _knob.lock();
-}
-
 void
-KnobGuiString::reflectExpressionState(int /*dimension*/,
+KnobGuiString::reflectExpressionState(DimIdx /*dimension*/,
                                       bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
 
     if (_textEdit) {
         _textEdit->setAnimation(3);
@@ -873,11 +879,12 @@ KnobGuiString::reflectExpressionState(int /*dimension*/,
 void
 KnobGuiString::updateToolTip()
 {
-    if ( hasToolTip() ) {
+    KnobGuiPtr knobUI = getKnobGui();
+    if ( knobUI->hasToolTip() ) {
 
         if (_textEdit) {
             bool useRichText = _knob.lock()->usesRichText();
-            QString tt = toolTip(0);
+            QString tt = knobUI->toolTip(0, getView());
             if (useRichText) {
                 tt += tr("This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info.");
@@ -886,9 +893,9 @@ KnobGuiString::updateToolTip()
             tt += tr("Use %1 to validate changes made to the text.").arg( seq.toString(QKeySequence::NativeText) );
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
-            toolTip(_lineEdit);
+            knobUI->toolTip(_lineEdit, getView());
         } else if (_label) {
-            toolTip(_label);
+            knobUI->toolTip(_label, getView());
         }
     }
 }

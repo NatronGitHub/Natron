@@ -28,39 +28,77 @@
 
 #include <QApplication>
 #include <QStyle>
+#include <QPalette>
+#include "Engine/Image.h"
+#include "Engine/Settings.h"
+#include "Gui/GuiApplicationManager.h"
+
 
 NATRON_NAMESPACE_ENTER;
+
+static QColor rgbToQColor(double r, double g, double b)
+{
+    QColor c;
+    c.setRgbF(Image::clamp(r, 0., 1.),
+               Image::clamp(g, 0., 1.),
+               Image::clamp(b, 0., 1.));
+    return c;
+}
 
 Label::Label(const QString &text,
              QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(text, parent, f)
-    , altered(false)
+    , textColor()
 
 {
+    double r,g,b;
+    appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+    setTextColor(rgbToQColor(r, g, b));
+
     setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
 
 Label::Label(QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(parent, f)
-    , altered(false)
+    , textColor()
 {
+    double r,g,b;
+    appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+    setTextColor(rgbToQColor(r, g, b));
+
     setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }
 
-bool
-Label::getAltered() const
-{
-    return altered;
-}
+
 
 void
 Label::refreshStyle()
 {
+    setStyleSheet(QString::fromUtf8("QLabel {color: rgb(%1, %2, %3);}\n"
+                                    "QLabel:!enabled { color: black; }").arg(textColor.red()).arg(textColor.green()).arg(textColor.blue()));
     style()->unpolish(this);
     style()->polish(this);
+   // QPalette pal = QPalette(palette());
+   // pal.setColor(QPalette::Foreground, textColor);
+   // setPalette(pal);
     update();
+}
+
+const QColor&
+Label::getTextColor() const
+{
+    return textColor;
+}
+
+void
+Label::setTextColor(const QColor& color)
+{
+    if (color != textColor) {
+        textColor = color;
+        refreshStyle();
+    }
 }
 
 void
@@ -69,10 +107,15 @@ Label::setAltered(bool a)
     if ( !canAlter() ) {
         return;
     }
-    if (this->altered != a) {
-        altered = a;
-        refreshStyle();
+    double r,g,b;
+
+    if (a) {
+        appPTR->getCurrentSettings()->getAltTextColor(&r, &g, &b);
+    } else {
+        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
     }
+    setTextColor(rgbToQColor(r, g, b));
+
 }
 
 NATRON_NAMESPACE_EXIT;

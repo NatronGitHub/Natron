@@ -27,8 +27,7 @@
 #include "Serialization/SerializationFwd.h"
 
 #define kInViewerContextItemLayoutSpacing "Spacing"
-#define kInViewerContextItemLayoutStretchBefore "StretchB"
-#define kInViewerContextItemLayoutStretchAfter "StretchA"
+#define kInViewerContextItemLayoutStretchAfter "Stretch"
 #define kInViewerContextItemLayoutNewLine "NewLine"
 #define kInViewerContextItemLayoutAddSeparator "Separator"
 
@@ -79,14 +78,17 @@ SERIALIZATION_NAMESPACE_ENTER;
  **/
 struct MasterSerialization
 {
+    // The name of the view the knob is slaved to
+    std::string masterViewName;
+
     // The dimension the knob is slaved to in the master knob
     std::string masterDimensionName;
 
     // the node script-name holding this knob
     std::string masterNodeName;
 
-    // if the master knob is part of a track this is the track name
-    std::string masterTrackName;
+    // if the master knob is part of a table item this is the table item fully qualified script-name
+    std::string masterTableItemName;
 
     // the script-name of the master knob
     std::string masterKnobName;
@@ -214,7 +216,8 @@ public:
 
 
     // Animation keyframes
-    std::map<int, std::string> keyframes;
+    // map<view name, map<frame, string> >
+    std::map<std::string,std::map<double, std::string> > keyframes;
 
 };
 
@@ -257,38 +260,56 @@ public:
 
 class KnobSerializationBase;
 
+// Enum indicating what's the data-type saved by the Knob
+enum SerializationValueVariantTypeEnum
+{
+    eSerializationValueVariantTypeNone,
+    eSerializationValueVariantTypeBoolean,
+    eSerializationValueVariantTypeInteger,
+    eSerializationValueVariantTypeDouble,
+    eSerializationValueVariantTypeString
+
+};
+
+
+struct DefaultValueSerialization
+{
+    SerializationValueVariant value;
+    SerializationValueVariantTypeEnum type;
+    bool serializeDefaultValue;
+
+    DefaultValueSerialization()
+    : value()
+    , type(eSerializationValueVariantTypeNone)
+    , serializeDefaultValue(false)
+    {
+
+    }
+};
+
 /**
  * @brief This class is used by KnobSerialization itself
  **/
 struct ValueSerialization
 {
-    // Enum indicating what's the data-type saved by the Knob
-    enum SerializationValueVariantTypeEnum
-    {
-        eSerializationValueVariantTypeNone,
-        eSerializationValueVariantTypeBoolean,
-        eSerializationValueVariantTypeInteger,
-        eSerializationValueVariantTypeDouble,
-        eSerializationValueVariantTypeString
-
-    };
 
     // If true, at least one of the fields below needs to be serialized
     bool _mustSerialize;
 
     int _dimension;
 
-    // Pointer to the actual KnobSerialization
-    KnobSerializationBase* _serialization;
+    // Pointer to the actual KnobSerialization, this is for compatibility only
+    // when loading an old serialization with boost
+    KnobSerialization* _serialization;
 
     // Control which type member holds the current value of the variant
     SerializationValueVariantTypeEnum _type;
 
     // Serialization of the value and default value as a variant
-    SerializationValueVariant _value, _defaultValue;
+    SerializationValueVariant _value;
 
-    // Whether we should save the value and default value
-    bool _serializeValue, _serializeDefaultValue;
+    // Whether we should save the value
+    bool _serializeValue;
 
     // Serialization of the animation curve
     CurveSerialization _animationCurve;
@@ -309,9 +330,7 @@ struct ValueSerialization
     , _serialization(0)
     , _type(eSerializationValueVariantTypeNone)
     , _value()
-    , _defaultValue()
     , _serializeValue(false)
-    , _serializeDefaultValue(false)
     , _animationCurve()
     , _expression()
     , _expresionHasReturnVariable(false)
@@ -360,7 +379,15 @@ public:
     bool _isSecret; // true if the knob is hidden, only serialized for user knob,s
     bool _disabled; // true if the knob is disabled, only serialized for user knobs
     bool _masterIsAlias; // is the master/slave link an alias ?
-    std::vector<ValueSerialization> _values; // serialized value for each dimension
+
+    typedef std::vector<ValueSerialization> PerDimensionValueSerializationVec;
+    typedef std::map<std::string, PerDimensionValueSerializationVec> PerViewValueSerializationMap;
+
+    typedef std::vector<DefaultValueSerialization> PerDimensionDefaultValueSerializationVec;
+
+    PerViewValueSerializationMap _values;
+    PerDimensionDefaultValueSerializationVec _defaultValues;
+
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
     bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
@@ -390,6 +417,7 @@ public:
     , _disabled(false)
     , _masterIsAlias(false)
     , _values()
+    , _defaultValues()
     , _extraData()
     , _isUserKnob(false)
     , _label()
@@ -428,6 +456,10 @@ public:
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
+
+private:
+
+    void decodeValueNode(const std::string& viewName, const YAML::Node& node);
 
 };
 
@@ -482,6 +514,7 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 };
+
 
 SERIALIZATION_NAMESPACE_EXIT;
 

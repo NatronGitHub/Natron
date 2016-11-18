@@ -34,6 +34,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobWidgetDnD.h"
 
@@ -158,20 +159,22 @@ ClickableLabel::setSunken(bool s)
 
 KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
+                                       ViewSetSpec view,
                                        QWidget* parent )
     : ClickableLabel(icon, parent)
-, _dnd(KnobWidgetDnD::create(knob, -1, this) )
+, _dnd(KnobWidgetDnD::create(knob, DimSpec::all(), view, this) )
 {
-    knob->enableRightClickMenu(this, -1);
+    KnobGuiWidgets::enableRightClickMenu(knob, this, DimSpec::all(), view);
 }
 
 KnobClickableLabel::KnobClickableLabel(const QString& text,
                                        const KnobGuiPtr& knob,
+                                       ViewSetSpec view,
                                        QWidget* parent)
     : ClickableLabel(text, parent)
-    , _dnd( KnobWidgetDnD::create(knob, -1, this) )
+, _dnd( KnobWidgetDnD::create(knob, DimSpec::all(), view,this) )
 {
-    knob->enableRightClickMenu(this, -1);
+    KnobGuiWidgets::enableRightClickMenu(knob, this, DimSpec::all(), view);
 }
 
 KnobClickableLabel::~KnobClickableLabel()

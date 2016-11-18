@@ -42,7 +42,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/MemoryInfo.h"
-#include "Engine/RotoContextPrivate.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
@@ -52,11 +51,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
+#include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoShapeRenderCairo.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/RotoPoint.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -90,14 +92,68 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER;
 
-////////////////////////////////////Stroke//////////////////////////////////
+struct RotoStrokeItemPrivate
+{
+
+    mutable QMutex lock;
+    RotoStrokeType type;
+    bool finished;
+
+    struct StrokeCurves
+    {
+        CurvePtr xCurve, yCurve, pressureCurve;
+    };
+
+    /**
+     * @brief A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
+     **/
+    std::vector<StrokeCurves> strokes;
+    double curveT0; // timestamp of the first point in curve
+    double lastTimestamp;
+    RectD bbox;
+    RectD wholeStrokeBboxWhilePainting;
+    mutable QMutex strokeDotPatternsMutex;
+    std::vector<cairo_pattern_t*> strokeDotPatterns;
+
+    OSGLContextWPtr drawingGlCpuContext,drawingGlGpuContext;
+
+    KnobDoubleWPtr effectStrength;
+    KnobBoolWPtr pressureOpacity, pressureSize, pressureHardness, buildUp;
+    KnobDoubleWPtr cloneTranslate;
+    KnobDoubleWPtr cloneRotate;
+    KnobDoubleWPtr cloneScale;
+    KnobBoolWPtr cloneScaleUniform;
+    KnobDoubleWPtr cloneSkewX;
+    KnobDoubleWPtr cloneSkewY;
+    KnobChoiceWPtr cloneSkewOrder;
+    KnobDoubleWPtr cloneCenter;
+    KnobChoiceWPtr cloneFilter;
+    KnobBoolWPtr cloneBlackOutside;
+
+    RotoStrokeItemPrivate(RotoStrokeType type)
+    : type(type)
+    , finished(false)
+    , strokes()
+    , curveT0(0)
+    , lastTimestamp(0)
+    , bbox()
+    , wholeStrokeBboxWhilePainting()
+    , strokeDotPatternsMutex()
+    , strokeDotPatterns()
+    , drawingGlCpuContext()
+    , drawingGlGpuContext()
+    {
+        bbox.x1 = std::numeric_limits<double>::infinity();
+        bbox.x2 = -std::numeric_limits<double>::infinity();
+        bbox.y1 = std::numeric_limits<double>::infinity();
+        bbox.y2 = -std::numeric_limits<double>::infinity();
+    }
+};
 
 RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
-                               const RotoContextPtr& context,
-                               const std::string & name,
-                               const RotoLayerPtr& parent)
+                               const KnobItemsTablePtr& model)
 
-    : RotoDrawableItem(context, name, parent)
+    : RotoDrawableItem(model)
     , _imp( new RotoStrokeItemPrivate(type) )
 {
 }
@@ -114,6 +170,46 @@ RotoStrokeType
 RotoStrokeItem::getBrushType() const
 {
     return _imp->type;
+}
+
+std::string
+RotoStrokeItem::getBaseItemName() const
+{
+    std::string itemName;
+    
+    switch (_imp->type) {
+        case eRotoStrokeTypeSolid:
+            itemName = kRotoPaintBrushBaseName;
+            break;
+        case eRotoStrokeTypeEraser:
+            itemName = kRotoPaintEraserBaseName;
+            break;
+        case eRotoStrokeTypeClone:
+            itemName = kRotoPaintCloneBaseName;
+            break;
+        case eRotoStrokeTypeReveal:
+            itemName = kRotoPaintRevealBaseName;
+            break;
+        case eRotoStrokeTypeBlur:
+            itemName = kRotoPaintBlurBaseName;
+            break;
+        case eRotoStrokeTypeSharpen:
+            itemName = kRotoPaintSharpenBaseName;
+            break;
+        case eRotoStrokeTypeSmear:
+            itemName = kRotoPaintSmearBaseName;
+            break;
+        case eRotoStrokeTypeDodge:
+            itemName = kRotoPaintDodgeBaseName;
+            break;
+        case eRotoStrokeTypeBurn:
+            itemName = kRotoPaintBurnBaseName;
+            break;
+        default:
+            break;
+    }
+    return itemName;
+
 }
 
 static void
@@ -294,7 +390,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
 bool
 RotoStrokeItem::isEmpty() const
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
 
     return _imp->strokes.empty();
 }
@@ -303,7 +399,7 @@ void
 RotoStrokeItem::setStrokeFinished()
 {
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         _imp->finished = true;
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
@@ -338,8 +434,23 @@ RotoStrokeItem::setStrokeFinished()
         maskNode->getEffectInstance()->invalidateHashCache();
     }
 
-    getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);
-    getContext()->clearViewersLastRenderedStrokes();
+
+    KnobItemsTablePtr model = getModel();
+    RotoPaintPtr isRotopaint;
+    if (model) {
+        NodePtr node = model->getNode();
+        if (node) {
+            isRotopaint = toRotoPaint(node->getEffectInstance());
+        }
+    }
+
+
+    if (isRotopaint) {
+        isRotopaint->getNode()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+        isRotopaint->setWhileCreatingPaintStrokeOnMergeNodes(false);
+        //isRotopaint->clearViewersLastRenderedStrokes();
+    }
+
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();
 }
@@ -354,7 +465,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
     RotoStrokeItemPtr thisShared = toRotoStrokeItem( shared_from_this() );
     assert(thisShared);
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         if (_imp->finished) {
             _imp->finished = false;
         }
@@ -409,54 +520,6 @@ RotoStrokeItem::appendPoint(bool newStroke,
         _imp->lastTimestamp = t;
         qDebug("t[%d]=%g", nk, t);
 
-#if 0   // the following was disabled because it creates oscillations.
-
-        // if it's at least the 3rd point in curve, add intermediate point if
-        // the time since last keyframe is larger that the time to the previous one...
-        // This avoids overshooting when the pen suddenly stops, and restarts much later
-        if (nk >= 2) {
-            KeyFrame xp, xpp;
-            bool valid;
-            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 1, &xp);
-            assert(valid);
-            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 2, &xpp);
-            assert(valid);
-
-            double tp = xp.getTime();
-            double tpp = xpp.getTime();
-            if ( (t != tp) && (tp != tpp) && ( (t - tp) > (tp - tpp) ) ) {
-                //printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
-                // add a keyframe to avoid overshoot when the pen stops suddenly and starts again much later
-                KeyFrame yp, ypp;
-                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 1, &yp);
-                assert(valid);
-                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 2, &ypp);
-                assert(valid);
-                KeyFrame pp, ppp;
-                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 1, &pp);
-                assert(valid);
-                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 2, &ppp);
-                assert(valid);
-                double tn = tp + (tp - tpp);
-                KeyFrame xn, yn, pn;
-                double alpha = (tp - tpp) / (t - tp);
-                assert(0 < alpha && alpha < 1);
-                xn.setTime(tn);
-                yn.setTime(tn);
-                pn.setTime(tn);
-                xn.setValue(xp.getValue() * (1 - alpha) + p.pos.x * alpha);
-                yn.setValue(yp.getValue() * (1 - alpha) + p.pos.y * alpha);
-                pn.setValue(pp.getValue() * (1 - alpha) + p.pressure * alpha);
-                _imp->xCurve.addKeyFrame(xn);
-                _imp->xCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                _imp->yCurve.addKeyFrame(yn);
-                _imp->yCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                _imp->pressureCurve.addKeyFrame(pn);
-                _imp->pressureCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                ++nk;
-            }
-        }
-#endif
 
         bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
         int ki; // index of the new keyframe (normally nk, but just in case)
@@ -501,6 +564,66 @@ RotoStrokeItem::appendPoint(bool newStroke,
 } // RotoStrokeItem::appendPoint
 
 void
+RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->strokes.clear();
+
+    for (std::list<std::list<RotoPoint> >::const_iterator it = strokes.begin(); it != strokes.end(); ++it) {
+
+        RotoStrokeItemPrivate::StrokeCurves s;
+        s.xCurve.reset(new Curve);
+        s.yCurve.reset(new Curve);
+        s.pressureCurve.reset(new Curve);
+
+        for (std::list<RotoPoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+
+            int nk = s.xCurve->getKeyFramesCount();
+            bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
+            int ki; // index of the new keyframe (normally nk, but just in case)
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue(it2->pos().x);
+                addKeyFrameOk = s.xCurve->addKeyFrame(k);
+                ki = ( addKeyFrameOk ? nk : (nk - 1) );
+            }
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue(it2->pos().y);
+                bool aok = s.yCurve->addKeyFrame(k);
+                assert(aok == addKeyFrameOk);
+                if (aok != addKeyFrameOk) {
+                    throw std::logic_error("RotoStrokeItem::setStrokes");
+                }
+            }
+
+            {
+                KeyFrame k;
+                k.setTime(it2->timestamp());
+                k.setValue( it2->pressure());
+                bool aok = s.pressureCurve->addKeyFrame(k);
+                assert(aok == addKeyFrameOk);
+                if (aok != addKeyFrameOk) {
+                    throw std::logic_error("RotoStrokeItem::setStrokes");
+                }
+            }
+            // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
+            // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
+            KeyframeTypeEnum interpolation = _imp->type == eRotoStrokeTypeSmear ? eKeyframeTypeFree : eKeyframeTypeCatmullRom;
+            s.xCurve->setKeyFrameInterpolation(interpolation, ki);
+            s.yCurve->setKeyFrameInterpolation(interpolation, ki);
+            s.pressureCurve->setKeyFrameInterpolation(interpolation, ki);
+        }
+
+        _imp->strokes.push_back(s);
+
+    }
+    setStrokeFinished();
+} // setStrokes
+
+void
 RotoStrokeItem::addStroke(const CurvePtr& xCurve,
                           const CurvePtr& yCurve,
                           const CurvePtr& pCurve)
@@ -512,7 +635,7 @@ RotoStrokeItem::addStroke(const CurvePtr& xCurve,
     s.pressureCurve = pCurve;
 
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         _imp->strokes.push_back(s);
     }
     invalidateHashCache();
@@ -525,7 +648,7 @@ RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
 {
     bool empty;
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         if ( _imp->strokes.empty() ) {
             return true;
         }
@@ -559,7 +682,7 @@ RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 void
 RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
     _imp->drawingGlGpuContext = gpuContext;
     _imp->drawingGlCpuContext = cpuContext;
 }
@@ -568,7 +691,7 @@ RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGL
 void
 RotoStrokeItem::getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
     *gpuContext = _imp->drawingGlGpuContext.lock();
     *cpuContext = _imp->drawingGlCpuContext.lock();
 }
@@ -576,13 +699,14 @@ RotoStrokeItem::getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* 
 RectD
 RotoStrokeItem::getWholeStrokeRoDWhilePainting() const
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
 
     return _imp->wholeStrokeBboxWhilePainting;
 }
 
 bool
 RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
+                                                   ViewGetSpec view,
                                                    int lastAge,
                                                    int lastMultiStrokeIndex,
                                                    std::list<std::pair<Point, double> >* points,
@@ -594,17 +718,17 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
 {
     Transform::Matrix3x3 transform;
 
-    getTransformAtTime(time, &transform);
+    getTransformAtTime(time, view, &transform);
 
     if (lastAge == -1) {
-        *wholeStrokeBbox = computeBoundingBox(time);
+        *wholeStrokeBbox = computeBoundingBox(time, view);
     } else {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         *wholeStrokeBbox = _imp->wholeStrokeBboxWhilePainting;
     }
     *isStrokeFirstTick = false;
 
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
     assert( !_imp->strokes.empty() );
     if ( (lastMultiStrokeIndex < 0) || ( lastMultiStrokeIndex >= (int)_imp->strokes.size() ) ) {
         return false;
@@ -640,7 +764,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
     //We changed stroke index so far, reset the age
     if ( (*strokeIndex != lastMultiStrokeIndex) && (lastAge != -1) ) {
         lastAge = -1;
-        *wholeStrokeBbox = computeBoundingBoxInternal(time);
+        *wholeStrokeBbox = computeBoundingBoxInternal(time, view);
     }
 
 
@@ -701,16 +825,16 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
 } // RotoStrokeItem::getMostRecentStrokeChangesSinceAge
 
 void
-RotoStrokeItem::clone(const RotoItem* other)
+RotoStrokeItem::copyItem(const KnobTableItemPtr& other)
 {
-    const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other);
+    const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other.get());
 
     assert(otherStroke);
     if (!otherStroke) {
         throw std::logic_error("RotoStrokeItem::clone");
     }
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         _imp->strokes.clear();
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
              it != otherStroke->_imp->strokes.end(); ++it) {
@@ -726,7 +850,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->type = otherStroke->_imp->type;
         _imp->finished = true;
     }
-    RotoDrawableItem::clone(other);
+    RotoDrawableItem::copyItem(other);
     invalidateHashCache();
     resetNodesThreadSafety();
 }
@@ -742,7 +866,7 @@ RotoStrokeItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase
     RotoDrawableItem::toSerialization(obj);
 
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         switch (_imp->type) {
             case eRotoStrokeTypeBlur:
                 s->_brushType = kRotoStrokeItemSerializationBrushTypeBlur;
@@ -819,7 +943,7 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
     }
     RotoDrawableItem::fromSerialization(obj);
     {
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         _imp->type = strokeTypeFromSerializationString(s->_brushType);
         for (std::list<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves>::const_iterator it = s->_subStrokes.begin(); it!=s->_subStrokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves stroke;
@@ -838,12 +962,12 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
 }
 
 RectD
-RotoStrokeItem::computeBoundingBoxInternal(double time) const
+RotoStrokeItem::computeBoundingBoxInternal(double time, ViewGetSpec view) const
 {
     RectD bbox;
     Transform::Matrix3x3 transform;
 
-    getTransformAtTime(time, &transform);
+    getTransformAtTime(time, view, &transform);
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     bool bboxSet = false;
     double halfBrushSize = getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
@@ -951,23 +1075,23 @@ RotoStrokeItem::computeBoundingBoxInternal(double time) const
 } // RotoStrokeItem::computeBoundingBoxInternal
 
 RectD
-RotoStrokeItem::computeBoundingBox(double time) const
+RotoStrokeItem::computeBoundingBox(double time, ViewGetSpec view) const
 {
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
 
-    return computeBoundingBoxInternal(time);
+    return computeBoundingBoxInternal(time, view);
 }
 
 RectD
-RotoStrokeItem::getBoundingBox(double time) const
+RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
 {
-    bool isActivated = getActivatedKnob()->getValueAtTime(time);
+    bool enabled = isActivated(time, view);
 
-    if (!isActivated) {
+    if (!enabled) {
         return RectD();
     }
 
-    return computeBoundingBox(time);
+    return computeBoundingBox(time, view);
 }
 
 std::list<CurvePtr >
@@ -975,7 +1099,7 @@ RotoStrokeItem::getXControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
     }
@@ -988,7 +1112,7 @@ RotoStrokeItem::getYControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
-    QMutexLocker k(&itemMutex);
+    QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
     }
@@ -999,20 +1123,25 @@ RotoStrokeItem::getYControlPoints() const
 void
 RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
                                double time,
+                               ViewGetSpec view,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
-                               RectD* bbox) const
+                               RectD* bbox,
+                               bool ignoreTransform) const
 {
     double brushSize = getBrushSizeKnob()->getValueAtTime(time) / 2.;
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     Transform::Matrix3x3 transform;
-
-    getTransformAtTime(time, &transform);
+    if (ignoreTransform) {
+        transform.setIdentity();
+    } else {
+        getTransformAtTime(time, view, &transform);
+    }
 
     bool bboxSet = false;
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xSet, ySet, pSet;
         {
-            QMutexLocker k(&itemMutex);
+            QMutexLocker k(&_imp->lock);
             xSet = it->xCurve->getKeyFrames_mt_safe();
             ySet = it->yCurve->getKeyFrames_mt_safe();
             pSet = it->pressureCurve->getKeyFrames_mt_safe();
@@ -1042,7 +1171,7 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
     {
         // Append the item knobs
-        QMutexLocker k(&itemMutex);
+        QMutexLocker k(&_imp->lock);
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
             Hash64::appendCurve(it->xCurve, hash);
             Hash64::appendCurve(it->yCurve, hash);
@@ -1064,6 +1193,131 @@ RotoStrokeItem::invalidateHashCache(bool invalidateParent)
     RotoDrawableItem::invalidateHashCache(invalidateParent);
 }
 
+void
+RotoStrokeItem::initializeKnobs()
+{
+    RotoDrawableItem::initializeKnobs();
+
+
+    // Make a strength parameter when relevant
+    if (_imp->type == eRotoStrokeTypeBlur ||
+        _imp->type == eRotoStrokeTypeSharpen) {
+        _imp->effectStrength = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushEffectParam);
+    }
+
+    // This is global to any stroke
+    _imp->pressureSize = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureSizeParam);
+    _imp->pressureOpacity = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureOpacityParam);
+    _imp->pressureHardness = createDuplicateOfTableKnob<KnobBool>(kRotoBrushPressureHardnessParam);
+    _imp->buildUp = createDuplicateOfTableKnob<KnobBool>(kRotoBrushBuildupParam);
+
+    if ( (_imp->type == eRotoStrokeTypeClone) || (_imp->type == eRotoStrokeTypeReveal) ) {
+        // Clone transform
+        _imp->cloneTranslate = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushTranslateParam);
+        _imp->cloneRotate = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushRotateParam);
+        _imp->cloneScale = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushScaleParam);
+        _imp->cloneScaleUniform = createDuplicateOfTableKnob<KnobBool>(kRotoBrushScaleUniformParam);
+        _imp->cloneSkewX = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSkewXParam);
+        _imp->cloneSkewY = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSkewYParam);
+        _imp->cloneSkewOrder = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushSkewOrderParam);
+        _imp->cloneCenter = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushCenterParam);
+        _imp->cloneFilter = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushFilterParam);
+        _imp->cloneBlackOutside = createDuplicateOfTableKnob<KnobBool>(kRotoBrushBlackOutsideParam);
+    }
+    
+}
+
+
+KnobDoublePtr
+RotoStrokeItem::getBrushEffectKnob() const
+{
+    return _imp->effectStrength.lock();
+}
+
+
+KnobBoolPtr
+RotoStrokeItem::getPressureOpacityKnob() const
+{
+    return _imp->pressureOpacity.lock();
+}
+
+KnobBoolPtr
+RotoStrokeItem::getPressureSizeKnob() const
+{
+    return _imp->pressureSize.lock();
+}
+
+KnobBoolPtr
+RotoStrokeItem::getPressureHardnessKnob() const
+{
+    return _imp->pressureHardness.lock();
+}
+
+KnobBoolPtr
+RotoStrokeItem::getBuildupKnob() const
+{
+    return _imp->buildUp.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneTranslateKnob() const
+{
+    return _imp->cloneTranslate.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneRotateKnob() const
+{
+    return _imp->cloneRotate.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneScaleKnob() const
+{
+    return _imp->cloneScale.lock();
+}
+
+KnobBoolPtr
+RotoStrokeItem::getBrushCloneScaleUniformKnob() const
+{
+    return _imp->cloneScaleUniform.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneSkewXKnob() const
+{
+    return _imp->cloneSkewX.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneSkewYKnob() const
+{
+    return _imp->cloneSkewY.lock();
+}
+
+KnobChoicePtr
+RotoStrokeItem::getBrushCloneSkewOrderKnob() const
+{
+    return _imp->cloneSkewOrder.lock();
+}
+
+KnobDoublePtr
+RotoStrokeItem::getBrushCloneCenterKnob() const
+{
+    return _imp->cloneCenter.lock();
+}
+
+KnobChoicePtr
+RotoStrokeItem::getBrushCloneFilterKnob() const
+{
+    return _imp->cloneFilter.lock();
+}
+
+KnobBoolPtr
+RotoStrokeItem::getBrushCloneBlackOutsideKnob() const
+{
+    return _imp->cloneBlackOutside.lock();
+}
 
 NATRON_NAMESPACE_EXIT;
 

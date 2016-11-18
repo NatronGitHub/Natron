@@ -102,7 +102,7 @@ NodeGraph::checkForHints(bool shiftdown,
     {
         for (std::set<NodeGuiPtr>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
             bool isAlreadyAnOutput = false;
-            const NodesWList& outputs = internalNode->getGuiOutputs();
+            const NodesWList& outputs = internalNode->getOutputs();
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr node = it2->lock();
                 if (!node) {
@@ -235,7 +235,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;

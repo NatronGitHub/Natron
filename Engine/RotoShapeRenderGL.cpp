@@ -32,7 +32,6 @@
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
-#include "Engine/RotoContext.h"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -630,9 +629,10 @@ void
 RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
-                                   const Bezier* bezier,
+                                   const BezierPtr& bezier,
                                    double opacity,
                                    double /*time*/,
+                                   ViewIdx view,
                                    double startTime,
                                    double endTime,
                                    double mbFrameStep,
@@ -661,10 +661,15 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
     GLShaderBasePtr fillShader = glContext->getOrCreateFillShader();
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
-        double fallOff = bezier->getFeatherFallOff(t);
-        double featherDist = bezier->getFeatherDistance(t);
-        double shapeColor[3];
-        bezier->getColor(t, shapeColor);
+        double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
+        double featherDist = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
+        std::vector<double> shapeColor(3);
+        {
+            KnobColorPtr colorKnob = bezier->getColorKnob();
+            for (int i = 0; i < 3; ++i) {
+                shapeColor[i] = colorKnob->getValueAtTime(t, DimIdx(i), view);
+            }
+        }
 
 
         ///Adjust the feather distance so it takes the mipmap level into account
@@ -673,7 +678,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         }
 
         RotoBezierTriangulation::PolygonData data;
-        RotoBezierTriangulation::computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
+        RotoBezierTriangulation::computeTriangles(bezier, t, view, mipmapLevel, featherDist, &data);
 
         if (glContext->isGPUContext()) {
             setupTexParams<GL_GPU>(target);
@@ -1331,10 +1336,11 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
                                    const double distToNextIn,
                                    const Point& lastCenterPointIn,
-                                   const RotoDrawableItem* stroke,
+                                   const RotoStrokeItemPtr& stroke,
                                    bool doBuildup,
                                    double opacity,
                                    double time,
+                                   ViewIdx view,
                                    unsigned int mipmapLevel,
                                    double *distToNextOut,
                                    Point* lastCenterPointOut)
@@ -1345,19 +1351,20 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
     data.dstImage = dstImage;
     data.roi = roi;
     RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
-                                                            renderStrokeBegin_gl,
-                                                            renderStrokeRenderDot_gl,
-                                                            renderStrokeEnd_gl,
-                                                            strokes,
-                                                            distToNextIn,
-                                                            lastCenterPointIn,
-                                                            stroke,
-                                                            doBuildup,
-                                                            opacity,
-                                                            time,
-                                                            mipmapLevel,
-                                                            distToNextOut,
-                                                            lastCenterPointOut);
+                                                     renderStrokeBegin_gl,
+                                                     renderStrokeRenderDot_gl,
+                                                     renderStrokeEnd_gl,
+                                                     strokes,
+                                                     distToNextIn,
+                                                     lastCenterPointIn,
+                                                     stroke,
+                                                     doBuildup,
+                                                     opacity,
+                                                     time,
+                                                     view,
+                                                     mipmapLevel,
+                                                     distToNextOut,
+                                                     lastCenterPointOut);
 }
 
 
@@ -1662,9 +1669,10 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
                                   const double distToNextIn,
                                   const Point& lastCenterPointIn,
-                                  const RotoDrawableItem* stroke,
+                                  const RotoStrokeItemPtr& stroke,
                                   double opacity,
                                   double time,
+                                  ViewIdx view,
                                   unsigned int mipmapLevel,
                                   double *distToNextOut,
                                   Point* lastCenterPointOut)
@@ -1675,19 +1683,20 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     data.dstImage = dstImage;
     data.roi = roi;
     bool hasRenderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
-                                                     renderSmearBegin_gl,
-                                                     renderSmearRenderDot_gl,
-                                                     renderSmearEnd_gl,
-                                                     strokes,
-                                                     distToNextIn,
-                                                     lastCenterPointIn,
-                                                     stroke,
-                                                     false,
-                                                     opacity,
-                                                     time,
-                                                     mipmapLevel,
-                                                     distToNextOut,
-                                                     lastCenterPointOut);
+                                                                           renderSmearBegin_gl,
+                                                                           renderSmearRenderDot_gl,
+                                                                           renderSmearEnd_gl,
+                                                                           strokes,
+                                                                           distToNextIn,
+                                                                           lastCenterPointIn,
+                                                                           stroke,
+                                                                           false,
+                                                                           opacity,
+                                                                           time,
+                                                                           view,
+                                                                           mipmapLevel,
+                                                                           distToNextOut,
+                                                                           lastCenterPointOut);
 
     // Also report the results to the dst image on the default framebuffer
     if (!glContext->isGPUContext()) {

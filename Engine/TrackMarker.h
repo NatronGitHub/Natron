@@ -39,6 +39,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobItemsTable.h"
 
 #include "Serialization/SerializationBase.h"
 
@@ -102,22 +103,19 @@ NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
 class TrackMarker
-    : public NamedKnobHolder
-    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    : public KnobTableItem
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const TrackerContextPtr& context);
+    TrackMarker(const KnobItemsTablePtr& context);
 
 public:
-    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const KnobItemsTablePtr& model) WARN_UNUSED_RETURN
     {
-        return TrackMarkerPtr( new TrackMarker(context) );
+        return TrackMarkerPtr( new TrackMarker(model) );
     }
 
     TrackMarkerPtr shared_from_this() {
@@ -126,19 +124,18 @@ public:
 
     virtual ~TrackMarker();
 
-    void clone(const TrackMarker& other);
+    virtual bool isItemContainer() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
+    virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL {
+        return true;
+    }
 
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
-    TrackerContextPtr getContext() const;
 
-    bool setScriptName(const std::string& name);
-    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    void setLabel(const std::string& label);
-    std::string getLabel() const;
     KnobDoublePtr getSearchWindowBottomLeftKnob() const;
     KnobDoublePtr getSearchWindowTopRightKnob() const;
     KnobDoublePtr getPatternTopLeftKnob() const;
@@ -154,15 +151,7 @@ public:
     KnobChoicePtr getMotionModelKnob() const;
     KnobBoolPtr getEnabledKnob() const;
 
-    int getReferenceFrame(int time, int frameStep) const;
-
-    bool isUserKeyframe(int time) const;
-
-    int getPreviousKeyframe(int time) const;
-
-    int getNextKeyframe( int time) const;
-
-    void getUserKeyframes(std::set<int>* keyframes) const;
+    int getReferenceFrame(double time, int frameStep) const;
 
     void getCenterKeyframes(std::set<double>* keyframes) const;
 
@@ -182,65 +171,36 @@ public:
 
     void resetTrack();
 
-    void setKeyFrameOnCenterAndPatternAtTime(int time);
-
-    void setUserKeyframe(int time);
-
-    void removeUserKeyframe(int time);
-
+    void setKeyFrameOnCenterAndPatternAtTime(double time);
     /*
        Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
-    void clearAnimationBeforeTime(int time);
-    void clearAnimationAfterTime(int time);
+    void clearAnimationBeforeTime(double time);
+    void clearAnimationAfterTime(double time);
 
-    void removeAllUserKeyframes();
 
-    std::pair<ImagePtr, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(double time, const RectI& roi) const;
 
-    RectI getMarkerImageRoI(int time) const;
+    RectI getMarkerImageRoI(double time) const;
 
-    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
-                              int dimension,
-                              bool isSlave) OVERRIDE FINAL;
+    /*virtual void onKnobSlaved(const KnobIPtr& slave,
+                              const KnobIPtr& master,
+                              DimIdx dimension,
+                              ViewIdx view,
+                              bool isSlave) OVERRIDE FINAL;*/
 
     void notifyTrackingStarted();
     void notifyTrackingEnded();
+
+    virtual std::string getBaseItemName() const OVERRIDE;
+
 
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
 
-public Q_SLOTS:
 
-    void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
-    void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
-    void onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec view, int dimension, int reason);
-    void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
-    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-    void onCenterAnimationRemoved(ViewSpec view, int dimension);
-
-    void onCenterKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onOffsetKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onErrorKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onWeightKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onMotionModelKnobValueChanged(ViewSpec, int dimension, int reason);
-
-    /*void onPatternTopLeftKnobValueChanged(int dimension,int reason);
-       void onPatternTopRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
-    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);
-
-public Q_SLOTS:
-
-    void onEnabledValueChanged(ViewSpec, int dimension, int reason);
-
-Q_SIGNALS:
-
-    void enabledChanged(int reason);
 
 private:
 
@@ -275,10 +235,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const TrackerContextPtr& context);
+    TrackMarkerPM(const KnobItemsTablePtr& context);
 
 public:
-    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const KnobItemsTablePtr& context) WARN_UNUSED_RETURN
     {
         return TrackMarkerPtr( new TrackMarkerPM(context) );
     }

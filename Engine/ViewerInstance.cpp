@@ -64,7 +64,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
@@ -351,8 +350,8 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
     KnobChoicePtr alphaChannelKnob = viewerGroup->getAlphaChannelKnob();
 
     // Remember the current choices
-    std::string layerCurChoice = layerKnob->getActiveEntryText_mt_safe();
-    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText_mt_safe();
+    std::string layerCurChoice = layerKnob->getActiveEntryText();
+    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText();
 
     // Merge components from A and B
     std::set<ImageComponents> components;
@@ -440,7 +439,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundLayerIndex != -1);
-    layerKnob->setValueFromPlugin(foundLayerIndex, ViewSpec::current(), 0);
+    layerKnob->setValue(foundLayerIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsLayer = (foundCurIt == components.end()) ? ImageComponents::getNoneComponents() : *foundCurIt;
@@ -465,7 +464,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundAlphaIndex != -1);
-    alphaChannelKnob->setValueFromPlugin(foundAlphaIndex, ViewSpec::current(), 0);
+    alphaChannelKnob->setValue(foundAlphaIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsAlphaLayer = (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) ? ImageComponents::getNoneComponents() : *foundCurAlphaIt;

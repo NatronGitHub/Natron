@@ -96,14 +96,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/StubNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/TrackMarker.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/TrackerNode.h"
+#include "Engine/TrackerHelper.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -150,7 +150,6 @@ Node::Node(const AppInstancePtr& app,
     , _imp( new NodePrivate(this, app, group, plugin) )
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
-    QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
     if (plugin && QString::fromUtf8(plugin->getPluginID().c_str()).startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
@@ -176,32 +175,6 @@ Node::isPersistent() const
     return _imp->isPersistent;
 }
 
-void
-Node::createRotoContextConditionnally()
-{
-    assert(!_imp->rotoContext);
-    assert(_imp->effect);
-    ///Initialize the roto context if any
-    if ( isRotoPaintingNode() ) {
-        _imp->effect->beginChanges();
-        _imp->rotoContext = RotoContext::create( shared_from_this() );
-        _imp->effect->endChanges(true);
-        _imp->rotoContext->createBaseLayer();
-        declareRotoPythonField();
-    }
-}
-
-void
-Node::createTrackerContextConditionnally()
-{
-    assert(!_imp->trackContext);
-    assert(_imp->effect);
-    ///Initialize the tracker context if any
-    if ( _imp->effect->isBuiltinTrackerNode() ) {
-        _imp->trackContext = TrackerContext::create( shared_from_this() );
-        declareTrackerPythonField();
-    }
-}
 
 PluginPtr
 Node::getPlugin() const
@@ -463,12 +436,6 @@ Node::load(const CreateNodeArgsPtr& args)
     // Set plug-in accepted bitdepths and set default metadata
     refreshAcceptedBitDepths();
 
-    // Create RotoContext if needed
-    createRotoContextConditionnally();
-
-    // Create TrackerContext if needed
-    createTrackerContextConditionnally();
-
     // Load inputs
     initializeInputs();
 
@@ -493,7 +460,7 @@ Node::load(const CreateNodeArgsPtr& args)
     // Setup default-metadata
     _imp->effect->setDefaultMetadata();
 
-    // For OpenFX we crate the image effect now
+    // For OpenFX we create the image effect now
     _imp->effect->createInstanceAction();
 
     // For readers, set their original frame range when creating them
@@ -790,6 +757,7 @@ Node::getPaintStrokeRoD_duringPainting() const
 
 void
 Node::getPaintStrokeRoD(double time,
+                        ViewIdx view,
                         RectD* bbox) const
 {
     bool duringPaintStroke = _imp->effect->isDuringPaintStrokeCreationThreadLocal();
@@ -802,7 +770,7 @@ Node::getPaintStrokeRoD(double time,
         if (!item) {
             throw std::logic_error("");
         }
-        *bbox = item->getBoundingBox(time);
+        *bbox = item->getBoundingBox(time, view);
     }
 }
 
@@ -824,6 +792,7 @@ Node::clearLastPaintStrokeRoD()
 
 void
 Node::getLastPaintStrokePoints(double time,
+                               ViewIdx view,
                                unsigned int mipmapLevel,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
                                int* strokeIndex) const
@@ -855,7 +824,7 @@ Node::getLastPaintStrokePoints(double time,
         if (!stroke) {
             throw std::logic_error("");
         }
-        stroke->evaluateStroke(mipmapLevel, time, strokes);
+        stroke->evaluateStroke(mipmapLevel, time, view, strokes);
         *strokeIndex = 0;
     }
 }
@@ -968,51 +937,20 @@ Node::getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const
     *warnings = _imp->streamWarnings;
 }
 
-void
-Node::declareRotoPythonField()
-{
-    if (getScriptName_mt_safe().empty()) {
-        return;
-    }
-    assert(_imp->rotoContext);
-    std::string appID = getApp()->getAppIDString();
-    std::string nodeName = getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string err;
-    std::string script = nodeFullName + ".roto = " + nodeFullName + ".getRotoContext()\n";
-    if ( !appPTR->isBackground() ) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("Node::declareRotoPythonField(): interpretPythonScript(" + script + ") failed!");
-    }
-    _imp->rotoContext->declarePythonFields();
-}
+
 
 void
-Node::declareTrackerPythonField()
+Node::declareTablePythonFields()
 {
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (!table) {
+        return;
+    }
     if (getScriptName_mt_safe().empty()) {
         return;
     }
 
-    assert(_imp->trackContext);
-    std::string appID = getApp()->getAppIDString();
-    std::string nodeName = getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string err;
-    std::string script = nodeFullName + ".tracker = " + nodeFullName + ".getTrackerContext()\n";
-    if ( !appPTR->isBackground() ) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("Node::declareTrackerPythonField(): interpretPythonScript(" + script + ") failed!");
-    }
-    _imp->trackContext->declarePythonFields();
+    table->declareItemsToPython();
 }
 
 NodeCollectionPtr
@@ -1056,7 +994,7 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 KnobIntBasePtr isInt = toKnobIntBase(nodeKnobs[j]);
                 KnobDoubleBasePtr isDbl = toKnobDoubleBase(nodeKnobs[j]);
                 KnobStringBasePtr isStr = toKnobStringBase(nodeKnobs[j]);
-                int nDims = nodeKnobs[j]->getDimension();
+                int nDims = nodeKnobs[j]->getNDimensions();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
                 propName += "_";
@@ -1065,25 +1003,25 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                     std::vector<bool> v = args.getPropertyN<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isBool->setValue(v[d], ViewSpec(0), d);
+                        isBool->setValue(v[d]);
                     }
                 } else if (isInt) {
                     std::vector<int> v = args.getPropertyN<int>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isInt->setValue(v[d], ViewSpec(0), d);
+                        isInt->setValue(v[d]);
                     }
                 } else if (isDbl) {
                     std::vector<double> v = args.getPropertyN<double>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isDbl->setValue(v[d], ViewSpec(0), d );
+                        isDbl->setValue(v[d]);
                     }
                 } else if (isStr) {
                     std::vector<std::string> v = args.getPropertyN<std::string>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
-                        isStr->setValue(v[d],ViewSpec(0), d );
+                        isStr->setValue(v[d]);
                     }
                 }
                 break;
@@ -1101,7 +1039,7 @@ findMasterKnob(const KnobIPtr & knob,
            const NodesList & allNodes,
            const std::string& masterKnobName,
            const std::string& masterNodeName,
-           const std::string& masterTrackName)
+           const std::string& masterItemName)
 {
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode;
@@ -1130,12 +1068,12 @@ findMasterKnob(const KnobIPtr & knob,
         return KnobIPtr();
     }
 
-    if ( !masterTrackName.empty() ) {
-        TrackerContextPtr context = masterNode->getTrackerContext();
-        if (context) {
-            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
-            if (marker) {
-                return marker->getKnobByName(masterKnobName);
+    if ( !masterItemName.empty() ) {
+        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable();
+        if (table) {
+            KnobTableItemPtr item = table->getItemByFullyQualifiedScriptName(masterItemName);
+            if (item) {
+                return item->getKnobByName(masterKnobName);
             }
         }
     } else {
@@ -1189,82 +1127,101 @@ Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSeri
         {
             if (isKnobSerialization->_masterIsAlias) {
                 if (!isKnobSerialization->_values.empty()) {
-                    const std::string& aliasKnobName = isKnobSerialization->_values[0]._slaveMasterLink.masterKnobName;
-                    const std::string& aliasNodeName = isKnobSerialization->_values[0]._slaveMasterLink.masterNodeName;
-                    const std::string& masterTrackName  = isKnobSerialization->_values[0]._slaveMasterLink.masterTrackName;
-                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName);
+                    const SERIALIZATION_NAMESPACE::ValueSerialization value = isKnobSerialization->_values.begin()->second[0];
+                    const std::string& aliasKnobName = value._slaveMasterLink.masterKnobName;
+                    const std::string& aliasNodeName = value._slaveMasterLink.masterNodeName;
+                    const std::string& masterTableItemName  = value._slaveMasterLink.masterTableItemName;
+                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTableItemName);
                     if (alias) {
                         knob->setKnobAsAliasOfThis(alias, true);
                     }
                 }
             } else {
-                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
-                    if (!isKnobSerialization->_values[i]._slaveMasterLink.hasLink) {
-                        continue;
-                    }
+                const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
+                for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
+                     it != isKnobSerialization->_values.end(); ++it) {
 
-                    std::string masterKnobName, masterNodeName, masterTrackName;
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterNodeName.empty()) {
-                         // Node name empty, assume this is the same node
-                        masterNodeName = getScriptName_mt_safe();
-                    }
+                    // Find a matching view name
+                    ViewIdx view_i(0);
+                    Project::getViewIndex(projectViews, it->first, &view_i);
 
-                    if (isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.empty()) {
-                        // Knob name empty, assume this is the same knob unless it has a single dimension
-                        if (knob->getDimension() == 1) {
+                    for (std::size_t i = 0; i < it->second.size(); ++i) {
+                        if (!it->second[i]._slaveMasterLink.hasLink) {
                             continue;
                         }
-                        masterKnobName = knob->getName();
-                    }
 
-                    masterTrackName = isKnobSerialization->_values[i]._slaveMasterLink.masterTrackName;
-                    KnobIPtr master = findMasterKnob(knob,
-                                                     allNodes,
-                                                     masterKnobName,
-                                                     masterNodeName,
-                                                     masterTrackName);
-                    if (master) {
-                        // Find dimension in master by name
-                        int dimIndex = -1;
-                        if (master->getDimension() == 1) {
-                            dimIndex = 0;
-                        } else {
-                            for (int d = 0; d < master->getDimension(); ++d) {
-                                if ( boost::iequals(master->getDimensionName(d), isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName) ) {
-                                    dimIndex = d;
-                                    break;
+                        std::string masterKnobName, masterNodeName, masterTableItemName;
+                        if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
+                            // Node name empty, assume this is the same node
+                            masterNodeName = getScriptName_mt_safe();
+                        }
+
+                        if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
+                            // Knob name empty, assume this is the same knob unless it has a single dimension
+                            if (knob->getNDimensions() == 1) {
+                                continue;
+                            }
+                            masterKnobName = knob->getName();
+                        }
+
+                        masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
+                        KnobIPtr master = findMasterKnob(knob,
+                                                         allNodes,
+                                                         masterKnobName,
+                                                         masterNodeName,
+                                                         masterTableItemName);
+                        if (master) {
+                            // Find dimension in master by name
+                            int otherDimIndex = -1;
+                            if (master->getNDimensions() == 1) {
+                                otherDimIndex = 0;
+                            } else {
+                                for (int d = 0; d < master->getNDimensions(); ++d) {
+                                    if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[i]._slaveMasterLink.masterDimensionName) ) {
+                                        otherDimIndex = d;
+                                        break;
+                                    }
+                                }
+                                if (otherDimIndex == -1) {
+                                    // Before Natron 2.2 we serialized the dimension index. Try converting to an int
+                                    otherDimIndex = QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
                                 }
                             }
-                            if (dimIndex == -1) {
-                                // Before Natron 2.2 we serialized the dimension index. Try converting to an int
-                                dimIndex = QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                            ViewIdx otherView(0);
+                            Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
+
+                            if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
+                                knob->slaveTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
+                            } else {
+                                throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                             }
                         }
-                        if (dimIndex >=0 && dimIndex < master->getDimension()) {
-                            knob->slaveTo(isKnobSerialization->_values[i]._dimension, master, dimIndex);
-                        } else {
-                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(isKnobSerialization->_values[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( isKnobSerialization->_values[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
-                        }
-                    }
 
-                }
-
-            }
+                    } // for each dimensions
+                } // for each view
+            } // isAlias
         }
 
         // Restore expressions
         {
-
-            try {
-                for (std::size_t i = 0; i < isKnobSerialization->_values.size(); ++i) {
-                    if ( !isKnobSerialization->_values[i]._expression.empty() ) {
-                        knob->restoreExpression(isKnobSerialization->_values[i]._dimension, isKnobSerialization->_values[i]._expression, isKnobSerialization->_values[i]._expresionHasReturnVariable);
+            const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
+            for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
+                 it != isKnobSerialization->_values.end(); ++it) {
+                // Find a matching view name
+                ViewIdx view_i(0);
+                Project::getViewIndex(projectViews, it->first, &view_i);
+                
+                for (std::size_t i = 0; i < it->second.size(); ++i) {
+                    try {
+                        if ( !it->second[i]._expression.empty() ) {
+                            knob->restoreExpression(DimIdx(it->second[i]._dimension), view_i,  it->second[i]._expression, it->second[i]._expresionHasReturnVariable);
+                        }
+                    } catch (const std::exception& e) {
+                        QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
+                        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
                     }
-                }
-            } catch (const std::exception& e) {
-                QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
-            }
+                } // for all dimensions
+            } // for all views
         }
     }
 }
@@ -1495,15 +1452,23 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
 
         bool hasExpr = false;
-        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
-            if (!knobs[i]->getExpression(d).empty()) {
-                hasExpr = true;
-                break;
-            }
-            std::pair<int, KnobIPtr > master = knobs[i]->getMaster(d);
-            if (master.second) {
-                hasExpr = true;
-                break;
+        {
+            std::list<ViewIdx> views = knobs[i]->getViewsList();
+            for (int d = 0; d < knobs[i]->getNDimensions(); ++d) {
+                for (std::list<ViewIdx>::const_iterator itV = views.begin(); itV != views.end(); ++itV) {
+                    if (!knobs[i]->getExpression(DimIdx(d), *itV).empty()) {
+                        hasExpr = true;
+                        break;
+                    }
+                    MasterKnobLink linkData;
+                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                        hasExpr = true;
+                        break;
+                    }
+                }
+                if (hasExpr) {
+                    break;
+                }
             }
         }
         if (!knobs[i]->getIsPersistent() && !hasExpr) {
@@ -1522,7 +1487,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         }
 
 
-        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
+        if (!isFullSaveMode && !knobs[i]->hasModifications()) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }
@@ -1577,18 +1542,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         serialization->_masterNodecriptName = masterNode->getScriptName_mt_safe();
     }
 
-    RotoContextPtr roto = getRotoContext();
-    if ( roto && !roto->isEmpty() ) {
-        serialization->_rotoContext.reset(new SERIALIZATION_NAMESPACE::RotoContextSerialization);
-        roto->toSerialization(serialization->_rotoContext.get());
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (table && table->getNumTopLevelItems() > 0) {
+        serialization->_tableModel.reset(new SERIALIZATION_NAMESPACE::KnobItemsTableSerialization);
+        table->toSerialization(serialization->_tableModel.get());
     }
-
-    TrackerContextPtr tracker = getTrackerContext();
-    if (tracker) {
-        serialization->_trackerContext.reset(new SERIALIZATION_NAMESPACE::TrackerContextSerialization);
-        tracker->toSerialization(serialization->_trackerContext.get());
-    }
-
 
     // For groups, serialize its children if the graph was edited
     NodeGroupPtr isGrp = isEffectNodeGroup();
@@ -1765,19 +1723,15 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
     if (filenameParam) {
-        computeFrameRangeForReader(filenameParam);
+        computeFrameRangeForReader(filenameParam, false);
     }
 
     // now restore the roto context if the node has a roto context
-    if (serialization._rotoContext && _imp->rotoContext) {
-        _imp->rotoContext->resetToDefault();
-        _imp->rotoContext->fromSerialization(*serialization._rotoContext);
-    }
-
-    // same for tracker context
-    if (serialization._trackerContext && _imp->trackContext) {
-        _imp->trackContext->clearMarkers();
-        _imp->trackContext->fromSerialization(*serialization._trackerContext);
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (serialization._tableModel && table) {
+        table->resetModel(eTableChangeReasonInternal);
+        table->fromSerialization(*serialization._tableModel);
+        table->declareItemsToPython();
     }
 
     {
@@ -1919,18 +1873,18 @@ Node::loadPresetsInternal(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& s
                 KnobBoolBasePtr isBool = toKnobBoolBase(*it);
                 KnobStringBasePtr isString = toKnobStringBase(*it);
                 KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
-                for (int d = 0; d < (*it)->getDimension(); ++d) {
-                    if ((*it)->isAnimated(d)) {
-                        continue;
-                    }
+                if ((*it)->hasAnimation()) {
+                    continue;
+                }
+                for (int d = 0; d < (*it)->getNDimensions(); ++d) {
                     if (isInt) {
-                        isInt->setDefaultValue(isInt->getValue(d), d);
+                        isInt->setDefaultValue(isInt->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isBool) {
-                        isBool->setDefaultValue(isBool->getValue(d), d);
+                        isBool->setDefaultValue(isBool->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isString) {
-                        isString->setDefaultValue(isString->getValue(d), d);
+                        isString->setDefaultValue(isString->getValue(DimIdx(d)), DimIdx(d));
                     } else if (isDouble) {
-                        isDouble->setDefaultValue(isDouble->getValue(d), d);
+                        isDouble->setDefaultValue(isDouble->getValue(DimIdx(d)), DimIdx(d));
                     }
                 }
             }
@@ -2150,9 +2104,8 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 continue;
             }
             (*it)->blockValueChanges();
-            for (int d = 0; d < (*it)->getDimension(); ++d) {
-                (*it)->resetToDefaultValue(d);
-            }
+            (*it)->unSplitAllViews();
+            (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
             (*it)->unblockValueChanges();
         }
     }
@@ -2193,24 +2146,24 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 if ( (isBtn && !isBtn->getIsCheckable())  || isPage || isSeparator) {
                     continue;
                 }
+                if ((*it)->hasAnimation()) {
+                    continue;
+                }
 
                 if ((*it)->getIsPersistent()) {
                     KnobIntBasePtr isInt = toKnobIntBase(*it);
                     KnobBoolBasePtr isBool = toKnobBoolBase(*it);
                     KnobStringBasePtr isString = toKnobStringBase(*it);
                     KnobDoubleBasePtr isDouble = toKnobDoubleBase(*it);
-                    for (int d = 0; d < (*it)->getDimension(); ++d) {
-                        if ((*it)->isAnimated(d)) {
-                            continue;
-                        }
+                    for (int d = 0; d < (*it)->getNDimensions(); ++d) {
                         if (isInt) {
-                            isInt->setDefaultValue(isInt->getInitialDefaultValue(d), d);
+                            isInt->setDefaultValue(isInt->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isBool) {
-                            isBool->setDefaultValue(isBool->getInitialDefaultValue(d), d);
+                            isBool->setDefaultValue(isBool->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isString) {
-                            isString->setDefaultValue(isString->getInitialDefaultValue(d), d);
+                            isString->setDefaultValue(isString->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         } else if (isDouble) {
-                            isDouble->setDefaultValue(isDouble->getInitialDefaultValue(d), d);
+                            isDouble->setDefaultValue(isDouble->getInitialDefaultValue(DimIdx(d)), DimIdx(d));
                         }
                     }
                 }
@@ -2490,9 +2443,10 @@ Node::areAllProcessingThreadsQuit() const
         }
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        if ( !trackerContext->hasTrackerThreadQuit() ) {
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if ( tracker && !tracker->hasTrackerThreadQuit() ) {
             return false;
         }
     }
@@ -2513,16 +2467,11 @@ Node::quitAnyProcessing_non_blocking()
     //Returns when the preview is done computign
     _imp->abortPreview_non_blocking();
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->quitTrackerThread_non_blocking();
-    }
-
-    if ( isRotoPaintingNode() ) {
-        NodesList rotopaintNodes;
-        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing_non_blocking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->quitTrackerThread_non_blocking();
         }
     }
 }
@@ -2530,15 +2479,6 @@ Node::quitAnyProcessing_non_blocking()
 void
 Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        if (_imp->nodeIsDequeuing) {
-            _imp->nodeIsDequeuing = false;
-
-            //Attempt to wake-up  sleeping threads of the thread pool
-            _imp->nodeIsDequeuingCond.wakeAll();
-        }
-    }
 
 
     //If this effect has a RenderEngine, make sure it is finished
@@ -2555,16 +2495,11 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     //Returns when the preview is done computign
     _imp->abortPreview_blocking(allowThreadsToRestart);
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
-    }
-
-    if ( isRotoPaintingNode() ) {
-        NodesList rotopaintNodes;
-        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing_blocking(allowThreadsToRestart);
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->quitTrackerThread_blocking(allowThreadsToRestart);
         }
     }
 }
@@ -2578,9 +2513,12 @@ Node::abortAnyProcessing_non_blocking()
         isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->abortTracking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->abortTracking();
+        }
     }
 
     _imp->abortPreview_non_blocking();
@@ -2598,11 +2536,13 @@ Node::abortAnyProcessing_blocking()
         engine->waitForAbortToComplete_enforce_blocking();
     }
 
-    TrackerContextPtr trackerContext = getTrackerContext();
-    if (trackerContext) {
-        trackerContext->abortTracking_blocking();
+    TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
+    if (isTracker) {
+        TrackerHelperPtr tracker = isTracker->getTracker();
+        if (tracker) {
+            tracker->abortTracking_blocking();
+        }
     }
-
     _imp->abortPreview_blocking(false);
 }
 
@@ -2628,15 +2568,6 @@ Node::getOutputs() const
     return _imp->outputs;
 }
 
-const NodesWList &
-Node::getGuiOutputs() const
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->guiOutputs;
-}
-
 void
 Node::getOutputs_mt_safe(NodesWList& outputs) const
 {
@@ -2649,7 +2580,7 @@ void
 Node::getInputNames(std::map<std::string, std::string> & inputNames) const
 {
     // This is called by the serialization thread.
-    // We use the guiInputs because we want to serialize exactly how the tree was to the user
+    // We use the inputs because we want to serialize exactly how the tree was to the user
 
     QMutexLocker l(&_imp->inputsLabelsMutex);
     assert( _imp->inputs.size() == _imp->inputLabels.size() );
@@ -2797,7 +2728,7 @@ Node::getPreferredInputNode() const
         }
         int inputNb = -1;
         std::vector<NodePtr> groupInputs;
-        isGroup->getInputs(&groupInputs, false);
+        isGroup->getInputs(&groupInputs);
         for (std::size_t i = 0; i < groupInputs.size(); ++i) {
             if (groupInputs[i].get() == this) {
                 inputNb = i;
@@ -2913,7 +2844,7 @@ Node::setLabel(const std::string& label)
     }
     NodeCollectionPtr collection = getGroup();
     if (collection) {
-        collection->notifyNodeNameChanged( shared_from_this() );
+        collection->notifyNodeLabelChanged( shared_from_this() );
     }
     Q_EMIT labelChanged( QString::fromUtf8( label.c_str() ) );
 }
@@ -2951,17 +2882,7 @@ insertDependenciesRecursive(Node* node,
         KnobI::ListenerDimsMap dimDeps;
         knobs[i]->getListeners(dimDeps);
         for (KnobI::ListenerDimsMap::iterator it = dimDeps.begin(); it != dimDeps.end(); ++it) {
-            KnobI::ListenerDimsMap::iterator found = dependencies->find(it->first);
-            if ( found != dependencies->end() ) {
-                assert( found->second.size() == it->second.size() );
-                for (std::size_t j = 0; j < found->second.size(); ++j) {
-                    if (it->second[j].isExpr) {
-                        found->second[j].isListening |= it->second[j].isListening;
-                    }
-                }
-            } else {
-                dependencies->insert(*it);
-            }
+            dependencies->insert(*it);
         }
     }
 
@@ -3088,9 +3009,9 @@ Node::setNameInternal(const std::string& name,
                 if (!listener) {
                     continue;
                 }
-                for (std::size_t d = 0; d < it->second.size(); ++d) {
-                    if (it->second[d].isListening && it->second[d].isExpr) {
-                        listener->replaceNodeNameInExpression(d, oldName, newName);
+                for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    if (it2->isExpr) {
+                        listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
                     }
                 }
             }
@@ -3480,6 +3401,28 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
         _imp->nodeRemovalCallback = onNodeDeleted;
         settingsPage->addKnob(onNodeDeleted);
     }
+    if (_imp->effect->getItemsTable()) {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(_imp->effect, tr("After Items Selection Changed"), 1, false);
+        param->setName("afterItemsSelectionChanged");
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time the "
+                                  "selection in the table changes. "
+                                  "The variable \"reason\" will be set to a value of type NatronEngine.Natron.TableChangeReasonEnum "
+                                  "depending on where the selection was made from. If reason is "
+                                  "NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonViewer then the selection was made "
+                                  "from the viewer. If reason is NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonPanel "
+                                  "then the selection was made from the settings panel. Otherwise the selection was not changed "
+                                  "by the user directly and results from an internal A.P.I call.\n"
+                                  "The signature of the callback is: callback(thisNode, app, deselected, selected, reason) where:\n"
+                                  "- thisNode: the node holding the items table\n"
+                                  "- app: points to the current application instance\n"
+                                  "- deselected: a sequence of items that were removed from the selection\n"
+                                  "- selected: a sequence of items that were added to the selection\n"
+                                  "- reason: a value of type NatronEngine.Natron.TableChangeReasonEnum") );
+        param->setAnimationEnabled(false);
+        _imp->tableSelectionChangedCallback = param;
+        settingsPage->addKnob(param);
+
+    }
 } // Node::createNodePage
 
 void
@@ -3648,11 +3591,11 @@ Node::createPyPlugPage()
         KnobIntPtr param = AppManager::createKnob<KnobInt>(_imp->effect, tr(kNatronNodeKnobPyPlugPluginVersionLabel), 2, false);
         param->setName(kNatronNodeKnobPyPlugPluginVersion);
         param->setEvaluateOnChange(false);
-        param->setDimensionName(0, "Major");
-        param->setDimensionName(1, "Minor");
+        param->setDimensionName(DimIdx(0), "Major");
+        param->setDimensionName(DimIdx(1), "Minor");
         if (pyPlug) {
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0), ViewSpec(0), 0);
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSpec(0), 1);
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0));
+            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
@@ -3664,8 +3607,8 @@ Node::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0), ViewSpec(0), 0);
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSpec(0), 1);
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0));
+            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
@@ -3761,17 +3704,20 @@ Node::createPythonPage()
 KnobDoublePtr
 Node::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
 {
-    KnobDoublePtr mixKnob = AppManager::checkIfKnobExistsWithNameOrCreate<KnobDouble>(_imp->effect, kHostMixingKnobName, tr("Mix"));
-    mixKnob->setDeclaredByPlugin(false);
-    mixKnob->setName(kHostMixingKnobName);
-    mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
-    mixKnob->setMinimum(0.);
-    mixKnob->setMaximum(1.);
-    mixKnob->setDefaultValue(1.);
-    if (mainPage) {
-        mainPage->addKnob(mixKnob);
+    KnobDoublePtr mixKnob = _imp->mixWithSource.lock();
+    if (!mixKnob) {
+        mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect, tr(kHostMixingKnobLabel));
+        mixKnob->setName(kHostMixingKnobName);
+        mixKnob->setDeclaredByPlugin(false);
+        mixKnob->setHintToolTip( tr(kHostMixingKnobHint) );
+        mixKnob->setRange(0., 1.);
+        mixKnob->setDefaultValue(1.);
+        if (mainPage) {
+            mainPage->addKnob(mixKnob);
+        }
+        _imp->mixWithSource = mixKnob;
     }
-    _imp->mixWithSource = mixKnob;
+
     return mixKnob;
 }
 
@@ -3793,7 +3739,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         MaskSelector sel;
         KnobBoolPtr enabled = AppManager::createKnob<KnobBool>(_imp->effect, inputLabels[i], 1, false);
 
-        enabled->setDefaultValue(false, 0);
+        enabled->setDefaultValue(false);
         enabled->setAddNewLine(false);
         if (hasMaskChannelSelector[i].second) {
             std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
@@ -3825,15 +3771,9 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             std::string option = rgbaCompname + '.' + rgbaChannels[c];
             choices.push_back(option);
         }
-        /*const ImageComponents& rgba = ImageComponents::getRGBAComponents();
-           const std::vector<std::string>& channels = rgba.getComponentsNames();
-           const std::string& layerName = rgba.getComponentsGlobalName();
-           for (std::size_t c = 0; c < channels.size(); ++c) {
-           choices.push_back(layerName + "." + channels[c]);
-           }*/
 
         channel->populateChoices(choices);
-        channel->setDefaultValue(choices.size() - 1, 0);
+        channel->setDefaultValue(choices.size() - 1);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
                                     "Setting this to None is the same as disconnecting the input.") );
@@ -3975,6 +3915,7 @@ Node::findOrCreateChannelEnabled()
         }
         _imp->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect, std::string(), 1, false);
+        premultWarning->setName("premultWarningKnob");
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecret(true);
         premultWarning->setAsLabel();
@@ -4208,6 +4149,11 @@ Node::initializeKnobs(bool loadingSerialization, bool hasGUI)
     }
 
     declarePythonKnobs();
+
+    KnobItemsTablePtr table = _imp->effect->getItemsTable();
+    if (table) {
+        table->declareItemsToPython();
+    }
     
     _imp->effect->endChanges();
 
@@ -4263,7 +4209,10 @@ Node::handleFormatKnob(const KnobIPtr& knob)
 
     _imp->effect->beginChanges();
     size->blockValueChanges();
-    size->setValues(f.width(), f.height(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    std::vector<int> values(2);
+    values[0] = f.width();
+    values[1] = f.height();
+    size->setValueAcrossDimensions(values);
     size->unblockValueChanges();
     par->blockValueChanges();
     par->setValue( f.getPixelAspectRatio() );
@@ -4436,17 +4385,17 @@ Node::makeDocumentation(bool genHTML) const
         }
 
         if (!isGroup && !isPage) {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
+            for (int i = 0; i < (*it)->getNDimensions(); ++i) {
                 QString valueStr;
 
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
-                        int index = isChoice->getDefaultValue(i);
-                        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        int index = isChoice->getDefaultValue(DimIdx(i));
+                        std::vector<std::string> entries = isChoice->getEntries();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
                         }
-                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
                         if ( entries.size() == entriesHelp.size() ) {
                             knobHint.append( QString::fromUtf8("\n\n") );
                             for (size_t i = 0; i < entries.size(); i++) {
@@ -4458,19 +4407,19 @@ Node::makeDocumentation(bool genHTML) const
                             }
                         }
                     } else if (isInt) {
-                        valueStr = QString::number( isInt->getDefaultValue(i) );
+                        valueStr = QString::number( isInt->getDefaultValue(DimIdx(i)) );
                     } else if (isDbl) {
-                        valueStr = QString::number( isDbl->getDefaultValue(i) );
+                        valueStr = QString::number( isDbl->getDefaultValue(DimIdx(i)) );
                     } else if (isBool) {
-                        valueStr = isBool->getDefaultValue(i) ? tr("On") : tr("Off");
+                        valueStr = isBool->getDefaultValue(DimIdx(i)) ? tr("On") : tr("Off");
                     } else if (isString) {
-                        valueStr = QString::fromUtf8( isString->getDefaultValue(i).c_str() );
+                        valueStr = QString::fromUtf8( isString->getDefaultValue(DimIdx(i)).c_str() );
                     } else if (isColor) {
-                        valueStr = QString::number( isColor->getDefaultValue(i) );
+                        valueStr = QString::number( isColor->getDefaultValue(DimIdx(i)) );
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), valueStr) );
+                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(DimIdx(i)).c_str() ), valueStr) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -4740,8 +4689,7 @@ Node::hasViewersConnected(std::list<ViewerInstancePtr >* viewers) const
  * properly visit all nodes in the correct order
  **/
 static NodePtr
-applyNodeRedirectionsUpstream(const NodePtr& node,
-                              bool useGuiInput)
+applyNodeRedirectionsUpstream(const NodePtr& node)
 {
     if (!node) {
         return node;
@@ -4749,13 +4697,13 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
     NodeGroupPtr isGrp = node->isEffectNodeGroup();
     if (isGrp) {
         //The node is a group, instead jump directly to the output node input of the  group
-        return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput(useGuiInput), useGuiInput);
+        return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput());
     }
 
     PrecompNodePtr isPrecomp = node->isEffectPrecompNode();
     if (isPrecomp) {
         //The node is a precomp, instead jump directly to the output node of the precomp
-        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode(), useGuiInput);
+        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode());
     }
 
     GroupInputPtr isInput = node->isEffectGroupInput();
@@ -4765,7 +4713,7 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
         assert(collection);
         isGrp = toNodeGroup(collection);
         if (isGrp) {
-            return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(useGuiInput, node), useGuiInput);
+            return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(node));
         }
     }
 
@@ -4781,7 +4729,6 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
 static void
 applyNodeRedirectionsDownstream(int recurseCounter,
                                 const NodePtr& node,
-                                bool useGuiOutputs,
                                 NodesList& translated)
 {
     NodeGroupPtr isGrp = node->isEffectNodeGroup();
@@ -4789,10 +4736,10 @@ applyNodeRedirectionsDownstream(int recurseCounter,
     if (isGrp) {
         //The node is a group, meaning it should not be taken into account, instead jump directly to the input nodes output of the group
         NodesList inputNodes;
-        isGrp->getInputsOutputs(&inputNodes, useGuiOutputs);
+        isGrp->getInputsOutputs(&inputNodes);
         for (NodesList::iterator it2 = inputNodes.begin(); it2 != inputNodes.end(); ++it2) {
             //Call recursively on them
-            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2, useGuiOutputs, translated);
+            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2, translated);
         }
 
         return;
@@ -4808,19 +4755,17 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         isGrp = toNodeGroup(collection);
         if (isGrp) {
             NodesWList groupOutputs;
-            if (useGuiOutputs) {
-                groupOutputs = isGrp->getNode()->getGuiOutputs();
-            } else {
-                NodePtr grpNode = isGrp->getNode();
-                if (grpNode) {
-                    grpNode->getOutputs_mt_safe(groupOutputs);
-                }
+
+            NodePtr grpNode = isGrp->getNode();
+            if (grpNode) {
+                grpNode->getOutputs_mt_safe(groupOutputs);
             }
+
             for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
                 NodePtr output = it2->lock();
                 if (output) {
-                    applyNodeRedirectionsDownstream(recurseCounter + 1, output, useGuiOutputs, translated);
+                    applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
                 }
             }
         }
@@ -4832,16 +4777,14 @@ applyNodeRedirectionsDownstream(int recurseCounter,
     if ( isInPrecomp && (isInPrecomp->getOutputNode() == node) ) {
         //This node is the output of the precomp, its outputs are the outputs of the precomp node
         NodesWList groupOutputs;
-        if (useGuiOutputs) {
-            groupOutputs = isInPrecomp->getNode()->getGuiOutputs();
-        } else {
-            isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
-        }
+
+        isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
+
         for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
             //Call recursively on them
             NodePtr output = it2->lock();
             if (output) {
-                applyNodeRedirectionsDownstream(recurseCounter + 1, output, useGuiOutputs, translated);
+                applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
             }
         }
 
@@ -4860,7 +4803,7 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
     NodesList redirections;
     NodePtr thisShared = boost::const_pointer_cast<Node>( shared_from_this() );
 
-    applyNodeRedirectionsDownstream(0, thisShared, false, redirections);
+    applyNodeRedirectionsDownstream(0, thisShared, redirections);
     if ( !redirections.empty() ) {
         outputs.insert( outputs.begin(), redirections.begin(), redirections.end() );
     } else {
@@ -4926,16 +4869,13 @@ Node::initializeInputs()
         std::vector<bool> oldInputsVisibility = _imp->inputsVisibility;
         _imp->inputIsRenderingCounter.resize(inputCount);
         _imp->inputs.resize(inputCount);
-        _imp->guiInputs.resize(inputCount);
         _imp->inputsVisibility.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             if ( i < (int)oldInputs.size() ) {
                 _imp->inputs[i] = oldInputs[i];
-                _imp->guiInputs[i] = oldInputs[i];
             } else {
                 _imp->inputs[i].reset();
-                _imp->guiInputs[i].reset();
             }
             if (i < (int) oldInputsVisibility.size()) {
                 _imp->inputsVisibility[i] = oldInputsVisibility[i];
@@ -4967,12 +4907,11 @@ Node::initializeInputs()
 NodePtr
 Node::getInput(int index) const
 {
-    return getInputInternal(false, true, index);
+    return getInputInternal(true, index);
 }
 
 NodePtr
-Node::getInputInternal(bool useGuiInput,
-                       bool useGroupRedirections,
+Node::getInputInternal(bool useGroupRedirections,
                        int index) const
 {
     if (!_imp->inputsInitialized) {
@@ -4983,30 +4922,18 @@ Node::getInputInternal(bool useGuiInput,
         return NodePtr();
     }
 
-    NodePtr ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
+    NodePtr ret =  _imp->inputs[index].lock();
     if (ret && useGroupRedirections) {
-        ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
+        ret = applyNodeRedirectionsUpstream(ret);
     }
 
     return ret;
 }
 
 NodePtr
-Node::getGuiInput(int index) const
-{
-    return getInputInternal(true, true, index);
-}
-
-NodePtr
 Node::getRealInput(int index) const
 {
-    return getInputInternal(false, false, index);
-}
-
-NodePtr
-Node::getRealGuiInput(int index) const
-{
-    return getInputInternal(true, false, index);
+    return getInputInternal(false, index);
 }
 
 int
@@ -5032,15 +4959,6 @@ Node::getInputs() const
     return _imp->inputs;
 }
 
-const std::vector<NodeWPtr > &
-Node::getGuiInputs() const
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->inputsInitialized);
-
-    return _imp->guiInputs;
-}
 
 std::vector<NodeWPtr >
 Node::getInputs_copy() const
@@ -5254,14 +5172,14 @@ Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& 
     markedNodes.push_back(this);
 
     // No need to lock inputs is only written to by the main-thread
-    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
-        if (_imp->guiInputs[i].lock() == input) {
+    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock() == input) {
             return true;
         }
     }
 
-    for (std::size_t i = 0; i  < _imp->guiInputs.size(); ++i) {
-        NodePtr in = _imp->guiInputs[i].lock();
+    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
+        NodePtr in = _imp->inputs[i].lock();
         if (in) {
             if (in->isNodeUpstreamInternal(input, markedNodes)) {
                 return true;
@@ -5349,16 +5267,16 @@ Node::canConnectInput(const NodePtr& input,
     ///Check for invalid index
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() ) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) ) {
             return eCanConnectInput_indexOutOfRange;
         }
-        if ( _imp->guiInputs[inputNumber].lock() ) {
+        if ( _imp->inputs[inputNumber].lock() ) {
             return eCanConnectInput_inputAlreadyConnected;
         }
     }
 
     NodeGroupPtr isGrp = input->isEffectNodeGroup();
-    if ( isGrp && !isGrp->getOutputNode(true) ) {
+    if ( isGrp && !isGrp->getOutputNode() ) {
         return eCanConnectInput_groupHasNoOutput;
     }
 
@@ -5383,7 +5301,7 @@ Node::canConnectInput(const NodePtr& input,
         double inputFPS = input->getEffectInstance()->getFrameRate();
         QMutexLocker l(&_imp->inputsMutex);
 
-        for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
+        for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
                 if ( !_imp->effect->supportsMultipleClipPARs() ) {
@@ -5423,7 +5341,6 @@ Node::connectInput(const NodePtr & input,
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
 
     {
@@ -5431,19 +5348,13 @@ Node::connectInput(const NodePtr & input,
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
              ( inputNumber >= (int)_imp->inputs.size() ) ||
-             ( !useGuiInputs && _imp->inputs[inputNumber].lock() ) ||
-             ( useGuiInputs && _imp->guiInputs[inputNumber].lock() ) ) {
+             _imp->inputs[inputNumber].lock()) {
             return false;
         }
 
-        ///Set the input
-        if (!useGuiInputs) {
-            _imp->inputs[inputNumber] = input;
-            _imp->guiInputs[inputNumber] = input;
-        } else {
-            _imp->guiInputs[inputNumber] = input;
-        }
-        input->connectOutput( useGuiInputs, shared_from_this() );
+        _imp->inputs[inputNumber] = input;
+
+        input->connectOutput(shared_from_this() );
     }
 
     getApp()->recheckInvalidExpressions();
@@ -5455,12 +5366,11 @@ Node::connectInput(const NodePtr & input,
     Q_EMIT inputChanged(inputNumber);
     bool mustCallEnd = false;
 
-    if (!useGuiInputs) {
-        ///Call the instance changed action with a reason clip changed
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputNumber);
-    }
+    ///Call the instance changed action with a reason clip changed
+    beginInputEdition();
+    mustCallEnd = true;
+    onInputChanged(inputNumber);
+
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
@@ -5481,7 +5391,7 @@ Node::connectInput(const NodePtr & input,
 
 
 bool
-Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
+Node::replaceInputInternal(const NodePtr& input, int inputNumber)
 {
     assert(_imp->inputsInitialized);
     assert(input);
@@ -5513,23 +5423,14 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
         QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
 
-        if (!useGuiInputs) {
-            NodePtr curIn = _imp->inputs[inputNumber].lock();
-            if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
-            }
-            _imp->inputs[inputNumber] = input;
-            _imp->guiInputs[inputNumber] = input;
-        } else {
-            NodePtr curIn = _imp->guiInputs[inputNumber].lock();
-            if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-                curIn->disconnectOutput(useGuiInputs, this);
-            }
-            _imp->guiInputs[inputNumber] = input;
+        NodePtr curIn = _imp->inputs[inputNumber].lock();
+        if (curIn) {
+            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+            curIn->disconnectOutput(this);
         }
-        input->connectOutput( useGuiInputs, shared_from_this() );
+        _imp->inputs[inputNumber] = input;
+
+        input->connectOutput(shared_from_this() );
     }
 
     ///Get notified when the input name has changed
@@ -5538,12 +5439,11 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInp
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
     bool mustCallEnd = false;
-    if (!useGuiInputs) {
-        beginInputEdition();
-        mustCallEnd = true;
-        ///Call the instance changed action with a reason clip changed
-        onInputChanged(inputNumber);
-    }
+    beginInputEdition();
+    mustCallEnd = true;
+    ///Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
@@ -5570,9 +5470,8 @@ Node::replaceInput(const NodePtr& input,
 {
 
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
-    return replaceInputInternal(input, inputNumber, useGuiInputs);
+    return replaceInputInternal(input, inputNumber);
 } // Node::replaceInput
 
 void
@@ -5618,7 +5517,6 @@ Node::switchInput0And1()
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
 
     {
@@ -5626,30 +5524,20 @@ Node::switchInput0And1()
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
         NodePtr input0, input1;
 
-        if (!useGuiInputs) {
-            input0 = _imp->inputs[inputAIndex].lock();
-            input1 = _imp->inputs[inputBIndex].lock();
-            _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
-            _imp->inputs[inputBIndex] = input0;
-            _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
-            _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
-        } else {
-            input0 = _imp->guiInputs[inputAIndex].lock();
-            input1 = _imp->guiInputs[inputBIndex].lock();
-            _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
-            _imp->guiInputs[inputBIndex] = input0;
-        }
+        input0 = _imp->inputs[inputAIndex].lock();
+        input1 = _imp->inputs[inputBIndex].lock();
+        _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
+        _imp->inputs[inputBIndex] = input0;
+
 
     }
     Q_EMIT inputChanged(inputAIndex);
     Q_EMIT inputChanged(inputBIndex);
-    bool mustCallEnd = false;
-    if (!useGuiInputs) {
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputAIndex);
-        onInputChanged(inputBIndex);
-    }
+
+    beginInputEdition();
+    onInputChanged(inputAIndex);
+    onInputChanged(inputBIndex);
+
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
         // Notify cache
@@ -5664,9 +5552,7 @@ Node::switchInput0And1()
     }
 
 
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
+    endInputEdition(true);
 } // switchInput0And1
 
 void
@@ -5683,8 +5569,8 @@ Node::onInputLabelChanged(const QString & name)
     int inputNb = -1;
     ///No need to lock, inputs is only written to by the mainthread
 
-    for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-        if (_imp->guiInputs[i].lock().get() == inp) {
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock().get() == inp) {
             inputNb = i;
             break;
         }
@@ -5696,19 +5582,13 @@ Node::onInputLabelChanged(const QString & name)
 }
 
 void
-Node::connectOutput(bool useGuiValues,
-                    const NodePtr& output)
+Node::connectOutput(const NodePtr& output)
 {
     assert(output);
 
     {
         QMutexLocker l(&_imp->outputsMutex);
-        if (!useGuiValues) {
-            _imp->outputs.push_back(output);
-            _imp->guiOutputs.push_back(output);
-        } else {
-            _imp->guiOutputs.push_back(output);
-        }
+        _imp->outputs.push_back(output);
     }
     Q_EMIT outputsChanged();
 }
@@ -5719,7 +5599,6 @@ Node::disconnectInput(int inputNumber)
     assert(_imp->inputsInitialized);
 
     NodePtr inputShared;
-    bool useGuiValues = isNodeRendering();
     bool destroyed;
     {
         QMutexLocker k(&_imp->isBeingDestroyedMutex);
@@ -5733,25 +5612,20 @@ Node::disconnectInput(int inputNumber)
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
              ( inputNumber > (int)_imp->inputs.size() ) ||
-             ( !useGuiValues && !_imp->inputs[inputNumber].lock() ) ||
-             ( useGuiValues && !_imp->guiInputs[inputNumber].lock() ) ) {
+             (!_imp->inputs[inputNumber].lock() )) {
             return -1;
         }
-        inputShared = useGuiValues ? _imp->guiInputs[inputNumber].lock() : _imp->inputs[inputNumber].lock();
+        inputShared = _imp->inputs[inputNumber].lock();
     }
 
 
     QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-    inputShared->disconnectOutput(useGuiValues, this);
+    inputShared->disconnectOutput(this);
 
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if (!useGuiValues) {
-            _imp->inputs[inputNumber].reset();
-            _imp->guiInputs[inputNumber].reset();
-        } else {
-            _imp->guiInputs[inputNumber].reset();
-        }
+        _imp->inputs[inputNumber].reset();
+
     }
 
     {
@@ -5762,12 +5636,10 @@ Node::disconnectInput(int inputNumber)
     }
 
     Q_EMIT inputChanged(inputNumber);
-    bool mustCallEnd = false;
-    if (!useGuiValues) {
-        beginInputEdition();
-        mustCallEnd = true;
-        onInputChanged(inputNumber);
-    }
+
+    beginInputEdition();
+    onInputChanged(inputNumber);
+
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
         // Notify cache
@@ -5779,59 +5651,39 @@ Node::disconnectInput(int inputNumber)
     if ( !inputChangedCB.empty() ) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
+    endInputEdition(true);
 
     return inputNumber;
 } // Node::disconnectInput
 
 int
-Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
+Node::disconnectInputInternal(const NodePtr& input)
 {
     assert(_imp->inputsInitialized);
     int found = -1;
     NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if (!useGuiValues) {
-            for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr curInput = _imp->inputs[i].lock();
-                if (curInput == input) {
-                    inputShared = curInput;
-                    found = (int)i;
-                    break;
-                }
-            }
-        } else {
-            for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-                NodePtr curInput = _imp->guiInputs[i].lock();
-                if (curInput == input) {
-                    inputShared = curInput;
-                    found = (int)i;
-                    break;
-                }
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr curInput = _imp->inputs[i].lock();
+            if (curInput == input) {
+                inputShared = curInput;
+                found = (int)i;
+                break;
             }
         }
+
     }
     if (found != -1) {
         {
             QMutexLocker l(&_imp->inputsMutex);
-            if (!useGuiValues) {
-                _imp->inputs[found].reset();
-                _imp->guiInputs[found].reset();
-            } else {
-                _imp->guiInputs[found].reset();
-            }
+            _imp->inputs[found].reset();
         }
-        input->disconnectOutput(useGuiValues, this);
+        input->disconnectOutput(this);
         Q_EMIT inputChanged(found);
-        bool mustCallEnd = false;
-        if (!useGuiValues) {
-            beginInputEdition();
-            mustCallEnd = true;
-            onInputChanged(found);
-        }
+        beginInputEdition();
+        onInputChanged(found);
+
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
             ///Recompute the hash
@@ -5847,9 +5699,7 @@ Node::disconnectInputInternal(const NodePtr& input, bool useGuiValues)
             _imp->runInputChangedCallback(found, inputChangedCB);
         }
 
-        if (mustCallEnd) {
-            endInputEdition(true);
-        }
+        endInputEdition(true);
 
         return found;
     }
@@ -5861,32 +5711,21 @@ int
 Node::disconnectInput(const NodePtr& input)
 {
 
-    bool useGuiValues = isNodeRendering();
     _imp->effect->abortAnyEvaluation();
-    return disconnectInputInternal(input, useGuiValues);
+    return disconnectInputInternal(input);
 } // Node::disconnectInput
 
 int
-Node::disconnectOutput(bool useGuiValues,
-                       const Node* output)
+Node::disconnectOutput(const Node* output)
 {
     assert(output);
     int ret = -1;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        if (!useGuiValues) {
-            int ret = 0;
-            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
-                if (it->lock().get() == output) {
-                    _imp->outputs.erase(it);
-                    break;
-                }
-            }
-        }
         int ret = 0;
-        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
+        for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
             if (it->lock().get() == output) {
-                _imp->guiOutputs.erase(it);
+                _imp->outputs.erase(it);
                 break;
             }
         }
@@ -6001,21 +5840,29 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 }
 
                 isEffect->beginChanges();
-                for (int dim = 0; dim < listener->getDimension(); ++dim) {
-                    std::pair<int, KnobIPtr > master = listener->getMaster(dim);
-                    if (master.second == knobs[i]) {
-                        listener->unSlave(dim, true);
+                std::list<ViewIdx> views = listener->getViewsList();
+                for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
+                    for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+                        MasterKnobLink linkData;
+                        if (listener->getMaster(DimIdx(dim), *it2, &linkData)) {
+                            KnobIPtr masterKnob = linkData.masterKnob.lock();
+                            if (masterKnob == knobs[i]) {
+                                listener->unSlave(DimIdx(dim), *it2, true);
+                            }
+                        }
+
+                        std::string hasExpr = listener->getExpression(DimIdx(dim), *it2);
+                        if ( !hasExpr.empty() ) {
+                            std::stringstream ss;
+                            ss << tr("Missing node ").toStdString();
+                            ss << getFullyQualifiedName();
+                            ss << ' ';
+                            ss << tr("in expression.").toStdString();
+                            listener->setExpressionInvalid( DimIdx(dim), *it2, false, ss.str() );
+                        }
+
                     }
 
-                    std::string hasExpr = listener->getExpression(dim);
-                    if ( !hasExpr.empty() ) {
-                        std::stringstream ss;
-                        ss << tr("Missing node ").toStdString();
-                        ss << getFullyQualifiedName();
-                        ss << ' ';
-                        ss << tr("in expression.").toStdString();
-                        listener->setExpressionInvalid( dim, false, ss.str() );
-                    }
                 }
                 isEffect->endChanges(true);
             }
@@ -6030,9 +5877,9 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (reconnect) {
         bool hasOnlyOneInputConnected = false;
 
-        ///No need to lock guiInputs is only written to by the mainthread
-        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
+        ///No need to lock inputs is only written to by the mainthread
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
             if (input) {
                 if ( !_imp->effect->isInputOptional(i) ) {
                     if (firstNonOptionalInput == -1) {
@@ -6054,7 +5901,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getRealGuiInput(firstNonOptionalInput);
+                inputToConnectTo = getRealInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }
@@ -6068,10 +5915,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
 
     if (hideGui) {
-        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
+        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+            NodePtr input = _imp->inputs[i].lock();
             if (input) {
-                input->disconnectOutput(false, this);
+                input->disconnectOutput(this);
             }
         }
     }
@@ -6082,7 +5929,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     NodesWList outputsQueueCopy;
     {
         QMutexLocker l(&_imp->outputsMutex);
-        outputsQueueCopy = _imp->guiOutputs;
+        outputsQueueCopy = _imp->outputs;
     }
 
 
@@ -6109,9 +5956,9 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
-                    output->replaceInputInternal(inputToConnectTo, inputNb, false);
+                    output->replaceInputInternal(inputToConnectTo, inputNb);
                 } else {
-                    ignore_result( output->disconnectInputInternal(shared_from_this(), false) );
+                    ignore_result( output->disconnectInputInternal(shared_from_this()) );
                 }
             }
         }
@@ -6172,14 +6019,14 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     }
 
 
-    ///No need to lock, guiInputs is only written to by the main-thread
+    ///No need to lock, inputs is only written to by the main-thread
     NodePtr thisShared = shared_from_this();
 
     ///for all inputs, reconnect their output to this node
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
         NodePtr input = _imp->inputs[i].lock();
         if (input) {
-            input->connectOutput(false, thisShared);
+            input->connectOutput(thisShared);
         }
     }
 
@@ -6525,7 +6372,7 @@ Node::makePreviewImage(SequenceTime time,
     EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
-        NodePtr outputNode = isGroup->getOutputNodeInput(false);
+        NodePtr outputNode = isGroup->getOutputNodeInput();
         if (outputNode) {
             return outputNode->makePreviewImage(time, width, height, buf);
         }
@@ -6784,17 +6631,6 @@ Node::isEffectOneViewNode() const
     return toOneViewNode(_imp->effect);
 }
 
-RotoContextPtr
-Node::getRotoContext() const
-{
-    return _imp->rotoContext;
-}
-
-TrackerContextPtr
-Node::getTrackerContext() const
-{
-    return _imp->trackContext;
-}
 
 const KnobsVec &
 Node::getKnobs() const
@@ -6826,8 +6662,12 @@ Node::getPluginIconFilePath() const
         return std::string();
     }
 
-
-    return plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+    std::string resourcesPath = plugin->getProperty<std::string>(kNatronPluginPropResourcesPath);
+    std::string filename = plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+    if (filename.empty()) {
+        return filename;
+    }
+    return resourcesPath + filename;
 }
 
 bool
@@ -7135,7 +6975,7 @@ Node::clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
     clearPersistentMessageInternal();
 
     int nInputs = getMaxInputCount();
-    ///No need to lock, guiInputs is only written to by the main-thread
+    ///No need to lock, inputs is only written to by the main-thread
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = getInput(i);
         if (input) {
@@ -7424,7 +7264,8 @@ Node::onAllKnobsSlaved(bool isSlave,
 void
 Node::onKnobSlaved(const KnobIPtr& slave,
                    const KnobIPtr& master,
-                   int dimension,
+                   DimIdx /*dimension*/,
+                   ViewIdx /*view*/,
                    bool isSlave)
 {
     // If this is a unslave action, remove the clone state
@@ -7435,14 +7276,17 @@ Node::onKnobSlaved(const KnobIPtr& slave,
         }
     }
 
+    if (slave == master) {
+        return;
+    }
 
     ///If the holder isn't an effect, ignore it too
     EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
-        TrackMarkerPtr isMarker = toTrackMarker( master->getHolder() );
-        if (isMarker) {
-            parentNode = isMarker->getContext()->getNode();
+        KnobTableItemPtr isItem = toKnobTableItem(master->getHolder());
+        if (isItem) {
+            parentNode = isItem->getModel()->getNode();
         }
     } else {
         parentNode = isEffect->getNode();
@@ -7453,7 +7297,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
         QMutexLocker l(&_imp->masterNodeMutex);
         KnobLinkList::iterator found = _imp->nodeLinks.end();
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->slave.lock() == slave) {
+            if (it->slaveKnob.lock() == slave) {
                 found = it;
                 break;
             }
@@ -7467,9 +7311,8 @@ Node::onKnobSlaved(const KnobIPtr& slave,
                 ///Add a new link
                 KnobLink link;
                 link.masterNode = parentNode;
-                link.slave = slave;
-                link.master = master;
-                link.dimension = dimension;
+                link.slaveKnob = slave;
+                link.masterKnob = master;
                 _imp->nodeLinks.push_back(link);
                 changed = true;
             }
@@ -7490,7 +7333,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
 } // onKnobSlaved
 
 void
-Node::getKnobsLinks(std::list<Node::KnobLink> & links) const
+Node::getKnobsLinks(std::list<KnobLink> & links) const
 {
     QMutexLocker l(&_imp->masterNodeMutex);
 
@@ -7746,7 +7589,7 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     //refreshLayersSelectorsVisibility();
 
-    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() );
+    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() /*&& !getApp()->isCreatingNodeTree() */);
 
     if (shouldDoInputChanged) {
         ///When loading a group (or project) just wait until everything is setup to actually compute input
@@ -7775,7 +7618,7 @@ Node::onInputChanged(int inputNb)
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
         std::vector<NodePtr> groupInputs;
-        isGroup->getInputs(&groupInputs, false);
+        isGroup->getInputs(&groupInputs);
         if ( (inputNb >= 0) && ( inputNb < (int)groupInputs.size() ) && groupInputs[inputNb] ) {
             std::map<NodePtr, int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
@@ -7837,7 +7680,7 @@ void
 Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
 {
     if ( _imp->effect->isReader() ) {
-        computeFrameRangeForReader(fileKnob);
+        computeFrameRangeForReader(fileKnob, true);
 
         ///Refresh the preview automatically if the filename changed
 
@@ -7916,7 +7759,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
 }
 
 void
-Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
+Node::computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange)
 {
     /*
        We compute the original frame range of the sequence for the plug-in
@@ -7939,10 +7782,11 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
-    KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
-    if (knob) {
-        KnobIntPtr originalFrameRange = toKnobInt(knob);
-        if ( originalFrameRange && (originalFrameRange->getDimension() == 2) ) {
+    KnobIntPtr originalFrameRangeKnob = toKnobInt(getKnobByName(kReaderParamNameOriginalFrameRange));
+    KnobIntPtr firstFrameKnob = toKnobInt(getKnobByName(kReaderParamNameFirstFrame));
+    KnobIntPtr lastFrameKnob = toKnobInt(getKnobByName(kReaderParamNameLastFrame));
+    if (originalFrameRangeKnob) {
+        if (originalFrameRangeKnob->getNDimensions() == 2){
             KnobFilePtr isFile = toKnobFile(fileKnob);
             assert(isFile);
             if (!isFile) {
@@ -7951,7 +7795,10 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
 
             if (pluginID == PLUGINID_OFX_READFFMPEG) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                std::vector<int> frameRange(2);
+                frameRange[0] = INT_MIN;
+                frameRange[1] = INT_MAX;
+                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -7964,10 +7811,25 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
                     leftBound = seq.begin()->first;
                     rightBound = seq.rbegin()->first;
                 }
-                originalFrameRange->setValues(leftBound, rightBound, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                std::vector<int> frameRange(2);
+                frameRange[0] = leftBound;
+                frameRange[1] = rightBound;
+                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
+
+                if (setFrameRange) {
+                    if (firstFrameKnob) {
+                        firstFrameKnob->setValue(leftBound);
+                        firstFrameKnob->setRange(leftBound, rightBound);
+                    }
+                    if (lastFrameKnob) {
+                        lastFrameKnob->setValue(rightBound);
+                        lastFrameKnob->setRange(leftBound, rightBound);
+                    }
+                }
             }
         }
     }
+
 }
 
 bool
@@ -8413,6 +8275,8 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
     QString value = QString::fromUtf8( availableViewsKnob->getValue().c_str() );
     QStringList views = value.split( QLatin1Char(',') );
 
+    bool isSingleView = views.size() == 1 && views.front().compare(QString::fromUtf8("Main"), Qt::CaseInsensitive) == 0;
+
     _imp->createdViews.clear();
 
     const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
@@ -8422,11 +8286,13 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
     }
 
     QStringList missingViews;
-    for (QStringList::Iterator it = views.begin(); it != views.end(); ++it) {
-        if ( !qProjectViews.contains(*it, Qt::CaseInsensitive) && !it->isEmpty() ) {
-            missingViews.push_back(*it);
+    if (!isSingleView) {
+        for (QStringList::Iterator it = views.begin(); it != views.end(); ++it) {
+            if ( !qProjectViews.contains(*it, Qt::CaseInsensitive) && !it->isEmpty() ) {
+                missingViews.push_back(*it);
+            }
+            _imp->createdViews.push_back( it->toStdString() );
         }
-        _imp->createdViews.push_back( it->toStdString() );
     }
 
     if ( !missingViews.isEmpty() ) {
@@ -8485,13 +8351,21 @@ Node::setHideInputsKnobValue(bool hidden)
 void
 Node::onRefreshIdentityStateRequestReceived()
 {
+    if ( !_imp->guiPointer.lock() ) {
+        return;
+    }
 
     assert( QThread::currentThread() == qApp->thread() );
-    if ( (_imp->refreshIdentityStateRequestsCount == 0) || !_imp->effect ) {
+    int refreshStateCount;
+    {
+        QMutexLocker k(&_imp->refreshIdentityStateRequestsCountMutex);
+        refreshStateCount = _imp->refreshIdentityStateRequestsCount;
+        _imp->refreshIdentityStateRequestsCount = 0;
+    }
+    if ( (refreshStateCount == 0) || !_imp->effect ) {
         //was already processed
         return;
     }
-    _imp->refreshIdentityStateRequestsCount = 0;
 
     ProjectPtr project = getApp()->getProject();
     if (project->isLoadingProject()) {
@@ -8543,14 +8417,13 @@ Node::onRefreshIdentityStateRequestReceived()
 void
 Node::refreshIdentityState()
 {
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( !_imp->guiPointer.lock() ) {
-        return;
-    }
 
     //Post a new request
-    ++_imp->refreshIdentityStateRequestsCount;
+    {
+        QMutexLocker k(&_imp->refreshIdentityStateRequestsCountMutex);
+        ++_imp->refreshIdentityStateRequestsCount;
+    }
     Q_EMIT refreshIdentityStateRequested();
 }
 
@@ -8599,7 +8472,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             w.useRenderStats = getApp()->isRenderStatsActionChecked();
             std::list<AppInstance::RenderWork> works;
             works.push_back(w);
-            getApp()->startWritersRendering(false, works);
+            getApp()->renderWritersNonBlocking(works);
         }
     } else if (what == _imp->disableNodeKnob.lock()) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
@@ -8705,11 +8578,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         // Trigger a knob changed action on the group
         KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
         if (k) {
-            if ( k->getValue() ) {
-                k->setValue(false);
-            } else {
-                k->setValue(true);
-            }
+            k->setValue(!k->getValue());
         }
     } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {
@@ -8820,7 +8689,7 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
     KnobChoicePtr k = _imp->openglRenderingEnabledKnob.lock();
     if (enabled) {
         if (k) {
-            k->setAllDimensionsEnabled(true);
+            k->setEnabled(true);
             int thisKnobIndex = k->getValue();
             if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
                 enabled = false;
@@ -8828,7 +8697,7 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
         }
     } else {
         if (k) {
-            k->setAllDimensionsEnabled(true);
+            k->setEnabled(true);
         }
     }
     _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
@@ -9119,10 +8988,22 @@ Node::isLifetimeActivated(int *firstFrame,
         return false;
     }
     KnobIntPtr lifetimeKnob = _imp->lifeTimeKnob.lock();
-    *firstFrame = lifetimeKnob->getValue(0);
-    *lastFrame = lifetimeKnob->getValue(1);
+    *firstFrame = lifetimeKnob->getValue(DimIdx(0));
+    *lastFrame = lifetimeKnob->getValue(DimIdx(1));
 
     return true;
+}
+
+KnobBoolPtr
+Node::getLifeTimeEnabledKnob() const
+{
+    return _imp->enableLifeTimeKnob.lock();
+}
+
+KnobIntPtr
+Node::getLifeTimeKnob() const
+{
+    return _imp->lifeTimeKnob.lock();
 }
 
 bool
@@ -9161,92 +9042,6 @@ Node::setNodeDisabled(bool disabled)
     }
 }
 
-void
-Node::showKeyframesOnTimeline(bool emitSignal)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( _imp->keyframesDisplayedOnTimeline || appPTR->isBackground() ) {
-        return;
-    }
-    _imp->keyframesDisplayedOnTimeline = true;
-    std::list<SequenceTime> keys;
-    getAllKnobsKeyframes(&keys);
-    getApp()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
-}
-
-void
-Node::hideKeyframesFromTimeline(bool emitSignal)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( !_imp->keyframesDisplayedOnTimeline || appPTR->isBackground() ) {
-        return;
-    }
-    _imp->keyframesDisplayedOnTimeline = false;
-    std::list<SequenceTime> keys;
-    getAllKnobsKeyframes(&keys);
-    getApp()->removeMultipleKeyframeIndicator(keys, emitSignal);
-}
-
-bool
-Node::areKeyframesVisibleOnTimeline() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->keyframesDisplayedOnTimeline;
-}
-
-bool
-Node::hasAnimatedKnob() const
-{
-    const KnobsVec & knobs = getKnobs();
-    bool hasAnimation = false;
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->canAnimate() ) {
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-                if ( knobs[i]->isAnimated(j) ) {
-                    hasAnimation = true;
-                    break;
-                }
-            }
-        }
-        if (hasAnimation) {
-            break;
-        }
-    }
-
-    return hasAnimation;
-}
-
-void
-Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
-{
-    assert(keyframes);
-    const KnobsVec & knobs = getKnobs();
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistent() ) {
-            continue;
-        }
-        if ( !knobs[i]->canAnimate() ) {
-            continue;
-        }
-        int dim = knobs[i]->getDimension();
-        KnobFilePtr isFile = toKnobFile(knobs[i]);
-        if (isFile) {
-            ///skip file knobs
-            continue;
-        }
-        for (int j = 0; j < dim; ++j) {
-            if ( knobs[i]->canAnimate() && knobs[i]->isAnimated( j, ViewIdx(0) ) ) {
-                KeyFrameSet kfs = knobs[i]->getCurve(ViewIdx(0), j)->getKeyFrames_mt_safe();
-                for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-                    keyframes->push_back( it->getTime() );
-                }
-            }
-        }
-    }
-}
 
 ImageBitDepthEnum
 Node::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
@@ -9406,13 +9201,6 @@ Node::setNodeIsRenderingInternal(NodesWList& markedNodes)
         }
     }
 
-    ///Wait for the main-thread to be done dequeuing the connect actions queue
-    if ( QThread::currentThread() != qApp->thread() ) {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while ( _imp->nodeIsDequeuing && !aborted() ) {
-            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-        }
-    }
 
     ///Increment the node is rendering counter
     {
@@ -9462,25 +9250,15 @@ Node::setNodeIsRendering(NodesWList& nodes)
 void
 Node::unsetNodeIsRendering()
 {
-    bool mustDequeue;
-    {
-        int nodeIsRendering;
-        ///Decrement the node is rendering counter
-        QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        if (_imp->nodeIsRendering > 1) {
-            --_imp->nodeIsRendering;
-        } else {
-            _imp->nodeIsRendering = 0;
-        }
-        nodeIsRendering = _imp->nodeIsRendering;
 
-
-        mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
+    // Decrement the node is rendering counter
+    QMutexLocker k(&_imp->nodeIsRenderingMutex);
+    if (_imp->nodeIsRendering > 1) {
+        --_imp->nodeIsRendering;
+    } else {
+        _imp->nodeIsRendering = 0;
     }
 
-    if (mustDequeue) {
-        Q_EMIT mustDequeueActions();
-    }
 }
 
 bool
@@ -9509,74 +9287,6 @@ Node::isNodeRendering() const
     return _imp->nodeIsRendering > 0;
 }
 
-void
-Node::dequeueActions()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    ///Flag that the node is dequeuing.
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        assert(!_imp->nodeIsDequeuing);
-        _imp->nodeIsDequeuing = true;
-    }
-    bool hasChanged = false;
-    if (_imp->effect) {
-        hasChanged |= _imp->effect->dequeueValuesSet();
-        NodeGroupPtr isGroup = isEffectNodeGroup();
-        if (isGroup) {
-            isGroup->dequeueConnexions();
-        }
-    }
-    RotoDrawableItemPtr strokeItem = getAttachedRotoItem();
-    if (strokeItem) {
-        strokeItem->dequeueGuiActions(false);
-    }
-
-
-    std::set<int> inputChanges;
-    {
-        QMutexLocker k(&_imp->inputsMutex);
-        assert( _imp->guiInputs.size() == _imp->inputs.size() );
-
-        for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr inp = _imp->inputs[i].lock();
-            NodePtr guiInp = _imp->guiInputs[i].lock();
-            if (inp != guiInp) {
-                inputChanges.insert(i);
-                _imp->inputs[i] = guiInp;
-            }
-        }
-    }
-    {
-        QMutexLocker k(&_imp->outputsMutex);
-        _imp->outputs = _imp->guiOutputs;
-    }
-
-    if ( !inputChanges.empty() ) {
-        beginInputEdition();
-        hasChanged = true;
-        for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
-            onInputChanged(*it);
-        }
-        endInputEdition(true);
-    }
-    if (hasChanged) {
-        _imp->effect->invalidateHashCache();
-        refreshIdentityState();
-    }
-
-    {
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        //Another slots in this thread might have aborted the dequeuing
-        if (_imp->nodeIsDequeuing) {
-            _imp->nodeIsDequeuing = false;
-
-            //There might be multiple threads waiting
-            _imp->nodeIsDequeuingCond.wakeAll();
-        }
-    }
-} // Node::dequeueActions
 
 static void
 addIdentityNodesRecursively(NodeConstPtr caller,
@@ -9656,7 +9366,7 @@ addIdentityNodesRecursively(NodeConstPtr caller,
         NodeGroupPtr isGrp = output->isEffectNodeGroup();
         if (isGrp) {
             NodesList inputOutputs;
-            isGrp->getInputsOutputs(&inputOutputs, false);
+            isGrp->getInputsOutputs(&inputOutputs);
             for (NodesList::iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
                 outputsToAdd.push_back(*it2);
             }
@@ -9756,7 +9466,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 return true;
             }
             NodeGroupPtr parentIsGroup = toNodeGroup( getGroup() );
-            if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput(false).get() == this) ) {
+            if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput().get() == this) ) {
                 //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
                 return true;
             }
@@ -9777,7 +9487,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
             }
 
             RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-            if ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() ) {
+            if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
@@ -9786,7 +9496,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
             RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
 
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-                   ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() );
+                   ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
         }
     }
 
@@ -9954,7 +9664,7 @@ Node::forceRefreshAllInputRelatedData()
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
         NodesList inputs;
-        isGroup->getInputsOutputs(&inputs, false);
+        isGroup->getInputsOutputs(&inputs);
         for (NodesList::iterator it = inputs.begin(); it != inputs.end(); ++it) {
             if ( (*it) ) {
                 (*it)->refreshInputRelatedDataRecursive();
@@ -9971,15 +9681,6 @@ Node::markAllInputRelatedDataDirty()
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
         _imp->mustComputeInputRelatedData = true;
-    }
-    if ( isRotoPaintingNode() ) {
-        RotoContextPtr roto = getRotoContext();
-        assert(roto);
-        NodesList rotoNodes;
-        roto->getRotoPaintTreeNodes(&rotoNodes);
-        for (NodesList::iterator it = rotoNodes.begin(); it != rotoNodes.end(); ++it) {
-            (*it)->markAllInputRelatedDataDirty();
-        }
     }
 }
 
@@ -10583,12 +10284,7 @@ Node::declareAllPythonAttributes()
     try {
         declareNodeVariableToPython( getFullyQualifiedName() );
         declarePythonKnobs();
-        if (_imp->rotoContext) {
-            declareRotoPythonField();
-        }
-        if (_imp->trackContext) {
-            declareTrackerPythonField();
-        }
+        declareTablePythonFields();
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }
@@ -10666,6 +10362,16 @@ Node::getBeforeNodeRemovalCallback() const
     KnobStringPtr s = _imp->nodeRemovalCallback.lock();
 
     return s ? s->getValue() : std::string();
+}
+
+void
+Node::runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
+{
+    KnobStringPtr s = _imp->tableSelectionChangedCallback.lock();
+    if (!s) {
+        return;
+    }
+    _imp->runAfterItemsSelectionChangedCallback(s->getValue(), deselected, selected, reason);
 }
 
 void
@@ -10997,7 +10703,7 @@ Node::getMaskChannel(int inputNb,
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
 
     if ( it != _imp->maskSelectors.end() ) {
-        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText_mt_safe();
+        std::string maskEncoded =  it->second.channel.lock()->getActiveEntryText();
         std::string nodeName, layerName, channelName;
         bool isColor;
         bool ok = parseMaskChannelString(maskEncoded, &nodeName, &layerName, &channelName, &isColor);
@@ -11148,8 +10854,8 @@ Node::refreshChannelSelectors()
             }
         }
 
-        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        const std::string curLayer_FriendlyName = layerKnob->getActiveEntryText_mt_safe();
+        const std::vector<std::string> currentLayerEntries = layerKnob->getEntries();
+        const std::string curLayer_FriendlyName = layerKnob->getActiveEntryText();
         const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(curLayer_FriendlyName);
 
 
@@ -11290,8 +10996,8 @@ Node::refreshChannelSelectors()
         }
 
         KnobChoicePtr channelKnob = it->second.channel.lock();
-        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries_mt_safe();
-        const std::string curChannelEncoded = channelKnob->getActiveEntryText_mt_safe();
+        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries();
+        const std::string curChannelEncoded = channelKnob->getActiveEntryText();
 
         // This will merge previous channels with new channels available while retaining previously existing channels.
         {
@@ -11340,7 +11046,7 @@ Node::addUserComponents(const ImageComponents& comps)
         ///Set the selector to the new channel
         KnobChoicePtr layerChoice = toKnobChoice(outputLayerKnob);
         if (layerChoice) {
-            layerChoice->setValueFromLabel(comps.getLayerName(), 0);
+            layerChoice->setValueFromLabel(comps.getLayerName());
         }
     }
 
@@ -11361,7 +11067,7 @@ Node::getHostMixingValue(double time,
 {
     KnobDoublePtr mix = _imp->mixWithSource.lock();
 
-    return mix ? mix->getValueAtTime(time, 0, view) : 1.;
+    return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
 }
 
 NATRON_NAMESPACE_EXIT;

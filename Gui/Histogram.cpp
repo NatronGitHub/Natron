@@ -52,7 +52,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"

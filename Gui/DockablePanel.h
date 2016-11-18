@@ -118,19 +118,15 @@ public:
     void resetHostOverlayColor();
 
     KnobHolderPtr getHolder() const;
-    TrackerPanel* getTrackerPanel() const;
 
     void onGuiClosing();
 
 
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-
     FloatingWidget* getFloatingWindow() const;
 
     void floatPanelInWindow(FloatingWidget* window);
-
-public:
 
 
     /**
@@ -153,6 +149,7 @@ public:
     virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL;
 private:
 
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* parent) OVERRIDE FINAL;
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
@@ -253,17 +250,6 @@ protected:
      * @brief Called when the "center on..." button is clicked
      **/
     virtual void centerOnItem() {}
-
-    virtual RotoPanel* initializeRotoPanel()
-    {
-        return NULL;
-    }
-
-    virtual TrackerPanel* initializeTrackerPanel()
-    {
-        return NULL;
-    }
-
 
 private:
 

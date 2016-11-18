@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if 0
+
 #include "RotoPanel.h"
 
 #include <stdexcept>
@@ -46,6 +48,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPainter>
 #include <QUndoCommand>
 #include <QByteArray>
+#include <QStyledItemDelegate>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -54,7 +57,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/RotoContextPrivate.h" // for getCompositingOperators
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
@@ -71,6 +73,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiMacros.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TableModelView.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SpinBox.h"
 
@@ -90,7 +93,6 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 
 NATRON_NAMESPACE_ENTER;
-
 
 class RemoveItemsUndoCommand
     : public QUndoCommand
@@ -376,6 +378,7 @@ public:
     QIcon iconLayer, iconBezier, iconVisible, iconUnvisible, iconLocked, iconUnlocked, iconInverted, iconUninverted, iconWheel;
     QIcon iconStroke, iconEraser, iconSmear, iconSharpen, iconBlur, iconClone, iconReveal, iconDodge, iconBurn;
     TreeWidget* tree;
+    boost::scoped_ptr<TableItemEditorFactory> itemFactory;
     QTreeWidgetItem* treeHeader;
     SelectedItems selectedItems;
     TreeItems items;
@@ -607,6 +610,11 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->tree->setToolTip(treeToolTip);
 
     _imp->mainLayout->addWidget(_imp->tree);
+
+    _imp->itemFactory.reset(new TableItemEditorFactory);
+    QStyledItemDelegate* delegate =  dynamic_cast<QStyledItemDelegate*>(_imp->tree->itemDelegate());
+    assert(delegate);
+    delegate->setItemEditorFactory( _imp->itemFactory.get() );
 
     QObject::connect( _imp->tree, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(onItemClicked(QTreeWidgetItem*,int)) );
     QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
@@ -2986,7 +2994,9 @@ DuplicateItemUndoCommand::redo()
     setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 #include "moc_RotoPanel.cpp"
+#endif

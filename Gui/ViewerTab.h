@@ -81,6 +81,7 @@ public:
 
     virtual void notifyGuiClosing() OVERRIDE FINAL;
     virtual void onPanelMadeCurrent() OVERRIDE FINAL;
+    virtual QIcon getIcon() const OVERRIDE FINAL;
 
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
@@ -210,6 +211,8 @@ public:
     void setImageFormat(int textureIndex, const ImageComponents& components, ImageBitDepthEnum depth);
 
     void redrawGLWidgets();
+
+    void redrawTimeline();
 
     void centerOn(SequenceTime left, SequenceTime right);
 

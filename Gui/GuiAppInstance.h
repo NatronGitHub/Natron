@@ -35,6 +35,7 @@
 #endif
 
 #include "Engine/AppInstance.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/GuiFwd.h"
@@ -188,8 +189,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
-    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewSetSpec view);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewSetSpec* view) const;
 
     virtual bool checkAllReadersModificationDate(bool errorAndWarn) OVERRIDE FINAL;
 
@@ -233,9 +234,6 @@ public Q_SLOTS:
     virtual void goToPreviousKeyframe() OVERRIDE FINAL;
     virtual void goToNextKeyframe() OVERRIDE FINAL;
 
-Q_SIGNALS:
-
-    void keyframeIndicatorsChanged();
 
 public:
 
@@ -273,25 +271,6 @@ public:
 
 
     virtual void createGroupGui(const NodePtr & group, const CreateNodeArgs& args) OVERRIDE FINAL;
-
-    ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
-    virtual void removeAllKeyframesIndicators() OVERRIDE FINAL;
-    virtual void addKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
-    virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void removeKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
-    virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void addNodesKeyframesToTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
-    virtual void addNodeKeyframesToTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual void removeNodesKeyframesFromTimeline(const std::list<NodePtr> & nodes) OVERRIDE FINAL;
-    virtual void removeNodeKeyframesFromTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
-    virtual void removeAllUserKeyframesIndicators() OVERRIDE FINAL;
-    virtual void addUserKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
-    virtual void addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void removeUserKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
-    virtual void removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & keys, bool emitSignal) OVERRIDE FINAL;
-    virtual void getUserKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
-    ///////////////// END OVERRIDEN FROM TIMELINEKEYFRAMES
 
 private:
 

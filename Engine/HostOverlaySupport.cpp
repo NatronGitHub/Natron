@@ -147,7 +147,7 @@ HostOverlayKnobs::checkHostOverlayValid()
         }
 
         // Dimension mismatch
-        if (knob->getDimension() != _imp->knobsDescription[i].nDims) {
+        if (knob->getNDimensions() != _imp->knobsDescription[i].nDims) {
             return false;
         }
     }

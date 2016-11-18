@@ -16,7 +16,7 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#include "RotoLayerSerialization.h"
+#include "RotoStrokeItemSerialization.h"
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
@@ -30,7 +30,7 @@ void
 RotoStrokeItemSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-    RotoDrawableItemSerialization::encode(em);
+    KnobTableItemSerialization::encode(em);
     bool isSolid = _brushType != kRotoStrokeItemSerializationBrushTypeSolid;
 
     if (!isSolid) {
@@ -60,10 +60,11 @@ RotoStrokeItemSerialization::encode(YAML::Emitter& em) const
 void
 RotoStrokeItemSerialization::decode(const YAML::Node& node)
 {
+
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
-    RotoItemSerialization::decode(node);
+    KnobTableItemSerialization::decode(node);
 
     if (node["Type"]) {
         _brushType = node["Type"].as<std::string>();

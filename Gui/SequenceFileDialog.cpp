@@ -401,7 +401,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _sequenceButton->setVisible(false);
     }
 
-    _view =  new SequenceDialogView(this);
+    _view =  new SequenceDialogView(gui, this);
 
     _model.reset( new FileSystemModel() );
     _model->initialize(this);
@@ -1092,7 +1092,7 @@ SequenceFileDialog::setRootIndex(const QModelIndex & index)
     _view->update();
 }
 
-SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
+SequenceDialogView::SequenceDialogView(Gui* gui, SequenceFileDialog* fd)
     : QTreeView(fd), _fd(fd)
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1108,6 +1108,17 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
     setDragDropMode(QAbstractItemView::DragOnly);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);
+
+#if QT_VERSION < 0x050000
+    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    double scale = gui->getHighDPIScaleFactor();
+    if (scale > 1) {
+        QSize iconSize = header()->iconSize();
+        iconSize.setHeight(iconSize.height() / scale);
+        header()->setIconSize(iconSize);
+    }
+#endif
 }
 
 void

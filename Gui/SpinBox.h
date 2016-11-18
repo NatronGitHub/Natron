@@ -31,6 +31,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
@@ -167,7 +169,8 @@ public:
     KnobSpinBox(QWidget* parent,
                 SpinBoxTypeEnum type,
                 const KnobGuiPtr& knob,
-                int dimension);
+                DimIdx dimension,
+                ViewIdx view);
 
     virtual ~KnobSpinBox();
 
@@ -189,7 +192,8 @@ private:
 
 private:
     KnobGuiWPtr knob;
-    int dimension;
+    DimIdx dimension;
+    ViewIdx view;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 

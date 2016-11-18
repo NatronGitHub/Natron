@@ -156,7 +156,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const NodesWList & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getOutputs();
         bool foundOutput = false;
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if (it->lock() == output) {
@@ -166,7 +166,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -190,7 +190,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const NodesWList & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getOutputs();
         bool foundOutput = false;
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if (it->lock() == output) {
@@ -200,7 +200,7 @@ BaseTest::disconnectNodes(const NodePtr& input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -233,8 +233,8 @@ TEST_F(BaseTest, GenerateDot)
     ASSERT_TRUE(frameRange);
     KnobIntPtr knob = toKnobInt(frameRange);
     ASSERT_TRUE(knob);
-    knob->setValue(1, ViewSpec::all(), 0);
-    knob->setValue(1, ViewSpec::all(), 1);
+    knob->setValue(1, ViewSetSpec::all(), DimIdx(0));
+    knob->setValue(1, ViewSetSpec::all(), DimIdx(1));
 
     Format f(0, 0, 200, 200, "toto", 1.);
     generator->getApp()->getProject()->setOrAddProjectFormat(f);
@@ -256,7 +256,7 @@ TEST_F(BaseTest, GenerateDot)
     w.frameStep = INT_MIN;
     w.useRenderStats = false;
     works.push_back(w);
-    getApp()->startWritersRendering(false, works);
+    getApp()->renderWritersBlocking(works);
 
     EXPECT_TRUE( QFile::exists(filePath) );
     QFile::remove(filePath);
@@ -278,9 +278,9 @@ TEST_F(BaseTest, SetValues)
 
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::all(),  0, 0, eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(0, 0., ViewSpec::all(), 0);
-    radius->setValueAtTime(100, 1., ViewSpec::all(), 0);
+    radius->setInterpolationAtTime(ViewSetSpec::all(),  DimIdx(0),  0, eKeyframeTypeLinear, &kf);
+    radius->setValueAtTime(0, 0., ViewSetSpec::all(), DimIdx(0));
+    radius->setValueAtTime(100, 1., ViewSetSpec::all(), DimIdx(0));
     for (int i = 0; i <= 100; ++i) {
         double v = radius->getValueAtTime(i);
         EXPECT_TRUE(std::abs(v - i / 100.) < 1e-6);

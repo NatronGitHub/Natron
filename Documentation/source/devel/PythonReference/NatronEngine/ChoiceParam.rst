@@ -16,23 +16,23 @@ Functions
 ^^^^^^^^^
 
 *    def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (option, help)
-*    def :meth:`get<NatronEngine.ChoiceParam.get>` ()
-*    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame)
+*    def :meth:`get<NatronEngine.ChoiceParam.get>` ([view="Main"])
+*    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame[,view="Main"])
 *    def :meth:`getDefaultValue<NatronEngine.ChoiceParam.getDefaultValue>` ()
 *    def :meth:`getOption<NatronEngine.ChoiceParam.getOption>` (index)
 *    def :meth:`getNumOptions<NatronEngine.ChoiceParam.getNumOptions>` ()
 *    def :meth:`getOptions<NatronEngine.ChoiceParam.getOptions>` ()
-*    def :meth:`getValue<NatronEngine.ChoiceParam.getValue>` ()
-*    def :meth:`getValueAtTime<NatronEngine.ChoiceParam.getValueAtTime>` (time)
-*    def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ()
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x)
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x, frame)
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (label)
+*    def :meth:`getValue<NatronEngine.ChoiceParam.getValue>` ([view="Main"])
+*    def :meth:`getValueAtTime<NatronEngine.ChoiceParam.getValueAtTime>` (time[,view="Main"])
+*    def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ([view="All"])
+*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x[,view="All"])
+*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x, frame[,view="All"])
+*    def :meth:`set<NatronEngine.ChoiceParam.set>` (label[,view="All"])
 *    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (value)
 *    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (label)
 *    def :meth:`setOptions<NatronEngine.ChoiceParam.setOptions>` (options)
-*    def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value)
-*    def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time)
+*    def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value[,view="All"])
+*    def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time[,view="All"])
 
 .. _choice.details:
 
@@ -64,23 +64,24 @@ hovers the entry with the mouse.
 
 
 
-.. method:: NatronEngine.ChoiceParam.get(frame)
+.. method:: NatronEngine.ChoiceParam.get(frame[, view="Main"])
 
 
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
-Get the value of the parameter at the given *frame*.
+Get the value of the parameter at the given *frame* and *view*.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.get()
+.. method:: NatronEngine.ChoiceParam.get([view="Main"])
 
-
+	:param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
-Get the value of the parameter at the current timeline's time.
+Get the value of the parameter at the current timeline's time for the given *view*.
 
 
 
@@ -127,52 +128,58 @@ Same as :func:`get()<NatronEngine.ChoiceParam.get>`
 
 
 
-.. method:: NatronEngine.ChoiceParam.getValueAtTime(time)
+.. method:: NatronEngine.ChoiceParam.getValueAtTime(time[,view="Main"])
 
 
     :param time: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.float>`
 
-Same as :func:`get(frame)<NatronEngine.ChoiceParam.get>`
+Same as :func:`get(frame,view)<NatronEngine.ChoiceParam.get>`
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.restoreDefaultValue()
+.. method:: NatronEngine.ChoiceParam.restoreDefaultValue([view="All"])
 
 
-
-Removes all animation and expression set on this parameter and set the value
+	:param view: :class:`str<PySide.QtCore.QString>`
+	
+Removes all animation and expression set on this parameter for the given *view* and set the value
 to be the default value.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(x)
+.. method:: NatronEngine.ChoiceParam.set(x [, view="All"])
 
 
     :param x: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Set the value of this parameter to be *x*. If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
+Set the value of this parameter to be *x* for the given view.
+ If this parameter is animated (see :func:`getIsAnimated(dimension, view)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(x, frame)
+.. method:: NatronEngine.ChoiceParam.set(x, frame [, view="All"])
 
 
     :param x: :class:`int<PySide.QtCore.int>`
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Set a new keyframe on the parameter with the value *x* at the given *frame*.
+Set a new keyframe on the parameter with the value *x* at the given *frame* and *view*.
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(label)
+.. method:: NatronEngine.ChoiceParam.set(label[, view="All"])
 
 
     :param label: :class:`str<NatronEngine.std::string>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 	
 Set the value of this parameter given a *label*. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
@@ -207,17 +214,16 @@ to the menu.
 
 
 
-.. method:: NatronEngine.ChoiceParam.setValue(value)
+.. method:: NatronEngine.ChoiceParam.setValue(value[, view="All"])
 
 
     :param value: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 Same as :func:`set<NatronEngine.ChoiceParam.setValue>`
 
 
-
-
-.. method:: NatronEngine.ChoiceParam.setValueAtTime(value, time)
+.. method:: NatronEngine.ChoiceParam.setValueAtTime(value, time[,view="All"])
 
 
     :param value: :class:`int<PySide.QtCore.int>`

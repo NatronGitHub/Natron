@@ -329,7 +329,7 @@ PrecompNode::onKnobsLoaded()
 bool
 PrecompNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
-                         ViewSpec /*view*/,
+                         ViewSetSpec /*view*/,
                          double /*time*/,
                          bool /*originatedFromMainThread*/)
 {
@@ -374,7 +374,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
         if (knob) {
             KnobChoicePtr choice = toKnobChoice(knob);
             if (choice) {
-                choice->setValue( errorBehaviourKnbo.lock()->getValue() );
+                choice->setValue( errorBehaviourKnbo.lock()->getValue());
             }
         }
     }
@@ -402,7 +402,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     }
     QString fileUnPathed = file.fileName();
 
-    subLabelKnob.lock()->setValue( fileUnPathed.toStdString() );
+    subLabelKnob.lock()->setValue( fileUnPathed.toStdString());
 
     QString path = file.path() + QLatin1Char('/');
 
@@ -484,7 +484,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText_mt_safe();
+    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText();
 
     if (userChoiceNodeName == "None") {
         return NodePtr();
@@ -637,10 +637,10 @@ PrecompNodePrivate::setFirstAndLastFrame()
     KnobIntPtr firstFrame = toKnobInt(writefirstFrameKnob);
     KnobIntPtr lastFrame = toKnobInt(writelastFrameKnob);
     if (firstFrame) {
-        firstFrameKnob.lock()->setValue( firstFrame->getValue() );
+        firstFrameKnob.lock()->setValue( firstFrame->getValue());
     }
     if (lastFrame) {
-        lastFrameKnob.lock()->setValue( lastFrame->getValue() );
+        lastFrameKnob.lock()->setValue( lastFrame->getValue());
     }
 }
 
@@ -658,7 +658,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     readNode->purgeAllInstancesCaches();
 
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(DimSpec::all(), _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -686,7 +686,7 @@ PrecompNodePrivate::launchPreRender()
 
     std::list<AppInstance::RenderWork> works;
     works.push_back(w);
-    _publicInterface->getApp()->startWritersRendering(false, works);
+    _publicInterface->getApp()->renderWritersNonBlocking(works);
 }
 
 void

@@ -32,6 +32,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QScrollBar>
 #include <QTextBlock>
 #include <QPainter>
+#include <QApplication>
 #include <QtCore/QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -39,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/Gui.h"
@@ -46,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
-
+#include "Gui/KnobUndoCommand.h" // PasteKnobClipBoardUndoCommand::makeLinkExpression
 NATRON_NAMESPACE_ENTER;
 
 
@@ -304,11 +306,15 @@ PySyntaxHighlighterPrivate::reload()
 
 InputScriptTextEdit::InputScriptTextEdit(Gui* gui,
                                          const KnobGuiPtr& knobExpressionReceiver,
+                                         DimSpec dimension,
+                                         ViewSetSpec view,
                                          QWidget* parent)
     : QPlainTextEdit(parent)
     , _lineNumber( new LineNumberWidget(this) )
     , _gui(gui)
     , _knobExpressionReceiver(knobExpressionReceiver)
+    , _knobTargetDimension(dimension)
+    , _knobTargetView(view)
 {
     QObject::connect( this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)) );
     QObject::connect( this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)) );
@@ -470,10 +476,11 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     if ( !formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
         return;
     }
-    int cbDim;
+    DimSpec cbDim;
+    ViewSetSpec cbView;
     KnobIPtr fromKnob;
     QDrag* drag;
-    _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
+    _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim, &cbView);
 
     if (!fromKnob) {
         return;
@@ -482,38 +489,22 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     if (!fromEffect) {
         return;
     }
-
     KnobGuiPtr toKnob = _knobExpressionReceiver.lock();
-
-    std::string fromEffectName;
-    // If this is the same node, use thisNode instead of the node name
-    if (toKnob) {
-        EffectInstancePtr toEffect = toEffectInstance( toKnob->getKnob()->getHolder() );
-        if (toEffect && toEffect == fromEffect) {
-            fromEffectName = "thisNode";
-        }
+    if (!toKnob) {
+        return;
     }
 
-    // Not the same node: fallback on the fully qualified name
-    if (fromEffectName.empty()) {
-        fromEffectName = fromEffect->getNode()->getFullyQualifiedName();
+    Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
+    KnobClipBoardType type = eKnobClipBoardTypeCopyExpressionLink;
+    if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
+        type = eKnobClipBoardTypeCopyExpressionMultCurveLink;
     }
 
-    QString toAppend;
-    toAppend.append( QString::fromUtf8( fromEffectName.c_str() ) );
-    toAppend.append( QLatin1Char('.') );
-    toAppend.append( QString::fromUtf8( fromKnob->getName().c_str() ) );
-    toAppend.append( QString::fromUtf8(".get()") );
-    if (fromKnob->getDimension() > 1) {
-        toAppend.append( QLatin1Char('[') );
-        if ( (cbDim == -1) || ( (cbDim == 0) && !fromKnob->getAllDimensionVisible() ) ) {
-            toAppend.append( QString::fromUtf8("dimension") );
-        } else {
-            toAppend.append( QString::number(cbDim) );
-        }
-        toAppend.append( QLatin1Char(']') );
-    }
-    appendPlainText(toAppend);
+
+    const std::vector<std::string> &projectViewNames = fromEffect->getApp()->getProject()->getProjectViewNames();
+    std::string expression = PasteKnobClipBoardUndoCommand::makeLinkExpression(projectViewNames, toKnob->getKnob(), type == eKnobClipBoardTypeCopyExpressionMultCurveLink, fromKnob, cbDim, cbView, _knobTargetDimension, _knobTargetView);
+
+    appendPlainText(QString::fromUtf8(expression.c_str()));
     e->acceptProposedAction();
 
 

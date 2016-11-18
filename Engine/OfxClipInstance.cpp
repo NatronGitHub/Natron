@@ -46,7 +46,6 @@
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/Project.h"
@@ -578,7 +577,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
     bool inputIsMask = _imp->mask;
     RectD rod;
     if ( attachedStroke && inputIsMask ) {
-        effect->getNode()->getPaintStrokeRoD(time, &rod);
+        effect->getNode()->getPaintStrokeRoD(time, view, &rod);
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
@@ -701,7 +700,7 @@ OfxClipInstance::loadTexture(OfxTime time,
     }
 
     OFX::Host::ImageEffect::Texture* texture = 0;
-    if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
+    if ( !getImagePlaneInternal(time, ViewGetSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
         return 0;
     }
 
@@ -723,7 +722,7 @@ OfxClipInstance::getImage(OfxTime time,
 {
     OFX::Host::ImageEffect::Image* image = 0;
 
-    if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/) ) {
+    if ( !getImagePlaneInternal(time, ViewGetSpec::current(), optionalBounds, 0 /*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/) ) {
         return 0;
     }
 
@@ -738,7 +737,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
 {
     OFX::Host::ImageEffect::Image* image = 0;
 
-    if ( !getImagePlaneInternal(time, ViewSpec(view), optionalBounds, 0 /*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/) ) {
+    if ( !getImagePlaneInternal(time, ViewGetSpec(view), optionalBounds, 0 /*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/) ) {
         return 0;
     }
 
@@ -758,10 +757,10 @@ OfxClipInstance::getImagePlane(OfxTime time,
         return NULL;
     }
 
-    ViewSpec spec;
+    ViewGetSpec spec;
     // The Foundry Furnace plug-ins pass -1 to the view parameter, we need to deal with it.
     if (view == -1) {
-        spec = ViewSpec::current();
+        spec = ViewGetSpec::current();
     } else {
         spec = ViewIdx(view);
     }
@@ -776,7 +775,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
 
 bool
 OfxClipInstance::getImagePlaneInternal(OfxTime time,
-                                       ViewSpec view,
+                                       ViewGetSpec view,
                                        const OfxRectD *optionalBounds,
                                        const std::string* ofxPlane,
                                        const ImageBitDepthEnum* textureDepth,
@@ -798,7 +797,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
 
 bool
 OfxClipInstance::getInputImageInternal(const OfxTime time,
-                                       const ViewSpec viewParam,
+                                       const ViewGetSpec viewParam,
                                        const OfxRectD *optionalBounds,
                                        const std::string* ofxPlane,
                                        const ImageBitDepthEnum* textureDepth,
@@ -888,7 +887,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         }
     }
 #endif
-    assert( !viewParam.isAll() );
     ViewIdx view;
     if (tls) {
         if ( viewParam.isCurrent() ) {

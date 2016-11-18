@@ -323,7 +323,7 @@ private:
 
 
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                             ViewSpec /*view*/,
+                             ViewSetSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 

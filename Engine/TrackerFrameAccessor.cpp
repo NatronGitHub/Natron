@@ -41,7 +41,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
-#include "Engine/TrackerContext.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -205,24 +204,24 @@ natronImageToLibMvFloatImage(bool enabledChannels[3],
 
 struct TrackerFrameAccessorPrivate
 {
-    const TrackerContext* context;
+    NodeWPtr node;
     NodePtr trackerInput;
     mutable QMutex cacheMutex;
     FrameAccessorCache cache;
     bool enabledChannels[3];
     int formatHeight;
 
-    TrackerFrameAccessorPrivate(const TrackerContext* context,
+    TrackerFrameAccessorPrivate(const NodePtr& node,
                                 bool enabledChannels[3],
                                 int formatHeight)
-        : context(context)
+        : node(node)
         , trackerInput()
         , cacheMutex()
         , cache()
         , enabledChannels()
         , formatHeight(formatHeight)
     {
-        trackerInput = context->getNode()->getInput(0);
+        trackerInput = node->getInput(0);
         assert(trackerInput);
         for (int i = 0; i < 3; ++i) {
             this->enabledChannels[i] = enabledChannels[i];
@@ -230,11 +229,11 @@ struct TrackerFrameAccessorPrivate
     }
 };
 
-TrackerFrameAccessor::TrackerFrameAccessor(const TrackerContext* context,
+TrackerFrameAccessor::TrackerFrameAccessor(const NodePtr& node,
                                            bool enabledChannels[3],
                                            int formatHeight)
     : mv::FrameAccessor()
-    , _imp( new TrackerFrameAccessorPrivate(context, enabledChannels, formatHeight) )
+    , _imp( new TrackerFrameAccessorPrivate(node, enabledChannels, formatHeight) )
 {
 }
 
@@ -334,7 +333,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     RenderScale scale;
     scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
 
-    NodePtr node = _imp->context->getNode();
+    NodePtr node = _imp->node.lock();
 
 
     const bool isRenderUserInteraction = true;
@@ -404,7 +403,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         components,
                                         eImageBitDepthFloat,
                                         true,
-                                        _imp->context->getNode()->getEffectInstance(),
+                                        node->getEffectInstance(),
                                         eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;

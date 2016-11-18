@@ -165,6 +165,10 @@ public:
     ///The CPU (osmesa) OpenGL context to use for the render of this frame
     boost::weak_ptr<OSGLContext> cpuOpenGLContext;
 
+    /// Local copies of render data such as knob values, node inputs etc...
+    /// that should remain the same throughout the render of the frame.
+    RenderValuesCachePtr valuesCache;
+
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
 

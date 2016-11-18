@@ -108,7 +108,7 @@ private:
 
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

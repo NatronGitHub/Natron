@@ -69,7 +69,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"
@@ -99,6 +98,8 @@ struct EditScriptDialogPrivate
 {
     Gui* gui;
     KnobGuiWPtr knobExpressionReceiver;
+    DimSpec knobDimension;
+    ViewSetSpec knobView;
     QVBoxLayout* mainLayout;
     Label* expressionLabel;
     InputScriptTextEdit* expressionEdit;
@@ -110,9 +111,14 @@ struct EditScriptDialogPrivate
     OutputScriptTextEdit* resultEdit;
     DialogButtonBox* buttons;
 
-    EditScriptDialogPrivate(Gui* gui, const KnobGuiPtr& knobExpressionReceiver)
+    EditScriptDialogPrivate(Gui* gui,
+                            const KnobGuiPtr& knobExpressionReceiver,
+                            DimSpec knobDimension,
+                            ViewSetSpec knobView)
         : gui(gui)
         , knobExpressionReceiver(knobExpressionReceiver)
+        , knobDimension(knobDimension)
+        , knobView(knobView)
         , mainLayout(0)
         , expressionLabel(0)
         , expressionEdit(0)
@@ -129,9 +135,11 @@ struct EditScriptDialogPrivate
 
 EditScriptDialog::EditScriptDialog(Gui* gui,
                                    const KnobGuiPtr& knobExpressionReceiver,
+                                   DimSpec knobDimension,
+                                   ViewSetSpec knobView,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditScriptDialogPrivate(gui, knobExpressionReceiver) )
+    , _imp( new EditScriptDialogPrivate(gui, knobExpressionReceiver, knobDimension, knobView) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
@@ -170,7 +178,7 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->expressionLabel = new Label(labelHtml, this);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
-    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), this);
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), _imp->knobDimension, _imp->knobView, this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     _imp->mainLayout->addWidget(_imp->expressionEdit);
@@ -214,8 +222,8 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onAcceptedPressed()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(onRejectedPressed()) );
 
     if ( !initialScript.isEmpty() ) {
         compileAndSetResult(initialScript);
@@ -344,9 +352,9 @@ void
 EditScriptDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        accept();
+        Q_EMIT dialogFinished(true);
     } else if (e->key() == Qt::Key_Escape) {
-        reject();
+        Q_EMIT dialogFinished(false);
     } else {
         QDialog::keyPressEvent(e);
     }

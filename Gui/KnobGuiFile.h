@@ -39,13 +39,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Gui/KnobGuiTable.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
 //================================
 class KnobGuiFile
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -53,20 +54,16 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiFile(knob, container);
+        return new KnobGuiFile(knob, view);
     }
 
-    KnobGuiFile(KnobIPtr knob,
-                KnobGuiContainerI *container);
+    KnobGuiFile(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiFile() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
-
 
     bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
 
@@ -98,14 +95,13 @@ private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
 
 private:
@@ -136,19 +132,16 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiPath(knob, container);
+        return new KnobGuiPath(knob, view);
     }
 
-    KnobGuiPath(KnobIPtr knob,
-                KnobGuiContainerI *container);
+    KnobGuiPath(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiPath() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -165,14 +158,13 @@ public Q_SLOTS:
 private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 

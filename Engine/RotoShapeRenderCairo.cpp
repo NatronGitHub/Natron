@@ -30,11 +30,10 @@
 
 #include <cairo/cairo.h>
 
+#include "Engine/BezierCP.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/RotoContext.h"
-#include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNode.h"
@@ -505,7 +504,7 @@ RotoShapeRenderCairo::bezulate(double time,
             bbox.setupInfinity();
             for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
-                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p.x, &p.y);
+                (*it)->getPositionAtTime(time, &p.x, &p.y);
                 polygon.push_back(p);
                 if (p.x < bbox.x1) {
                     bbox.x1 = p.x;
@@ -531,8 +530,8 @@ RotoShapeRenderCairo::bezulate(double time,
 
                 //mid-point of the line segment between points i and i + n
                 Point nextPoint, curPoint;
-                (*it)->getPositionAtTime(false, time, ViewIdx(0), &curPoint.x, &curPoint.y);
-                (*next)->getPositionAtTime(false, time, ViewIdx(0), &nextPoint.x, &nextPoint.y);
+                (*it)->getPositionAtTime(time, &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(time,  &nextPoint.x, &nextPoint.y);
 
                 /*
                  * Compute the number of intersections between the current line segment [it,next] and all other line segments
@@ -630,10 +629,10 @@ RotoShapeRenderCairo::bezulate(double time,
                     next = simpleClosedCurve.begin();
                 }
                 Point p0, p1, p2, p3, p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3, dest;
-                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p0.x, &p0.y);
-                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &p1.x, &p1.y);
-                (*next)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &p2.x, &p2.y);
-                (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
+                (*it)->getPositionAtTime(time,  &p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(time,  &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(time,  &p2.x, &p2.y);
+                (*next)->getPositionAtTime(time,  &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
                 BezierCPPtr controlPoint(new BezierCP);
                 controlPoint->setStaticPosition(dest.x, dest.y);
@@ -902,10 +901,11 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                          const std::list<std::list<std::pair<Point, double> > >& strokes,
                                          const double distToNextIn,
                                          const Point& lastCenterPointIn,
-                                         const RotoDrawableItem* stroke,
+                                         const RotoStrokeItemPtr& stroke,
                                          bool doBuildup,
                                          double alpha,
                                          double time,
+                                         ViewIdx view,
                                          unsigned int mipmapLevel,
                                          double* distToNextOut,
                                          Point* lastCenterPoint)
@@ -925,6 +925,7 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                                      doBuildup,
                                                      alpha,
                                                      time,
+                                                     view,
                                                      mipmapLevel,
                                                      distToNextOut,
                                                      lastCenterPoint);
@@ -1076,8 +1077,9 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
 
 bool
 RotoShapeRenderCairo::renderSmear_cairo(double time,
+                                        ViewIdx view,
                                         unsigned int mipMapLevel,
-                                        const RotoStrokeItem* rotoItem,
+                                        const RotoStrokeItemPtr& rotoItem,
                                         const RectI& /*roi*/,
                                         const ImagePtr& dstImage,
                                         const double distToNextIn,
@@ -1088,47 +1090,54 @@ RotoShapeRenderCairo::renderSmear_cairo(double time,
 {
 
     RenderSmearCairoData data;
-    data.opacity = rotoItem->getOpacity(time);
+    data.opacity = rotoItem->getOpacityKnob()->getValueAtTime(time, DimIdx(0), view);
     data.dstImage = dstImage;
 
     bool renderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
-                                                     renderSmearBegin_cairo,
-                                                     renderSmearRenderDot_cairo,
-                                                     renderStrokeEnd_cairo,
-                                                     strokes,
-                                                     distToNextIn,
-                                                     lastCenterPointIn,
-                                                     rotoItem,
-                                                     false,
-                                                     data.opacity,
-                                                     time,
-                                                     mipMapLevel,
-                                                     distToNextOut,
-                                                     lastCenterPointOut);
+                                                                        renderSmearBegin_cairo,
+                                                                        renderSmearRenderDot_cairo,
+                                                                        renderStrokeEnd_cairo,
+                                                                        strokes,
+                                                                        distToNextIn,
+                                                                        lastCenterPointIn,
+                                                                        rotoItem,
+                                                                        false,
+                                                                        data.opacity,
+                                                                        time,
+                                                                        view,
+                                                                        mipMapLevel,
+                                                                        distToNextOut,
+                                                                        lastCenterPointOut);
     return renderedDot;
-
+    
 } // RotoShapeRenderCairo::renderSmear_cairo
 
 
 void
 RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
-                                       const Bezier* bezier,
-                                       double opacity,
-                                       double /*time*/,
-                                       double startTime, double endTime, double mbFrameStep,
-                                       unsigned int mipmapLevel)
+                                         const BezierPtr& bezier,
+                                         double opacity,
+                                         double /*time*/,
+                                         ViewIdx view,
+                                         double startTime, double endTime, double mbFrameStep,
+                                         unsigned int mipmapLevel)
 {
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 
-        double fallOff = bezier->getFeatherFallOff(t);
-        double featherDist = bezier->getFeatherDistance(t);
+        double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
+        double featherDist = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
         double shapeColor[3];
-        bezier->getColor(t, shapeColor);
+        {
+            KnobColorPtr colorKnob = bezier->getColorKnob();
+            for (int i = 0; i < 3; ++i) {
+                shapeColor[i] = colorKnob->getValueAtTime(t, DimIdx(i), view);
+            }
+        }
 
 
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-
+        
         cairo_new_path(cr);
 
         ////Define the feather edge pattern
@@ -1153,13 +1162,13 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
         renderInternalShape_cairo(data, shapeColor, mesh);
         Q_UNUSED(opacity);
 #else
-        renderFeather_old_cairo(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+        renderFeather_old_cairo(bezier, t, view, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
 
         Transform::Matrix3x3 transform;
-        bezier->getTransformAtTime(t, &transform);
+        bezier->getTransformAtTime(t, view, &transform);
 
         // strangely, the above-mentioned cairo bug doesn't affect this function
-        BezierCPs cps = bezier->getControlPoints_mt_safe();
+        BezierCPs cps = bezier->getControlPoints(view);
         renderInternalShape_old_cairo(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
 
 #endif
@@ -1170,14 +1179,15 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 } // RotoShapeRenderCairo::renderBezier_cairo
 
 void
-RotoShapeRenderCairo::renderFeather_old_cairo(const Bezier* bezier,
-                                            double time,
-                                            unsigned int mipmapLevel,
-                                            double shapeColor[3],
-                                            double /*opacity*/,
-                                            double featherDist,
-                                            double fallOff,
-                                            cairo_pattern_t* mesh)
+RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
+                                              double time,
+                                              ViewIdx view,
+                                              unsigned int mipmapLevel,
+                                              double shapeColor[3],
+                                              double /*opacity*/,
+                                              double featherDist,
+                                              double fallOff,
+                                              cairo_pattern_t* mesh)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
     ///to the Natron image.
@@ -1197,14 +1207,14 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const Bezier* bezier,
 
     featherPolyBBox.setupInfinity();
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                     50,
 #else
                                                     1,
 #endif
                                                     true, &featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel,
+    bezier->evaluateAtTime_DeCasteljau(time, view, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                        50,
 #else
@@ -1212,7 +1222,7 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const Bezier* bezier,
 #endif
                                        &bezierPolygon, NULL);
 
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time, view);
 
     assert( !featherPolygon.empty() && !bezierPolygon.empty() );
 
@@ -1836,7 +1846,7 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(double time,
 
 
     Transform::Point3D initCp;
-    (*point)->getPositionAtTime(false, time, ViewIdx(0), &initCp.x, &initCp.y);
+    (*point)->getPositionAtTime(time,  &initCp.x, &initCp.y);
     initCp.z = 1.;
     initCp = Transform::matApply(transform, initCp);
 
@@ -1850,11 +1860,11 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(double time,
         }
 
         Transform::Point3D right, nextLeft, next;
-        (*point)->getRightBezierPointAtTime(false, time, ViewIdx(0), &right.x, &right.y);
+        (*point)->getRightBezierPointAtTime(time,  &right.x, &right.y);
         right.z = 1;
-        (*nextPoint)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &nextLeft.x, &nextLeft.y);
+        (*nextPoint)->getLeftBezierPointAtTime(time,  &nextLeft.x, &nextLeft.y);
         nextLeft.z = 1;
-        (*nextPoint)->getPositionAtTime(false, time, ViewIdx(0), &next.x, &next.y);
+        (*nextPoint)->getPositionAtTime(time,  &next.x, &next.y);
         next.z = 1;
 
         right = Transform::matApply(transform, right);
@@ -1901,6 +1911,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                                                const double endTime,
                                                const double timeStep,
                                                const double time,
+                                               ViewIdx view,
                                                const ImageBitDepthEnum depth,
                                                const unsigned int mipmapLevel,
                                                const bool isDuringPainting,
@@ -1913,8 +1924,8 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 {
 
     //NodePtr node = rotoItem->getContext()->getNode();
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(rotoItem.get());
-    Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
+    BezierPtr isBezier = toBezier(rotoItem);
     cairo_format_t cairoImgFormat;
     int srcNComps;
     bool doBuildUp = true;
@@ -1923,7 +1934,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         //Motion-blur is not supported for strokes
         assert(startTime == endTime);
 
-        doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(time);
+        doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(time, DimIdx(0), view);
         //For the non build-up case, we use the LIGHTEN compositing operator, which only works on colors
         if ( !doBuildUp || (components.getNumComponents() > 1) ) {
             cairoImgFormat = CAIRO_FORMAT_ARGB32;
@@ -1937,11 +1948,16 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         srcNComps = 1;
     }
 
-
     double shapeColor[3];
-    rotoItem->getColor(time, shapeColor);
+    {
+        KnobColorPtr colorKnob = rotoItem->getColorKnob();
+        for (int i = 0; i < 3; ++i) {
+            shapeColor[i] = colorKnob->getValueAtTime(time, DimIdx(i), view);
+        }
+    }
 
-    double opacity = rotoItem->getOpacity(time);
+
+    double opacity = rotoItem->getOpacityKnob()->getValueAtTime(time, DimIdx(0), view);
 
     ////Allocate the cairo temporary buffer
     CairoImageWrapper imgWrapper;
@@ -1989,8 +2005,10 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 dotPatterns[i] = (cairo_pattern_t*)0;
             }
         }
+
 #pragma message WARN("BUG: isStroke is NULL in the following call if shape is an open bezier")
-        RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, time, mipmapLevel, distToNextOut, lastCenterPointOut);
+        RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, time, view, mipmapLevel, distToNextOut, lastCenterPointOut);
+
 
         if (isDuringPainting) {
             if (isStroke) {
@@ -2006,8 +2024,8 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         }
     } else {
         ///render the bezier only if finished (closed) and activated
-        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() >1 ) ) {
-            RotoShapeRenderCairo::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
+        if ( isBezier->isCurveFinished(view) && isBezier->isActivated(time, view) && ( isBezier->getControlPointsCount(view) >1 ) ) {
+            RotoShapeRenderCairo::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, time, view,  startTime, endTime, timeStep, mipmapLevel);
         }
     }
 

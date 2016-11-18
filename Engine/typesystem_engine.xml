@@ -219,6 +219,7 @@
     <enum-type name="ImageBitDepthEnum"/>
     <enum-type name="ImagePremultiplicationEnum"/>
     <enum-type name="OrientationEnum"/>
+    <enum-type name="RotoStrokeType"/>
     <enum-type name="ViewerContextLayoutTypeEnum"/>
     </namespace-type>
     
@@ -1161,12 +1162,7 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="getRotoContext()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getTrackerContext()const">
+        <modify-function signature="getItemsTable()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1226,13 +1222,13 @@
         </modify-function>
     </object-type>
     <object-type name="AnimatedParam">
-        <modify-function signature="setExpression(QString,bool,int)">
+        <modify-function signature="setExpression(QString,bool,int,QString)">
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="getKeyTime(int,int,double*)const">
+        <modify-function signature="getKeyTime(int,int,double*,QString)const">
             <modify-argument index="3">
                 <remove-argument/>
             </modify-argument>
@@ -1248,7 +1244,7 @@
                 return %PYARG_0;
             </inject-code>
         </modify-function>
-        <modify-function signature="getExpression(int,bool*)const">
+        <modify-function signature="getExpression(int,bool*,QString)const">
             <modify-argument index="2">
                 <remove-argument/>
             </modify-argument>
@@ -1266,27 +1262,27 @@
         </modify-function>
     </object-type>
     <object-type name="IntParam">
-        <modify-function signature="set(int)">
+        <modify-function signature="set(int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,double)">
+        <modify-function signature="set(int,double,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
         </modify-function>
-        <modify-function signature="setValue(int,int)">
+        <modify-function signature="setValue(int,int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
         </modify-function>
-        <modify-function signature="setValueAtTime(int,double,int)">
+        <modify-function signature="setValueAtTime(int,double,int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
         </modify-function>
-        <modify-function signature="restoreDefaultValue(int)">
+        <modify-function signature="restoreDefaultValue(int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
@@ -1314,12 +1310,12 @@
         </add-function>
     </object-type>
     <object-type name="Int2DParam">
-        <modify-function signature="set(int,int)">
+        <modify-function signature="set(int,int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,int,double)">
+        <modify-function signature="set(int,int,double,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
@@ -1350,12 +1346,12 @@
         </add-function>
     </object-type>
     <object-type name="Int3DParam">
-        <modify-function signature="set(int,int,int)">
+        <modify-function signature="set(int,int,int,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(int,int,int,double)">
+        <modify-function signature="set(int,int,int,double,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
             </inject-code>
@@ -1411,12 +1407,12 @@
         </add-function>
     </object-type>
     <object-type name="Double3DParam">
-        <modify-function signature="set(double,double,double)">
+        <modify-function signature="set(double,double,double,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
             </inject-code>
         </modify-function>
-        <modify-function signature="set(double,double,double,double)">
+        <modify-function signature="set(double,double,double,double,QString)">
             <inject-code class="target" position="beginning">
                 %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
             </inject-code>
@@ -1521,24 +1517,11 @@
     </object-type>
     
     <object-type name="ItemBase">
-        <modify-function signature="getParentLayer()const">
+        <modify-function signature="getParent()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="setScriptName(QString)">
-            <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
-            </inject-code>
-        </modify-function>
-        <modify-function signature="setLabel(QString)">
-            <inject-code class="target" position="beginning">
-                %CPPSELF.%FUNCTION_NAME(%1);
-            </inject-code>
-        </modify-function>
-    </object-type>
-    <object-type name="Layer">
         <modify-function signature="getChildren()const">
             <inject-code class="target" position="beginning">
                 std::list&lt;ItemBase*&gt; items = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
@@ -1553,146 +1536,6 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="addItem(ItemBase*)">
-            <inject-code class="target" position="beginning">
-                %CPPSELF.%FUNCTION_NAME(%1);
-            </inject-code>
-        </modify-function>
-        <modify-function signature="insertItem(int,ItemBase*)">
-            <inject-code class="target" position="beginning">
-                %CPPSELF.%FUNCTION_NAME(%1,%2);
-            </inject-code>
-        </modify-function>
-        <modify-function signature="removeItem(ItemBase*)">
-            <inject-code class="target" position="beginning">
-                %CPPSELF.%FUNCTION_NAME(%1);
-            </inject-code>
-        </modify-function>
-    </object-type>
-    <object-type name="BezierCurve">
-        <modify-function signature="getActivatedParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getOpacityParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getFeatherDistanceParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getFeatherFallOffParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getColorParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getCompositingOperatorParam()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getKeyframes(std::list&lt;double&gt;*)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyList"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                std::list&lt;double&gt; keys;
-                %CPPSELF.%FUNCTION_NAME(&amp;keys);
-                PyObject* ret = PyList_New((int) keys.size());
-                int idx = 0;
-                for (std::list&lt;double&gt;::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
-                PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[double](*it));
-                }
-                return ret;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
-            <modify-argument index="3">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="4">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="5">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="6">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="7">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="8">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                double x,y,rx,ry,lx,ly;
-                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
-
-                PyObject* ret = PyTuple_New(6);
-                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
-                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
-                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
-                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
-                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
-                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
-                return ret;
-            </inject-code>
-        </modify-function>
-        <modify-function signature="getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const">
-            <modify-argument index="3">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="4">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="5">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="6">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="7">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="8">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                double x,y,rx,ry,lx,ly;
-                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry);
-
-                PyObject* ret = PyTuple_New(6);
-                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
-                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
-                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
-                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
-                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
-                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
-                return ret;
-            </inject-code>
-        </modify-function>
-
-    </object-type>
-    <object-type name="Track">
         <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -1712,20 +1555,7 @@
                 return ret;
             </inject-code>
         </modify-function>
-    </object-type>
-        
-    <object-type name="Tracker">
-        <modify-function signature="getTrackByName(QString)const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="createTrack()">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getAllTracks(std::list&lt;Track*&gt;*)const">
+        <modify-function signature="getUserKeyframes(std::list&lt;double&gt;*,QString)const">
             <modify-argument index="1">
                 <remove-argument/>
             </modify-argument>
@@ -1733,59 +1563,178 @@
                 <replace-type modified-type="PyList"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                std::list&lt;Track*&gt; tracks;
-                %CPPSELF.%FUNCTION_NAME(&amp;tracks);
-                PyObject* ret = PyList_New((int) tracks.size());
+                std::list&lt;double&gt; keys;
+                %CPPSELF.%FUNCTION_NAME(&amp;keys,%2);
+                PyObject* ret = PyList_New((int) keys.size());
                 int idx = 0;
-                for (std::list&lt;Track*&gt;::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
-                PyObject* item = %CONVERTTOPYTHON[Track*](*it);
+                for (std::list&lt;double&gt;::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
+                PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[double](*it));
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="ItemsTable">
+        <modify-function signature="getItemByFullyQualifiedScriptName(QString)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getSelectedItems()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;ItemBase*&gt; items = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) items.size());
+                int idx = 0;
+                for (std::list&lt;ItemBase*&gt;::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[ItemBase*](*it);
                 // Ownership transferences.
                 Shiboken::Object::getOwnership(item);
                 PyList_SET_ITEM(ret, idx, item);
                 }
                 return ret;
             </inject-code>
-            
         </modify-function>
-        <modify-function signature="getSelectedTracks(std::list&lt;Track*&gt;*)const">
-            <modify-argument index="1">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyList"/>
-            </modify-argument>
+
+        <modify-function signature="getTopLevelItems()const">
             <inject-code class="target" position="beginning">
-                std::list&lt;Track*&gt; tracks;
-                %CPPSELF.%FUNCTION_NAME(&amp;tracks);
-                PyObject* ret = PyList_New((int) tracks.size());
+                std::list&lt;ItemBase*&gt; items = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) items.size());
                 int idx = 0;
-                for (std::list&lt;Track*&gt;::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
-                PyObject* item = %CONVERTTOPYTHON[Track*](*it);
+                for (std::list&lt;ItemBase*&gt;::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[ItemBase*](*it);
                 // Ownership transferences.
                 Shiboken::Object::getOwnership(item);
                 PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="BezierCurve">
+        <modify-function signature="getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="5">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="6">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="7">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="8">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y,rx,ry,lx,ly;
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry, %9);
+
+                PyObject* ret = PyTuple_New(6);
+                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
+                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
+                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
+                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
+                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="5">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="6">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="7">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="8">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y,rx,ry,lx,ly;
+                %CPPSELF.%FUNCTION_NAME(%1, %2, &amp;x,&amp;y, &amp;lx,&amp;ly,&amp;rx,&amp;ry,%9);
+
+                PyObject* ret = PyTuple_New(6);
+                PyTuple_SET_ITEM(ret, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(ret, 1, %CONVERTTOPYTHON[double](y));
+                PyTuple_SET_ITEM(ret, 2, %CONVERTTOPYTHON[double](lx));
+                PyTuple_SET_ITEM(ret, 3, %CONVERTTOPYTHON[double](ly));
+                PyTuple_SET_ITEM(ret, 4, %CONVERTTOPYTHON[double](rx));
+                PyTuple_SET_ITEM(ret, 5, %CONVERTTOPYTHON[double](ry));
+                return ret;
+            </inject-code>
+        </modify-function>
+
+    </object-type>
+    <object-type name="Track">
+    </object-type>
+    <object-type name="StrokePoint">
+    </object-type>
+    <object-type name="Tracker">
+        <modify-function signature="createTrack()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="StrokeItem">
+        <modify-function signature="getPoints()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;std::list&lt;StrokePoint&gt; &gt; points = %CPPSELF.%FUNCTION_NAME();
+                PyObject* ret = PyList_New((int) points.size());
+                int i = 0;
+                for (std::list&lt;std::list&lt;StrokePoint&gt; &gt;::iterator it = points.begin(); it!=points.end(); ++it, ++i) {
+
+
+                    PyObject* subStrokeItemList = PyList_New((int) it->size());
+
+                    int idx = 0;
+                    for (std::list&lt;StrokePoint&gt;::iterator it2 = it->begin(); it2!=it->end(); ++it2,++idx) {
+                        PyObject* item = %CONVERTTOPYTHON[StrokePoint](*it);
+                        // Ownership transferences.
+                        PyList_SET_ITEM(subStrokeItemList, idx, item);
+                    }
+                    PyList_SET_ITEM(ret, i, subStrokeItemList);
                 }
                 return ret;
             </inject-code>
         </modify-function>
     </object-type>
     <object-type name="Roto">
-        <modify-function signature="getBaseLayer()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="getItemByName(QString)const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
         <modify-function signature="createLayer()">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="createStroke(NATRON_NAMESPACE::RotoStrokeType)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>

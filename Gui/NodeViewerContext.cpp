@@ -104,10 +104,7 @@ public:
     {
     }
 
-    void createKnobInternal(const KnobIPtr& knob,
-                            QWidget*& lastRowContainer,
-                            QHBoxLayout*& lastRowLayout,
-                            KnobsVec& knobsOnSameLine);
+    KnobGuiPtr createKnobInternal(const KnobIPtr& knob);
 
     void createKnobs(const KnobsVec& knobsUi);
 
@@ -219,14 +216,14 @@ NodeViewerContext::createGui()
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
                 KnobGroupPtr isGroup = toKnobGroup( pageChildren[i] );
                 if (isGroup) {
-                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
+                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
                     KnobsVec toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
                         KnobButtonPtr isButton = toKnobButton( toolButtonChildren[j] );
                         if (isButton) {
-                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
+                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum) ));
                             const std::string& roleShortcutID = isGroup->getName();
                             QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
                             if ( act && createdToolButton && isButton->getValue() ) {
@@ -249,19 +246,6 @@ NodeViewerContext::createGui()
     }
 } // NodeViewerContext::createGui
 
-static void
-addSpacer(QBoxLayout* layout)
-{
-    layout->addSpacing( TO_DPIX(5) );
-    QFrame* line = new QFrame( layout->parentWidget() );
-    line->setFrameShape(QFrame::VLine);
-    line->setFrameShadow(QFrame::Raised);
-    QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
-    line->setPalette(palette);
-    layout->addWidget(line);
-    layout->addSpacing( TO_DPIX(5) );
-}
 
 void
 NodeViewerContext::onNodeColorChanged(const QColor& color)
@@ -297,70 +281,23 @@ NodeViewerContext::getItemsSpacingOnSameLine() const
     return 0;
 }
 
-void
-NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob,
-                                             QWidget*& lastRowContainer,
-                                             QHBoxLayout*& lastRowLayout,
-                                             KnobsVec& knobsOnSameLine)
+KnobGuiPtr
+NodeViewerContextPrivate::createKnobInternal(const KnobIPtr& knob)
 {
-    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, publicInterface) );
-    if (!ret) {
-        assert(false);
-        return;
-    }
-    ret->initialize();
+    KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeViewerUI, publicInterface);
 
     knobsMapping.insert( std::make_pair(knob, ret) );
 
-    ViewerContextLayoutTypeEnum layoutType = knob->getInViewerContextLayoutType();
+    ret->createGUI(widgetsContainer);
 
-    KnobClickableLabel* label = 0;
-    std::string inViewerLabel = knob->getInViewerContextLabel();
-    std::string inViewerLabelIcon = knob->getInViewerContextIconFilePath(false);
-    QWidget* labelContainer = 0;
-    if ( (!inViewerLabel.empty() || !inViewerLabelIcon.empty()) && ret->shouldCreateLabel() ) {
-        labelContainer = new QWidget(widgetsContainer);
-        QHBoxLayout* labelLayout = new QHBoxLayout(labelContainer);
-        labelLayout->setContentsMargins(0, 0, TO_DPIX(3), 0 );
-        labelLayout->setSpacing( TO_DPIY(2) );
+    return ret;
 
-        label = new KnobClickableLabel(QString(), ret, labelContainer);
-        KnobGuiContainerHelper::setLabelFromTextAndIcon(label, QString::fromUtf8(inViewerLabel.c_str()) + QString::fromUtf8(":"), QString::fromUtf8(inViewerLabelIcon.c_str()), ret->isLabelBold());
-        QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
+}
 
-        labelLayout->addWidget(label);
-    }
-    if (layoutType == eViewerContextLayoutTypeStretchBefore) {
-        lastRowLayout->addStretch();
-    }
-    ret->createGUI(lastRowContainer, labelContainer, label, 0 /*warningIndicator*/, lastRowLayout, layoutType == eViewerContextLayoutTypeAddNewLine, 0, knobsOnSameLine);
-
-    if (layoutType == eViewerContextLayoutTypeAddNewLine) {
-        knobsOnSameLine.clear();
-        lastRowLayout->addStretch();
-        lastRowContainer = new QWidget(widgetsContainer);
-        lastRowLayout = new QHBoxLayout(lastRowContainer);
-        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-        lastRowLayout->setSpacing(0);
-        widgetsContainerLayout->addWidget(lastRowContainer);
-    } else {
-        knobsOnSameLine.push_back(knob);
-        if ( layoutType == eViewerContextLayoutTypeSeparator ) {
-            addSpacer(lastRowLayout);
-        } else if ( layoutType == eViewerContextLayoutTypeStretchAfter ) {
-            lastRowLayout->addStretch();
-        } else if ( layoutType == eViewerContextLayoutTypeSpacing ) {
-            int spacing = knob->getInViewerContextItemSpacing();
-            lastRowLayout->addSpacing( TO_DPIX(spacing) );
-        }
-
-    } // makeNewLine
-
-
-    ret->setEnabledSlot();
-    ret->setSecret();
-
-
+QWidget*
+NodeViewerContext::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    return new QWidget(parent);
 }
 
 void
@@ -374,17 +311,14 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
     knobsMapping.clear();
 
     {
-        QWidget* lastRowContainer = new QWidget(widgetsContainer);
-        QHBoxLayout* lastRowLayout = new QHBoxLayout(lastRowContainer);
-        lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
-        lastRowLayout->setSpacing(0);
-        widgetsContainerLayout->addWidget(lastRowContainer);
-
-        KnobsVec knobsOnSameLine;
         for (KnobsVec::const_iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
-            createKnobInternal(*it, lastRowContainer, lastRowLayout,  knobsOnSameLine);
-        }
+            KnobGuiPtr ret = createKnobInternal(*it);
 
+            if (ret->isOnNewLine()) {
+                QWidget* mainContainer = ret->getFieldContainer();
+                widgetsContainerLayout->addWidget(mainContainer);
+            }
+        }
     }
 
     ViewerNodePtr isViewer = thisNode->getNode()->isEffectViewerNode();
@@ -395,13 +329,12 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         KnobsVec playerKnobs = playerPage->getChildren();
         assert(!playerKnobs.empty());
-        playerContainer =  new QWidget(viewerTab);
-        playerLayout =  new QHBoxLayout(playerContainer);
-        playerLayout->setContentsMargins(0, 0, 0, 0);
-        playerLayout->setSpacing(0);
-        KnobsVec knobsOnSameLine;
         for (KnobsVec::const_iterator it = playerKnobs.begin(); it != playerKnobs.end(); ++it) {
-            createKnobInternal(*it, playerContainer, playerLayout, knobsOnSameLine);
+            KnobGuiPtr ret = createKnobInternal(*it);
+            if (it == playerKnobs.begin()) {
+                playerContainer = ret->getFieldContainer();
+                playerLayout = dynamic_cast<QHBoxLayout*>(playerContainer->layout());
+            }
         }
 
     }
@@ -597,9 +530,7 @@ NodeViewerContext::setCurrentTool(const QString& toolID,
 }
 
 void
-NodeViewerContext::onToolGroupValueChanged(ViewSpec /*view*/,
-                                           int /*dimension*/,
-                                           int reason)
+NodeViewerContext::onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum reason)
 {
     KnobSignalSlotHandler* caller = dynamic_cast<KnobSignalSlotHandler*>( sender() );
 
@@ -632,9 +563,7 @@ NodeViewerContext::onToolGroupValueChanged(ViewSpec /*view*/,
 }
 
 void
-NodeViewerContext::onToolActionValueChanged(ViewSpec /*view*/,
-                                            int /*dimension*/,
-                                            int reason)
+NodeViewerContext::onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum reason)
 {
     KnobSignalSlotHandler* caller = dynamic_cast<KnobSignalSlotHandler*>( sender() );
 
@@ -747,35 +676,35 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
 
                 if (oldIsGroup) {
                     if (oldIsGroup->getValue() != false) {
-                        oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        oldIsGroup->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                     }
                 }
                 
                 if (newIsGroup->getValue() != true) {
-                    newIsGroup->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    newIsGroup->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                 }
 
 
                 // Only change the value of the button if we are in the same group
                 if (oldIsButton && oldIsGroup == newIsGroup) {
                     if (oldIsButton->getValue() != false) {
-                        oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        oldIsButton->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                     }
                 }
                 if (newIsButton->getValue() != true) {
-                    newIsButton->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    newIsButton->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0), true);
                 }
             }
         }

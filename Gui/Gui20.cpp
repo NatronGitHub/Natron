@@ -52,7 +52,7 @@
 #include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -313,7 +313,7 @@ Gui::maximize(TabWidget* what)
                 QWidget* tab = what->tabAt(i)->getWidget();
                 assert(tab);
                 NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
-                CurveEditor* isEditor = dynamic_cast<CurveEditor*>(tab);
+                AnimationModuleEditor* isEditor = dynamic_cast<AnimationModuleEditor*>(tab);
                 if (isGraph || isEditor) {
                     hasNodeGraphOrCurveEditor = true;
                     break;

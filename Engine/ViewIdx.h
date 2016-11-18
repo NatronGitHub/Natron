@@ -33,29 +33,38 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ViewSpec
+
+class ViewIdx;
+class ViewGetSpec;
+
+class ViewSetSpec
 {
     int i;
 
 public:
-    ViewSpec()
-        : i(0)
+    ViewSetSpec()
+    : i(0)
     {
     }
 
     // cast from int must be explicit
-    explicit ViewSpec(int index)
-        : i(index)
+    explicit ViewSetSpec(int index)
+    : i(index)
     {
         assert(index >= -2);
     }
 
+    ViewSetSpec(const ViewIdx& view_i);
+    ViewSetSpec(const ViewGetSpec& view_get);
+
     // cast to int is implicit
     operator int() const
     {
-        assert(i >= 0);
-
         return i;
+    }
+
+    bool operator<(const ViewSetSpec& b) const {
+        return i < b.i;
     }
 
     int value() const
@@ -69,22 +78,71 @@ public:
 
     bool isViewIdx() const { return i >= 0; }
 
-    static ViewSpec all() { return ViewSpec(-1); };
-    static ViewSpec current() { return ViewSpec(-2); };
+    static ViewSetSpec all() { return ViewSetSpec(-1); };
+    static ViewSetSpec current() { return ViewSetSpec(-2); };
+};
+
+
+class ViewGetSpec
+{
+    int i;
+
+public:
+    ViewGetSpec()
+    : i(0)
+    {
+    }
+
+    // cast from int must be explicit
+    explicit ViewGetSpec(int index)
+    : i(index)
+    {
+        assert(index == -2 || index >= 0);
+    }
+
+    ViewGetSpec(const ViewIdx& view_i);
+
+    // cast to int is implicit
+    operator int() const
+    {
+        return i;
+    }
+
+    bool operator<(const ViewGetSpec& b) const {
+        return i < b.i;
+    }
+
+    int value() const
+    {
+        return static_cast<int>(*this);
+    }
+
+    bool isCurrent() const { return i == -2; }
+
+    bool isViewIdx() const { return i >= 0; }
+
+    static ViewGetSpec current() { return ViewGetSpec(-2); };
+
+private:
+
+    bool isAll() const { return false; }
+
+    static ViewIdx all(); // overload with no implementation
+
 };
 
 class ViewIdx
-    : public ViewSpec
+    : public ViewGetSpec
 {
 public:
     ViewIdx()
-        : ViewSpec(0)
+        : ViewGetSpec(0)
     {
     }
 
     // cast from int must be explicit
     explicit ViewIdx(int index)
-        : ViewSpec(index)
+        : ViewGetSpec(index)
     {
         assert(index >= 0);
     }
@@ -99,11 +157,9 @@ public:
     }
 
 private:
-    bool isAll() const { return false; }
 
     bool isCurrent() const { return false; }
 
-    static ViewIdx all(); // overload with no implementation
     static ViewIdx current(); // overload with no implementation
 };
 

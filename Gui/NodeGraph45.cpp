@@ -146,11 +146,9 @@ NodeGraph::refreshAllKnobsGui()
             for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        if ( knob->isAnimated(i) ) {
-                            it2->second->onInternalValueChanged(ViewSpec::all(), i, eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(ViewSpec::all(), i);
-                        }
+                    if (knob->hasAnimation()) {
+                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+                        knob->refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
                     }
                 }
             }

@@ -79,11 +79,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -579,6 +577,8 @@ Gui::keyPressEvent(QKeyEvent* e)
             // valid serialization
             (void)lastUsedGraph->pasteClipboard();
         }
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, modifiers, key)) {
+        setVisibleProjectSettingsPanel();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
@@ -770,19 +770,22 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
         _imp->_isGUIFrozen = clicked;
     }
+    std::list<ViewerTab*> allViewers;
     {
         QMutexLocker k(&_imp->_viewerTabsMutex);
-        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            ViewerNodePtr viewer = (*it)->getInternalNode();
-            if (!viewer) {
-                continue;
-            }
-            viewer->getTurboModeButtonKnob()->setValue(clicked);
-            if (!clicked) {
-                (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
-            }
+        allViewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+        ViewerNodePtr viewer = (*it)->getInternalNode();
+        if (!viewer) {
+            continue;
+        }
+        viewer->getTurboModeButtonKnob()->setValue(clicked);
+        if (!clicked) {
+            (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
         }
     }
+
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {
@@ -806,9 +809,13 @@ Gui::addShortcut(BoundAction* action)
 void
 Gui::redrawAllViewers()
 {
-    QMutexLocker k(&_imp->_viewerTabsMutex);
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
 
-    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getViewer()->redraw();
         }
@@ -975,17 +982,6 @@ Gui::addMenuEntry(const QString & menuGrouping,
     }
 }
 
-void
-Gui::setDopeSheetTreeWidth(int width)
-{
-    _imp->_dopeSheetEditor->setTreeWidgetWidth(width);
-}
-
-void
-Gui::setCurveEditorTreeWidth(int width)
-{
-    _imp->_curveEditor->setTreeWidgetWidth(width);
-}
 
 void
 Gui::setTripleSyncEnabled(bool enabled)

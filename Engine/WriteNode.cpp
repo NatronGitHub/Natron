@@ -506,7 +506,7 @@ WriteNodePrivate::checkEncoderCreated(double time,
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewSpec( view.value() ) );
+    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewGetSpec( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
@@ -530,7 +530,8 @@ getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationLis
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
-            filePattern = (*it)->_values[0]._value.isString;
+            SERIALIZATION_NAMESPACE::ValueSerialization& value = (*it)->_values.begin()->second[0];
+            filePattern = value._value.isString;
             break;
         }
     }
@@ -558,7 +559,10 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         assert(originalFrameRangeKnob);
         KnobIntPtr originalFrameRange = toKnobInt( originalFrameRangeKnob );
         if (originalFrameRange) {
-            originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+            std::vector<int> values(2);
+            values[0] = first;
+            values[1] = last;
+            originalFrameRange->setValueAcrossDimensions(values);
         }
     }
     {
@@ -629,7 +633,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             KnobIPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
             KnobIPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
             if (inputReadColorSpace && outputWriteColorSpace) {
-                inputReadColorSpace->slaveTo(0, outputWriteColorSpace, 0);
+                inputReadColorSpace->slaveTo(outputWriteColorSpace);
             }
         } else {
             output->replaceInput(writeNode, 0);
@@ -686,7 +690,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             //Use default
             writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
+            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
                 writerPluginID = entries[pluginChoice_i];
             }
@@ -835,7 +839,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     pluginChoice->populateChoices(entries, help);
     pluginChoice->blockValueChanges();
-    pluginChoice->resetToDefaultValue(0);
+    pluginChoice->resetToDefaultValue();
     pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
@@ -902,7 +906,7 @@ WriteNode::initializeKnobs()
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
-    frameIncrKnob->setMinimum(1);
+    frameIncrKnob->setRange(1, INT_MAX);
     frameIncrKnob->setDefaultValue(1);
     controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
@@ -1018,7 +1022,7 @@ WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializati
 bool
 WriteNode::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum reason,
-                       ViewSpec view,
+                       ViewSetSpec view,
                        double time,
                        bool originatedFromMainThread)
 {
@@ -1058,7 +1062,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         }
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }
@@ -1082,7 +1086,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
         KnobButtonPtr button = _imp->renderButtonKnob.lock();
-        button->setAllDimensionsEnabled(!readFile);
+        button->setEnabled(!readFile);
         if (readFile) {
             KnobFilePtr fileKnob = _imp->outputFileKnob.lock();
             assert(fileKnob);

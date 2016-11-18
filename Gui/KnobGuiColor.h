@@ -45,7 +45,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
 #include "Gui/KnobGuiValue.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
@@ -94,6 +93,7 @@ Q_SIGNALS:
 
 private:
 
+
     virtual void enterEvent(QEvent*) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
@@ -115,14 +115,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knobUI, ViewIdx view)
     {
-        return new KnobGuiColor(knob, container);
+        return new KnobGuiColor(knobUI, view);
     }
 
-    KnobGuiColor(KnobIPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view);
 
     virtual ~KnobGuiColor() {}
 
@@ -130,20 +128,16 @@ public Q_SLOTS:
 
     void showColorDialog();
 
-    void setPickingEnabled(bool enabled);
+    void onInternalKnobPickingEnabled(ViewSetSpec view, bool enabled);
 
-    void onPickingEnabled(bool enabled);
-
-    void onMustShowAllDimension();
+    void onColorLabelPickingEnabled(bool enabled);
 
     void onDialogCurrentColorChanged(const QColor & color);
 
 
-Q_SIGNALS:
-
-    void dimensionSwitchToggled(bool b);
-
 private:
+
+    void setPickingEnabledInternal(bool enabled);
 
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -172,11 +166,9 @@ private:
 
     void updateLabel(double r, double g, double b, double a);
 
-    virtual void _show() OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
-    virtual void onDimensionsFolded() OVERRIDE FINAL;
-    virtual void onDimensionsExpanded() OVERRIDE FINAL;
+    virtual void onDimensionsMadeVisible(bool visible) OVERRIDE FINAL;
 
 private:
 
@@ -188,7 +180,7 @@ private:
 };
 
 inline KnobGuiColorPtr
-toKnobGuiColor(const KnobGuiIPtr& knobGui)
+toKnobGuiColor(const KnobGuiWidgetsPtr& knobGui)
 {
     return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
 }

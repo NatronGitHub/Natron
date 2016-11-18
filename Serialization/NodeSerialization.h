@@ -22,8 +22,7 @@
 #include <climits>
 
 #include "Serialization/KnobSerialization.h"
-#include "Serialization/TrackerSerialization.h"
-#include "Serialization/RotoContextSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
@@ -65,8 +64,7 @@ public:
     , _pluginMinorVersion(-1)
     , _masterNodecriptName()
     , _inputs()
-    , _rotoContext()
-    , _trackerContext()
+    , _tableModel()
     , _userPages()
     , _pagesIndexes()
     , _children()
@@ -137,10 +135,8 @@ public:
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
     std::map<std::string, std::string> _inputs;
 
-    // If this node has a Roto context, this is its serialization
-    boost::shared_ptr<RotoContextSerialization> _rotoContext;
-    // If this node has a Tracker context, this is its serialization
-    boost::shared_ptr<TrackerContextSerialization> _trackerContext;
+    // If this node has an item model (Roto, tracker...), this points to its serialization
+    KnobItemsTableSerializationPtr _tableModel;
 
     // The serialization of the pages created by the user
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;

@@ -54,6 +54,7 @@ struct StringKeyFrame_compare_time
 };
 
 typedef std::set<StringKeyFrame, StringKeyFrame_compare_time> Keyframes;
+typedef std::map<ViewIdx, Keyframes> PerViewKeyFrames;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -63,7 +64,7 @@ struct StringAnimationManagerPrivate
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
     void* ofxParamHandle;
     mutable QMutex keyframesMutex;
-    Keyframes keyframes;
+    PerViewKeyFrames keyframes;
 
     // Weak ptr because it is encapsulated into the AnimatingKnobStringHelper class (inheriting KnobI)
     KnobIConstWPtr knob;
@@ -87,6 +88,26 @@ StringAnimationManager::~StringAnimationManager()
 {
 }
 
+void
+StringAnimationManager::splitView(ViewIdx view)
+{
+    QMutexLocker k(&_imp->keyframesMutex);
+    const Keyframes& mainViewKeys = _imp->keyframes[ViewIdx(0)];
+    Keyframes& thisViewKeys = _imp->keyframes[view];
+    thisViewKeys = mainViewKeys;
+}
+
+void
+StringAnimationManager::unSplitView(ViewIdx view)
+{
+    QMutexLocker k(&_imp->keyframesMutex);
+    PerViewKeyFrames::iterator foundView = _imp->keyframes.find(view);
+    if (foundView == _imp->keyframes.end()) {
+        return;
+    }
+    _imp->keyframes.erase(foundView);
+}
+
 bool
 StringAnimationManager::hasCustomInterp() const
 {
@@ -103,6 +124,7 @@ StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t
 
 bool
 StringAnimationManager::customInterpolation(double time,
+                                            ViewIdx view,
                                             std::string* ret) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
@@ -114,16 +136,21 @@ StringAnimationManager::customInterpolation(double time,
         return false;
     }
 
-    if (_imp->keyframes.size() == 1) {
-        *ret = _imp->keyframes.begin()->value;
+    const PerViewKeyFrames::const_iterator foundView = _imp->keyframes.find(view);
+    if (foundView == _imp->keyframes.end()) {
+        return false;
+    }
+
+    if (foundView->second.size() == 1) {
+        *ret = foundView->second.begin()->value;
 
         return true;
     }
 
     /// get the keyframes surrounding the time
-    Keyframes::const_iterator upper = _imp->keyframes.end();
-    Keyframes::const_iterator lower = _imp->keyframes.end();
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
+    Keyframes::const_iterator upper = foundView->second.end();
+    Keyframes::const_iterator lower = foundView->second.end();
+    for (Keyframes::const_iterator it = foundView->second.begin(); it != foundView->second.end(); ++it) {
         if (it->time > time) {
             upper = it;
             break;
@@ -135,14 +162,14 @@ StringAnimationManager::customInterpolation(double time,
         }
     }
 
-    if ( upper == _imp->keyframes.end() ) {
+    if ( upper == foundView->second.end() ) {
         ///if the time is greater than the time of all keyframes return the last
 
         --upper;
         *ret = upper->value;
 
         return true;
-    } else if ( upper == _imp->keyframes.begin() ) {
+    } else if ( upper == foundView->second.begin() ) {
         ///if the time is lesser than the time of all keyframes, return the first
         *ret = upper->value;
 
@@ -192,6 +219,7 @@ StringAnimationManager::customInterpolation(double time,
 
 void
 StringAnimationManager::insertKeyFrame(double time,
+                                       ViewIdx view,
                                        const std::string & v,
                                        double* index)
 {
@@ -200,28 +228,43 @@ StringAnimationManager::insertKeyFrame(double time,
     k.time = time;
     k.value = v;
     QMutexLocker l(&_imp->keyframesMutex);
-    std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
+    Keyframes& keys = _imp->keyframes[view];
+
+    std::pair<Keyframes::iterator, bool> ret = keys.insert(k);
     if (!ret.second) {
-        _imp->keyframes.erase(ret.first);
-        ret = _imp->keyframes.insert(k);
+        keys.erase(ret.first);
+        ret = keys.insert(k);
         assert(ret.second);
     }
-    *index = std::distance(_imp->keyframes.begin(), ret.first);
+    *index = std::distance(keys.begin(), ret.first);
 }
 
 void
-StringAnimationManager::removeKeyFrame(double time)
+StringAnimationManager::removeKeyFrame(double time, ViewIdx view)
 {
     QMutexLocker l(&_imp->keyframesMutex);
-
-    for (Keyframes::iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
+    const PerViewKeyFrames::iterator foundView = _imp->keyframes.find(view);
+    if (foundView == _imp->keyframes.end()) {
+        return;
+    }
+    for (Keyframes::iterator it = foundView->second.begin(); it != foundView->second.end(); ++it) {
         if (it->time == time) {
-            _imp->keyframes.erase(it);
+            foundView->second.erase(it);
 
             return;
         }
     }
 }
+
+
+void
+StringAnimationManager::removeKeyframes(const std::list<double>& keysRemoved, ViewIdx view)
+{
+    for (std::list<double>::const_iterator it = keysRemoved.begin(); it != keysRemoved.end(); ++it) {
+        removeKeyFrame(*it, view);
+    }
+}
+
 
 void
 StringAnimationManager::clearKeyFrames()
@@ -233,18 +276,24 @@ StringAnimationManager::clearKeyFrames()
 
 void
 StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
+                                                    ViewIdx view,
                                                     std::string* returnValue) const
 {
     int index = std::floor(interpolated + 0.5);
     QMutexLocker l(&_imp->keyframesMutex);
 
-    if ( _imp->keyframes.empty() ) {
+    const PerViewKeyFrames::iterator foundView = _imp->keyframes.find(view);
+    if (foundView == _imp->keyframes.end()) {
+        return;
+    }
+
+    if ( foundView->second.empty() ) {
         return;
     }
 
     ///if the index is not in the range, just return the last
     if ( index >= (int)_imp->keyframes.size() ) {
-        Keyframes::const_iterator it = _imp->keyframes.end();
+        Keyframes::const_iterator it = foundView->second.end();
         --it;
         *returnValue = it->value;
 
@@ -252,7 +301,7 @@ StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
     }
 
     int i = 0;
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
+    for (Keyframes::const_iterator it = foundView->second.begin(); it != foundView->second.end(); ++it) {
         if (i == index) {
             *returnValue = it->value;
 
@@ -262,28 +311,31 @@ StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
     }
 }
 
-void
-StringAnimationManager::clone(const StringAnimationManager & other)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-    QMutexLocker l2(&other._imp->keyframesMutex);
-
-    _imp->keyframes = other._imp->keyframes;
-}
 
 bool
-StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & other)
+StringAnimationManager::clone(const StringAnimationManager & other,
+                              ViewIdx view,
+                              ViewIdx otherView,
+                              SequenceTime offset,
+                              const RangeD* range)
 {
     QMutexLocker l(&_imp->keyframesMutex);
     QMutexLocker l2(&other._imp->keyframesMutex);
     bool hasChanged = false;
 
-    if ( _imp->keyframes.size() != other._imp->keyframes.size() ) {
+    const PerViewKeyFrames::iterator foundOtherView = other._imp->keyframes.find(otherView);
+    if (foundOtherView == other._imp->keyframes.end()) {
+        return false;
+    }
+
+    Keyframes& keys = _imp->keyframes[view];
+
+    if ( keys.size() != foundOtherView->second.size() ) {
         hasChanged = true;
     }
     if (!hasChanged) {
-        Keyframes::const_iterator oit = other._imp->keyframes.begin();
-        for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it, ++oit) {
+        Keyframes::const_iterator oit = foundOtherView->second.begin();
+        for (Keyframes::const_iterator it = keys.begin(); it != keys.end(); ++it, ++oit) {
             if ( (it->time != oit->time) || (it->value != oit->value) ) {
                 hasChanged = true;
                 break;
@@ -291,60 +343,64 @@ StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & ot
         }
     }
     if (hasChanged) {
-        _imp->keyframes = other._imp->keyframes;
+        keys.clear();
+        for (Keyframes::const_iterator it = foundOtherView->second.begin(); it != foundOtherView->second.end(); ++it) {
+            double time = it->time;
+            if ( range && ( (time < range->min) || (time > range->max) ) ) {
+                // We ignore a keyframe, then consider the curve has changed
+                hasChanged = true;
+                continue;
+            }
+            StringKeyFrame k;
+            k.time = time + offset;
+            k.value = it->value;
+            keys.insert(k);
+
+        }
+
+        keys = foundOtherView->second;
     }
 
     return hasChanged;
 }
 
+
 void
-StringAnimationManager::clone(const StringAnimationManager & other,
-                              SequenceTime offset,
-                              const RangeD* range)
+StringAnimationManager::load(const std::map<ViewIdx,std::map<double, std::string> > & keyframes)
 {
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
     QMutexLocker l(&_imp->keyframesMutex);
 
     _imp->keyframes.clear();
-    QMutexLocker l2(&other._imp->keyframesMutex);
-    for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
-        if ( copyRange && ( (it->time < range->min) || (it->time > range->max) ) ) {
-            continue;
+    for (std::map<ViewIdx,std::map<double, std::string> >::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+
+        Keyframes& keys = _imp->keyframes[it->first];
+        for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            StringKeyFrame k;
+            k.time = it2->first;
+            k.value = it2->second;
+            std::pair<Keyframes::iterator, bool> ret = keys.insert(k);
+            assert(ret.second);
+            Q_UNUSED(ret);
         }
-        StringKeyFrame k;
-        k.time = it->time + offset;
-        k.value = it->value;
-        _imp->keyframes.insert(k);
+
     }
 }
 
 void
-StringAnimationManager::load(const std::map<int, std::string> & keyframes)
+StringAnimationManager::save(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
 
-    _imp->keyframes.clear();
-    for (std::map<int, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        StringKeyFrame k;
-        k.time = it->first;
-        k.value = it->second;
-        std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
-        assert(ret.second);
-        Q_UNUSED(ret);
-    }
-}
+    for (PerViewKeyFrames::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
 
-void
-StringAnimationManager::save(std::map<int, std::string>* keyframes) const
-{
-    QMutexLocker l(&_imp->keyframesMutex);
+        std::map<double, std::string>& keys = (*keyframes)[it->first];
 
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        std::pair<std::map<int, std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it->time, it->value) );
-        assert(success.second);
-        Q_UNUSED(success);
+        for (Keyframes::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            std::pair<std::map<double, std::string>::iterator, bool> success = keys.insert( std::make_pair(it2->time, it2->value) );
+            assert(success.second);
+            Q_UNUSED(success);
+        }
+
     }
 }
 

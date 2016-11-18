@@ -89,6 +89,8 @@ static const CPUDriverEnum defaultMesaDriver = eCPUDriverLLVMPipe;
 
 Settings::Settings()
     : KnobHolder( AppInstancePtr() ) // < Settings are process wide and do not belong to a single AppInstance
+    , _nRedrawStyleSheetRequests(0)
+    , _restoringDefaults(false)
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -136,7 +138,6 @@ Settings::initializeKnobs()
     initializeKnobsPython();
     initializeKnobsAppearance();
     initializeKnobsGuiColors();
-    initializeKnobsCurveEditorColors();
     initializeKnobsDopeSheetColors();
     initializeKnobsNodeGraphColors();
     initializeKnobsScriptEditorColors();
@@ -181,8 +182,7 @@ Settings::initializeKnobsGeneral()
     _autoSaveDelay = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Auto-save trigger delay") );
     _autoSaveDelay->setName("autoSaveDelay");
     _autoSaveDelay->disableSlider();
-    _autoSaveDelay->setMinimum(0);
-    _autoSaveDelay->setMaximum(60);
+    _autoSaveDelay->setRange(0, 60);
     _autoSaveDelay->setHintToolTip( tr("The number of seconds after an event that %1 should wait before "
                                        " auto-saving. Note that if a render is in progress, %1 will "
                                        " wait until it is done to actually auto-save.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -324,8 +324,8 @@ Settings::initializeKnobsThreading()
                                         "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
-    _numberOfThreads->setMinimum(-1);
-    _numberOfThreads->setDisplayMinimum(-1);
+    _numberOfThreads->setRange(-1, INT_MAX);
+    _numberOfThreads->setDisplayRange(-1, 30);
     _threadingPage->addKnob(_numberOfThreads);
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -337,7 +337,7 @@ Settings::initializeKnobsThreading()
                                                  "in some situations to worse performances. Overall to get the best performances you should have your "
                                                  "CPU at 100% activity without idle times.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setMinimum(0);
+    _numberOfParallelRenders->setRange(0, INT_MAX);
     _numberOfParallelRenders->disableSlider();
     _threadingPage->addKnob(_numberOfParallelRenders);
 #endif
@@ -362,7 +362,7 @@ Settings::initializeKnobsThreading()
                                            "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
                                            "for an effect.") );
 
-    _nThreadsPerEffect->setMinimum(0);
+    _nThreadsPerEffect->setRange(0, INT_MAX);
     _nThreadsPerEffect->disableSlider();
     _threadingPage->addKnob(_nThreadsPerEffect);
 
@@ -532,10 +532,8 @@ Settings::initializeKnobsGPU()
 
     _nOpenGLContexts = AppManager::createKnob<KnobInt>( shared_from_this(), tr("No. of OpenGL Contexts") );
     _nOpenGLContexts->setName("maxOpenGLContexts");
-    _nOpenGLContexts->setMinimum(1);
-    _nOpenGLContexts->setDisplayMinimum(1);
-    _nOpenGLContexts->setDisplayMaximum(8);
-    _nOpenGLContexts->setMaximum(8);
+    _nOpenGLContexts->setRange(1, 8);
+    _nOpenGLContexts->setDisplayRange(1, 8);;
     _nOpenGLContexts->setHintToolTip( tr("The number of OpenGL contexts created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread, allowing for more frames to be rendered simultaneously. Increasing this value may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
     _gpuPage->addKnob(_nOpenGLContexts);
 
@@ -588,7 +586,7 @@ Settings::initializeKnobsProjectSetup()
     _enableMappingFromDriveLettersToUNCShareNames->setHintToolTip( tr("This is only relevant for Windows: If checked, %1 will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _enableMappingFromDriveLettersToUNCShareNames->setName("useDriveLetters");
 #ifndef __NATRON_WIN32__
-    _enableMappingFromDriveLettersToUNCShareNames->setAllDimensionsEnabled(false);
+    _enableMappingFromDriveLettersToUNCShareNames->setEnabled(false);
 #endif
     _projectsPage->addKnob(_enableMappingFromDriveLettersToUNCShareNames);
 }
@@ -653,8 +651,7 @@ Settings::initializeKnobsUserInterface()
                                          "held by the properties dock at the same time."
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(1);
-    _maxPanelsOpened->setMaximum(100);
+    _maxPanelsOpened->setRange(1, 100);
     _uiPage->addKnob(_maxPanelsOpened);
 
     _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Value increments based on cursor position") );
@@ -708,7 +705,7 @@ Settings::initializeKnobsColorManagement()
     }
     configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
     _ocioConfigKnob->populateChoices(configs);
-    _ocioConfigKnob->setDefaultValue(defaultIndex, 0);
+    _ocioConfigKnob->setDefaultValue(defaultIndex);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
                                         "operators and plugins that use OpenColorIO, by setting the \"OCIO\" "
                                         "environment variable. Only nodes created after changing this parameter will take "
@@ -722,9 +719,9 @@ Settings::initializeKnobsColorManagement()
     _customOcioConfigFile->setName("ocioCustomConfigFile");
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
-        _customOcioConfigFile->setAllDimensionsEnabled(true);
+        _customOcioConfigFile->setEnabled(true);
     } else {
-        _customOcioConfigFile->setAllDimensionsEnabled(false);
+        _customOcioConfigFile->setEnabled(false);
     }
 
     _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
@@ -864,58 +861,37 @@ Settings::initializeKnobsGuiColors()
     _guiColorsTab->addKnob(_sliderColor);
 } // Settings::initializeKnobsGuiColors
 
-void
-Settings::initializeKnobsCurveEditorColors()
-{
-    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Curve Editor") );
-    _appearanceTab->addKnob(_curveEditorColorsTab);
-
-    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Background color"), 3);
-    _curveEditorBGColor->setName("curveEditorBG");
-    _curveEditorBGColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorBGColor);
-
-    _gridColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Grid color"), 3);
-    _gridColor->setName("curveditorGrid");
-    _gridColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_gridColor);
-
-    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale color"), 3);
-    _curveEditorScaleColor->setName("curveeditorScale");
-    _curveEditorScaleColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorScaleColor);
-}
 
 void
 Settings::initializeKnobsDopeSheetColors()
 {
-    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Dope Sheet") );
-    _appearanceTab->addKnob(_dopeSheetEditorColorsTab);
+    _animationColorsTab = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Animation Module") );
+    _appearanceTab->addKnob(_animationColorsTab);
 
-    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet background color"), 3);
-    _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
-    _dopeSheetEditorBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorBackgroundColor);
+    _animationViewBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Background Color"), 3);
+    _animationViewBackgroundColor->setName("animationViewBGColor");
+    _animationViewBackgroundColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewBackgroundColor);
 
-    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
-    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
-    _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
+    _dopesheetRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Root section background color"), 4);
+    _dopesheetRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
+    _dopesheetRootSectionBackgroundColor->setSimplified(true);
+    _animationColorsTab->addKnob(_dopesheetRootSectionBackgroundColor);
 
-    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
-    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
-    _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
+    _dopesheetKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Knob section background color"), 4);
+    _dopesheetKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
+    _dopesheetKnobSectionBackgroundColor->setSimplified(true);
+    _animationColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
 
-    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet scale color"), 3);
-    _dopeSheetEditorScaleColor->setName("dopesheetScale");
-    _dopeSheetEditorScaleColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorScaleColor);
+    _animationViewScaleColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Scale Text Color"), 3);
+    _animationViewScaleColor->setName("animationViewScaleColor");
+    _animationViewScaleColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewScaleColor);
 
-    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Sheet grid color"), 3);
-    _dopeSheetEditorGridColor->setName("dopesheetGrid");
-    _dopeSheetEditorGridColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorGridColor);
+    _animationViewGridColor = AppManager::createKnob<KnobColor>(shared_from_this(), tr("Grid Color"), 3);
+    _animationViewGridColor->setName("animationViewGridColor");
+    _animationViewGridColor->setSimplified(true);
+    _animationColorsTab->addKnob(_animationViewGridColor);
 }
 
 void
@@ -1121,16 +1097,14 @@ Settings::initializeKnobsViewers()
                                         "A high value means that the viewer renders large tiles, so that "
                                         "rendering is done less often, but on larger areas.") );
     _powerOf2Tiling->disableSlider();
-    _powerOf2Tiling->setMinimum(4);
-    _powerOf2Tiling->setDisplayMinimum(4);
-    _powerOf2Tiling->setMaximum(9);
-    _powerOf2Tiling->setDisplayMaximum(9);
+    _powerOf2Tiling->setRange(4, 9);
+    _powerOf2Tiling->setDisplayRange(4, 9);
 
     _viewersTab->addKnob(_powerOf2Tiling);
 
     _checkerboardTileSize = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Checkerboard tile size (pixels)") );
     _checkerboardTileSize->setName("checkerboardTileSize");
-    _checkerboardTileSize->setMinimum(1);
+    _checkerboardTileSize->setRange(1, INT_MAX);
     _checkerboardTileSize->setHintToolTip( tr("The size (in screen pixels) of one tile of the checkerboard.") );
     _viewersTab->addKnob(_checkerboardTileSize);
 
@@ -1172,7 +1146,7 @@ Settings::initializeKnobsViewers()
 
     _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
-    _maximumNodeViewerUIOpened->setMinimum(1);
+    _maximumNodeViewerUIOpened->setRange(1, INT_MAX);
     _maximumNodeViewerUIOpened->disableSlider();
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
@@ -1216,7 +1190,7 @@ Settings::initializeKnobsNodeGraph()
 
     _maxUndoRedoNodeGraph->setName("maxUndoRedo");
     _maxUndoRedoNodeGraph->disableSlider();
-    _maxUndoRedoNodeGraph->setMinimum(0);
+    _maxUndoRedoNodeGraph->setRange(0, INT_MAX);
     _maxUndoRedoNodeGraph->setHintToolTip( tr("Set the maximum of events related to the node graph %1 "
                                               "remembers. Past this limit, older events will be deleted forever, "
                                               "allowing to re-use the RAM for other purposes. \n"
@@ -1265,8 +1239,7 @@ Settings::initializeKnobsCaching()
     _maxRAMPercent = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
     _maxRAMPercent->setName("maxRAMPercent");
     _maxRAMPercent->disableSlider();
-    _maxRAMPercent->setMinimum(0);
-    _maxRAMPercent->setMaximum(100);
+    _maxRAMPercent->setRange(0, 100);
     QString ramHint( tr("This setting indicates the percentage of the total RAM which can be used by the memory caches. "
                         "This system has %1 of RAM.").arg( printAsRAM( getSystemTotalRAM() ) ) );
     if ( isApplication32Bits() && (getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) ) {
@@ -1289,8 +1262,7 @@ Settings::initializeKnobsCaching()
     _unreachableRAMPercent = AppManager::createKnob<KnobInt>( shared_from_this(), tr("System RAM to keep free (% of total RAM)") );
     _unreachableRAMPercent->setName("unreachableRAMPercent");
     _unreachableRAMPercent->disableSlider();
-    _unreachableRAMPercent->setMinimum(0);
-    _unreachableRAMPercent->setMaximum(90);
+    _unreachableRAMPercent->setRange(0, 90);
     _unreachableRAMPercent->setHintToolTip(tr("This determines how much RAM should be kept free for other applications "
                                               "running on the same system. "
                                               "When this limit is reached, the caches start recycling memory instead of growing. "
@@ -1311,16 +1283,14 @@ Settings::initializeKnobsCaching()
     _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum playback disk cache size (GiB)") );
     _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
     _maxViewerDiskCacheGB->disableSlider();
-    _maxViewerDiskCacheGB->setMinimum(0);
-    _maxViewerDiskCacheGB->setMaximum(100);
+    _maxViewerDiskCacheGB->setRange(0, 100);
     _maxViewerDiskCacheGB->setHintToolTip( tr("The maximum size that may be used by the playback cache on disk (in GiB)") );
     _cachingTab->addKnob(_maxViewerDiskCacheGB);
 
     _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Maximum DiskCache node disk usage (GiB)") );
     _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
     _maxDiskCacheNodeGB->disableSlider();
-    _maxDiskCacheNodeGB->setMinimum(0);
-    _maxDiskCacheNodeGB->setMaximum(100);
+    _maxDiskCacheNodeGB->setRange(0, 100);
     _maxDiskCacheNodeGB->setHintToolTip( tr("The maximum size that may be used by the DiskCache node on disk (in GiB)") );
     _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
@@ -1479,50 +1449,51 @@ Settings::setDefaultValues()
     _enableCrashReports->setDefaultValue(true);
     _documentationSource->setDefaultValue(0);
     _notifyOnFileChange->setDefaultValue(true);
-    _autoSaveDelay->setDefaultValue(5, 0);
+    _autoSaveDelay->setDefaultValue(5);
     _autoSaveUnSavedProjects->setDefaultValue(true);
-    _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
-    _linearPickers->setDefaultValue(true, 0);
+    _maxUndoRedoNodeGraph->setDefaultValue(20);
+    _linearPickers->setDefaultValue(true);
     _convertNaNValues->setDefaultValue(true);
     _pluginUseImageCopyForSource->setDefaultValue(false);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
     _loadProjectsWorkspace->setDefaultValue(false);
-    _numberOfThreads->setDefaultValue(0, 0);
+    _numberOfThreads->setDefaultValue(0);
+
 
 
     _osmesaRenderers->setDefaultValue(defaultMesaDriver);
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setDefaultValue(0, 0);
+    _numberOfParallelRenders->setDefaultValue(0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
     _enableOpenGL->setDefaultValue((int)eEnableOpenGLEnabled);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
-    _renderInSeparateProcess->setDefaultValue(false, 0);
+    _renderInSeparateProcess->setDefaultValue(false);
     _queueRenders->setDefaultValue(false);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(true, 0);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
-    _maxPanelsOpened->setDefaultValue(10, 0);
+    _maxPanelsOpened->setDefaultValue(10);
     _useCursorPositionIncrements->setDefaultValue(true);
     _renderOnEditingFinished->setDefaultValue(false);
     _activateRGBSupport->setDefaultValue(true);
     _activateTransformConcatenationSupport->setDefaultValue(true);
-    _extraPluginPaths->setDefaultValue("", 0);
+    _extraPluginPaths->setDefaultValue("");
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
-    _texturesMode->setDefaultValue(0, 0);
-    _powerOf2Tiling->setDefaultValue(8, 0);
+    _texturesMode->setDefaultValue(0);
+    _powerOf2Tiling->setDefaultValue(8);
     _checkerboardTileSize->setDefaultValue(5);
-    _checkerboardColor1->setDefaultValue(0.5, 0);
-    _checkerboardColor1->setDefaultValue(0.5, 1);
-    _checkerboardColor1->setDefaultValue(0.5, 2);
-    _checkerboardColor1->setDefaultValue(0.5, 3);
-    _checkerboardColor2->setDefaultValue(0., 0);
-    _checkerboardColor2->setDefaultValue(0., 1);
-    _checkerboardColor2->setDefaultValue(0., 2);
-    _checkerboardColor2->setDefaultValue(0., 3);
+    _checkerboardColor1->setDefaultValue(0.5);
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(2));
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(3));
+    _checkerboardColor2->setDefaultValue(0.);
+    _checkerboardColor2->setDefaultValue(0., DimIdx(1));
+    _checkerboardColor2->setDefaultValue(0., DimIdx(2));
+    _checkerboardColor2->setDefaultValue(0., DimIdx(3));
     _autoWipe->setDefaultValue(true);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
@@ -1533,215 +1504,202 @@ Settings::setDefaultValues()
     _ocioStartupCheck->setDefaultValue(true);
 
     _aggressiveCaching->setDefaultValue(false);
-    _maxRAMPercent->setDefaultValue(50, 0);
+    _maxRAMPercent->setDefaultValue(50);
     _unreachableRAMPercent->setDefaultValue(5);
-    _maxViewerDiskCacheGB->setDefaultValue(5, 0);
-    _maxDiskCacheNodeGB->setDefaultValue(10, 0);
+    _maxViewerDiskCacheGB->setDefaultValue(5);
+    _maxDiskCacheNodeGB->setDefaultValue(10);
     setCachingLabels();
     _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
     _useAntiAliasing->setDefaultValue(true);
-    _defaultNodeColor->setDefaultValue(0.7, 0);
-    _defaultNodeColor->setDefaultValue(0.7, 1);
-    _defaultNodeColor->setDefaultValue(0.7, 2);
-    _defaultBackdropColor->setDefaultValue(0.45, 0);
-    _defaultBackdropColor->setDefaultValue(0.45, 1);
-    _defaultBackdropColor->setDefaultValue(0.45, 2);
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(2));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(2));
     _disconnectedArrowLength->setDefaultValue(30);
     _hideOptionalInputsAutomatically->setDefaultValue(true);
     _useInputAForMergeAutoConnect->setDefaultValue(false);
 
-    _defaultGeneratorColor->setDefaultValue(0.3, 0);
-    _defaultGeneratorColor->setDefaultValue(0.5, 1);
-    _defaultGeneratorColor->setDefaultValue(0.2, 2);
+    _defaultGeneratorColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultGeneratorColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultGeneratorColor->setDefaultValue(0.2, DimIdx(2));
 
-    _defaultReaderColor->setDefaultValue(0.7, 0);
-    _defaultReaderColor->setDefaultValue(0.7, 1);
-    _defaultReaderColor->setDefaultValue(0.7, 2);
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(2));
 
-    _defaultWriterColor->setDefaultValue(0.75, 0);
-    _defaultWriterColor->setDefaultValue(0.75, 1);
-    _defaultWriterColor->setDefaultValue(0., 2);
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultWriterColor->setDefaultValue(0., DimIdx(2));
 
-    _defaultColorGroupColor->setDefaultValue(0.48, 0);
-    _defaultColorGroupColor->setDefaultValue(0.66, 1);
-    _defaultColorGroupColor->setDefaultValue(1., 2);
+    _defaultColorGroupColor->setDefaultValue(0.48, DimIdx(0));
+    _defaultColorGroupColor->setDefaultValue(0.66, DimIdx(1));
+    _defaultColorGroupColor->setDefaultValue(1., DimIdx(DimIdx(2)));
 
-    _defaultFilterGroupColor->setDefaultValue(0.8, 0);
-    _defaultFilterGroupColor->setDefaultValue(0.5, 1);
-    _defaultFilterGroupColor->setDefaultValue(0.3, 2);
+    _defaultFilterGroupColor->setDefaultValue(0.8, DimIdx(0));
+    _defaultFilterGroupColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultFilterGroupColor->setDefaultValue(0.3, DimIdx(2));
 
-    _defaultTransformGroupColor->setDefaultValue(0.7, 0);
-    _defaultTransformGroupColor->setDefaultValue(0.3, 1);
-    _defaultTransformGroupColor->setDefaultValue(0.1, 2);
+    _defaultTransformGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTransformGroupColor->setDefaultValue(0.3, DimIdx(1));
+    _defaultTransformGroupColor->setDefaultValue(0.1, DimIdx(2));
 
-    _defaultTimeGroupColor->setDefaultValue(0.7, 0);
-    _defaultTimeGroupColor->setDefaultValue(0.65, 1);
-    _defaultTimeGroupColor->setDefaultValue(0.35, 2);
+    _defaultTimeGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTimeGroupColor->setDefaultValue(0.65, DimIdx(1));
+    _defaultTimeGroupColor->setDefaultValue(0.35, DimIdx(2));
 
-    _defaultDrawGroupColor->setDefaultValue(0.75, 0);
-    _defaultDrawGroupColor->setDefaultValue(0.75, 1);
-    _defaultDrawGroupColor->setDefaultValue(0.75, 2);
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(2));
 
-    _defaultKeyerGroupColor->setDefaultValue(0., 0);
-    _defaultKeyerGroupColor->setDefaultValue(1, 1);
-    _defaultKeyerGroupColor->setDefaultValue(0., 2);
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultKeyerGroupColor->setDefaultValue(1, DimIdx(1));
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(2));
 
-    _defaultChannelGroupColor->setDefaultValue(0.6, 0);
-    _defaultChannelGroupColor->setDefaultValue(0.24, 1);
-    _defaultChannelGroupColor->setDefaultValue(0.39, 2);
+    _defaultChannelGroupColor->setDefaultValue(0.6, DimIdx(0));
+    _defaultChannelGroupColor->setDefaultValue(0.24, DimIdx(1));
+    _defaultChannelGroupColor->setDefaultValue(0.39, DimIdx(2));
 
-    _defaultMergeGroupColor->setDefaultValue(0.3, 0);
-    _defaultMergeGroupColor->setDefaultValue(0.37, 1);
-    _defaultMergeGroupColor->setDefaultValue(0.776, 2);
+    _defaultMergeGroupColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultMergeGroupColor->setDefaultValue(0.37, DimIdx(1));
+    _defaultMergeGroupColor->setDefaultValue(0.776, DimIdx(2));
 
-    _defaultViewsGroupColor->setDefaultValue(0.5, 0);
-    _defaultViewsGroupColor->setDefaultValue(0.9, 1);
-    _defaultViewsGroupColor->setDefaultValue(0.7, 2);
+    _defaultViewsGroupColor->setDefaultValue(0.5, DimIdx(0));
+    _defaultViewsGroupColor->setDefaultValue(0.9, DimIdx(1));
+    _defaultViewsGroupColor->setDefaultValue(0.7, DimIdx(2));
 
-    _defaultDeepGroupColor->setDefaultValue(0., 0);
-    _defaultDeepGroupColor->setDefaultValue(0., 1);
-    _defaultDeepGroupColor->setDefaultValue(0.38, 2);
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(1));
+    _defaultDeepGroupColor->setDefaultValue(0.38, DimIdx(2));
 
     _echoVariableDeclarationToPython->setDefaultValue(false);
 
 
-    _sunkenColor->setDefaultValue(0.12, 0);
-    _sunkenColor->setDefaultValue(0.12, 1);
-    _sunkenColor->setDefaultValue(0.12, 2);
+    _sunkenColor->setDefaultValue(0.12, DimIdx(0));
+    _sunkenColor->setDefaultValue(0.12, DimIdx(1));
+    _sunkenColor->setDefaultValue(0.12, DimIdx(2));
 
-    _baseColor->setDefaultValue(0.19, 0);
-    _baseColor->setDefaultValue(0.19, 1);
-    _baseColor->setDefaultValue(0.19, 2);
+    _baseColor->setDefaultValue(0.19, DimIdx(0));
+    _baseColor->setDefaultValue(0.19, DimIdx(1));
+    _baseColor->setDefaultValue(0.19, DimIdx(2));
 
-    _raisedColor->setDefaultValue(0.28, 0);
-    _raisedColor->setDefaultValue(0.28, 1);
-    _raisedColor->setDefaultValue(0.28, 2);
+    _raisedColor->setDefaultValue(0.28, DimIdx(0));
+    _raisedColor->setDefaultValue(0.28, DimIdx(1));
+    _raisedColor->setDefaultValue(0.28, DimIdx(2));
 
-    _selectionColor->setDefaultValue(0.95, 0);
-    _selectionColor->setDefaultValue(0.54, 1);
-    _selectionColor->setDefaultValue(0., 2);
+    _selectionColor->setDefaultValue(0.95, DimIdx(0));
+    _selectionColor->setDefaultValue(0.54, DimIdx(1));
+    _selectionColor->setDefaultValue(0., DimIdx(2));
 
-    _textColor->setDefaultValue(0.78, 0);
-    _textColor->setDefaultValue(0.78, 1);
-    _textColor->setDefaultValue(0.78, 2);
+    _textColor->setDefaultValue(0.78, DimIdx(0));
+    _textColor->setDefaultValue(0.78, DimIdx(1));
+    _textColor->setDefaultValue(0.78, DimIdx(2));
 
-    _altTextColor->setDefaultValue(0.6, 0);
-    _altTextColor->setDefaultValue(0.6, 1);
-    _altTextColor->setDefaultValue(0.6, 2);
+    _altTextColor->setDefaultValue(0.6, DimIdx(0));
+    _altTextColor->setDefaultValue(0.6, DimIdx(1));
+    _altTextColor->setDefaultValue(0.6, DimIdx(2));
 
-    _timelinePlayheadColor->setDefaultValue(0.95, 0);
-    _timelinePlayheadColor->setDefaultValue(0.54, 1);
-    _timelinePlayheadColor->setDefaultValue(0., 2);
+    _timelinePlayheadColor->setDefaultValue(0.95, DimIdx(0));
+    _timelinePlayheadColor->setDefaultValue(0.54, DimIdx(1));
+    _timelinePlayheadColor->setDefaultValue(0., DimIdx(2));
 
-    _timelineBGColor->setDefaultValue(0, 0);
-    _timelineBGColor->setDefaultValue(0, 1);
-    _timelineBGColor->setDefaultValue(0., 2);
+    _timelineBGColor->setDefaultValue(0, DimIdx(0));
+    _timelineBGColor->setDefaultValue(0, DimIdx(1));
+    _timelineBGColor->setDefaultValue(0., DimIdx(2));
 
-    _timelineBoundsColor->setDefaultValue(0.81, 0);
-    _timelineBoundsColor->setDefaultValue(0.27, 1);
-    _timelineBoundsColor->setDefaultValue(0.02, 2);
+    _timelineBoundsColor->setDefaultValue(0.81, DimIdx(0));
+    _timelineBoundsColor->setDefaultValue(0.27, DimIdx(1));
+    _timelineBoundsColor->setDefaultValue(0.02, DimIdx(2));
 
-    _cachedFrameColor->setDefaultValue(0.56, 0);
-    _cachedFrameColor->setDefaultValue(0.79, 1);
-    _cachedFrameColor->setDefaultValue(0.4, 2);
+    _cachedFrameColor->setDefaultValue(0.56, DimIdx(0));
+    _cachedFrameColor->setDefaultValue(0.79, DimIdx(1));
+    _cachedFrameColor->setDefaultValue(0.4, DimIdx(2));
 
-    _diskCachedFrameColor->setDefaultValue(0.27, 0);
-    _diskCachedFrameColor->setDefaultValue(0.38, 1);
-    _diskCachedFrameColor->setDefaultValue(0.25, 2);
+    _diskCachedFrameColor->setDefaultValue(0.27, DimIdx(0));
+    _diskCachedFrameColor->setDefaultValue(0.38, DimIdx(1));
+    _diskCachedFrameColor->setDefaultValue(0.25, DimIdx(2));
 
-    _interpolatedColor->setDefaultValue(0.34, 0);
-    _interpolatedColor->setDefaultValue(0.46, 1);
-    _interpolatedColor->setDefaultValue(0.6, 2);
+    _interpolatedColor->setDefaultValue(0.34, DimIdx(0));
+    _interpolatedColor->setDefaultValue(0.46, DimIdx(1));
+    _interpolatedColor->setDefaultValue(0.6, DimIdx(2));
 
-    _keyframeColor->setDefaultValue(0.08, 0);
-    _keyframeColor->setDefaultValue(0.38, 1);
-    _keyframeColor->setDefaultValue(0.97, 2);
+    _keyframeColor->setDefaultValue(0.08, DimIdx(0));
+    _keyframeColor->setDefaultValue(0.38, DimIdx(1));
+    _keyframeColor->setDefaultValue(0.97, DimIdx(2));
 
-    _trackerKeyframeColor->setDefaultValue(0.7, 0);
-    _trackerKeyframeColor->setDefaultValue(0.78, 1);
-    _trackerKeyframeColor->setDefaultValue(0.39, 2);
+    _trackerKeyframeColor->setDefaultValue(0.7, DimIdx(0));
+    _trackerKeyframeColor->setDefaultValue(0.78, DimIdx(1));
+    _trackerKeyframeColor->setDefaultValue(0.39, DimIdx(2));
 
 
-    _exprColor->setDefaultValue(0.7, 0);
-    _exprColor->setDefaultValue(0.78, 1);
-    _exprColor->setDefaultValue(0.39, 2);
+    _exprColor->setDefaultValue(0.7, DimIdx(0));
+    _exprColor->setDefaultValue(0.78, DimIdx(1));
+    _exprColor->setDefaultValue(0.39, DimIdx(2));
 
-    _curveEditorBGColor->setDefaultValue(0., 0);
-    _curveEditorBGColor->setDefaultValue(0., 1);
-    _curveEditorBGColor->setDefaultValue(0., 2);
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
 
-    _gridColor->setDefaultValue(0.46, 0);
-    _gridColor->setDefaultValue(0.84, 1);
-    _gridColor->setDefaultValue(0.35, 2);
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
 
-    _curveEditorScaleColor->setDefaultValue(0.26, 0);
-    _curveEditorScaleColor->setDefaultValue(0.48, 1);
-    _curveEditorScaleColor->setDefaultValue(0.2, 2);
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
 
-    // Initialize Dope sheet editor Settings knobs
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 0);
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 1);
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 2);
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
 
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 0);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 1);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 2);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.2, 3);
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
 
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 0);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 1);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 2);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, 3);
+    _keywordColor->setDefaultValue(0.7, DimIdx(0));
+    _keywordColor->setDefaultValue(0.7, DimIdx(1));
+    _keywordColor->setDefaultValue(0., DimIdx(2));
 
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
-    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
+    _operatorColor->setDefaultValue(0.78, DimIdx(0));
+    _operatorColor->setDefaultValue(0.78, DimIdx(1));
+    _operatorColor->setDefaultValue(0.78, DimIdx(2));
 
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 0);
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 2);
+    _braceColor->setDefaultValue(0.85, DimIdx(0));
+    _braceColor->setDefaultValue(0.85, DimIdx(1));
+    _braceColor->setDefaultValue(0.85, DimIdx(2));
 
-    _keywordColor->setDefaultValue(0.7, 0);
-    _keywordColor->setDefaultValue(0.7, 1);
-    _keywordColor->setDefaultValue(0., 2);
+    _defClassColor->setDefaultValue(0.7, DimIdx(0));
+    _defClassColor->setDefaultValue(0.7, DimIdx(1));
+    _defClassColor->setDefaultValue(0., DimIdx(2));
 
-    _operatorColor->setDefaultValue(0.78, 0);
-    _operatorColor->setDefaultValue(0.78, 1);
-    _operatorColor->setDefaultValue(0.78, 2);
+    _stringsColor->setDefaultValue(0.8, DimIdx(0));
+    _stringsColor->setDefaultValue(0.2, DimIdx(1));
+    _stringsColor->setDefaultValue(0., DimIdx(2));
 
-    _braceColor->setDefaultValue(0.85, 0);
-    _braceColor->setDefaultValue(0.85, 1);
-    _braceColor->setDefaultValue(0.85, 2);
+    _commentsColor->setDefaultValue(0.25, DimIdx(0));
+    _commentsColor->setDefaultValue(0.6, DimIdx(1));
+    _commentsColor->setDefaultValue(0.25, DimIdx(2));
 
-    _defClassColor->setDefaultValue(0.7, 0);
-    _defClassColor->setDefaultValue(0.7, 1);
-    _defClassColor->setDefaultValue(0., 2);
+    _selfColor->setDefaultValue(0.7, DimIdx(0));
+    _selfColor->setDefaultValue(0.7, DimIdx(1));
+    _selfColor->setDefaultValue(0., DimIdx(2));
 
-    _stringsColor->setDefaultValue(0.8, 0);
-    _stringsColor->setDefaultValue(0.2, 1);
-    _stringsColor->setDefaultValue(0., 2);
+    _numbersColor->setDefaultValue(0.25, DimIdx(0));
+    _numbersColor->setDefaultValue(0.8, DimIdx(1));
+    _numbersColor->setDefaultValue(0.9, DimIdx(2));
 
-    _commentsColor->setDefaultValue(0.25, 0);
-    _commentsColor->setDefaultValue(0.6, 1);
-    _commentsColor->setDefaultValue(0.25, 2);
+    _curLineColor->setDefaultValue(0.35, DimIdx(0));
+    _curLineColor->setDefaultValue(0.35, DimIdx(1));
+    _curLineColor->setDefaultValue(0.35, DimIdx(2));
 
-    _selfColor->setDefaultValue(0.7, 0);
-    _selfColor->setDefaultValue(0.7, 1);
-    _selfColor->setDefaultValue(0., 2);
-
-    _numbersColor->setDefaultValue(0.25, 0);
-    _numbersColor->setDefaultValue(0.8, 1);
-    _numbersColor->setDefaultValue(0.9, 2);
-
-    _curLineColor->setDefaultValue(0.35, 0);
-    _curLineColor->setDefaultValue(0.35, 1);
-    _curLineColor->setDefaultValue(0.35, 2);
-
-    _sliderColor->setDefaultValue(0.33, 0);
-    _sliderColor->setDefaultValue(0.45, 1);
-    _sliderColor->setDefaultValue(0.44, 2);
+    _sliderColor->setDefaultValue(0.33, DimIdx(0));
+    _sliderColor->setDefaultValue(0.45, DimIdx(1));
+    _sliderColor->setDefaultValue(0.44, DimIdx(2));
 
     _scriptEditorFontChoice->setDefaultValue(0);
     _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
@@ -1913,17 +1871,17 @@ Settings::saveSettings(const KnobsVec& knobs,
         KnobBoolBasePtr isBool = toKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+        for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
             QString dimensionName;
-            if (knobs[i]->getDimension() > 1) {
-                dimensionName =  QString::fromUtf8( name.c_str() ) + QLatin1Char('.') + QString::fromUtf8( knobs[i]->getDimensionName(j).c_str() );
+            if (knobs[i]->getNDimensions() > 1) {
+                dimensionName =  QString::fromUtf8( name.c_str() ) + QLatin1Char('.') + QString::fromUtf8( knobs[i]->getDimensionName(DimIdx(j)).c_str() );
             } else {
                 dimensionName = QString::fromUtf8( name.c_str() );
             }
             try {
                 if (isString) {
                     QString old = settings.value(dimensionName).toString();
-                    QString newValue = QString::fromUtf8( isString->getValue(j).c_str() );
+                    QString newValue = QString::fromUtf8( isString->getValue(DimIdx(j)).c_str() );
                     if (old != newValue) {
                         changedKnobs.push_back(knobs[i]);
                     }
@@ -1931,8 +1889,8 @@ Settings::saveSettings(const KnobsVec& knobs,
                 } else if (isInt) {
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
-                        int newIndex = isChoice->getValue(j);
-                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        int newIndex = isChoice->getValue(DimIdx(j));
+                        const std::vector<std::string> entries = isChoice->getEntries();
                         if ( newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
                             QString newValue = QString::fromUtf8( entries[newIndex].c_str() );
@@ -1942,7 +1900,7 @@ Settings::saveSettings(const KnobsVec& knobs,
                             settings.setValue( dimensionName, QVariant(newValue) );
                         }
                     } else {
-                        int newValue = isInt->getValue(j);
+                        int newValue = isInt->getValue(DimIdx(j));
                         int oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toInt();
                         if (newValue != oldValue) {
                             changedKnobs.push_back(knobs[i]);
@@ -1950,14 +1908,14 @@ Settings::saveSettings(const KnobsVec& knobs,
                         settings.setValue( dimensionName, QVariant(newValue) );
                     }
                 } else if (isDouble) {
-                    double newValue = isDouble->getValue(j);
+                    double newValue = isDouble->getValue(DimIdx(j));
                     double oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toDouble();
                     if (newValue != oldValue) {
                         changedKnobs.push_back(knobs[i]);
                     }
                     settings.setValue( dimensionName, QVariant(newValue) );
                 } else if (isBool) {
-                    bool newValue = isBool->getValue(j);
+                    bool newValue = isBool->getValue(DimIdx(j));
                     bool oldValue = settings.value(dimensionName).toBool();
                     if (newValue != oldValue) {
                         changedKnobs.push_back(knobs[i]);
@@ -1969,7 +1927,7 @@ Settings::saveSettings(const KnobsVec& knobs,
             } catch (std::logic_error) {
                 // ignore
             }
-        } // for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+        } // for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
     } // for (U32 i = 0; i < knobs.size(); ++i) {
 
     if (doWarnings) {
@@ -1991,18 +1949,20 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
 
         const std::string& name = knobs[i]->getName();
 
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+        // Prevent onKnobValuechanged from being called
+        knobs[i]->blockValueChanges();
+        for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
+            std::string dimensionName = knobs[i]->getNDimensions() > 1 ? name + '.' + knobs[i]->getDimensionName(DimIdx(j)) : name;
             QString qDimName = QString::fromUtf8( dimensionName.c_str() );
 
             if ( settings.contains(qDimName) ) {
                 if (isString) {
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewSpec::all(), j);
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewSetSpec::all(), DimIdx(j));
                 } else if (isInt) {
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        const std::vector<std::string> entries = isChoice->getEntries();
                         int found = -1;
 
                         for (U32 k = 0; k < entries.size(); ++k) {
@@ -2013,20 +1973,21 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
                         }
 
                         if (found >= 0) {
-                            isChoice->setValue(found, ViewSpec::all(), j);
+                            isChoice->setValue(found, ViewSetSpec::all(), DimIdx(j));
                         }
                     } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), ViewSpec::all(), j);
+                        isInt->setValue(settings.value(qDimName).toInt(), ViewSetSpec::all(), DimIdx(j));
                     }
                 } else if (isDouble) {
-                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewSpec::all(), j);
+                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewSetSpec::all(), DimIdx(j));
                 } else if (isBool) {
-                    isBool->setValue(settings.value(qDimName).toBool(), ViewSpec::all(), j);
+                    isBool->setValue(settings.value(qDimName).toBool(), ViewSetSpec::all(), DimIdx(j));
                 } else {
                     assert(false);
                 }
             }
         }
+        knobs[i]->unblockValueChanges();
     }
 } // Settings::restoreKnobsFromSettings
 
@@ -2045,7 +2006,7 @@ Settings::restoreSettings()
 
     // Restore opengl renderer
     {
-        std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
+        std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries();
         QString missingGLError;
         bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
 
@@ -2124,7 +2085,7 @@ Settings::tryLoadOpenColorIOConfig()
     QString configFile;
 
 
-    if ( _customOcioConfigFile->isEnabled(0) ) {
+    if ( _customOcioConfigFile->isEnabled(DimIdx(0)) ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2145,7 +2106,7 @@ Settings::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2218,7 +2179,7 @@ bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             ViewSpec /*view*/,
+                             ViewSetSpec /*view*/,
                              bool /*originatedFromMainThread*/)
 {
     Q_EMIT settingChanged(k);
@@ -2255,20 +2216,20 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _nThreadsPerEffect ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob ) {
-        if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
-            _customOcioConfigFile->setAllDimensionsEnabled(true);
+        if (_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            _customOcioConfigFile->setEnabled(true);
         } else {
-            _customOcioConfigFile->setAllDimensionsEnabled(false);
+            _customOcioConfigFile->setEnabled(false);
         }
         tryLoadOpenColorIOConfig();
     } else if ( k == _useThreadPool ) {
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _customOcioConfigFile ) {
-        if ( _customOcioConfigFile->isEnabled(0) ) {
+        if ( _customOcioConfigFile->isEnabled(DimIdx(DimIdx(0))) ) {
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
+            if ( warnOcioChanged && appPTR->getTopLevelInstance() && !_restoringDefaults ) {
                 bool stopAsking = false;
                 Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
                                        tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
@@ -2288,77 +2249,77 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _powerOf2Tiling && !_restoringSettings) {
         appPTR->onViewerTileCacheSizeChanged();
     } else if ( k == _texturesMode &&  !_restoringSettings) {
-         appPTR->onViewerTileCacheSizeChanged();
+        appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
     } else if ( !_restoringSettings &&
-                ( ( k == _sunkenColor ) ||
-                  ( k == _baseColor ) ||
-                  ( k == _raisedColor ) ||
-                  ( k == _selectionColor ) ||
-                  ( k == _textColor ) ||
-                  ( k == _altTextColor ) ||
-                  ( k == _timelinePlayheadColor ) ||
-                  ( k == _timelineBoundsColor ) ||
-                  ( k == _timelineBGColor ) ||
-                  ( k == _interpolatedColor ) ||
-                  ( k == _keyframeColor ) ||
-                  ( k == _trackerKeyframeColor ) ||
-                  ( k == _cachedFrameColor ) ||
-                  ( k == _diskCachedFrameColor ) ||
-                  ( k == _curveEditorBGColor ) ||
-                  ( k == _gridColor ) ||
-                  ( k == _curveEditorScaleColor ) ||
-                  ( k == _dopeSheetEditorBackgroundColor ) ||
-                  ( k == _dopeSheetEditorRootSectionBackgroundColor ) ||
-                  ( k == _dopeSheetEditorKnobSectionBackgroundColor ) ||
-                  ( k == _dopeSheetEditorScaleColor ) ||
-                  ( k == _dopeSheetEditorGridColor ) ||
-                  ( k == _keywordColor ) ||
-                  ( k == _operatorColor ) ||
-                  ( k == _curLineColor ) ||
-                  ( k == _braceColor ) ||
-                  ( k == _defClassColor ) ||
-                  ( k == _stringsColor ) ||
-                  ( k == _commentsColor ) ||
-                  ( k == _selfColor ) ||
-                  ( k == _sliderColor ) ||
-                  ( k == _numbersColor ) ) ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _qssFile ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _hostName ) {
-        std::string hostName = _hostName->getActiveEntryText_mt_safe();
-        bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
-        _customHostName->setSecret(!isCustom);
-    } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
-        StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
-                                                            tr("You are about to make %1 crash to test the reporting system.\n"
-                                                               "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
-                                                            StandardButtons(eStandardButtonYes | eStandardButtonNo) );
-        if (reply == eStandardButtonYes) {
-            crash_application();
-        }
-    } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
-        appPTR->reloadScriptEditorFonts();
-    } else if ( k == _pluginUseImageCopyForSource ) {
-        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } else if ( k == _enableOpenGL ) {
-        appPTR->refreshOpenGLRenderingFlagOnAllInstances();
-        if (!_restoringSettings) {
-            appPTR->clearPluginsLoadedCache();
-        }
-    } else {
-        ret = false;
-    }
+               ( ( k == _sunkenColor ) ||
+                ( k == _baseColor ) ||
+                ( k == _raisedColor ) ||
+                ( k == _selectionColor ) ||
+                ( k == _textColor ) ||
+                ( k == _altTextColor ) ||
+                ( k == _timelinePlayheadColor ) ||
+                ( k == _timelineBoundsColor ) ||
+                ( k == _timelineBGColor ) ||
+                ( k == _interpolatedColor ) ||
+                ( k == _keyframeColor ) ||
+                ( k == _trackerKeyframeColor ) ||
+                ( k == _cachedFrameColor ) ||
+                ( k == _diskCachedFrameColor ) ||
+                ( k == _animationViewBackgroundColor ) ||
+                ( k == _animationViewGridColor ) ||
+                ( k == _animationViewScaleColor ) ||
+                ( k == _dopesheetRootSectionBackgroundColor ) ||
+                ( k == _dopesheetKnobSectionBackgroundColor ) ||
+                ( k == _keywordColor ) ||
+                ( k == _operatorColor ) ||
+                ( k == _curLineColor ) ||
+                ( k == _braceColor ) ||
+                ( k == _defClassColor ) ||
+                ( k == _stringsColor ) ||
+                ( k == _commentsColor ) ||
+                ( k == _selfColor ) ||
+                ( k == _sliderColor ) ||
+                ( k == _numbersColor ) ||
+                ( k == _qssFile) ) ) {
+                   if (_restoringDefaults) {
+                       ++_nRedrawStyleSheetRequests;
+                   } else {
+                       appPTR->reloadStylesheets();
+                   }
+               } else if ( k == _hostName ) {
+                   std::string hostName = _hostName->getActiveEntryText();
+                   bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
+                   _customHostName->setSecret(!isCustom);
+               } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
+                   StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
+                                                                      tr("You are about to make %1 crash to test the reporting system.\n"
+                                                                         "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
+                                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo) );
+                   if (reply == eStandardButtonYes) {
+                       crash_application();
+                   }
+               } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
+                   appPTR->reloadScriptEditorFonts();
+               } else if ( k == _pluginUseImageCopyForSource ) {
+                   appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
+               } else if ( k == _enableOpenGL ) {
+                   appPTR->refreshOpenGLRenderingFlagOnAllInstances();
+                   if (!_restoringSettings) {
+                       appPTR->clearPluginsLoadedCache();
+                   }
+               } else {
+                   ret = false;
+               }
     if (ret) {
-        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings ) {
+        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings && !_restoringDefaults ) {
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
-
+    
     return ret;
 } // onKnobValueChanged
 
@@ -2400,10 +2361,10 @@ Settings::getCheckerboardColor1(double* r,
                                 double* b,
                                 double* a) const
 {
-    *r = _checkerboardColor1->getValue(0);
-    *g = _checkerboardColor1->getValue(1);
-    *b = _checkerboardColor1->getValue(2);
-    *a = _checkerboardColor1->getValue(3);
+    *r = _checkerboardColor1->getValue(DimIdx(0));
+    *g = _checkerboardColor1->getValue(DimIdx(1));
+    *b = _checkerboardColor1->getValue(DimIdx(2));
+    *a = _checkerboardColor1->getValue(DimIdx(3));
 }
 
 void
@@ -2412,10 +2373,10 @@ Settings::getCheckerboardColor2(double* r,
                                 double* b,
                                 double* a) const
 {
-    *r = _checkerboardColor2->getValue(0);
-    *g = _checkerboardColor2->getValue(1);
-    *b = _checkerboardColor2->getValue(2);
-    *a = _checkerboardColor2->getValue(3);
+    *r = _checkerboardColor2->getValue(DimIdx(0));
+    *g = _checkerboardColor2->getValue(DimIdx(1));
+    *b = _checkerboardColor2->getValue(DimIdx(2));
+    *a = _checkerboardColor2->getValue(DimIdx(3));
 }
 
 bool
@@ -2658,15 +2619,22 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
+    _nRedrawStyleSheetRequests = 0;
+    _restoringDefaults = true;
+
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            knobs[i]->resetToDefaultValue(j);
-        }
+        knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     }
     setCachingLabels();
     endChanges();
+
+    if (_nRedrawStyleSheetRequests > 0) {
+        appPTR->reloadStylesheets();
+        _nRedrawStyleSheetRequests = 0;
+    }
+    _restoringDefaults = false;
 }
 
 bool
@@ -2748,9 +2716,9 @@ Settings::getDefaultNodeColor(float *r,
                               float *g,
                               float *b) const
 {
-    *r = _defaultNodeColor->getValue(0);
-    *g = _defaultNodeColor->getValue(1);
-    *b = _defaultNodeColor->getValue(2);
+    *r = _defaultNodeColor->getValue(DimIdx(0));
+    *g = _defaultNodeColor->getValue(DimIdx(1));
+    *b = _defaultNodeColor->getValue(DimIdx(2));
 }
 
 void
@@ -2758,9 +2726,9 @@ Settings::getDefaultBackdropColor(float *r,
                                   float *g,
                                   float *b) const
 {
-    *r = _defaultBackdropColor->getValue(0);
-    *g = _defaultBackdropColor->getValue(1);
-    *b = _defaultBackdropColor->getValue(2);
+    *r = _defaultBackdropColor->getValue(DimIdx(0));
+    *g = _defaultBackdropColor->getValue(DimIdx(1));
+    *b = _defaultBackdropColor->getValue(DimIdx(2));
 }
 
 void
@@ -2768,9 +2736,9 @@ Settings::getGeneratorColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultGeneratorColor->getValue(0);
-    *g = _defaultGeneratorColor->getValue(1);
-    *b = _defaultGeneratorColor->getValue(2);
+    *r = _defaultGeneratorColor->getValue(DimIdx(0));
+    *g = _defaultGeneratorColor->getValue(DimIdx(1));
+    *b = _defaultGeneratorColor->getValue(DimIdx(2));
 }
 
 void
@@ -2778,9 +2746,9 @@ Settings::getReaderColor(float *r,
                          float *g,
                          float *b) const
 {
-    *r = _defaultReaderColor->getValue(0);
-    *g = _defaultReaderColor->getValue(1);
-    *b = _defaultReaderColor->getValue(2);
+    *r = _defaultReaderColor->getValue(DimIdx(0));
+    *g = _defaultReaderColor->getValue(DimIdx(1));
+    *b = _defaultReaderColor->getValue(DimIdx(2));
 }
 
 void
@@ -2788,9 +2756,9 @@ Settings::getWriterColor(float *r,
                          float *g,
                          float *b) const
 {
-    *r = _defaultWriterColor->getValue(0);
-    *g = _defaultWriterColor->getValue(1);
-    *b = _defaultWriterColor->getValue(2);
+    *r = _defaultWriterColor->getValue(DimIdx(0));
+    *g = _defaultWriterColor->getValue(DimIdx(1));
+    *b = _defaultWriterColor->getValue(DimIdx(2));
 }
 
 void
@@ -2798,9 +2766,9 @@ Settings::getColorGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultColorGroupColor->getValue(0);
-    *g = _defaultColorGroupColor->getValue(1);
-    *b = _defaultColorGroupColor->getValue(2);
+    *r = _defaultColorGroupColor->getValue(DimIdx(0));
+    *g = _defaultColorGroupColor->getValue(DimIdx(1));
+    *b = _defaultColorGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2808,9 +2776,9 @@ Settings::getFilterGroupColor(float *r,
                               float *g,
                               float *b) const
 {
-    *r = _defaultFilterGroupColor->getValue(0);
-    *g = _defaultFilterGroupColor->getValue(1);
-    *b = _defaultFilterGroupColor->getValue(2);
+    *r = _defaultFilterGroupColor->getValue(DimIdx(0));
+    *g = _defaultFilterGroupColor->getValue(DimIdx(1));
+    *b = _defaultFilterGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2818,9 +2786,9 @@ Settings::getTransformGroupColor(float *r,
                                  float *g,
                                  float *b) const
 {
-    *r = _defaultTransformGroupColor->getValue(0);
-    *g = _defaultTransformGroupColor->getValue(1);
-    *b = _defaultTransformGroupColor->getValue(2);
+    *r = _defaultTransformGroupColor->getValue(DimIdx(0));
+    *g = _defaultTransformGroupColor->getValue(DimIdx(1));
+    *b = _defaultTransformGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2828,9 +2796,9 @@ Settings::getTimeGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultTimeGroupColor->getValue(0);
-    *g = _defaultTimeGroupColor->getValue(1);
-    *b = _defaultTimeGroupColor->getValue(2);
+    *r = _defaultTimeGroupColor->getValue(DimIdx(0));
+    *g = _defaultTimeGroupColor->getValue(DimIdx(1));
+    *b = _defaultTimeGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2838,9 +2806,9 @@ Settings::getDrawGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultDrawGroupColor->getValue(0);
-    *g = _defaultDrawGroupColor->getValue(1);
-    *b = _defaultDrawGroupColor->getValue(2);
+    *r = _defaultDrawGroupColor->getValue(DimIdx(0));
+    *g = _defaultDrawGroupColor->getValue(DimIdx(1));
+    *b = _defaultDrawGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2848,9 +2816,9 @@ Settings::getKeyerGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultKeyerGroupColor->getValue(0);
-    *g = _defaultKeyerGroupColor->getValue(1);
-    *b = _defaultKeyerGroupColor->getValue(2);
+    *r = _defaultKeyerGroupColor->getValue(DimIdx(0));
+    *g = _defaultKeyerGroupColor->getValue(DimIdx(1));
+    *b = _defaultKeyerGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2858,9 +2826,9 @@ Settings::getChannelGroupColor(float *r,
                                float *g,
                                float *b) const
 {
-    *r = _defaultChannelGroupColor->getValue(0);
-    *g = _defaultChannelGroupColor->getValue(1);
-    *b = _defaultChannelGroupColor->getValue(2);
+    *r = _defaultChannelGroupColor->getValue(DimIdx(0));
+    *g = _defaultChannelGroupColor->getValue(DimIdx(1));
+    *b = _defaultChannelGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2868,9 +2836,9 @@ Settings::getMergeGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultMergeGroupColor->getValue(0);
-    *g = _defaultMergeGroupColor->getValue(1);
-    *b = _defaultMergeGroupColor->getValue(2);
+    *r = _defaultMergeGroupColor->getValue(DimIdx(0));
+    *g = _defaultMergeGroupColor->getValue(DimIdx(1));
+    *b = _defaultMergeGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2878,9 +2846,9 @@ Settings::getViewsGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultViewsGroupColor->getValue(0);
-    *g = _defaultViewsGroupColor->getValue(1);
-    *b = _defaultViewsGroupColor->getValue(2);
+    *r = _defaultViewsGroupColor->getValue(DimIdx(0));
+    *g = _defaultViewsGroupColor->getValue(DimIdx(1));
+    *b = _defaultViewsGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2888,9 +2856,9 @@ Settings::getDeepGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultDeepGroupColor->getValue(0);
-    *g = _defaultDeepGroupColor->getValue(1);
-    *b = _defaultDeepGroupColor->getValue(2);
+    *r = _defaultDeepGroupColor->getValue(DimIdx(0));
+    *g = _defaultDeepGroupColor->getValue(DimIdx(1));
+    *b = _defaultDeepGroupColor->getValue(DimIdx(2));
 }
 
 int
@@ -2903,7 +2871,7 @@ std::string
 Settings::getHostName() const
 {
     int entry_i =  _hostName->getValue();
-    std::vector<std::string> entries = _hostName->getEntries_mt_safe();
+    std::vector<std::string> entries = _hostName->getEntries();
 
     if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
         return _customHostName->getValue();
@@ -3028,7 +2996,7 @@ Settings::doOCIOStartupCheckIfNeeded()
 
     if (docheck && mainInstance) {
         int entry_i = _ocioConfigKnob->getValue();
-        std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _ocioConfigKnob->getEntries();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
@@ -3115,7 +3083,7 @@ Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
+    settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(DimIdx(0)).c_str() ) ) );
 }
 
 std::string
@@ -3184,9 +3152,9 @@ Settings::getSunkenColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _sunkenColor->getValue(0);
-    *g = _sunkenColor->getValue(1);
-    *b = _sunkenColor->getValue(2);
+    *r = _sunkenColor->getValue(DimIdx(0));
+    *g = _sunkenColor->getValue(DimIdx(1));
+    *b = _sunkenColor->getValue(DimIdx(2));
 }
 
 void
@@ -3194,9 +3162,9 @@ Settings::getBaseColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _baseColor->getValue(0);
-    *g = _baseColor->getValue(1);
-    *b = _baseColor->getValue(2);
+    *r = _baseColor->getValue(DimIdx(0));
+    *g = _baseColor->getValue(DimIdx(1));
+    *b = _baseColor->getValue(DimIdx(2));
 }
 
 void
@@ -3204,9 +3172,9 @@ Settings::getRaisedColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _raisedColor->getValue(0);
-    *g = _raisedColor->getValue(1);
-    *b = _raisedColor->getValue(2);
+    *r = _raisedColor->getValue(DimIdx(0));
+    *g = _raisedColor->getValue(DimIdx(1));
+    *b = _raisedColor->getValue(DimIdx(2));
 }
 
 void
@@ -3214,9 +3182,9 @@ Settings::getSelectionColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _selectionColor->getValue(0);
-    *g = _selectionColor->getValue(1);
-    *b = _selectionColor->getValue(2);
+    *r = _selectionColor->getValue(DimIdx(0));
+    *g = _selectionColor->getValue(DimIdx(1));
+    *b = _selectionColor->getValue(DimIdx(2));
 }
 
 void
@@ -3224,9 +3192,9 @@ Settings::getInterpolatedColor(double* r,
                                double* g,
                                double* b) const
 {
-    *r = _interpolatedColor->getValue(0);
-    *g = _interpolatedColor->getValue(1);
-    *b = _interpolatedColor->getValue(2);
+    *r = _interpolatedColor->getValue(DimIdx(0));
+    *g = _interpolatedColor->getValue(DimIdx(1));
+    *b = _interpolatedColor->getValue(DimIdx(2));
 }
 
 void
@@ -3234,9 +3202,9 @@ Settings::getKeyframeColor(double* r,
                            double* g,
                            double* b) const
 {
-    *r = _keyframeColor->getValue(0);
-    *g = _keyframeColor->getValue(1);
-    *b = _keyframeColor->getValue(2);
+    *r = _keyframeColor->getValue(DimIdx(0));
+    *g = _keyframeColor->getValue(DimIdx(1));
+    *b = _keyframeColor->getValue(DimIdx(2));
 }
 
 void
@@ -3244,9 +3212,9 @@ Settings::getTrackerKeyframeColor(double* r,
                                   double* g,
                                   double* b) const
 {
-    *r = _trackerKeyframeColor->getValue(0);
-    *g = _trackerKeyframeColor->getValue(1);
-    *b = _trackerKeyframeColor->getValue(2);
+    *r = _trackerKeyframeColor->getValue(DimIdx(0));
+    *g = _trackerKeyframeColor->getValue(DimIdx(1));
+    *b = _trackerKeyframeColor->getValue(DimIdx(2));
 }
 
 void
@@ -3254,9 +3222,9 @@ Settings::getExprColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _exprColor->getValue(0);
-    *g = _exprColor->getValue(1);
-    *b = _exprColor->getValue(2);
+    *r = _exprColor->getValue(DimIdx(0));
+    *g = _exprColor->getValue(DimIdx(1));
+    *b = _exprColor->getValue(DimIdx(2));
 }
 
 void
@@ -3264,9 +3232,9 @@ Settings::getTextColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _textColor->getValue(0);
-    *g = _textColor->getValue(1);
-    *b = _textColor->getValue(2);
+    *r = _textColor->getValue(DimIdx(0));
+    *g = _textColor->getValue(DimIdx(1));
+    *b = _textColor->getValue(DimIdx(2));
 }
 
 void
@@ -3274,9 +3242,9 @@ Settings::getAltTextColor(double* r,
                           double* g,
                           double* b) const
 {
-    *r = _altTextColor->getValue(0);
-    *g = _altTextColor->getValue(1);
-    *b = _altTextColor->getValue(2);
+    *r = _altTextColor->getValue(DimIdx(0));
+    *g = _altTextColor->getValue(DimIdx(1));
+    *b = _altTextColor->getValue(DimIdx(2));
 }
 
 void
@@ -3284,9 +3252,9 @@ Settings::getTimelinePlayheadColor(double* r,
                                    double* g,
                                    double* b) const
 {
-    *r = _timelinePlayheadColor->getValue(0);
-    *g = _timelinePlayheadColor->getValue(1);
-    *b = _timelinePlayheadColor->getValue(2);
+    *r = _timelinePlayheadColor->getValue(DimIdx(0));
+    *g = _timelinePlayheadColor->getValue(DimIdx(1));
+    *b = _timelinePlayheadColor->getValue(DimIdx(2));
 }
 
 void
@@ -3294,9 +3262,9 @@ Settings::getTimelineBoundsColor(double* r,
                                  double* g,
                                  double* b) const
 {
-    *r = _timelineBoundsColor->getValue(0);
-    *g = _timelineBoundsColor->getValue(1);
-    *b = _timelineBoundsColor->getValue(2);
+    *r = _timelineBoundsColor->getValue(DimIdx(0));
+    *g = _timelineBoundsColor->getValue(DimIdx(1));
+    *b = _timelineBoundsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3304,9 +3272,9 @@ Settings::getTimelineBGColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _timelineBGColor->getValue(0);
-    *g = _timelineBGColor->getValue(1);
-    *b = _timelineBGColor->getValue(2);
+    *r = _timelineBGColor->getValue(DimIdx(0));
+    *g = _timelineBGColor->getValue(DimIdx(1));
+    *b = _timelineBGColor->getValue(DimIdx(2));
 }
 
 void
@@ -3314,9 +3282,9 @@ Settings::getCachedFrameColor(double* r,
                               double* g,
                               double* b) const
 {
-    *r = _cachedFrameColor->getValue(0);
-    *g = _cachedFrameColor->getValue(1);
-    *b = _cachedFrameColor->getValue(2);
+    *r = _cachedFrameColor->getValue(DimIdx(0));
+    *g = _cachedFrameColor->getValue(DimIdx(1));
+    *b = _cachedFrameColor->getValue(DimIdx(2));
 }
 
 void
@@ -3324,93 +3292,63 @@ Settings::getDiskCachedColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _diskCachedFrameColor->getValue(0);
-    *g = _diskCachedFrameColor->getValue(1);
-    *b = _diskCachedFrameColor->getValue(2);
+    *r = _diskCachedFrameColor->getValue(DimIdx(0));
+    *g = _diskCachedFrameColor->getValue(DimIdx(1));
+    *b = _diskCachedFrameColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getCurveEditorBGColor(double* r,
-                                double* g,
-                                double* b) const
-{
-    *r = _curveEditorBGColor->getValue(0);
-    *g = _curveEditorBGColor->getValue(1);
-    *b = _curveEditorBGColor->getValue(2);
-}
-
-void
-Settings::getCurveEditorGridColor(double* r,
-                                  double* g,
-                                  double* b) const
-{
-    *r = _gridColor->getValue(0);
-    *g = _gridColor->getValue(1);
-    *b = _gridColor->getValue(2);
-}
-
-void
-Settings::getCurveEditorScaleColor(double* r,
-                                   double* g,
-                                   double* b) const
-{
-    *r = _curveEditorScaleColor->getValue(0);
-    *g = _curveEditorScaleColor->getValue(1);
-    *b = _curveEditorScaleColor->getValue(2);
-}
-
-void
-Settings::getDopeSheetEditorBackgroundColor(double *r,
+Settings::getAnimationModuleEditorBackgroundColor(double *r,
                                             double *g,
                                             double *b) const
 {
-    *r = _dopeSheetEditorBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorBackgroundColor->getValue(2);
+    *r = _animationViewBackgroundColor->getValue(DimIdx(0));
+    *g = _animationViewBackgroundColor->getValue(DimIdx(1));
+    *b = _animationViewBackgroundColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorRootRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorRootRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorRootSectionBackgroundColor->getValue(2);
-    *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(3);
+    *r = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _dopesheetRootSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorKnobRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorKnobSectionBackgroundColor->getValue(2);
-    *a = _dopeSheetEditorKnobSectionBackgroundColor->getValue(3);
+    *r = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _dopesheetKnobSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorScaleColor(double *r,
+Settings::getAnimationModuleEditorScaleColor(double *r,
                                        double *g,
                                        double *b) const
 {
-    *r = _dopeSheetEditorScaleColor->getValue(0);
-    *g = _dopeSheetEditorScaleColor->getValue(1);
-    *b = _dopeSheetEditorScaleColor->getValue(2);
+    *r = _animationViewScaleColor->getValue(DimIdx(0));
+    *g = _animationViewScaleColor->getValue(DimIdx(1));
+    *b = _animationViewScaleColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorGridColor(double *r,
+Settings::getAnimationModuleEditorGridColor(double *r,
                                       double *g,
                                       double *b) const
 {
-    *r = _dopeSheetEditorGridColor->getValue(0);
-    *g = _dopeSheetEditorGridColor->getValue(1);
-    *b = _dopeSheetEditorGridColor->getValue(2);
+    *r = _animationViewGridColor->getValue(DimIdx(0));
+    *g = _animationViewGridColor->getValue(DimIdx(1));
+    *b = _animationViewGridColor->getValue(DimIdx(2));
 }
 
 void
@@ -3418,9 +3356,9 @@ Settings::getSEKeywordColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _keywordColor->getValue(0);
-    *g = _keywordColor->getValue(1);
-    *b = _keywordColor->getValue(2);
+    *r = _keywordColor->getValue(DimIdx(0));
+    *g = _keywordColor->getValue(DimIdx(1));
+    *b = _keywordColor->getValue(DimIdx(2));
 }
 
 void
@@ -3428,9 +3366,9 @@ Settings::getSEOperatorColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _operatorColor->getValue(0);
-    *g = _operatorColor->getValue(1);
-    *b = _operatorColor->getValue(2);
+    *r = _operatorColor->getValue(DimIdx(0));
+    *g = _operatorColor->getValue(DimIdx(1));
+    *b = _operatorColor->getValue(DimIdx(2));
 }
 
 void
@@ -3438,9 +3376,9 @@ Settings::getSEBraceColor(double* r,
                           double* g,
                           double* b) const
 {
-    *r = _braceColor->getValue(0);
-    *g = _braceColor->getValue(1);
-    *b = _braceColor->getValue(2);
+    *r = _braceColor->getValue(DimIdx(0));
+    *g = _braceColor->getValue(DimIdx(1));
+    *b = _braceColor->getValue(DimIdx(2));
 }
 
 void
@@ -3448,9 +3386,9 @@ Settings::getSEDefClassColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _defClassColor->getValue(0);
-    *g = _defClassColor->getValue(1);
-    *b = _defClassColor->getValue(2);
+    *r = _defClassColor->getValue(DimIdx(0));
+    *g = _defClassColor->getValue(DimIdx(1));
+    *b = _defClassColor->getValue(DimIdx(2));
 }
 
 void
@@ -3458,9 +3396,9 @@ Settings::getSEStringsColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _stringsColor->getValue(0);
-    *g = _stringsColor->getValue(1);
-    *b = _stringsColor->getValue(2);
+    *r = _stringsColor->getValue(DimIdx(0));
+    *g = _stringsColor->getValue(DimIdx(1));
+    *b = _stringsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3468,9 +3406,9 @@ Settings::getSECommentsColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _commentsColor->getValue(0);
-    *g = _commentsColor->getValue(1);
-    *b = _commentsColor->getValue(2);
+    *r = _commentsColor->getValue(DimIdx(0));
+    *g = _commentsColor->getValue(DimIdx(1));
+    *b = _commentsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3478,9 +3416,9 @@ Settings::getSESelfColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _selfColor->getValue(0);
-    *g = _selfColor->getValue(1);
-    *b = _selfColor->getValue(2);
+    *r = _selfColor->getValue(DimIdx(0));
+    *g = _selfColor->getValue(DimIdx(1));
+    *b = _selfColor->getValue(DimIdx(2));
 }
 
 void
@@ -3488,9 +3426,9 @@ Settings::getSENumbersColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _numbersColor->getValue(0);
-    *g = _numbersColor->getValue(1);
-    *b = _numbersColor->getValue(2);
+    *r = _numbersColor->getValue(DimIdx(0));
+    *g = _numbersColor->getValue(DimIdx(1));
+    *b = _numbersColor->getValue(DimIdx(2));
 }
 
 void
@@ -3498,9 +3436,9 @@ Settings::getSECurLineColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _curLineColor->getValue(0);
-    *g = _curLineColor->getValue(1);
-    *b = _curLineColor->getValue(2);
+    *r = _curLineColor->getValue(DimIdx(0));
+    *g = _curLineColor->getValue(DimIdx(1));
+    *b = _curLineColor->getValue(DimIdx(2));
 }
 
 void
@@ -3508,9 +3446,9 @@ Settings::getSliderColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _sliderColor->getValue(0);
-    *g = _sliderColor->getValue(1);
-    *b = _sliderColor->getValue(2);
+    *r = _sliderColor->getValue(DimIdx(0));
+    *g = _sliderColor->getValue(DimIdx(1));
+    *b = _sliderColor->getValue(DimIdx(2));
 }
 
 int
@@ -3522,7 +3460,7 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _scriptEditorFontChoice->getActiveEntryText_mt_safe();
+    return _scriptEditorFontChoice->getActiveEntryText();
 }
 
 void
@@ -3533,12 +3471,6 @@ Settings::getPluginIconFrameColor(int *r,
     *r = 50;
     *g = 50;
     *b = 50;
-}
-
-int
-Settings::getDopeSheetEditorNodeSeparationWith() const
-{
-    return 4;
 }
 
 bool
@@ -3580,9 +3512,7 @@ Settings::restoreDefaultAppearance()
         KnobColorPtr isColorKnob = toKnobColor(children[i]);
         if ( isColorKnob && isColorKnob->isSimplified() ) {
             isColorKnob->blockValueChanges();
-            for (int j = 0; j < isColorKnob->getDimension(); ++j) {
-                isColorKnob->resetToDefaultValue(j);
-            }
+            isColorKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
             isColorKnob->unblockValueChanges();
         }
     }

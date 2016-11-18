@@ -38,9 +38,8 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/FStreamsSupport.h"
 
-#include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Histogram.h"
 #include "Gui/GuiAppInstance.h"
@@ -93,8 +92,7 @@ Gui::createDefaultLayout1()
     propertiesSplitter->setSizes_mt_safe(sizes);
 
     workshopPane->moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea);
-    workshopPane->moveTab(_imp->_curveEditor, _imp->_curveEditor);
-    workshopPane->moveTab(_imp->_dopeSheetEditor, _imp->_dopeSheetEditor);
+    workshopPane->moveTab(_imp->_animationModule, _imp->_animationModule);
     propertiesPane->moveTab(_imp->_propertiesBin, _imp->_propertiesBin);
 
     {

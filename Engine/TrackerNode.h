@@ -29,10 +29,21 @@
 
 #include "Engine/NodeGroup.h"
 
+#define kTrackerUIParamDefaultMarkerPatternWinSize "defPatternWinSize"
+#define kTrackerUIParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
+#define kTrackerUIParamDefaultMarkerPatternWinSizeHint "The size in pixels of the pattern that created markers will have by default"
+
+#define kTrackerUIParamDefaultMarkerSearchWinSize "defSearchWinSize"
+#define kTrackerUIParamDefaultMarkerSearchWinSizeLabel "Default Search Area Size"
+#define kTrackerUIParamDefaultMarkerSearchWinSizeHint "The size in pixels of the search window that created markers will have by default"
+
+#define kTrackerUIParamDefaultMotionModel "defMotionModel"
+#define kTrackerUIParamDefaultMotionModelLabel "Default Motion Model"
+#define kTrackerUIParamDefaultMotionModelHint "The motion model that new tracks have by default"
 
 NATRON_NAMESPACE_ENTER;
 
-struct TrackerNodePrivate;
+class TrackerNodePrivate;
 class TrackerNode
     : public NodeGroup
 {
@@ -110,7 +121,30 @@ public:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
+
+    TrackerHelperPtr getTracker() const;
+
+public Q_SLOTS:
+
+
+    void onCornerPinSolverWatcherFinished();
+    void onTransformSolverWatcherFinished();
+
+    void onCornerPinSolverWatcherProgress(int progress);
+    void onTransformSolverWatcherProgress(int progress);
+
 private:
+
+    void initializeViewerUIKnobs(const KnobPagePtr& trackingPage);
+
+    void initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage);
+
+    void initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage);
+
+    void initializeTrackingPageKnobs(const KnobPagePtr& trackingPage);
+
+    void initializeTransformPageKnobs(const KnobPagePtr& transformPage);
 
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -131,7 +165,7 @@ private:
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
+                             ViewSetSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
@@ -139,7 +173,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<TrackerNodePrivate> _imp;
+    boost::shared_ptr<TrackerNodePrivate> _imp;
 };
 
 inline TrackerNodePtr

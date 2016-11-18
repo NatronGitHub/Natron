@@ -224,7 +224,7 @@ struct AddKnobDialogPrivate
 
     void setVisibleDefaultValues(bool visible, AddKnobDialogPrivate::DefaultValueType type, int dimensions);
 
-    void createKnobFromSelection(int type, int optionalGroupIndex = -1);
+    void createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum type, int optionalGroupIndex = -1);
 
     KnobGroupPtr getSelectedGroup() const;
 
@@ -346,7 +346,7 @@ AddKnobDialog::dataTypeDim(ParamDataTypeEnum t)
 AddKnobDialog::ParamDataTypeEnum
 AddKnobDialog::getChoiceIndexFromKnobType(const KnobIPtr& knob)
 {
-    int dim = knob->getDimension();
+    int dim = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
     KnobColorPtr isColor = toKnobColor(knob);
@@ -444,14 +444,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     //QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
 
     _imp->vLayout = new QVBoxLayout(this);
-    _imp->vLayout->setContentsMargins(0, 0, 15, 0);
+    _imp->vLayout->setContentsMargins(0, 0, TO_DPIX(15), 0);
 
     _imp->mainContainer = new QWidget(this);
     _imp->mainLayout = new QFormLayout(_imp->mainContainer);
     _imp->mainLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     _imp->mainLayout->setFormAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-    _imp->mainLayout->setSpacing(3);
-    _imp->mainLayout->setContentsMargins(0, 0, 15, 0);
+    _imp->mainLayout->setSpacing(TO_DPIX(3));
+    _imp->mainLayout->setContentsMargins(0, 0, TO_DPIX(15), 0);
 
     _imp->vLayout->addWidget(_imp->mainContainer);
 
@@ -618,8 +618,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         KnobChoicePtr isChoice = toKnobChoice(knob);
         if (isChoice) {
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-            std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
+            std::vector<std::string> entries = isChoice->getEntries();
+            std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
             QString data;
             for (U32 i = 0; i < entries.size(); ++i) {
                 QString line( QString::fromUtf8( entries[i].c_str() ) );
@@ -801,28 +801,28 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
 
         if (isDbl) {
-            double min = isDbl->getMinimum(0);
-            double max = isDbl->getMaximum(0);
-            double dmin = isDbl->getDisplayMinimum(0);
-            double dmax = isDbl->getDisplayMaximum(0);
+            double min = isDbl->getMinimum();
+            double max = isDbl->getMaximum();
+            double dmin = isDbl->getDisplayMinimum();
+            double dmax = isDbl->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
             _imp->dmaxBox->setValue(dmax);
         } else if (isInt) {
-            int min = isInt->getMinimum(0);
-            int max = isInt->getMaximum(0);
-            int dmin = isInt->getDisplayMinimum(0);
-            int dmax = isInt->getDisplayMaximum(0);
+            int min = isInt->getMinimum();
+            int max = isInt->getMaximum();
+            int dmin = isInt->getDisplayMinimum();
+            int dmax = isInt->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
             _imp->dmaxBox->setValue(dmax);
         } else if (isColor) {
-            double min = isColor->getMinimum(0);
-            double max = isColor->getMaximum(0);
-            double dmin = isColor->getDisplayMinimum(0);
-            double dmax = isColor->getDisplayMaximum(0);
+            double min = isColor->getMinimum();
+            double max = isColor->getMaximum();
+            double dmin = isColor->getDisplayMinimum();
+            double dmax = isColor->getDisplayMaximum();
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
             _imp->dminBox->setValue(dmin);
@@ -882,30 +882,30 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobChoicePtr isChoice = toKnobChoice(knob);
 
         if (isChoice) {
-            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
+            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(DimIdx(0)) ).c_str() ) );
         } else if (isDbl) {
-            _imp->default0->setValue( isDbl->getDefaultValue(0) );
-            if (isDbl->getDimension() >= 2) {
-                _imp->default1->setValue( isDbl->getDefaultValue(1) );
+            _imp->default0->setValue( isDbl->getDefaultValue(DimIdx(0)) );
+            if (isDbl->getNDimensions() >= 2) {
+                _imp->default1->setValue( isDbl->getDefaultValue(DimIdx(1)) );
             }
-            if (isDbl->getDimension() >= 3) {
-                _imp->default2->setValue( isDbl->getDefaultValue(2) );
+            if (isDbl->getNDimensions() >= 3) {
+                _imp->default2->setValue( isDbl->getDefaultValue(DimIdx(2)) );
             }
-            if (isDbl->getDimension() >= 4) {
-                _imp->default3->setValue( isDbl->getDefaultValue(3) );
+            if (isDbl->getNDimensions() >= 4) {
+                _imp->default3->setValue( isDbl->getDefaultValue(DimIdx(3)) );
             }
         } else if (isInt) {
-            _imp->default0->setValue( isInt->getDefaultValue(0) );
-            if (isInt->getDimension() >= 2) {
-                _imp->default1->setValue( isInt->getDefaultValue(1) );
+            _imp->default0->setValue( isInt->getDefaultValue(DimIdx(0)) );
+            if (isInt->getNDimensions() >= 2) {
+                _imp->default1->setValue( isInt->getDefaultValue(DimIdx(1)) );
             }
-            if (isInt->getDimension() >= 3) {
-                _imp->default2->setValue( isInt->getDefaultValue(2) );
+            if (isInt->getNDimensions() >= 3) {
+                _imp->default2->setValue( isInt->getDefaultValue(DimIdx(2)) );
             }
         } else if (isBool) {
-            _imp->defaultBool->setChecked( isBool->getDefaultValue(0) );
+            _imp->defaultBool->setChecked( isBool->getDefaultValue(DimIdx(0)) );
         } else if (isStr) {
-            _imp->defaultStr->setText( QString::fromUtf8( isStr->getDefaultValue(0).c_str() ) );
+            _imp->defaultStr->setText( QString::fromUtf8( isStr->getDefaultValue(DimIdx(0)).c_str() ) );
         }
     }
 
@@ -1346,7 +1346,7 @@ template <typename T>
 void
 AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
 {
-    int dim = knob->getDimension();
+    int dim = knob->getNDimensions();
 
     boost::shared_ptr<Knob<T> > k = boost::dynamic_pointer_cast<Knob<T> >(knob);
     assert(k);
@@ -1361,8 +1361,8 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
         maxs[i] = maxBox->value();
         dmaxs[i] = dmaxBox->value();
     }
-    k->setMinimumsAndMaximums(mins, maxs);
-    k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+    k->setRangeAcrossDimensions(mins, maxs);
+    k->setDisplayRangeAcrossDimensions(dmins, dmaxs);
     std::vector<T> defValues;
     if (dim >= 1) {
         defValues.push_back( default0->value() );
@@ -1376,16 +1376,15 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
     if (dim >= 4) {
         defValues.push_back( default3->value() );
     }
-    for (U32 i = 0; i < defValues.size(); ++i) {
-        k->setDefaultValue(defValues[i], i);
+    for (std::size_t i = 0; i < defValues.size(); ++i) {
+        k->setDefaultValue(defValues[i], DimIdx(i));
     }
 }
 
 void
-AddKnobDialogPrivate::createKnobFromSelection(int index,
+AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t,
                                               int optionalGroupIndex)
 {
-    AddKnobDialog::ParamDataTypeEnum t = (AddKnobDialog::ParamDataTypeEnum)index;
 
     assert(!knob);
     std::string label = labelLineEdit->text().toStdString();
@@ -1404,7 +1403,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeFloatingPoint2D:
     case AddKnobDialog::eParamDataTypeFloatingPoint3D: {
         //double
-        int dim = index - 2;
+        int dim = (int)t - 2;
         KnobDoublePtr k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>(k);
         knob = k;
@@ -1413,7 +1412,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeColorRGB:
     case AddKnobDialog::eParamDataTypeColorRGBA: {
         // color
-        int dim = index - 3;
+        int dim = (int)t - 3;
         KnobColorPtr k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>(k);
         knob = k;
@@ -1484,7 +1483,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
                 k->setUsesRichText(true);
             }
         } else {
-            if (index == 10) {
+            if (t == AddKnobDialog::eParamDataTypeLabel) {
                 k->setAsLabel();
             }
         }
@@ -1578,7 +1577,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     }
 
 
-    if ( (index != 16) && parentPage && !addedInGrp ) {
+    if ( (t != AddKnobDialog::eParamDataTypePage) && parentPage && !addedInGrp ) {
 
         // Ensure the knob is in a page
         KnobPagePtr page = getSelectedPage();
@@ -1761,10 +1760,10 @@ AddKnobDialog::onOkClicked()
                 }
             }
         }
-        expressions.resize( _imp->knob->getDimension() );
+        expressions.resize( _imp->knob->getNDimensions() );
         for (std::size_t i = 0; i < expressions.size(); ++i) {
-            std::string expr = _imp->knob->getExpression(i);
-            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
+            std::string expr = _imp->knob->getExpression(DimIdx(i), ViewIdx(0));
+            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
             expressions[i] = std::make_pair(expr, useRetVar);
         }
 
@@ -1780,8 +1779,8 @@ AddKnobDialog::onOkClicked()
             std::vector<std::pair<std::string, bool> > exprs;
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 std::pair<std::string, bool> e;
-                e.first = listener->getExpression(i);
-                e.second = listener->isExpressionUsingRetVariable(i);
+                e.first = listener->getExpression(DimIdx(i), ViewIdx(0));
+                e.second = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
                 exprs.push_back(e);
             }
             listenersExpressions[listener] = exprs;
@@ -1808,7 +1807,7 @@ AddKnobDialog::onOkClicked()
         }
     } else if (!_imp->isKnobAlias) {
         try {
-            _imp->createKnobFromSelection( (int)t, oldIndexInParent );
+            _imp->createKnobFromSelection(t, oldIndexInParent );
         }   catch (const std::exception& e) {
             Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 
@@ -1826,14 +1825,14 @@ AddKnobDialog::onOkClicked()
         if ( isLabelKnob && isLabelKnob->isLabel() ) {
             ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
             ///so we have to force a reset to the default value.
-            isLabelKnob->resetToDefaultValue(0);
+            isLabelKnob->resetToDefaultValue();
         }
 
         //Recover expressions
         try {
             for (std::size_t i = 0; i < expressions.size(); ++i) {
                 if ( !expressions[i].first.empty() ) {
-                    _imp->knob->setExpression(i, expressions[i].first, expressions[i].second, false);
+                    _imp->knob->setExpression(DimIdx(i), ViewSetSpec::all(), expressions[i].first, expressions[i].second, false);
                 }
             }
         } catch (...) {
@@ -1885,7 +1884,7 @@ AddKnobDialog::onOkClicked()
         } else if (isChoice) {
             std::string defValue = _imp->defaultStr->text().toStdString();
             int defIndex = -1;
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> entries = isChoice->getEntries();
             for (std::size_t i = 0; i < entries.size(); ++i) {
                 if (entries[i] == defValue) {
                     defIndex = i;
@@ -1944,8 +1943,8 @@ AddKnobDialog::onOkClicked()
 
     //Recover listeners expressions
     for (std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
-        assert( it->first->getDimension() == (int)it->second.size() );
-        for (int i = 0; i < it->first->getDimension(); ++i) {
+        assert( it->first->getNDimensions() == (int)it->second.size() );
+        for (int i = 0; i < it->first->getNDimensions(); ++i) {
             try {
                 std::string expr;
                 if ( oldKnobScriptName != _imp->knob->getName() ) {
@@ -1956,7 +1955,7 @@ AddKnobDialog::onOkClicked()
                 } else {
                     expr = it->second[i].first;
                 }
-                it->first->setExpression(i, expr, it->second[i].second, false);
+                it->first->setExpression(DimIdx(i), ViewIdx(0), expr, it->second[i].second, false);
             } catch (...) {
             }
         }

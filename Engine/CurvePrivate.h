@@ -62,13 +62,15 @@ struct CurvePrivate
 #endif
 
     KnobIWPtr owner;
-    int dimensionInOwner;
+    DimIdx dimensionInOwner;
+    ViewIdx viewInOwner;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
     bool isParametric;
     bool isPeriodic;
+    bool canMoveY;
 
     CurvePrivate()
         : keyFrames()
@@ -76,7 +78,8 @@ struct CurvePrivate
         , resultCache()
 #endif
         , owner()
-        , dimensionInOwner(-1)
+        , dimensionInOwner(0)
+        , viewInOwner(0)
         , type(eCurveTypeDouble)
         , xMin(-std::numeric_limits<double>::infinity())
         , xMax(std::numeric_limits<double>::infinity())
@@ -85,6 +88,7 @@ struct CurvePrivate
         , _lock(QMutex::Recursive)
         , isParametric(false)
         , isPeriodic(false)
+        , canMoveY(true)
     {
     }
 
@@ -99,6 +103,7 @@ struct CurvePrivate
         keyFrames = other.keyFrames;
         owner = other.owner;
         dimensionInOwner = other.dimensionInOwner;
+        viewInOwner = other.viewInOwner;
         isParametric = other.isParametric;
         type = other.type;
         xMin = other.xMin;
@@ -106,6 +111,7 @@ struct CurvePrivate
         yMin = other.yMin;
         yMax = other.yMax;
         isPeriodic = other.isPeriodic;
+        canMoveY = other.canMoveY;
     }
 
     

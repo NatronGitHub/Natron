@@ -773,8 +773,8 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     ViewerInstancePtr internalInstance = toViewerInstance(getInternalViewerNode()->getEffectInstance());
     KnobChoicePtr aInputKnob = aInputNodeChoiceKnob.lock();
     KnobChoicePtr bInputKnob = bInputNodeChoiceKnob.lock();
-    std::string aCurChoice = aInputKnob->getActiveEntryText_mt_safe();
-    std::string bCurChoice = bInputKnob->getActiveEntryText_mt_safe();
+    std::string aCurChoice = aInputKnob->getActiveEntryText();
+    std::string bCurChoice = bInputKnob->getActiveEntryText();
 
     if (aCurChoice == "-") {
         aCurChoice.clear();
@@ -784,7 +784,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     }
 
     ViewerCompositingOperatorEnum operation = (ViewerCompositingOperatorEnum)blendingModeChoiceKnob.lock()->getValue();
-    bInputKnob->setAllDimensionsEnabled(operation != eViewerCompositingOperatorNone);
+    bInputKnob->setEnabled(operation != eViewerCompositingOperatorNone);
 
     // If we found the old choice and the old choice it not "-", we set the index
     int foundCurAChoiceIndex = -1;
@@ -846,7 +846,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
 
 
     if (uiContext) {
-        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled(0)  || bCurChoice.empty() ) {
+        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled()  || bCurChoice.empty() ) {
             uiContext->setInfoBarVisible(1, false);
         } else if (operation != eViewerCompositingOperatorNone) {
             uiContext->setInfoBarVisible(1, true);
@@ -866,6 +866,9 @@ void
 ViewerNode::onInputChanged(int /*inputNb*/)
 {
     _imp->refreshInputChoices(true);
+    refreshInputFromChoiceMenu(0);
+    refreshInputFromChoiceMenu(1);
+
 }
 
 void
@@ -1052,7 +1055,7 @@ ViewerNodePrivate::onInternalViewerCreated()
     QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), _publicInterface, SLOT(onEngineStarted(bool)) );
 
     // Refresh visibility & enabledness
-    fpsKnob.lock()->setAllDimensionsEnabled(enableFpsKnob.lock()->getValue());
+    fpsKnob.lock()->setEnabled(enableFpsKnob.lock()->getValue());
 
     // Refresh playback mode
     PlaybackModeEnum mode = (PlaybackModeEnum)playbackModeKnob.lock()->getValue();
@@ -1272,16 +1275,16 @@ ViewerNode::initializeKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setSecret(true);
-        param->setDefaultValue(0.2, 0);
-        param->setDefaultValue(0.2, 1);
+        param->setDefaultValue(0.2, DimIdx(0));
+        param->setDefaultValue(0.2, DimIdx(1));
         page->addKnob(param);
         _imp->userRoIBtmLeftKnob = param;
     }
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoISize), 2 );
         param->setDefaultValuesAreNormalized(true);
-        param->setDefaultValue(.6, 0);
-        param->setDefaultValue(.6, 1);
+        param->setDefaultValue(.6, DimIdx(0));
+        param->setDefaultValue(.6, DimIdx(1));
         param->setSecret(true);
         page->addKnob(param);
         _imp->userRoISizeKnob = param;
@@ -1451,8 +1454,7 @@ ViewerNode::initializeKnobs()
         param->setHintToolTip(tr(kViewerNodeParamGainHint));
         page->addKnob(param);
         param->setSecret(true);
-        param->setDisplayMinimum(-6.);
-        param->setDisplayMaximum(6.);
+        param->setDisplayRange(-6., 6.);
         _imp->gainSliderKnob = param;
     }
 
@@ -1489,8 +1491,7 @@ ViewerNode::initializeKnobs()
         param->setDefaultValue(1.);
         page->addKnob(param);
         param->setSecret(true);
-        param->setDisplayMinimum(0.);
-        param->setDisplayMaximum(5.);
+        param->setDisplayRange(0., 5.);
         _imp->gammaSliderKnob = param;
     }
 
@@ -1649,8 +1650,8 @@ ViewerNode::initializeKnobs()
         param->setSecret(true);
         param->setDefaultValue(projectFps);
         param->setEvaluateOnChange(false);
-        param->setEnabled(0, false);
-        param->setMinimum(0.);
+        param->setEnabled(false);
+        param->setRange(0., std::numeric_limits<double>::infinity());
         param->disableSlider();
         _imp->fpsKnob = param;
     }
@@ -2349,8 +2350,8 @@ ViewerNode::initializeKnobs()
         param->setName(kViewerNodeParamWipeCenter);
         param->setSecret(true);
         param->setDefaultValuesAreNormalized(true);
-        param->setDefaultValue(0.5, 0);
-        param->setDefaultValue(0.5, 1);
+        param->setDefaultValue(0.5, DimIdx(0));
+        param->setDefaultValue(0.5, DimIdx(1));
         page->addKnob(param);
         addOverlaySlaveParam(param);
         _imp->wipeCenter = param;
@@ -2422,7 +2423,9 @@ ViewerNode::refreshViewsKnobVisibility()
 {
     KnobChoicePtr knob = _imp->activeViewKnob.lock();
     if (knob) {
-        knob->setInViewerContextSecret(getApp()->getProject()->getProjectViewsCount() <= 1);
+        const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
+        knob->populateChoices(views);
+        knob->setInViewerContextSecret(views.size() <= 1);
     }
 }
 
@@ -2436,7 +2439,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
     int index = -1;
     if (realNodeGroupInput) {
         // THe group effectively has an input, find it in the menu entries of the choice
-        std::vector<std::string> entries = inputChoiceKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = inputChoiceKnob->getEntries();
         for (std::size_t i = 0; i < entries.size(); ++i) {
             if (entries[i] == realNodeGroupInput->getLabel()) {
                 index = i;
@@ -2450,7 +2453,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
     if (index == -1) {
         index = 0;
     }
-    inputChoiceKnob->setValueFromPlugin(index, ViewSpec::current(), 0);
+    inputChoiceKnob->setValue(index, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
 
 }
 
@@ -2465,7 +2468,7 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
     assert(internalNodeToConnect);
 
     std::vector<NodePtr> inputNodes;
-    getInputs(&inputNodes, false);
+    getInputs(&inputNodes);
     if (groupInputIndex >= (int)inputNodes.size() || groupInputIndex < 0) {
         // Invalid input index
         return;
@@ -2498,7 +2501,7 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
 void
 ViewerNode::setZoomComboBoxText(const std::string& text)
 {
-    _imp->zoomChoiceKnob.lock()->setActiveEntry(text);
+    _imp->zoomChoiceKnob.lock()->setActiveEntryText(text, ViewSetSpec(0));
 }
 
 bool
@@ -2533,7 +2536,7 @@ ViewerNode::isInfoBarVisible() const
 
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                        ViewSpec /*view*/,
+                        ViewSetSpec /*view*/,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
@@ -2590,7 +2593,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                 if (it->getComponentsNames().size() == 4) {
 
                     // Use setValueFromPlugin so we don't recurse
-                    _imp->alphaChannelKnob.lock()->setValueFromPlugin(chanCount - 1, ViewSpec::current(), 0);
+                    _imp->alphaChannelKnob.lock()->setValue(chanCount - 1, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
 
                     internalViewerNode->setAlphaChannel(*it, it->getComponentsNames()[3]);
                 }
@@ -2599,7 +2602,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             }
         }
 
-        _imp->alphaChannelKnob.lock()->setValueFromPlugin(0, ViewSpec::current(), 0);
+        _imp->alphaChannelKnob.lock()->setValue(0, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         internalViewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
         internalViewerNode->setCurrentLayer(ImageComponents::getNoneComponents());
 
@@ -2614,9 +2617,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->blendingModeChoiceKnob.lock()) {
         ViewerCompositingOperatorEnum op = (ViewerCompositingOperatorEnum)_imp->blendingModeChoiceKnob.lock()->getValue();
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
-        _imp->bInputNodeChoiceKnob.lock()->setAllDimensionsEnabled(op != eViewerCompositingOperatorNone);
+        _imp->bInputNodeChoiceKnob.lock()->setEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
-        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryText();
         if (zoomChoice == "Fit") {
             _imp->uiContext->fitImageToFormat();
         } else if (zoomChoice == "+") {
@@ -2666,10 +2669,10 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->enableAutoContrastButtonKnob.lock()) {
         bool enable = _imp->enableAutoContrastButtonKnob.lock()->getValue();
-        _imp->enableGammaButtonKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->gammaSliderKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->enableGainButtonKnob.lock()->setAllDimensionsEnabled(!enable);
-        _imp->gainSliderKnob.lock()->setAllDimensionsEnabled(!enable);
+        _imp->enableGammaButtonKnob.lock()->setEnabled(!enable);
+        _imp->gammaSliderKnob.lock()->setEnabled(!enable);
+        _imp->enableGainButtonKnob.lock()->setEnabled(!enable);
+        _imp->gainSliderKnob.lock()->setEnabled(!enable);
         
     } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
@@ -2734,30 +2737,33 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickCenterWipe.lock()) {
         KnobDoublePtr knob = _imp->wipeCenter.lock();
-        knob->setValues(_imp->lastMousePos.x(), _imp->lastMousePos.y(), ViewSpec::current(), eValueChangedReasonPluginEdited);
+        std::vector<double> values(2);
+        values[0] = _imp->lastMousePos.x();
+        values[1] = _imp->lastMousePos.y();
+        knob->setValueAcrossDimensions(values);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
     } else if (k == _imp->rightClickPreviousLayer.lock()) {
 
     } else if (k == _imp->rightClickSwitchAB.lock()) {
         NodePtr internalViewer = _imp->getInternalViewerNode();
-        std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
-        std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+        std::string aChoice = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText();
+        std::string bChoice = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
         internalViewer->switchInput0And1();
         try {
             _imp->aInputNodeChoiceKnob.lock()->blockValueChanges();
-            _imp->aInputNodeChoiceKnob.lock()->setValueFromLabel(bChoice, 0);
+            _imp->aInputNodeChoiceKnob.lock()->setValueFromLabel(bChoice);
             _imp->aInputNodeChoiceKnob.lock()->unblockValueChanges();
             _imp->bInputNodeChoiceKnob.lock()->blockValueChanges();
-            _imp->bInputNodeChoiceKnob.lock()->setValueFromLabel(aChoice, 0);
+            _imp->bInputNodeChoiceKnob.lock()->setValueFromLabel(aChoice);
             _imp->bInputNodeChoiceKnob.lock()->unblockValueChanges();
         } catch (...) {
 
         }
     } else if (k == _imp->rightClickHideAll.lock()) {
         bool allHidden = _imp->rightClickHideAll.lock()->getValue();
-        _imp->rightClickHideAllTop.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
-        _imp->rightClickHideAllBottom.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickHideAllTop.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickHideAllBottom.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->isDuringPainting()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2765,9 +2771,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickHideAllTop.lock()) {
         bool allHidden = _imp->rightClickHideAllTop.lock()->getValue();
-        _imp->rightClickShowHideTopToolbar.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
-        _imp->rightClickShowHideLeftToolbar.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
-        _imp->rightClickShowHideTabHeader.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideTabHeader.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->isDuringPainting()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2775,9 +2781,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickHideAllBottom.lock()) {
         bool allHidden = _imp->rightClickHideAllBottom.lock()->getValue();
-        _imp->rightClickShowHidePlayer.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
-        _imp->rightClickShowHideTimeline.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
-        _imp->enableInfoBarButtonKnob.lock()->setValueFromPlugin(!allHidden, ViewSpec::current(), 0);
+        _imp->rightClickShowHidePlayer.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->isDuringPainting()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2926,7 +2932,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
         if (currentIndex >= 0) {
             // User edited so the handler is executed
-            knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+            knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
         }
 
     } else if (k == _imp->rightClickNextLayer.lock()) {
@@ -2939,7 +2945,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         if ( (currentIndex == 0) && (nChoices > 1) ) {
             currentIndex = 1;
         }
-        knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+        knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
     } else if (k == _imp->rightClickPreviousView.lock()) {
         KnobChoicePtr knob = _imp->activeViewKnob.lock();
         int currentIndex = knob->getValue();
@@ -2952,7 +2958,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
         if (currentIndex >= 0) {
             // User edited so the handler is executed
-            knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+            knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
         }
     } else if (k == _imp->rightClickNextView.lock()) {
         KnobChoicePtr knob = _imp->activeViewKnob.lock();
@@ -2965,11 +2971,11 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             currentIndex = currentIndex + 1;
         }
 
-        knob->setValue(currentIndex, ViewSpec::current(), 0, eValueChangedReasonUserEdited, 0);
+        knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
     } else if (k == _imp->enableFpsKnob.lock()) {
-        _imp->fpsKnob.lock()->setAllDimensionsEnabled(_imp->enableFpsKnob.lock()->getValue());
+        _imp->fpsKnob.lock()->setEnabled(_imp->enableFpsKnob.lock()->getValue());
         refreshFps();
-    } else if (k == _imp->fpsKnob.lock()) {
+    } else if (k == _imp->fpsKnob.lock() && reason != eValueChangedReasonPluginEdited) {
         refreshFps();
     } else if (k == _imp->playForwardButtonKnob.lock()) {
         if (reason != eValueChangedReasonPluginEdited) {
@@ -3040,9 +3046,10 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->abortRenderingAction.lock()) {
         _imp->abortAllViewersRendering();
     } else if (k == _imp->setInPointButtonKnob.lock()) {
-        _imp->inPointKnob.lock()->setValueFromPlugin(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0);
+        _imp->inPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     } else if (k == _imp->setOutPointButtonKnob.lock()) {
-        _imp->outPointKnob.lock()->setValueFromPlugin(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0);
+        _imp->outPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+
     } else if (k == _imp->inPointKnob.lock()) {
         _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
     } else if (k == _imp->outPointKnob.lock()) {
@@ -3268,7 +3275,7 @@ ViewerNodePrivate::drawWipeControl()
         angle = wipeAngle.lock()->getValue();
         KnobDoublePtr centerKnob = wipeCenter.lock();
         center.rx() = centerKnob->getValue();
-        center.ry() = centerKnob->getValue(1);
+        center.ry() = centerKnob->getValue(DimIdx(1));
         mixAmount = wipeAmount.lock()->getValue();
     }
     double alphaMix1, alphaMix0, alphaCurMix;
@@ -3933,7 +3940,7 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
         case eViewerNodeInteractMouseStateDraggingWipeCenter: {
             KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
             centerKnob->setValue(centerKnob->getValue() + dx);
-            centerKnob->setValue(centerKnob->getValue(1) + dy, ViewSpec::current(), 1);
+            centerKnob->setValue(centerKnob->getValue(DimIdx(1)) + dy, ViewSetSpec::current(), DimIdx(1));
             overlayCaught = true;
             break;
         }
@@ -3941,7 +3948,7 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
             KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
             Point center;
             center.x = centerKnob->getValue();
-            center.y = centerKnob->getValue(1);
+            center.y = centerKnob->getValue(DimIdx(1));
             double angle = std::atan2( pos.y() - center.y, pos.x() - center.x );
             double prevAngle = std::atan2( _imp->lastMousePos.y() - center.y,
                                           _imp->lastMousePos.x() - center.x );
@@ -3957,7 +3964,7 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
             KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
             Point center;
             center.x = centerKnob->getValue();
-            center.y = centerKnob->getValue(1);
+            center.y = centerKnob->getValue(DimIdx(1));
             double angle = std::atan2( pos.y() - center.y, pos.x() - center.x );
 
             KnobDoublePtr angleKnob = _imp->wipeAngle.lock();
@@ -4072,7 +4079,7 @@ ViewerNode::invalidateUiContext()
 NodePtr
 ViewerNode::getCurrentAInput() const
 {
-    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText();
     if (curLabel == "-") {
         return NodePtr();
     }
@@ -4087,7 +4094,7 @@ ViewerNode::getCurrentAInput() const
 NodePtr
 ViewerNode::getCurrentBInput() const
 {
-    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
     if (curLabel == "-") {
         return NodePtr();
     }
@@ -4106,10 +4113,10 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     assert(internalInputIdx == 0 || internalInputIdx == 1);
 
     std::vector<NodePtr> groupInputNodes;
-    getInputs(&groupInputNodes, false);
+    getInputs(&groupInputNodes);
 
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
-    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText_mt_safe();
+    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryText() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryText();
 
     NodePtr nodeToConnect = getInternalViewerNode()->getInputRecursive(internalInputIdx);
     if (curLabel == "-") {
@@ -4157,7 +4164,14 @@ ViewerNode::getCurrentOperator() const
 void
 ViewerNode::setRefreshButtonDown(bool down)
 {
-    _imp->refreshButtonKnob.lock()->setValue(down);
+    KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
+    beginChanges();
+    knob->blockValueChanges();
+    knob->setValue(down);
+    knob->unblockValueChanges();
+
+    // Ignore evaluation
+    endChanges(true);
 }
 
 bool
@@ -4214,7 +4228,7 @@ ViewerNode::getWipeCenter() const
     KnobDoublePtr wipeCenter = _imp->wipeCenter.lock();
     QPointF r;
     r.rx() = wipeCenter->getValue();
-    r.ry() = wipeCenter->getValue(1);
+    r.ry() = wipeCenter->getValue(DimIdx(1));
     return r;
 }
 
@@ -4258,10 +4272,9 @@ void
 ViewerNode::resetWipe()
 {
     beginChanges();
-    _imp->wipeCenter.lock()->resetToDefaultValue(0);
-    _imp->wipeCenter.lock()->resetToDefaultValue(1);
-    _imp->wipeAngle.lock()->resetToDefaultValue(0);
-    _imp->wipeAmount.lock()->resetToDefaultValue(0);
+    _imp->wipeCenter.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+    _imp->wipeAngle.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+    _imp->wipeAmount.lock()->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
 }
 
 KnobChoicePtr
@@ -4312,10 +4325,10 @@ ViewerNode::getUserRoI() const
     RectD ret;
     KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
     KnobDoublePtr size = _imp->userRoISizeKnob.lock();
-    ret.x1 = btmLeft->getValue(0);
-    ret.y1 = btmLeft->getValue(1);
-    ret.x2 = ret.x1 + size->getValue(0);
-    ret.y2 = ret.y1 + size->getValue(1);
+    ret.x1 = btmLeft->getValue();
+    ret.y1 = btmLeft->getValue(DimIdx(1));
+    ret.x2 = ret.x1 + size->getValue();
+    ret.y2 = ret.y1 + size->getValue(DimIdx(1));
     return ret;
 }
 
@@ -4324,8 +4337,13 @@ ViewerNode::setUserRoI(const RectD& rect)
 {
     KnobDoublePtr btmLeft = _imp->userRoIBtmLeftKnob.lock();
     KnobDoublePtr size = _imp->userRoISizeKnob.lock();
-    btmLeft->setValues(rect.x1, rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
-    size->setValues(rect.x2 - rect.x1, rect.y2 - rect.y1, ViewSpec::current(), eValueChangedReasonUserEdited);
+    std::vector<double> values(2);
+    values[0] = rect.x1;
+    values[1] = rect.y1;
+    btmLeft->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::current(), eValueChangedReasonUserEdited);
+    values[0] = rect.x2 - rect.x1;
+    values[1] = rect.y2 - rect.y1;
+    size->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::current(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -4399,8 +4417,8 @@ ViewerNodePrivate::abortAllViewersRendering()
     std::list<ViewerNodePtr> viewers;
     getAllViewerNodes(false, viewers);
 
-    playForwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
-    playBackwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+    playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
 
 
     if ( _publicInterface->getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
@@ -4455,7 +4473,7 @@ ViewerNode::refreshFps()
                 fps = getApp()->getProjectFrameRate();
             }
         }
-        _imp->fpsKnob.lock()->setValue(fps);
+        _imp->fpsKnob.lock()->setValue(fps, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
     ViewerInstancePtr viewerNode = getInternalViewerNode();
     if (!viewerNode) {
@@ -4479,8 +4497,8 @@ ViewerNode::onEngineStarted(bool forward)
     std::list<ViewerNodePtr> viewers;
     _imp->getAllViewerNodes(false, viewers);
     for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->_imp->playForwardButtonKnob.lock()->setValueFromPlugin(forward, ViewSpec::current(), 0);
-        (*it)->_imp->playBackwardButtonKnob.lock()->setValueFromPlugin(!forward, ViewSpec::current(), 0);
+        (*it)->_imp->playForwardButtonKnob.lock()->setValue(forward, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        (*it)->_imp->playBackwardButtonKnob.lock()->setValue(!forward, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 
     if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
@@ -4500,7 +4518,7 @@ ViewerNode::onEngineStopped()
     std::list<ViewerNodePtr> viewers;
     _imp->getAllViewerNodes(false, viewers);
 
-    _imp->curFrameKnob.lock()->setValueFromPlugin( getInternalViewerNode()->getTimeline()->currentFrame(), ViewSpec::current(), 0 );
+    _imp->curFrameKnob.lock()->setValue( getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
         getApp()->setGuiFrozen(false);
@@ -4518,8 +4536,8 @@ ViewerNode::onSetDownPlaybackButtonsTimeout()
         std::list<ViewerNodePtr> viewers;
         _imp->getAllViewerNodes(false, viewers);
         for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->_imp->playForwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
-            (*it)->_imp->playBackwardButtonKnob.lock()->setValueFromPlugin(false, ViewSpec::current(), 0);
+            (*it)->_imp->playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+            (*it)->_imp->playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         }
     }
 }

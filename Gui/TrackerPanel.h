@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if 0
+
 #include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -106,7 +108,6 @@ public Q_SLOTS:
     void onItemDataChanged(TableItem* item);
     void onItemEnabledCheckBoxChecked(bool checked);
     void onItemMotionModelChanged(int index);
-    void onItemRightClicked(TableItem* item);
 
     void onContextSelectionAboutToChange(int reason);
     void onContextSelectionChanged(int reason);
@@ -156,5 +157,5 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
-
+#endif 
 #endif // TRACKERPANEL_H

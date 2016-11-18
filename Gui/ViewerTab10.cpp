@@ -149,7 +149,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     ViewerNodePtr node = _imp->viewerNode.lock();
     ViewerInstancePtr viewerNode = node->getInternalViewerNode();
     if ((TimelineChangeReasonEnum)reason != eTimelineChangeReasonPlaybackSeek) {
-        node->getCurrentFrameKnob()->setValueFromPlugin(time, ViewSpec::current(), 0);
+        node->getCurrentFrameKnob()->setValue(time, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 
     GuiAppInstancePtr app = gui->getApp();

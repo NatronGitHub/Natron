@@ -43,20 +43,6 @@ NATRON_NAMESPACE_ENTER;
 class Variant
     : public QVariant
 {
-#if 0 // Variant is never serialized (although serialization is available from VariantSerialization.h)
-    template<class Archive>
-    void save(Archive & ar,
-              const unsigned int version) const;
-
-    template<class Archive>
-    void load(Archive & ar,
-              const unsigned int version);
-
-    template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
-#endif
-
 public:
 
     Variant()

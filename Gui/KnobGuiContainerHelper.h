@@ -36,12 +36,17 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QObject>
+#include <QMessageBox>
+#include <QPixmap>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/DockablePanelI.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
+
+#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -50,14 +55,12 @@ typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 struct KnobPageGui
 {
     QWidget* tab;
-    int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
     KnobPageWPtr pageKnob;
     QGridLayout* gridLayout;
 
     KnobPageGui()
         : tab(0)
-        , currentRow(0)
         , groupAsTab(0)
         , pageKnob()
         , gridLayout(0)
@@ -176,6 +179,11 @@ public:
     const KnobsGuiMapping& getKnobsMapping() const;
 
     /**
+     * @brief If this container has a knob items table, this is a pointer to its gui
+     **/
+    KnobItemsTableGuiPtr getKnobItemsTable() const;
+
+    /**
      * @brief Returns the undo/redo stack used for commands applied on knobs
      **/
     boost::shared_ptr<QUndoStack> getUndoStack() const;
@@ -248,7 +256,9 @@ public:
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ///// End override from KnobGuiContainerI
 
-    static void setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold);
+    static bool setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold);
+
+    static QPixmap getStandardIcon(QMessageBox::Icon icon, int size, QWidget* widget);
 
     /**
      * @brief Refresh whether a page should be made visible or not. A page is considered to be visible
@@ -256,6 +266,12 @@ public:
      **/
     virtual void refreshPageVisibility(const KnobPagePtr& page) OVERRIDE;
 
+
+    /**
+     * @brief Creates the widget that will contain the GUI for a knob
+     **/
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE WARN_UNUSED_RETURN;
+    
 protected:
 
     /**
@@ -278,11 +294,6 @@ protected:
      * @brief This is call after knobs are initialized to set the current page pointer
      **/
     virtual void refreshCurrentPage() = 0;
-
-    /**
-     * @brief Creates the widget that will contain the GUI for a knob
-     **/
-    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const;
 
     /**
      * @brief Returns the main container
@@ -334,6 +345,11 @@ protected:
      **/
     KnobPageGuiPtr getOrCreateDefaultPage();
 
+    /**
+     * @brief If the knobs container can display a knob items table GUI, implement it to create it
+     **/
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* /*parent*/) { return KnobItemsTableGuiPtr(); };
+
 private:
 
     void initializeKnobVector(const KnobsVec& knobs);
@@ -342,11 +358,7 @@ private:
 
     void clearUndoRedoStack();
 
-    KnobGuiPtr findKnobGuiOrCreate(const KnobIPtr & knob,
-                                   bool makeNewLine,
-                                   int lastKnobLineSpacing,
-                                   QWidget* lastRowWidget,
-                                   const KnobsVec& knobsOnSameLine);
+    KnobGuiPtr findKnobGuiOrCreate(const KnobIPtr &knob);
 
     void initializeKnobVectorInternal(const KnobsVec& siblingsVec, KnobsVec* regularKnobsVec);
 

@@ -144,9 +144,6 @@ public:
 
 private:
 
-
-    virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
-    virtual TrackerPanel* initializeTrackerPanel() OVERRIDE;
     virtual void centerOnItem() OVERRIDE FINAL;
 
 public Q_SLOTS:

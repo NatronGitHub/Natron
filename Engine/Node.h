@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/ImageComponents.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
@@ -68,7 +69,10 @@ CLANG_DIAG_ON(deprecated)
 #define kInputChannelKnobName "inputChannel"
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
+
 #define kHostMixingKnobName "hostMix"
+#define kHostMixingKnobLabel "Mix"
+#define kHostMixingKnobHint "Mix between the source image at 0 and the full effect at 1"
 
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"
@@ -290,11 +294,6 @@ public:
     void setValuesFromSerialization(const CreateNodeArgs& args);
 
 
-    ///If the node can have a roto context, create it
-    void createRotoContextConditionnally();
-
-    void createTrackerContextConditionnally();
-
     ///function called by EffectInstance to create a knob
     template <class K>
     boost::shared_ptr<K> createKnob(const std::string &description,
@@ -434,13 +433,6 @@ public:
     OneViewNodePtr isEffectOneViewNode() const;
 
     /**
-     * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
-     **/
-    RotoContextPtr getRotoContext() const;
-
-    TrackerContextPtr getTrackerContext() const;
-
-    /**
      * @brief Forwarded to the live effect instance
      **/
     int getMaxInputCount() const;
@@ -500,20 +492,13 @@ public:
     NodePtr getInput(int index) const;
 
     /**
-     * @brief Returns the input as seen on the gui. This is not necessarily the same as the value returned by getInput.
-     **/
-    NodePtr getGuiInput(int index) const;
-
-    /**
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
     NodePtr getRealInput(int index) const;
 
-    NodePtr getRealGuiInput(int index) const;
-
 private:
 
-    NodePtr getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const;
+    NodePtr getInputInternal(bool useGroupRedirections, int index) const;
 
 public:
 
@@ -533,7 +518,6 @@ public:
      * This can only be called by the main thread.
      **/
     const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<NodeWPtr > & getGuiInputs() const WARN_UNUSED_RETURN;
     std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
@@ -616,12 +600,13 @@ public:
     void setLastPaintStrokeDataNoRotopaint();
     void invalidateLastPaintStrokeDataNoRotopaint();
 
-    void getPaintStrokeRoD(double time, RectD* bbox) const;
+    void getPaintStrokeRoD(double time, ViewIdx view, RectD* bbox) const;
     RectD getPaintStrokeRoD_duringPainting() const;
 
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(double time,
+                                  ViewIdx view,
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
@@ -649,7 +634,6 @@ public:
     void getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs);
 
     const NodesWList & getOutputs() const;
-    const NodesWList & getGuiOutputs() const;
     void getOutputs_mt_safe(NodesWList& outputs) const;
 
     /**
@@ -731,9 +715,9 @@ public:
 
 private:
 
-    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
+    bool replaceInputInternal(const NodePtr& input, int inputNumber);
 
-    int disconnectInputInternal(const NodePtr& input, bool useGuiInputs);
+    int disconnectInputInternal(const NodePtr& input);
 
 
     bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;
@@ -794,12 +778,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(bool useGuiValues, const NodePtr& output);
+    void connectOutput(const NodePtr& output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues, const Node* output);
+    int disconnectOutput(const Node* output);
 
 public:
 
@@ -1012,7 +996,11 @@ public:
 
     void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
 
-    void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master, int dimension, bool isSlave);
+    void onKnobSlaved(const KnobIPtr& slave,
+                      const KnobIPtr& master,
+                      DimIdx dimension,
+                      ViewIdx view,
+                      bool isSlave);
 
     NodePtr getMasterNode() const;
 
@@ -1056,24 +1044,11 @@ public:
 
     bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
 
+    KnobBoolPtr getLifeTimeEnabledKnob() const;
+
+    KnobIntPtr getLifeTimeKnob() const;
+
     std::string getNodeExtraLabel() const;
-
-    /**
-     * @brief Show keyframe markers on the timeline. The signal to refresh the timeline's gui
-     * will be emitted only if emitSignal is set to true.
-     * Calling this function without calling hideKeyframesFromTimeline() has no effect.
-     **/
-    void showKeyframesOnTimeline(bool emitSignal);
-
-    /**
-     * @brief Hide keyframe markers on the timeline. The signal to refresh the timeline's gui
-     * will be emitted only if emitSignal is set to true.
-     * Calling this function without calling showKeyframesOnTimeline() has no effect.
-     **/
-    void hideKeyframesFromTimeline(bool emitSignal);
-
-    bool areKeyframesVisibleOnTimeline() const;
-
 
 private:
 
@@ -1110,15 +1085,11 @@ public:
 
     struct KnobLink
     {
-        ///The knob being slaved
-        KnobIWPtr slave;
-        KnobIWPtr master;
+        KnobIWPtr masterKnob;
+        KnobIWPtr slaveKnob;
 
-        ///The master node to which the knob is slaved to
+        // The master node to which the knob is slaved to
         NodeWPtr masterNode;
-
-        ///The dimension being slaved, -1 if irrelevant
-        int dimension;
     };
 
     void getKnobsLinks(std::list<KnobLink> & links) const;
@@ -1179,15 +1150,6 @@ public:
     void onSetSupportRenderScaleMaybeSet(int support);
 
     bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
-
-    /**
-     * @brief Fills keyframes with all different keyframes time that all parameters of this
-     * node have. Some keyframes might appear several times.
-     **/
-    void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
-
-    bool hasAnimatedKnob() const;
-
 
     void setNodeIsRendering(NodesWList& nodes);
     void unsetNodeIsRendering();
@@ -1266,12 +1228,14 @@ public:
     std::string getAfterFrameRenderCallback() const;
     std::string getAfterNodeCreatedCallback() const;
     std::string getBeforeNodeRemovalCallback() const;
+    
+    void runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
     void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 
-    void computeFrameRangeForReader(const KnobIPtr& fileKnob);
+    void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
 
     bool canHandleRenderScaleForOverlays() const;
@@ -1535,8 +1499,6 @@ public Q_SLOTS:
         Q_EMIT settingsPanelClosed(closed);
     }
 
-    void dequeueActions();
-
     void onParentMultiInstanceInputChanged(int input);
 
 Q_SIGNALS:
@@ -1564,8 +1526,7 @@ Q_SIGNALS:
     void knobsInitialized();
 
     /*
-     * @brief Emitted whenever an input changed on the GUI. Note that at the time this signal is emitted, the value returned by
-     * getInput() is not necessarily the same as the value returned by getGuiInput() since the node might still be rendering.
+     * @brief Emitted whenever an input changed on the GUI.
      */
     void inputChanged(int);
 
@@ -1619,15 +1580,12 @@ Q_SIGNALS:
 
     void nodePresetsChanged();
 
-    void mustDequeueActions();
-
     void enabledChannelCheckboxChanged();
 
 private:
 
 
-    void declareRotoPythonField();
-    void declareTrackerPythonField();
+    void declareTablePythonFields();
 
     std::string makeInfoForInput(int inputNumber) const;
 

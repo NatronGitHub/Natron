@@ -18,15 +18,9 @@ QLabel {
     color: %5;
 }
 
-
-
-
-
-
-Label[altered="true"] { color: %10; }
-Label[altered="false"] { color: %5; }
-
-
+QLabel:!enabled {
+    color: %8;
+}
 
 NodeSettingsPanel[_selected="true"] {
     border:1px solid white;

@@ -75,6 +75,7 @@ DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
     AbortableRenderInfo.cpp \
+    AnimatingObjectI.cpp \
     AppInstance.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
@@ -120,9 +121,12 @@ SOURCES += \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
+    KnobAnimation.cpp \
+    KnobExpression.cpp \
     KnobFactory.cpp \
     KnobFile.cpp \
     KnobTypes.cpp \
+    KnobItemsTable.cpp \
     LibraryBinary.cpp \
     Log.cpp \
     Lut.cpp \
@@ -162,6 +166,7 @@ SOURCES += \
     PropertiesHolder.cpp \
     PyPanelI.cpp \
     PyAppInstance.cpp \
+    PyItemsTable.cpp \
     PyNodeGroup.cpp \
     PyNode.cpp \
     PyExprUtils.cpp \
@@ -170,16 +175,16 @@ SOURCES += \
     PySideCompat.cpp \
     PyTracker.cpp \
     ReadNode.cpp \
+    RenderValuesCache.cpp \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
     RotoBezierTriangulation.cpp \
-    RotoContext.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
     RotoLayer.cpp \
     RotoPaint.cpp \
-    RotoPaintInteract.cpp \
+    RotoPaintPrivate.cpp \
     RotoShapeRenderNode.cpp \
     RotoShapeRenderNodePrivate.cpp \
     RotoShapeRenderCairo.cpp \
@@ -200,18 +205,22 @@ SOURCES += \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
-    TrackerContext.cpp \
-    TrackerContextPrivate.cpp \
+    TrackArgs.cpp \
+    TrackerHelper.cpp \
+    TrackerHelperPrivate.cpp \
     TrackerFrameAccessor.cpp \
     TrackMarker.cpp \
     TrackerNode.cpp \
-    TrackerNodeInteract.cpp \
+    TrackerNodePrivate.cpp \
+    TrackerNodeTransformExport.cpp \
+    TrackScheduler.cpp \
     TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
+    ViewIdx.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
@@ -247,7 +256,9 @@ SOURCES += \
     NatronEngine/beziercurve_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
     NatronEngine/imagelayer_wrapper.cpp \
-    NatronEngine/layer_wrapper.cpp \
+    NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
     NatronEngine/track_wrapper.cpp \
     NatronEngine/tracker_wrapper.cpp \
@@ -268,9 +279,11 @@ SOURCES += \
 
 
 
+
 HEADERS += \
     AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
+    AnimatingObjectI.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \
@@ -288,6 +301,7 @@ HEADERS += \
     CreateNodeArgs.h \
     Curve.h \
     CurvePrivate.h \
+    DimensionIdx.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
@@ -325,11 +339,15 @@ HEADERS += \
     JoinViewsNode.h \
     KeyHelper.h \
     Knob.h \
+    KnobPrivate.h \
     KnobGuiI.h \
     KnobImpl.h \
+    KnobGetValueImpl.h \
+    KnobSetValueImpl.h \
     KnobFactory.h \
     KnobFile.h \
     KnobTypes.h \
+    KnobItemsTable.h \
     LibraryBinary.h \
     Log.h \
     LogEntry.h \
@@ -378,6 +396,7 @@ HEADERS += \
     PropertiesHolder.h \
     PyAppInstance.h \
     PyGlobalFunctions.h \
+    PyItemsTable.h \
     PyNodeGroup.h \
     PyNode.h \
     PyExprUtils.h \
@@ -390,14 +409,13 @@ HEADERS += \
     RectD.h \
     RectI.h \
     RenderStats.h \
+    RenderValuesCache.h \
     RotoBezierTriangulation.h \
-    RotoContext.h \
-    RotoContextPrivate.h \
     RotoDrawableItem.h \
     RotoLayer.h \
     RotoItem.h \
     RotoPaint.h \
-    RotoPaintInteract.h \
+    RotoPaintPrivate.h \
     RotoPoint.h \
     RotoShapeRenderNode.h \
     RotoShapeRenderNodePrivate.h \
@@ -420,13 +438,16 @@ HEADERS += \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \
-    TimeLineKeyFrames.h \
+    TimeLineKeys.h \
     Timer.h \
-    TrackerContext.h \
-    TrackerContextPrivate.h \
+    TrackArgs.h \
+    TrackerHelper.h \
+    TrackerHelperPrivate.h \
     TrackerFrameAccessor.h \
     TrackerNode.h \
-    TrackerNodeInteract.h \
+    TrackerNodePrivate.h \
+    TrackerParamsProvider.h \
+    TrackScheduler.h \
     TrackerUndoCommand.h \
     TrackMarker.h \
     TLSHolder.h \
@@ -503,7 +524,9 @@ HEADERS += \
     NatronEngine/beziercurve_wrapper.h \
     NatronEngine/itembase_wrapper.h \
     NatronEngine/imagelayer_wrapper.h \
-    NatronEngine/layer_wrapper.h \
+    NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/roto_wrapper.h \
     NatronEngine/track_wrapper.h \
     NatronEngine/tracker_wrapper.h \

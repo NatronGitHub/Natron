@@ -52,13 +52,13 @@ BlockingBackgroundRender::blockingRender(bool enableRenderStats,
                                          int last,
                                          int frameStep)
 {
-    // avoid race condition: the code must work even if renderFullSequence() calls notifyFinished()
+    // avoid race condition: the code must work even if renderSequential() calls notifyFinished()
     // immediately.
     QMutexLocker locker(&_runningMutex);
 
     assert(_running == false);
     _running = true;
-    _writer->renderFullSequence(true, enableRenderStats, this, first, last, frameStep);
+    _writer->renderSequential(true, enableRenderStats, this, first, last, frameStep);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         _running = false;
     } else {

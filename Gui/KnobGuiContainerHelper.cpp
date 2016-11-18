@@ -45,14 +45,15 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobItemsTableGui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/TabGroup.h"
+#include "Gui/TableModelView.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
-#define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 
 NATRON_NAMESPACE_ENTER;
@@ -71,6 +72,9 @@ struct KnobGuiContainerHelperPrivate
     bool clearedStackDuringPush;
     boost::scoped_ptr<KnobGuiContainerSignalsHandler> signals;
 
+    KnobItemsTableGuiPtr knobsTable;
+
+
     KnobGuiContainerHelperPrivate(KnobGuiContainerHelper* p,
                                   const KnobHolderPtr& holder,
                                   const boost::shared_ptr<QUndoStack>& stack)
@@ -83,6 +87,7 @@ struct KnobGuiContainerHelperPrivate
         , cmdBeingPushed(0)
         , clearedStackDuringPush(false)
         , signals( new KnobGuiContainerSignalsHandler(p) )
+        , knobsTable()
     {
         if (stack) {
             undoStack = stack;
@@ -139,7 +144,7 @@ KnobGuiContainerHelper::getKnobGui(const KnobIPtr& knob) const
 int
 KnobGuiContainerHelper::getItemsSpacingOnSameLine() const
 {
-    return TO_DPIX(15);
+    return 15;
 }
 
 KnobGuiPtr
@@ -151,12 +156,7 @@ KnobGuiContainerHelperPrivate::createKnobGui(const KnobIPtr &knob)
         return found->second;
     }
 
-    KnobGuiPtr ret( appPTR->createGuiForKnob(knob, _p) );
-    assert(ret);
-    if (!ret) {
-        return ret;
-    }
-    ret->initialize();
+    KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypePage, _p);
     knobsMap.push_back( std::make_pair(knob, ret) );
 
     return ret;
@@ -262,7 +262,6 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
 
     // Create the page gui
     KnobPageGuiPtr pageGui( new KnobPageGui() );
-    pageGui->currentRow = 0;
     pageGui->tab = newTab;
     pageGui->pageKnob = page;
     pageGui->groupAsTab = 0;
@@ -286,8 +285,8 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     return pageGui;
 } // KnobGuiContainerHelper::getOrCreatePage
 
-static QPixmap
-getStandardIcon(QMessageBox::Icon icon,
+QPixmap
+KnobGuiContainerHelper::getStandardIcon(QMessageBox::Icon icon,
                 int size,
                 QWidget* widget)
 {
@@ -316,61 +315,7 @@ getStandardIcon(QMessageBox::Icon icon,
     return QPixmap();
 }
 
-/**
- * @brief Given a knob "ref" within a vector of knobs, returns a vector
- * of all knobs that should be on the same horizontal line as this knob.
- **/
-static void
-findKnobsOnSameLine(const KnobsVec& knobs,
-                    const KnobIPtr& ref,
-                    KnobsVec& knobsOnSameLine)
-{
-    int idx = -1;
 
-    for (U32 k = 0; k < knobs.size(); ++k) {
-        if (knobs[k] == ref) {
-            idx = k;
-            break;
-        }
-    }
-    assert(idx != -1);
-    if (idx < 0) {
-        return;
-    }
-    ///find all knobs backward that are on the same line.
-    int k = idx - 1;
-    KnobIPtr parent = ref->getParentKnob();
-
-    while ( k >= 0 && !knobs[k]->isNewLineActivated() ) {
-        if (parent) {
-            assert(knobs[k]->getParentKnob() == parent);
-            knobsOnSameLine.push_back(knobs[k]);
-        } else {
-            if ( !knobs[k]->getParentKnob() &&
-                 !toKnobPage( knobs[k] ) &&
-                 !toKnobGroup( knobs[k] ) ) {
-                knobsOnSameLine.push_back(knobs[k]);
-            }
-        }
-        --k;
-    }
-
-    ///find all knobs forward that are on the same line.
-    k = idx;
-    while ( k < (int)(knobs.size() - 1) && !knobs[k]->isNewLineActivated() ) {
-        if (parent) {
-            assert(knobs[k + 1]->getParentKnob() == parent);
-            knobsOnSameLine.push_back(knobs[k + 1]);
-        } else {
-            if ( !knobs[k + 1]->getParentKnob() &&
-                 !toKnobPage( knobs[k + 1] ) &&
-                 !toKnobGroup( knobs[k + 1] ) ) {
-                knobsOnSameLine.push_back(knobs[k + 1]);
-            }
-        }
-        ++k;
-    }
-}
 
 const KnobsVec&
 KnobGuiContainerHelper::getInternalKnobs() const
@@ -384,12 +329,44 @@ KnobGuiContainerHelper::getKnobsMapping() const
     return _imp->knobsMap;
 }
 
+KnobItemsTableGuiPtr
+KnobGuiContainerHelper::getKnobItemsTable() const
+{
+    return _imp->knobsTable;
+}
+
 void
 KnobGuiContainerHelper::initializeKnobs()
 {
     initializeKnobVector( _imp->holder.lock()->getKnobs() );
     _imp->refreshPagesEnabledness();
     refreshCurrentPage();
+
+    // Add the table if not done before
+    KnobHolderPtr holder = _imp->holder.lock();
+    KnobItemsTablePtr table = holder->getItemsTable();
+    if (table && !_imp->knobsTable) {
+        std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+        KnobIPtr foundKnob = holder->getKnobByName(knobTableName);
+        KnobPagePtr page = toKnobPage(foundKnob);
+        KnobPageGuiPtr guiPage;
+        if (!page) {
+            // Look for the first page available
+            if (!_imp->pages.empty()) {
+                guiPage = _imp->pages.begin()->second;
+            }
+        } else {
+            PagesMap::const_iterator found = _imp->pages.find(page);
+            if (found != _imp->pages.end()) {
+                guiPage = found->second;
+            }
+        }
+        if (guiPage) {
+            _imp->knobsTable = createKnobItemsTable(guiPage->tab);
+            guiPage->gridLayout->addWidget(_imp->knobsTable->getTableView(), guiPage->gridLayout->rowCount(), 0, 1, 2);
+        }
+    }
+
 
     onKnobsInitialized();
 }
@@ -398,15 +375,11 @@ void
 KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec,
                                                      KnobsVec* regularKnobsVec)
 {
-    // A pointer to the container of the last knob created on the same row
-    QWidget* lastRowWidget = 0;
+
 
     // Hold a pointer to the previous child if the previous child did not want to create a new line
-    KnobsVec::const_iterator prev = siblingsVec.end();
-
     for (KnobsVec::const_iterator it2 = siblingsVec.begin(); it2 != siblingsVec.end(); ++it2) {
-        bool makeNewLine = true;
-        int lastKnobSpacing = 0;
+
         KnobGroupPtr isGroup = toKnobGroup(*it2);
 
         // A vector of all other knobs on the same line
@@ -417,37 +390,9 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
         KnobIPtr parentKnob = (*it2)->getParentKnob();
         KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
 
-        // Determine if we should create this knob on a new line or use the one created before
-        if (!isGroup) {
-            if ( ( prev != siblingsVec.end() ) && !(*prev)->isNewLineActivated() ) {
-                makeNewLine = false;
-                lastKnobSpacing = (*prev)->getSpacingBetweenitems();
-            }
-            if (isParentGroup) {
-                // If the parent knob is a group, knobs on the same line have to be found in the children
-                // of the parent
-                KnobsVec groupsiblings = isParentGroup->getChildren();
-                findKnobsOnSameLine(groupsiblings, *it2, knobsOnSameLine);
-            } else {
-                // Parent is a page, find the siblings in the children of the page
-                findKnobsOnSameLine(siblingsVec, *it2, knobsOnSameLine);
-            }
-        }
-
         // Create this knob
-        KnobGuiPtr newGui = findKnobGuiOrCreate(*it2, makeNewLine, lastKnobSpacing, lastRowWidget, knobsOnSameLine);
+        KnobGuiPtr newGui = findKnobGuiOrCreate(*it2);
 
-        // Childrens cannot be on the same row than their parent
-        if (!isGroup && newGui) {
-            lastRowWidget = newGui->getFieldContainer();
-        }
-
-
-        if ( prev == siblingsVec.end() ) {
-            prev = siblingsVec.begin();
-        } else {
-            ++prev;
-        }
 
         // Remove it from the "regularKnobs" to mark it as created as we will use them later
         if (regularKnobsVec) {
@@ -479,7 +424,7 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
     }
     for (std::list<KnobPagePtr >::iterator it = pages.begin(); it != pages.end(); ++it) {
         // Create page
-        KnobGuiPtr knobGui = findKnobGuiOrCreate( *it, true /*makeNewLine*/, 0/*lastKnobSpacing*/,  0 /*lastRowWidget*/, KnobsVec() /*knobsOnSameLine*/);
+        KnobGuiPtr knobGui = findKnobGuiOrCreate(*it);
         Q_UNUSED(knobGui);
 
         // Create its children
@@ -526,7 +471,7 @@ workAroundGridLayoutBug(QGridLayout* layout)
     layout->addWidget(foundSpacer, layout->rowCount(), 0, 1, 2);
 }
 
-void
+bool
 KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, const QString& labelText, const QString& labelIconFilePath, bool setBold)
 {
     bool pixmapSet = false;
@@ -553,6 +498,9 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
         if ( !pix.isNull() ) {
             pixmapSet = true;
             widget->setPixmap(pix);
+            return true;
+        } else {
+            return false;
         }
     }
     if (!pixmapSet) {
@@ -561,16 +509,14 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
             widget->setBold(true);
         }
         widget->setText_overload(labelText );
+        return !labelText.isEmpty();
     }
+    return false;
 
 }
 
 KnobGuiPtr
-KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
-                                            bool makeNewLine,
-                                            int lastKnobLineSpacing,
-                                            QWidget* lastRowWidget,
-                                            const KnobsVec& knobsOnSameLine)
+KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 {
     assert(knob);
 
@@ -618,11 +564,15 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
     assert(parentKnob || !isPagingEnabled());
 
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
-    KnobGuiGroup* parentGui = 0;
 
+    boost::shared_ptr<KnobGuiGroup> parentGroupGui;
+    KnobGuiPtr parentKnobGui;
     // If this knob is within a group, make sure the group is created so far
     if (parentIsGroup) {
-        parentGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentKnob, true, 0, 0, KnobsVec() ).get() );
+        parentKnobGui = findKnobGuiOrCreate(parentKnob);
+        if (parentKnobGui) {
+            parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
+        }
     }
 
     // So far the knob could have no parent, in which case we force it to be in the default page.
@@ -648,15 +598,14 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
             }
             page->groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
             if (!existed) {
-                page->gridLayout->addWidget(page->groupAsTab, page->currentRow, 0, 1, 2);
+                page->gridLayout->addWidget(page->groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
             }
 
             page->groupAsTab->refreshTabSecretNess( isGroup );
         } else {
             // This is a group inside a group
-            assert(parentIsGroup);
-            assert(parentGui);
-            TabGroup* groupAsTab = parentGui->getOrCreateTabWidget();
+            assert(parentKnobGui);
+            TabGroup* groupAsTab = parentKnobGui->getOrCreateTabWidget();
             assert(groupAsTab);
             groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
 
@@ -676,9 +625,9 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                 } else {
                     KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
                     assert( it != _imp->knobsMap.end() );
-                    KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( it->second.get() );
-                    assert(parentParentGroupGui);
-                    parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
+                    if (it != _imp->knobsMap.end() && it->second) {
+                        parentTabGroup = it->second->getOrCreateTabWidget();
+                    }
                 }
 
                 QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
@@ -688,7 +637,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                 KnobPagePtr topLevelPage = knob->getTopLevelPage();
                 KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
                 assert(page);
-                page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
+                page->gridLayout->addWidget(groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
             }
             groupAsTab->refreshTabSecretNess(isGroup);
         }
@@ -712,69 +661,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
         if (!page) {
             return ret;
         }
-        ///retrieve the form layout
-        QGridLayout* layout = page->gridLayout;
-
-        // If the knob has specified that it didn't want to trigger a new line, decrement the current row
-        // index of the tab
-        if (!makeNewLine) {
-            --page->currentRow;
-        }
-
-        QWidget* fieldContainer = 0;
-        QHBoxLayout* fieldLayout = 0;
-
-        if (makeNewLine) {
-            ///if new line is not turned off, create a new line
-            fieldContainer = createKnobHorizontalFieldContainer(page->tab);
-            fieldLayout = new QHBoxLayout(fieldContainer);
-            fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
-            fieldLayout->setSpacing( TO_DPIY(2) );
-            fieldLayout->setAlignment(Qt::AlignLeft);
-        } else {
-            ///otherwise re-use the last row's widget and layout
-            assert(lastRowWidget);
-            fieldContainer = lastRowWidget;
-            fieldLayout = dynamic_cast<QHBoxLayout*>( fieldContainer->layout() );
-        }
-
-        assert(fieldContainer);
-        assert(fieldLayout);
-
-        ///Create the label if needed
-        KnobClickableLabel* label = 0;
-        Label* warningLabel = 0;
-        std::string descriptionLabel = ret->getDescriptionLabel();
-        const std::string& labelIconFilePath = knob->getIconLabel();
-        QWidget *labelContainer = 0;
-        QHBoxLayout *labelLayout = 0;
-        const bool hasLabel = ret->shouldCreateLabel();
-        if (hasLabel) {
-            if (makeNewLine) {
-                labelContainer = new QWidget(page->tab);
-                labelLayout = new QHBoxLayout(labelContainer);
-                labelLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
-                labelLayout->setSpacing( TO_DPIY(2) );
-            }
-
-            label = new KnobClickableLabel(QString(), ret, page->tab);
-            warningLabel = new Label(page->tab);
-            warningLabel->setVisible(false);
-            QFontMetrics fm(label->font(), 0);
-            int pixSize = fm.height();
-            QPixmap stdErrorPix;
-            stdErrorPix = getStandardIcon(QMessageBox::Critical, pixSize, label);
-            warningLabel->setPixmap(stdErrorPix);
-
-            setLabelFromTextAndIcon(label, QString::fromUtf8(descriptionLabel.c_str()), QString::fromUtf8(labelIconFilePath.c_str()), ret->isLabelBold());
-            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
-
-
-            if (makeNewLine) {
-                labelLayout->addWidget(warningLabel);
-                labelLayout->addWidget(label);
-            }
-        } // hasLabel
+        // Retrieve the main grid layout
+        QGridLayout* gridLayout = page->gridLayout;
 
         /*
          * Find out in which layout the knob should be: either in the layout of the page or in the layout of
@@ -809,44 +697,28 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
 
             assert(parentParentIsGroup || parentParentIsPage);
             if (parentParentIsGroup) {
-                KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentParent, true, 0,  0, KnobsVec() ).get() );
-                assert(parentParentGroupGui);
-                if (parentParentGroupGui) {
-                    TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
+                KnobGuiPtr parentParentGui = findKnobGuiOrCreate(parentParent);
+                assert(parentParentGui);
+                if (parentParentGui) {
+                    TabGroup* groupAsTab = parentParentGui->getOrCreateTabWidget();
                     assert(groupAsTab);
-                    layout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+                    gridLayout = groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
                 }
             } else if (parentParentIsPage) {
                 KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
                 assert(page);
                 assert(page->groupAsTab);
-                layout = page->groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
+                gridLayout = page->groupAsTab->addTab( closestParentGroupTab, QString::fromUtf8( closestParentGroupTab->getLabel().c_str() ) );
             }
-            assert(layout);
+            assert(gridLayout);
         }
 
         // Fill the fieldLayout with the widgets
-        ret->createGUI(fieldContainer, labelContainer, label, warningLabel, fieldLayout, makeNewLine, lastKnobLineSpacing, knobsOnSameLine);
+        ret->createGUI(page->tab);
 
-        ret->setEnabledSlot();
 
         // Must add the row to the layout before calling setSecret()
-        if (makeNewLine) {
-            int rowIndex;
-            if (closestParentGroupTab) {
-                rowIndex = layout->rowCount();
-            } else if ( parentGui && knob->isDynamicallyCreated() ) {
-                const std::list<KnobGuiWPtr>& children = parentGui->getChildren();
-                if ( children.empty() ) {
-                    rowIndex = parentGui->getActualIndexInLayout();
-                } else {
-                    rowIndex = children.back().lock()->getActualIndexInLayout();
-                }
-                ++rowIndex;
-            } else {
-                rowIndex = page->currentRow;
-            }
-
+        if (ret->isOnNewLine()) {
 
             const bool labelOnSameColumn = ret->isLabelOnSameColumn();
             Qt::Alignment labelAlignment;
@@ -858,35 +730,40 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                 labelAlignment = Qt::AlignRight;
             }
 
-            if (!hasLabel) {
-                layout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
+            int rowIndex = gridLayout->rowCount();
+            QWidget* labelContainer = ret->getLabelContainer();
+            QWidget* fieldContainer = ret->getFieldContainer();
+            if (!labelContainer) {
+                gridLayout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
             } else {
-                if (label) {
-                    if (labelOnSameColumn) {
-                        labelLayout->addWidget(fieldContainer);
-                        layout->addWidget(labelContainer, rowIndex, 0, 1, 2);
-                    } else {
-                        layout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
-                        layout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
-                    }
+                if (labelOnSameColumn) {
+                    labelContainer->layout()->addWidget(fieldContainer);
+                    gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 2);
+                } else {
+                    gridLayout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
+                    gridLayout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
                 }
+
             }
 
-            workAroundGridLayoutBug(layout);
-        } // makeNewLine
 
-        ret->setSecret();
+            workAroundGridLayoutBug(gridLayout);
 
-        if ( knob->isNewLineActivated() && ret->shouldAddStretch() ) {
-            fieldLayout->addStretch();
+        }  // makeNewLine
+
+        if (parentGroupGui) {
+            parentGroupGui->addKnob(ret);
         }
 
-
-        ///increment the row count
-        ++page->currentRow;
-
-        if (parentIsGroup && parentGui) {
-            parentGui->addKnob(ret);
+        // If the node wants a knobtable after this knob, create it
+        KnobHolderPtr holder = _imp->holder.lock();
+        KnobItemsTablePtr table = holder->getItemsTable();
+        if (table && !_imp->knobsTable) {
+            std::string knobTableName = holder->getItemsTablePreviousKnobScriptName();
+            if (knobTableName == knob->getName()) {
+                _imp->knobsTable = createKnobItemsTable(page->tab);
+                gridLayout->addWidget(_imp->knobsTable->getTableView(), gridLayout->rowCount(), 0, 1, 2);
+            }
         }
     } //  if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {
 
@@ -923,7 +800,6 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
             }
 
             found->second->tab->deleteLater();
-            found->second->currentRow = 0;
             _imp->pages.erase(found);
         }
     } else {
@@ -957,14 +833,12 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
             } else if (isParentGroup) {
                 KnobsGuiMapping::iterator found  = _imp->findKnobGui(knob);
                 assert( found != _imp->knobsMap.end() );
-                KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>( found->second.get() );
-                assert(parentGroupGui);
-                if (parentGroupGui) {
-                    TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
+                if (found != _imp->knobsMap.end() && found->second) {
+                    TabGroup* groupAsTab = found->second->getOrCreateTabWidget();
                     if (groupAsTab) {
                         groupAsTab->removeTab(isGrp);
                         if ( groupAsTab->isEmpty() ) {
-                            parentGroupGui->removeTabWidget();
+                            found->second->removeTabWidget();
                         }
                     }
                 }
@@ -977,7 +851,7 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
         } else {
             KnobsGuiMapping::iterator it  = _imp->findKnobGui(knob);
             if ( it != _imp->knobsMap.end() ) {
-                it->second->removeGui();
+                it->second->destroyWidgetsLater();
                 _imp->knobsMap.erase(it);
             }
         }
@@ -1005,7 +879,7 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
             if (knob) {
                 knob->setKnobGuiPointer( KnobGuiPtr() );
             }
-            it->second->removeGui();
+            it->second->destroyWidgetsLater();
             it->second.reset();
         }
     }
@@ -1014,7 +888,6 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
     for (PagesMap::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
         removePageFromContainer(it->second);
         it->second->tab->deleteLater();
-        it->second->currentRow = 0;
     }
     _imp->pages.clear();
 
@@ -1069,14 +942,14 @@ KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         KnobPagePtr page = it->second->pageKnob.lock();
         if (it->second == curPage) {
-            if ( !page->isEnabled(0) ) {
-                page->setEnabled(0, true);
-                page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+            if ( !page->isEnabled() ) {
+                page->setEnabled(true);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         } else {
-            if ( page->isEnabled(0) ) {
-                page->setEnabled(0, false);
-                page->evaluateValueChange(0, page->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+            if ( page->isEnabled() ) {
+                page->setEnabled(false);
+                page->evaluateValueChange(DimSpec::all(), page->getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
             }
         }
     }

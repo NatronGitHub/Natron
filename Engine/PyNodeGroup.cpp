@@ -53,6 +53,7 @@ Effect*
 Group::getNode(const QString& fullySpecifiedName) const
 {
     if ( !_collection.lock() ) {
+        PythonSetNullError();
         return 0;
     }
     NodePtr node = _collection.lock()->getNodeByFullySpecifiedName( fullySpecifiedName.toStdString() );
@@ -69,6 +70,7 @@ Group::getChildren() const
     std::list<Effect*> ret;
 
     if ( !_collection.lock() ) {
+        PythonSetNullError();
         return ret;
     }
 

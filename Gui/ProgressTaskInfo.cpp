@@ -60,8 +60,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Button.h"
 
+
+#define COL_NAME 0
 #define COL_PROGRESS 1
+#define COL_STATUS 2
 #define COL_CONTROLS 3
+#define COL_TIME_REMAINING 4
+#define COL_FRAME_RANGE 5
+#define COL_TASK_INFO 6
 
 #define NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS 4000
 #define NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS 1000
@@ -92,13 +98,7 @@ public:
     ProgressPanel* panel;
     NodeWPtr node;
     ProgressTaskInfo* _publicInterface; // can not be a smart ptr
-    TableItem* nameItem;
-    TableItem* progressItem;
-    TableItem* statusItem;
-    TableItem* controlsItem;
-    TableItem* timeRemainingItem;
-    TableItem* taskInfoItem;
-    TableItem* frameRangeItem;
+    TableItemPtr item;
     ProgressTaskInfo::ProgressTaskStatusEnum status;
     QProgressBar* progressBar;
     double progressPercent;
@@ -133,13 +133,7 @@ public:
         : panel(panel)
         , node(node)
         , _publicInterface(publicInterface)
-        , nameItem(0)
-        , progressItem(0)
-        , statusItem(0)
-        , controlsItem(0)
-        , timeRemainingItem(0)
-        , taskInfoItem(0)
-        , frameRangeItem(0)
+        , item()
         , status(ProgressTaskInfo::eProgressTaskStatusQueued)
         , progressBar(0)
         , progressPercent(0)
@@ -240,35 +234,35 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         }
         _imp->canceled = true;
     }
-    if (_imp->timeRemainingItem) {
-        _imp->timeRemainingItem->setText( tr("N/A") );
-    }
-    if (_imp->statusItem) {
+    if (_imp->item) {
+        _imp->item->setText(COL_TIME_REMAINING, tr("N/A"));
         if (!calledFromRenderEngine) {
-            _imp->statusItem->setTextColor( QColor(243, 147, 0) );
+            _imp->item->setTextColor(COL_STATUS, QColor(243, 147, 0) );
             if (_imp->canBePaused) {
-                _imp->statusItem->setText( tr("Paused") );
+                _imp->item->setText(COL_STATUS, tr("Paused") );
                 _imp->status = eProgressTaskStatusPaused;
             } else {
-                _imp->statusItem->setText( tr("Canceled") );
+                _imp->item->setText(COL_STATUS, tr("Canceled") );
                 _imp->status = eProgressTaskStatusCanceled;
             }
         } else {
             if (retCode == 0) {
-                _imp->statusItem->setTextColor(Qt::black);
-                _imp->statusItem->setText( tr("Finished") );
+                _imp->item->setTextColor(COL_STATUS, Qt::black);
+                _imp->item->setText(COL_STATUS, tr("Finished") );
                 _imp->status = eProgressTaskStatusFinished;
                 if (_imp->progressBar) {
                     _imp->progressBar->setValue(100);
                 }
             } else {
-                _imp->statusItem->setTextColor(Qt::red);
-                _imp->statusItem->setText( tr("Failed") );
+                _imp->item->setTextColor(COL_STATUS,Qt::red);
+                _imp->item->setText(COL_STATUS, tr("Failed") );
                 _imp->status = eProgressTaskStatusFinished;
             }
         }
         _imp->refreshButtons();
     }
+
+
     NodePtr node = getNode();
     OutputEffectInstancePtr effect = toOutputEffectInstance( node->getEffectInstance() );
     node->getApp()->removeRenderFromQueue(effect);
@@ -317,13 +311,13 @@ ProgressTaskInfo::restartTask()
                                    _imp->frameStep,
                                    node->getApp()->isRenderStatsActionChecked() );
         w.isRestart = true;
-        _imp->statusItem->setTextColor(Qt::yellow);
+        _imp->item->setTextColor(COL_STATUS, Qt::yellow);
         _imp->status = eProgressTaskStatusQueued;
-        _imp->statusItem->setText( tr("Queued") );
+        _imp->item->setText(COL_STATUS, tr("Queued") );
         _imp->refreshButtons();
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
-        node->getApp()->startWritersRendering(false, works);
+        node->getApp()->renderWritersNonBlocking(works);
     }
 }
 
@@ -374,14 +368,8 @@ ProgressTaskInfo::onProcessCanceled()
 void
 ProgressTaskInfo::clearItems()
 {
-    _imp->nameItem = 0;
-    _imp->progressItem = 0;
+    _imp->item.reset();
     _imp->progressBar = 0;
-    _imp->controlsItem = 0;
-    _imp->timeRemainingItem = 0;
-    _imp->taskInfoItem = 0;
-    _imp->statusItem = 0;
-    _imp->frameRangeItem = 0;
 }
 
 NodePtr
@@ -413,7 +401,7 @@ ProgressTaskInfo::canPause() const
 void
 ProgressTaskInfo::onRefreshLabelTimeout()
 {
-    if (!_imp->timeRemainingItem) {
+    if (!_imp->item) {
         if ( !_imp->canBePaused && wasCanceled() ) {
             return;
         }
@@ -429,7 +417,7 @@ ProgressTaskInfo::onRefreshLabelTimeout()
     } else {
         timeStr += Timer::printAsTime(_imp->timeRemaining, true);
     }
-    _imp->timeRemainingItem->setText(timeStr);
+    _imp->item->setText(COL_TIME_REMAINING, timeStr);
 }
 
 void
@@ -441,7 +429,7 @@ ProgressTaskInfo::createItems()
 void
 ProgressTaskInfoPrivate::createItems()
 {
-    if (nameItem) {
+    if (item) {
         return;
     }
     NodePtr node = getNode();
@@ -454,69 +442,56 @@ ProgressTaskInfoPrivate::createItems()
         color.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
     }
     _publicInterface->createCellWidgets();
+    item = TableItem::create(panel->getModel());
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_NAME, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if (nodeUI) {
-            item->setTextColor(Qt::black);
-            item->setBackgroundColor(color);
+            item->setTextColor(COL_NAME, Qt::black);
+            item->setBackgroundColor(COL_NAME, color);
         }
-        item->setText( QString::fromUtf8( node->getLabel().c_str() ) );
-        nameItem = item;
+        item->setText(COL_NAME,  QString::fromUtf8( node->getLabel().c_str() ) );
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_PROGRESS, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        progressItem = item;
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_STATUS, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        item->setTextColor(Qt::yellow);
-        item->setText( tr("Queued") );
-        statusItem = item;
+        item->setTextColor(COL_STATUS,Qt::yellow);
+        item->setText(COL_STATUS, tr("Queued") );
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_CONTROLS, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if (nodeUI) {
-            item->setIcon( QIcon() );
+            item->setIcon(COL_CONTROLS,  QIcon() );
         }
-        item->setText( canBePaused ? tr("Yes") : tr("No") );
-        controlsItem = item;
+        item->setText(COL_CONTROLS,  canBePaused ? tr("Yes") : tr("No") );
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_TIME_REMAINING, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        item->setText( tr("N/A") );
-        timeRemainingItem = item;
+        item->setText(COL_TIME_REMAINING, tr("N/A") );
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_FRAME_RANGE, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         if ( getNode()->getEffectInstance()->isOutput() ) {
             QString frames;
             frames.append( QString::number(firstFrame) );
             frames.append( QChar::fromLatin1('-') );
             frames.append( QString::number(lastFrame) );
-            item->setText(frames);
+            item->setText(COL_FRAME_RANGE, frames);
         } else {
-            item->setText( tr("N/A") );
+            item->setText(COL_FRAME_RANGE,  tr("N/A") );
         }
-        frameRangeItem = item;
     }
     {
-        TableItem* item = new TableItem;
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        item->setFlags(COL_TASK_INFO, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        item->setText(message);
-        taskInfoItem = item;
+        item->setText(COL_TASK_INFO, message);
     }
     panel->addTaskToTable( _publicInterface->shared_from_this() );
 } // ProgressTaskInfoPrivate::createItems
@@ -538,7 +513,7 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,
     double timeElapsedSecs = _imp->timer->getTimeSinceCreation();
     _imp->timeRemaining = subTaskProgress == 0 ? 0 : timeElapsedSecs * (1. - subTaskProgress) / subTaskProgress;
 
-    if ( !_imp->nameItem && !wasCanceled() ) {
+    if ( !_imp->item && !wasCanceled() ) {
         ///Show the item if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
         //double totalTime = subTaskProgress == 0 ? 0 : timeElapsedSecs * 1. / subTaskProgress;
 
@@ -551,11 +526,11 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,
         }
     }
 
-    if (!_imp->updatedProgressOnce && _imp->statusItem) {
+    if (!_imp->updatedProgressOnce && _imp->item) {
         _imp->updatedProgressOnce = true;
-        _imp->statusItem->setTextColor(Qt::green);
+        _imp->item->setTextColor(COL_STATUS, Qt::green);
         _imp->status = eProgressTaskStatusRunning;
-        _imp->statusItem->setText( tr("Running") );
+        _imp->item->setText(COL_STATUS,  tr("Running") );
         _imp->refreshButtons();
     }
 }
@@ -574,16 +549,10 @@ ProgressTaskInfo::updateProgress(const int frame,
     updateProgressBar(percent, progress);
 }
 
-void
-ProgressTaskInfo::getTableItems(std::vector<TableItem*>* items) const
+TableItemPtr
+ProgressTaskInfo::getTableItem() const
 {
-    items->push_back(_imp->nameItem);
-    items->push_back(_imp->progressItem);
-    items->push_back(_imp->statusItem);
-    items->push_back(_imp->controlsItem);
-    items->push_back(_imp->timeRemainingItem);
-    items->push_back(_imp->frameRangeItem);
-    items->push_back(_imp->taskInfoItem);
+    return _imp->item;
 }
 
 void

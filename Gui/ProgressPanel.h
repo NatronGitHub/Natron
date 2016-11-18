@@ -107,6 +107,10 @@ public:
 
     void onLastTaskAddedFinished(const ProgressTaskInfo* task);
 
+    TableModelPtr getModel() const;
+
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onCancelTasksTriggered();
@@ -123,7 +127,7 @@ public Q_SLOTS:
 
     void onShowProgressPanelTimerTriggered();
 
-    void onItemRightClicked(TableItem* item);
+    void onItemRightClicked(QPoint globalPos, const TableItemPtr& item);
 
 Q_SIGNALS:
 

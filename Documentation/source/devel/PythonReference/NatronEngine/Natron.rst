@@ -17,7 +17,6 @@ that are more complicated than a simple boolean value.
     * eViewerContextLayoutTypeSpacing	// Add spacing in pixels after the item
     * eViewerContextLayoutTypeSeparator  // Add a vertical line after the item
     * eViewerContextLayoutTypeStretchAfter // Add layout stretch after the item
-    * eViewerContextLayoutTypeStretchBefore // Add layout stretch before the item
     * eViewerContextLayoutTypeAddNewLine // Add a new line after the item
 
 

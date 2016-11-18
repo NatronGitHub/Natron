@@ -110,6 +110,8 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     QPixmap makePixmapForDrag(int index);
 
     QPoint _dragPos;
@@ -183,13 +185,7 @@ public:
        Returns false if the object's name is empty but the TabWidget needs a decoration*/
     bool appendTab(PanelWidget* widget, ScriptObject* object);
 
-    /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
-       Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QIcon & icon, PanelWidget* widget,  ScriptObject* object);
-
     /*Inserts before the element at index.*/
-    void insertTab(int index, const QIcon & icon, PanelWidget* widget, ScriptObject* object);
-
     void insertTab(int index, PanelWidget* widget, ScriptObject* object);
 
     /*Removes from the TabWidget, but does not delete the widget.
@@ -291,9 +287,7 @@ public Q_SLOTS:
 
     void moveNodeGraphHere();
 
-    void moveCurveEditorHere();
-
-    void moveDopeSheetEditorHere();
+    void moveAnimationModuleEditorHere();
 
     void newHistogramHere();
 

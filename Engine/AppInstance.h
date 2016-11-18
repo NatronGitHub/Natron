@@ -43,7 +43,6 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
-#include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -88,7 +87,6 @@ class AppInstance
     : public QObject
     , public boost::noncopyable
     , public boost::enable_shared_from_this<AppInstance>
-    , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -283,6 +281,13 @@ public:
     {
     }
 
+    virtual void goToPreviousKeyframe()
+    {
+    }
+    virtual void goToNextKeyframe()
+    {
+    }
+
     virtual void setMasterSyncViewer(const NodePtr& viewerNode) { Q_UNUSED(viewerNode); }
 
     virtual NodePtr getMasterSyncViewer() const { return NodePtr(); }
@@ -301,15 +306,20 @@ public:
 
 
     /**
-     * @brief Given writer names, start rendering the given RenderRequest. If empty all Writers in the project
-     * will be rendered using the frame ranges.
+     * @brief Given writer names, render the given frame ranges. If empty all Writers in the project
+     * will be rendered using the frame ranges. It internally calls renderWritersBlocking if the parameter
+     * doBlockingRender is true, otherwise it calls renderWritersNonBlocking.
      **/
     void startWritersRenderingFromNames(bool enableRenderStats,
                                         bool doBlockingRender,
                                         const std::list<std::string>& writers,
                                         const std::list<std::pair<int, std::pair<int, int> > >& frameRanges);
-    void startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers);
+    void renderWritersBlocking(const std::list<RenderWork>& writers);
+    void renderWritersNonBlocking(const std::list<RenderWork>& writers);
 
+private:
+
+    void renderWritersInternal(bool blocking, const std::list<RenderWork>& writers);
 public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
@@ -436,7 +446,12 @@ public:
 
     virtual void createGroupGui(const NodePtr & /*group*/, const CreateNodeArgs& /*args*/) {}
 
+    /**
+     * @brief Remove from the render queue a render that was not yet started. This is useful for the GUI
+     * if the user wants to cancel a render request.
+     **/
     void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
+
     virtual void reloadScriptEditorFonts() {}
 
     const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
@@ -511,8 +526,14 @@ public Q_SLOTS:
 
     void newVersionCheckError();
 
+    /**
+    * @brief Called when a render started with renderWritersInternal is finished from another process
+    **/
     void onBackgroundRenderProcessFinished();
 
+    /**
+     * @brief Called when a render started with renderWritersInternal is finished
+     **/
     void onQueuedRenderFinished(int retCode);
 
 Q_SIGNALS:
@@ -531,7 +552,10 @@ protected:
 
 private:
 
-
+    /**
+     * @brief Remove the given writer from the active renders queue and startup a new render
+     * if the queue is not empty
+     **/
     void startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter);
 
 

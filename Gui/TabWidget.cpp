@@ -57,8 +57,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -283,6 +282,16 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addSpacing(10);
 
     _imp->tabBar = new TabBar(this, _imp->header);
+#if QT_VERSION < 0x050000
+    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    double scale = gui->getHighDPIScaleFactor();
+    if (scale > 1) {
+        QSize iconSize = _imp->tabBar->iconSize();
+        iconSize.setHeight(iconSize.height() / scale);
+        _imp->tabBar->setIconSize(iconSize);
+    }
+#endif
     _imp->tabBar->setShape(QTabBar::RoundedNorth);
     _imp->tabBar->setDrawBase(false);
     QObject::connect( _imp->tabBar, SIGNAL(currentChanged(int)), this, SLOT(setCurrentIndex(int)) );
@@ -432,8 +441,7 @@ TabWidget::createMenu()
     menu.addAction( tr("New viewer"), this, SLOT(addNewViewer()) );
     menu.addAction( tr("New histogram"), this, SLOT(newHistogramHere()) );
     menu.addAction( tr("Node graph here"), this, SLOT(moveNodeGraphHere()) );
-    menu.addAction( tr("Curve Editor here"), this, SLOT(moveCurveEditorHere()) );
-    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveDopeSheetEditorHere()) );
+    menu.addAction( tr("Dope Sheet Editor here"), this, SLOT(moveAnimationModuleEditorHere()) );
     menu.addAction( tr("Properties bin here"), this, SLOT(movePropertiesBinHere()) );
     menu.addAction( tr("Script editor here"), this, SLOT(moveScriptEditorHere()) );
     menu.addAction( tr("Progress Panel here"), this, SLOT(moveProgressPanelHere()) );
@@ -740,18 +748,11 @@ TabWidget::moveNodeGraphHere()
     moveTab(graph, graph);
 }
 
-void
-TabWidget::moveCurveEditorHere()
-{
-    CurveEditor* editor = _imp->gui->getCurveEditor();
-
-    moveTab(editor, editor);
-}
 
 void
-TabWidget::moveDopeSheetEditorHere()
+TabWidget::moveAnimationModuleEditorHere()
 {
-    DopeSheetEditor *editor = _imp->gui->getDopeSheetEditor();
+    AnimationModuleEditor *editor = _imp->gui->getAnimationModuleEditor();
 
     moveTab(editor, editor);
 }
@@ -973,21 +974,17 @@ bool
 TabWidget::appendTab(PanelWidget* widget,
                      ScriptObject* object)
 {
-    return appendTab(QIcon(), widget, object);
-}
-
-bool
-TabWidget::appendTab(const QIcon & icon,
-                     PanelWidget* widget,
-                     ScriptObject* object)
-{
+    QString title;
+    QIcon icon = widget->getIcon();
+    //if (icon.isNull()) {
+        title = QString::fromUtf8( object->getLabel().c_str() );
+    //}
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
 
         ///If we do not know the tab ignore it
         std::string name = object->getScriptName();
-        std::string label = object->getLabel();
-        if ( name.empty() || label.empty() ) {
+        if ( name.empty()) {
             return false;
         }
 
@@ -997,7 +994,8 @@ TabWidget::appendTab(const QIcon & icon,
         _imp->tabs.push_back( std::make_pair(widget, object) );
         //widget->setParent(this);
         _imp->modifyingTabBar = true;
-        _imp->tabBar->addTab( icon, QString::fromUtf8( label.c_str() ) );
+
+        _imp->tabBar->addTab( icon, title );
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
         if (_imp->tabs.size() == 1) {
@@ -1021,11 +1019,14 @@ TabWidget::appendTab(const QIcon & icon,
 
 void
 TabWidget::insertTab(int index,
-                     const QIcon & icon,
                      PanelWidget* widget,
                      ScriptObject* object)
 {
-    QString title = QString::fromUtf8( object->getLabel().c_str() );
+    QString title;
+    QIcon icon = widget->getIcon();
+    //if (icon.isNull()) {
+        title = QString::fromUtf8( object->getLabel().c_str() );
+    //}
     QMutexLocker l(&_imp->tabWidgetStateMutex);
 
     if ( (U32)index < _imp->tabs.size() ) {
@@ -1034,6 +1035,9 @@ TabWidget::insertTab(int index,
 
         _imp->tabs.insert( _imp->tabs.begin() + index, std::make_pair(widget, object) );
         _imp->modifyingTabBar = true;
+
+
+
         _imp->tabBar->insertTab(index, icon, title);
         _imp->tabBar->updateGeometry(); //< necessary
         _imp->modifyingTabBar = false;
@@ -1052,13 +1056,7 @@ TabWidget::insertTab(int index,
     _imp->floatButton->setEnabled(true);
 }
 
-void
-TabWidget::insertTab(int index,
-                     PanelWidget* widget,
-                     ScriptObject* object)
-{
-    insertTab(index, QIcon(), widget, object);
-}
+
 
 PanelWidget*
 TabWidget::removeTab(int index,
@@ -1371,6 +1369,28 @@ TabBar::TabBar(TabWidget* tabWidget,
     QObject::connect( this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)) );
 }
 
+QSize
+TabBar::sizeHint() const
+{
+    return QTabBar::sizeHint();
+#if 0
+    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
+    s.setHeight(s.height() / scale);
+    return s;
+#endif
+}
+
+QSize
+TabBar::minimumSizeHint() const
+{
+    return QTabBar::minimumSizeHint();
+#if 0
+    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
+    s.setHeight(s.height() / scale);
+    return s;
+#endif
+}
+
 void
 TabBar::setMouseOverFocus(bool focus)
 {
@@ -1541,14 +1561,11 @@ TabBar::makePixmapForDrag(int index)
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
 
-#if QT_VERSION < 0x050000
-    ///Prevent a bug with grabWidget and retina display on Qt4
-    bool isHighDPI = _tabWidget->getGui()->isHighDPI();
-    if (isHighDPI) {
-        tabBarImg = tabBarImg.scaled(tabBarImg.width() / 2., tabBarImg.height() / 2.);
-        currentTabImg = currentTabImg.scaled(currentTabImg.width() / 2., currentTabImg.height() / 2.);
-    }
-#endif
+    // Prevent a bug with grabWidget and retina display on Qt4
+    // See https://bugreports.qt.io/browse/QTBUG-23870
+    _tabWidget->getGui()->scaleImageToAdjustDPI(&tabBarImg);
+    _tabWidget->getGui()->scaleImageToAdjustDPI(&currentTabImg);
+
 
     //now we just put together the 2 pixmaps and set it with mid transparancy
     QImage ret(currentTabImg.width(), currentTabImg.height() + tabBarImg.height(), QImage::Format_ARGB32_Premultiplied);

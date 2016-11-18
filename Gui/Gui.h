@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <set>
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -46,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/SerializableWindow.h"
+#include "Engine/TimeLineKeys.h"
 
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
@@ -88,12 +90,8 @@ public:
     void createGui();
 
 
-    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
-
-    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
-
-    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
-    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
+    void addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr& node);
 
     const NodesGuiList & getSelectedNodes() const;
 
@@ -213,7 +211,7 @@ public:
     static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
-    void setCurveEditorOnTop();
+    void setAnimationEditorOnTop();
 
     ///Make the layout of the application as it is the first time Natron is opened
     void createDefaultLayout1();
@@ -280,11 +278,11 @@ public:
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
-    void setColorPickersColor(double r, double g, double b, double a);
+    void setColorPickersColor(ViewIdx view, double r, double g, double b, double a);
 
-    void registerNewColorPicker(KnobColorPtr knob);
+    void registerNewColorPicker(KnobColorPtr knob, ViewIdx view);
 
-    void removeColorPicker(KnobColorPtr knob);
+    void removeColorPicker(KnobColorPtr knob, ViewIdx view);
 
     void clearColorPickers();
 
@@ -317,8 +315,7 @@ public:
                            const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
-    CurveEditor* getCurveEditor() const;
-    DopeSheetEditor * getDopeSheetEditor() const;
+    AnimationModuleEditor * getAnimationModuleEditor() const;
     ScriptEditor* getScriptEditor() const;
     ProgressPanel* getProgressPanel() const;
     QVBoxLayout* getPropertiesLayout() const;
@@ -434,10 +431,6 @@ public:
     void setTripleSyncEnabled(bool enabled);
     bool isTripleSyncEnabled() const;
 
-    void setDopeSheetTreeWidth(int width);
-    void setCurveEditorTreeWidth(int width);
-
-
     void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
 
     bool isAboutToClose() const;
@@ -459,12 +452,19 @@ public:
      * @brief Returns true on OS X if on a High DPI (Retina) Display.
      **/
 #ifndef Q_OS_MAC
-    bool isHighDPI() const { return false; }
+    double getHighDPIScaleFactor() const { return 1.; }
 
 #else
-    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
-
+    double getHighDPIScaleFactor() const { return QtMac::getHighDPIScaleFactorInternal(this); }
 #endif
+
+    /**
+     * @brief Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+     * https://bugreports.qt.io/browse/QTBUG-23870
+     **/
+    void scalePixmapToAdjustDPI(QPixmap* pix);
+    void scaleImageToAdjustDPI(QImage* pix);
+
 
     AppInstancePtr createNewProject();
 
@@ -509,6 +509,10 @@ public:
     virtual SplitterI* isMainWidgetSplitter() const OVERRIDE FINAL;
 
     virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
+
+    void refreshTimelineGuiKeyframes();
+
+    const TimeLineKeysSet& getTimelineGuiKeyframes() const;
 
 protected:
 

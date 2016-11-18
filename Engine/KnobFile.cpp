@@ -77,7 +77,7 @@ KnobFile::reloadFile()
         effect->purgeCaches();
         effect->clearPersistentMessage(false);
     }
-    evaluateValueChange(0, getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0), eValueChangedReasonNatronInternalEdited);
 }
 
 bool
@@ -100,9 +100,12 @@ KnobFile::typeName() const
 }
 
 std::string
-KnobFile::getFileName(int time,
-                      ViewSpec view)
+KnobFile::getFileName(int frame,
+                      ViewGetSpec view)
 {
+    if ( view.isCurrent() ) {
+        view = getCurrentView();
+    }
    if (_dialogType == eKnobFileDialogTypeOpenFileSequences ||
        _dialogType == eKnobFileDialogTypeSaveFileSequences) {
         ///try to interpret the pattern and generate a filename if indexes are found
@@ -110,13 +113,10 @@ KnobFile::getFileName(int time,
         if ( getHolder() && getHolder()->getApp() ) {
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
-        if ( !view.isViewIdx() ) {
-            view = ViewIdx(0);
-        }
 
-        return SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view);
+        return SequenceParsing::generateFileNameFromPattern(getValue(DimIdx(0), view), views, frame, view);
     }
-    return getValue(0, view);
+    return getValue(DimIdx(0), view);
 }
 
 

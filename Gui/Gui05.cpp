@@ -32,6 +32,7 @@
 #include <QtCore/QTimer>
 
 #include <QHBoxLayout>
+#include <QMenuBar>
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
@@ -42,10 +43,9 @@
 #include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
@@ -112,8 +112,7 @@ Gui::setupUi()
     _imp->_mainLayout->addWidget(_imp->_leftRightSplitter);
 
     _imp->createNodeGraphGui();
-    _imp->createCurveEditorGui();
-    _imp->createDopeSheetGui();
+    _imp->createAnimationModuleGui();
     _imp->createScriptEditorGui();
     _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
@@ -137,7 +136,7 @@ Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
 
-    _imp->_aboutWindow = new AboutWindow(this);
+    _imp->_aboutWindow = new AboutWindow(this, this);
     _imp->_aboutWindow->hide();
 
 
@@ -338,6 +337,7 @@ Gui::getLastSelectedNodeCollection() const
 void
 Gui::wipeLayout()
 {
+
     std::list<TabWidgetI*> panesCpy = getApp()->getTabWidgetsSerialization();
     getApp()->clearTabWidgets();
     std::list<SerializableWindow*> floatingWidgets = getApp()->getFloatingWindowsSerialization();
@@ -401,6 +401,9 @@ Gui::wipeLayout()
     _imp->_mainLayout->addWidget(newSplitter);
 
     getApp()->registerSplitter(newSplitter);
+
+    // Re-create new menu actions
+    createMenuActions();
  
 } // Gui::wipeLayout
 

@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
+#if 0
 #include "TrackerPanel.h"
 
 #include <QApplication>
@@ -452,7 +452,6 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->view = new TableView(this);
     QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onRemoveButtonClicked()) );
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
     TrackerTableItemDelegate* delegate = new TrackerTableItemDelegate(_imp->view, this);
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
@@ -552,7 +551,7 @@ tooltipFromKnob(const KnobIPtr& knob)
 
     std::vector<std::string> expressions;
     bool exprAllSame = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
         expressions.push_back( knob->getExpression(i) );
         if ( (i > 0) && (expressions[i] != expressions[0]) ) {
             exprAllSame = false;
@@ -565,7 +564,7 @@ tooltipFromKnob(const KnobIPtr& knob)
             exprTt = QString::fromUtf8("ret = <b>%1</b><br />").arg( QString::fromUtf8( expressions[0].c_str() ) );
         }
     } else {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
             std::string dimName = knob->getDimensionName(i);
             QString toAppend = QString::fromUtf8("%1 = <b>%2</b><br />").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
             exprTt.append(toAppend);
@@ -1344,11 +1343,6 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
 } // TrackerPanel::selectInternal
 
 void
-TrackerPanel::onItemRightClicked(TableItem* /*item*/)
-{
-}
-
-void
 TrackerPanel::onItemDataChanged(TableItem* item)
 {
     if (_imp->itemDataChangedRecursion) {
@@ -1820,7 +1814,7 @@ TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,
 
     ++_imp->itemDataChangedRecursion;
     KnobDoublePtr centerKnob = marker->getCenterKnob();
-    for (int i = 0; i < centerKnob->getDimension(); ++i) {
+    for (int i = 0; i < centerKnob->getNDimensions(); ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
             int col = i == 0 ? COL_CENTER_X : COL_CENTER_Y;
             TableItem* item = getItemAt(marker, col);
@@ -1844,7 +1838,7 @@ TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,
     }
     ++_imp->itemDataChangedRecursion;
     KnobDoublePtr offsetKnob = marker->getOffsetKnob();
-    for (int i = 0; i < offsetKnob->getDimension(); ++i) {
+    for (int i = 0; i < offsetKnob->getNDimensions(); ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
             int col = i == 0 ? COL_OFFSET_X : COL_OFFSET_Y;
             TableItem* item = getItemAt(marker, col);
@@ -2045,4 +2039,7 @@ NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
 
+
 #include "moc_TrackerPanel.cpp"
+
+#endif

@@ -82,12 +82,11 @@ using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
-KnobGuiSeparator::KnobGuiSeparator(KnobIPtr knob,
-                                   KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiSeparator::KnobGuiSeparator(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _line(0)
 {
-    _knob = toKnobSeparator(knob);
+    _knob = toKnobSeparator(knob->getKnob());
 }
 
 void
@@ -128,21 +127,10 @@ KnobGuiSeparator::removeSpecificGui()
 }
 
 void
-KnobGuiSeparator::_hide()
+KnobGuiSeparator::setWidgetsVisible(bool visible)
 {
-    _line->hide();
+    _line->setVisible(visible);
 }
 
-void
-KnobGuiSeparator::_show()
-{
-    _line->show();
-}
-
-KnobIPtr
-KnobGuiSeparator::getKnob() const
-{
-    return _knob.lock();
-}
 
 NATRON_NAMESPACE_EXIT;

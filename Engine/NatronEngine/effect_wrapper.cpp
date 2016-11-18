@@ -20,10 +20,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyNode.h>
 #include <PyParameter.h>
-#include <PyRoto.h>
-#include <PyTracker.h>
 #include <RectD.h>
 #include <list>
 #include <map>
@@ -123,6 +122,48 @@ static PyObject* Sbk_EffectFunc_beginChanges(PyObject* self)
         return 0;
     }
     Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_EffectFunc_beginParametersUndoCommand(PyObject* self, PyObject* pyArg)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: beginParametersUndoCommand(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // beginParametersUndoCommand(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_beginParametersUndoCommand_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // beginParametersUndoCommand(QString)
+            cppSelf->beginParametersUndoCommand(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_beginParametersUndoCommand_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.beginParametersUndoCommand", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_EffectFunc_canConnectInput(PyObject* self, PyObject* args)
@@ -419,6 +460,29 @@ static PyObject* Sbk_EffectFunc_endChanges(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_EffectFunc_endParametersUndoCommand(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // endParametersUndoCommand()
+            cppSelf->endParametersUndoCommand();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -693,6 +757,35 @@ static PyObject* Sbk_EffectFunc_getInputLabel(PyObject* self, PyObject* pyArg)
         const char* overloads[] = {"int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getInputLabel", overloads);
         return 0;
+}
+
+static PyObject* Sbk_EffectFunc_getItemsTable(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getItemsTable()const
+            ItemsTable * cppResult = const_cast<const ::Effect*>(cppSelf)->getItemsTable();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_EffectFunc_getLabel(PyObject* self)
@@ -971,27 +1064,50 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
 
 
     // Overloaded function decisor
-    // 0: getRegionOfDefinition(double,int)const
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // getRegionOfDefinition(double,int)const
+    // 0: getRegionOfDefinition(double,QString)const
+    // 1: getRegionOfDefinition(double,int)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 2
+            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            overloadId = 1; // getRegionOfDefinition(double,int)const
+        } else if (numArgs == 2
+            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // getRegionOfDefinition(double,QString)const
+        }
     }
 
     // Function signature not found.
     if (overloadId == -1) goto Sbk_EffectFunc_getRegionOfDefinition_TypeError;
 
     // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
+    switch (overloadId) {
+        case 0: // getRegionOfDefinition(double time, const QString & view) const
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = ::QString();
+            pythonToCpp[1](pyArgs[1], &cppArg1);
 
-        if (!PyErr_Occurred()) {
-            // getRegionOfDefinition(double,int)const
-            RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
+            if (!PyErr_Occurred()) {
+                // getRegionOfDefinition(double,QString)const
+                RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
+            }
+            break;
+        }
+        case 1: // getRegionOfDefinition(double time, int view) const
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+
+            if (!PyErr_Occurred()) {
+                // getRegionOfDefinition(double,int)const
+                RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
+            }
+            break;
         }
     }
 
@@ -1002,38 +1118,9 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
     return pyResult;
 
     Sbk_EffectFunc_getRegionOfDefinition_TypeError:
-        const char* overloads[] = {"float, int", 0};
+        const char* overloads[] = {"float, unicode", "float, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.getRegionOfDefinition", overloads);
         return 0;
-}
-
-static PyObject* Sbk_EffectFunc_getRotoContext(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getRotoContext()const
-            Roto * cppResult = const_cast<const ::Effect*>(cppSelf)->getRotoContext();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ROTO_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
 }
 
 static PyObject* Sbk_EffectFunc_getScriptName(PyObject* self)
@@ -1088,35 +1175,6 @@ static PyObject* Sbk_EffectFunc_getSize(PyObject* self)
             // End of code injection
 
 
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_EffectFunc_getTrackerContext(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getTrackerContext()const
-            Tracker * cppResult = const_cast<const ::Effect*>(cppSelf)->getTrackerContext();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACKER_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
         }
     }
 
@@ -1709,12 +1767,14 @@ static PyObject* Sbk_EffectFunc_setSubGraphEditable(PyObject* self, PyObject* py
 static PyMethodDef Sbk_Effect_methods[] = {
     {"addUserPlane", (PyCFunction)Sbk_EffectFunc_addUserPlane, METH_VARARGS},
     {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
+    {"beginParametersUndoCommand", (PyCFunction)Sbk_EffectFunc_beginParametersUndoCommand, METH_O},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
     {"clearViewerUIParameters", (PyCFunction)Sbk_EffectFunc_clearViewerUIParameters, METH_NOARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
+    {"endParametersUndoCommand", (PyCFunction)Sbk_EffectFunc_endParametersUndoCommand, METH_NOARGS},
     {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_NOARGS},
     {"getBitDepth", (PyCFunction)Sbk_EffectFunc_getBitDepth, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
@@ -1722,6 +1782,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getFrameRate", (PyCFunction)Sbk_EffectFunc_getFrameRate, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getInputLabel", (PyCFunction)Sbk_EffectFunc_getInputLabel, METH_O},
+    {"getItemsTable", (PyCFunction)Sbk_EffectFunc_getItemsTable, METH_NOARGS},
     {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
@@ -1731,10 +1792,8 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getPosition", (PyCFunction)Sbk_EffectFunc_getPosition, METH_NOARGS},
     {"getPremult", (PyCFunction)Sbk_EffectFunc_getPremult, METH_NOARGS},
     {"getRegionOfDefinition", (PyCFunction)Sbk_EffectFunc_getRegionOfDefinition, METH_VARARGS},
-    {"getRotoContext", (PyCFunction)Sbk_EffectFunc_getRotoContext, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_EffectFunc_getScriptName, METH_NOARGS},
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
-    {"getTrackerContext", (PyCFunction)Sbk_EffectFunc_getTrackerContext, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"insertParamInViewerUI", (PyCFunction)Sbk_EffectFunc_insertParamInViewerUI, METH_VARARGS|METH_KEYWORDS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},

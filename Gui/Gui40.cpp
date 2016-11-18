@@ -66,6 +66,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -196,17 +197,18 @@ Gui::onProjectNameChanged(const QString & filePath,
 }
 
 void
-Gui::setColorPickersColor(double r,
+Gui::setColorPickersColor(ViewIdx view,
+                          double r,
                           double g,
                           double b,
                           double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(r, g, b, a);
+    _imp->_projectGui->setPickersColor(view, r, g, b, a);
 }
 
 void
-Gui::registerNewColorPicker(KnobColorPtr knob)
+Gui::registerNewColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
@@ -217,14 +219,14 @@ Gui::registerNewColorPicker(KnobColorPtr knob)
         }
         internalViewerNode->setPickerEnabled(true);
     }
-    _imp->_projectGui->registerNewColorPicker(knob);
+    _imp->_projectGui->registerNewColorPicker(knob, view);
 }
 
 void
-Gui::removeColorPicker(KnobColorPtr knob)
+Gui::removeColorPicker(KnobColorPtr knob, ViewIdx view)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->removeColorPicker(knob);
+    _imp->_projectGui->removeColorPicker(knob, view);
 }
 
 void
@@ -245,9 +247,13 @@ Gui::hasPickers() const
 void
 Gui::setViewersCurrentView(ViewIdx view)
 {
-    QMutexLocker l(&_imp->_viewerTabsMutex);
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         ViewerNodePtr internalViewerNode = (*it)->getInternalNode();
         if (!internalViewerNode) {
             continue;
@@ -398,16 +404,11 @@ Gui::getNodeGraph() const
     return _imp->_nodeGraphArea;
 }
 
-CurveEditor*
-Gui::getCurveEditor() const
-{
-    return _imp->_curveEditor;
-}
 
-DopeSheetEditor *
-Gui::getDopeSheetEditor() const
+AnimationModuleEditor *
+Gui::getAnimationModuleEditor() const
 {
-    return _imp->_dopeSheetEditor;
+    return _imp->_animationModule;
 }
 
 ScriptEditor*
@@ -746,7 +747,7 @@ Gui::renderSelectedNode()
             }
         }
     }
-    getApp()->startWritersRendering(false, workList);
+    getApp()->renderWritersNonBlocking(workList);
 } // Gui::renderSelectedNode
 
 void
@@ -826,8 +827,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 
     assert( QThread::currentThread() == qApp->thread() );
     if ( (reason == eTimelineChangeReasonUserSeek) ||
-         ( reason == eTimelineChangeReasonDopeSheetEditorSeek) ||
-         ( reason == eTimelineChangeReasonCurveEditorSeek) ) {
+         ( reason == eTimelineChangeReasonAnimationModuleSeek) ) {
         if ( getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -865,5 +865,37 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         instance->renderCurrentFrame(!isPlayback);
     }
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
+
+void
+Gui::refreshTimelineGuiKeyframes()
+{
+    _imp->keyframesVisibleOnTimeline.clear();
+
+    std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it!=openedPanels.end(); ++it) {
+        NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+        if (!isNodePanel) {
+            continue;
+        }
+        NodeGuiPtr node = isNodePanel->getNode();
+        if (!node) {
+            continue;
+        }
+        node->getAllVisibleKnobsKeyframes(&_imp->keyframesVisibleOnTimeline);
+    }
+
+    // Now redraw timelines
+    const std::list<ViewerTab*>& viewers = getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+        (*it)->redrawTimeline();
+    }
+
+}
+
+const TimeLineKeysSet&
+Gui::getTimelineGuiKeyframes() const
+{
+    return _imp->keyframesVisibleOnTimeline;
+}
 
 NATRON_NAMESPACE_EXIT;

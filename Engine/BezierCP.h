@@ -105,7 +105,7 @@ public:
     CurvePtr getRightXCurve() const;
     CurvePtr getRightYCurve() const;
 
-    void clone(const BezierCP & other);
+    void copyControlPoint(const BezierCP & other);
 
     void setPositionAtTime(double time, double x, double y);
 
@@ -119,15 +119,11 @@ public:
 
     void setRightBezierStaticPosition(double x, double y);
 
-    void removeKeyframe(double time);
-
-    void removeAnimation(double currentTime);
+    ///returns true if a keyframe was set
+    bool cuspPoint(double time,bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
     ///returns true if a keyframe was set
-    bool cuspPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
-
-    ///returns true if a keyframe was set
-    bool smoothPoint(double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    bool smoothPoint(double time, ViewGetSpec view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -135,7 +131,7 @@ public:
         return false;
     }
 
-    bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
+    bool equalsAtTime(double time, const BezierCP & other) const;
 
     bool operator==(const BezierCP& other) const;
 
@@ -144,27 +140,19 @@ public:
         return !(*this == other);
     }
 
-    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool getPositionAtTime(double time, double* x, double* y) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool getLeftBezierPointAtTime(double time, double* x, double* y) const;
 
-    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y) const;
+    bool getRightBezierPointAtTime(double time, double *x, double *y) const;
 
-    bool hasKeyFrameAtTime(bool useGuiCurves, double time) const;
+    void removeKeyframe(double time);
 
-    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const;
+    void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
-    void getKeyFrames(bool useGuiCurves, std::list<std::pair<double, KeyframeTypeEnum> >* keys) const;
+    int getControlPointsCount(ViewGetSpec view) const;
 
-    int getKeyFrameIndex(bool useGuiCurves, double time) const;
-
-    void setKeyFrameInterpolation(bool useGuiCurves, KeyframeTypeEnum interp, int index);
-
-    double getKeyframeTime(bool useGuiCurves, int index) const;
-
-    int getKeyframesCount(bool useGuiCurves) const;
-
-    int getControlPointsCount() const;
+    void getKeyframeTimes(std::set<double>* keys) const;
 
     /**
      * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
@@ -180,7 +168,7 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(bool useGuiCurves, double time, ViewIdx view, double x, double y, double acceptance) const;
+    int isNearbyTangent(double time, ViewGetSpec view, double x, double y, double acceptance) const;
 
     SequenceTime getOffsetTime() const;
 

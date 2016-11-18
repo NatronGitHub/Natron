@@ -72,8 +72,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RenderValuesCache.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
@@ -241,6 +241,21 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     args->stats = inArgs->stats;
     args->openGLContext = inArgs->glContext;
     args->cpuOpenGLContext = inArgs->cpuGlContext;
+    args->valuesCache.reset(new RenderValuesCache);
+    {
+        // Cache the meta-datas now
+        QMutexLocker k(&_imp->metadatasMutex);
+        args->valuesCache->setCachedNodeMetadatas(_imp->metadatas);
+    }
+    {
+        // Also cache all inputs
+        NodePtr node = getNode();
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            args->valuesCache->setCachedInput(i, node->getInput(i));
+        }
+    }
+    // Rest of values are cached on demand.
+    
     argsList.push_back(args);
 }
 
@@ -277,6 +292,101 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 }
 
+
+static double
+getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs, const AppInstancePtr& app)
+{
+    if (!app) {
+        return 0.;
+    }
+
+    if (args.validArgs) {
+        return args.time;
+    }
+
+    if ( !frameArgs.empty() ) {
+        return frameArgs.back()->time;
+    }
+
+    return app->getTimeLine()->currentFrame();
+}
+
+
+double
+EffectInstance::getCurrentTime() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    AppInstancePtr app = getApp();
+    if (!app) {
+        return 0.;
+    }
+    if (!tls) {
+        return app->getTimeLine()->currentFrame();
+    }
+    return getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
+}
+
+static ViewIdx
+getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs)
+{
+    if (args.validArgs) {
+        return args.view;
+    }
+    if ( !frameArgs.empty() ) {
+        return frameArgs.back()->view;
+    }
+    return ViewIdx(0);
+}
+
+ViewIdx
+EffectInstance::getCurrentView() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if (!tls) {
+        return ViewIdx(0);
+    }
+    return getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+}
+
+void
+EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    AppInstancePtr app = getApp();
+    if (!tls) {
+        *view = ViewIdx(0);
+        *time = app ? app->getTimeLine()->currentFrame() : 0.;
+        return;
+    }
+    *time = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
+    *view = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+}
+
+SequenceTime
+EffectInstance::getFrameRenderArgsCurrentTime() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return getApp()->getTimeLine()->currentFrame();
+    }
+
+    return tls->frameArgs.back()->time;
+}
+
+ViewIdx
+EffectInstance::getFrameRenderArgsCurrentView() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return ViewIdx(0);
+    }
+
+    return tls->frameArgs.back()->view;
+}
+
 ParallelRenderArgsPtr
 EffectInstance::getParallelRenderArgsTLS() const
 {
@@ -287,6 +397,27 @@ EffectInstance::getParallelRenderArgsTLS() const
     }
 
     return tls->frameArgs.back();
+}
+
+RenderValuesCachePtr
+EffectInstance::getRenderValuesCacheTLS(double* currentRenderTime, ViewIdx* currentRenderView) const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    if ( !tls || tls->frameArgs.empty() ) {
+        return RenderValuesCachePtr();
+    }
+    ParallelRenderArgsPtr args = tls->frameArgs.back();
+    if (args) {
+        if (currentRenderTime) {
+            *currentRenderTime = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, getApp());
+        }
+        if (currentRenderView) {
+            *currentRenderView = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+        }
+        return args->valuesCache;
+    }
+    return RenderValuesCachePtr();
 }
 
 void
@@ -328,12 +459,12 @@ EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
 
     // If any knob has an expression, we must clear its results and clear its hash cache
     // because the result of the expression might depend on the state of the node
-    const KnobsVec & knobs = getKnobs();
+    KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        for (int i = 0; i < (*it)->getDimension(); ++i) {
-            std::string expr = (*it)->getExpression(i);
+        for (int i = 0; i < (*it)->getNDimensions(); ++i) {
+            std::string expr = (*it)->getExpression(DimIdx(i));
             if (!expr.empty()) {
-                (*it)->clearExpressionsResults(i);
+                (*it)->clearExpressionsResults(DimSpec(i), ViewSetSpec::all());
                 (*it)->invalidateHashCache(false);
             }
         }
@@ -708,7 +839,7 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
         tlsArgs->isSequential = isSequentialRender;
         tlsArgs->abortInfo = renderInfo;
-        tlsArgs->treeRoot = inputEffect->getNode();
+        tlsArgs->treeRoot = getNode();
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();
@@ -3123,7 +3254,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
 
 
 void
-EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, int /*dimension*/, double /*time*/, ViewSpec /*view*/)
+EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, DimSpec /*dimension*/, double /*time*/, ViewSetSpec /*view*/)
 {
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
@@ -3140,14 +3271,13 @@ EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, Value
     }
 
 
-    if (isMT) {
-        node->refreshIdentityState();
-        if (knob) {
-            knob->invalidateHashCache();
-        } else {
-            invalidateHashCache();
-        }
+    node->refreshIdentityState();
+    if (knob) {
+        knob->invalidateHashCache();
+    } else {
+        invalidateHashCache();
     }
+
 }
 
 void
@@ -3390,10 +3520,11 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 void
 EffectInstance::onKnobSlaved(const KnobIPtr& slave,
                              const KnobIPtr& master,
-                             int dimension,
+                             DimIdx dimension,
+                             ViewIdx view,
                              bool isSlave)
 {
-    getNode()->onKnobSlaved(slave, master, dimension, isSlave);
+    getNode()->onKnobSlaved(slave, master, dimension, view, isSlave);
 }
 
 void
@@ -3904,7 +4035,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     bool ret = false;
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
-    if ( ( rotoItem && !rotoItem->isActivated(time) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
+    if ( ( rotoItem && !rotoItem->isActivated(time, view) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
         *inputTime = time;
@@ -4831,7 +4962,7 @@ bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   ViewSpec /*view*/,
+                                   ViewSetSpec /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
     return false;
@@ -4970,12 +5101,11 @@ bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          ViewSpec view,
+                                          ViewSetSpec view,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
     if (!node->isNodeCreated()) {
-#pragma message WARN("monitor this")
         return false;
     }
 
@@ -5279,12 +5409,6 @@ EffectInstance::getNearestNonIdentity(double time)
     }
 }
 
-bool
-EffectInstance::canSetValue() const
-{
-    return !getNode()->isNodeRendering() || appPTR->isBackground();
-}
-
 void
 EffectInstance::abortAnyEvaluation(bool keepOldestRender)
 {
@@ -5300,26 +5424,11 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         NodesList inputOutputs;
-        isGroup->getInputsOutputs(&inputOutputs, false);
+        isGroup->getInputsOutputs(&inputOutputs);
         for (NodesList::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
-    } else {
-        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
-        if (attachedStroke) {
-            ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
-            RotoContextPtr context = attachedStroke->getContext();
-            assert(context);
-            if (context) {
-                NodePtr rotonode = context->getNode();
-                if (rotonode) {
-                    rotonode->hasOutputNodesConnected(&outputNodes);
-                }
-            }
-        } else {
-            node->hasOutputNodesConnected(&outputNodes);
-        }
-    }
+    } 
     for (std::list<OutputEffectInstancePtr>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished
@@ -5331,99 +5440,6 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
     }
 }
 
-static double
-getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs, const AppInstancePtr& app)
-{
-    if (!app) {
-        return 0.;
-    }
-
-    if (args.validArgs) {
-        return args.time;
-    }
-
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->time;
-    }
-
-    return app->getTimeLine()->currentFrame();
-}
-
-
-double
-EffectInstance::getCurrentTime() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!app) {
-        return 0.;
-    }
-    if (!tls) {
-        return app->getTimeLine()->currentFrame();
-    }
-    return getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
-}
-
-static ViewIdx
-getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs)
-{
-    if (args.validArgs) {
-        return args.view;
-    }
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->view;
-    }
-    return ViewIdx(0);
-}
-
-ViewIdx
-EffectInstance::getCurrentView() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    
-    if (!tls) {
-        return ViewIdx(0);
-    }
-    return getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-}
-
-void
-EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!tls) {
-        *view = ViewIdx(0);
-        *time = app ? app->getTimeLine()->currentFrame() : 0.;
-        return;
-    }
-    *time = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
-    *view = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-}
-
-SequenceTime
-EffectInstance::getFrameRenderArgsCurrentTime() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return getApp()->getTimeLine()->currentFrame();
-    }
-
-    return tls->frameArgs.back()->time;
-}
-
-ViewIdx
-EffectInstance::getFrameRenderArgsCurrentView() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return ViewIdx(0);
-    }
-
-    return tls->frameArgs.back()->view;
-}
 
 #ifdef DEBUG
 void
@@ -5576,7 +5592,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // set some stuff up
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
-    metadata.setIsFrameVarying( node->hasAnimatedKnob() );
+    metadata.setIsFrameVarying( getHasAnimation() );
     metadata.setIsContinuous(false);
 
     // now find the best depth that the plugin supports
@@ -5748,8 +5764,8 @@ bool
 EffectInstance::isFrameVaryingOrAnimated() const
 {
     NodePtr node = getNode();
-    RotoContextPtr roto = node->getRotoContext();
-    return isFrameVarying() || getHasAnimation() || (roto && roto->isAnimated());
+    KnobItemsTablePtr table = getItemsTable();
+    return isFrameVarying() || getHasAnimation() || (table && table->hasAnimation());
 }
 
 bool
@@ -5787,15 +5803,7 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
 
     ClipPreferencesRunning_RAII runningflag_( shared_from_this() );
     bool ret = refreshMetaDatas_public(false);
-    node->refreshIdentityState();
 
-    if ( !node->duringInputChangedAction() ) {
-        ///The channels selector refreshing is already taken care of in the inputChanged action
-        node->refreshChannelSelectors();
-    }
-
-    node->checkForPremultWarningAndCheckboxes();
-    node->refreshLayersSelectorsVisibility();
 
     markedNodes.push_back( node.get() );
 
@@ -5870,7 +5878,18 @@ EffectInstance::refreshMetaDatas_internal()
 
     bool ret = setMetaDatasInternal(metadata);
     onMetaDatasRefreshed(metadata);
-  
+
+    NodePtr node = getNode();
+    node->refreshIdentityState();
+
+    if ( !node->duringInputChangedAction() ) {
+        ///The channels selector refreshing is already taken care of in the inputChanged action
+        node->refreshChannelSelectors();
+    }
+
+    node->checkForPremultWarningAndCheckboxes();
+    node->refreshLayersSelectorsVisibility();
+
     return ret;
 }
 

@@ -109,7 +109,7 @@ public:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSpec view,
+                                    ViewSetSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     double getRamMaximumPercent() const;
@@ -316,14 +316,11 @@ public:
     void getTimelineBGColor(double* r, double* g, double* b) const;
     void getCachedFrameColor(double* r, double* g, double* b) const;
     void getDiskCachedColor(double* r, double* g, double* b) const;
-    void getCurveEditorBGColor(double* r, double* g, double* b) const;
-    void getCurveEditorGridColor(double* r, double* g, double* b) const;
-    void getCurveEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorBackgroundColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorGridColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorBackgroundColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorScaleColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorGridColor(double* r, double* g, double* b) const;
     void getSliderColor(double* r, double* g, double* b) const;
 
 
@@ -341,7 +338,6 @@ public:
     std::string getSEFontFamily() const;
 
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
-    int getDopeSheetEditorNodeSeparationWith() const;
 
     bool isNaNHandlingEnabled() const;
 
@@ -397,7 +393,6 @@ private:
     void initializeKnobsPython();
     void initializeKnobsAppearance();
     void initializeKnobsGuiColors();
-    void initializeKnobsCurveEditorColors();
     void initializeKnobsDopeSheetColors();
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
@@ -579,19 +574,14 @@ private:
     KnobColorPtr _diskCachedFrameColor;
     KnobColorPtr _sliderColor;
 
-    // Apprance/Curve Editor
-    KnobPagePtr _curveEditorColorsTab;
-    KnobColorPtr _curveEditorBGColor;
-    KnobColorPtr _gridColor;
-    KnobColorPtr _curveEditorScaleColor;
 
     // Appearance/Dope Sheet
-    KnobPagePtr _dopeSheetEditorColorsTab;
-    KnobColorPtr _dopeSheetEditorBackgroundColor;
-    KnobColorPtr _dopeSheetEditorRootSectionBackgroundColor;
-    KnobColorPtr _dopeSheetEditorKnobSectionBackgroundColor;
-    KnobColorPtr _dopeSheetEditorScaleColor;
-    KnobColorPtr _dopeSheetEditorGridColor;
+    KnobPagePtr _animationColorsTab;
+    KnobColorPtr _animationViewBackgroundColor;
+    KnobColorPtr _dopesheetRootSectionBackgroundColor;
+    KnobColorPtr _dopesheetKnobSectionBackgroundColor;
+    KnobColorPtr _animationViewScaleColor;
+    KnobColorPtr _animationViewGridColor;
 
     // Appearance/Script Editor
     KnobPagePtr _scriptEditorColorsTab;
@@ -625,6 +615,11 @@ private:
     KnobColorPtr _defaultViewsGroupColor;
     KnobColorPtr _defaultDeepGroupColor;
     std::vector<std::string> _knownHostNames;
+
+    // Count the number of stylesheet changes during restore defaults
+    // to avoid reloading it many times
+    int _nRedrawStyleSheetRequests;
+    bool _restoringDefaults;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;

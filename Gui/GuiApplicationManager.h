@@ -36,9 +36,10 @@
 #endif
 
 #include "Engine/AppManager.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Variant.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/ViewIdx.h"
 #include "Gui/GuiFwd.h"
 
 #if defined(appPTR)
@@ -101,12 +102,14 @@ public:
 
     void setKnobClipBoard(KnobClipBoardType type,
                           const KnobIPtr& serialization,
-                          int dimension);
+                          DimSpec dimension,
+                          ViewSetSpec view);
 
 
     void getKnobClipBoard(KnobClipBoardType *type,
                           KnobIPtr* serialization,
-                          int *dimension) const;
+                          DimSpec *dimension,
+                          ViewSetSpec *view) const;
 
 
     void updateAllRecentFileMenus();
@@ -118,7 +121,7 @@ public:
     const QCursor & getLinkToCursor() const;
     const QCursor & getLinkToMultCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
-    KnobGui* createGuiForKnob(KnobIPtr knob, KnobGuiContainerI *container) const;
+    KnobGuiWidgets* createGuiForKnob(const KnobGuiPtr& knob, ViewIdx) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
     virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
@@ -194,6 +197,7 @@ public:
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
 
+   
 public Q_SLOTS:
 
     void onFontconfigCacheUpdateFinished();

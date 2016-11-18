@@ -63,6 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
+#include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
@@ -82,21 +83,21 @@ using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
 
-KnobGuiButton::KnobGuiButton(KnobIPtr knob,
-                             KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiButton::KnobGuiButton(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _button(0)
 {
-    _knob = toKnobButton(knob);
+    _knob = toKnobButton(knob->getKnob());
 }
 
 void
 KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
+    KnobGuiPtr knobUI = getKnobGui();
     KnobButtonPtr knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
     QString onIconFilePath, offIconFilePath;
-    if (isViewerUIKnob()) {
+    if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
         onIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(true).c_str() );
         offIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(false).c_str() );
     } else {
@@ -156,8 +157,8 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         _button->setDown(checked);
     }
     QObject::connect( _button, SIGNAL(clicked(bool)), this, SLOT(emitValueChanged(bool)) );
-    if ( hasToolTip() ) {
-        toolTip(_button);
+    if ( knobUI->hasToolTip() ) {
+        knobUI->toolTip(_button, getView());
     }
     layout->addWidget(_button);
 } // KnobGuiButton::createWidget
@@ -189,35 +190,31 @@ KnobGuiButton::emitValueChanged(bool clicked)
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
-        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(), clicked, 0, false) );
+        KnobButtonPtr knob = _knob.lock();
+        getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), clicked, DimIdx(0), getView()) );
     } else {
         k->trigger();
     }
 }
 
 void
-KnobGuiButton::_hide()
+KnobGuiButton::setWidgetsVisible(bool visible)
 {
     if (_button) {
-        _button->hide();
+        _button->setVisible(visible);
     }
 }
 
 void
-KnobGuiButton::_show()
-{
-    if (_button) {
-        _button->show();
-    }
-}
-
-void
-KnobGuiButton::updateGUI(int /*dimension*/)
+KnobGuiButton::updateGUI()
 {
     KnobButtonPtr k = _knob.lock();
 
     if ( k->getIsCheckable() ) {
         bool checked = k->getValue();
+        if (_button->isChecked() == checked) {
+            return;
+        }
         _button->setDown(checked);
         _button->setChecked(checked);
     }
@@ -227,29 +224,23 @@ void
 KnobGuiButton::setEnabled()
 {
     KnobButtonPtr knob = _knob.lock();
-    bool b = knob->isEnabled(0);
+    bool b = knob->isEnabled(DimIdx(0), getView());
 
     _button->setEnabled(b);
 }
 
 void
 KnobGuiButton::setReadOnly(bool readOnly,
-                           int /*dimension*/)
+                           DimSpec /*dimension*/)
 {
     _button->setEnabled(!readOnly);
 }
 
-KnobIPtr
-KnobGuiButton::getKnob() const
-{
-    return _knob.lock();
-}
-
 void
-KnobGuiButton::onLabelChangedInternal()
+KnobGuiButton::onLabelChanged()
 {
     if (_button) {
-        _button->setText(QString::fromUtf8(getKnob()->getLabel().c_str()));
+        _button->setText(QString::fromUtf8(_knob.lock()->getLabel().c_str()));
     }
 }
 

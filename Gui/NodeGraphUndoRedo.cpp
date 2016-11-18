@@ -232,7 +232,7 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         n.node = *it;
 
         ///find all outputs to restore
-        const NodesWList & outputs = (*it)->getNode()->getGuiOutputs();
+        const NodesWList & outputs = (*it)->getNode()->getOutputs();
         for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
             NodePtr output = it2->lock();
             if (!output) {
@@ -288,9 +288,7 @@ RemoveMultipleNodesCommand::undo()
         }
 
         node->getNode()->activate(outputsToRestore, false, false);
-        if ( node->isSettingsPanelVisible() ) {
-            node->getNode()->showKeyframesOnTimeline( next == _nodes.end() );
-        }
+
         std::list<ViewerInstancePtr> viewers;
         node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -332,7 +330,7 @@ RemoveMultipleNodesCommand::redo()
          ++it) {
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
-        NodesWList outputs = node->getNode()->getGuiOutputs();
+        NodesWList outputs = node->getNode()->getOutputs();
         std::list<ViewerInstancePtr> viewers;
         node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -369,7 +367,7 @@ RemoveMultipleNodesCommand::redo()
                     ViewerNodePtr isViewer = output->isEffectViewerNode();
                     ///if the node is an viewer, when disconnecting the active input just activate another input instead
                     if (isViewer) {
-                        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
+                        const std::vector<NodeWPtr> & inputs = output->getInputs();
                         ///set as active input the first non null input
                         for (std::size_t i = 0; i < inputs.size(); ++i) {
                             NodePtr input = inputs[i].lock();
@@ -387,9 +385,6 @@ RemoveMultipleNodesCommand::redo()
                     }
                 }
             }
-        }
-        if ( node->isSettingsPanelVisible() ) {
-            node->getNode()->hideKeyframesFromTimeline( next == _nodes.end() );
         }
 
         // increment for next iteration
@@ -611,7 +606,7 @@ InsertNodeCommand::redo()
 
     ///find out if the node is already connected to what the edge is connected
     bool alreadyConnected = false;
-    const std::vector<NodeWPtr > & inpNodes = newSrcInternal->getGuiInputs();
+    const std::vector<NodeWPtr > & inpNodes = newSrcInternal->getInputs();
     if (oldSrcInternal) {
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if (inpNodes[i].lock() == oldSrcInternal) {
@@ -947,7 +942,7 @@ static bool
 hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
                      const NodeGuiPtr& node)
 {
-    const NodesWList& outputs = node->getNode()->getGuiOutputs();
+    const NodesWList& outputs = node->getNode()->getOutputs();
     bool foundOutput = false;
 
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -973,7 +968,7 @@ static bool
 hasNodeInputsInList(const std::list<NodeGuiPtr >& nodes,
                     const NodeGuiPtr& node)
 {
-    const std::vector<NodeWPtr >& inputs = node->getNode()->getGuiInputs();
+    const std::vector<NodeWPtr >& inputs = node->getNode()->getInputs();
     bool foundInput = false;
 
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1185,7 +1180,7 @@ addTreeInputs(const std::list<NodeGuiPtr >& nodes,
     if ( !hasNodeInputsInList(nodes, node) ) {
         ExtractedInput input;
         input.node = node;
-        input.inputs = node->getNode()->getGuiInputs();
+        input.inputs = node->getNode()->getInputs();
         tree.inputs.push_back(input);
         markedNodes.push_back(node);
     } else {
@@ -1213,7 +1208,7 @@ extractTreesFromNodes(const std::list<NodeGuiPtr >& nodes,
             ExtractedTree tree;
             tree.output.node = *it;
             NodePtr n = (*it)->getNode();
-            const NodesWList& outputs = n->getGuiOutputs();
+            const NodesWList& outputs = n->getOutputs();
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
                 if (!output) {
@@ -1234,7 +1229,7 @@ extractTreesFromNodes(const std::list<NodeGuiPtr >& nodes,
             if ( tree.inputs.empty() ) {
                 ExtractedInput input;
                 input.node = *it;
-                input.inputs = n->getGuiInputs();
+                input.inputs = n->getInputs();
                 tree.inputs.push_back(input);
             }
 
@@ -1717,8 +1712,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         SERIALIZATION_NAMESPACE::NodeClipBoard cb;
         NodesList nodes = group->getNodes();
         std::vector<NodePtr> groupInputs;
-        NodePtr groupOutput = group->getOutputNode(true);
-        group->getInputs(&groupInputs, true);
+        NodePtr groupOutput = group->getOutputNode();
+        group->getInputs(&groupInputs);
 
         std::list<NodeGuiPtr > nodesToCopy;
         for (NodesList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {

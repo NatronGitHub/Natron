@@ -69,7 +69,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"
@@ -79,6 +78,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/Label.h"
+#include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
 #include "Gui/Menu.h"
@@ -210,8 +210,8 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;
-                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                    if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
+                for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
+                    if ( knobs[j]->isSlave(DimIdx(k), ViewIdx(0)) || !knobs[j]->isEnabled(DimIdx(k)) || name.isEmpty() ) {
                         canInsertKnob = false;
                     }
                 }

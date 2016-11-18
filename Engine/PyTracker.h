@@ -34,17 +34,17 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include "Engine/PyParameter.h"
+#include "Engine/PyItemsTable.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-class Track
+class Track : public ItemBase
 {
 public:
 
-    Track(const TrackMarkerPtr& marker);
+    Track(const TrackMarkerPtr& marker, const ItemsTable* table);
 
     ~Track();
 
@@ -53,39 +53,22 @@ public:
         return _marker.lock();
     }
 
-    void setScriptName(const QString& scriptName);
-    QString getScriptName() const;
-
-    Param* getParam(const QString& scriptName) const;
-
-    std::list<Param*> getParams() const;
-
     void reset();
 
 private:
 
 
-    boost::weak_ptr<TrackMarker> _marker;
+    TrackMarkerWPtr _marker;
 };
 
-class Tracker
+class Tracker : public ItemsTable
 {
 public:
 
-    Tracker(const TrackerContextPtr& ctx);
+    Tracker(const KnobItemsTablePtr& ctx, const TrackerHelperPtr& tracker);
 
-    ~Tracker();
+    virtual ~Tracker();
 
-    TrackerContextPtr getInternalContext() const
-    {
-        return _ctx.lock();
-    }
-
-    Track* getTrackByName(const QString& name) const;
-
-    void getAllTracks(std::list<Track*>* markers) const;
-
-    void getSelectedTracks(std::list<Track*>* markers) const;
 
     Track* createTrack();
 
@@ -98,8 +81,10 @@ public:
 
 private:
 
+    virtual ItemBase* createPyItemWrapper(const KnobTableItemPtr& item) const OVERRIDE FINAL;
 
-    boost::weak_ptr<TrackerContext> _ctx;
+    TrackerHelperWPtr _tracker;
+
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

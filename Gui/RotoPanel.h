@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if 0
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -47,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 NATRON_NAMESPACE_ENTER;
+
 
 struct RotoPanelPrivate;
 
@@ -207,7 +209,7 @@ public:
 };
 
 typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
-
 NATRON_NAMESPACE_EXIT;
+#endif
 
 #endif // ROTOPANEL_H

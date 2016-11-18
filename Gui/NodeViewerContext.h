@@ -36,7 +36,9 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
+#include "Global/GlobalDefines.h"
 
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
@@ -95,6 +97,7 @@ public:
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setCurrentTool(const QString& toolID, bool notifyNode);
 
@@ -132,13 +135,9 @@ public Q_SLOTS:
 
     void onToolActionTriggered(QAction* act);
 
-    void onToolGroupValueChanged(ViewSpec view,
-                                 int dimension,
-                                 int reason);
+    void onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
 
-    void onToolActionValueChanged(ViewSpec view,
-                                  int dimension,
-                                  int reason);
+    void onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
 
     void onNodeSettingsPanelClosed(bool closed);
 

@@ -46,9 +46,8 @@
 #include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
@@ -108,8 +107,8 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     }
     KnobIntPtr inPoint = viewer->getPlaybackInPointKnob();
     KnobIntPtr outPoint = viewer->getPlaybackOutPointKnob();
-    inPoint->setValueFromPlugin(first, ViewSpec::current(), 0);
-    outPoint->setValueFromPlugin(second, ViewSpec::current(), 0);
+    inPoint->setValue(first, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    outPoint->setValue(second, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     abortViewersAndRefresh();
 }
@@ -303,6 +302,12 @@ ViewerTab::redrawGLWidgets()
     _imp->timeLineGui->update();
 }
 
+void
+ViewerTab::redrawTimeline()
+{
+    _imp->timeLineGui->update();
+}
+
 
 void
 ViewerTab::centerOn(SequenceTime left,
@@ -396,16 +401,12 @@ ViewerTab::setTripleSyncEnabled(bool toggled)
 {
     getGui()->setTripleSyncEnabled(toggled);
     if (toggled) {
-        DopeSheetEditor* deditor = getGui()->getDopeSheetEditor();
-        CurveEditor* cEditor = getGui()->getCurveEditor();
-        //Sync curve editor and dopesheet tree width
-        cEditor->setTreeWidgetWidth( deditor->getTreeWidgetWidth() );
+        AnimationModuleEditor* deditor = getGui()->getAnimationModuleEditor();
 
         SequenceTime left, right;
         _imp->timeLineGui->getVisibleRange(&left, &right);
         getGui()->centerOpenedViewersOn(left, right);
         deditor->centerOn(left, right);
-        cEditor->getCurveWidget()->centerOn(left, right);
     }
 }
 

@@ -641,7 +641,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setIsPersistent(persistent);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecret(secretByDefault);
-    knob->setAllDimensionsEnabled(enabledByDefault);
+    knob->setEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
@@ -649,8 +649,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if ( knob->isAnimationEnabled() ) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
         if (handler) {
-            QObject::connect( handler.get(), SIGNAL(animationLevelChanged(ViewSpec,int)), ptk,
-                              SLOT(onKnobAnimationLevelChanged(ViewSpec,int)) );
+            QObject::connect( handler.get(), SIGNAL(animationLevelChanged(ViewSetSpec,DimSpec)), ptk,
+                              SLOT(onKnobAnimationLevelChanged(ViewSetSpec,DimSpec)) );
         }
     }
 
@@ -934,13 +934,13 @@ OfxImageEffectInstance::addParamsToTheirParents()
 
  */
 OfxStatus
-OfxImageEffectInstance::editBegin(const std::string & /*name*/)
+OfxImageEffectInstance::editBegin(const std::string & name)
 {
     ///Don't push undo/redo actions while creating a group
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingNode() ) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        effect->beginMultipleEdits(name);
     }
 
     return kOfxStatOK;
@@ -956,7 +956,7 @@ OfxImageEffectInstance::editEnd()
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingNode() ) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        effect->endMultipleEdits();
     }
 
     return kOfxStatOK;

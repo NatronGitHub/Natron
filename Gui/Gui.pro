@@ -80,29 +80,32 @@ SOURCES += \
     ActionShortcuts.cpp \
     AddKnobDialog.cpp \
     AnimatedCheckBox.cpp \
+    AnimItemBase.cpp \
+    AnimationModule.cpp \
+    AnimationModuleBase.cpp \
+    AnimationModuleEditor.cpp \
+    AnimationModuleSelectionModel.cpp \
+    AnimationModuleTreeView.cpp \
+    AnimationModuleUndoRedo.cpp \
+    AnimationModuleView.cpp \
+    AnimationModuleViewCurveWidget.cpp \
+    AnimationModuleViewCurveWidgetPrivate.cpp \
+    AnimationModuleViewDopeSheet.cpp \
+    AnimationModuleViewPrivate.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
     ClickableLabel.cpp \
     ColoredFrame.cpp \
     ComboBox.cpp \
-    CurveEditor.cpp \
-    CurveEditorUndoRedo.cpp \
     CurveGui.cpp \
-    CurveWidget.cpp \
     CurveWidgetDialogs.cpp \
-    CurveWidgetPrivate.cpp \
     CustomParamInteract.cpp \
     DialogButtonBox.cpp \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
     DocumentationManager.cpp \
-    DopeSheet.cpp \
-    DopeSheetView.cpp \
-    DopeSheetEditorUndoRedo.cpp \
-    DopeSheetHierarchyView.cpp \
-    DopeSheetEditor.cpp \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
@@ -127,6 +130,8 @@ SOURCES += \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
+    KnobAnim.cpp \
+    KnobItemsTableGui.cpp \
     KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
@@ -134,6 +139,7 @@ SOURCES += \
     KnobGuiFactory.cpp \
     KnobGuiPrivate.cpp \
     KnobGuiFile.cpp \
+    KnobGuiWidgets.cpp \
     FileTypeMainWindow_win.cpp \
     KnobGuiButton.cpp \
     KnobGuiBool.cpp \
@@ -155,6 +161,7 @@ SOURCES += \
     MessageBox.cpp \
     Menu.cpp \
     NewLayerDialog.cpp \
+    NodeAnim.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -199,6 +206,7 @@ SOURCES += \
     SplashScreen.cpp \
     Splitter.cpp \
     TabGroup.cpp \
+    TableItemAnim.cpp \
     TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
@@ -228,17 +236,22 @@ HEADERS += \
     ActionShortcuts.h \
     AddKnobDialog.h \
     AnimatedCheckBox.h \
+    AnimItemBase.h \
+    AnimationModule.h \
+    AnimationModuleBase.h \
+    AnimationModuleEditor.h \
+    AnimationModuleSelectionModel.h \
+    AnimationModuleTreeView.h \
+    AnimationModuleUndoRedo.h \
+    AnimationModuleView.h \
+    AnimationModuleViewPrivate.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
     ClickableLabel.h \
     ColoredFrame.h \
     ComboBox.h \
-    CurveEditor.h \
-    CurveEditorUndoRedo.h \
     CurveGui.h \
-    CurveSelection.h \
-    CurveWidget.h \
     CurveWidgetDialogs.h \
     CurveWidgetPrivate.h \
     CustomParamInteract.h \
@@ -247,11 +260,6 @@ HEADERS += \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
     DocumentationManager.h \
-    DopeSheet.h \
-    DopeSheetView.h \
-    DopeSheetEditorUndoRedo.h \
-    DopeSheetHierarchyView.h \
-    DopeSheetEditor.h \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
@@ -272,6 +280,8 @@ HEADERS += \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
+    KnobAnim.h \
+    KnobItemsTableGui.h \
     KnobGui.h \
     KnobGuiContainerI.h \
     KnobGuiContainerHelper.h \
@@ -287,6 +297,7 @@ HEADERS += \
     KnobGuiTable.h \
     KnobGuiParametric.h \
     KnobGuiValue.h \
+    KnobGuiWidgets.h \
     KnobUndoCommand.h \
     KnobWidgetDnD.h \
     Label.h \
@@ -297,6 +308,7 @@ HEADERS += \
     MessageBox.h \
     Menu.h \
     NewLayerDialog.h \
+    NodeAnim.h \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
@@ -332,6 +344,7 @@ HEADERS += \
     SpinBoxValidator.h \
     SplashScreen.h \
     Splitter.h \
+    TableItemAnim.h \
     TabGroup.h \
     TableModelView.h \
     TabWidget.h \

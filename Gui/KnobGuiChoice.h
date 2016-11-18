@@ -44,13 +44,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/ComboBox.h"
@@ -63,7 +61,8 @@ class KnobComboBox
 {
 public:
     KnobComboBox(const KnobGuiPtr& knob,
-                 int dimension,
+                 DimSpec dimension,
+                 ViewIdx view,
                  QWidget* parent = 0);
 
     virtual ~KnobComboBox();
@@ -94,9 +93,10 @@ class ChannelsComboBox
 public:
 
     ChannelsComboBox(const KnobGuiPtr& knob,
-                     int dimension,
+                     DimSpec dimension,
+                     ViewIdx view,
                      QWidget* parent = 0)
-    : KnobComboBox(knob, dimension, parent) {}
+    : KnobComboBox(knob, dimension, view, parent) {}
 
 private:
 
@@ -104,28 +104,27 @@ private:
 };
 
 class KnobGuiChoice
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiChoice(knob, container);
+        return new KnobGuiChoice(knob, view);
     }
 
-    KnobGuiChoice(KnobIPtr knob,
-                  KnobGuiContainerI *container);
+    KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiChoice() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
     static QString getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
+
+    ComboBox* getCombobox() const;
 
 public Q_SLOTS:
 
@@ -139,24 +138,24 @@ public Q_SLOTS:
 
     void onItemNewSelected();
 
-    void onRefreshMenuActionTriggered();
 
 private:
 
     QString getPixmapPathFromFilePath(const QString& filePath) const;
 
-    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
+    
+private:
+
     KnobComboBox *_comboBox;
     KnobChoiceWPtr _knob;
 };

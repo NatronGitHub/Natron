@@ -35,6 +35,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QUndoGroup>
 #include <QDesktopServices>
+#include <QImage>
+#include <QPixmap>
 #include <QtCore/QUrl>
 
 #include "Engine/Node.h"
@@ -45,8 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Global/StrUtils.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -298,27 +299,15 @@ Gui::getProjectGui() const
 
 
 void
-Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
+Gui::addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_curveEditor->addNode(node);
+    _imp->_animationModule->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
+Gui::removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr &node)
 {
-    _imp->_curveEditor->removeNode( node );
-}
-
-void
-Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
-{
-    _imp->_dopeSheetEditor->addNode(node);
-}
-
-void
-Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
-{
-    _imp->_dopeSheetEditor->removeNode( node );
+    _imp->_animationModule->removeNode( node );
 }
 
 void
@@ -397,8 +386,13 @@ Gui::eventFilter(QObject *target,
 void
 Gui::createMenuActions()
 {
-    _imp->menubar = new QMenuBar(this);
-    setMenuBar(_imp->menubar);
+    if (!_imp->menubar) {
+        _imp->menubar = new QMenuBar(this);
+        setMenuBar(_imp->menubar);
+    } else {
+        _imp->menubar->clear();
+    }
+
 
     _imp->menuFile = new Menu(tr("File"), _imp->menubar);
     _imp->menuRecentFiles = new Menu(tr("Open Recent"), _imp->menuFile);
@@ -453,6 +447,7 @@ Gui::createMenuActions()
 
     _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
+    _imp->actionProject_settings->setShortcutContext(Qt::WidgetShortcut);
     QObject::connect( _imp->actionProject_settings, SIGNAL(triggered()), this, SLOT(setVisibleProjectSettingsPanel()) );
 
     _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, this);
@@ -765,6 +760,43 @@ Gui::dockClicked()
     setWindowState( (windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
 }
 #endif
+
+template <class IMG>
+void scaleImageToAdjustDPIInternal(double scale, IMG* pix)
+{
+
+    if (scale <= 1) {
+        return;
+    }
+    int newWidth = pix->width() / scale;
+    int newHeight = pix->height() / scale;
+
+    *pix = pix->scaled(newWidth, newHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+}
+
+
+
+void
+Gui::scaleImageToAdjustDPI(QImage* pix)
+{
+#if QT_VERSION > 0x050000
+    Q_UNUSED(pix);
+    return;
+#endif
+    double highDPIFactor = getHighDPIScaleFactor();
+    scaleImageToAdjustDPIInternal<QImage>(highDPIFactor, pix);
+}
+
+void
+Gui::scalePixmapToAdjustDPI(QPixmap* pix)
+{
+#if QT_VERSION > 0x050000
+    Q_UNUSED(pix);
+    return;
+#endif
+    double highDPIFactor = getHighDPIScaleFactor();
+    scaleImageToAdjustDPIInternal<QPixmap>(highDPIFactor, pix);
+}
 
 NATRON_NAMESPACE_EXIT;
 

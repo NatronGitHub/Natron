@@ -94,146 +94,118 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    RotoDrawableItem(const RotoContextPtr& context,
-                     const std::string & name,
-                     const RotoLayerPtr& parent);
+    RotoDrawableItem(const KnobItemsTablePtr& model);
 
 
     virtual ~RotoDrawableItem();
 
+    /**
+     * @brief Returns the default overlay color
+     **/
     static void getDefaultOverlayColor(double *r, double *g, double *b);
 
+    /**
+     * @brief Create internal nodes used by the item. Does nothing if nodes are already created
+     * @param connectNodes If true, this will also call refreshNodesConnections()
+     **/
     void createNodes(bool connectNodes = true);
 
+    /**
+     * @brief Set the render thread safety to instance safe. This is called when user start drawing.
+     **/
     void setNodesThreadSafetyForRotopainting();
 
+    /**
+     * @brief If setNodesThreadSafetyForRotopainting() was called, this will restore the thread safety of the internal 
+     * nodes to their default thread safety for rendering.
+     **/
+    void resetNodesThreadSafety();
+
+    /**
+     * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
+     * to calling this function.
+     **/
     void refreshNodesConnections(bool isTreeConcatenated);
 
+    /**
+     * @brief Deactivates all nodes used by this item
+     **/
+    void deactivateNodes();
+
+    /**
+     * @brief Activates all nodes used by this item
+     **/
+    void activateNodes();
+
+    /**
+     * @brief Deactivate all nodes used by this item
+     **/
+    void disconnectNodes();
+
+    /**
+     * @brief Clear the image pointers used by internal nodes of the item used to store previous computations
+     * while rotopainting. This will force a render of the full image
+     **/
     void clearPaintBuffers();
-
-    virtual void clone(const RotoItem*  other) OVERRIDE;
-
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
-
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
-    bool isActivated(double time) const;
-    void setActivated(bool a, double time);
+    bool isActivated(double time, ViewGetSpec view) const;
 
     /**
-     * @brief The opacity of the curve
+     * @brief Get the frame-range(s) through which the item is activated
      **/
-    double getOpacity(double time) const;
-    void setOpacity(double o, double time);
-
-    /**
-     * @brief The distance of the feather is the distance from the control point to the feather point plus
-     * the feather distance returned by this function.
-     **/
-    double getFeatherDistance(double time) const;
-    void setFeatherDistance(double d, double time);
-    int getNumKeyframesFeatherDistance() const;
-
-    /**
-     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
-     **/
-    double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double f, double time);
-
-    /**
-     * @brief The color that the GUI should use to draw the overlay of the shape
-     **/
-    void getOverlayColor(double* color) const;
-    void setOverlayColor(const double* color);
-    bool getInverted(double time) const;
-    void getColor(double time, double* color) const;
-    void setColor(double time, double r, double g, double b);
-
-    int getCompositingOperator() const;
-
-    void setCompositingOperator(int op);
+    std::vector<RangeD> getActivatedRanges(ViewGetSpec view) const;
 
     std::string getCompositingOperatorToolTip() const;
 
-    KnobBoolPtr getActivatedKnob() const;
-    KnobDoublePtr getFeatherKnob() const;
-    KnobDoublePtr getFeatherFallOffKnob() const;
+    KnobBoolPtr getCustomRangeKnob() const;
+
     KnobDoublePtr getOpacityKnob() const;
     KnobBoolPtr getInvertedKnob() const;
     KnobChoicePtr getOperatorKnob() const;
     KnobColorPtr getColorKnob() const;
+    KnobColorPtr getOverlayColorKnob() const;
     KnobDoublePtr getCenterKnob() const;
     KnobIntPtr getLifeTimeFrameKnob() const;
+
+    KnobIntPtr getTimeOffsetKnob() const;
+    KnobChoicePtr getTimeOffsetModeKnob() const;
+    KnobChoicePtr getMergeInputAChoiceKnob() const;
+    KnobChoicePtr getMergeMaskChoiceKnob() const;
+
     KnobDoublePtr getBrushSizeKnob() const;
     KnobDoublePtr getBrushHardnessKnob() const;
     KnobDoublePtr getBrushSpacingKnob() const;
-    KnobDoublePtr getBrushEffectKnob() const;
     KnobDoublePtr getBrushVisiblePortionKnob() const;
-    KnobBoolPtr getPressureOpacityKnob() const;
-    KnobBoolPtr getPressureSizeKnob() const;
-    KnobBoolPtr getPressureHardnessKnob() const;
-    KnobBoolPtr getBuildupKnob() const;
-    KnobIntPtr getTimeOffsetKnob() const;
-    KnobChoicePtr getTimeOffsetModeKnob() const;
-    KnobChoicePtr getBrushSourceTypeKnob() const;
-    KnobDoublePtr getBrushCloneTranslateKnob() const;
-    KnobDoublePtr getMotionBlurAmountKnob() const;
-    KnobDoublePtr getShutterOffsetKnob() const;
-    KnobDoublePtr getShutterKnob() const;
-    KnobChoicePtr getShutterTypeKnob() const;
-    KnobChoicePtr getFallOffRampTypeKnob() const;
+
 
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    virtual RectD getBoundingBox(double time) const = 0;
+    virtual RectD getBoundingBox(double time, ViewGetSpec view) const = 0;
 
-    void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
+    void getTransformAtTime(double time, ViewGetSpec view, Transform::Matrix3x3* matrix) const;
+    
+    void setExtraMatrix(bool setKeyframe, double time, ViewSetSpec view, const Transform::Matrix3x3& mat);
 
     /**
-     * @brief Set the transform at the given time
+     * @brief Return pointer to internal node
      **/
-    void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
-
-    void setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat);
-
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
     NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
 
-    void resetNodesThreadSafety();
-    void deactivateNodes();
-    void activateNodes();
-    void disconnectNodes();
 
     void resetTransformCenter();
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE ;
-
     virtual void initializeKnobs() OVERRIDE;
 
-
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
-
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, int dimension, double time, ViewSpec view) OVERRIDE;
-
-    virtual void dequeueGuiActions(bool /*force*/) {}
+    virtual RotoStrokeType getBrushType() const = 0;
 
 Q_SIGNALS:
 
@@ -241,26 +213,51 @@ Q_SIGNALS:
 
     void shapeColorChanged();
 
-    void compositingOperatorChanged(ViewSpec, int, int);
+    void compositingOperatorChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 
-    void onRotoKnobChanged(ViewSpec, int, int);
+    void onRotoKnobChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 protected:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSpec view,
+                                    ViewSetSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
 
-    virtual void onTransformSet(double /*time*/) {}
+    virtual void onTransformSet(double /*time*/, ViewSetSpec /*view*/) {}
 
 private:
 
+    virtual void onItemRemovedFromModel() OVERRIDE FINAL;
 
-    RotoDrawableItemPtr findPreviousInHierarchy();
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
+};
+
+
+class CompNodeItem : public RotoDrawableItem
+{
+public:
+
+    CompNodeItem(const KnobItemsTablePtr& model)
+    : RotoDrawableItem(model)
+    {
+
+    }
+
+
+    virtual ~CompNodeItem()
+    {
+
+    }
+
+    virtual RotoStrokeType getBrushType() const OVERRIDE FINAL
+    {
+        return eRotoStrokeTypeComp;
+    }
+
+    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

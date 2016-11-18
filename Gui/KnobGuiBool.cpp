@@ -67,6 +67,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobGui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
@@ -84,12 +85,13 @@ using std::make_pair;
 //==========================KnobBool_GUI======================================
 
 Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob,
-                             int dimension,
+                             DimSpec dimension,
+                             ViewIdx view,
                              QWidget* parent)
     : AnimatedCheckBox(parent)
     , useCustomColor(false)
     , customColor()
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
 }
 
@@ -200,25 +202,25 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
     AnimatedCheckBox::focusOutEvent(e);
 }
 
-KnobGuiBool::KnobGuiBool(KnobIPtr knob,
-                         KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiBool::KnobGuiBool(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _checkBox(0)
 {
-    _knob = toKnobBool(knob);
+    _knob = toKnobBool(knob->getKnob());
 }
 
 void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new Bool_CheckBox( shared_from_this(), 0, layout->parentWidget() );
-    onLabelChangedInternal();
+    KnobGuiPtr knobUI = getKnobGui();
+    _checkBox = new Bool_CheckBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
+    onLabelChanged();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
-    QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
+    QObject::connect( knobUI.get(), SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
 
     ///set the copy/link actions in the right click menu
-    enableRightClickMenu(_checkBox, 0);
+    KnobGuiWidgets::enableRightClickMenu(knobUI, _checkBox, DimIdx(0), getView());
 
     layout->addWidget(_checkBox);
 }
@@ -235,13 +237,17 @@ KnobGuiBool::removeSpecificGui()
 }
 
 void
-KnobGuiBool::updateGUI(int /*dimension*/)
+KnobGuiBool::updateGUI()
 {
-    _checkBox->setChecked( _knob.lock()->getValue(0) );
+    bool checked = _knob.lock()->getValue(DimIdx(0), getView());
+    if (_checkBox->isChecked() == checked) {
+        return;
+    }
+    _checkBox->setChecked(checked);
 }
 
 void
-KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
+KnobGuiBool::reflectAnimationLevel(DimIdx /*dimension*/,
                                    AnimationLevelEnum level)
 {
     int value;
@@ -266,7 +272,7 @@ KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
-KnobGuiBool::onLabelChangedInternal()
+KnobGuiBool::onLabelChanged()
 {
     const std::string& label = _knob.lock()->getLabel();
 
@@ -298,39 +304,36 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
+
+    KnobBoolPtr knob = _knob.lock();
+    getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), b, DimIdx(0), getView()) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
+    KnobBoolPtr knob = _knob.lock();
+    getKnobGui()->pushUndoCommand( new KnobUndoCommand<bool>(knob, knob->getValue(DimIdx(0), getView()), b, DimIdx(0), getView()) );
 }
 
 void
-KnobGuiBool::_hide()
+KnobGuiBool::setWidgetsVisible(bool visible)
 {
-    _checkBox->hide();
-}
-
-void
-KnobGuiBool::_show()
-{
-    _checkBox->show();
+    _checkBox->setVisible(visible);
 }
 
 void
 KnobGuiBool::setEnabled()
 {
     KnobBoolPtr knob = _knob.lock();
-    bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(DimIdx(0), getView())  && knob->getExpression(DimIdx(0), getView()).empty();
 
     _checkBox->setReadOnly(!b);
 }
 
 void
 KnobGuiBool::setReadOnly(bool readOnly,
-                         int /*dimension*/)
+                         DimSpec /*dimension*/)
 {
     _checkBox->setReadOnly(readOnly);
 }
@@ -341,17 +344,11 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-KnobIPtr
-KnobGuiBool::getKnob() const
-{
-    return _knob.lock();
-}
-
 void
-KnobGuiBool::reflectExpressionState(int /*dimension*/,
+KnobGuiBool::reflectExpressionState(DimIdx /*dimension*/,
                                     bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
 
     _checkBox->setAnimation(3);
     _checkBox->setReadOnly(hasExpr || !isEnabled);
@@ -360,9 +357,10 @@ KnobGuiBool::reflectExpressionState(int /*dimension*/,
 void
 KnobGuiBool::updateToolTip()
 {
-    if ( hasToolTip() ) {
-        for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
-            toolTip(_checkBox);
+    KnobGuiPtr knob = getKnobGui();
+    if ( knob->hasToolTip() ) {
+        for (int i = 0; i < _knob.lock()->getNDimensions(); ++i) {
+            knob->toolTip(_checkBox, getView());
         }
     }
 }

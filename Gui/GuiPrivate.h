@@ -43,6 +43,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Enums.h"
 
+#include "Engine/TimeLineKeys.h"
+
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/GuiFwd.h"
@@ -162,12 +164,10 @@ public:
     NodeGraph* _lastFocusedGraph;
     std::list<NodeGraph*> _groups;
 
-    ///The curve editor.
-    CurveEditor *_curveEditor;
     ProgressPanel* _progressPanel;
 
     // The dope sheet
-    DopeSheetEditor *_dopeSheetEditor;
+    AnimationModuleEditor *_animationModule;
 
     ///the left toolbar
     QToolBar* _toolBox;
@@ -234,6 +234,9 @@ public:
     std::map<ActionWithShortcut*, std::string> pythonCommands;
     RenderStatsDialog* statsDialog;
     PanelWidget* currentPanelFocus;
+    
+    // List of keyframes that should be visible on all timeline GUI
+    TimeLineKeysSet keyframesVisibleOnTimeline;
 
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
@@ -260,9 +263,7 @@ public:
     ///Must be called absolutely before createPropertiesBinGui
     void createNodeGraphGui();
 
-    void createCurveEditorGui();
-
-    void createDopeSheetGui();
+    void createAnimationModuleGui();
 
     void createScriptEditorGui();
 

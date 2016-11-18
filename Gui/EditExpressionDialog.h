@@ -32,6 +32,8 @@
 
 #include <QtCore/QString>
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 #include "Gui/EditScriptDialog.h"
 #include "Gui/GuiFwd.h"
 
@@ -45,13 +47,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    int _dimension;
+    DimSpec _dimension;
+    ViewSetSpec _view;
     KnobGuiPtr _knob;
 
 public:
 
     EditExpressionDialog(Gui* gui,
-                         int dimension,
+                         DimSpec dimension,
+                         ViewSetSpec view,
                          const KnobGuiPtr& knob,
                          QWidget* parent);
 
@@ -59,8 +63,9 @@ public:
     {
     }
 
-    int getDimension() const;
+    DimSpec getDimension() const;
 
+    ViewSetSpec getView() const;
 private:
 
     virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;

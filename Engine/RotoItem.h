@@ -46,12 +46,11 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/Knob.h"
-
+#include "Engine/KnobItemsTable.h"
 #include "Serialization/SerializationBase.h"
 
 
-#define kRotoLayerBaseName "Layer"
+#define kRotoLayerBaseName "Group"
 #define kRotoBezierBaseName "Bezier"
 #define kRotoOpenBezierBaseName "Pencil"
 #define kRotoEllipseBaseName "Ellipse"
@@ -66,49 +65,33 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+
+#define kParamRotoItemEnabled "enabled"
+#define kParamRotoItemEnabledLabel "Enabled"
+#define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered.\n" \
+"This is a global switch that is saved with the project and supersedes the life time parameter."
+
+#define kParamRotoItemLocked "locked"
+#define kParamRotoItemLockedLabel "Locked"
+#define kParamRotoItemLockedHint "When checked, the parameter is no longer editable in the viewer and its parameters are greyed out."
+
 NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
-    : public KnobHolder
-    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
+    : public KnobTableItem
 {
-public:
-
-    enum SelectionReasonEnum
-    {
-        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
-        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
-        eSelectionReasonOther ///when the project loader restores the selection
-    };
-
 public:
 
     // This class is virtual pure so no need to privatize the constructor
 
-    RotoItem( const RotoContextPtr& context,
-             const std::string & name,
-             RotoLayerPtr parent = RotoLayerPtr() );
+    RotoItem(const KnobItemsTablePtr& model);
 
 
     virtual ~RotoItem();
 
-    virtual void clone(const RotoItem*  other);
+    virtual bool isItemContainer() const OVERRIDE { return false; }
 
-    ///only callable on the main-thread
-    bool setScriptName(const std::string & name);
-
-    std::string getScriptName() const;
-    std::string getFullyQualifiedName() const;
-    std::string getLabel() const;
-
-    void setLabel(const std::string& label);
-
-    ///only callable on the main-thread
-    void setParentLayer(RotoLayerPtr layer);
-
-    ///MT-safe
-    RotoLayerPtr getParentLayer() const;
 
     ///only callable from the main-thread
     void setGloballyActivated(bool a, bool setChildren);
@@ -118,72 +101,32 @@ public:
 
     bool isDeactivatedRecursive() const;
 
-    void setLocked(bool l, bool lockChildren, RotoItem::SelectionReasonEnum reason);
+    void setLocked(bool l, bool lockChildren);
     bool getLocked() const;
 
     bool isLockedRecursive() const;
 
-    /**
-     * @brief Returns at which hierarchy level the item is.
-     * The base layer is 0.
-     * All items into that base layer are on level 1.
-     * etc...
-     **/
-    int getHierarchyLevel() const;
+    KnobBoolPtr getLockedKnob() const;
 
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
+    KnobBoolPtr getActivatedKnob() const;
 
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
+    virtual std::string getBaseItemName() const OVERRIDE = 0;
 
-    /**
-     * @brief Returns the name of the node holding this item
-     **/
-    std::string getRotoNodeName() const;
-    RotoContextPtr getContext() const;
-    RotoItemPtr getPreviousItemInLayer() const;
-
-    
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
 
 
-    ///This mutex protects every-member this class and the derived class might have.
-    ///That is for the RotoItem class:
-    ///  - name
-    ///  - globallyActivated
-    ///  - locked
-    ///  - parentLayer
-    ///
-    ///For the RotoDrawableItem:
-    ///  - overlayColor
-    ///
-    ///For the RotoLayer class:
-    ///  - items
-    ///
-    ///For the Bezier class:
-    ///  - points
-    ///  - featherPoints
-    ///  - finished
-    ///  - pointsAtDistance
-    ///  - featherPointsAtDistance
-    ///  - featherPointsAtDistanceVal
-    mutable QMutex itemMutex;
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSetSpec view,
+                                    bool originatedFromMainThread) OVERRIDE;
 
 private:
 
     void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked, RotoItem::SelectionReasonEnum reason);
+    void setLocked_recursive(bool locked);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };

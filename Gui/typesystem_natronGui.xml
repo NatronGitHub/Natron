@@ -152,7 +152,6 @@
                 return ret;
             </inject-code>
         </modify-function>
-        <modify-function signature="save_serialization_thread()const" remove="all"/>
     </object-type>
     
     <object-type name="PyTabWidget">

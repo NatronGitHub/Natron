@@ -53,6 +53,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModule.h"
+#include "Gui/AnimationModuleUndoRedo.h"
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
 #include "Gui/DockablePanelPrivate.h"
@@ -60,8 +63,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/FloatingWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/NodeAnim.h"
+#include "Gui/KnobAnim.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h" // triggerButtonIsRight...
+#include "Gui/KnobItemsTableGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/KnobGuiGroup.h"
@@ -76,10 +82,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/PropertiesBinWrapper.h"
-#include "Gui/RotoPanel.h"
 #include "Gui/TabGroup.h"
 #include "Gui/TabWidget.h"
-#include "Gui/TrackerPanel.h"
 #include "Gui/VerticalColorBar.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -140,12 +144,12 @@ DockablePanel::DockablePanel(Gui* gui,
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->_headerWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        _imp->_headerLayout->setSpacing(2);
+        _imp->_headerLayout->setSpacing(TO_DPIX(2));
         _imp->_headerWidget->setLayout(_imp->_headerLayout);
 
         if (isEffect) {
             _imp->_iconLabel = new Label( getHeaderWidget() );
-            _imp->_iconLabel->setContentsMargins(2, 2, 2, 2);
+            _imp->_iconLabel->setContentsMargins(TO_DPIX(2), TO_DPIX(2), TO_DPIX(2), TO_DPIX(2));
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
@@ -277,10 +281,6 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
 
-            //bShow timeline keyframe markers to be consistent with the fact that the panel is opened by default
-            isEffect->getNode()->showKeyframesOnTimeline(true);
-
-
 
             if (isEffect->getNode()->hasOverlay()) {
                 QPixmap pixOverlay;
@@ -384,8 +384,8 @@ DockablePanel::DockablePanel(Gui* gui,
 
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
-    _imp->_horizLayout->setSpacing(2);
+    _imp->_horizLayout->setContentsMargins(0, TO_DPIX(3), TO_DPIX(3), 0);
+    _imp->_horizLayout->setSpacing(TO_DPIX(2));
 
     _imp->_rightContainer = new QWidget(_imp->_horizContainer);
     _imp->_rightContainerLayout = new QVBoxLayout(_imp->_rightContainer);
@@ -535,13 +535,10 @@ DockablePanel::onKnobsRecreated()
     if (isNodePanel) {
 
         Gui* gui = getGui();
-        if (gui) {
-            NodeGuiPtr node = isNodePanel->getNode();
-            getGui()->getCurveEditor()->removeNode( node );
-            getGui()->getCurveEditor()->addNode(node);
-
-            gui->removeNodeGuiFromDopeSheetEditor(node);
-            gui->addNodeGuiToDopeSheetEditor(node);
+        NodeGuiPtr node = isNodePanel->getNode();
+        if (gui && node) {
+            getGui()->removeNodeGuiFromAnimationModuleEditor(node);
+            getGui()->addNodeGuiToAnimationModuleEditor(node);
         }
     }
 }
@@ -686,7 +683,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             }
         }
 
-        pushUndoCommand( new RestoreDefaultsCommand(true, knobsList, -1) );
+        pushUndoCommand( new RestoreDefaultsCommand(knobsList, DimSpec::all(), ViewSetSpec::all()) );
     }
 }
 
@@ -723,50 +720,8 @@ DockablePanel::onKnobsInitialized()
 {
     assert(_imp->_tabWidget);
     _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
-
-
-    RotoPanel* roto = initializeRotoPanel();
-    if (roto) {
-        _imp->_rightContainerLayout->addWidget(roto);
-    }
-
-
-    assert(!_imp->_trackerPanel);
-    _imp->_trackerPanel = initializeTrackerPanel();
-
-    if (_imp->_trackerPanel) {
-        if ( !_imp->_tabWidget->count() ) {
-            // No page, add it to the bottom
-            _imp->_rightContainerLayout->addWidget(_imp->_trackerPanel);
-        } else {
-            // There is a page, add it to the first page
-
-            QGridLayout* layout = dynamic_cast<QGridLayout*>( _imp->_tabWidget->widget(0)->layout() );
-            assert(layout);
-            if (layout) {
-                layout->addWidget(_imp->_trackerPanel, layout->rowCount(), 0, 1, 2);
-            }
-        }
-    }
-
-
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    if (isNodePanel) {
-        NodeCollectionPtr collec = isNodePanel->getNode()->getNode()->getGroup();
-        NodeGroupPtr isGroup = toNodeGroup(collec);
-        if (isGroup) {
-            if ( !isGroup->isSubGraphEditedByUser() ) {
-                setEnabled(false);
-            }
-        }
-    }
 } // DockablePanel::initializeKnobsInternal
 
-TrackerPanel*
-DockablePanel::getTrackerPanel() const
-{
-    return _imp->_trackerPanel;
-}
 
 void
 DockablePanel::refreshTabWidgetMaxHeight()
@@ -918,7 +873,7 @@ DockablePanel::setClosed(bool c)
 } // setClosed
 
 void
-DockablePanel::setClosedInternal(bool c)
+DockablePanel::setClosedInternal(bool closed)
 {
     if (!_imp->_gui) {
         return;
@@ -926,10 +881,10 @@ DockablePanel::setClosedInternal(bool c)
 
     {
         QMutexLocker l(&_imp->_isClosedMutex);
-        if (c == _imp->_isClosed) {
+        if (closed == _imp->_isClosed) {
             return;
         }
-        _imp->_isClosed = c;
+        _imp->_isClosed = closed;
     }
 
 
@@ -939,7 +894,7 @@ DockablePanel::setClosedInternal(bool c)
         return;
     }
 
-    if (!c) {
+    if (!closed) {
         _imp->_gui->addVisibleDockablePanel(this);
     } else {
         _imp->_gui->removeVisibleDockablePanel(this);
@@ -949,9 +904,9 @@ DockablePanel::setClosedInternal(bool c)
     ///Remove any color picker active
     const KnobsGuiMapping& knobs = getKnobsMapping();
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobGuiColor* ck = dynamic_cast<KnobGuiColor*>( it->second.get() );
+        KnobColorPtr ck = toKnobColor(it->first.lock());
         if (ck) {
-            ck->setPickingEnabled(false);
+            ck->setPickingEnabled(ViewSetSpec::all(), false);
         }
     }
 
@@ -961,35 +916,25 @@ DockablePanel::setClosedInternal(bool c)
         NodePtr internalNode = nodeGui->getNode();
 
         Gui* gui = getGui();
-        if (internalNode && gui) {
-            GuiAppInstancePtr app = gui->getApp();
-            if (app) {
-                boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
-                if (timeline) {
-                    internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+        if (gui) {
+            if (!closed) {
+                gui->addNodeGuiToAnimationModuleEditor(nodeGui);
+            } else {
+                gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
+            }
+            if (internalNode) {
+                GuiAppInstancePtr app = gui->getApp();
+                if (app) {
+                    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                    if (timeline) {
+                        internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+                    }
                 }
             }
         }
-
-        if (gui) {
-            if (!c) {
-                gui->addNodeGuiToCurveEditor(nodeGui);
-                gui->addNodeGuiToDopeSheetEditor(nodeGui);
-            } else {
-                gui->removeNodeGuiFromCurveEditor(nodeGui);
-                gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
-            }
-        }
-        ///Regular show/hide
-        if (c) {
-            internalNode->hideKeyframesFromTimeline(true);
-        } else {
-            internalNode->showKeyframesOnTimeline(true);
-        }
-
     }
 
-    Q_EMIT closeChanged(c);
+    Q_EMIT closeChanged(closed);
 } // DockablePanel::setClosedInternal
 
 void
@@ -1438,88 +1383,133 @@ DockablePanel::onManageUserParametersActionTriggered()
 void
 DockablePanel::setKeyOnAllParameters()
 {
+
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!isNodePanel) {
+        return;
+    }
+    NodeGuiPtr nodeUi = isNodePanel->getNode();
+    if (!nodeUi) {
+        return;
+    }
     Gui* gui = getGui();
     if (!gui) {
         return;
     }
-    double time = gui->getApp()->getTimeLine()->currentFrame();
-    AddKeysCommand::KeysToAddList keys;
-    const KnobsGuiMapping& knobsMap = getKnobsMapping();
+    AnimationModulePtr model = gui->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    NodeAnimPtr nodeAnim = model->findNodeAnim(nodeUi->getNode());
+    if (!nodeAnim) {
+        return;
+    }
 
-    for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobIPtr knob = it->first.lock();
-        if ( knob->isAnimationEnabled() ) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
-                for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
-                    AddKeysCommand::KeyToAdd k;
-                    KeyFrame kf;
-                    kf.setTime(time);
-                    KnobIntBasePtr isInt = toKnobIntBase(knob);
-                    KnobBoolBasePtr isBool = toKnobBoolBase(knob);
-                    AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-                    KnobDoubleBasePtr isDouble = toKnobDoubleBase(knob);
+    const std::vector<KnobAnimPtr>& knobs = nodeAnim->getKnobs();
 
-                    if (isInt) {
-                        kf.setValue( isInt->getValueAtTime(time, i) );
-                    } else if (isBool) {
-                        kf.setValue( isBool->getValueAtTime(time, i) );
-                    } else if (isDouble) {
-                        kf.setValue( isDouble->getValueAtTime(time, i) );
-                    } else if (isString) {
-                        std::string v = isString->getValueAtTime(time, i);
-                        double dv;
-                        isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
-                        kf.setValue(dv);
-                    }
+    AnimItemDimViewKeyFramesMap keys;
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
-                    k.keyframes.push_back(kf);
-                    k.curveUI = *it2;
-                    KnobCurveGuiPtr isKnobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(*it2);
-                    if (isKnobCurve) {
-                        k.knobUI = isKnobCurve->getKnobGui();
-                        k.dimension = isKnobCurve->getDimension();
-                    } else {
-                        k.dimension = 0;
-                    }
-                    keys.push_back(k);
+
+
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        int nDims = (*it)->getNDimensions();
+        KnobIPtr internalKnob = (*it)->getInternalKnob();
+        KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
+        KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
+        AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
+        KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
+
+        std::list<ViewIdx> views = (*it)->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+            for (int i = 0; i < nDims; ++i) {
+
+                KeyFrameWithString kf;
+                kf.key.setTime(time);
+
+                if (isInt) {
+                    kf.key.setValue( isInt->getValueAtTime(time, DimIdx(i), *it2));
+                } else if (isBool) {
+                    kf.key.setValue( isBool->getValueAtTime(time, DimIdx(i), *it2));
+                } else if (isDouble) {
+                    kf.key.setValue( isDouble->getValueAtTime(time, DimIdx(i), *it2));
+                } else if (isString) {
+                    std::string v = isString->getValueAtTime(time, DimIdx(i), *it2);
+                    double dv;
+                    isString->stringToKeyFrameValue(time, *it2, v, &dv);
+                    kf.string = v;
+                    kf.key.setValue(dv);
                 }
+
+                AnimItemDimViewIndexID id(*it, *it2, DimIdx(i));
+                keys[id].insert(kf);
             }
         }
+
     }
-    pushUndoCommand( new AddKeysCommand(gui->getCurveEditor()->getCurveWidget(), keys) );
+    pushUndoCommand(new AddKeysCommand(keys, model, false /*replaceAnimation*/));
+
 }
 
 void
 DockablePanel::removeAnimationOnAllParameters()
 {
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!isNodePanel) {
+        return;
+    }
+    NodeGuiPtr nodeUi = isNodePanel->getNode();
+    if (!nodeUi) {
+        return;
+    }
     Gui* gui = getGui();
     if (!gui) {
         return;
     }
-    std::map< CurveGuiPtr, std::vector<KeyFrame > > keysToRemove;
+    AnimationModulePtr model = gui->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    NodeAnimPtr nodeAnim = model->findNodeAnim(nodeUi->getNode());
+    if (!nodeAnim) {
+        return;
+    }
 
-    const KnobsGuiMapping& knobsMap = getKnobsMapping();
+    const std::vector<KnobAnimPtr>& knobs = nodeAnim->getKnobs();
 
-    for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobIPtr knob = it->first.lock();
-        if ( knob->isAnimationEnabled() ) {
-            for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<CurveGuiPtr > curves = getGui()->getCurveEditor()->findCurve(it->second, i);
+    AnimItemDimViewKeyFramesMap keys;
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        int nDims = (*it)->getNDimensions();
+        KnobIPtr internalKnob = (*it)->getInternalKnob();
+        AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
-
-                for (std::list<CurveGuiPtr >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
-                    KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
-                    std::vector<KeyFrame > vect;
-                    for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
-                        vect.push_back(*it3);
-                    }
-                    keysToRemove.insert( std::make_pair(*it2, vect) );
+        std::list<ViewIdx> views = (*it)->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+            for (int i = 0; i < nDims; ++i) {
+                CurveGuiPtr curve = (*it)->getCurveGui(DimIdx(i), *it2);
+                if (!curve) {
+                    continue;
                 }
+                KeyFrameSet internalSet = curve->getKeyFrames();
+                AnimItemDimViewIndexID id(*it, *it2, DimIdx(i));
+                KeyFrameWithStringSet& keysToRemove = keys[id];
+                for (KeyFrameSet::const_iterator it3 = internalSet.begin(); it3 != internalSet.end(); ++it3) {
+                    KeyFrameWithString kf;
+                    kf.key = *it3;
+                    if (isString) {
+                        kf.string = isString->getValueAtTime(it3->getTime(), DimIdx(i), *it2);
+
+                    }
+
+                    keysToRemove.insert(kf);
+                }
+
             }
         }
+        
     }
-    pushUndoCommand( new RemoveKeysCommand(gui->getCurveEditor()->getCurveWidget(), keysToRemove) );
+    pushUndoCommand(new RemoveKeysCommand(keys, model));
+
 }
 
 void
@@ -1631,6 +1621,17 @@ DockablePanel::getHolderFullyQualifiedScriptName() const
         assert(false);
         return std::string();
     }
+}
+
+KnobItemsTableGuiPtr
+DockablePanel::createKnobItemsTable(QWidget* parent)
+{
+    KnobItemsTablePtr table = getHolder()->getItemsTable();
+    if (!table) {
+        return KnobItemsTableGuiPtr();
+    }
+    KnobItemsTableGuiPtr ret(new KnobItemsTableGui(table, this, parent));
+    return ret;
 }
 
 

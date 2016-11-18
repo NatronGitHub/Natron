@@ -27,6 +27,14 @@
 #include <cassert>
 #include <stdexcept>
 
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -35,6 +43,10 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/PyRoto.h"
 #include "Engine/PyTracker.h"
+#include "Engine/Project.h"
+#include "Engine/RotoPaintPrivate.h"
+#include "Engine/TrackerNode.h"
+#include "Engine/TrackerHelper.h"
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -223,6 +235,7 @@ Effect::isReaderNode()
     NodePtr n = getInternalNode();
 
     if (!n) {
+        PythonSetNullError();
         return false;
     }
 
@@ -235,6 +248,7 @@ Effect::isWriterNode()
     NodePtr n = getInternalNode();
 
     if (!n) {
+        PythonSetNullError();
         return false;
     }
 
@@ -244,13 +258,27 @@ Effect::isWriterNode()
 void
 Effect::destroy(bool autoReconnect)
 {
-    getInternalNode()->destroyNode(false, autoReconnect);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+
+    n->destroyNode(false, autoReconnect);
 }
 
 int
 Effect::getMaxInputCount() const
 {
-    return getInternalNode()->getMaxInputCount();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+
+    return n->getMaxInputCount();
 }
 
 bool
@@ -258,13 +286,22 @@ Effect::canConnectInput(int inputNumber,
                         const Effect* node) const
 {
     if (!node) {
+        PythonSetNullError();
         return false;
     }
 
     if ( !node->getInternalNode() ) {
+        PythonSetNullError();
         return false;
     }
-    Node::CanConnectInputReturnValue ret = getInternalNode()->canConnectInput(node->getInternalNode(), inputNumber);
+
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    Node::CanConnectInputReturnValue ret = n->canConnectInput(node->getInternalNode(), inputNumber);
 
     return ret == Node::eCanConnectInput_ok ||
            ret == Node::eCanConnectInput_differentFPS ||
@@ -275,6 +312,7 @@ bool
 Effect::connectInput(int inputNumber,
                      const Effect* input)
 {
+
     if ( canConnectInput(inputNumber, input) ) {
         return getInternalNode()->connectInput(input->getInternalNode(), inputNumber);
     } else {
@@ -285,19 +323,31 @@ Effect::connectInput(int inputNumber,
 void
 Effect::disconnectInput(int inputNumber)
 {
-    getInternalNode()->disconnectInput(inputNumber);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    n->disconnectInput(inputNumber);
 }
 
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    NodePtr node = getInternalNode()->getRealInput(inputNumber);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = n->getRealInput(inputNumber);
 
     if (node) {
         return new Effect(node);
     }
 
-    return NULL;
+    return 0;
 }
 
 Effect*
@@ -305,6 +355,7 @@ Effect::getInput(const QString& inputLabel) const
 {
     NodePtr node = getInternalNode();
     if (!node) {
+        PythonSetNullError();
         return 0;
     }
     int maxInputs = node->getMaxInputCount();
@@ -324,14 +375,26 @@ Effect::getInput(const QString& inputLabel) const
 QString
 Effect::getScriptName() const
 {
-    return QString::fromUtf8( getInternalNode()->getScriptName_mt_safe().c_str() );
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return QString();
+    }
+    return QString::fromUtf8( n->getScriptName_mt_safe().c_str() );
 }
 
 bool
 Effect::setScriptName(const QString& scriptName)
 {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
     try {
-        getInternalNode()->setScriptName( scriptName.toStdString() );
+        n->setScriptName( scriptName.toStdString() );
     } catch (...) {
         return false;
     }
@@ -342,21 +405,40 @@ Effect::setScriptName(const QString& scriptName)
 QString
 Effect::getLabel() const
 {
-    return QString::fromUtf8( getInternalNode()->getLabel_mt_safe().c_str() );
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return QString();
+    }
+    return QString::fromUtf8( n->getLabel_mt_safe().c_str() );
 }
 
 void
 Effect::setLabel(const QString& name)
 {
-    return getInternalNode()->setLabel( name.toStdString() );
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    return n->setLabel( name.toStdString() );
 }
 
 QString
 Effect::getInputLabel(int inputNumber)
 {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return QString();
+    }
     try {
-        return QString::fromUtf8( getInternalNode()->getInputLabel(inputNumber).c_str() );
+        return QString::fromUtf8( n->getInputLabel(inputNumber).c_str() );
     } catch (const std::exception& e) {
+        PyErr_SetString(PyExc_IndexError, e.what());
         getInternalNode()->getApp()->appendToScriptEditor( e.what() );
     }
 
@@ -366,13 +448,24 @@ Effect::getInputLabel(int inputNumber)
 QString
 Effect::getPluginID() const
 {
-    return QString::fromUtf8( getInternalNode()->getPluginID().c_str() );
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return QString();
+    }
+    return QString::fromUtf8( n->getPluginID().c_str() );
 }
 
 Param*
 Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
-    int dims = knob->getDimension();
+
+    if (!knob) {
+        PythonSetNullError();
+        return 0;
+    }
+    int dims = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDouble = toKnobDouble(knob);
     KnobBoolPtr isBool = toKnobBool(knob);
@@ -446,7 +539,13 @@ std::list<Param*>
 Effect::getParams() const
 {
     std::list<Param*> ret;
-    const KnobsVec& knobs = getInternalNode()->getKnobs();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ret;
+    }
+    const KnobsVec& knobs = n->getKnobs();
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = createParamWrapperForKnob(*it);
@@ -461,7 +560,13 @@ Effect::getParams() const
 Param*
 Effect::getParam(const QString& name) const
 {
-    KnobIPtr knob = getInternalNode()->getKnobByName( name.toStdString() );
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobIPtr knob = n->getKnobByName( name.toStdString() );
 
     if (knob) {
         return createParamWrapperForKnob(knob);
@@ -473,35 +578,65 @@ Effect::getParam(const QString& name) const
 int
 Effect::getCurrentTime() const
 {
-    return getInternalNode()->getEffectInstance()->getCurrentTime();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0.;
+    }
+    return n->getEffectInstance()->getCurrentTime();
 }
 
 void
 Effect::setPosition(double x,
                     double y)
 {
-    getInternalNode()->setPosition(x, y);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ;
+    }
+    n->setPosition(x, y);
 }
 
 void
 Effect::getPosition(double* x,
                     double* y) const
 {
-    getInternalNode()->getPosition(x, y);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    n->getPosition(x, y);
 }
 
 void
 Effect::setSize(double w,
                 double h)
 {
-    getInternalNode()->setSize(w, h);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ;
+    }
+    n->setSize(w, h);
 }
 
 void
 Effect::getSize(double* w,
                 double* h) const
 {
-    getInternalNode()->getSize(w, h);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    n->getSize(w, h);
 }
 
 void
@@ -509,7 +644,13 @@ Effect::getColor(double* r,
                  double *g,
                  double* b) const
 {
-    bool hasColor = getInternalNode()->getColor(r, g, b);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    bool hasColor = n->getColor(r, g, b);
     Q_UNUSED(hasColor);
 }
 
@@ -518,27 +659,85 @@ Effect::setColor(double r,
                  double g,
                  double b)
 {
-    getInternalNode()->setColor(r, g, b);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ;
+    }
+    n->setColor(r, g, b);
 }
 
 bool
 Effect::isNodeSelected() const
 {
-    return getInternalNode()->isUserSelected();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
+    return n->isUserSelected();
 }
 
 void
 Effect::beginChanges()
 {
-    getInternalNode()->getEffectInstance()->beginChanges();
-    getInternalNode()->beginInputEdition();
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    n->getEffectInstance()->beginChanges();
+    n->beginInputEdition();
 }
 
 void
 Effect::endChanges()
 {
-    getInternalNode()->getEffectInstance()->endChanges();
-    getInternalNode()->endInputEdition(true);
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    n->getEffectInstance()->endChanges();
+    n->endInputEdition(true);
+}
+
+void
+Effect::beginParametersUndoCommand(const QString& name)
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    EffectInstancePtr effect = n->getEffectInstance();
+    if (!effect) {
+        PythonSetNullError();
+        return;
+    }
+    effect->beginMultipleEdits(name.toStdString());
+}
+
+void
+Effect::endParametersUndoCommand()
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return;
+    }
+    EffectInstancePtr effect = n->getEffectInstance();
+    if (!effect) {
+        PythonSetNullError();
+        return;
+    }
+    effect->endMultipleEdits();
 }
 
 IntParam*
@@ -547,6 +746,7 @@ UserParamHolder::createIntParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
@@ -569,6 +769,7 @@ UserParamHolder::createInt2DParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
@@ -591,6 +792,7 @@ UserParamHolder::createInt3DParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
@@ -613,6 +815,7 @@ UserParamHolder::createDoubleParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
@@ -635,6 +838,7 @@ UserParamHolder::createDouble2DParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
@@ -657,6 +861,7 @@ UserParamHolder::createDouble3DParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
@@ -679,6 +884,7 @@ UserParamHolder::createBooleanParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobBoolPtr knob = holder->createBoolKnob( name.toStdString(), label.toStdString() );
@@ -701,6 +907,7 @@ UserParamHolder::createChoiceParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobChoicePtr knob = holder->createChoiceKnob( name.toStdString(), label.toStdString() );
@@ -724,6 +931,7 @@ UserParamHolder::createColorParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobColorPtr knob = holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
@@ -746,6 +954,7 @@ UserParamHolder::createStringParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobStringPtr knob = holder->createStringKnob( name.toStdString(), label.toStdString() );
@@ -768,6 +977,7 @@ UserParamHolder::createFileParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
@@ -790,6 +1000,7 @@ UserParamHolder::createOutputFileParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
@@ -812,6 +1023,7 @@ UserParamHolder::createPathParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobPathPtr knob = holder->createPathKnob( name.toStdString(), label.toStdString() );
@@ -834,6 +1046,7 @@ UserParamHolder::createButtonParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobButtonPtr knob = holder->createButtonKnob( name.toStdString(), label.toStdString() );
@@ -856,6 +1069,7 @@ UserParamHolder::createSeparatorParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobSeparatorPtr knob = holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
@@ -878,6 +1092,7 @@ UserParamHolder::createGroupParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobGroupPtr knob = holder->createGroupKnob( name.toStdString(), label.toStdString() );
@@ -900,6 +1115,7 @@ UserParamHolder::createPageParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobPagePtr knob = holder->createPageKnob( name.toStdString(), label.toStdString() );
@@ -917,6 +1133,7 @@ UserParamHolder::createParametricParam(const QString& name,
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return NULL;
     }
     KnobParametricPtr knob = holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
@@ -937,17 +1154,21 @@ bool
 UserParamHolder::removeParam(Param* param)
 {
     if (!param) {
+        PythonSetNullError();
         return false;
     }
     if ( !param->getInternalKnob() ) {
+        PythonSetNullError();
         return false;
     }
     if ( !param->getInternalKnob()->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return false;
     }
 
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return false;
     }
     holder->deleteKnob(param->getInternalKnob(), true);
@@ -958,9 +1179,16 @@ UserParamHolder::removeParam(Param* param)
 PageParam*
 Effect::getUserPageParam() const
 {
-    KnobPagePtr page = getInternalNode()->getEffectInstance()->getOrCreateUserPageKnob();
+    NodePtr n = getInternalNode();
 
-    assert(page);
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobPagePtr page = n->getEffectInstance()->getOrCreateUserPageKnob();
+    if (!page) {
+        return 0;
+    }
 
     return new PageParam(page);
 }
@@ -970,35 +1198,40 @@ UserParamHolder::refreshUserParamsGUI()
 {
     KnobHolderPtr holder = _holder.lock();
     if (!holder) {
+        PythonSetNullError();
         return;
     }
     holder->recreateUserKnobs(false);
 }
 
 
-Roto*
-Effect::getRotoContext() const
+ItemsTable*
+Effect::getItemsTable() const
 {
-    RotoContextPtr roto = getInternalNode()->getRotoContext();
+    NodePtr n = getInternalNode();
 
-    if (roto) {
-        return new Roto(roto);
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobItemsTablePtr table = n->getEffectInstance()->getItemsTable();
+
+    if (table) {
+        RotoPaintKnobItemsTable* isRotoPaintTable = dynamic_cast<RotoPaintKnobItemsTable*>(table.get());
+        if (isRotoPaintTable) {
+            return new Roto(table);
+        }
+        TrackerNodePtr isTrackerNode = toTrackerNode(n->getEffectInstance());
+        if (isTrackerNode) {
+            return new Tracker(table, isTrackerNode->getTracker());
+        }
+        return new ItemsTable(table);
     }
 
     return 0;
 }
 
-Tracker*
-Effect::getTrackerContext() const
-{
-    TrackerContextPtr t = getInternalNode()->getTrackerContext();
 
-    if (t) {
-        return new Tracker(t);
-    }
-
-    return 0;
-}
 
 RectD
 Effect::getRegionOfDefinition(double time,
@@ -1007,10 +1240,12 @@ Effect::getRegionOfDefinition(double time,
     RectD rod;
 
     if (!getInternalNode()) {
+        PythonSetNullError();
         return rod;
     }
     EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
     if (!effect) {
+        PythonSetNullError();
         return rod;
     }
     RenderScale s(1.);
@@ -1025,13 +1260,44 @@ Effect::getRegionOfDefinition(double time,
     return rod;
 }
 
+RectD
+Effect::getRegionOfDefinition(double time, const QString& view) const
+{
+    RectD rod;
+    if (!getInternalNode()) {
+        PythonSetNullError();
+        return rod;
+    }
+    EffectInstancePtr effect = getInternalNode()->getEffectInstance() ;
+    if (!effect) {
+        PythonSetNullError();
+        return rod;
+    }
+    const std::vector<std::string>& projectViews = effect->getApp()->getProject()->getProjectViewNames();
+    bool foundView = false;
+    ViewIdx foundViewIdx;
+    std::string stdViewName = view.toStdString();
+    foundView = Project::getViewIndex(projectViews, stdViewName, &foundViewIdx);
+  
+    if (!foundView) {
+        PythonSetInvalidViewName(view);
+        return rod;
+    }
+    return getRegionOfDefinition(time, foundViewIdx);
+
+}
+
 void
 Effect::setSubGraphEditable(bool editable)
 {
-    if ( !getInternalNode() ) {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
         return;
     }
-    NodeGroupPtr isGroup = getInternalNode()->isEffectNodeGroup();
+
+    NodeGroupPtr isGroup = n->isEffectNodeGroup();
     if (isGroup) {
         isGroup->setSubGraphEditable(editable);
     }
@@ -1041,9 +1307,16 @@ bool
 Effect::addUserPlane(const QString& planeName,
                      const QStringList& channels)
 {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
     if ( planeName.isEmpty() ||
          ( channels.size() < 1) ||
          ( channels.size() > 4) ) {
+        PyErr_SetString(PyExc_ValueError, tr("Invalid arguments").toStdString().c_str());
         return false;
     }
     std::string compsGlobal;
@@ -1056,7 +1329,7 @@ Effect::addUserPlane(const QString& planeName,
     }
     ImageComponents comp(planeName.toStdString(), compsGlobal, chans);
 
-    return getInternalNode()->addUserComponents(comp);
+    return n->addUserComponents(comp);
 }
 
 std::map<ImageLayer, Effect*>
@@ -1064,11 +1337,15 @@ Effect::getAvailableLayers() const
 {
     std::map<ImageLayer, Effect*> ret;
 
-    if ( !getInternalNode() ) {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
         return ret;
     }
+
     EffectInstance::ComponentsAvailableMap availComps;
-    getInternalNode()->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
+    n->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
     for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {
@@ -1087,6 +1364,7 @@ Effect::getFrameRate() const
     NodePtr node = getInternalNode();
 
     if (!node) {
+        PythonSetNullError();
         return 24.;
     }
 
@@ -1099,6 +1377,7 @@ Effect::getPixelAspectRatio() const
     NodePtr node = getInternalNode();
 
     if (!node) {
+        PythonSetNullError();
         return 1.;
     }
 
@@ -1111,6 +1390,7 @@ Effect::getBitDepth() const
     NodePtr node = getInternalNode();
 
     if (!node) {
+        PythonSetNullError();
         return eImageBitDepthFloat;
     }
 
@@ -1123,6 +1403,7 @@ Effect::getPremult() const
     NodePtr node = getInternalNode();
 
     if (!node) {
+        PythonSetNullError();
         return eImagePremultiplicationPremultiplied;
     }
 
@@ -1132,29 +1413,40 @@ Effect::getPremult() const
 void
 Effect::setPagesOrder(const QStringList& pages)
 {
-    if ( !getInternalNode() ) {
-        return;
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ;
     }
+
 
     std::list<std::string> order;
     for (QStringList::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         order.push_back( it->toStdString() );
     }
-    getInternalNode()->setPagesOrder(order);
+    n->setPagesOrder(order);
 }
 
 void
 Effect::insertParamInViewerUI(Param* param, int index)
 {
-    NodePtr node = getInternalNode();
-    if (!node || !param) {
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return ;
+    }
+    if (!param) {
+        PythonSetNullError();
         return;
     }
     KnobIPtr knob = param->getInternalKnob();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    node->getEffectInstance()->insertKnobToViewerUI(knob, index);
+    n->getEffectInstance()->insertKnobToViewerUI(knob, index);
 }
 
 void
@@ -1162,10 +1454,12 @@ Effect::removeParamFromViewerUI(Param* param)
 {
     NodePtr node = getInternalNode();
     if (!node || !param) {
+        PythonSetNullError();
         return;
     }
     KnobIPtr knob = param->getInternalKnob();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
     node->getEffectInstance()->removeKnobViewerUI(knob);
@@ -1176,6 +1470,7 @@ Effect::clearViewerUIParameters()
 {
     NodePtr node = getInternalNode();
     if (!node) {
+        PythonSetNullError();
         return;
     }
     node->getEffectInstance()->setViewerUIKnobs(KnobsVec());

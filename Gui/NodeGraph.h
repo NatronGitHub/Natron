@@ -177,6 +177,9 @@ public:
 
     bool isDoingNavigatorRender() const;
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
+
 public Q_SLOTS:
     
     bool pasteClipboard(const QPointF& pos = QPointF(INT_MIN, INT_MIN));

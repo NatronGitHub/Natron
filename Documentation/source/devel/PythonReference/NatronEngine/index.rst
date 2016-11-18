@@ -40,7 +40,7 @@ without importing anything.
 	Int3DTuple
 	IntParam
 	ItemBase
-	Layer
+	ItemsTable
 	Natron
 	PageParam
 	Param
@@ -52,8 +52,10 @@ without importing anything.
 	Roto
 	StringParam
 	StringParamBase
-        Track
-        Tracker
+	StrokeItem
+	StrokePoint
+    Track
+    Tracker
 	UserParamHolder
  
 

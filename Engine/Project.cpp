@@ -340,7 +340,7 @@ Project::loadProjectInternal(const QString & pathIn,
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
 
-    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
@@ -483,7 +483,6 @@ Project::saveProjectInternal(const QString & path,
                              bool autoSave,
                              bool updateProjectProperties)
 {
-    bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
     QString filePath;
@@ -501,21 +500,19 @@ Project::saveProjectInternal(const QString & path,
         }
         filePath.append( QLatin1Char('/') );
         filePath.append(name);
-        if (!isRenderSave) {
-            filePath.append( QString::fromUtf8(".autosave") );
-        }
-        if (!isRenderSave) {
-            if (appendTimeHash) {
-                Hash64 timeHash;
+        filePath.append( QString::fromUtf8(".autosave") );
 
-                Q_FOREACH(QChar ch, timeStr) {
-                    timeHash.append<unsigned short>( ch.unicode() );
-                }
-                timeHash.computeHash();
-                QString timeHashStr = QString::number( timeHash.value() );
-                filePath.append(QLatin1Char('.') + timeHashStr);
+        if (appendTimeHash) {
+            Hash64 timeHash;
+
+            Q_FOREACH(QChar ch, timeStr) {
+                timeHash.append<unsigned short>( ch.unicode() );
             }
+            timeHash.computeHash();
+            QString timeHashStr = QString::number( timeHash.value() );
+            filePath.append(QLatin1Char('.') + timeHashStr);
         }
+
 
         if (updateProjectProperties) {
             QMutexLocker l(&_imp->projectLock);
@@ -545,9 +542,9 @@ Project::saveProjectInternal(const QString & path,
 
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
-            _imp->saveDate->setValue( timeStr.toStdString() );
-            _imp->lastAuthorName->setValue( generateGUIUserName() );
-            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+            _imp->saveDate->setValue( timeStr.toStdString());
+            _imp->lastAuthorName->setValue( generateGUIUserName());
+            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
         }
 
         try {
@@ -598,11 +595,10 @@ Project::saveProjectInternal(const QString & path,
         //Create the lock file corresponding to the project
         createLockFile();
     } else if (updateProjectProperties) {
-        if (!isRenderSave) {
-            QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
-            QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            Q_EMIT projectNameChanged(projectPath + projectFilename, true);
-        }
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
+
     }
     if (updateProjectProperties) {
         _imp->lastAutoSave = time;
@@ -704,7 +700,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
         QString autosaveSuffix( QString::fromUtf8(".autosave") );
         searchStr.append(autosaveSuffix);
         int suffixPos = entry.indexOf(searchStr);
-        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
+        if (suffixPos == -1) {
             continue;
         }
         QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
@@ -760,7 +756,7 @@ Project::initializeKnobs()
         const Format& f = appFormats[i];
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
         if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
-            _imp->formatKnob->setDefaultValue(i, 0);
+            _imp->formatKnob->setDefaultValue(i);
         }
         entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(f);
@@ -785,14 +781,16 @@ Project::initializeKnobs()
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
     bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
+    _imp->previewMode->setDefaultValue(autoPreviewEnabled);
 
 
     _imp->frameRange = AppManager::createKnob<KnobInt>(shared_from_this(), tr("Frame Range"), 2);
-    _imp->frameRange->setDefaultValue(1, 0);
-    _imp->frameRange->setDefaultValue(250, 1);
-    _imp->frameRange->setDimensionName(0, "first");
-    _imp->frameRange->setDimensionName(1, "last");
+    std::vector<int> defFrameRange(2);
+    defFrameRange[0] = 1;
+    defFrameRange[1] = 250;
+    _imp->frameRange->setDefaultValues(defFrameRange, DimIdx(0));
+    _imp->frameRange->setDimensionName(DimIdx(0), "first");
+    _imp->frameRange->setDimensionName(DimIdx(1), "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
     _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
@@ -818,8 +816,7 @@ Project::initializeKnobs()
                                         "special frame rates.") );
     _imp->frameRate->setAnimationEnabled(false);
     _imp->frameRate->setDefaultValue(24);
-    _imp->frameRate->setDisplayMinimum(0.);
-    _imp->frameRate->setDisplayMaximum(50.);
+    _imp->frameRate->setDisplayRange(0., 50.);
     page->addKnob(_imp->frameRate);
 
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("GPU Rendering") );
@@ -839,7 +836,7 @@ Project::initializeKnobs()
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
     if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
+        _imp->gpuSupport->setEnabled(false);
     }
     page->addKnob(_imp->gpuSupport);
 
@@ -931,7 +928,7 @@ Project::initializeKnobs()
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistent(false);
 //    _imp->projectName->setAsLabel();
-    _imp->projectName->setEnabled(0, false);
+    _imp->projectName->setEnabled(false);
     _imp->projectName->setAnimationEnabled(false);
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
@@ -940,7 +937,7 @@ Project::initializeKnobs()
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistent(false);
     _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setEnabled(0, false);
+    _imp->projectPath->setEnabled(false);
     // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
 
@@ -948,7 +945,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
-    _imp->natronVersion->setEnabled(0, false);
+    _imp->natronVersion->setEnabled(false);
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
 
@@ -959,7 +956,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip( tr("The user name and host name of the original author of the project.") );
     //_imp->originalAuthorName->setAsLabel();
-    _imp->originalAuthorName->setEnabled(0, false);
+    _imp->originalAuthorName->setEnabled(false);
     _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
@@ -970,7 +967,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
-    _imp->lastAuthorName->setEnabled(0, false);
+    _imp->lastAuthorName->setEnabled(false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
     _imp->lastAuthorName->setDefaultValue(authorName);
@@ -981,7 +978,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip( tr("The creation date of the project.") );
     //_imp->projectCreationDate->setAsLabel();
-    _imp->projectCreationDate->setEnabled(0, false);
+    _imp->projectCreationDate->setEnabled(false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
     _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
@@ -991,7 +988,7 @@ Project::initializeKnobs()
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
-    _imp->saveDate->setEnabled(0, false);
+    _imp->saveDate->setEnabled(false);
     _imp->saveDate->setEvaluateOnChange(false);
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
@@ -1086,7 +1083,7 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    std::string formatSpec = _imp->formatKnob->getActiveEntryText_mt_safe();
+    std::string formatSpec = _imp->formatKnob->getActiveEntryText();
     if ( !formatSpec.empty() ) {
         ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
     } else {
@@ -1187,7 +1184,7 @@ void
 Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
                                  int* currentValue) const
 {
-    *formatStrings = _imp->formatKnob->getEntries_mt_safe();
+    *formatStrings = _imp->formatKnob->getEntries();
     *currentValue = _imp->formatKnob->getValue();
 }
 
@@ -1346,6 +1343,47 @@ Project::getProjectViewNames() const
     return tls;
 }
 
+std::string
+Project::getViewName(ViewIdx view) const
+{
+    const std::vector<std::string>& viewNames = getProjectViewNames();
+    if (view < 0 || view >= (int)viewNames.size()) {
+        return std::string();
+    }
+    return viewNames[view];
+}
+
+bool
+Project::getViewIndex(const std::vector<std::string>& viewNames, const std::string& viewName, ViewIdx* view)
+{
+    *view = ViewIdx(0);
+    for (std::size_t i = 0; i < viewNames.size(); ++i) {
+        if (boost::iequals(viewNames[i], viewName)) {
+            *view = ViewIdx(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+Project::getViewIndex(const std::string& viewName, ViewIdx* view) const
+{
+    std::list<std::vector<std::string> > pairs;
+    _imp->viewsList->getTable(&pairs);
+    {
+        int i = 0;
+        for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+             it != pairs.end(); ++it) {
+            if (boost::iequals((*it)[0], viewName)) {
+                *view = ViewIdx(i);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void
 Project::setupProjectForStereo()
 {
@@ -1454,7 +1492,7 @@ Project::isAutoPreviewEnabled() const
 void
 Project::toggleAutoPreview()
 {
-    _imp->previewMode->setValue( !_imp->previewMode->getValue() );
+    _imp->previewMode->setValue( !_imp->previewMode->getValue());
 }
 
 TimeLinePtr Project::getTimeLine() const
@@ -1486,8 +1524,8 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
     appPTR->clearErrorLog_mt_safe();
 
 
-    _imp->projectName->setValue( name.toStdString() );
-    _imp->projectPath->setValue( path.toStdString() );
+    _imp->projectName->setValue( name.toStdString());
+    _imp->projectPath->setValue( path.toStdString());
 
     getApp()->setProjectBeingLoadedInfo(obj._projectLoadedInfo);
 
@@ -1506,24 +1544,17 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
 
 }
 
-void
-Project::beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
-}
-
-void
-Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
-}
-
 ///this function is only called on the main thread
 bool
 Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
-                            ViewSpec /*view*/,
+                            ViewSetSpec /*view*/,
                             bool /*originatedFromMainThread*/)
 {
+    if (reason == eValueChangedReasonRestoreDefault) {
+        return false;
+    }
     bool ret = true;
 
     if ( knob == _imp->viewsList ) {
@@ -1550,7 +1581,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         getNodes_recursive(nodes, true);
 
         // Refresh nodes with a format parameter
-        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -1565,15 +1596,15 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
             forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
         }
-    } else if ( knob == _imp->addFormatKnob ) {
+    } else if ( knob == _imp->addFormatKnob && reason != eValueChangedReasonRestoreDefault) {
         Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate ) {
         forceComputeInputDependentDataOnAllTrees();
     } else if ( knob == _imp->frameRange ) {
-        int first = _imp->frameRange->getValue(0);
-        int last = _imp->frameRange->getValue(1);
+        int first = _imp->frameRange->getValue(DimIdx(0));
+        int last = _imp->frameRange->getValue(DimIdx(1));
         Q_EMIT frameRangeChanged(first, last);
     } else if ( knob == _imp->gpuSupport ) {
 
@@ -1605,9 +1636,9 @@ Project::refreshOpenGLRenderingFlagOnNodes()
 {
     bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
     if (!activated) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
+        _imp->gpuSupport->setEnabled(false);
     } else {
-        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        _imp->gpuSupport->setEnabled(true);
         int index =  _imp->gpuSupport->getValue();
         activated = index == 0 || (index == 2 && !getApp()->isBackground());
     }
@@ -1777,11 +1808,6 @@ Project::clearAutoSavesDir()
     QStringList entries = savesDir.entryList();
 
     Q_FOREACH(const QString &entry, entries) {
-        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
-        /// @see AppInstance::startWritersRendering
-        if ( entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
-            continue;
-        }
 
         QString searchStr( QLatin1Char('.') );
         searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
@@ -1919,16 +1945,13 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
         }
-        getApp()->removeAllKeyframesIndicators();
 
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         const KnobsVec & knobs = getKnobs();
 
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-                knobs[i]->resetToDefaultValue(j);
-            }
+            knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
 
 
@@ -2059,7 +2082,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         NodesList nodes;
         getNodes_recursive(nodes, true);
         int index = _imp->formatKnob->getValue();
-        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2518,8 +2541,8 @@ void
 Project::getFrameRange(double* first,
                        double* last) const
 {
-    *first = _imp->frameRange->getValue(0);
-    *last = _imp->frameRange->getValue(1);
+    *first = _imp->frameRange->getValue();
+    *last = _imp->frameRange->getValue(DimIdx(1));
 }
 
 void
@@ -2529,26 +2552,28 @@ Project::unionFrameRangeWith(int first,
     int curFirst, curLast;
     bool mustSet = !_imp->frameRange->hasModifications() && first != last;
 
-    curFirst = _imp->frameRange->getValue(0);
-    curLast = _imp->frameRange->getValue(1);
+    curFirst = _imp->frameRange->getValue(DimIdx(0));
+    curLast = _imp->frameRange->getValue(DimIdx(1));
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
+    _imp->frameRange->setValue(curFirst);
+    _imp->frameRange->setValue(curLast, ViewIdx(0), DimIdx(1));
     endChanges();
 }
 
 void
 Project::recomputeFrameRangeFromReaders()
 {
-    int first = 1, last = 1;
+    int first = INT_MIN, last = INT_MAX;
 
     recomputeFrameRangeForAllReaders(&first, &last);
-
+    if (first == INT_MIN || last == INT_MAX) {
+        return;
+    }
     beginChanges();
-    _imp->frameRange->setValue(first, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(last,  ViewSpec::all(), 1);
+    _imp->frameRange->setValue(first, ViewSetSpec::all(), DimIdx(0));
+    _imp->frameRange->setValue(last, ViewSetSpec::all(), DimIdx(1));
     endChanges();
 }
 
@@ -2570,7 +2595,7 @@ static bool
 hasNodeOutputsInList(const NodesList& nodes,
                      const NodePtr& node)
 {
-    const NodesWList& outputs = node->getGuiOutputs();
+    const NodesWList& outputs = node->getOutputs();
     bool foundOutput = false;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2594,7 +2619,7 @@ static bool
 hasNodeInputsInList(const NodesList& nodes,
                     const NodePtr& node)
 {
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr >& inputs = node->getInputs();
     bool foundInput = false;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2632,7 +2657,7 @@ addTreeInputs(const NodesList& nodes,
     if ( !hasNodeInputsInList(nodes, node) ) {
         Project::TreeInput input;
         input.node = node;
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+        const std::vector<NodeWPtr >& inputs = node->getInputs();
         input.inputs.resize( inputs.size() );
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             input.inputs[i] = inputs[i].lock();
@@ -2642,7 +2667,7 @@ addTreeInputs(const NodesList& nodes,
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+        const std::vector<NodeWPtr >& inputs = node->getInputs();
         for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             NodePtr input = it2->lock();
             if (input) {
@@ -2663,7 +2688,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
-            const NodesWList& outputs = (*it)->getGuiOutputs();
+            const NodesWList& outputs = (*it)->getOutputs();
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
                 if (!output) {
@@ -2673,7 +2698,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 tree.output.outputs.push_back( std::make_pair(idx, *it2) );
             }
 
-            const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+            const std::vector<NodeWPtr >& inputs = (*it)->getInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
                 if (input) {
@@ -2685,7 +2710,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 TreeInput input;
                 input.node = *it;
 
-                const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+                const std::vector<NodeWPtr >& inputs = (*it)->getInputs();
                 input.inputs.resize( inputs.size() );
                 for (std::size_t i = 0; i < inputs.size(); ++i) {
                     input.inputs[i] = inputs[i].lock();
@@ -2722,7 +2747,7 @@ Project::onProjectFormatPopulated()
     NodesList nodes;
 
     getNodes_recursive(nodes, true);
-    std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+    std::vector<std::string> entries = _imp->formatKnob->getEntries();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);
     }
@@ -2796,11 +2821,11 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
         KnobPagePtr isPage = toKnobPage(knobs[i]);
         KnobButtonPtr isButton = toKnobButton(knobs[i]);
-        if (isGroup || isPage || isButton) {
+        if (isGroup || isPage || (isButton && !isButton->getIsCheckable())) {
             continue;
         }
 
-        if (!isFullSaveMode && !knobs[i]->hasModificationsForSerialization()) {
+        if (!isFullSaveMode && !knobs[i]->hasModifications()) {
             continue;
         }
 
@@ -2809,7 +2834,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         knobs[i]->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
 
-            // Specialize case for the project paths knob: do not serialize the project path itself and
+            // do not serialize the project path itself and
             // the OCIO path as they are useless
             if (knobs[i] == _imp->envVars) {
                 std::list<std::vector<std::string> > projectPathsTable, newTable;
@@ -2821,10 +2846,11 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                     }
                     newTable.push_back(*it);
                 }
-                newKnobSer->_values[0]._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
-                newKnobSer->_values[0]._serializeValue = newKnobSer->_values[0]._value.isString.empty();
-                if (!newKnobSer->_values[0]._serializeValue) {
-                    newKnobSer->_values[0]._mustSerialize = false;
+                SERIALIZATION_NAMESPACE::ValueSerialization& value = newKnobSer->_values.begin()->second[0];
+                value._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
+                value._serializeValue = value._value.isString.empty();
+                if (!value._serializeValue) {
+                    value._mustSerialize = false;
                     newKnobSer->_mustSerialize = false;
                 }
             }

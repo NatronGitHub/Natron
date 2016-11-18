@@ -44,7 +44,6 @@
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/ScriptEditor.h"

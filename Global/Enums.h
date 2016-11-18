@@ -52,8 +52,7 @@ enum TimelineChangeReasonEnum
 {
     eTimelineChangeReasonUserSeek = 0,
     eTimelineChangeReasonPlaybackSeek = 1,
-    eTimelineChangeReasonCurveEditorSeek = 2,
-    eTimelineChangeReasonDopeSheetEditorSeek = 3,
+    eTimelineChangeReasonAnimationModuleSeek = 2,
     eTimelineChangeReasonOtherSeek
 };
 
@@ -289,6 +288,15 @@ enum PixmapEnum
     NATRON_PIXMAP_FREEZE_ENABLED,
     NATRON_PIXMAP_FREEZE_DISABLED,
 
+    NATRON_PIXMAP_CURVE_EDITOR,
+    NATRON_PIXMAP_DOPE_SHEET,
+    NATRON_PIXMAP_NODE_GRAPH,
+    NATRON_PIXMAP_PROGRESS_PANEL,
+    NATRON_PIXMAP_SCRIPT_EDITOR,
+    NATRON_PIXMAP_PROPERTIES_PANEL,
+    NATRON_PIXMAP_ANIMATION_MODULE,
+    NATRON_PIXMAP_VIEWER_PANEL,
+
     NATRON_PIXMAP_VIEWER_ICON,
     NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED,
     NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,
@@ -393,6 +401,15 @@ enum ValueChangedReasonEnum
     eValueChangedReasonRestoreDefault,
 };
 
+// Controls the return value of a setValue call on a knob
+enum ValueChangedReturnCodeEnum
+{
+    eValueChangedReturnCodeNoKeyframeAdded = 0,
+    eValueChangedReturnCodeKeyframeModified,
+    eValueChangedReturnCodeKeyframeAdded,
+    eValueChangedReturnCodeNothingChanged,
+};
+
 
 // Used to add stretch before or after widgets
 enum ViewerContextLayoutTypeEnum
@@ -400,7 +417,6 @@ enum ViewerContextLayoutTypeEnum
     eViewerContextLayoutTypeSpacing,
     eViewerContextLayoutTypeSeparator,
     eViewerContextLayoutTypeStretchAfter,
-    eViewerContextLayoutTypeStretchBefore,
     eViewerContextLayoutTypeAddNewLine
 };
 
@@ -547,6 +563,7 @@ enum RotoStrokeType
     eRotoStrokeTypeSmear,
     eRotoStrokeTypeDodge,
     eRotoStrokeTypeBurn,
+    eRotoStrokeTypeComp
 };
 
 enum RenderSafetyEnum
@@ -574,33 +591,30 @@ enum PluginOpenGLRenderSupport
     ePluginOpenGLRenderSupportNeeded // Can do only GPU
 };
 
-enum CurveChangeReason
-{
-    eCurveChangeReasonCurveEditor,
-    eCurveChangeReasonDopeSheet,
-    eCurveChangeReasonInternal
-};
-
 enum OpenGLRequirementsTypeEnum
 {
     eOpenGLRequirementsTypeViewer,
     eOpenGLRequirementsTypeRendering
 };
 
-enum DopeSheetItemType
+enum AnimatedItemTypeEnum
 {
-    eDopeSheetItemTypeCommon = 1001,
+    eAnimatedItemTypeCommon = 1001,
 
     // Range-based nodes
-    eDopeSheetItemTypeReader,
-    eDopeSheetItemTypeRetime,
-    eDopeSheetItemTypeTimeOffset,
-    eDopeSheetItemTypeFrameRange,
-    eDopeSheetItemTypeGroup,
+    eAnimatedItemTypeReader,
+    eAnimatedItemTypeRetime,
+    eAnimatedItemTypeTimeOffset,
+    eAnimatedItemTypeFrameRange,
+    eAnimatedItemTypeGroup,
 
     // Others
-    eDopeSheetItemTypeKnobRoot,
-    eDopeSheetItemTypeKnobDim
+    eAnimatedItemTypeKnobRoot,
+    eAnimatedItemTypeKnobView,
+    eAnimatedItemTypeKnobDim,
+
+    eAnimatedItemTypeTableItemRoot,
+    eAnimatedItemTypeTableItemAnimation
 };
 
 enum CreateNodeReason
@@ -624,7 +638,9 @@ enum KnobClipBoardType
 {
     eKnobClipBoardTypeCopyValue,
     eKnobClipBoardTypeCopyAnim,
-    eKnobClipBoardTypeCopyLink
+    eKnobClipBoardTypeCopyLink,
+    eKnobClipBoardTypeCopyExpressionLink,
+    eKnobClipBoardTypeCopyExpressionMultCurveLink,
 };
 
 enum ValueIsNormalizedEnum
@@ -701,6 +717,18 @@ enum MergingFunctionEnum
     eMergeStencil,
     eMergeUnder,
     eMergeXOR
+};
+
+enum TableChangeReasonEnum
+{
+    // The action was initiated by an internal call of the API of KnobItemsTable
+    eTableChangeReasonInternal,
+
+    // The action was initiated by an external call from the Viewer interface (overlay interacts)
+    eTableChangeReasonViewer,
+
+    // The action was initiated by calling the API of the table Gui
+    eTableChangeReasonPanel
 };
 
 

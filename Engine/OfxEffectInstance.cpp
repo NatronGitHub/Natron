@@ -2351,7 +2351,7 @@ public:
         assert(!currentValue);
         state->setValue(true);
         if (currentValue) {
-            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+            state->evaluateValueChange(DimSpec::all(), 0 /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }
     }
 
@@ -2363,9 +2363,9 @@ public:
         KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(currentValue);
-        state->setValue(false);
+        state->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronInternalEdited, 0);
         if (!currentValue) {
-            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+            state->evaluateValueChange(DimSpec::all(), 0 /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }
     }
     
@@ -2375,7 +2375,7 @@ public:
 bool
 OfxEffectInstance::knobChanged(const KnobIPtr& k,
                                ValueChangedReasonEnum reason,
-                               ViewSpec view,
+                               ViewSetSpec view,
                                double time,
                                bool /*originatedFromMainThread*/)
 {

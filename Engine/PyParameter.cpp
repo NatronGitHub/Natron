@@ -27,11 +27,20 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Curve.h"
+#include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
+
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -49,8 +58,8 @@ Param*
 Param::getParent() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
     KnobIPtr parent = knob->getParentKnob();
@@ -66,19 +75,19 @@ int
 Param::getNumDimensions() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getDimension();
+    return knob->getNDimensions();
 }
 
 QString
 Param::getScriptName() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
     return QString::fromUtf8( knob->getName().c_str() );
@@ -88,8 +97,8 @@ QString
 Param::getLabel() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
     return QString::fromUtf8( knob->getLabel().c_str() );
@@ -99,8 +108,12 @@ void
 Param::setLabel(const QString& label)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setLabel(label);
@@ -110,8 +123,8 @@ QString
 Param::getTypeName() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
     return QString::fromUtf8( knob->typeName().c_str() );
@@ -121,8 +134,9 @@ QString
 Param::getHelp() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
+
         return QString();
     }
     return QString::fromUtf8( knob->getHintToolTip().c_str() );
@@ -132,8 +146,12 @@ void
 Param::setHelp(const QString& help)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setHintToolTip( help.toStdString() );
@@ -143,8 +161,8 @@ bool
 Param::getIsVisible() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->getIsSecret();
@@ -154,8 +172,8 @@ void
 Param::setVisible(bool visible)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return;
     }
     knob->setSecret(!visible);
@@ -164,12 +182,17 @@ Param::setVisible(bool visible)
 bool
 Param::getIsEnabled(int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
 
+    KnobIPtr knob = getInternalKnob();
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
-    return knob->isEnabled(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+    return knob->isEnabled(DimIdx(dimension));
 }
 
 void
@@ -177,19 +200,23 @@ Param::setEnabled(bool enabled,
                   int dimension)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setEnabled(dimension, enabled);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->setEnabled(enabled, DimIdx(dimension));
 }
 
 bool
 Param::getIsPersistent() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->getIsPersistent();
@@ -199,8 +226,12 @@ void
 Param::setPersistent(bool persistent)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setIsPersistent(persistent);
@@ -210,8 +241,8 @@ bool
 Param::getEvaluateOnChange() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->getEvaluateOnChange();
@@ -221,8 +252,12 @@ void
 Param::setEvaluateOnChange(bool eval)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setEvaluateOnChange(eval);
@@ -232,8 +267,8 @@ bool
 Param::getCanAnimate() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->canAnimate();
@@ -243,8 +278,8 @@ bool
 Param::getIsAnimationEnabled() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->isAnimationEnabled();
@@ -254,8 +289,12 @@ void
 Param::setAnimationEnabled(bool e)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setAnimationEnabled(e);
@@ -265,8 +304,8 @@ bool
 Param::getAddNewLine()
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
     return knob->isNewLineActivated();
@@ -276,23 +315,32 @@ void
 Param::setAddNewLine(bool a)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+
 
     KnobIPtr parentKnob = knob->getParentKnob();
     if (parentKnob) {
         KnobGroupPtr parentIsGrp = toKnobGroup(parentKnob);
         KnobPagePtr parentIsPage = toKnobPage(parentKnob);
         assert(parentIsGrp || parentIsPage);
+        if (!parentIsGrp && !parentIsPage) {
+            PythonSetNullError();
+            return;
+        }
         KnobsVec children;
         if (parentIsGrp) {
             children = parentIsGrp->getChildren();
         } else if (parentIsPage) {
             children = parentIsPage->getChildren();
         }
-        for (U32 i = 0; i < children.size(); ++i) {
+        for (std::size_t i = 0; i < children.size(); ++i) {
             if (children[i] == knob) {
                 if (i > 0) {
                     children[i - 1]->setAddNewLine(a);
@@ -307,12 +355,14 @@ bool
 Param::getHasViewerUI() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
+
     KnobHolderPtr holder = knob->getHolder();
     if (!holder) {
+        PythonSetNullError();
         return false;
     }
     return holder->getInViewerContextKnobIndex(knob) != -1;
@@ -322,10 +372,11 @@ void
 Param::setViewerUIVisible(bool visible)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return;
     }
+
     knob->setInViewerContextSecret(!visible);
 }
 
@@ -334,10 +385,11 @@ bool
 Param::getViewerUIVisible() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
+
     return knob->getInViewerContextSecret();
 }
 
@@ -345,10 +397,11 @@ void
 Param::setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        return;
+        PythonSetNullError();
+        return ;
     }
+
     knob->setInViewerContextLayoutType(type);
 }
 
@@ -356,10 +409,11 @@ NATRON_NAMESPACE::ViewerContextLayoutTypeEnum
 Param::getViewerUILayoutType() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return eViewerContextLayoutTypeSpacing;
     }
+
     return knob->getInViewerContextLayoutType();
 }
 
@@ -368,9 +422,9 @@ void
 Param::setViewerUIItemSpacing(int spacingPx)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        return;
+        PythonSetNullError();
+        return ;
     }
     knob->setInViewerContextItemSpacing(spacingPx);
 }
@@ -379,9 +433,9 @@ int
 Param::getViewerUIItemSpacing() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        return 0;
+        PythonSetNullError();
+        return  0;
     }
     return knob->getInViewerContextItemSpacing();
 }
@@ -391,8 +445,12 @@ void
 Param::setViewerUIIconFilePath(const QString& icon, bool checked)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if (!knob || !knob->isUserKnob()) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     knob->setInViewerContextIconFilePath(icon.toStdString(), checked);
@@ -402,8 +460,8 @@ QString
 Param::getViewerUIIconFilePath(bool checked) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
     return QString::fromUtf8(knob->getInViewerContextIconFilePath(checked).c_str());
@@ -414,10 +472,15 @@ void
 Param::setViewerUILabel(const QString& label)
 {
     KnobIPtr knob = getInternalKnob();
-
-    if (!knob || !knob->isUserKnob()) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+
     knob->setInViewerContextLabel(label);
 }
 
@@ -425,24 +488,124 @@ QString
 Param::getViewerUILabel() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
     return QString::fromUtf8(knob->getInViewerContextLabel().c_str());
 }
 
+template <typename VIEWSPECTYPE>
+static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, const QString& viewName, VIEWSPECTYPE* view) {
+
+    if (allowAll && viewName == QLatin1String(kPyParamViewSetSpecAll)) {
+        *view = VIEWSPECTYPE(ViewSetSpec::all());
+        return true;
+    } else if (viewName == QLatin1String(kPyParamViewIdxMain) ) {
+        *view = VIEWSPECTYPE(0);
+        return true;
+    }
+    KnobIPtr knob = param->getInternalKnob();
+    if (!knob) {
+        return false;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return false;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return false;
+    }
+    const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
+    bool foundView = false;
+    ViewIdx foundViewIdx;
+    std::string stdViewName = viewName.toStdString();
+    foundView = Project::getViewIndex(projectViews, stdViewName, &foundViewIdx);
+
+    if (!foundView) {
+        return false;
+    }
+
+    // Now check that the view exist in the knob
+    std::list<ViewIdx> splitViews = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = splitViews.begin(); it != splitViews.end(); ++it) {
+        if (*it == foundViewIdx) {
+            *view = VIEWSPECTYPE(foundViewIdx);
+            return true;
+        }
+    }
+    *view = VIEWSPECTYPE(0);
+    return true;
+}
+
+bool
+Param::getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const
+{
+    return getViewSpecFromViewNameInternal(this, false, viewName, view);
+}
+
+bool
+Param::getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const
+{
+    return getViewSpecFromViewNameInternal(this, true, viewName, view);
+}
+
+static DimSpec getDimSpecFromDimensionIndex(int dimension) {
+    if (dimension == kPyParamDimSpecAll) {
+        return DimSpec::all();
+    }
+    return DimSpec(dimension);
+}
+
 bool
 Param::copy(Param* other,
-            int dimension)
+            int thisDimension,
+            int otherDimension,
+            const QString& thisView,
+            const QString& otherView)
 {
     KnobIPtr thisKnob = _knob.lock();
     KnobIPtr otherKnob = other->_knob.lock();
-
-    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
+    if (!thisKnob || ! otherKnob) {
+        PythonSetNullError();
         return false;
     }
-    thisKnob->cloneAndUpdateGui(otherKnob, dimension);
+    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot copy from a parameter with an incompatible type").toStdString().c_str());
+        return false;
+    }
+    if ((thisDimension == kPyParamDimSpecAll && otherDimension != kPyParamDimSpecAll) ||
+        (thisDimension != kPyParamDimSpecAll && otherDimension == kPyParamDimSpecAll)) {
+        PyErr_SetString(PyExc_ValueError, tr("thisDimension and otherDimension arguments must be either -1 for both or a valid index").toStdString().c_str());
+        return false;
+    }
+    if (thisDimension < 0 || thisDimension >= thisKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(thisDimension);
+        return false;
+    }
+    if (otherDimension < 0 || otherDimension >= otherKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(otherDimension);
+        return false;
+    }
+    if ((thisView == QLatin1String(kPyParamViewSetSpecAll) && otherView != QLatin1String(kPyParamViewSetSpecAll)) ||
+        (thisView != QLatin1String(kPyParamViewSetSpecAll) && otherView == QLatin1String(kPyParamViewSetSpecAll))) {
+        PyErr_SetString(PyExc_ValueError, tr("thisView and otherView arguments must be either \"All\" for both or a valid view name").toStdString().c_str());
+        return false;
+    }
+    ViewSetSpec thisViewSpec, otherViewSpec;
+    if (!getViewSetSpecFromViewName(thisView, &thisViewSpec)) {
+        PythonSetInvalidViewName(thisView);
+        return false;
+    }
+    if (!getViewSetSpecFromViewName(otherView, &otherViewSpec)) {
+        PythonSetInvalidViewName(otherView);
+        return false;
+    }
+    DimSpec thisDimSpec = getDimSpecFromDimensionIndex(thisDimension);
+    DimSpec otherDimSpec = getDimSpecFromDimensionIndex(otherDimension);
+
+    thisKnob->copyKnob(otherKnob, thisViewSpec, thisDimSpec, otherViewSpec, otherDimSpec, /*range*/ 0, /*offset*/ 0);
 
     return true;
 }
@@ -450,30 +613,76 @@ Param::copy(Param* other,
 bool
 Param::slaveTo(Param* other,
                int thisDimension,
-               int otherDimension)
+               int otherDimension,
+               const QString& thisView,
+               const QString& otherView)
 {
     KnobIPtr thisKnob = _knob.lock();
     KnobIPtr otherKnob = other->_knob.lock();
-
-    if ( !KnobI::areTypesCompatibleForSlave(thisKnob, otherKnob) ) {
+    if (!thisKnob || ! otherKnob) {
+        PythonSetNullError();
         return false;
     }
-    if ( (thisDimension < 0) || ( thisDimension >= thisKnob->getDimension() ) || (otherDimension < 0) || ( otherDimension >= otherKnob->getDimension() ) ) {
+    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot slave to a parameter with an incompatible type").toStdString().c_str());
         return false;
     }
+    if ((thisDimension == kPyParamDimSpecAll && otherDimension != kPyParamDimSpecAll) ||
+        (thisDimension != kPyParamDimSpecAll && otherDimension == kPyParamDimSpecAll)) {
+        PyErr_SetString(PyExc_ValueError, tr("thisDimension and otherDimension arguments must be either -1 for both or a valid index").toStdString().c_str());
+        return false;
+    }
+    if (thisDimension < 0 || thisDimension >= thisKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(thisDimension);
+        return false;
+    }
+    if (otherDimension < 0 || otherDimension >= otherKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(otherDimension);
+        return false;
+    }
+    if ((thisView == QLatin1String(kPyParamViewSetSpecAll) && otherView != QLatin1String(kPyParamViewSetSpecAll)) ||
+        (thisView != QLatin1String(kPyParamViewSetSpecAll) && otherView == QLatin1String(kPyParamViewSetSpecAll))) {
+        PyErr_SetString(PyExc_ValueError, tr("thisView and otherView arguments must be either \"All\" for both or a valid view name").toStdString().c_str());
+        return false;
+    }
+    ViewSetSpec thisViewSpec, otherViewSpec;
+    if (!getViewSetSpecFromViewName(thisView, &thisViewSpec)) {
+        PythonSetInvalidViewName(thisView);
+        return false;
+    }
+    if (!getViewSetSpecFromViewName(otherView, &otherViewSpec)) {
+        PythonSetInvalidViewName(otherView);
+        return false;
+    }
+    DimSpec thisDimSpec = getDimSpecFromDimensionIndex(thisDimension);
+    DimSpec otherDimSpec = getDimSpecFromDimensionIndex(otherDimension);
 
-    return thisKnob->slaveTo(thisDimension, otherKnob, otherDimension);
+
+    return thisKnob->slaveTo(otherKnob, thisDimSpec, otherDimSpec, thisViewSpec, otherViewSpec);
 }
 
 void
-Param::unslave(int dimension)
+Param::unslave(int dimension, const QString& viewName)
 {
     KnobIPtr thisKnob = _knob.lock();
 
     if (!thisKnob) {
+        PythonSetNullError();
         return;
     }
-    thisKnob->unSlave(dimension, false);
+
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= thisKnob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+
+    DimSpec thisDimSpec = getDimSpecFromDimensionIndex(dimension);
+    thisKnob->unSlave(thisDimSpec, thisViewSpec, false);
 }
 
 double
@@ -524,14 +733,25 @@ Param::randomInt(unsigned int seed) const
 
 double
 Param::curve(double time,
-             int dimension) const
+             int dimension,
+             const QString& viewName) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr thisKnob = _knob.lock();
 
-    if (!knob) {
+    if (!thisKnob) {
+        PythonSetNullError();
         return 0.;
     }
-    return knob->getRawCurveValueAt(time, ViewSpec::current(), dimension);
+    if (dimension < 0 || dimension >= thisKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return 0.;
+    }
+    return thisKnob->getRawCurveValueAt(time, thisViewSpec, DimIdx(dimension));
 }
 
 bool
@@ -542,11 +762,20 @@ Param::setAsAlias(Param* other)
     }
     KnobIPtr otherKnob = other->_knob.lock();
     KnobIPtr thisKnob = getInternalKnob();
-    if ( !otherKnob || !thisKnob || ( otherKnob->typeName() != thisKnob->typeName() ) ||
-         ( otherKnob->getDimension() != thisKnob->getDimension() ) ) {
+    if (!thisKnob || !otherKnob) {
+        PythonSetNullError();
         return false;
     }
 
+    if (otherKnob->typeName() != thisKnob->typeName()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter of a different kind").toStdString().c_str());
+        return false;
+    }
+
+    if (otherKnob->getNDimensions() != thisKnob->getNDimensions()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter with a different number of dimensions").toStdString().c_str());
+        return false;
+    }
     return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
 }
 
@@ -570,108 +799,265 @@ AnimatedParam::~AnimatedParam()
 {
 }
 
-bool
-AnimatedParam::getIsAnimated(int dimension) const
+void
+AnimatedParam::splitView(const QString& viewName)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (!knob->isAnimationEnabled()) {
+        PyErr_SetString(PyExc_ValueError, tr("splitView: Cannot split view for a parameter that cannot animate").toStdString().c_str());
+        return;
+    }
+    knob->splitView(ViewIdx(thisViewSpec.value()));
+}
+
+void
+AnimatedParam::unSplitView(const QString& viewName)
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (!knob->isAnimationEnabled()) {
+        PyErr_SetString(PyExc_ValueError, tr("unSplitView: Cannot unsplit view for a parameter that cannot animate").toStdString().c_str());
+        return;
+    }
+    knob->unSplitView(ViewIdx(thisViewSpec.value()));
+}
+
+QStringList
+AnimatedParam::getViewsList() const
+{
+    QStringList ret;
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return ret;
+    }
+    AppInstancePtr app = holder->getApp();
+    if (!app) {
+        return ret;
+    }
+    const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (*it < 0 && *it >= (int)projectViews.size()) {
+            continue;
+        }
+        ret.push_back(QString::fromUtf8(projectViews[*it].c_str()));
+    }
+    return ret;
+
+}
+
+bool
+AnimatedParam::getIsAnimated(int dimension, const QString& view) const
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
         return false;
     }
-    return knob->isAnimated( dimension, ViewSpec::current() );
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+
+    return knob->isAnimated( DimIdx(dimension), thisViewSpec );
 }
 
 int
-AnimatedParam::getNumKeys(int dimension) const
+AnimatedParam::getNumKeys(int dimension, const QString& view) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getKeyFramesCount(ViewSpec::current(), dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+
+
+    return knob->getKeyFramesCount(thisViewSpec, DimIdx(dimension));
 }
 
 int
 AnimatedParam::getKeyIndex(double time,
-                           int dimension) const
+                           int dimension, const QString& view) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        return 0;
+        PythonSetNullError();
+        return -1;
     }
-    return knob->getKeyFrameIndex(ViewSpec::current(), dimension, time);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return -1;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return -1;
+    }
+
+    return knob->getKeyFrameIndex(thisViewSpec, DimIdx(dimension), time);
 }
 
 bool
 AnimatedParam::getKeyTime(int index,
                           int dimension,
-                          double* time) const
+                          double* time, const QString& view) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        *time = 0.;
+        PythonSetNullError();
         return false;
     }
-    return knob->getKeyFrameTime(ViewSpec::current(), index, dimension, time);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+
+    return knob->getKeyFrameTime(thisViewSpec, index, DimIdx(dimension), time);
+
 }
 
 void
 AnimatedParam::deleteValueAtTime(double time,
-                                 int dimension)
+                                 int dimension, const QString& view)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
+
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
+    knob->deleteValueAtTime(time, thisViewSpec, dim);
+
 }
 
 void
-AnimatedParam::removeAnimation(int dimension)
+AnimatedParam::removeAnimation(int dimension, const QString& view)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->removeAnimation(ViewSpec::all(), dimension);
+
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
+    knob->removeAnimation(thisViewSpec, dim);
+
 }
 
 double
 AnimatedParam::getDerivativeAtTime(double time,
-                                   int dimension) const
+                                   int dimension, const QString& view) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return 0.;
     }
-    return knob->getDerivativeAtTime(time, ViewSpec::current(), dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0.;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0.;
+    }
+
+    return knob->getDerivativeAtTime(time, thisViewSpec, DimIdx(dimension));
 }
 
 double
 AnimatedParam::getIntegrateFromTimeToTime(double time1,
                                           double time2,
-                                          int dimension) const
+                                          int dimension, const QString& view) const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return false;
     }
-    return knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+
+    return knob->getIntegrateFromTimeToTime(time1, time2, thisViewSpec, DimIdx(dimension));
 }
 
-int
+double
 AnimatedParam::getCurrentTime() const
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
     return knob->getCurrentTime();
@@ -680,22 +1066,31 @@ AnimatedParam::getCurrentTime() const
 bool
 AnimatedParam::setInterpolationAtTime(double time,
                                       KeyframeTypeEnum interpolation,
-                                      int dimension)
+                                      int dimension, const QString& view)
 {
     KnobIPtr knob = getInternalKnob();
-
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
-    KeyFrame newKey;
 
-    return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setInterpolationAtTime(thisViewSpec, dim, time, interpolation);
+    return true;
 }
 
 void
-Param::_addAsDependencyOf(int fromExprDimension,
-                          Param* param,
-                          int thisDimension)
+Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
     //from expr is in the dimension of expressionKnob
     //thisDimension is in the dimesnion of getValueCallerKnob
@@ -703,31 +1098,70 @@ Param::_addAsDependencyOf(int fromExprDimension,
     KnobIPtr expressionKnob = param->_knob.lock();
     KnobIPtr getValueCallerKnob = _knob.lock();
 
-    if ( (fromExprDimension < 0) || ( fromExprDimension >= expressionKnob->getDimension() ) ) {
-        return;
-    }
-    if ( (thisDimension != -1) && (thisDimension != 0) && ( thisDimension >= getValueCallerKnob->getDimension() ) ) {
-        return;
-    }
-    if (getValueCallerKnob == expressionKnob) {
+    if (!expressionKnob || !getValueCallerKnob) {
+        PythonSetNullError();
         return;
     }
 
-    getValueCallerKnob->addListener(true, fromExprDimension, thisDimension, expressionKnob);
+    if (getValueCallerKnob == expressionKnob) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot add the parameter as a dependency of itself").toStdString().c_str());
+        return;
+    }
+
+    if (fromExprDimension < 0 || fromExprDimension >= expressionKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(fromExprDimension);
+        return;
+    }
+
+    if (thisDimension < 0 || thisDimension >= getValueCallerKnob->getNDimensions()) {
+        PythonSetInvalidDimensionError(thisDimension);
+        return;
+    }
+
+    ViewGetSpec thisViewSpec, fromExprViewSpec;
+
+    if (!getViewGetSpecFromViewName(thisView, &thisViewSpec)) {
+        PythonSetInvalidViewName(thisView);
+        return;
+    }
+
+    if (!getViewGetSpecFromViewName(fromExprView, &fromExprViewSpec)) {
+        PythonSetInvalidViewName(fromExprView);
+        return;
+    }
+
+    getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
 }
 
 bool
 AnimatedParam::setExpression(const QString& expr,
                              bool hasRetVariable,
-                             int dimension)
+                             int dimension,
+                             const QString& view)
 {
-    KnobIPtr thisKnob = _knob.lock();
-    if (!thisKnob) {
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
         return false;
     }
+
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return false;
+    }
+
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
     try {
-        thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
-    } catch (...) {
+        knob->setExpression(dim, thisViewSpec, expr.toStdString(), hasRetVariable, true);
+    } catch (const std::exception& e) {
+        PyErr_SetString(PyExc_ValueError, e.what());
+
         return false;
     }
 
@@ -736,15 +1170,28 @@ AnimatedParam::setExpression(const QString& expr,
 
 QString
 AnimatedParam::getExpression(int dimension,
-                             bool* hasRetVariable) const
+                             bool* hasRetVariable,
+                             const QString& view) const
 {
-    KnobIPtr thisKnob = _knob.lock();
-    if (!thisKnob) {
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
         return QString();
     }
-    QString ret = QString::fromUtf8( thisKnob->getExpression(dimension).c_str() );
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return QString();
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return QString();
+    }
 
-    *hasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
+    QString ret = QString::fromUtf8( knob->getExpression(DimIdx(dimension), thisViewSpec).c_str() );
+
+    *hasRetVariable = knob->isExpressionUsingRetVariable(thisViewSpec, DimIdx(dimension));
+
 
     return ret;
 }
@@ -762,208 +1209,341 @@ IntParam::~IntParam()
 }
 
 int
-IntParam::get() const
+IntParam::get(const QString& view) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(0), thisViewSpec);
 
-    return knob->getValue();
 }
 
 Int2DTuple
-Int2DParam::get() const
+Int2DParam::get(const QString& view) const
 {
     Int2DTuple ret = {0, 0};
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+
         return ret;
     }
 
-    ret.x = knob->getValue(0);
-    ret.y = knob->getValue(1);
+    ret.x = knob->getValue(DimIdx(0), thisViewSpec);
+    ret.y = knob->getValue(DimIdx(1), thisViewSpec);
 
     return ret;
 }
 
 Int3DTuple
-Int3DParam::get() const
+Int3DParam::get(const QString& view) const
 {
+    Int3DTuple ret;
     KnobIntPtr knob = _intKnob.lock();
-    Int3DTuple ret = {0, 0, 0};
     if (!knob) {
+        PythonSetNullError();
         return ret;
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return ret;
+    }
+    ret.x = knob->getValue(DimIdx(0), thisViewSpec);
+    ret.y = knob->getValue(DimIdx(1), thisViewSpec);
+    ret.z = knob->getValue(DimIdx(2), thisViewSpec);
 
-    ret.x = knob->getValue(0);
-    ret.y = knob->getValue(1);
-    ret.z = knob->getValue(2);
 
     return ret;
 }
 
 int
-IntParam::get(double frame) const
+IntParam::get(double frame, const QString& view) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
 
-    return knob->getValueAtTime(frame, 0);
 }
 
 Int2DTuple
-Int2DParam::get(double frame) const
+Int2DParam::get(double frame, const QString& view) const
 {
     Int2DTuple ret = {0, 0};
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, 0);
-    ret.y = knob->getValueAtTime(frame, 1);
+    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
 
     return ret;
 }
 
 Int3DTuple
-Int3DParam::get(double frame) const
+Int3DParam::get(double frame, const QString& view) const
 {
     Int3DTuple ret = {0, 0, 0};
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, 0);
-    ret.y = knob->getValueAtTime(frame, 1);
-    ret.z = knob->getValueAtTime(frame, 2);
+    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
+    ret.z = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
 
     return ret;
 }
 
 void
-IntParam::set(int x)
+IntParam::set(int x, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    knob->setValue(x, thisViewSpec, DimIdx(0));
+
 }
 
 void
 Int2DParam::set(int x,
-                int y)
+                int y, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->beginChanges();
-    knob->setValue(x, ViewSpec::current(), 0);
-    knob->setValue(y, ViewSpec::current(), 1);
-    knob->endChanges();
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<int> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAcrossDimensions(values, DimIdx(0), thisViewSpec);
+
 }
 
 void
 Int3DParam::set(int x,
                 int y,
-                int z)
+                int z, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+
         return;
     }
 
-    knob->beginChanges();
-    knob->setValue(x, ViewSpec::current(), 0);
-    knob->setValue(y, ViewSpec::current(), 1);
-    knob->setValue(z, ViewSpec::current(), 2);
-    knob->endChanges();
+    std::vector<int> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAcrossDimensions(values, DimIdx(0), thisViewSpec);
 }
 
 void
 IntParam::set(int x,
-              double frame)
+              double frame, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+
 }
 
 void
 Int2DParam::set(int x,
                 int y,
-                double frame)
+                double frame, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<int> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+
 }
 
 void
 Int3DParam::set(int x,
                 int y,
                 int z,
-                double frame)
+                double frame, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<int> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+
 }
 
 int
-IntParam::getValue(int dimension) const
+IntParam::getValue(int dimension, const QString& view) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getValue(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(dimension), thisViewSpec);
+
 }
 
 void
 IntParam::setValue(int value,
-                   int dimension)
+                   int dimension, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValue(value, thisViewSpec, dim);
+
 }
 
 int
 IntParam::getValueAtTime(double time,
-                         int dimension) const
+                         int dimension, const QString& view) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getValueAtTime(time, dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
+
 }
 
 void
 IntParam::setValueAtTime(int value,
                          double time,
-                         int dimension)
+                         int dimension, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValueAtTime(time, value, thisViewSpec, dim);
 }
 
 void
@@ -972,9 +1552,15 @@ IntParam::setDefaultValue(int value,
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDefaultValueWithoutApplying(value, dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setDefaultValueWithoutApplying(value, dim);
 }
 
 int
@@ -982,19 +1568,37 @@ IntParam::getDefaultValue(int dimension) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDefaultValue(DimIdx(dimension));
 }
 
 void
-IntParam::restoreDefaultValue(int dimension)
+IntParam::restoreDefaultValue(int dimension, const QString& view)
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->resetToDefaultValue(dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
+    knob->resetToDefaultValue(dim, thisViewSpec);
 }
 
 void
@@ -1003,9 +1607,19 @@ IntParam::setMinimum(int minimum,
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+
+    knob->setRange(minimum, knob->getMaximum(DimIdx(dimension)), DimIdx(dimension));
 }
 
 int
@@ -1013,9 +1627,14 @@ IntParam::getMinimum(int dimension) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    return knob->getMinimum(DimIdx(dimension));
 }
 
 void
@@ -1023,10 +1642,19 @@ IntParam::setMaximum(int maximum,
                      int dimension)
 {
     KnobIntPtr knob = _intKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->setRange(knob->getMinimum(DimIdx(dimension)),maximum, DimIdx(dimension));
 }
 
 int
@@ -1034,9 +1662,15 @@ IntParam::getMaximum(int dimension) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getMaximum(DimIdx(dimension));
 }
 
 void
@@ -1044,10 +1678,19 @@ IntParam::setDisplayMinimum(int minimum,
                             int dimension)
 {
     KnobIntPtr knob = _intKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDisplayMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(minimum, knob->getDisplayMaximum(DimIdx(dimension)), DimIdx(dimension));
 }
 
 int
@@ -1055,9 +1698,16 @@ IntParam::getDisplayMinimum(int dimension) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getDisplayMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMinimum(DimIdx(dimension));
+
 }
 
 void
@@ -1066,9 +1716,18 @@ IntParam::setDisplayMaximum(int maximum,
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDisplayMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(knob->getDisplayMinimum(DimIdx(dimension)), maximum, DimIdx(dimension));
 }
 
 int
@@ -1076,23 +1735,25 @@ IntParam::getDisplayMaximum(int dimension) const
 {
     KnobIntPtr knob = _intKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getDisplayMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMaximum(DimIdx(dimension));
+
 }
 
 int
-IntParam::addAsDependencyOf(int fromExprDimension,
-                            Param* param,
-                            int thisDimension)
+IntParam::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobIntPtr knob = _intKnob.lock();
-    if (!knob) {
-        return 0;
-    }
-    return knob->getValue();
+    return getValue();
+
 }
 
 //////////// DoubleParam
@@ -1108,144 +1769,221 @@ DoubleParam::~DoubleParam()
 }
 
 double
-DoubleParam::get() const
+DoubleParam::get(const QString& view) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValue(0);
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(0), thisViewSpec);
 }
 
 Double2DTuple
-Double2DParam::get() const
+Double2DParam::get(const QString& view) const
 {
+    Double2DTuple ret;
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double2DTuple ret = {0., 0.};
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+
         return ret;
     }
 
-    ret.x = knob->getValue(0);
-    ret.y = knob->getValue(1);
+    ret.x = knob->getValue(DimIdx(0), thisViewSpec);
+    ret.y = knob->getValue(DimIdx(1), thisViewSpec);
 
     return ret;
+    
 }
 
 Double3DTuple
-Double3DParam::get() const
+Double3DParam::get(const QString& view) const
 {
+    Double3DTuple ret;
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double3DTuple ret = {0., 0., 0.};
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return ret;
     }
 
-    ret.x = knob->getValue(0);
-    ret.y = knob->getValue(1);
-    ret.z = knob->getValue(2);
+    ret.x = knob->getValue(DimIdx(0), thisViewSpec);
+    ret.y = knob->getValue(DimIdx(1), thisViewSpec);
+    ret.z = knob->getValue(DimIdx(2), thisViewSpec);
 
-    return ret;
-}
+    return ret;}
 
 double
-DoubleParam::get(double frame) const
+DoubleParam::get(double frame, const QString& view) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValueAtTime(frame, 0);
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
 }
 
 Double2DTuple
-Double2DParam::get(double frame) const
+Double2DParam::get(double frame, const QString& view) const
 {
     Double2DTuple ret = {0., 0.};
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, 0);
-    ret.y = knob->getValueAtTime(frame, 1);
+    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
 
     return ret;
 }
 
 Double3DTuple
-Double3DParam::get(double frame) const
+Double3DParam::get(double frame, const QString& view) const
 {
+    Double3DTuple ret;
     KnobDoublePtr knob = _doubleKnob.lock();
-    Double3DTuple ret = {0., 0., 0.};
     if (!knob) {
+        PythonSetNullError();
+        return ret;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, 0);
-    ret.y = knob->getValueAtTime(frame, 1);
-    ret.z = knob->getValueAtTime(frame, 2);
+    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
+    ret.z = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
 
     return ret;
 }
 
 void
-DoubleParam::set(double x)
+DoubleParam::set(double x, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    knob->setValue(x, thisViewSpec, DimIdx(0));
 }
 
 void
 Double2DParam::set(double x,
-                   double y)
+                   double y, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setValues(x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<double> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAcrossDimensions(values, DimIdx(0), thisViewSpec);
 }
 
 void
 Double3DParam::set(double x,
                    double y,
-                   double z)
+                   double z, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return;
     }
 
-    knob->setValues(x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    std::vector<double> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAcrossDimensions(values, DimIdx(0), thisViewSpec);
 }
 
 void
 DoubleParam::set(double x,
-                 double frame)
+                 double frame, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
 }
 
 void
 Double2DParam::set(double x,
                    double y,
-                   double frame)
+                   double frame, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<double> values(2);
+    values[0] = x;
+    values[1] = y;
+    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
 }
 
 void
@@ -1253,67 +1991,119 @@ Double2DParam::setUsePointInteract(bool use)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->setHasHostOverlayHandle(use);
+    knob->setHasHostOverlayHandle(use);
 }
 
 void
 Double3DParam::set(double x,
                    double y,
                    double z,
-                   double frame)
+                   double frame, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    std::vector<double> values(3);
+    values[0] = x;
+    values[1] = y;
+    values[2] = z;
+    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
 }
 
 double
-DoubleParam::getValue(int dimension) const
+DoubleParam::getValue(int dimension, const QString& view) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValue(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(dimension), thisViewSpec);
 }
 
 void
 DoubleParam::setValue(double value,
-                      int dimension)
+                      int dimension, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValue(value, thisViewSpec, dim);
 }
 
 double
 DoubleParam::getValueAtTime(double time,
-                            int dimension) const
+                            int dimension, const QString& view) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValueAtTime(time, dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
 }
 
 void
 DoubleParam::setValueAtTime(double value,
                             double time,
-                            int dimension)
+                            int dimension, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValueAtTime(time, value, thisViewSpec, dim);
 }
 
 void
@@ -1322,9 +2112,15 @@ DoubleParam::setDefaultValue(double value,
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->setDefaultValueWithoutApplying(value, dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setDefaultValueWithoutApplying(value, dim);
 }
 
 double
@@ -1332,19 +2128,37 @@ DoubleParam::getDefaultValue(int dimension) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDefaultValue(DimIdx(dimension));
 }
 
 void
-DoubleParam::restoreDefaultValue(int dimension)
+DoubleParam::restoreDefaultValue(int dimension, const QString& view)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->resetToDefaultValue(dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
+    knob->resetToDefaultValue(dim, thisViewSpec);
 }
 
 void
@@ -1353,9 +2167,19 @@ DoubleParam::setMinimum(double minimum,
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+
+    knob->setRange(minimum, knob->getMaximum(DimIdx(dimension)), DimIdx(dimension));
 }
 
 double
@@ -1363,9 +2187,14 @@ DoubleParam::getMinimum(int dimension) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    return knob->getMinimum(DimIdx(dimension));
 }
 
 void
@@ -1373,10 +2202,19 @@ DoubleParam::setMaximum(double maximum,
                         int dimension)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->setRange(knob->getMinimum(DimIdx(dimension)),maximum, DimIdx(dimension));
 }
 
 double
@@ -1384,9 +2222,15 @@ DoubleParam::getMaximum(int dimension) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getMaximum(DimIdx(dimension));
 }
 
 void
@@ -1394,10 +2238,20 @@ DoubleParam::setDisplayMinimum(double minimum,
                                int dimension)
 {
     KnobDoublePtr knob = _doubleKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDisplayMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(minimum, knob->getDisplayMaximum(DimIdx(dimension)), DimIdx(dimension));
+
 }
 
 double
@@ -1405,9 +2259,15 @@ DoubleParam::getDisplayMinimum(int dimension) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDisplayMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMinimum(DimIdx(dimension));
 }
 
 void
@@ -1416,9 +2276,19 @@ DoubleParam::setDisplayMaximum(double maximum,
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    return knob->setDisplayMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(knob->getDisplayMinimum(DimIdx(dimension)), maximum, DimIdx(dimension));
+
 }
 
 double
@@ -1426,23 +2296,23 @@ DoubleParam::getDisplayMaximum(int dimension) const
 {
     KnobDoublePtr knob = _doubleKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDisplayMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMaximum(DimIdx(dimension));
 }
 
 double
-DoubleParam::addAsDependencyOf(int fromExprDimension,
-                               Param* param,
-                               int thisDimension)
+DoubleParam::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobDoublePtr knob = _doubleKnob.lock();
-    if (!knob) {
-        return 0.;
-    }
-    return knob->getValue();
+    return getValue();
 }
 
 ////////ColorParam
@@ -1458,33 +2328,47 @@ ColorParam::~ColorParam()
 }
 
 ColorTuple
-ColorParam::get() const
+ColorParam::get(const QString& view) const
 {
     ColorTuple ret = {0., 0., 0., 0.};
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return ret;
     }
-    ret.r = knob->getValue(0);
-    ret.g = knob->getValue(1);
-    ret.b = knob->getValue(2);
-    ret.a = knob->getDimension() == 4 ? knob->getValue(3) : 1.;
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return ret;
+    }
+    ret.r = knob->getValue(DimIdx(0), thisViewSpec);
+    ret.g = knob->getValue(DimIdx(1), thisViewSpec);
+    ret.b = knob->getValue(DimIdx(2), thisViewSpec);
+    ret.a = knob->getNDimensions() == 4 ? knob->getValue(DimIdx(3)) : 1.;
+
 
     return ret;
 }
 
 ColorTuple
-ColorParam::get(double frame) const
+ColorParam::get(double frame, const QString& view) const
 {
     ColorTuple ret = {0., 0., 0., 0.};
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return ret;
     }
-    ret.r = knob->getValueAtTime(frame, 0);
-    ret.g = knob->getValueAtTime(frame, 1);
-    ret.b = knob->getValueAtTime(frame, 2);
-    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 2) : 1.;
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return ret;
+    }
+    ret.r = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    ret.g = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
+    ret.b = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
+    ret.a = knob->getNDimensions() == 4 ? knob->getValueAtTime(frame, DimIdx(3)) : 1.;
+
 
     return ret;
 }
@@ -1493,20 +2377,27 @@ void
 ColorParam::set(double r,
                 double g,
                 double b,
-                double a)
+                double a, const QString& view)
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->beginChanges();
-    knob->setValue(r, ViewSpec::current(), 0);
-    knob->setValue(g, ViewSpec::current(), 1);
-    knob->setValue(b, ViewSpec::current(), 2);
-    if (knob->getDimension() == 4) {
-        knob->setValue(a, ViewSpec::current(), 3);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
     }
-    knob->endChanges();
+
+    std::vector<double> values(knob->getNDimensions());
+    values[0] = r;
+    values[1] = g;
+    values[2] = b;
+    if (knob->getNDimensions() == 4) {
+        values[3] = a;
+    }
+    knob->setValueAcrossDimensions(values, DimIdx(0), thisViewSpec);
 }
 
 void
@@ -1514,65 +2405,113 @@ ColorParam::set(double r,
                 double g,
                 double b,
                 double a,
-                double frame)
+                double frame, const QString& view)
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->beginChanges();
-    knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
-    knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
-    int dims = knob->getDimension();
-    knob->setValueAtTime(frame, b, ViewSpec::current(), 2);
-    if (dims == 4) {
-        knob->setValueAtTime(frame, a, ViewSpec::current(), 3);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
     }
-    knob->endChanges();
+
+    std::vector<double> values(knob->getNDimensions());
+    values[0] = r;
+    values[1] = g;
+    values[2] = b;
+    if (knob->getNDimensions() == 4) {
+        values[3] = a;
+    }
+    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
 }
 
 double
-ColorParam::getValue(int dimension) const
+ColorParam::getValue(int dimension, const QString& view) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValue(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(dimension), thisViewSpec);
 }
 
 void
 ColorParam::setValue(double value,
-                     int dimension)
+                     int dimension, const QString& view)
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValue(value, thisViewSpec, dim);
 }
 
 double
 ColorParam::getValueAtTime(double time,
-                           int dimension) const
+                           int dimension, const QString& view) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getValueAtTime(time, dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
 }
 
 void
 ColorParam::setValueAtTime(double value,
                            double time,
-                           int dimension)
+                           int dimension, const QString& view)
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setValueAtTime(time, value, thisViewSpec, dim);
 }
 
 void
@@ -1581,9 +2520,15 @@ ColorParam::setDefaultValue(double value,
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDefaultValueWithoutApplying(value, dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+    knob->setDefaultValueWithoutApplying(value, dim);
 }
 
 double
@@ -1591,30 +2536,59 @@ ColorParam::getDefaultValue(int dimension) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDefaultValue(DimIdx(dimension));
 }
 
 void
-ColorParam::restoreDefaultValue(int dimension)
+ColorParam::restoreDefaultValue(int dimension, const QString& view)
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->resetToDefaultValue(dimension);
+    if (dimension != kPyParamDimSpecAll && (dimension < 0 || dimension >= knob->getNDimensions())) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    DimSpec dim = getDimSpecFromDimensionIndex(dimension);
+
+    knob->resetToDefaultValue(dim, thisViewSpec);
 }
 
 void
 ColorParam::setMinimum(double minimum,
                        int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+   KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+
+    knob->setRange(minimum, knob->getMaximum(DimIdx(dimension)), DimIdx(dimension));
+
 }
 
 double
@@ -1622,9 +2596,14 @@ ColorParam::getMinimum(int dimension) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+    return knob->getMinimum(DimIdx(dimension));
 }
 
 void
@@ -1632,10 +2611,19 @@ ColorParam::setMaximum(double maximum,
                        int dimension)
 {
     KnobColorPtr knob = _colorKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->setRange(knob->getMinimum(DimIdx(dimension)),maximum, DimIdx(dimension));
 }
 
 double
@@ -1643,9 +2631,16 @@ ColorParam::getMaximum(int dimension) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getMaximum(DimIdx(dimension));
+
 }
 
 void
@@ -1653,10 +2648,20 @@ ColorParam::setDisplayMinimum(double minimum,
                               int dimension)
 {
     KnobColorPtr knob = _colorKnob.lock();
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDisplayMinimum(minimum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(minimum, knob->getDisplayMaximum(DimIdx(dimension)), DimIdx(dimension));
+
 }
 
 double
@@ -1664,9 +2669,16 @@ ColorParam::getDisplayMinimum(int dimension) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDisplayMinimum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMinimum(DimIdx(dimension));
+
 }
 
 void
@@ -1675,9 +2687,19 @@ ColorParam::setDisplayMaximum(double maximum,
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDisplayMaximum(maximum, dimension);
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    return knob->setDisplayRange(knob->getDisplayMinimum(DimIdx(dimension)), maximum, DimIdx(dimension));
+
 }
 
 double
@@ -1685,23 +2707,24 @@ ColorParam::getDisplayMaximum(int dimension) const
 {
     KnobColorPtr knob = _colorKnob.lock();
     if (!knob) {
-        return 0.;
+        PythonSetNullError();
+        return 0;
     }
-    return knob->getDisplayMaximum(dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return 0;
+    }
+
+    return knob->getDisplayMaximum(DimIdx(dimension));
+
 }
 
 double
-ColorParam::addAsDependencyOf(int fromExprDimension,
-                              Param* param,
-                              int thisDimension)
+ColorParam::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobColorPtr knob = _colorKnob.lock();
-    if (!knob) {
-        return 0.;
-    }
-    return knob->getValue();
+    return getValue();
 }
 
 //////////////// ChoiceParam
@@ -1716,109 +2739,121 @@ ChoiceParam::~ChoiceParam()
 }
 
 int
-ChoiceParam::get() const
+ChoiceParam::get(const QString& view) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getValue(0);
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValue(DimIdx(0), thisViewSpec);
 }
 
 int
-ChoiceParam::get(double frame) const
+ChoiceParam::get(double frame, const QString& view) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getValueAtTime(frame, 0);
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+
 }
 
 void
-ChoiceParam::set(int x)
+ChoiceParam::set(int x, const QString& view)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    knob->setValue(x, thisViewSpec, DimIdx(0));
+
 }
 
 void
 ChoiceParam::set(int x,
-                 double frame)
+                 double frame, const QString& view)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+
 }
 
 void
-ChoiceParam::set(const QString& label)
+ChoiceParam::set(const QString& label, const QString& view)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return;
     }
     try {
-        KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), 0);
+        ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), thisViewSpec);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
-        KnobHolderPtr holder =  knob->getHolder();
-        AppInstancePtr app;
-        if (holder) {
-            app = holder->getApp();
-        }
-        if (app) {
-            app->appendToScriptEditor(e.what());
-        } else {
-            std::cerr << e.what() << std::endl;
-        }
+        PyErr_SetString(PyExc_ValueError, e.what());
+
     }
 }
 
 int
-ChoiceParam::getValue() const
+ChoiceParam::getValue(const QString& view) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
-        return 0;
-    }
-    return knob->getValue(0);
+    return get(view);
+
 }
 
 void
-ChoiceParam::setValue(int value)
+ChoiceParam::setValue(int value, const QString& view)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
-        return;
-    }
-    knob->setValue(value, ViewSpec::current(), 0);
+    set(value, view);
 }
 
 int
-ChoiceParam::getValueAtTime(double time) const
+ChoiceParam::getValueAtTime(double time, const QString& view) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
-        return 0;
-    }
-    return knob->getValueAtTime(time, 0);
+    return get(time, view);
 }
 
 void
 ChoiceParam::setValueAtTime(int value,
-                            double time)
+                            double time, const QString& view)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
-        return;
-    }
-    knob->setValueAtTime(time, value, ViewSpec::current(), 0);
+    set(value, time, view);
 }
 
 void
@@ -1826,9 +2861,10 @@ ChoiceParam::setDefaultValue(int value)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->setDefaultValueWithoutApplying(value, 0);
+    knob->setDefaultValueWithoutApplying(value, DimSpec::all());
 }
 
 void
@@ -1836,6 +2872,7 @@ ChoiceParam::setDefaultValue(const QString& value)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
     knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
@@ -1846,19 +2883,27 @@ ChoiceParam::getDefaultValue() const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
-    return knob->getDefaultValues_mt_safe()[0];
+    return knob->getDefaultValue(DimIdx(0));
 }
 
 void
-ChoiceParam::restoreDefaultValue()
+ChoiceParam::restoreDefaultValue(const QString& view)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-    knob->resetToDefaultValue(0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->resetToDefaultValue(DimSpec::all(), thisViewSpec);
+
 }
 
 void
@@ -1866,12 +2911,14 @@ ChoiceParam::addOption(const QString& option,
                        const QString& help)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    std::vector<std::string> helps = knob->getEntriesHelp_mt_safe();
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
     knob->appendChoice( option.toStdString(), help.toStdString() );
 }
 
@@ -1879,11 +2926,14 @@ void
 ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
     std::vector<std::string> entries, helps;
     for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it) {
         entries.push_back( it->first.toStdString() );
@@ -1897,15 +2947,33 @@ ChoiceParam::getOption(int index) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries =  knob->getEntries();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
+        PyErr_SetString(PyExc_IndexError, tr("Option index out of range").toStdString().c_str());
         return QString();
     }
 
     return QString::fromUtf8( entries[index].c_str() );
+}
+
+QString
+ChoiceParam::getActiveOption(const QString& view) const
+{
+    KnobChoicePtr knob = _choiceKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
+        return QString();
+    }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return QString();
+    }
+    return QString::fromUtf8(knob->getActiveEntryText(thisViewSpec).c_str());
 }
 
 int
@@ -1913,6 +2981,7 @@ ChoiceParam::getNumOptions() const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return 0;
     }
     return knob->getNumEntries();
@@ -1921,12 +2990,13 @@ ChoiceParam::getNumOptions() const
 QStringList
 ChoiceParam::getOptions() const
 {
-    QStringList ret;
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
-        return ret;
+        PythonSetNullError();
+        return QStringList();
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    QStringList ret;
+    std::vector<std::string> entries = knob->getEntries();
 
     for (std::size_t i = 0; i < entries.size(); ++i) {
         ret.push_back( QString::fromUtf8( entries[i].c_str() ) );
@@ -1936,17 +3006,11 @@ ChoiceParam::getOptions() const
 }
 
 int
-ChoiceParam::addAsDependencyOf(int fromExprDimension,
-                               Param* param,
-                               int thisDimension)
+ChoiceParam::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
-        return 0;
-    }
-    return knob->getValue();
+    return getValue();
 }
 
 ////////////////BooleanParam
@@ -1963,93 +3027,99 @@ BooleanParam::~BooleanParam()
 }
 
 bool
-BooleanParam::get() const
+BooleanParam::get(const QString& view) const
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+    return knob->getValue(DimIdx(0), thisViewSpec);
 
-    return knob->getValue(0);
 }
 
 bool
-BooleanParam::get(double frame) const
+BooleanParam::get(double frame, const QString& view) const
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
 
-    return knob->getValueAtTime(frame, 0);
 }
 
 void
-BooleanParam::set(bool x)
+BooleanParam::set(bool x, const QString& view)
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return;
     }
 
-    knob->setValue(x, ViewSpec::current(), 0);
+    knob->setValue(x, thisViewSpec, DimIdx(0));
+
 }
 
 void
 BooleanParam::set(bool x,
-                  double frame)
+                  double frame, const QString& view)
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return;
     }
 
-    knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
+    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+
 }
 
 bool
-BooleanParam::getValue() const
+BooleanParam::getValue(const QString& view) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
-    if (!knob) {
-        return false;
-    }
-
-    return knob->getValue(0);
+    return get(view);
 }
 
 void
-BooleanParam::setValue(bool value)
+BooleanParam::setValue(bool value, const QString& view)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
-    if (!knob) {
-        return;
-    }
-
-    knob->setValue(value, ViewSpec::current(), 0);
+    set(value, view);
 }
 
 bool
-BooleanParam::getValueAtTime(double time) const
+BooleanParam::getValueAtTime(double time, const QString& view) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
-    if (!knob) {
-        return false;
-    }
-
-    return knob->getValueAtTime(time, 0);
+    return get(time, view);
 }
 
 void
 BooleanParam::setValueAtTime(bool value,
-                             double time)
+                             double time, const QString& view)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
-    if (!knob) {
-        return;
-    }
-
-    knob->setValueAtTime(time, value, ViewSpec::current(), 0);
+    set(value, time, view);
 }
 
 void
@@ -2057,10 +3127,10 @@ BooleanParam::setDefaultValue(bool value)
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setDefaultValueWithoutApplying(value, 0);
+    knob->setDefaultValueWithoutApplying(value, DimSpec::all());
 }
 
 bool
@@ -2068,36 +3138,35 @@ BooleanParam::getDefaultValue() const
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return false;
     }
-
-    return knob->getDefaultValues_mt_safe()[0];
+    return knob->getDefaultValue(DimIdx(0));
 }
 
 void
-BooleanParam::restoreDefaultValue()
+BooleanParam::restoreDefaultValue(const QString& view)
 {
     KnobBoolPtr knob = _boolKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->resetToDefaultValue(0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->resetToDefaultValue(DimSpec::all(), thisViewSpec);
 }
 
 bool
-BooleanParam::addAsDependencyOf(int fromExprDimension,
-                                Param* param,
-                                int thisDimension)
+BooleanParam::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobBoolPtr knob = _boolKnob.lock();
-    if (!knob) {
-        return false;
-    }
+    return getValue();
 
-    return knob->getValue();
 }
 
 ////////////// StringParamBase
@@ -2114,93 +3183,96 @@ StringParamBase::~StringParamBase()
 }
 
 QString
-StringParamBase::get() const
+StringParamBase::get(const QString& view) const
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
-
-    return QString::fromUtf8( knob->getValue(0).c_str() );
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return QString();
+    }
+    return QString::fromUtf8(knob->getValue(DimIdx(0), thisViewSpec).c_str());
 }
 
 QString
-StringParamBase::get(double frame) const
+StringParamBase::get(double frame, const QString& view) const
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
+    ViewGetSpec thisViewSpec;
+    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return QString();
+    }
+    return QString::fromUtf8(knob->getValueAtTime(frame, DimIdx(0), thisViewSpec).c_str());
 
-    return QString::fromUtf8( knob->getValueAtTime(frame, 0).c_str() );
 }
 
 void
-StringParamBase::set(const QString& x)
+StringParamBase::set(const QString& x, const QString& view)
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->setValue(x.toStdString(), thisViewSpec);
 
-    knob->setValue(x.toStdString(), ViewSpec::current(), 0);
 }
 
 void
 StringParamBase::set(const QString& x,
-                     double frame)
+                     double frame, const QString& view)
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    knob->setValueAtTime(frame, x.toStdString(), thisViewSpec);
 }
 
 QString
-StringParamBase::getValue() const
+StringParamBase::getValue(const QString& view) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
-    if (!knob) {
-        return QString();
-    }
-
-    return QString::fromUtf8( knob->getValue(0).c_str() );
+    return get(view);
 }
 
 void
-StringParamBase::setValue(const QString& value)
+StringParamBase::setValue(const QString& value, const QString& view)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
-    if (!knob) {
-        return;
-    }
-
-    knob->setValue(value.toStdString(), ViewSpec::current(), 0);
+    set(value, view);
 }
 
 QString
-StringParamBase::getValueAtTime(double time) const
+StringParamBase::getValueAtTime(double time, const QString& view) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
-    if (!knob) {
-        return QString();
-    }
-
-    return QString::fromUtf8( knob->getValueAtTime(time, 0).c_str() );
+    return get(time, view);
 }
 
 void
 StringParamBase::setValueAtTime(const QString& value,
-                                double time)
+                                double time, const QString& view)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
-    if (!knob) {
-        return;
-    }
+    set(value, time, view);
 
-    knob->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
 }
 
 void
@@ -2208,10 +3280,10 @@ StringParamBase::setDefaultValue(const QString& value)
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return;
     }
-
-    knob->setDefaultValueWithoutApplying(value.toStdString(), 0);
+    knob->setDefaultValueWithoutApplying(value.toStdString(), DimSpec::all());
 }
 
 QString
@@ -2219,36 +3291,35 @@ StringParamBase::getDefaultValue() const
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
         return QString();
     }
-
-    return QString::fromUtf8( knob->getDefaultValues_mt_safe()[0].c_str() );
+    return QString::fromUtf8( knob->getDefaultValue(DimIdx(0)).c_str() );
 }
 
 void
-StringParamBase::restoreDefaultValue()
+StringParamBase::restoreDefaultValue(const QString& view)
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    ViewSetSpec thisViewSpec;
+    if (!getViewSetSpecFromViewName(view, &thisViewSpec)) {
+        PythonSetInvalidViewName(view);
         return;
     }
 
-    return knob->resetToDefaultValue(0);
+    _stringKnob.lock()->resetToDefaultValue(DimSpec::all(), thisViewSpec);
 }
 
 QString
-StringParamBase::addAsDependencyOf(int fromExprDimension,
-                                   Param* param,
-                                   int thisDimension)
+StringParamBase::addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView)
 {
-    _addAsDependencyOf(fromExprDimension, param, thisDimension);
+    _addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView);
 
-    KnobStringBasePtr knob = _stringKnob.lock();
-    if (!knob) {
-        return QString();
-    }
-
-    return QString::fromUtf8( knob->getValue().c_str() );
+    return getValue();
 }
 
 ////////////////////StringParam
@@ -2267,8 +3338,12 @@ void
 StringParam::setType(StringParam::TypeEnum type)
 {
     KnobStringPtr knob = _sKnob.lock();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !knob->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     switch (type) {
@@ -2308,8 +3383,12 @@ void
 FileParam::setSequenceEnabled(bool enabled)
 {
     KnobFilePtr k = _sKnob.lock();
-
-    if ( !k || !k->isUserKnob() ) {
+    if (!k) {
+        PythonSetNullError();
+        return;
+    }
+    if ( !k->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     if (enabled) {
@@ -2331,8 +3410,12 @@ void
 FileParam::setDialogType(bool fileExisting, bool useSequences, const std::vector<std::string>& filters)
 {
     KnobFilePtr k = _sKnob.lock();
-
+    if (!k) {
+        PythonSetNullError();
+        return;
+    }
     if ( !k->isUserKnob() ) {
+        PythonSetNonUserKnobError();
         return;
     }
     if (fileExisting) {
@@ -2386,12 +3469,17 @@ PathParam::~PathParam()
 void
 PathParam::setAsMultiPathTable()
 {
-    KnobPathPtr knob = _sKnob.lock();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    KnobPathPtr k = _sKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    knob->setMultiPath(true);
+    if ( !k->isUserKnob() ) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+
+    k->setMultiPath(true);
 }
 
 ////////////////////ButtonParam
@@ -2409,45 +3497,46 @@ ButtonParam::~ButtonParam()
 bool
 ButtonParam::isCheckable() const
 {
-    KnobButtonPtr knob = _buttonKnob.lock();
-
-    if (!knob) {
+    KnobButtonPtr k = _buttonKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return false;
     }
-    return knob->getIsCheckable();
+    return k->getIsCheckable();
 }
 
 void
 ButtonParam::setDown(bool down)
 {
-    KnobButtonPtr knob = _buttonKnob.lock();
-
-    if (!knob) {
+    KnobButtonPtr k = _buttonKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    knob->setValue(down);
+    k->setValue(down);
 }
 
 
 bool
 ButtonParam::isDown() const
 {
-    KnobButtonPtr knob = _buttonKnob.lock();
-
-    if (!knob) {
+    KnobButtonPtr k = _buttonKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return false;
     }
-    return knob->getValue();
+    return k->getValue();
 }
 
 void
 ButtonParam::trigger()
 {
-    KnobButtonPtr knob = _buttonKnob.lock();
-    if (!knob) {
+    KnobButtonPtr k = _buttonKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    knob->trigger();
+    k->trigger();
 }
 
 ////////////////////SeparatorParam
@@ -2478,48 +3567,61 @@ void
 GroupParam::addParam(const Param* param)
 {
     if (!param) {
+        PythonSetNullError();
         return;
     }
-    KnobIPtr knob = param->getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    KnobIPtr otherKnob = param->getInternalKnob();
+    if (!otherKnob) {
+        PythonSetNullError();
+    }
+    KnobGroupPtr k = _groupKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    KnobGroupPtr group = _groupKnob.lock();
-    if (!group) {
+    if (!k->isUserKnob()) {
+        PythonSetNonUserKnobError();
         return;
     }
-    group->addKnob(knob);
+    k->addKnob(otherKnob);
 }
 
 void
 GroupParam::setAsTab()
 {
-    KnobGroupPtr group = _groupKnob.lock();
-    if ( !group || !group->isUserKnob() ) {
+    KnobGroupPtr k = _groupKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    group->setAsTab();
+    if (!k->isUserKnob()) {
+        PythonSetNonUserKnobError();
+        return;
+    }
+
+    k->setAsTab();
 }
 
 void
 GroupParam::setOpened(bool opened)
 {
-    KnobGroupPtr group = _groupKnob.lock();
-    if (!group) {
+    KnobGroupPtr k = _groupKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    group->setValue(opened, ViewSpec::current(), 0);
+    k->setValue(opened);
 }
 
 bool
 GroupParam::getIsOpened() const
 {
-    KnobGroupPtr group = _groupKnob.lock();
-    if (!group) {
+    KnobGroupPtr k = _groupKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return false;
     }
-    return group->getValue();
+    return k->getValue();
 }
 
 //////////////////////PageParam
@@ -2538,19 +3640,23 @@ void
 PageParam::addParam(const Param* param)
 {
     if (!param) {
+        PythonSetNullError();
         return;
     }
-    KnobIPtr knob = param->getInternalKnob();
-
-    if ( !knob || !knob->isUserKnob() ) {
+    KnobIPtr otherKnob = param->getInternalKnob();
+    if (!otherKnob) {
+        PythonSetNullError();
+    }
+    KnobPagePtr k = _pageKnob.lock();
+    if (!k) {
+        PythonSetNullError();
         return;
     }
-    KnobPagePtr pageKnob = _pageKnob.lock();
-
-    if ( !pageKnob ) {
+    if (!k->isUserKnob()) {
+        PythonSetNonUserKnobError();
         return;
     }
-    pageKnob->addKnob( knob );
+    k->addKnob(otherKnob);
 }
 
 ////////////////////ParametricParam
@@ -2570,22 +3676,32 @@ ParametricParam::setCurveColor(int dimension,
                                double g,
                                double b)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    param->setCurveColor(dimension, r, g, b);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->setCurveColor(DimIdx(dimension), r, g, b);
 }
 
 void
 ParametricParam::getCurveColor(int dimension,
                                ColorTuple& ret) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    param->getCurveColor(dimension, &ret.r, &ret.g, &ret.b);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return;
+    }
+    knob->getCurveColor(DimIdx(dimension), &ret.r, &ret.g, &ret.b);
     ret.a = 1.;
 }
 
@@ -2595,11 +3711,16 @@ ParametricParam::addControlPoint(int dimension,
                                  double value,
                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, interpolation);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->addControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), key, value, interpolation);
 }
 
 StatusEnum
@@ -2610,23 +3731,33 @@ ParametricParam::addControlPoint(int dimension,
                                  double rightDerivative,
                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, leftDerivative, rightDerivative, interpolation);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->addControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), key, value, leftDerivative, rightDerivative, interpolation);
 }
 
 double
 ParametricParam::getValue(int dimension,
                           double parametricPosition) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
+        return 0.;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
         return 0.;
     }
     double ret;
-    StatusEnum stat = param->getValue(dimension, parametricPosition, &ret);
+    StatusEnum stat =  knob->getValue(DimIdx(dimension), parametricPosition, &ret);
 
     if (stat == eStatusFailed) {
         ret =  0.;
@@ -2638,12 +3769,17 @@ ParametricParam::getValue(int dimension,
 int
 ParametricParam::getNControlPoints(int dimension) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
+        return 0;
+    }
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
         return 0;
     }
     int ret;
-    StatusEnum stat = param->getNControlPoints(dimension, &ret);
+    StatusEnum stat =  knob->getNControlPoints(DimIdx(dimension), &ret);
 
     if (stat == eStatusFailed) {
         ret = 0;
@@ -2660,11 +3796,16 @@ ParametricParam::getNthControlPoint(int dimension,
                                     double *leftDerivative,
                                     double *rightDerivative) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->getNthControlPoint(dimension, nthCtl, key, value, leftDerivative, rightDerivative);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->getNthControlPoint(DimIdx(dimension), nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 StatusEnum
@@ -2675,11 +3816,16 @@ ParametricParam::setNthControlPoint(int dimension,
                                     double leftDerivative,
                                     double rightDerivative)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->setNthControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl, key, value, leftDerivative, rightDerivative);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->setNthControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 StatusEnum
@@ -2687,42 +3833,59 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
                                                  int nThCtl,
                                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, dimension, nThCtl, interpolation);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nThCtl, interpolation);
 }
 
 StatusEnum
 ParametricParam::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->deleteControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return knob->deleteControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nthCtl);
 }
 
 StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return eStatusFailed;
     }
-    return param->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
+    if (dimension < 0 || dimension >= knob->getNDimensions()) {
+        PythonSetInvalidDimensionError(dimension);
+        return eStatusFailed;
+    }
+    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, DimIdx(dimension));
 }
 
 void
 ParametricParam::setDefaultCurvesFromCurrentCurves()
 {
-    KnobParametricPtr param = _parametricKnob.lock();
-    if (!param) {
+    KnobParametricPtr knob = _parametricKnob.lock();
+    if (!knob) {
+        PythonSetNullError();
         return;
     }
-    param->setDefaultCurvesFromCurves();
+
+    knob->setDefaultCurvesFromCurves();
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

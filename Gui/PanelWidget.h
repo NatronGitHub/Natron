@@ -30,6 +30,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
+#include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -91,6 +92,11 @@ public:
     virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) { Q_UNUSED(data); return false; }
 
     virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) { Q_UNUSED(data); return false; }
+
+    virtual QIcon getIcon() const
+    {
+        return QIcon();
+    }
 
 protected:
 

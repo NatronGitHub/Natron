@@ -27,6 +27,12 @@
 
 #include "Global/Macros.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include <list>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -40,6 +46,8 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
+    Q_DECLARE_TR_FUNCTIONS(Group);
+
     NodeCollectionWPtr _collection;
 
 public:

@@ -36,11 +36,13 @@
 #include "Engine/Image.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/Node.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/Project.h"
+#include "Engine/TrackerNode.h"
+#include "Engine/TrackerNodePrivate.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
 
-#include "Serialization/TrackerSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
 
 
 #include <ofxNatron.h>
@@ -80,7 +82,6 @@ static MetaTypesRegistration registration;
 struct TrackMarkerPrivate
 {
     TrackMarker* _publicInterface; // can not be a smart ptr
-    boost::weak_ptr<TrackerContext> context;
 
     // Defines the rectangle of the search window, this is in coordinates relative to the marker center point
     KnobDoubleWPtr searchWindowBtmLeft, searchWindowTopRight;
@@ -93,18 +94,14 @@ struct TrackMarkerPrivate
 #endif
     KnobChoiceWPtr motionModel;
     mutable QMutex trackMutex;
-    std::set<int> userKeyframes;
-    std::string trackScriptName, trackLabel;
     KnobBoolWPtr enabled;
 
     // Only used by the TrackScheduler thread
     int trackingStartedCount;
     std::list<double> keyframesAddedWhileTracking;
 
-    TrackMarkerPrivate(TrackMarker* publicInterface,
-                       const TrackerContextPtr& context)
+    TrackMarkerPrivate(TrackMarker* publicInterface)
         : _publicInterface(publicInterface)
-        , context(context)
         , searchWindowBtmLeft()
         , searchWindowTopRight()
         , patternTopLeft()
@@ -119,9 +116,6 @@ struct TrackMarkerPrivate
 #endif
         , motionModel()
         , trackMutex()
-        , userKeyframes()
-        , trackScriptName()
-        , trackLabel()
         , enabled()
         , trackingStartedCount(0)
         , keyframesAddedWhileTracking()
@@ -129,9 +123,9 @@ struct TrackMarkerPrivate
     }
 };
 
-TrackMarker::TrackMarker(const TrackerContextPtr& context)
-    : NamedKnobHolder( context->getNode()->getApp() )
-    , _imp( new TrackMarkerPrivate(this, context) )
+TrackMarker::TrackMarker(const KnobItemsTablePtr& model)
+    : KnobTableItem(model)
+    , _imp( new TrackMarkerPrivate(this) )
 {
 }
 
@@ -139,60 +133,72 @@ TrackMarker::~TrackMarker()
 {
 }
 
+std::string
+TrackMarker::getBaseItemName() const
+{
+    return tr("Track").toStdString();
+}
+
 void
 TrackMarker::initializeKnobs()
 {
-    TrackerContextPtr context = _imp->context.lock();
-    KnobIntPtr defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
-    KnobIntPtr defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
-    KnobChoicePtr defMotionModelKnob = context->getDefaultMotionModelKnob();
+    KnobItemsTablePtr model = getModel();
+    EffectInstancePtr effect;
+    if (model) {
+        effect = model->getNode()->getEffectInstance();
+    }
+    KnobIntPtr defPatternSizeKnob, defSearchSizeKnob;
+    KnobChoicePtr defMotionModelKnob;
+    defPatternSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerPatternWinSize));
+    defSearchSizeKnob = toKnobInt(effect->getKnobByName(kTrackerUIParamDefaultMarkerSearchWinSize));
+    defMotionModelKnob = toKnobChoice(effect->getKnobByName(kTrackerUIParamDefaultMotionModel));
 
-    double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
-    double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
+    double patternHalfSize = defPatternSizeKnob ? defPatternSizeKnob->getValue() / 2. : 21;
+    double searchHalfSize = defSearchSizeKnob ? defSearchSizeKnob->getValue() / 2. : 71;
 
-    int defMotionModel_i = defMotionModelKnob->getValue();
+    int defMotionModel_i = defMotionModelKnob ? defMotionModelKnob->getValue() : 0;
 
     KnobDoublePtr swbbtmLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 
     swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
-    swbbtmLeft->setDefaultValue(-searchHalfSize, 0);
-    swbbtmLeft->setDefaultValue(-searchHalfSize, 1);
+    swbbtmLeft->setDefaultValue(-searchHalfSize, DimIdx(0));
+    swbbtmLeft->setDefaultValue(-searchHalfSize, DimIdx(1));
     swbbtmLeft->setHintToolTip( tr(kTrackerParamSearchWndBtmLeftHint) );
     _imp->searchWindowBtmLeft = swbbtmLeft;
 
     KnobDoublePtr swbtRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndTopRightLabel), 2, false);
     swbtRight->setName(kTrackerParamSearchWndTopRight);
-    swbtRight->setDefaultValue(searchHalfSize, 0);
-    swbtRight->setDefaultValue(searchHalfSize, 1);
+    swbtRight->setDefaultValue(searchHalfSize, DimIdx(0));
+    swbtRight->setDefaultValue(searchHalfSize, DimIdx(1));
     swbtRight->setHintToolTip( tr(kTrackerParamSearchWndTopRightHint) );
     _imp->searchWindowTopRight = swbtRight;
 
 
     KnobDoublePtr ptLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternTopLeftLabel), 2, false);
     ptLeft->setName(kTrackerParamPatternTopLeft);
-    ptLeft->setDefaultValue(-patternHalfSize, 0);
-    ptLeft->setDefaultValue(patternHalfSize, 1);
+    ptLeft->setDefaultValue(-patternHalfSize, DimIdx(0));
+    ptLeft->setDefaultValue(patternHalfSize, DimIdx(1));
     ptLeft->setHintToolTip( tr(kTrackerParamPatternTopLeftHint) );
     _imp->patternTopLeft = ptLeft;
 
     KnobDoublePtr ptRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternTopRightLabel), 2, false);
     ptRight->setName(kTrackerParamPatternTopRight);
-    ptRight->setDefaultValue(patternHalfSize, 0);
-    ptRight->setDefaultValue(patternHalfSize, 1);
+    ptRight->setDefaultValue(patternHalfSize, DimIdx(0));
+    ptRight->setDefaultValue(patternHalfSize, DimIdx(1));
     ptRight->setHintToolTip( tr(kTrackerParamPatternTopRightHint) );
     _imp->patternTopRight = ptRight;
 
     KnobDoublePtr pBRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternBtmRightLabel), 2, false);
     pBRight->setName(kTrackerParamPatternBtmRight);
-    pBRight->setDefaultValue(patternHalfSize, 0);
-    pBRight->setDefaultValue(-patternHalfSize, 1);
+    pBRight->setDefaultValue(patternHalfSize, DimIdx(0));
+    pBRight->setDefaultValue(-patternHalfSize, DimIdx(1));
     pBRight->setHintToolTip( tr(kTrackerParamPatternBtmRightHint) );
     _imp->patternBtmRight = pBRight;
 
     KnobDoublePtr pBLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternBtmLeftLabel), 2, false);
     pBLeft->setName(kTrackerParamPatternBtmLeft);
-    pBLeft->setDefaultValue(-patternHalfSize, 0);
-    pBLeft->setDefaultValue(-patternHalfSize, 1);
+    pBLeft->setDefaultValue(-patternHalfSize, DimIdx(0));
+    pBLeft->setDefaultValue(-patternHalfSize, DimIdx(1));
     pBLeft->setHintToolTip( tr(kTrackerParamPatternBtmLeftHint) );
     _imp->patternBtmLeft = pBLeft;
 
@@ -212,8 +218,7 @@ TrackMarker::initializeKnobs()
     weightKnob->setHintToolTip( tr(kTrackerParamTrackWeightHint) );
     weightKnob->setDefaultValue(1.);
     weightKnob->setAnimationEnabled(false);
-    weightKnob->setMinimum(0.);
-    weightKnob->setMaximum(1.);
+    weightKnob->setRange(0., 1.);
     _imp->weight = weightKnob;
 #endif
 
@@ -223,7 +228,7 @@ TrackMarker::initializeKnobs()
     {
         std::vector<std::string> choices, helps;
         std::map<int, std::string> icons;
-        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps, &icons);
+        TrackerNodePrivate::getMotionModelsAndHelps(true, &choices, &helps, &icons);
         mmodelKnob->populateChoices(choices, helps);
         mmodelKnob->setIcons(icons);
     }
@@ -242,206 +247,31 @@ TrackMarker::initializeKnobs()
     enableKnob->setDefaultValue(true);
     _imp->enabled = enableKnob;
 
+    addColumn(kKnobTableItemColumnLabel, DimIdx(0));
+    addColumn(kTrackerParamEnabled, DimIdx(0));
+    addColumn(kTrackerParamMotionModel, DimIdx(0));
+    addColumn(kTrackerParamCenter, DimIdx(0));
+    addColumn(kTrackerParamCenter, DimIdx(1));
+    addColumn(kTrackerParamOffset, DimIdx(0));
+    addColumn(kTrackerParamOffset, DimIdx(1));
+    addColumn(kTrackerParamError, DimIdx(0));
 
-    QObject::connect( this, SIGNAL(enabledChanged(int)), _imp->context.lock().get(), SLOT(onMarkerEnabledChanged(int)) );
-    boost::shared_ptr<KnobSignalSlotHandler> handler = _imp->center.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this, SLOT(onCenterKeyframeSet(double,ViewSpec,int,int,bool)) );
-    QObject::connect( handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this, SLOT(onCenterKeyframeRemoved(double,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)), this, SLOT(onCenterKeyframeMoved(ViewSpec,int,double,double)) );
-    QObject::connect( handler.get(), SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
-                      SLOT(onCenterKeyframesSet(std::list<double>,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
-                      SLOT(onCenterMultipleKeysRemoved(std::list<double>,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(animationRemoved(ViewSpec,int)), this, SLOT(onCenterAnimationRemoved(ViewSpec,int)) );
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCenterKnobValueChanged(ViewSpec,int,int)) );
-
-    handler = _imp->offset.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onOffsetKnobValueChanged(ViewSpec,int,int)) );
-
-    handler = _imp->error.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onErrorKnobValueChanged(ViewSpec,int,int)) );
-
-#ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    handler = _imp->weight.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onWeightKnobValueChanged(ViewSpec,int,int)) );
-#endif
-
-    handler = _imp->motionModel.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onMotionModelKnobValueChanged(ViewSpec,int,int)) );
-
-    /*handler = _imp->patternBtmLeft->getSignalSlotHandler();
-       QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternBtmLeftKnobValueChanged(int,int)));
-
-       handler = _imp->patternTopLeft->getSignalSlotHandler();
-       QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternTopLeftKnobValueChanged(int,int)));
-
-       handler = _imp->patternTopRight->getSignalSlotHandler();
-       QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternTopRightKnobValueChanged(int,int)));
-
-       handler = _imp->patternBtmRight->getSignalSlotHandler();
-       QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternBtmRightKnobValueChanged(int,int)));
-     */
-
-    handler = _imp->searchWindowBtmLeft.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchBtmLeftKnobValueChanged(ViewSpec,int,int)) );
-
-    handler = _imp->searchWindowTopRight.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchTopRightKnobValueChanged(ViewSpec,int,int)) );
-
-    handler = _imp->enabled.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onEnabledValueChanged(ViewSpec,int,int)) );
 } // TrackMarker::initializeKnobs
 
 void
-TrackMarker::clone(const TrackMarker& other)
+TrackMarker::copyItem(const KnobTableItemPtr& other)
 {
     TrackMarkerPtr thisShared = shared_from_this();
-    TrackerContextPtr context = getContext();
 
-    context->s_trackAboutToClone(thisShared);
-
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        _imp->trackLabel = other._imp->trackLabel;
-        _imp->trackScriptName = other._imp->trackScriptName;
-        _imp->userKeyframes = other._imp->userKeyframes;
-        _imp->enabled = other._imp->enabled;
-
-        const KnobsVec& knobs = getKnobs();
-        KnobsVec::const_iterator itOther = other.getKnobs().begin();
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it, ++itOther) {
-            (*it)->clone(*itOther);
-        }
-    }
-
-    context->s_trackCloned(thisShared);
-}
-
-void
-TrackMarker::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
-{
-    const SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::TrackSerialization*>(&obj);
-    if (!s) {
+    TrackMarkerPtr otherMarker = toTrackMarker(other);
+    if (!otherMarker) {
         return;
     }
-    QMutexLocker k(&_imp->trackMutex);
 
-    _imp->trackLabel = s->_label;
-    _imp->trackScriptName = s->_scriptName;
-    const KnobsVec& knobs = getKnobs();
-
-    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = s->_knobs.begin(); it != s->_knobs.end(); ++it) {
-        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ( (*it2)->getName() == (*it)->getName() ) {
-                (*it2)->blockValueChanges();
-                (*it2)->fromSerialization(**it);
-                (*it2)->unblockValueChanges();
-                break;
-            }
-        }
-    }
-    for (std::list<int>::const_iterator it = s->_userKeys.begin(); it != s->_userKeys.end(); ++it) {
-        _imp->userKeyframes.insert(*it);
-    }
+    KnobTableItem::copyItem(other);
 }
 
-void
-TrackMarker::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
-{
-    SERIALIZATION_NAMESPACE::TrackSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::TrackSerialization*>(obj);
-    if (!s) {
-        return;
-    }
-    QMutexLocker k(&_imp->trackMutex);
 
-    s->_isPM = (dynamic_cast<const TrackMarkerPM*>(this) != 0);
-    s->_label = _imp->trackLabel;
-    s->_scriptName = _imp->trackScriptName;
-    KnobsVec knobs = getKnobs_mt_safe();
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr k( new SERIALIZATION_NAMESPACE::KnobSerialization);
-        (*it)->toSerialization(k.get());
-        if (k->_mustSerialize) {
-            s->_knobs.push_back(k);
-        }
-    }
-    for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-        s->_userKeys.push_back(*it);
-    }
-}
-
-TrackerContextPtr
-TrackMarker::getContext() const
-{
-    return _imp->context.lock();
-}
-
-bool
-TrackMarker::setScriptName(const std::string& name)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
-
-    if ( name.empty() ) {
-        return false;
-    }
-
-    std::string currentName;
-    {
-        QMutexLocker l(&_imp->trackMutex);
-        currentName = _imp->trackScriptName;
-    }
-
-
-    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
-
-    if ( cpy.empty() || cpy == currentName) {
-        return false;
-    }
-
-    TrackMarkerPtr existingItem = getContext()->getMarkerByName(name);
-    if ( existingItem && (existingItem.get() != this) ) {
-        return false;
-    }
-
-    TrackMarkerPtr thisShared = shared_from_this();
-    if (!currentName.empty()) {
-        getContext()->removeItemAsPythonField(thisShared);
-    }
-
-    {
-        QMutexLocker l(&_imp->trackMutex);
-        _imp->trackScriptName = cpy;
-    }
-
-    getContext()->declareItemAsPythonField(thisShared);
-
-    return true;
-}
-
-std::string
-TrackMarker::getScriptName_mt_safe() const
-{
-    QMutexLocker l(&_imp->trackMutex);
-
-    return _imp->trackScriptName;
-}
-
-void
-TrackMarker::setLabel(const std::string& label)
-{
-    QMutexLocker l(&_imp->trackMutex);
-
-    _imp->trackLabel = label;
-}
-
-std::string
-TrackMarker::getLabel() const
-{
-    QMutexLocker l(&_imp->trackMutex);
-
-    return _imp->trackLabel;
-}
 
 KnobDoublePtr
 TrackMarker::getSearchWindowBottomLeftKnob() const
@@ -518,54 +348,11 @@ TrackMarker::getEnabledKnob() const
     return _imp->enabled.lock();
 }
 
-bool
-TrackMarker::isUserKeyframe(int time) const
-{
-    QMutexLocker k(&_imp->trackMutex);
-
-    return _imp->userKeyframes.find(time) != _imp->userKeyframes.end();
-}
-
-int
-TrackMarker::getPreviousKeyframe(int time) const
-{
-    QMutexLocker k(&_imp->trackMutex);
-
-    for (std::set<int>::const_reverse_iterator it = _imp->userKeyframes.rbegin(); it != _imp->userKeyframes.rend(); ++it) {
-        if (*it < time) {
-            return *it;
-        }
-    }
-
-    return INT_MIN;
-}
-
-int
-TrackMarker::getNextKeyframe( int time) const
-{
-    QMutexLocker k(&_imp->trackMutex);
-
-    for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
-        if (*it > time) {
-            return *it;
-        }
-    }
-
-    return INT_MAX;
-}
-
-void
-TrackMarker::getUserKeyframes(std::set<int>* keyframes) const
-{
-    QMutexLocker k(&_imp->trackMutex);
-
-    *keyframes = _imp->userKeyframes;
-}
 
 void
 TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 {
-    CurvePtr curve = _imp->center.lock()->getCurve(ViewSpec(0), 0);
+    CurvePtr curve = _imp->center.lock()->getCurve(ViewGetSpec(0), DimIdx(0));
 
     assert(curve);
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
@@ -577,7 +364,7 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 bool
 TrackMarker::isEnabled(double time) const
 {
-    return _imp->enabled.lock()->getValueAtTime(time, 0, ViewSpec::current(), true, true /*byPassMaster*/);
+    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewGetSpec::current(), true, true /*byPassMaster*/);
 }
 
 void
@@ -589,87 +376,36 @@ TrackMarker::setEnabledAtTime(double time,
     if (!knob) {
         return;
     }
-    knob->setValueAtTime(time, enabled, ViewSpec::all(), 0);
+    knob->setValueAtTime(time, enabled, ViewSetSpec::all(), DimIdx(0));
 }
 
 AnimationLevelEnum
 TrackMarker::getEnabledNessAnimationLevel() const
 {
-    return _imp->enabled.lock()->getAnimationLevel(0);
-}
-
-void
-TrackMarker::setMotionModelFromGui(int index)
-{
-    KnobChoicePtr knob = _imp->motionModel.lock();
-
-    if (!knob) {
-        return;
-    }
-
-
-    KeyFrame k;
-    std::pair<int, KnobIPtr> master = knob->getMaster(0);
-    if (master.second) {
-        knob->unSlave(0, true);
-    }
-    knob->onValueChanged(index, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
-    if (master.second) {
-        master.second->cloneAndUpdateGui(knob);
-        knob->slaveTo(0, master.second, master.first);
-    }
-}
-
-void
-TrackMarker::setEnabledFromGui(double /*time*/,
-                               bool enabled)
-{
-    KnobBoolPtr knob = _imp->enabled.lock();
-
-    if (!knob) {
-        return;
-    }
-
-
-    KeyFrame k;
-    std::pair<int, KnobIPtr> master = knob->getMaster(0);
-    if (master.second) {
-        knob->unSlave(0, true);
-    }
-    knob->onValueChanged(enabled, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
-    if (master.second) {
-        master.second->cloneAndUpdateGui(knob);
-        knob->slaveTo(0, master.second, master.first);
-    }
-
-    getContext()->solveTransformParamsIfAutomatic();
-}
-
-void
-TrackMarker::onEnabledValueChanged(ViewSpec,
-                                   int /*dimension*/,
-                                   int reason)
-{
-    Q_EMIT enabledChanged(reason);
+    return _imp->enabled.lock()->getAnimationLevel(DimIdx(0), ViewIdx(0));
 }
 
 int
-TrackMarker::getReferenceFrame(int time,
+TrackMarker::getReferenceFrame(double time,
                                int frameStep) const
 {
     QMutexLocker k(&_imp->trackMutex);
-    std::set<int>::iterator upper = _imp->userKeyframes.upper_bound(time);
 
-    if ( upper == _imp->userKeyframes.end() ) {
+    std::set<double> userKeyframes;
+    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+
+    std::set<double>::iterator upper = userKeyframes.upper_bound(time);
+
+    if ( upper == userKeyframes.end() ) {
         //all keys are lower than time, pick the last one
-        if ( !_imp->userKeyframes.empty() ) {
-            return *_imp->userKeyframes.rbegin();
+        if ( !userKeyframes.empty() ) {
+            return *userKeyframes.rbegin();
         }
 
         // no keyframe - use the previous/next as reference
         return time - frameStep;
     } else {
-        if ( upper == _imp->userKeyframes.begin() ) {
+        if ( upper == userKeyframes.begin() ) {
             ///all keys are greater than time
             return *upper;
         }
@@ -692,15 +428,20 @@ TrackMarker::getReferenceFrame(int time,
 void
 TrackMarker::resetCenter()
 {
-    TrackerContextPtr context = getContext();
-
-    assert(context);
-    NodePtr input = context->getNode()->getInput(0);
-    if (input) {
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    RectD rod;
+    NodePtr input = model->getNode()->getInput(0);
+    if (!input) {
+        Format f;
+        getApp()->getProject()->getProjectDefaultFormat(&f);
+        rod = f.toCanonicalFormat();
+    } else {
         SequenceTime time = input->getApp()->getTimeLine()->currentFrame();
         RenderScale scale;
         scale.x = scale.y = 1;
-        RectD rod;
         U64 inputHash;
         bool gotHash = input->getEffectInstance()->getRenderHash(time, ViewIdx(0), &inputHash);
         (void)gotHash;
@@ -714,8 +455,8 @@ TrackMarker::resetCenter()
         }
 
         KnobDoublePtr centerKnob = getCenterKnob();
-        centerKnob->setValue(center.x, ViewSpec::current(), 0);
-        centerKnob->setValue(center.y, ViewSpec::current(), 1);
+        centerKnob->setValue(center.x, ViewSetSpec::current(), DimIdx(0));
+        centerKnob->setValue(center.y, ViewSetSpec::current(), DimIdx(1));
     }
 }
 
@@ -727,20 +468,20 @@ enum DeleteKnobAnimationEnum
 };
 
 static void
-deleteKnobAnimation(const std::set<int>& userKeyframes,
+deleteKnobAnimation(const std::set<double>& userKeyframes,
                     const KnobIPtr& knob,
                     DeleteKnobAnimationEnum type,
-                    int currentTime)
+                    double currentTime)
 {
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        CurvePtr curve = knob->getCurve(ViewSpec(0), i);
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
+        CurvePtr curve = knob->getCurve(ViewGetSpec(0), DimIdx(i));
         assert(curve);
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
         std::list<double> toRemove;
         switch (type) {
         case eDeleteKnobAnimationAll: {
             for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
                 if ( found == userKeyframes.end() ) {
                     toRemove.push_back( it->getTime() );
                 }
@@ -752,7 +493,7 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
                 if (it->getTime() >= currentTime) {
                     break;
                 }
-                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
                 if ( found == userKeyframes.end() ) {
                     toRemove.push_back( it->getTime() );
                 }
@@ -764,7 +505,7 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
                 if (it->getTime() <= currentTime) {
                     break;
                 }
-                std::set<int>::iterator found = userKeyframes.find( (int)it->getTime() );
+                std::set<double>::iterator found = userKeyframes.find( it->getTime() );
                 if ( found == userKeyframes.end() ) {
                     toRemove.push_back( it->getTime() );
                 }
@@ -772,16 +513,16 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
             break;
         }
         }
-        knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i, true);
+        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i));
     }
 }
 
 void
 TrackMarker::clearAnimation()
 {
-    std::set<int> userKeyframes;
+    std::set<double> userKeyframes;
 
-    getUserKeyframes(&userKeyframes);
+    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -797,11 +538,11 @@ TrackMarker::clearAnimation()
 }
 
 void
-TrackMarker::clearAnimationBeforeTime(int time)
+TrackMarker::clearAnimationBeforeTime(double time)
 {
-    std::set<int> userKeyframes;
+    std::set<double> userKeyframes;
 
-    getUserKeyframes(&userKeyframes);
+    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -817,11 +558,11 @@ TrackMarker::clearAnimationBeforeTime(int time)
 }
 
 void
-TrackMarker::clearAnimationAfterTime(int time)
+TrackMarker::clearAnimationAfterTime(double time)
 {
-    std::set<int> userKeyframes;
+    std::set<double> userKeyframes;
 
-    getUserKeyframes(&userKeyframes);
+    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -840,223 +581,57 @@ void
 TrackMarker::resetOffset()
 {
     KnobDoublePtr knob = getOffsetKnob();
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        knob->resetToDefaultValue(i);
-    }
+    knob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
 }
 
 void
 TrackMarker::resetTrack()
 {
     Point curCenter;
-    KnobDoublePtr knob = getCenterKnob();
+    KnobDoublePtr centerKnob = getCenterKnob();
 
-    curCenter.x = knob->getValue(0);
-    curCenter.y = knob->getValue(1);
-
-    EffectInstancePtr effect = getContext()->getNode()->getEffectInstance();
-    effect->beginChanges();
+    curCenter.x = centerKnob->getValue();
+    curCenter.y = centerKnob->getValue(DimIdx(1));
 
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (*it != knob) {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
-                (*it)->resetToDefaultValue(i);
-            }
+        if (*it != centerKnob) {
+            (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         } else {
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
-                (*it)->removeAnimation(ViewSpec::current(), i);
-            }
-            knob->setValue(curCenter.x, ViewSpec::current(), 0);
-            knob->setValue(curCenter.y, ViewSpec::current(), 1);
+            (*it)->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+
+            std::vector<double> values(2);
+            values[0] = curCenter.x;
+            values[1] = curCenter.y;
+            centerKnob->setValueAcrossDimensions(values);
         }
     }
-    effect->endChanges();
-    removeAllUserKeyframes();
+
+    removeAnimation(ViewSetSpec::all(), DimSpec::all());
 }
 
-void
-TrackMarker::removeAllUserKeyframes()
-{
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        _imp->userKeyframes.clear();
-    }
-    getContext()->s_allKeyframesRemovedOnTrack( shared_from_this() );
-}
 
 void
-TrackMarker::setKeyFrameOnCenterAndPatternAtTime(int time)
+TrackMarker::setKeyFrameOnCenterAndPatternAtTime(double time)
 {
     KnobDoublePtr center = _imp->center.lock();
 
-    for (int i = 0; i < center->getDimension(); ++i) {
-        double v = center->getValueAtTime(time, i);
-        center->setValueAtTime(time, v, ViewSpec::all(), i);
+    {
+        std::vector<double> values(2);
+        values[0] = center->getValueAtTime(time);
+        values[1] = center->getValueAtTime(time, DimIdx(1));
+        center->setValueAtTimeAcrossDimensions(time, values);
     }
 
     KnobDoublePtr patternCorners[4] = {_imp->patternBtmLeft.lock(), _imp->patternTopLeft.lock(), _imp->patternTopRight.lock(), _imp->patternBtmRight.lock()};
     for (int c = 0; c < 4; ++c) {
         KnobDoublePtr k = patternCorners[c];
-        for (int i = 0; i < k->getDimension(); ++i) {
-            double v = k->getValueAtTime(time, i);
-            k->setValueAtTime(time, v, ViewSpec::all(), i);
-        }
+        std::vector<double> values(2);
+        values[0] = k->getValueAtTime(time, DimIdx(0));
+        values[1] = k->getValueAtTime(time, DimIdx(1));
+        k->setValueAcrossDimensions(values);
     }
 }
-
-void
-TrackMarker::setUserKeyframe(int time)
-{
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        _imp->userKeyframes.insert(time);
-    }
-    getContext()->s_keyframeSetOnTrack(shared_from_this(), time);
-}
-
-void
-TrackMarker::removeUserKeyframe(int time)
-{
-    bool emitSignal = false;
-    {
-        QMutexLocker k(&_imp->trackMutex);
-        std::set<int>::iterator found = _imp->userKeyframes.find(time);
-        if ( found != _imp->userKeyframes.end() ) {
-            _imp->userKeyframes.erase(found);
-            emitSignal = true;
-        }
-    }
-
-    if (emitSignal) {
-        getContext()->s_keyframeRemovedOnTrack(shared_from_this(), time);
-    }
-}
-
-void
-TrackMarker::onCenterKeyframeSet(double time,
-                                 ViewSpec /*view*/,
-                                 int /*dimension*/,
-                                 int /*reason*/,
-                                 bool added)
-{
-    if (!_imp->trackingStartedCount) {
-        if (added) {
-            getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), time);
-        }
-    } else {
-        if (added) {
-            _imp->keyframesAddedWhileTracking.push_back(time);
-        }
-    }
-}
-
-void
-TrackMarker::onCenterKeyframeRemoved(double time,
-                                     ViewSpec /*view*/,
-                                     int /*dimension*/,
-                                     int /*reason*/)
-{
-    getContext()->s_keyframeRemovedOnTrackCenter(shared_from_this(), time);
-}
-
-void
-TrackMarker::onCenterMultipleKeysRemoved(const std::list<double>& times,
-                                         ViewSpec /*view*/,
-                                         int /*dimension*/,
-                                         int /*reason*/)
-{
-    getContext()->s_multipleKeyframesRemovedOnTrackCenter(shared_from_this(), times);
-}
-
-void
-TrackMarker::onCenterKeyframeMoved(ViewSpec /*view*/,
-                                   int /*dimension*/,
-                                   double oldTime,
-                                   double newTime)
-{
-    getContext()->s_keyframeRemovedOnTrackCenter(shared_from_this(), oldTime);
-    getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), newTime);
-}
-
-void
-TrackMarker::onCenterKeyframesSet(const std::list<double>& keys,
-                                  ViewSpec /*view*/,
-                                  int /*dimension*/,
-                                  int /*reason*/)
-{
-    getContext()->s_multipleKeyframesSetOnTrackCenter(shared_from_this(), keys);
-}
-
-void
-TrackMarker::onCenterAnimationRemoved(ViewSpec /*view*/,
-                                      int /*dimension*/)
-{
-    getContext()->s_allKeyframesRemovedOnTrackCenter( shared_from_this() );
-}
-
-void
-TrackMarker::onCenterKnobValueChanged(ViewSpec /*view*/,
-                                      int dimension,
-                                      int reason)
-{
-    if (!_imp->trackingStartedCount) {
-        getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
-    }
-}
-
-void
-TrackMarker::onOffsetKnobValueChanged(ViewSpec /*view*/,
-                                      int dimension,
-                                      int reason)
-{
-    getContext()->s_offsetKnobValueChanged(shared_from_this(), dimension, reason);
-}
-
-void
-TrackMarker::onErrorKnobValueChanged(ViewSpec /*view*/,
-                                     int dimension,
-                                     int reason)
-{
-    if (!_imp->trackingStartedCount) {
-        getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
-    }
-}
-
-void
-TrackMarker::onWeightKnobValueChanged(ViewSpec /*view*/,
-                                      int dimension,
-                                      int reason)
-{
-    getContext()->s_weightKnobValueChanged(shared_from_this(), dimension, reason);
-}
-
-void
-TrackMarker::onMotionModelKnobValueChanged(ViewSpec /*view*/,
-                                           int dimension,
-                                           int reason)
-{
-    getContext()->s_motionModelKnobValueChanged(shared_from_this(), dimension, reason);
-}
-
-
-void
-TrackMarker::onSearchBtmLeftKnobValueChanged(ViewSpec /*view*/,
-                                             int dimension,
-                                             int reason)
-{
-    getContext()->s_searchBtmLeftKnobValueChanged(shared_from_this(), dimension, reason);
-}
-
-void
-TrackMarker::onSearchTopRightKnobValueChanged(ViewSpec /*view*/,
-                                              int dimension,
-                                              int reason)
-{
-    getContext()->s_searchTopRightKnobValueChanged(shared_from_this(), dimension, reason);
-}
-
 void
 TrackMarker::notifyTrackingStarted()
 {
@@ -1073,7 +648,8 @@ TrackMarker::notifyTrackingEnded()
 
     // Refresh knobs once finished
     if (!_imp->trackingStartedCount) {
-        TrackMarkerPtr marker = shared_from_this();
+#pragma message WARN("Handle keyframes for trackmarker center knob")
+        /*TrackMarkerPtr marker = shared_from_this();
         getContext()->s_errorKnobValueChanged(marker, 0, eValueChangedReasonNatronInternalEdited);
         for (int i = 0; i < 2; ++i) {
             getContext()->s_centerKnobValueChanged(marker, i, eValueChangedReasonNatronInternalEdited);
@@ -1081,36 +657,36 @@ TrackMarker::notifyTrackingEnded()
         if (!_imp->keyframesAddedWhileTracking.empty()) {
             getContext()->s_multipleKeyframesSetOnTrackCenter(marker, _imp->keyframesAddedWhileTracking);
             _imp->keyframesAddedWhileTracking.clear();
-        }
+        }*/
     }
 }
 
 
 RectI
-TrackMarker::getMarkerImageRoI(int time) const
+TrackMarker::getMarkerImageRoI(double time) const
 {
     const unsigned int mipmapLevel = 0;
     Point center, offset;
     KnobDoublePtr centerKnob = getCenterKnob();
     KnobDoublePtr offsetKnob = getOffsetKnob();
 
-    center.x = centerKnob->getValueAtTime(time, 0);
-    center.y = centerKnob->getValueAtTime(time, 1);
+    center.x = centerKnob->getValueAtTime(time, DimIdx(0));
+    center.y = centerKnob->getValueAtTime(time, DimIdx(1));
 
-    offset.x = offsetKnob->getValueAtTime(time, 0);
-    offset.y = offsetKnob->getValueAtTime(time, 1);
+    offset.x = offsetKnob->getValueAtTime(time, DimIdx(0));
+    offset.y = offsetKnob->getValueAtTime(time, DimIdx(1));
 
     RectD roiCanonical;
     KnobDoublePtr swBl = getSearchWindowBottomLeftKnob();
     KnobDoublePtr swTr = getSearchWindowTopRightKnob();
 
-    roiCanonical.x1 = swBl->getValueAtTime(time, 0) + center.x + offset.x;
-    roiCanonical.y1 = swBl->getValueAtTime(time, 1) + center.y + offset.y;
-    roiCanonical.x2 = swTr->getValueAtTime(time, 0) + center.x + offset.x;
-    roiCanonical.y2 = swTr->getValueAtTime(time, 1) + center.y + offset.y;
+    roiCanonical.x1 = swBl->getValueAtTime(time, DimIdx(0)) + center.x + offset.x;
+    roiCanonical.y1 = swBl->getValueAtTime(time, DimIdx(1)) + center.y + offset.y;
+    roiCanonical.x2 = swTr->getValueAtTime(time, DimIdx(0)) + center.x + offset.x;
+    roiCanonical.y2 = swTr->getValueAtTime(time, DimIdx(1)) + center.y + offset.y;
 
     RectI roi;
-    NodePtr node = getContext()->getNode();
+    NodePtr node = getModel()->getNode();
     NodePtr input = node->getInput(0);
     if (!input) {
         return RectI();
@@ -1121,7 +697,7 @@ TrackMarker::getMarkerImageRoI(int time) const
 }
 
 std::pair<ImagePtr, RectI>
-TrackMarker::getMarkerImage(int time,
+TrackMarker::getMarkerImage(double time,
                             const RectI& roi) const
 {
     std::list<ImageComponents> components;
@@ -1131,7 +707,7 @@ TrackMarker::getMarkerImage(int time,
     const unsigned int mipmapLevel = 0;
     assert( !roi.isNull() );
 
-    NodePtr node = getContext()->getNode();
+    NodePtr node = getModel()->getNode();
     NodePtr input = node->getInput(0);
     if (!input) {
         return std::make_pair(ImagePtr(), roi);
@@ -1151,7 +727,7 @@ TrackMarker::getMarkerImage(int time,
     tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
     tlsArgs->isSequential = isSequentialRender;
     tlsArgs->abortInfo = abortInfo;
-    tlsArgs->treeRoot = getContext()->getNode();
+    tlsArgs->treeRoot = getModel()->getNode();
     tlsArgs->textureIndex = 0;
     tlsArgs->timeline = node->getApp()->getTimeLine();
     tlsArgs->activeRotoPaintNode = NodePtr();
@@ -1218,20 +794,9 @@ TrackMarker::getMarkerImage(int time,
     return std::make_pair(planes.begin()->second, roi);
 } // TrackMarker::getMarkerImage
 
-void
-TrackMarker::onKnobSlaved(const KnobIPtr& slave,
-                          const KnobIPtr& master,
-                          int dimension,
-                          bool isSlave)
-{
-    EffectInstancePtr effect = getContext()->getNode()->getEffectInstance();
 
-    if (effect) {
-        effect->onKnobSlaved(slave, master, dimension, isSlave);
-    }
-}
 
-TrackMarkerPM::TrackMarkerPM(const TrackerContextPtr& context)
+TrackMarkerPM::TrackMarkerPM(const KnobItemsTablePtr& context)
     : TrackMarker(context)
 {
 }
@@ -1243,7 +808,7 @@ TrackMarkerPM::~TrackMarkerPM()
 void
 TrackMarkerPM::onTrackerNodeInputChanged(int /*inputNb*/)
 {
-    NodePtr thisNode = getContext()->getNode();
+    NodePtr thisNode = getModel()->getNode();
 
     if (thisNode) {
         NodePtr inputNode = thisNode->getInput(0);
@@ -1270,9 +835,7 @@ TrackMarkerPM::trackMarker(bool forward,
 
     // Unslave the center knob since the trackerNode will update it, then update the marker center
     KnobDoublePtr center = centerKnob.lock();
-    for (int i = 0; i < center->getDimension(); ++i) {
-        center->unSlave(i, true);
-    }
+    center->unSlave(DimSpec::all(), ViewSetSpec::all(), true);
 
     trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0),
                                                                 true);
@@ -1281,12 +844,12 @@ TrackMarkerPM::trackMarker(bool forward,
     // The TrackerPM plug-in has set a keyframe at the refFrame and frame, copy them
     bool ret = true;
     double centerPoint[2];
-    for (int i = 0; i < center->getDimension(); ++i) {
+    for (int i = 0; i < center->getNDimensions(); ++i) {
         {
-            int index = center->getKeyFrameIndex(ViewSpec::current(), i, frame);
+            int index = center->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(i), frame);
             if (index != -1) {
-                centerPoint[i] = center->getValueAtTime(frame, i);
-                markerCenter->setValueAtTime(frame, centerPoint[i], ViewSpec::current(), i);
+                centerPoint[i] = center->getValueAtTime(frame, DimIdx(i));
+                markerCenter->setValueAtTime(frame, centerPoint[i], ViewSetSpec::current(), DimIdx(i));
             } else {
                 // No keyframe at this time: tracking failed
                 ret = false;
@@ -1294,10 +857,10 @@ TrackMarkerPM::trackMarker(bool forward,
             }
         }
         {
-            int index = center->getKeyFrameIndex(ViewSpec::current(), i, refFrame);
+            int index = center->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(i), refFrame);
             if (index != -1) {
-                double value = center->getValueAtTime(refFrame, i);
-                markerCenter->setValueAtTime(refFrame, value, ViewSpec::current(), i);
+                double value = center->getValueAtTime(refFrame, DimIdx(i));
+                markerCenter->setValueAtTime(refFrame, value, ViewSetSpec::current(), DimIdx(i));
             }
         }
     }
@@ -1307,18 +870,18 @@ TrackMarkerPM::trackMarker(bool forward,
         KnobDoublePtr markerError = getErrorKnob();
         KnobDoublePtr correlation = correlationScoreKnob.lock();
         {
-            int index = correlation->getKeyFrameIndex(ViewSpec::current(), 0, frame);
+            int index = correlation->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(0), frame);
             if (index != -1) {
                 // The error is estimated as a percentage of the correlation across the number of pixels in the pattern window
                 KnobDoublePtr  pBtmLeft = patternBtmLeftKnob.lock();
                 KnobDoublePtr  pTopRight = patternTopRightKnob.lock();
                 Point btmLeft, topRight;
 
-                btmLeft.x = pBtmLeft->getValueAtTime(frame, 0);
-                btmLeft.y = pBtmLeft->getValueAtTime(frame, 1);
+                btmLeft.x = pBtmLeft->getValueAtTime(frame, DimIdx(0));
+                btmLeft.y = pBtmLeft->getValueAtTime(frame, DimIdx(1));
 
-                topRight.x = pTopRight->getValueAtTime(frame, 0);
-                topRight.y = pTopRight->getValueAtTime(frame, 1);
+                topRight.x = pTopRight->getValueAtTime(frame, DimIdx(0));
+                topRight.y = pTopRight->getValueAtTime(frame, DimIdx(1));
 
 
                 double areaPixels = (topRight.x - btmLeft.x) * (topRight.y - btmLeft.y);
@@ -1328,19 +891,17 @@ TrackMarkerPM::trackMarker(bool forward,
                     areaPixels *= comps.getNumComponents();
                 }
 
-                double value = correlation->getValueAtTime(frame, 0);
+                double value = correlation->getValueAtTime(frame, DimIdx(0));
 
                 // Convert to a percentage
                 value /= areaPixels;
 
-                markerError->setValueAtTime(frame, value, ViewSpec::current(), 0);
+                markerError->setValueAtTime(frame, value, ViewSetSpec::current(), DimIdx(0));
             }
         }
     }
 
-    for (int i = 0; i < center->getDimension(); ++i) {
-        center->slaveTo(i, markerCenter, i);
-    }
+    center->slaveTo(markerCenter);
 
     return ret;
 } // TrackMarkerPM::trackMarker
@@ -1366,8 +927,7 @@ void
 TrackMarkerPM::initializeKnobs()
 {
     TrackMarker::initializeKnobs();
-    NodePtr thisNode = getContext()->getNode();
-    QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
+    NodePtr thisNode = getModel()->getNode();
     NodePtr node;
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() ));
@@ -1375,7 +935,7 @@ TrackMarkerPM::initializeKnobs()
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
 
-        node = getContext()->getNode()->getApp()->createNode(args);
+        node = getApp()->createNode(args);
         if (!node) {
             throw std::runtime_error("Couldn't create plug-in " PLUGINID_OFX_TRACKERPM);
         }
@@ -1388,21 +948,25 @@ TrackMarkerPM::initializeKnobs()
         trackerNode = node;
     }
 
+    KnobItemsTablePtr model = getModel();
+    EffectInstancePtr effect;
+    if (model) {
+        effect = model->getNode()->getEffectInstance();
+    }
+
     trackPrevButton = getNodeKnob<KnobButton>(node, kTrackerPMParamTrackingPrevious);
     trackNextButton = getNodeKnob<KnobButton>(node, kTrackerPMParamTrackingNext);
     KnobDoublePtr center = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingCenterPoint);
     centerKnob = center;
+
     // Slave the center knob and unslave when tracking
-    for (int i = 0; i < center->getDimension(); ++i) {
-        center->slaveTo(i, getCenterKnob(), i);
-    }
+    center->slaveTo(getCenterKnob());
 
     KnobDoublePtr offset = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingOffset);
 
     // Slave the offset knob
-    for (int i = 0; i < offset->getDimension(); ++i) {
-        offset->slaveTo(i, getOffsetKnob(), i);
-    }
+    offset->slaveTo(getOffsetKnob());
+
     offsetKnob = offset;
 
     // Ref frame is set for each
@@ -1413,7 +977,15 @@ TrackMarkerPM::initializeKnobs()
     enableRefFrameKnob->setValue(true);
 
     KnobChoicePtr scoreType = getNodeKnob<KnobChoice>(node, kTrackerPMParamScore);
-    scoreType->slaveTo(0, getContext()->getCorrelationScoreTypeKnob(), 0);
+    if (effect) {
+#ifdef kTrackerParamPatternMatchingScoreType
+        KnobIPtr modelKnob = effect->getKnobByName(kTrackerParamPatternMatchingScoreType);
+        if (modelKnob) {
+            scoreType->slaveTo(modelKnob);
+        }
+#endif
+    }
+
     scoreTypeKnob = scoreType;
 
     KnobDoublePtr correlationScore = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingCorrelationScore);
@@ -1423,30 +995,23 @@ TrackMarkerPM::initializeKnobs()
     patternBtmLeftKnob = patternBtmLeft;
 
     // Slave the search window and pattern of the node to the parameters of the marker
-    for (int i = 0; i < patternBtmLeft->getDimension(); ++i) {
-        patternBtmLeft->slaveTo(i, getPatternBtmLeftKnob(), i);
-    }
+    patternBtmLeft->slaveTo(getPatternBtmLeftKnob());
+
     KnobDoublePtr patternTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingPatternBoxTopRight);
     patternTopRightKnob = patternTopRight;
-    for (int i = 0; i < patternTopRight->getDimension(); ++i) {
-        patternTopRight->slaveTo(i, getPatternTopRightKnob(), i);
-    }
+    patternTopRight->slaveTo(getPatternTopRightKnob());
 
     KnobDoublePtr searchWindowBtmLeft = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxBtmLeft);
     searchWindowBtmLeftKnob = searchWindowBtmLeft;
-    for (int i = 0; i < searchWindowBtmLeft->getDimension(); ++i) {
-        searchWindowBtmLeft->slaveTo(i, getSearchWindowBottomLeftKnob(), i);
-    }
+    searchWindowBtmLeft->slaveTo(getSearchWindowBottomLeftKnob());
 
     KnobDoublePtr searchWindowTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxTopRight);
     searchWindowTopRightKnob = searchWindowTopRight;
-    for (int i = 0; i < searchWindowTopRight->getDimension(); ++i) {
-        searchWindowTopRight->slaveTo(i, getSearchWindowTopRightKnob(), i);
-    }
+    searchWindowTopRight->slaveTo(getSearchWindowTopRightKnob());
+
 } // TrackMarkerPM::initializeKnobs
 
 
 NATRON_NAMESPACE_EXIT;
-
 NATRON_NAMESPACE_USING;
 #include "moc_TrackMarker.cpp"

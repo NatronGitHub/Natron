@@ -269,32 +269,35 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     }
     std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
     std::list<DockablePanelI*>::iterator it = std::find(panels.begin(), panels.end(), panel);
-    if ( it != panels.end() ) {
-        if ( !panel->isFloating() ) {
-            panels.erase(it);
-            panels.push_front(panel);
-            getApp()->setOpenedSettingsPanelsInternal(panels);
-            panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
-            _imp->_layoutPropertiesBin->removeWidget(panel);
-            _imp->_layoutPropertiesBin->insertWidget(0, panel);
-            _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
-            if ( !panel->isVisible() ) {
-                panel->setVisible(true);
-            }
-            buildTabFocusOrderPropertiesBin();
-        } else {
-            panel->activateWindow();
-        }
-
-    } else {
+    if ( it == panels.end() ) {
         return;
     }
+    if (panel->isFloating()) {
+        panel->activateWindow();
+    } else {
+        panels.erase(it);
+        panels.push_front(panel);
+        getApp()->setOpenedSettingsPanelsInternal(panels);
+        panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
+        _imp->_layoutPropertiesBin->removeWidget(panel);
+        _imp->_layoutPropertiesBin->insertWidget(0, panel);
+        _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+        if ( !panel->isVisible() ) {
+            panel->setVisible(true);
+        }
+        buildTabFocusOrderPropertiesBin();
+    }
+
+    // Refresh timeline's keyframes
+    refreshTimelineGuiKeyframes();
+
 
 }
 
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
+
 
     int nbDockedPanels = 0;
     DockablePanel* foundPanel = 0;
@@ -320,6 +323,11 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
                     foundPanel = isPanel;
                 }
             }
+        }
+
+        // If the panel is already here, don't remove anything just put it first
+        if (foundPanel && (nbDockedPanels <= maxPanels || maxPanels == 0)) {
+            break;
         }
         if ((nbDockedPanels >= maxPanels) && (maxPanels != 0)) {
             if (first) {
@@ -360,13 +368,22 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
             panel->setVisible(true);
         }
         getApp()->registerSettingsPanel(panel);
+
+        // Refresh timeline's keyframes, this is also done in putSettingsPanelFirst
+        refreshTimelineGuiKeyframes();
     }
+
+
+
 } // Gui::addVisibleDockablePanel
 
 void
 Gui::removeVisibleDockablePanel(DockablePanel* panel)
 {
+
     getApp()->unregisterSettingsPanel(panel);
+    // Refresh timeline's keyframes
+    refreshTimelineGuiKeyframes();
 }
 
 

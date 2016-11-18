@@ -55,6 +55,7 @@ HEADERS += \
     ImageKeySerialization.h \
     ImageParamsSerialization.h \
     KnobSerialization.h \
+    KnobTableItemSerialization.h \
     NodeSerialization.h \
     NodeBackdropSerialization.h \
     NodeClipBoard.h \
@@ -66,22 +67,16 @@ HEADERS += \
     ProjectSerialization.h \
     RectDSerialization.h \
     RectISerialization.h \
-    RotoContextSerialization.h \
-    RotoDrawableItemSerialization.h \
-    RotoItemSerialization.h \
-    RotoLayerSerialization.h \
     RotoStrokeItemSerialization.h \
     SerializationBase.h \
     SerializationFwd.h \
     SerializationIO.h \
     SerializationCompat.h \
     TextureRectSerialization.h \
-    TrackerSerialization.h \
     WorkspaceSerialization.h
 
 
 SOURCES += \
-    KnobSerialization.cpp \
     BezierCPSerialization.cpp \
     BezierSerialization.cpp \
     CurveSerialization.cpp \
@@ -90,17 +85,14 @@ SOURCES += \
     FrameParamsSerialization.cpp \
     ImageKeySerialization.cpp \
     ImageParamsSerialization.cpp \
+    KnobSerialization.cpp \
+    KnobTableItemSerialization.cpp \
     NodeSerialization.cpp \
     NodeClipBoard.cpp \
     NonKeyParamsSerialization.cpp \
     ProjectSerialization.cpp \
     RectDSerialization.cpp \
     RectISerialization.cpp \
-    RotoContextSerialization.cpp \
-    RotoDrawableItemSerialization.cpp \
-    RotoItemSerialization.cpp \
-    RotoLayerSerialization.cpp \
     RotoStrokeItemSerialization.cpp \
     TextureRectSerialization.cpp \
-    TrackerSerialization.cpp \
     WorkspaceSerialization.cpp

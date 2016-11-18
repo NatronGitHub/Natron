@@ -341,7 +341,11 @@ App::renderInternal(bool forceBlocking,
 
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    getInternalApp()->startWritersRendering(forceBlocking, l);
+    if (forceBlocking) {
+        getInternalApp()->renderWritersBlocking(l);
+    } else {
+        getInternalApp()->renderWritersNonBlocking(l);
+    }
 }
 
 void
@@ -385,7 +389,11 @@ App::renderInternal(bool forceBlocking,
 
         l.push_back(w);
     }
-    getInternalApp()->startWritersRendering(forceBlocking, l);
+    if (forceBlocking) {
+        getInternalApp()->renderWritersBlocking(l);
+    } else {
+        getInternalApp()->renderWritersNonBlocking(l);
+    }
 }
 
 void
@@ -522,6 +530,25 @@ App::getViewNames() const
     }
 
     return ret;
+}
+
+int
+App::getViewIndex(const QString& viewName) const
+{
+    ViewIdx view_i;
+    if (!getInternalApp()->getProject()->getViewIndex(viewName.toStdString(), &view_i)) {
+        return false;
+    }
+    return view_i;
+}
+
+QString
+App::getViewName(int viewIndex) const
+{
+    if (viewIndex < 0) {
+        return QString();
+    }
+    return QString::fromUtf8(getInternalApp()->getProject()->getViewName(ViewIdx(viewIndex)).c_str());
 }
 
 void

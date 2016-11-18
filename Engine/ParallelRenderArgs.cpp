@@ -40,7 +40,6 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
@@ -792,7 +791,8 @@ static bool
 setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
                           const RotoStrokeItemPtr& activeStroke,
                           const NodePtr& /*treeRoot*/,
-                          double time)
+                          double time,
+                          ViewIdx view)
 {
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(rotoPaintNode->getEffectInstance());
@@ -829,7 +829,7 @@ setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
     //the multi-stroke index in case of a stroke containing multiple strokes from the user
     int strokeIndex;
     bool isStrokeFirstTick;
-    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
+    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, view, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
         rotoPaintNode->getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
 
         for (NodesList::iterator it = rotoPaintTreeNodes.begin(); it != rotoPaintTreeNodes.end(); ++it) {
@@ -902,7 +902,7 @@ ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
 
         if (isPainting) {
             assert(inArgs->activeRotoDrawableItem && inArgs->activeRotoPaintNode);
-            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time);
+            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time, inArgs->view);
         }
 
         // When painting, always use the same context since we paint over the same texture
@@ -981,20 +981,6 @@ ParallelRenderArgsSetter::computeRequestPass(unsigned int mipMapLevel, const Rec
                 (*it)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
             }
         }
-
-        NodesList rotoPaintNodes;
-        RotoContextPtr roto = (*it)->getRotoContext();
-        if (roto) {
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-        }
-
-        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            FrameRequestMap::const_iterator foundRequest = requestData.find(*it2);
-            if ( foundRequest != requestData.end() ) {
-                (*it2)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
-            }
-        }
-
     }
     return stat;
 }

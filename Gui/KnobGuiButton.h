@@ -45,8 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -55,28 +54,26 @@ NATRON_NAMESPACE_ENTER;
 
 //================================
 class KnobGuiButton
-    : public KnobGui
+    : QObject
+    , public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiButton(knob, container);
+        return new KnobGuiButton(knob, view);
     }
 
-    KnobGuiButton(KnobIPtr knob,
-                  KnobGuiContainerI *container);
+    KnobGuiButton(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool shouldCreateLabel() const OVERRIDE FINAL
+    virtual bool mustCreateLabelWidget() const OVERRIDE FINAL
     {
         return false;
     }
@@ -87,17 +84,16 @@ public Q_SLOTS:
 
 private:
 
-    virtual void onLabelChangedInternal() OVERRIDE FINAL;
+    virtual void onLabelChanged() OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
+    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }
 
-    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
 
 private:
     Button *_button;

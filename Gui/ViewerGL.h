@@ -257,6 +257,7 @@ public:
                             double r,
                             double g,
                             double b,
+                            double a,
                             int flags = 0) OVERRIDE FINAL; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
 

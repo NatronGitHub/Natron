@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/ViewIdx.h"
 #include "Global/Macros.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -136,10 +137,12 @@ public:
 
     KnobClickableLabel(const QPixmap& icon,
                        const KnobGuiPtr& knob,
+                       ViewSetSpec view,
                        QWidget* parent = 0);
 
     KnobClickableLabel(const QString& text,
                        const KnobGuiPtr& knob,
+                       ViewSetSpec view,
                        QWidget* parent = 0);
 
     virtual ~KnobClickableLabel();

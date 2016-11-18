@@ -65,8 +65,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h" // kShortcutGroupViewer ...
-#include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // isMouseShortcut
 #include "Gui/GuiDefines.h"
@@ -189,7 +189,11 @@ ViewerGL::resizeGL(int w,
     glCheckError(GL_GPU);
     _imp->ms = eMouseStateUndefined;
     assert(_imp->viewerTab);
-    ViewerInstancePtr viewer = _imp->viewerTab->getInternalNode()->getInternalViewerNode();
+    ViewerNodePtr viewerNode = _imp->viewerTab->getInternalNode();
+    if (!viewerNode) {
+        return;
+    }
+    ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
     if (!viewer) {
         return;
     }
@@ -2467,11 +2471,13 @@ ViewerGL::renderText(double x,
                      double r,
                      double g,
                      double b,
+                     double a,
                      int flags)
 {
     QColor c;
 
     c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    c.setAlphaF(Image::clamp(a, 0., 1.));
     renderText(x, y, QString::fromUtf8( string.c_str() ), c, font(), flags);
 
     return true;
@@ -2798,6 +2804,8 @@ ViewerGL::pickColorInternal(double x,
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
 
+    ViewIdx currentView = getInternalNode()->getCurrentView();
+
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool ret = false;
@@ -2807,7 +2815,7 @@ ViewerGL::pickColorInternal(double x,
         bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a, &mmLevel);
         if (picked) {
             if (i == 0) {
-                _imp->viewerTab->getGui()->setColorPickersColor(r, g, b, a);
+                _imp->viewerTab->getGui()->setColorPickersColor(currentView, r, g, b, a);
             }
             _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
             _imp->infoViewer[i]->setColorValid(true);
@@ -2975,6 +2983,8 @@ ViewerGL::updateRectangleColorPickerInternal()
     QPointF btmRight = _imp->pickerRect.bottomRight();
     RectD rect;
 
+    ViewIdx currentView = getInternalNode()->getCurrentView();
+
     rect.set_left( std::min( topLeft.x(), btmRight.x() ) );
     rect.set_right( std::max( topLeft.x(), btmRight.x() ) );
     rect.set_bottom( std::min( topLeft.y(), btmRight.y() ) );
@@ -2984,7 +2994,7 @@ ViewerGL::updateRectangleColorPickerInternal()
         bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a, &mm);
         if (picked) {
             if (i == 0) {
-                _imp->viewerTab->getGui()->setColorPickersColor(r, g, b, a);
+                _imp->viewerTab->getGui()->setColorPickersColor(currentView, r, g, b, a);
             }
             _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorVisible() ) {

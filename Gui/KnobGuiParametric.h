@@ -30,6 +30,12 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
+
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -45,40 +51,39 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
+struct KnobGuiParametricPrivate;
 class KnobGuiParametric
-    : public KnobGui
-      , public CurveSelection
+    : public QObject, public KnobGuiWidgets, public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobIPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiParametric(knob, container);
+        return new KnobGuiParametric(knob, view);
     }
 
-    KnobGuiParametric(KnobIPtr knob,
-                      KnobGuiContainerI *container);
+    KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view);
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool shouldCreateLabel() const OVERRIDE
+    virtual bool mustCreateLabelWidget() const OVERRIDE
     {
         return false;
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
-    virtual void getSelectedCurves(std::vector<CurveGuiPtr >* selection) OVERRIDE FINAL;
+
+
+    // Overriden from OverlaySupport
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
@@ -87,51 +92,51 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL
+    {
+        return 0;
+    }
+
+
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
 
-    void onCurveChanged(int dimension);
+    void onCurveChanged(DimSpec dimension);
 
     void onItemsSelectionChanged();
 
     void resetSelectedCurves();
 
-    void onColorChanged(int dimension);
+    void onColorChanged(DimSpec dimension);
 
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled() OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
     virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
     {
     }
 
     virtual void setReadOnly(bool /*readOnly*/,
-                             int /*dimension*/) OVERRIDE FINAL
+                             DimSpec /*dimension*/) OVERRIDE FINAL
     {
     }
 
-    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+    virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;
 
 private:
-    // TODO: PIMPL
-    QWidget* treeColumn;
-    CurveWidget* _curveWidget;
-    QTreeWidget* _tree;
-    Button* _resetButton;
-    struct CurveDescriptor
-    {
-        KnobCurveGuiPtr curve;
-        QTreeWidgetItem* treeItem;
-    };
 
-    typedef std::vector<CurveDescriptor> CurveGuis;
-    CurveGuis _curves;
-    KnobParametricWPtr _knob;
+    boost::scoped_ptr<KnobGuiParametricPrivate> _imp;
+
 };
 
 NATRON_NAMESPACE_EXIT;

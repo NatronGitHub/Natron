@@ -68,7 +68,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
@@ -155,7 +154,7 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 }
 
 void
-OutputEffectInstance::renderFullSequence(bool isBlocking,
+OutputEffectInstance::renderSequential(bool isBlocking,
                                          bool enableRenderStats,
                                          BlockingBackgroundRender* renderController,
                                          int first,
@@ -418,7 +417,7 @@ OutputEffectInstance::reportStats(int time,
     if (fileKnob) {
         KnobFilePtr strKnob = toKnobFile(fileKnob);
         if  (strKnob) {
-            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
+            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( DimIdx(0), ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
             qfileName.append( QString::fromUtf8("-stats.txt") );
             filename = qfileName.toStdString();

@@ -43,6 +43,7 @@
 #include "PyGlobalFunctions.h"
 #include "PyNodeGroup.h"
 #include "PyAppInstance.h"
+#include "PyItemsTable.h"
 #include "PyRoto.h"
 #include "PyTracker.h"
 #include "PyNode.h"

@@ -42,7 +42,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/CurveEditorUndoRedo.h" // KeyPtr
+#include "Gui/AnimItemBase.h"
+
 #include "Gui/CurveGui.h" // CurveGui
 #include "Gui/GuiFwd.h"
 
@@ -146,8 +147,8 @@ public:
     };
 
     EditKeyFrameDialog(EditModeEnum mode,
-                       CurveWidget* curveWidget,
-                       const KeyPtr& key,
+                       AnimationModuleView* curveWidget,
+                       const AnimItemDimViewKeyFrame& key,
                        QWidget* parent);
 
     virtual ~EditKeyFrameDialog();
@@ -156,6 +157,7 @@ Q_SIGNALS:
 
     void valueChanged(int dimension, double value);
 
+    void dialogFinished(bool accepted);
 public Q_SLOTS:
 
     void onXSpinBoxValueChanged(double d);
@@ -163,6 +165,8 @@ public Q_SLOTS:
     void onEditingFinished();
 
 private:
+
+    void refreshSelectedKey();
 
     void moveKeyTo(double newX, double newY);
     void moveDerivativeTo(double d);

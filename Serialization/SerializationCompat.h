@@ -22,6 +22,8 @@
 // This file contains all implementation of old boost serialization involving Engine and Gui classes
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+#include "Global/Macros.h"
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/xml_iarchive.hpp>
@@ -38,12 +40,14 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/scoped_ptr.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
+#include "Serialization/RotoStrokeItemSerialization.h"
+#include "Serialization/BezierSerialization.h"
+#include "Serialization/BezierCPSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/CurveSerialization.h"
 #include "Serialization/KnobSerialization.h"
-#include "Serialization/TrackerSerialization.h"
-#include "Serialization/RotoContextSerialization.h"
-#include "Serialization/RotoDrawableItemSerialization.h"
+#include "Serialization/KnobTableItemSerialization.h"
+#include "Serialization/ProjectSerialization.h"
 #include "Serialization/NodeGroupSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
@@ -59,7 +63,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/RectI.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/ViewIdx.h"
 #include <SequenceParsing.h>
 
 #define kKnobOutputFileTypeName "OutputFile"
@@ -157,6 +161,256 @@ GCC_DIAG_OFF(unused-parameter)
 #define PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION 6
 #define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION
 
+SERIALIZATION_NAMESPACE_ENTER;
+namespace Compat {
+
+class RotoItemSerialization
+{
+
+public:
+
+    std::string name, label;
+    std::string parentLayerName;
+    bool locked;
+
+    RotoItemSerialization()
+    : name()
+    , parentLayerName()
+    , locked(false)
+    {
+    }
+
+    virtual ~RotoItemSerialization()
+    {
+    }
+
+    void convertRotoItemSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
+
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
+};
+
+class RotoLayerSerialization
+: public RotoItemSerialization
+{
+
+public:
+
+    RotoLayerSerialization()
+    : RotoItemSerialization()
+    {
+    }
+
+    virtual ~RotoLayerSerialization()
+    {
+    }
+
+
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+    void convertRotoLayerSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
+
+
+    std::list <boost::shared_ptr<Compat::RotoItemSerialization> > children;
+
+    KnobSerializationList knobs;
+};
+
+class RotoDrawableItemSerialization
+: public RotoItemSerialization
+{
+
+public:
+
+
+    KnobSerializationList _knobs;
+
+    RotoDrawableItemSerialization()
+    : RotoItemSerialization()
+    , _knobs()
+    {
+    }
+
+    virtual ~RotoDrawableItemSerialization()
+    {
+    }
+
+    void convertRotoDrawableItemSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
+};
+
+
+struct StrokePoint
+{
+    double x, y, pressure;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
+};
+
+
+
+class BezierSerialization
+: public RotoDrawableItemSerialization
+{
+
+public:
+
+    BezierSerialization()
+    : RotoDrawableItemSerialization()
+    , _isOpenBezier(false)
+    {
+    }
+
+    virtual ~BezierSerialization()
+    {
+    }
+
+
+    template<class Archive>
+    void serialize(Archive & ar,
+                   const unsigned int version);
+
+
+    void convertBezierSerialization(SERIALIZATION_NAMESPACE::BezierSerialization* outSerialization);
+
+    struct ControlPoint
+    {
+        BezierCPSerialization innerPoint;
+
+        // Serialize feather only if different
+        boost::shared_ptr<BezierCPSerialization> featherPoint;
+    };
+
+    std::list< ControlPoint > _controlPoints;
+
+    bool _closed;
+    bool _isOpenBezier;
+};
+
+
+class RotoStrokeItemSerialization
+: public RotoDrawableItemSerialization
+{
+
+public:
+
+
+    std::string _brushType;
+    struct PointCurves
+    {
+        CurveSerializationPtr x,y,pressure;
+    };
+    std::list<PointCurves> _subStrokes;
+
+
+    RotoStrokeItemSerialization()
+    : RotoDrawableItemSerialization()
+    , _brushType()
+    , _subStrokes()
+    {
+    }
+
+    virtual ~RotoStrokeItemSerialization()
+    {
+    }
+
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+    void convertStrokeSerialization(SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization* outSerialization);
+
+    
+};
+
+
+class TrackSerialization
+{
+
+public:
+
+
+    bool _enabled;
+    bool _isPM;
+    std::string _label, _scriptName;
+    std::list<KnobSerializationPtr> _knobs;
+    std::list<int> _userKeys;
+
+    TrackSerialization()
+    : _enabled(true)
+    , _isPM(false)
+    , _label()
+    , _scriptName()
+    , _knobs()
+    , _userKeys()
+    {
+    }
+
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+    void convertTrackSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization);
+
+};
+
+class RotoContextSerialization
+{
+
+public:
+
+    RotoContextSerialization()
+    : _baseLayer()
+    {
+    }
+
+    virtual ~RotoContextSerialization()
+    {
+    }
+
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+    void convertRotoContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization);
+
+    RotoLayerSerialization _baseLayer;
+};
+
+class TrackerContextSerialization
+{
+public:
+
+    TrackerContextSerialization()
+    : _tracks()
+    {
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+
+    void convertTrackerContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization);
+
+    std::list<TrackSerialization> _tracks;
+};
+
+} // namespace Compat
+
+
+
+
+
+SERIALIZATION_NAMESPACE_EXIT;
+
 // Everything below is deprecated and maintained for projects prior to Natron 2.2
 template<class Archive>
 void
@@ -229,11 +483,11 @@ NATRON_NAMESPACE::BezierCP::serialize(Archive &ar, const unsigned int version)
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::BezierSerialization::serialize(Archive & ar, const unsigned int version)
+SERIALIZATION_NAMESPACE::Compat::BezierSerialization::serialize(Archive & ar, const unsigned int version)
 {
-    boost::serialization::void_cast_register<BezierSerialization, RotoDrawableItemSerialization>(
-                                                                                                 static_cast<BezierSerialization *>(NULL),
-                                                                                                 static_cast<RotoDrawableItemSerialization *>(NULL)
+    boost::serialization::void_cast_register<Compat::BezierSerialization, Compat::RotoDrawableItemSerialization>(
+                                                                                                 static_cast<Compat::BezierSerialization *>(NULL),
+                                                                                                 static_cast<Compat::RotoDrawableItemSerialization *>(NULL)
                                                                                                  );
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
     int numPoints;
@@ -270,7 +524,7 @@ SERIALIZATION_NAMESPACE::BezierSerialization::serialize(Archive & ar, const unsi
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::StrokePoint::serialize(Archive & ar,
+SERIALIZATION_NAMESPACE::Compat::StrokePoint::serialize(Archive & ar,
                const unsigned int /*version*/)
 {
     ar & ::boost::serialization::make_nvp("X", x);
@@ -280,12 +534,12 @@ SERIALIZATION_NAMESPACE::StrokePoint::serialize(Archive & ar,
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization::serialize(Archive & ar,
+SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
     boost::serialization::void_cast_register<RotoDrawableItemSerialization, RotoItemSerialization>(
-                                                                                                   static_cast<RotoDrawableItemSerialization *>(NULL),
-                                                                                                   static_cast<RotoItemSerialization *>(NULL)
+                                                                                                   static_cast<Compat::RotoDrawableItemSerialization *>(NULL),
+                                                                                                   static_cast<Compat::RotoItemSerialization *>(NULL)
                                                                                                    );
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
     if (version < ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST) {
@@ -332,15 +586,15 @@ SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization::serialize(Archive & ar,
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::RotoLayerSerialization::serialize(Archive & ar,
+SERIALIZATION_NAMESPACE::Compat::RotoLayerSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
 
-    boost::serialization::void_cast_register<RotoLayerSerialization, RotoItemSerialization>(
-                                                                                            static_cast<RotoLayerSerialization *>(NULL),
-                                                                                            static_cast<RotoItemSerialization *>(NULL)
+    boost::serialization::void_cast_register<Compat::RotoLayerSerialization, Compat::RotoItemSerialization>(
+                                                                                            static_cast<Compat::RotoLayerSerialization *>(NULL),
+                                                                                            static_cast<Compat::RotoItemSerialization *>(NULL)
                                                                                             );
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Compat::RotoItemSerialization);
     int numChildren;
     ar & ::boost::serialization::make_nvp("NumChildren", numChildren);
     for (int i = 0; i < numChildren; ++i) {
@@ -353,15 +607,15 @@ SERIALIZATION_NAMESPACE::RotoLayerSerialization::serialize(Archive & ar,
             ar & ::boost::serialization::make_nvp("Type", type);
         }
         if (type == 0) {
-            boost::shared_ptr<BezierSerialization> b(new BezierSerialization);
+            boost::shared_ptr<Compat::BezierSerialization> b(new Compat::BezierSerialization);
             ar & ::boost::serialization::make_nvp("Item", *b);
             children.push_back(b);
         } else if (type == 1) {
-            boost::shared_ptr<RotoStrokeItemSerialization> b(new RotoStrokeItemSerialization);
+            boost::shared_ptr<Compat::RotoStrokeItemSerialization> b(new Compat::RotoStrokeItemSerialization);
             ar & ::boost::serialization::make_nvp("Item", *b);
             children.push_back(b);
         } else {
-            boost::shared_ptr<RotoLayerSerialization> l(new RotoLayerSerialization);
+            boost::shared_ptr<Compat::RotoLayerSerialization> l(new Compat::RotoLayerSerialization);
             ar & ::boost::serialization::make_nvp("Item", *l);
             children.push_back(l);
         }
@@ -370,14 +624,14 @@ SERIALIZATION_NAMESPACE::RotoLayerSerialization::serialize(Archive & ar,
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::serialize(Archive & ar,
+SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
-    boost::serialization::void_cast_register<RotoStrokeItemSerialization, RotoDrawableItemSerialization>(
-                                                                                                         static_cast<RotoStrokeItemSerialization *>(NULL),
-                                                                                                         static_cast<RotoDrawableItemSerialization *>(NULL)
+    boost::serialization::void_cast_register<Compat::RotoStrokeItemSerialization, Compat::RotoDrawableItemSerialization>(
+                                                                                                         static_cast<Compat::RotoStrokeItemSerialization *>(NULL),
+                                                                                                         static_cast<Compat::RotoDrawableItemSerialization *>(NULL)
                                                                                                          );
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Compat::RotoDrawableItemSerialization);
     if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
         ar & ::boost::serialization::make_nvp("BrushType", _brushType);
         NATRON_NAMESPACE::Curve x,y,p;
@@ -417,7 +671,7 @@ SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::serialize(Archive & ar,
 
 
 template<class Archive>
-void SERIALIZATION_NAMESPACE::RotoItemSerialization::serialize(Archive & ar,
+void SERIALIZATION_NAMESPACE::Compat::RotoItemSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
 
@@ -461,7 +715,7 @@ void NATRON_NAMESPACE::ImageComponents::serialize(Archive & ar, const unsigned i
 }
 
 template<class Archive>
-void SERIALIZATION_NAMESPACE::RotoContextSerialization::serialize(Archive & ar,
+void SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
     ar & ::boost::serialization::make_nvp("BaseLayer", _baseLayer);
@@ -544,7 +798,7 @@ SERIALIZATION_NAMESPACE::MasterSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
     if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
-        ar & ::boost::serialization::make_nvp("MasterTrackName", masterTrackName);
+        ar & ::boost::serialization::make_nvp("MasterTrackName", masterTableItemName);
     }
 }
 
@@ -554,10 +808,6 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
 {
     // With boost, value was always serialized
     _serializeValue = true;
-
-    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-        _serializeDefaultValue = false;
-    }
 
     _mustSerialize = true;
 
@@ -580,7 +830,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
         convertOldFileKeyframesToPattern = isFile && getKnobName() == kOfxImageEffectFileParamName;
     }
 
-    _type = ValueSerialization::eSerializationValueVariantTypeNone;
+    _type = eSerializationValueVariantTypeNone;
 
     bool loadValue = true;
     if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
@@ -597,13 +847,13 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
 
 
         if (isInt) {
-            _type = ValueSerialization::eSerializationValueVariantTypeInteger;
+            _type = eSerializationValueVariantTypeInteger;
         } else if (isDouble || isColor) {
-            _type = ValueSerialization::eSerializationValueVariantTypeDouble;
+            _type = eSerializationValueVariantTypeDouble;
         } else if (isBool) {
-            _type = ValueSerialization::eSerializationValueVariantTypeBoolean;
+            _type = eSerializationValueVariantTypeBoolean;
         } else if (isString || isOutputFile || isPath || isLayers || isFile || isChoice) {
-            _type = ValueSerialization::eSerializationValueVariantTypeString;
+            _type = eSerializationValueVariantTypeString;
         }
 
         if (isChoice) {
@@ -618,11 +868,11 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
                 }
             }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
+                ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isInt);
             }
         } else if (isFile) {
             loadValue = false;
-            ar & ::boost::serialization::make_nvp("Value", _value.isString);
+            ar & ::boost::serialization::make_nvp("Value", _serialization->_defaultValues[_dimension].value.isString);
 
             ///Convert the old keyframes stored in the file parameter by analysing one keyframe
             ///and deducing the pattern from it and setting it as a value instead
@@ -633,42 +883,47 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
                                                               &_value.isString);
             }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
+                ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isString);
             }
         }
 
     }
 
+    if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+        _serialization->_defaultValues[_dimension].type = _type;
+        _serialization->_defaultValues[_dimension].serializeDefaultValue = false;
+    }
+
     if (loadValue) {
         switch (_type) {
-            case ValueSerialization::eSerializationValueVariantTypeNone:
+            case eSerializationValueVariantTypeNone:
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeInteger:
+            case eSerializationValueVariantTypeInteger:
                 ar & ::boost::serialization::make_nvp("Value", _value.isInt);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isInt);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isInt);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeDouble:
+            case eSerializationValueVariantTypeDouble:
                 ar & ::boost::serialization::make_nvp("Value", _value.isDouble);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isDouble);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isDouble);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeString:
+            case eSerializationValueVariantTypeString:
                 ar & ::boost::serialization::make_nvp("Value", _value.isString);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isString);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isString);
                 }
                 break;
 
-            case ValueSerialization::eSerializationValueVariantTypeBoolean:
+            case eSerializationValueVariantTypeBoolean:
                 ar & ::boost::serialization::make_nvp("Value", _value.isBool);
                 if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                    ar & ::boost::serialization::make_nvp("Default", _defaultValue.isBool);
+                    ar & ::boost::serialization::make_nvp("Default", _serialization->_defaultValues[_dimension].value.isBool);
                 }
 
                 break;
@@ -771,17 +1026,20 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         _extraData.reset(new TextExtraData);
     }
 
-    _values.resize(_dimension);
+    _defaultValues.resize(_dimension);
+    KnobSerialization::PerDimensionValueSerializationVec& values = _values["Main"];
+
+    values.resize(_dimension);
     for (std::size_t i = 0; i < _values.size(); ++i) {
-        _values[i]._typeName = _typeName;
-        _values[i]._dimension = i;
-        _values[i]._serialization = this;
-        ar & ::boost::serialization::make_nvp("item", _values[i]);
+        values[i]._typeName = _typeName;
+        values[i]._dimension = i;
+        values[i]._serialization = this;
+        ar & ::boost::serialization::make_nvp("item", values[i]);
     }
 
     // If the knob is a multi-line rich-text knob, parse the font since now font properties are not encoded in the text directly
-    if (isString && _values.size() > 0) {
-        QString str = QString::fromUtf8(_values[0]._value.isString.c_str());
+    if (isString && values.size() > 0) {
+        QString str = QString::fromUtf8(values[0]._value.isString.c_str());
 
         bool italicActivated = false;
         bool boldActivated = false;
@@ -863,7 +1121,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         data->italicActivated = italicActivated;
 
         str = NATRON_NAMESPACE::KnobString::removeAutoAddedHtmlTags(str);
-        _values[0]._value.isString = str.toStdString();
+        values[0]._value.isString = str.toStdString();
     }
 
     ////restore extra datas
@@ -912,7 +1170,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         if (isChoice) {
             std::string stringChoice;
             ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
-            _values[0]._value.isString = stringChoice;
+            values[0]._value.isString = stringChoice;
         }
 
 
@@ -1060,7 +1318,7 @@ SERIALIZATION_NAMESPACE::GroupKnobSerialization::serialize(Archive & ar, const u
     }
 }
 
-static void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::GroupKnobSerialization& k, SERIALIZATION_NAMESPACE::NodeSerialization* node)
+inline void addUserKnobToRegularKnobsRecursive(const SERIALIZATION_NAMESPACE::GroupKnobSerialization& k, SERIALIZATION_NAMESPACE::NodeSerialization* node)
 {
     for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = k._children.begin(); it!=k._children.end(); ++it) {
         SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroup = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(it->get());
@@ -1143,16 +1401,21 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         bool hasRotoContext;
         ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
         if (hasRotoContext) {
-            _rotoContext.reset(new RotoContextSerialization);
-            ar & ::boost::serialization::make_nvp("RotoContext", *_rotoContext);
+            Compat::RotoContextSerialization rotoContext;
+            _tableModel.reset(new KnobItemsTableSerialization);
+            ar & ::boost::serialization::make_nvp("RotoContext", rotoContext);
+            rotoContext.convertRotoContext(_tableModel.get());
         }
 
         if (version >= NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT) {
             bool hasTrackerContext;
             ar & boost::serialization::make_nvp("HasTrackerContext", hasTrackerContext);
             if (hasTrackerContext) {
-                _trackerContext.reset(new TrackerContextSerialization);
-                ar & boost::serialization::make_nvp("TrackerContext", *_trackerContext);
+
+                Compat::TrackerContextSerialization trackerContext;
+                _tableModel.reset(new KnobItemsTableSerialization);
+                ar & boost::serialization::make_nvp("TrackerContext", trackerContext);
+                trackerContext.convertTrackerContext(_tableModel.get());
             }
         }
     }
@@ -1220,7 +1483,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
 
 template<class Archive>
 void
-SERIALIZATION_NAMESPACE::TrackSerialization::serialize(Archive & ar,
+SERIALIZATION_NAMESPACE::Compat::TrackSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
     if (version >= TRACK_SERIALIZATION_ADD_TRACKER_PM) {
@@ -1247,13 +1510,13 @@ SERIALIZATION_NAMESPACE::TrackSerialization::serialize(Archive & ar,
 }
 
 template<class Archive>
-void SERIALIZATION_NAMESPACE::TrackerContextSerialization::serialize(Archive & ar,
+void SERIALIZATION_NAMESPACE::Compat::TrackerContextSerialization::serialize(Archive & ar,
           const unsigned int /*version*/)
 {
     int nbItems;
     ar & boost::serialization::make_nvp("NbItems", nbItems);
     for (int i = 0; i < nbItems; ++i) {
-        TrackSerialization s;
+        Compat::TrackSerialization s;
         ar & boost::serialization::make_nvp("Item", s);
         _tracks.push_back(s);
     }
@@ -1377,21 +1640,21 @@ BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(SERIALIZATION_NAMESPACE::RectI);
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::Format, FORMAT_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::BezierCP, BEZIER_CP_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::BezierSerialization, BEZIER_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::KnobSerialization, KNOB_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ValueSerialization, VALUE_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::MasterSerialization, MASTER_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::GroupKnobSerialization, GROUP_KNOB_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::ProjectSerialization, PROJECT_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization, ROTO_DRAWABLE_ITEM_VERSION)
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(SERIALIZATION_NAMESPACE::RotoDrawableItemSerialization);
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoItemSerialization, ROTO_ITEM_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoLayerSerialization, ROTO_LAYER_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackSerialization, TRACK_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
-BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::RotoContextSerialization, ROTO_CTX_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization, ROTO_DRAWABLE_ITEM_VERSION)
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization);
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoItemSerialization, ROTO_ITEM_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoLayerSerialization, ROTO_LAYER_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization, ROTO_STROKE_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackSerialization, TRACK_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization, ROTO_CTX_VERSION)
 
 #endif // NATRON_BOOST_SERIALIZATION_COMPAT
 

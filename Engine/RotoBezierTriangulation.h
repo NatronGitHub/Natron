@@ -100,7 +100,7 @@ public:
         unsigned int error;
     };
 
-    static void computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel,  double featherDist, PolygonData* outArgs);
+    static void computeTriangles(const BezierPtr& bezier, double time, ViewIdx view, unsigned int mipmapLevel,  double featherDist, PolygonData* outArgs);
 
 };
 

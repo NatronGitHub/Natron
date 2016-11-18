@@ -533,8 +533,9 @@ ReadNodePrivate::checkDecoderCreated(double time,
                                      ViewIdx view)
 {
     KnobFilePtr fileKnob = inputFileKnob.lock();
-
-    assert(fileKnob);
+    if (!fileKnob) {
+        return false;
+    }
     std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
@@ -559,7 +560,8 @@ getFileNameFromSerialization(const SERIALIZATION_NAMESPACE::KnobSerializationLis
 
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getName() == kOfxImageEffectFileParamName && (*it)->getTypeName() == KnobFile::typeNameStatic()) {
-            filePattern = (*it)->_values[0]._value.isString;
+            SERIALIZATION_NAMESPACE::ValueSerialization& value = (*it)->_values.begin()->second[0];
+            filePattern = value._value.isString;
             break;
         }
     }
@@ -591,7 +593,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             //Use default
             readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
+            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
                 readerPluginID = entries[pluginChoice_i];
             }
@@ -779,7 +781,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     pluginChoice->populateChoices(entries, help);
     pluginChoice->blockValueChanges();
-    pluginChoice->resetToDefaultValue(0);
+    pluginChoice->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     pluginChoice->unblockValueChanges();
     if (entries.size() <= 2) {
         pluginChoice->setSecret(true);
@@ -1064,7 +1066,7 @@ ReadNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerializatio
 bool
 ReadNode::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum reason,
-                      ViewSpec view,
+                      ViewSetSpec view,
                       double time,
                       bool originatedFromMainThread)
 {
@@ -1104,7 +1106,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         }
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }

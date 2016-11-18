@@ -34,6 +34,8 @@
 
 #include <QtCore/QCoreApplication>
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 #include "Gui/GuiFwd.h"
 
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"
@@ -47,19 +49,21 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
     KnobWidgetDnD(const KnobGuiPtr& knob,
-                  int dimension,
+                  DimSpec dimension,
+                  ViewSetSpec view,
                   QWidget* widget);
 
 public:
 
 
     static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
-                                            int dimension,
-                                            QWidget* widget)
+                                                   DimSpec dimension,
+                                                   ViewSetSpec view,
+                                                   QWidget* widget)
     {
-        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, widget));
+        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, view, widget));
     }
-
+    
 
     ~KnobWidgetDnD();
 

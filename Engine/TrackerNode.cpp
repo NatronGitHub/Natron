@@ -27,20 +27,27 @@
 #include "TrackerNode.h"
 
 #include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Curve.h"
+#include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Lut.h"
+#include "Engine/Project.h"
 #include "Engine/TimeLine.h"
-#include "Engine/TrackerContext.h"
+#include "Engine/TrackerHelper.h"
 #include "Engine/TrackMarker.h"
-#include "Engine/TrackerNodeInteract.h"
+#include "Engine/TrackerNodePrivate.h"
 #include "Engine/TrackerUndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/GLIncludes.h"
 
+#include "Serialization/KnobTableItemSerialization.h"
+
+
 #define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -108,12 +115,12 @@ TrackerNode::createPlugin()
 
 
     return ret;
-}
+} // createPlugin
 
 
 TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
-    , _imp( new TrackerNodePrivate(this) )
+    , _imp( TrackerNodePrivate::create(this) )
 {
 }
 
@@ -121,320 +128,539 @@ TrackerNode::~TrackerNode()
 {
 }
 
+void
+TrackerNode::setupInitialSubGraphState()
+{
+    QString fixedNamePrefix = QString::fromUtf8( getScriptName_mt_safe().c_str() );
+
+    fixedNamePrefix.append( QLatin1Char('_') );
+    NodePtr input, output;
+
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+
+        output = getApp()->createNode(args);
+        if (!output) {
+            throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_NATRON_OUTPUT)).toStdString());
+        }
+    }
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
+        input = getApp()->createNode(args);
+        if (!input) {
+            throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_NATRON_INPUT)).toStdString());
+        }
+
+    }
+
+
+    {
+        QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_CORNERPIN, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
+        NodePtr cpNode = getApp()->createNode(args);
+        if (!cpNode) {
+            throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_OFX_CORNERPIN)).toStdString());
+        }
+        cpNode->setNodeDisabled(true);
+        _imp->cornerPinNode = cpNode;
+    }
+
+    {
+        QString transformName = fixedNamePrefix + QLatin1String("Transform");
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TRANSFORM, thisShared));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
+        NodePtr tNode = getApp()->createNode(args);
+        if (!tNode) {
+            throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_OFX_TRANSFORM)).toStdString());
+        }
+        tNode->setNodeDisabled(true);
+        _imp->transformNode = tNode;
+
+        output->connectInput(tNode, 0);
+        NodePtr cpNode = _imp->cornerPinNode.lock();
+        tNode->connectInput(cpNode, 0);
+        cpNode->connectInput(input, 0);
+    }
+    
+    // Initialize transform nodes now because they need to link to some of the Transform/CornerPin node
+    // knobs.
+    initializeTransformPageKnobs(_imp->transformPageKnob.lock());
+} // setupInitialSubGraphState
 
 void
-TrackerNode::initializeKnobs()
+TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
 {
-    TrackerContextPtr context = getNode()->getTrackerContext();
-    KnobPagePtr trackingPage = context->getTrackingPageKnob();
-    KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamAddTrackLabel) );
 
-    addMarker->setName(kTrackerUIParamAddTrack);
-    addMarker->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
-    addMarker->setEvaluateOnChange(false);
-    addMarker->setCheckable(true);
-    addMarker->setDefaultValue(false);
-    addMarker->setSecret(true);
-    addMarker->setIconLabel(NATRON_IMAGES_PATH "addTrack.png");
-    addOverlaySlaveParam(addMarker);
-    trackingPage->addKnob(addMarker);
-    _imp->ui->addTrackButton = addMarker;
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
-    KnobButtonPtr trackBw = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackBWLabel) );
-    trackBw->setName(kTrackerUIParamTrackBW);
-    trackBw->setHintToolTip( tr(kTrackerUIParamTrackBWHint) );
-    trackBw->setEvaluateOnChange(false);
-    trackBw->setCheckable(true);
-    trackBw->setDefaultValue(false);
-    trackBw->setSecret(true);
-    trackBw->setInViewerContextCanHaveShortcut(true);
-    trackBw->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOn.png", true);
-    trackBw->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOff.png", false);
-    trackingPage->addKnob(trackBw);
-    _imp->ui->trackBwButton = trackBw;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamAddTrackLabel) );
 
-    KnobButtonPtr trackPrev = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackPreviousLabel) );
-    trackPrev->setName(kTrackerUIParamTrackPrevious);
-    trackPrev->setHintToolTip( tr(kTrackerUIParamTrackPreviousHint) );
-    trackPrev->setEvaluateOnChange(false);
-    trackPrev->setSecret(true);
-    trackPrev->setInViewerContextCanHaveShortcut(true);
-    trackPrev->setIconLabel(NATRON_IMAGES_PATH "trackPrev.png");
-    trackingPage->addKnob(trackPrev);
-    _imp->ui->trackPrevButton = trackPrev;
+        param->setName(kTrackerUIParamAddTrack);
+        param->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        param->setSecret(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "addTrack.png");
+        addOverlaySlaveParam(param);
+        trackingPage->addKnob(param);
+        _imp->ui->addTrackButton = param;
+    }
 
-    KnobButtonPtr stopTracking = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamStopTrackingLabel) );
-    stopTracking->setName(kTrackerUIParamStopTracking);
-    stopTracking->setHintToolTip( tr(kTrackerUIParamStopTrackingHint) );
-    stopTracking->setEvaluateOnChange(false);
-    stopTracking->setSecret(true);
-    stopTracking->setInViewerContextCanHaveShortcut(true);
-    stopTracking->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png");
-    trackingPage->addKnob(stopTracking);
-    _imp->ui->stopTrackingButton = stopTracking;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackBWLabel) );
+        param->setName(kTrackerUIParamTrackBW);
+        param->setHintToolTip( tr(kTrackerUIParamTrackBWHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOn.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOff.png", false);
+        trackingPage->addKnob(param);
+        _imp->ui->trackBwButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackPreviousLabel) );
+        param->setName(kTrackerUIParamTrackPrevious);
+        param->setHintToolTip( tr(kTrackerUIParamTrackPreviousHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackPrev.png");
+        trackingPage->addKnob(param);
+        _imp->ui->trackPrevButton = param;
+    }
 
-    KnobButtonPtr trackNext = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackNextLabel) );
-    trackNext->setName(kTrackerUIParamTrackNext);
-    trackNext->setHintToolTip( tr(kTrackerUIParamTrackNextHint) );
-    trackNext->setEvaluateOnChange(false);
-    trackNext->setSecret(true);
-    trackNext->setInViewerContextCanHaveShortcut(true);
-    trackNext->setIconLabel(NATRON_IMAGES_PATH "trackNext.png");
-    trackingPage->addKnob(trackNext);
-    _imp->ui->trackNextButton = trackNext;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamStopTrackingLabel) );
+        param->setName(kTrackerUIParamStopTracking);
+        param->setHintToolTip( tr(kTrackerUIParamStopTrackingHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png");
+        trackingPage->addKnob(param);
+        _imp->ui->stopTrackingButton = param;
+    }
 
-    KnobButtonPtr trackFw = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackFWLabel) );
-    trackFw->setName(kTrackerUIParamTrackFW);
-    trackFw->setHintToolTip( tr(kTrackerUIParamTrackFWHint) );
-    trackFw->setEvaluateOnChange(false);
-    trackFw->setCheckable(true);
-    trackFw->setDefaultValue(false);
-    trackFw->setSecret(true);
-    trackFw->setInViewerContextCanHaveShortcut(true);
-    trackFw->setIconLabel(NATRON_IMAGES_PATH "trackForwardOn.png", true);
-    trackFw->setIconLabel(NATRON_IMAGES_PATH "trackForwardOff.png", false);
-    trackingPage->addKnob(trackFw);
-    _imp->ui->trackFwButton = trackFw;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackNextLabel) );
+        param->setName(kTrackerUIParamTrackNext);
+        param->setHintToolTip( tr(kTrackerUIParamTrackNextHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackNext.png");
+        trackingPage->addKnob(param);
+        _imp->ui->trackNextButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackFWLabel) );
+        param->setName(kTrackerUIParamTrackFW);
+        param->setHintToolTip( tr(kTrackerUIParamTrackFWHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackForwardOn.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackForwardOff.png", false);
+        trackingPage->addKnob(param);
+        _imp->ui->trackFwButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeLabel) );
+        param->setName(kTrackerUIParamTrackRange);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackRange.png");
+        trackingPage->addKnob(param);
+        _imp->ui->trackRangeButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackAllKeyframesLabel) );
+        param->setName(kTrackerUIParamTrackAllKeyframes);
+        param->setHintToolTip( tr(kTrackerUIParamTrackAllKeyframesHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackAllKeyframes.png");
+        trackingPage->addKnob(param);
+        _imp->ui->trackAllKeyframesButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackCurrentKeyframeLabel) );
+        param->setName(kTrackerUIParamTrackCurrentKeyframe);
+        param->setHintToolTip( tr(kTrackerUIParamTrackCurrentKeyframeHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "trackCurrentKeyframe.png");
+        trackingPage->addKnob(param);
+        _imp->ui->trackCurrentKeyframeButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamSetPatternKeyFrameLabel) );
+        param->setName(kTrackerUIParamSetPatternKeyFrame);
+        param->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
+        trackingPage->addKnob(param);
+        _imp->ui->setKeyFrameButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
+        param->setName(kTrackerUIParamRemovePatternKeyFrame);
+        param->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
+        trackingPage->addKnob(param);
+        _imp->ui->removeKeyFrameButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAllAnimationLabel) );
+        param->setName(kTrackerUIParamClearAllAnimation);
+        param->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimation.png");
+        trackingPage->addKnob(param);
+        _imp->ui->clearAllAnimationButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAnimationBwLabel) );
+        param->setName(kTrackerUIParamClearAnimationBw);
+        param->setHintToolTip( tr(kTrackerUIParamClearAnimationBwHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimationBw.png");
+        trackingPage->addKnob(param);
+        _imp->ui->clearBwAnimationButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAnimationFwLabel) );
+        param->setName(kTrackerUIParamClearAnimationFw);
+        param->setHintToolTip( tr(kTrackerUIParamClearAnimationFwHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimationFw.png");
+        trackingPage->addKnob(param);
+        _imp->ui->clearFwAnimationButton = param;
+    }
 
-    KnobButtonPtr trackRange = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeLabel) );
-    trackRange->setName(kTrackerUIParamTrackRange);
-    trackRange->setHintToolTip( tr(kTrackerUIParamTrackRangeHint) );
-    trackRange->setEvaluateOnChange(false);
-    trackRange->setSecret(true);
-    trackRange->setInViewerContextCanHaveShortcut(true);
-    trackRange->setIconLabel(NATRON_IMAGES_PATH "trackRange.png");
-    trackingPage->addKnob(trackRange);
-    _imp->ui->trackRangeButton = trackRange;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRefreshViewerLabel) );
+        param->setName(kTrackerUIParamRefreshViewer);
+        param->setHintToolTip( tr(kTrackerUIParamRefreshViewerHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(true);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
+        trackingPage->addKnob(param);
+        _imp->ui->updateViewerButton = param;
+    }
 
-    KnobButtonPtr trackAllKeys = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackAllKeyframesLabel) );
-    trackAllKeys->setName(kTrackerUIParamTrackAllKeyframes);
-    trackAllKeys->setHintToolTip( tr(kTrackerUIParamTrackAllKeyframesHint) );
-    trackAllKeys->setEvaluateOnChange(false);
-    trackAllKeys->setSecret(true);
-    trackAllKeys->setInViewerContextCanHaveShortcut(true);
-    trackAllKeys->setIconLabel(NATRON_IMAGES_PATH "trackAllKeyframes.png");
-    trackingPage->addKnob(trackAllKeys);
-    _imp->ui->trackAllKeyframesButton = trackAllKeys;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamCenterViewerLabel) );
+        param->setName(kTrackerUIParamCenterViewer);
+        param->setHintToolTip( tr(kTrackerUIParamCenterViewerHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "centerOnTrack.png");
+        trackingPage->addKnob(param);
+        _imp->ui->centerViewerButton = param;
+    }
 
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamCreateKeyOnMoveLabel) );
+        param->setName(kTrackerUIParamCreateKeyOnMove);
+        param->setHintToolTip( tr(kTrackerUIParamCreateKeyOnMoveHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(true);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOn.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOff.png", false);
+        trackingPage->addKnob(param);
+        _imp->ui->createKeyOnMoveButton = param;
+    }
 
-    KnobButtonPtr trackCurKey = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackCurrentKeyframeLabel) );
-    trackCurKey->setName(kTrackerUIParamTrackCurrentKeyframe);
-    trackCurKey->setHintToolTip( tr(kTrackerUIParamTrackCurrentKeyframeHint) );
-    trackCurKey->setEvaluateOnChange(false);
-    trackCurKey->setSecret(true);
-    trackCurKey->setInViewerContextCanHaveShortcut(true);
-    trackCurKey->setIconLabel(NATRON_IMAGES_PATH "trackCurrentKeyframe.png");
-    trackingPage->addKnob(trackCurKey);
-    _imp->ui->trackCurrentKeyframeButton = trackCurKey;
-
-
-    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamSetPatternKeyFrameLabel) );
-    addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
-    addKeyframe->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
-    addKeyframe->setEvaluateOnChange(false);
-    addKeyframe->setSecret(true);
-    addKeyframe->setInViewerContextCanHaveShortcut(true);
-    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
-    trackingPage->addKnob(addKeyframe);
-    _imp->ui->setKeyFrameButton = addKeyframe;
-
-    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
-    removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
-    removeKeyframe->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
-    removeKeyframe->setEvaluateOnChange(false);
-    removeKeyframe->setSecret(true);
-    removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
-    trackingPage->addKnob(removeKeyframe);
-    _imp->ui->removeKeyFrameButton = removeKeyframe;
-
-    KnobButtonPtr clearAllAnimation = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAllAnimationLabel) );
-    clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
-    clearAllAnimation->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
-    clearAllAnimation->setEvaluateOnChange(false);
-    clearAllAnimation->setSecret(true);
-    clearAllAnimation->setInViewerContextCanHaveShortcut(true);
-    clearAllAnimation->setIconLabel(NATRON_IMAGES_PATH "clearAnimation.png");
-    trackingPage->addKnob(clearAllAnimation);
-    _imp->ui->clearAllAnimationButton = clearAllAnimation;
-
-    KnobButtonPtr clearBackwardAnim = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAnimationBwLabel) );
-    clearBackwardAnim->setName(kTrackerUIParamClearAnimationBw);
-    clearBackwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationBwHint) );
-    clearBackwardAnim->setEvaluateOnChange(false);
-    clearBackwardAnim->setSecret(true);
-    clearBackwardAnim->setInViewerContextCanHaveShortcut(true);
-    clearBackwardAnim->setIconLabel(NATRON_IMAGES_PATH "clearAnimationBw.png");
-    trackingPage->addKnob(clearBackwardAnim);
-    _imp->ui->clearBwAnimationButton = clearBackwardAnim;
-
-    KnobButtonPtr clearForwardAnim = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamClearAnimationFwLabel) );
-    clearForwardAnim->setName(kTrackerUIParamClearAnimationFw);
-    clearForwardAnim->setHintToolTip( tr(kTrackerUIParamClearAnimationFwHint) );
-    clearForwardAnim->setEvaluateOnChange(false);
-    clearForwardAnim->setSecret(true);
-    clearForwardAnim->setInViewerContextCanHaveShortcut(true);
-    clearForwardAnim->setIconLabel(NATRON_IMAGES_PATH "clearAnimationFw.png");
-    trackingPage->addKnob(clearForwardAnim);
-    _imp->ui->clearFwAnimationButton = clearForwardAnim;
-
-    KnobButtonPtr updateViewer = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRefreshViewerLabel) );
-    updateViewer->setName(kTrackerUIParamRefreshViewer);
-    updateViewer->setHintToolTip( tr(kTrackerUIParamRefreshViewerHint) );
-    updateViewer->setEvaluateOnChange(false);
-    updateViewer->setCheckable(true);
-    updateViewer->setDefaultValue(true);
-    updateViewer->setSecret(true);
-    updateViewer->setInViewerContextCanHaveShortcut(true);
-    updateViewer->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
-    updateViewer->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
-    trackingPage->addKnob(updateViewer);
-    _imp->ui->updateViewerButton = updateViewer;
-
-    KnobButtonPtr centerViewer = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamCenterViewerLabel) );
-    centerViewer->setName(kTrackerUIParamCenterViewer);
-    centerViewer->setHintToolTip( tr(kTrackerUIParamCenterViewerHint) );
-    centerViewer->setEvaluateOnChange(false);
-    centerViewer->setCheckable(true);
-    centerViewer->setDefaultValue(false);
-    centerViewer->setSecret(true);
-    centerViewer->setInViewerContextCanHaveShortcut(true);
-    centerViewer->setIconLabel(NATRON_IMAGES_PATH "centerOnTrack.png");
-    trackingPage->addKnob(centerViewer);
-    _imp->ui->centerViewerButton = centerViewer;
-
-    KnobButtonPtr createKeyOnMove = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamCreateKeyOnMoveLabel) );
-    createKeyOnMove->setName(kTrackerUIParamCreateKeyOnMove);
-    createKeyOnMove->setHintToolTip( tr(kTrackerUIParamCreateKeyOnMoveHint) );
-    createKeyOnMove->setEvaluateOnChange(false);
-    createKeyOnMove->setCheckable(true);
-    createKeyOnMove->setDefaultValue(true);
-    createKeyOnMove->setSecret(true);
-    createKeyOnMove->setInViewerContextCanHaveShortcut(true);
-    createKeyOnMove->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOn.png", true);
-    createKeyOnMove->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOff.png", false);
-    trackingPage->addKnob(createKeyOnMove);
-    _imp->ui->createKeyOnMoveButton = createKeyOnMove;
-
-    KnobButtonPtr showError = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamShowErrorLabel) );
-    showError->setName(kTrackerUIParamShowError);
-    showError->setHintToolTip( tr(kTrackerUIParamShowErrorHint) );
-    showError->setEvaluateOnChange(false);
-    showError->setCheckable(true);
-    showError->setDefaultValue(false);
-    showError->setSecret(true);
-    showError->setInViewerContextCanHaveShortcut(true);
-    addOverlaySlaveParam(showError);
-    showError->setIconLabel(NATRON_IMAGES_PATH "showTrackError.png", true);
-    showError->setIconLabel(NATRON_IMAGES_PATH "hideTrackError.png", false);
-    trackingPage->addKnob(showError);
-    _imp->ui->showCorrelationButton = showError;
-
-
-
-    KnobButtonPtr resetOffset = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetOffsetLabel) );
-    resetOffset->setName(kTrackerUIParamResetOffset);
-    resetOffset->setHintToolTip( tr(kTrackerUIParamResetOffsetHint) );
-    resetOffset->setEvaluateOnChange(false);
-    resetOffset->setSecret(true);
-    resetOffset->setInViewerContextCanHaveShortcut(true);
-    addOverlaySlaveParam(resetOffset);
-    resetOffset->setIconLabel(NATRON_IMAGES_PATH "resetTrackOffset.png");
-    trackingPage->addKnob(resetOffset);
-    _imp->ui->resetOffsetButton = resetOffset;
-
-    KnobButtonPtr resetTrack = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamResetTrackLabel) );
-    resetTrack->setName(kTrackerUIParamResetTrack);
-    resetTrack->setHintToolTip( tr(kTrackerUIParamResetTrackHint) );
-    resetTrack->setEvaluateOnChange(false);
-    resetTrack->setSecret(true);
-    resetTrack->setInViewerContextCanHaveShortcut(true);
-    addOverlaySlaveParam(resetTrack);
-    resetTrack->setIconLabel(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
-    trackingPage->addKnob(resetTrack);
-    _imp->ui->resetTrackButton = resetTrack;
-
-    KnobIntPtr magWindow = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamMagWindowSizeLabel) );
-    magWindow->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
-    magWindow->setName(kTrackerUIParamMagWindowSize);
-    magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
-    magWindow->setEvaluateOnChange(false);
-    magWindow->setDefaultValue(200);
-    magWindow->setMinimum(10);
-    magWindow->setMaximum(10000);
-    magWindow->disableSlider();
-    addOverlaySlaveParam(magWindow);
-    trackingPage->addKnob(magWindow);
-    _imp->ui->magWindowPxSizeKnob = magWindow;
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamShowErrorLabel) );
+        param->setName(kTrackerUIParamShowError);
+        param->setHintToolTip( tr(kTrackerUIParamShowErrorHint) );
+        param->setEvaluateOnChange(false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        addOverlaySlaveParam(param);
+        param->setIconLabel(NATRON_IMAGES_PATH "showTrackError.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "hideTrackError.png", false);
+        trackingPage->addKnob(param);
+        _imp->ui->showCorrelationButton = param;
+    }
 
 
-    KnobSeparatorPtr trackTableSeparator = AppManager::createKnob<KnobSeparator>(shared_from_this(), tr(""));
-    trackTableSeparator->setName("trackTableSep");
-    trackingPage->addKnob(trackTableSeparator);
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamResetOffsetLabel) );
+        param->setName(kTrackerUIParamResetOffset);
+        param->setHintToolTip( tr(kTrackerUIParamResetOffsetHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        addOverlaySlaveParam(param);
+        param->setIconLabel(NATRON_IMAGES_PATH "resetTrackOffset.png");
+        trackingPage->addKnob(param);
+        _imp->ui->resetOffsetButton = param;
+    }
 
-    addKnobToViewerUI(addMarker);
-    addMarker->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(trackBw);
-    trackBw->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(trackPrev);
-    trackPrev->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(trackNext);
-    trackNext->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(trackFw);
-    trackFw->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(trackRange);
-    trackRange->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(trackAllKeys);
-    trackAllKeys->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(trackCurKey);
-    trackCurKey->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(addKeyframe);
-    addKeyframe->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(removeKeyframe);
-    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(clearAllAnimation);
-    clearAllAnimation->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(clearBackwardAnim);
-    clearBackwardAnim->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(clearForwardAnim);
-    clearForwardAnim->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(updateViewer);
-    updateViewer->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(centerViewer);
-    centerViewer->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(createKeyOnMove);
-    addKnobToViewerUI(showError);
-    showError->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(resetOffset);
-    resetOffset->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(resetTrack);
-    resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
-    addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
-    addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
-    KnobChoicePtr defMotionModelKnob = context->getDefaultMotionModelKnob();
-    addKnobToViewerUI(defMotionModelKnob);
-    defMotionModelKnob->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamResetTrackLabel) );
+        param->setName(kTrackerUIParamResetTrack);
+        param->setHintToolTip( tr(kTrackerUIParamResetTrackHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setInViewerContextCanHaveShortcut(true);
+        addOverlaySlaveParam(param);
+        param->setIconLabel(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
+        trackingPage->addKnob(param);
+        _imp->ui->resetTrackButton = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamMagWindowSizeLabel) );
+        param->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
+        param->setName(kTrackerUIParamMagWindowSize);
+        param->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(200);
+        param->setRange(10, 10000);
+        param->disableSlider();
+        addOverlaySlaveParam(param);
+        trackingPage->addKnob(param);
+        _imp->ui->magWindowPxSizeKnob = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel), 1, false);
+        param->setName(kTrackerUIParamDefaultMarkerPatternWinSize);
+        param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel));
+        param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerPatternWinSizeHint) );
+        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "patternSize.png");
+        param->setAnimationEnabled(false);
+        param->setRange(1, INT_MAX);
+        param->disableSlider();
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(21);
+        param->setSecret(true);
+        trackingPage->addKnob(param);
+        _imp->ui->defaultPatternWinSize = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel), 1, false);
+        param->setName(kTrackerUIParamDefaultMarkerSearchWinSize);
+        param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel));
+        param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerSearchWinSizeHint) );
+        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "searchSize.png");
+        param->setAnimationEnabled(false);
+        param->setRange(1, INT_MAX);
+        param->disableSlider();
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setDefaultValue(71);
+        trackingPage->addKnob(param);
+        _imp->ui->defaultSearchWinSize = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(""), 1, false);
+        param->setName(kTrackerUIParamDefaultMotionModel);
+        param->setAnimationEnabled(false);
+        {
+            std::vector<std::string> choices, helps;
+            std::map<int, std::string> icons;
+            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &helps, &icons);
+            param->populateChoices(choices, helps);
+            param->setIcons(icons);
+        }
+        param->setSecret(true);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->ui->defaultMotionModel = param;
+    }
+    
+    addKnobToViewerUI(_imp->ui->addTrackButton.lock());
+    _imp->ui->addTrackButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->trackBwButton.lock());
+    _imp->ui->trackBwButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->trackPrevButton.lock());
+    _imp->ui->trackPrevButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->trackNextButton.lock());
+    _imp->ui->trackNextButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->trackFwButton.lock());
+    _imp->ui->trackFwButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->trackRangeButton.lock());
+    _imp->ui->trackRangeButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->trackAllKeyframesButton.lock());
+    _imp->ui->trackAllKeyframesButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->trackCurrentKeyframeButton.lock());
+    _imp->ui->trackCurrentKeyframeButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->setKeyFrameButton.lock());
+    _imp->ui->setKeyFrameButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->removeKeyFrameButton.lock());
+    _imp->ui->removeKeyFrameButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->clearAllAnimationButton.lock());
+    _imp->ui->clearAllAnimationButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->clearBwAnimationButton.lock());
+    _imp->ui->clearBwAnimationButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->clearFwAnimationButton.lock());
+    _imp->ui->clearFwAnimationButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->updateViewerButton.lock());
+    _imp->ui->updateViewerButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->centerViewerButton.lock());
+    _imp->ui->centerViewerButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->createKeyOnMoveButton.lock());
+    addKnobToViewerUI(_imp->ui->showCorrelationButton.lock());
+    _imp->ui->showCorrelationButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->resetOffsetButton.lock());
+    _imp->ui->resetOffsetButton.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->ui->resetTrackButton.lock());
+    _imp->ui->resetTrackButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(_imp->ui->defaultPatternWinSize.lock());
+    addKnobToViewerUI(_imp->ui->defaultSearchWinSize.lock());
+    addKnobToViewerUI(_imp->ui->defaultMotionModel.lock());
+    _imp->ui->defaultMotionModel.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeStretchAfter);
 
 
-    context->setUpdateViewer( updateViewer->getValue() );
-    context->setCenterOnTrack( centerViewer->getValue() );
+} // initializeViewerUIKnobs
 
-    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
-    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), _imp->ui.get(), SLOT(onContextSelectionChanged(int)) );
-    QObject::connect( context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeSetOnTrack(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(keyframeRemovedOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeRemovedOnTrack(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(allKeyframesRemovedOnTrack(TrackMarkerPtr)), _imp->ui.get(), SLOT(onAllKeyframesRemovedOnTrack(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(trackingFinished()), _imp->ui.get(), SLOT(onTrackingEnded()) );
-    QObject::connect( context.get(), SIGNAL(trackingStarted(int)), _imp->ui.get(), SLOT(onTrackingStarted(int)) );
+void
+TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
+{
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
+
+    // Track range dialog
+    KnobGroupPtr dialog = AppManager::createKnob<KnobGroup>( thisShared, tr(kTrackerUIParamTrackRangeDialogLabel) );
+    dialog->setName(kTrackerUIParamTrackRangeDialog);
+    dialog->setSecret(true);
+    dialog->setEvaluateOnChange(false);
+    dialog->setDefaultValue(false);
+    dialog->setIsPersistent(false);
+    dialog->setAsDialog(true);
+    trackingPage->addKnob(dialog);
+    _imp->ui->trackRangeDialogGroup = dialog;
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
+        param->setName(kTrackerUIParamTrackRangeDialogFirstFrame);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setIsPersistent(false);
+        param->setDefaultValue(INT_MIN);
+        dialog->addKnob(param);
+        _imp->ui->trackRangeDialogFirstFrame = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
+        param->setName(kTrackerUIParamTrackRangeDialogLastFrame);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setIsPersistent(false);
+        param->setDefaultValue(INT_MIN);
+        dialog->addKnob(param);
+        _imp->ui->trackRangeDialogLastFrame = param;
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogStepLabel) );
+        param->setName(kTrackerUIParamTrackRangeDialogStep);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setIsPersistent(false);
+        param->setDefaultValue(INT_MIN);
+        dialog->addKnob(param);
+        _imp->ui->trackRangeDialogStep = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
+        param->setName(kTrackerUIParamTrackRangeDialogOkButton);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
+        param->setSecret(true);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        param->setSpacingBetweenItems(3);
+        param->setIsPersistent(false);
+        dialog->addKnob(param);
+        _imp->ui->trackRangeDialogOkButton = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
+        param->setName(kTrackerUIParamTrackRangeDialogCancelButton);
+        param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
+        param->setSecret(true);
+        param->setEvaluateOnChange(false);
+        dialog->addKnob(param);
+        _imp->ui->trackRangeDialogCancelButton = param;
+    }
+} // initializeTrackRangeDialogKnobs
+
+void
+TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
+{
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
     // Right click menu
-    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kTrackerUIParamRightClickMenu) );
+    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kTrackerUIParamRightClickMenu) );
     rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     trackingPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
+
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionSelectAllTracks);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -444,7 +670,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->selectAllTracksMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionRemoveTracks);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -454,7 +680,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->removeTracksMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeBottom);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -464,7 +690,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnBottomMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeLeft);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -474,7 +700,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnLeftMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeRight);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -484,7 +710,7 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnRightMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
         action->setName(kTrackerUIParamRightClickMenuActionNudgeTop);
         action->setSecret(true);
         action->setEvaluateOnChange(false);
@@ -494,94 +720,677 @@ TrackerNode::initializeKnobs()
         _imp->ui->nudgeTracksOnTopMenuAction = action;
     }
 
+} // initializeRightClickMenuKnobs
 
-    // Track range dialog
-    KnobGroupPtr trackRangeDialog = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLabel) );
-    trackRangeDialog->setName(kTrackerUIParamTrackRangeDialog);
-    trackRangeDialog->setSecret(true);
-    trackRangeDialog->setEvaluateOnChange(false);
-    trackRangeDialog->setDefaultValue(false);
-    trackRangeDialog->setIsPersistent(false);
-    trackRangeDialog->setAsDialog(true);
-    trackingPage->addKnob(trackRangeDialog);
-    _imp->ui->trackRangeDialogGroup = trackRangeDialog;
 
-    KnobIntPtr trackRangeDialogFirstFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
-    trackRangeDialogFirstFrame->setName(kTrackerUIParamTrackRangeDialogFirstFrame);
-    trackRangeDialogFirstFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
-    trackRangeDialogFirstFrame->setSecret(true);
-    trackRangeDialogFirstFrame->setEvaluateOnChange(false);
-    trackRangeDialogFirstFrame->setAnimationEnabled(false);
-    trackRangeDialogFirstFrame->setIsPersistent(false);
-    trackRangeDialogFirstFrame->setDefaultValue(INT_MIN);
-    trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
-    _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
+/**
+ * @brief Creates a duplicate of the knob identified by knobName which is a knob in the internalNode onto the effect and add it to the given page.
+ * If otherNode is set, also fetch a knob of the given name on the otherNode and link it to the newly created knob.
+ **/
 
-    KnobIntPtr trackRangeDialogLastFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
-    trackRangeDialogLastFrame->setName(kTrackerUIParamTrackRangeDialogLastFrame);
-    trackRangeDialogLastFrame->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
-    trackRangeDialogLastFrame->setSecret(true);
-    trackRangeDialogLastFrame->setEvaluateOnChange(false);
-    trackRangeDialogLastFrame->setAnimationEnabled(false);
-    trackRangeDialogLastFrame->setIsPersistent(false);
-    trackRangeDialogLastFrame->setDefaultValue(INT_MIN);
-    trackRangeDialog->addKnob(trackRangeDialogLastFrame);
-    _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
+template <typename KNOBTYPE>
+boost::shared_ptr<KNOBTYPE>
+createDuplicateKnob( const std::string& knobName,
+                    const NodePtr& internalNode,
+                    const EffectInstancePtr& effect,
+                    const KnobPagePtr& page = KnobPagePtr(),
+                    const KnobGroupPtr& group = KnobGroupPtr(),
+                    const NodePtr& otherNode = NodePtr() )
+{
+    KnobIPtr internalNodeKnob = internalNode->getKnobByName(knobName);
 
-    KnobIntPtr trackRangeDialogFrameStep = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogStepLabel) );
-    trackRangeDialogFrameStep->setName(kTrackerUIParamTrackRangeDialogStep);
-    trackRangeDialogFrameStep->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
-    trackRangeDialogFrameStep->setSecret(true);
-    trackRangeDialogFrameStep->setEvaluateOnChange(false);
-    trackRangeDialogFrameStep->setAnimationEnabled(false);
-    trackRangeDialogFrameStep->setIsPersistent(false);
-    trackRangeDialogFrameStep->setDefaultValue(INT_MIN);
-    trackRangeDialog->addKnob(trackRangeDialogFrameStep);
-    _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
+    if (!internalNodeKnob) {
+        return boost::shared_ptr<KNOBTYPE>();
+    }
+    assert(internalNodeKnob);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
-    KnobButtonPtr trackRangeDialogOkButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
-    trackRangeDialogOkButton->setName(kTrackerUIParamTrackRangeDialogOkButton);
-    trackRangeDialogOkButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
-    trackRangeDialogOkButton->setSecret(true);
-    trackRangeDialogOkButton->setAddNewLine(false);
-    trackRangeDialogOkButton->setEvaluateOnChange(false);
-    trackRangeDialogOkButton->setSpacingBetweenItems(3);
-    trackRangeDialogOkButton->setIsPersistent(false);
-    trackRangeDialog->addKnob(trackRangeDialogOkButton);
-    _imp->ui->trackRangeDialogOkButton = trackRangeDialogOkButton;
+    if (otherNode) {
+        KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
+        assert(otherNodeKnob);
+        otherNodeKnob->slaveTo(duplicateKnob);
+    }
 
-    KnobButtonPtr trackRangeDialogCancelButton = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
-    trackRangeDialogCancelButton->setName(kTrackerUIParamTrackRangeDialogCancelButton);
-    trackRangeDialogCancelButton->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
-    trackRangeDialogCancelButton->setSecret(true);
-    trackRangeDialogCancelButton->setEvaluateOnChange(false);
-    trackRangeDialog->addKnob(trackRangeDialogCancelButton);
-    _imp->ui->trackRangeDialogCancelButton = trackRangeDialogCancelButton;
+    return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
+} // createDuplicateKnob
+
+void
+TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
+{
+
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
+
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamUsePatternMatchingLabel), 1);
+        param->setName(kTrackerParamUsePatternMatching);
+        param->setHintToolTip( tr(kTrackerParamUsePatternMatchingHint) );
+        param->setDefaultValue(false);
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->usePatternMatching = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamPatternMatchingScoreTypeLabel), 1, false);
+        param->setName(kTrackerParamPatternMatchingScoreType);
+        param->setHintToolTip( tr(kTrackerParamPatternMatchingScoreTypeHint) );
+        {
+            std::vector<std::string> choices, helps;
+            choices.push_back(kTrackerParamPatternMatchingScoreOptionSSD);
+            helps.push_back(kTrackerParamPatternMatchingScoreOptionSSDHint);
+            choices.push_back(kTrackerParamPatternMatchingScoreOptionSAD);
+            helps.push_back(kTrackerParamPatternMatchingScoreOptionSADHint);
+            choices.push_back(kTrackerParamPatternMatchingScoreOptionNCC);
+            helps.push_back(kTrackerParamPatternMatchingScoreOptionNCCHint);
+            choices.push_back(kTrackerParamPatternMatchingScoreOptionZNCC);
+            helps.push_back(kTrackerParamPatternMatchingScoreOptionZNCCHint);
+            param->populateChoices(choices, helps);
+        }
+        param->setDefaultValue(1); // SAD
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->patternMatchingScore = param;
+    }
+#endif // NATRON_TRACKER_ENABLE_TRACKER_PM
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackRedLabel), 1, false);
+        param->setName(kTrackerParamTrackRed);
+        param->setHintToolTip( tr(kTrackerParamTrackRedHint) );
+        param->setDefaultValue(true);
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->enableTrackRed = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackGreenLabel), 1, false);
+        param->setName(kTrackerParamTrackGreen);
+        param->setHintToolTip( tr(kTrackerParamTrackGreenHint) );
+        param->setDefaultValue(true);
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->enableTrackGreen = param;
+    }
+
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackBlueLabel), 1, false);
+        param->setName(kTrackerParamTrackBlue);
+        param->setHintToolTip( tr(kTrackerParamTrackBlueHint) );
+        param->setDefaultValue(true);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->enableTrackBlue = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamMaxErrorLabel), 1, false);
+        param->setName(kTrackerParamMaxError);
+        param->setHintToolTip( tr(kTrackerParamMaxErrorHint) );
+        param->setAnimationEnabled(false);
+        param->setRange(0., 1.);
+        param->setDefaultValue(0.25);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->maxError = param;
+    }
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamMaximumIterationLabel), 1, false);
+        param->setName(kTrackerParamMaximumIteration);
+        param->setHintToolTip( tr(kTrackerParamMaximumIterationHint) );
+        param->setAnimationEnabled(false);
+        param->setRange(0, 150);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(50);
+        trackingPage->addKnob(param);
+        _imp->maxIterations = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamBruteForcePreTrackLabel), 1, false);
+        param->setName(kTrackerParamBruteForcePreTrack);
+        param->setHintToolTip( tr(kTrackerParamBruteForcePreTrackHint) );
+        param->setDefaultValue(true);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        trackingPage->addKnob(param);
+        _imp->bruteForcePreTrack = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamNormalizeIntensitiesLabel), 1, false);
+        param->setName(kTrackerParamNormalizeIntensities);
+        param->setHintToolTip( tr(kTrackerParamNormalizeIntensitiesHint) );
+        param->setDefaultValue(false);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->useNormalizedIntensities = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamPreBlurSigmaLabel), 1, false);
+        param->setName(kTrackerParamPreBlurSigma);
+        param->setHintToolTip( tr(kTrackerParamPreBlurSigmaHint) );
+        param->setAnimationEnabled(false);
+        param->setRange(0, 10.);
+        param->setDefaultValue(0.9);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->preBlurSigma = param;
+    }
+
+    {
+        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(thisShared, tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);
+        param->setName(kTrackerParamPerTrackParamsSeparator);
+        trackingPage->addKnob(param);
+        _imp->perTrackParamsSeparator = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamEnabledLabel), 1, false);
+        param->setName(kTrackerParamEnabled);
+        param->setHintToolTip( tr(kTrackerParamEnabledHint) );
+        param->setAnimationEnabled(true);
+        param->setDefaultValue(true);
+        param->setEvaluateOnChange(false);
+        param->setEnabled(false);
+        param->setAddNewLine(false);
+        trackingPage->addKnob(param);
+        _imp->activateTrack = param;
+        _imp->knobsTable->addPerItemKnobMaster(param);
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamAutoKeyEnabledLabel), 1, false);
+        param->setName(kTrackerParamAutoKeyEnabled);
+        param->setHintToolTip( tr(kTrackerParamAutoKeyEnabledHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(false);
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->autoKeyEnabled = param;
+    }
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamMotionModelLabel), 1, false);
+        param->setName(kTrackerParamMotionModel);
+        param->setHintToolTip( tr(kTrackerParamMotionModelHint) );
+        {
+            std::vector<std::string> choices, helps;
+            std::map<int, std::string> icons;
+            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &helps, &icons);
+            param->populateChoices(choices, helps);
+            param->setIcons(icons);
+        }
+        param->setEnabled(false);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        _imp->motionModel = param;
+        trackingPage->addKnob(param);
+    }
+} // initializeTrackingPageKnobs
+
+void
+TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
+{
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
+
+    {
+        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr("Transform Generation"), 3);
+        transformPage->addKnob(param);
+        _imp->transformGenerationSeparator = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamMotionTypeLabel), 1);
+        param->setName(kTrackerParamMotionType);
+        param->setHintToolTip( tr(kTrackerParamMotionTypeHint) );
+        {
+            std::vector<std::string> choices, helps;
+            choices.push_back(kTrackerParamMotionTypeNone);
+            helps.push_back(kTrackerParamMotionTypeNoneHelp);
+            choices.push_back(kTrackerParamMotionTypeStabilize);
+            helps.push_back(kTrackerParamMotionTypeStabilizeHelp);
+            choices.push_back(kTrackerParamMotionTypeMatchMove);
+            helps.push_back(kTrackerParamMotionTypeMatchMoveHelp);
+            choices.push_back(kTrackerParamMotionTypeRemoveJitter);
+            helps.push_back(kTrackerParamMotionTypeRemoveJitterHelp);
+            choices.push_back(kTrackerParamMotionTypeAddJitter);
+            helps.push_back(kTrackerParamMotionTypeAddJitterHelp);
+
+            param->populateChoices(choices, helps);
+        }
+        param->setAddNewLine(false);
+        _imp->motionType = param;
+        transformPage->addKnob(param);
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamTransformTypeLabel), 1);
+        param->setName(kTrackerParamTransformType);
+        param->setHintToolTip( tr(kTrackerParamTransformTypeHint) );
+        {
+            std::vector<std::string> choices, helps;
+            choices.push_back(kTrackerParamTransformTypeTransform);
+            helps.push_back(kTrackerParamTransformTypeTransformHelp);
+            choices.push_back(kTrackerParamTransformTypeCornerPin);
+            helps.push_back(kTrackerParamTransformTypeCornerPinHelp);
+
+            param->populateChoices(choices, helps);
+        }
+        param->setDefaultValue(1);
+        _imp->transformType = param;
+        transformPage->addKnob(param);
+    }
+
+    {
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamReferenceFrameLabel), 1);
+        param->setName(kTrackerParamReferenceFrame);
+        param->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(0);
+        param->setAddNewLine(false);
+        param->setEvaluateOnChange(false);
+        transformPage->addKnob(param);
+        _imp->referenceFrame = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamSetReferenceFrameLabel), 1);
+        param->setName(kTrackerParamSetReferenceFrame);
+        param->setHintToolTip( tr(kTrackerParamSetReferenceFrameHint) );
+        transformPage->addKnob(param);
+        _imp->setCurrentFrameButton = param;
+    }
+    {
+        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamJitterPeriodLabel), 1);
+        param->setName(kTrackerParamJitterPeriod);
+        param->setHintToolTip( tr(kTrackerParamJitterPeriodHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(10);
+        param->setRange(0, INT_MAX);
+        param->setEvaluateOnChange(false);
+        transformPage->addKnob(param);
+        _imp->jitterPeriod = param;
+    }
+    {
+        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamSmoothLabel), 3);
+        param->setName(kTrackerParamSmooth);
+        param->setHintToolTip( tr(kTrackerParamSmoothHint) );
+        param->setAnimationEnabled(false);
+        param->disableSlider();
+        param->setDimensionName(DimIdx(0), "t");
+        param->setDimensionName(DimIdx(1), "r");
+        param->setDimensionName(DimIdx(2), "s");
+        for (int i = 0; i < 3; ++i) {
+            param->setRange(0, INT_MAX, DimIdx(i));
+        }
+        param->setEvaluateOnChange(false);
+        transformPage->addKnob(param);
+        _imp->smoothTransform = param;
+    }
+    {
+        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamSmoothCornerPinLabel), 1);
+        param->setName(kTrackerParamSmoothCornerPin);
+        param->setHintToolTip( tr(kTrackerParamSmoothCornerPinHint) );
+        param->setAnimationEnabled(false);
+        param->disableSlider();
+        param->setRange(0, INT_MAX);
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        transformPage->addKnob(param);
+        _imp->smoothCornerPin = param;
+    }
+    {
+        KnobBoolPtr  param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamAutoGenerateTransformLabel), 1);
+        param->setName(kTrackerParamAutoGenerateTransform);
+        param->setHintToolTip( tr(kTrackerParamAutoGenerateTransformHint) );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(true);
+        param->setAddNewLine(false);
+        transformPage->addKnob(param);
+        _imp->autoGenerateTransform = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamGenerateTransformLabel), 1);
+        param->setName(kTrackerParamGenerateTransform);
+        param->setHintToolTip( tr(kTrackerParamGenerateTransformHint) );
+        param->setEvaluateOnChange(false);
+        transformPage->addKnob(param);
+        _imp->generateTransformButton = param;
+    }
+    {
+        KnobBoolPtr  param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamRobustModelLabel), 1);
+        param->setName(kTrackerParamRobustModel);
+        param->setHintToolTip( tr(kTrackerParamRobustModelHint) );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(true);
+        param->setAddNewLine(false);
+        transformPage->addKnob(param);
+        _imp->robustModel = param;
+    }
+    {
+        KnobStringPtr  param = AppManager::createKnob<KnobString>(thisShared, tr(kTrackerParamFittingErrorWarningLabel), 1);
+        param->setName(kTrackerParamFittingErrorWarning);
+        param->setHintToolTip( tr(kTrackerParamFittingErrorWarningHint) );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
+        param->setIconLabel("dialog-warning");
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        param->setAsLabel();
+        transformPage->addKnob(param);
+        _imp->fittingErrorWarning = param;
+    }
+    {
+        KnobDoublePtr  param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamFittingErrorLabel), 1);
+        param->setName(kTrackerParamFittingError);
+        param->setHintToolTip( tr(kTrackerParamFittingErrorHint) );
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        param->setEnabled(false);
+        transformPage->addKnob(param);
+        _imp->fittingError = param;
+    }
+    {
+        KnobDoublePtr  param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamFittingErrorWarnValueLabel), 1);
+        param->setName(kTrackerParamFittingErrorWarnValue);
+        param->setHintToolTip( tr(kTrackerParamFittingErrorWarnValueHint) );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setDefaultValue(1);
+        transformPage->addKnob(param);
+        _imp->fittingErrorWarnIfAbove = param;
+    }
+    {
+        KnobStringPtr param = AppManager::createKnob<KnobString>(thisShared, std::string(), 1);
+        param->setName(kTrackerParamTransformOutOfDate);
+        param->setHintToolTip( tr(kTrackerParamTransformOutOfDateHint) );
+        param->setIconLabel("dialog-warning");
+        param->setAsLabel();
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        transformPage->addKnob(param);
+        _imp->transformOutOfDateLabel = param;
+    }
+    {
+        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(thisShared, tr("Transform Controls"), 3);
+        transformPage->addKnob(param);
+        param->setSecret(true);
+        _imp->transformControlsSeparator = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamDisableTransformLabel), 1);
+        param->setName(kTrackerParamDisableTransform);
+        param->setHintToolTip( tr(kTrackerParamDisableTransformHint) );
+        param->setEvaluateOnChange(false);
+        param->setSecret(true);
+        transformPage->addKnob(param);
+        _imp->disableTransform = param;
+    }
+
+
+    NodePtr tNode = _imp->transformNode.lock();
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->translate = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->rotate = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, thisShared, transformPage);
+        param->setAddNewLine(false);
+        param->setSecret(true);
+        _imp->scale = param;
+    }
+    {
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->scaleUniform = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->skewX = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->skewY = param;
+    }
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->skewOrder = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, thisShared, transformPage);
+        param->setSecret(true);
+        _imp->center = param;
+    }
+    NodePtr cNode = _imp->cornerPinNode.lock();
+    KnobGroupPtr  toGroupKnob = AppManager::createKnob<KnobGroup>(thisShared, tr(kCornerPinParamTo), 1);
+    toGroupKnob->setName(kCornerPinParamTo);
+    toGroupKnob->setAsTab();
+    toGroupKnob->setSecret(true);
+    transformPage->addKnob(toGroupKnob);
+    _imp->toGroup = toGroupKnob;
+
+    KnobGroupPtr  fromGroupKnob = AppManager::createKnob<KnobGroup>(thisShared, tr(kCornerPinParamFrom), 1);
+    fromGroupKnob->setName(kCornerPinParamFrom);
+    fromGroupKnob->setAsTab();
+    fromGroupKnob->setSecret(true);
+    transformPage->addKnob(fromGroupKnob);
+    _imp->fromGroup = fromGroupKnob;
+
+    const char* fromPointNames[4] = {kCornerPinParamFrom1, kCornerPinParamFrom2, kCornerPinParamFrom3, kCornerPinParamFrom4};
+    const char* toPointNames[4] = {kCornerPinParamTo1, kCornerPinParamTo2, kCornerPinParamTo3, kCornerPinParamTo4};
+    const char* enablePointNames[4] = {kCornerPinParamEnable1, kCornerPinParamEnable2, kCornerPinParamEnable3, kCornerPinParamEnable4};
+
+    for (int i = 0; i < 4; ++i) {
+        _imp->fromPoints[i] = createDuplicateKnob<KnobDouble>(fromPointNames[i], cNode, thisShared, transformPage, fromGroupKnob);
+
+        _imp->toPoints[i] = createDuplicateKnob<KnobDouble>(toPointNames[i], cNode, thisShared, transformPage, toGroupKnob);
+        _imp->toPoints[i].lock()->setAddNewLine(false);
+        _imp->enableToPoint[i] = createDuplicateKnob<KnobBool>(enablePointNames[i], cNode, thisShared, transformPage, toGroupKnob);
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kCornerPinParamSetToInputRoDLabel), 1);
+        param->setName(kCornerPinParamSetToInputRoD);
+        param->setHintToolTip( tr(kCornerPinParamSetToInputRoDHint) );
+        fromGroupKnob->addKnob(param);
+        _imp->setFromPointsToInputRodButton = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>( thisShared, std::string(kTrackerParamCornerPinFromPointsSetOnce) );
+        param->setSecret(true);
+        fromGroupKnob->addKnob(param);
+        _imp->cornerPinFromPointsSetOnceAutomatically = param;
+    }
+    _imp->cornerPinOverlayPoints = createDuplicateKnob<KnobChoice>(kCornerPinParamOverlayPoints, cNode, thisShared, transformPage);
+    _imp->cornerPinOverlayPoints.lock()->setSecret(true);
+
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kCornerPinParamMatrix, cNode, thisShared, transformPage);
+        _imp->cornerPinMatrix = param;
+        param->setSecret(true);
+
+    }
+
+    // Add filtering & motion blur knobs
+    {
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamInvert, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->invertTransform = param;
+    }
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        param->setAddNewLine(false);
+        _imp->filter = param;
+    }
+    {
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        param->setAddNewLine(false);
+        _imp->clamp = param;
+    }
+    {
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->blackOutside = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->motionBlur = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->shutter = param;
+    }
+    {
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->shutterOffset = param;
+    }
+    {
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        param->setSecret(true);
+        _imp->customShutterOffset = param;
+    }
+    getNode()->addTransformInteract(_imp->translate.lock(),
+                                    _imp->scale.lock(),
+                                    _imp->scaleUniform.lock(),
+                                    _imp->rotate.lock(),
+                                    _imp->skewX.lock(),
+                                    _imp->skewY.lock(),
+                                    _imp->skewOrder.lock(),
+                                    _imp->center.lock(),
+                                    _imp->invertTransform.lock(),
+                                    KnobBoolPtr() /*interactive*/);
+
+    getNode()->addCornerPinInteract(_imp->fromPoints[0].lock(),
+                                    _imp->fromPoints[1].lock(),
+                                    _imp->fromPoints[2].lock(),
+                                    _imp->fromPoints[3].lock(),
+                                    _imp->toPoints[0].lock(),
+                                    _imp->toPoints[1].lock(),
+                                    _imp->toPoints[2].lock(),
+                                    _imp->toPoints[3].lock(),
+                                    _imp->enableToPoint[0].lock(),
+                                    _imp->enableToPoint[1].lock(),
+                                    _imp->enableToPoint[2].lock(),
+                                    _imp->enableToPoint[3].lock(),
+                                    _imp->cornerPinOverlayPoints.lock(),
+                                    _imp->invertTransform.lock(),
+                                    KnobBoolPtr() /*interactive*/);
+
+    {
+        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(kTrackerParamExportDataSeparatorLabel), 1, false);
+        param->setName(kTrackerParamExportDataSeparator);
+        transformPage->addKnob(param);
+        _imp->exportDataSep = param;
+    }
+    {
+        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamExportLinkLabel), 1, false);
+        param->setName(kTrackerParamExportLink);
+        param->setHintToolTip( tr(kTrackerParamExportLinkHint) );
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        param->setDefaultValue(true);
+        transformPage->addKnob(param);
+        _imp->exportLink = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamExportButtonLabel), 1);
+        param->setName(kTrackerParamExportButton);
+        param->setHintToolTip( tr(kTrackerParamExportButtonHint) );
+        param->setEnabled(false);
+        transformPage->addKnob(param);
+        _imp->exportButton = param;
+    }
+} // initializeTransformPageKnobs
+
+void
+TrackerNode::initializeKnobs()
+{
+    TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
+
+    _imp->knobsTable.reset(new TrackerKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTable));
+    QObject::connect(_imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)),
+                     _imp->ui.get(), SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
+    _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
+    _imp->knobsTable->setColumnText(0, tr(kTrackerParamEnabledLabel).toStdString());
+    _imp->knobsTable->setColumnText(1, tr("Label").toStdString());
+    _imp->knobsTable->setColumnText(2, tr(kTrackerParamMotionModelLabel).toStdString());
+    _imp->knobsTable->setColumnText(3, tr("%1 X").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());
+    _imp->knobsTable->setColumnText(4, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());
+    _imp->knobsTable->setColumnText(5, tr("%1 X").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
+    _imp->knobsTable->setColumnText(6, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
+    _imp->knobsTable->setColumnText(7, tr(kTrackerParamErrorLabel).toStdString());
+    
+    _imp->knobsTable->setColumnIcon(2, "motionTypeAffine.png");
+    
+    _imp->tracker.reset(new TrackerHelper(_imp));
+    
+    KnobPagePtr trackingPage = AppManager::createKnob<KnobPage>(thisShared, tr("Tracking"), 1, false);
+    trackingPage->setName("trackingPage");
+    _imp->trackingPageKnob = trackingPage;
+    KnobPagePtr transformPage = AppManager::createKnob<KnobPage>(thisShared, tr("Transform"), 1, false);
+    transformPage->setName("transformPage");
+    _imp->transformPageKnob = transformPage;
+
+    initializeTrackingPageKnobs(trackingPage);
+    initializeTrackRangeDialogKnobs(trackingPage);
+    initializeViewerUIKnobs(trackingPage);
+
+    // Add a separator before the table
+    {
+        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(""));
+        param->setName("trackTableSep");
+        trackingPage->addKnob(param);
+    }
+    setItemsTable(_imp->knobsTable, "trackTableSep");
+
+
+    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
+    QObject::connect( _imp->tracker.get(), SIGNAL(trackingFinished()), _imp->ui.get(), SLOT(onTrackingEnded()) );
+    QObject::connect( _imp->tracker.get(), SIGNAL(trackingStarted(int)), _imp->ui.get(), SLOT(onTrackingStarted(int)) );
+
+
 } // TrackerNode::initializeKnobs
 
 bool
 TrackerNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
-                         ViewSpec view,
-                         double time,
-                         bool originatedFromMainThread)
+                         ViewSetSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
 {
-    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
-    if (!ctx) {
-        return false;
-    }
 
-    ctx->onKnobsLoaded();
-    
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();
         int last = _imp->ui->trackRangeDialogLastFrame.lock()->getValue();
         int step = _imp->ui->trackRangeDialogStep.lock()->getValue();
-        TrackerContextPtr ctx = getNode()->getTrackerContext();
-        if ( ctx->isCurrentlyTracking() ) {
-            ctx->abortTracking();
+        if ( _imp->tracker->isCurrentlyTracking() ) {
+            _imp->tracker->abortTracking();
         }
 
         if (step == 0) {
@@ -598,18 +1407,17 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         }
 
         OverlaySupport* overlay = getCurrentViewportForOverlays();
-        ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
+        _imp->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->selectAllTracksMenuAction.lock() ) {
-        getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
+        _imp->knobsTable->selectAll(eTableChangeReasonInternal);
     } else if ( k == _imp->ui->removeTracksMenuAction.lock() ) {
         std::list<TrackMarkerPtr > markers;
-        TrackerContextPtr context = getNode()->getTrackerContext();
-        context->getSelectedMarkers(&markers);
+        _imp->knobsTable->getSelectedMarkers(&markers);
         if ( !markers.empty() ) {
-            pushUndoCommand( new RemoveTracksCommand( markers, context ) );
+            pushUndoCommand( new RemoveTracksCommand( markers ) );
         }
     } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, 1) ) {
@@ -649,10 +1457,6 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         _imp->ui->onClearBwAnimationClicked();
     } else if ( ( k == _imp->ui->clearFwAnimationButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onClearFwAnimationClicked();
-    } else if ( ( k == _imp->ui->updateViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
-        _imp->ui->onUpdateViewerClicked( _imp->ui->updateViewerButton.lock()->getValue() );
-    } else if ( ( k == _imp->ui->centerViewerButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
-        _imp->ui->onCenterViewerButtonClicked( _imp->ui->centerViewerButton.lock()->getValue() );
     } else if ( ( k == _imp->ui->setKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onSetKeyframeButtonClicked();
     } else if ( ( k == _imp->ui->removeKeyFrameButton.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -663,12 +1467,47 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         _imp->ui->onResetTrackButtonClicked();
     } else if ( k == _imp->ui->addTrackButton.lock() ) {
         _imp->ui->clickToAddTrackEnabled = _imp->ui->addTrackButton.lock()->getValue();
+    } else if ( k == _imp->exportButton.lock() ) {
+        _imp->exportTrackDataFromExportOptions();
+    } else if ( k == _imp->setCurrentFrameButton.lock() ) {
+        KnobIntPtr refFrame = _imp->referenceFrame.lock();
+        refFrame->setValue(getCurrentTime());
+    } else if ( k == _imp->transformType.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+        _imp->refreshVisibilityFromTransformType();
+    } else if ( k == _imp->motionType.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+        _imp->refreshVisibilityFromTransformType();
+    } else if ( k == _imp->jitterPeriod.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->smoothCornerPin.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->smoothTransform.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->referenceFrame.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->robustModel.lock() ) {
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->generateTransformButton.lock() ) {
+        _imp->solveTransformParams();
+    } else if ( k == _imp->setFromPointsToInputRodButton.lock() ) {
+        _imp->setFromPointsToInputRod();
+        _imp->solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->autoGenerateTransform.lock() ) {
+        _imp->solveTransformParams();
+        _imp->refreshVisibilityFromTransformType();
+    }
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    else if ( k == _imp->usePatternMatching.lock() ) {
+        _imp->refreshVisibilityFromTransformType();
+    }
+#endif
+    else if ( k == _imp->disableTransform.lock() ) {
+        _imp->refreshVisibilityFromTransformType();
     } else {
         ret = false;
     }
-    if (!ret) {
-        ret |= ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
-    }
+
 
     return ret;
 } // TrackerNode::knobChanged
@@ -676,15 +1515,11 @@ TrackerNode::knobChanged(const KnobIPtr& k,
 void
 TrackerNode::onKnobsLoaded()
 {
-    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
-    if (!ctx) {
-        return;
-    }
-    ctx->onKnobsLoaded();
 
-    ctx->setUpdateViewer( _imp->ui->updateViewerButton.lock()->getValue() );
-    ctx->setCenterOnTrack( _imp->ui->centerViewerButton.lock()->getValue() );
+    _imp->setSolverParamsEnabled(true);
+    _imp->refreshVisibilityFromTransformType();
+
 }
 
 void
@@ -694,1734 +1529,93 @@ TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
     _imp->ui->refreshSelectedMarkerTexture();
 }
 
+RectD
+TrackerNodePrivate::getInputRoD(double time, ViewIdx view) const
+{
+    EffectInstancePtr inputEffect = publicInterface->getInput(0);
+    bool useProjFormat = false;
+    RectD ret;
+
+    if (!inputEffect) {
+        useProjFormat = true;
+    } else {
+        U64 nodeHash;
+        bool gotHash = inputEffect->getRenderHash(time, view, &nodeHash);
+        (void)gotHash;
+        StatusEnum stat = inputEffect->getRegionOfDefinition_public(nodeHash, time, RenderScale(1.), view, &ret);
+        if (stat == eStatusFailed) {
+            useProjFormat = true;
+        } else {
+            return ret;
+        }
+    }
+    if (useProjFormat) {
+        Format f;
+        publicInterface->getApp()->getProject()->getProjectDefaultFormat(&f);
+        ret.x1 = f.x1;
+        ret.x2 = f.x2;
+        ret.y1 = f.y1;
+        ret.y2 = f.y2;
+    }
+
+    return ret;
+} // getInputRoD
+
+void
+TrackerNodePrivate::setFromPointsToInputRod()
+{
+    RectD inputRod = getInputRoD(publicInterface->getCurrentTime(), publicInterface->getCurrentView());
+    KnobDoublePtr fromPointsKnob[4];
+
+    for (int i = 0; i < 4; ++i) {
+        fromPointsKnob[i] = fromPoints[i].lock();
+    }
+    {
+        std::vector<double> values(2);
+        values[0] = inputRod.x1;
+        values[1] = inputRod.y1;
+        fromPointsKnob[0]->setValueAcrossDimensions(values);
+    }
+    {
+        std::vector<double> values(2);
+        values[0] = inputRod.x2;
+        values[1] = inputRod.y1;
+        fromPointsKnob[1]->setValueAcrossDimensions(values);
+    }
+    {
+        std::vector<double> values(2);
+        values[0] = inputRod.x2;
+        values[1] = inputRod.y2;
+        fromPointsKnob[2]->setValueAcrossDimensions(values);
+    }
+    {
+        std::vector<double> values(2);
+        values[0] = inputRod.x1;
+        values[1] = inputRod.y2;
+        fromPointsKnob[3]->setValueAcrossDimensions(values);
+    }
+}
+
 void
 TrackerNode::onInputChanged(int inputNb)
 {
-    TrackerContextPtr ctx = getNode()->getTrackerContext();
+    KnobBoolPtr fromPointsSetOnceKnob = _imp->cornerPinFromPointsSetOnceAutomatically.lock();
+    if ( !fromPointsSetOnceKnob->getValue() ) {
+        _imp->setFromPointsToInputRod();
+        fromPointsSetOnceKnob->setValue(true);
+    }
 
-    ctx->inputChanged(inputNb);
+    std::vector<TrackMarkerPtr> allMarkers;
+    _imp->knobsTable->getAllMarkers(&allMarkers);
+    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
+        TrackMarkerPM* isPM = dynamic_cast<TrackMarkerPM*>(allMarkers[i].get());
+        if (isPM) {
+            isPM->onTrackerNodeInputChanged(inputNb);
+        }
+    }
+
 
     _imp->ui->refreshSelectedMarkerTexture();
-}
-
-struct CenterPointDisplayInfo
-{
-    double x;
-    double y;
-    double err;
-    bool isValid;
-
-    CenterPointDisplayInfo()
-    : x(0)
-    , y(0)
-    , err(0)
-    , isValid(false)
-    {
-
-    }
-};
-
-typedef std::map<double, CenterPointDisplayInfo> CenterPointsMap;
-
-void
-TrackerNode::drawOverlay(double time,
-                         const RenderScale & /*renderScale*/,
-                         ViewIdx /*view*/)
-{
-    double pixelScaleX, pixelScaleY;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-
-    assert(overlay);
-    overlay->getPixelScale(pixelScaleX, pixelScaleY);
-    double viewportSize[2];
-    overlay->getViewportSize(viewportSize[0], viewportSize[1]);
-
-    {
-        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
-        double markerColor[3];
-        if ( !getNode()->getOverlayColor(&markerColor[0], &markerColor[1], &markerColor[2]) ) {
-            markerColor[0] = markerColor[1] = markerColor[2] = 0.8;
-        }
-
-        std::vector<TrackMarkerPtr > allMarkers;
-        std::list<TrackMarkerPtr > selectedMarkers;
-        TrackerContextPtr context = getNode()->getTrackerContext();
-        context->getSelectedMarkers(&selectedMarkers);
-        context->getAllMarkers(&allMarkers);
-
-        bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
-        bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
-        TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
-        bool selectedFound = false;
-        Point selectedCenter;
-        Point selectedPtnTopLeft;
-        Point selectedPtnTopRight;
-        Point selectedPtnBtmRight;
-        Point selectedPtnBtmLeft;
-        Point selectedOffset;
-        Point selectedSearchBtmLeft;
-        Point selectedSearchTopRight;
-
-        for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-            bool isEnabled = (*it)->isEnabled(time);
-
-            double thisMarkerColor[3];
-            if (!isEnabled) {
-                for (int i = 0; i < 3; ++i) {
-                    thisMarkerColor[i] = markerColor[i] / 2.;
-                }
-            } else {
-                for (int i = 0; i < 3; ++i) {
-                    thisMarkerColor[i] = markerColor[i];
-                }
-            }
-
-            bool isHoverMarker = *it == _imp->ui->hoverMarker;
-            bool isDraggedMarker = *it == _imp->ui->interactMarker;
-            bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
-            std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
-            bool isSelected = foundSelected != selectedMarkers.end();
-            KnobDoublePtr centerKnob = (*it)->getCenterKnob();
-            KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
-            KnobDoublePtr errorKnob = (*it)->getErrorKnob();
-            KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
-            KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
-            KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
-            KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-            KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
-            KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
-
-            // When the tracking page is secret, still show markers, but as if deselected
-            if (!isSelected || trackingPageSecret) {
-                ///Draw a custom interact, indicating the track isn't selected
-                GL_GPU::glEnable(GL_LINE_SMOOTH);
-                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                GL_GPU::glLineWidth(1.5f);
-
-                for (int l = 0; l < 2; ++l) {
-                    // shadow (uses GL_PROJECTION)
-                    GL_GPU::glMatrixMode(GL_PROJECTION);
-                    int direction = (l == 0) ? 1 : -1;
-                    // translate (1,-1) pixels
-                    GL_GPU::glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                    GL_GPU::glMatrixMode(GL_MODELVIEW);
-
-                    if (l == 0) {
-                        GL_GPU::glColor4d(0., 0., 0., 1.);
-                    } else {
-                        GL_GPU::glColor4f(thisMarkerColor[0], thisMarkerColor[1], thisMarkerColor[2], 1.);
-                    }
-
-
-                    double x = centerKnob->getValueAtTime(time, 0);
-                    double y = centerKnob->getValueAtTime(time, 1);
-
-                    GL_GPU::glPointSize(POINT_SIZE);
-                    GL_GPU::glBegin(GL_POINTS);
-                    GL_GPU::glVertex2d(x, y);
-                    GL_GPU::glEnd();
-
-                    GL_GPU::glBegin(GL_LINES);
-                    GL_GPU::glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
-                    GL_GPU::glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
-
-
-                    GL_GPU::glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
-                    GL_GPU::glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
-                    GL_GPU::glEnd();
-                }
-                GL_GPU::glPointSize(1.);
-            } else { // if (isSelected) {
-                GL_GPU::glEnable(GL_LINE_SMOOTH);
-                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                GLdouble projection[16];
-                GL_GPU::glGetDoublev( GL_PROJECTION_MATRIX, projection);
-                OfxPointD shadow; // how much to translate GL_PROJECTION to get exactly one pixel on screen
-                shadow.x = 2. / (projection[0] * viewportSize[0]);
-                shadow.y = 2. / (projection[5] * viewportSize[1]);
-
-                const QPointF center( centerKnob->getValueAtTime(time, 0),
-                                      centerKnob->getValueAtTime(time, 1) );
-                const QPointF offset( offsetKnob->getValueAtTime(time, 0),
-                                      offsetKnob->getValueAtTime(time, 1) );
-                const QPointF topLeft( ptnTopLeft->getValueAtTime(time, 0) + offset.x() + center.x(),
-                                       ptnTopLeft->getValueAtTime(time, 1) + offset.y() + center.y() );
-                const QPointF topRight( ptnTopRight->getValueAtTime(time, 0) + offset.x() + center.x(),
-                                        ptnTopRight->getValueAtTime(time, 1) + offset.y() + center.y() );
-                const QPointF btmRight( ptnBtmRight->getValueAtTime(time, 0) + offset.x() + center.x(),
-                                        ptnBtmRight->getValueAtTime(time, 1) + offset.y() + center.y() );
-                const QPointF btmLeft( ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x(),
-                                       ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y() );
-                const double searchLeft   = searchWndBtmLeft->getValueAtTime(time, 0)  + offset.x() + center.x();
-                const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1)  + offset.y() + center.y();
-                const double searchRight  = searchWndTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
-                const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
-                const double searchMidX   = (searchLeft + searchRight) / 2;
-                const double searchMidY   = (searchTop + searchBottom) / 2;
-
-                if (selectedMarker == *it) {
-                    selectedCenter.x = center.x();
-                    selectedCenter.y = center.y();
-                    selectedOffset.x = offset.x();
-                    selectedOffset.y = offset.y();
-                    selectedPtnBtmLeft.x = btmLeft.x();
-                    selectedPtnBtmLeft.y = btmLeft.y();
-                    selectedPtnBtmRight.x = btmRight.x();
-                    selectedPtnBtmRight.y = btmRight.y();
-                    selectedPtnTopRight.x = topRight.x();
-                    selectedPtnTopRight.y = topRight.y();
-                    selectedPtnTopLeft.x = topLeft.x();
-                    selectedPtnTopLeft.y = topLeft.y();
-                    selectedSearchBtmLeft.x = searchLeft;
-                    selectedSearchBtmLeft.y = searchBottom;
-
-                    selectedSearchTopRight.x = searchRight;
-                    selectedSearchTopRight.y = searchTop;
-                    selectedFound = true;
-                }
-
-                const QPointF innerMidLeft( (btmLeft + topLeft) / 2 );
-                const QPointF innerMidTop( (topLeft + topRight) / 2 );
-                const QPointF innerMidRight( (btmRight + topRight) / 2 );
-                const QPointF innerMidBtm( (btmLeft + btmRight) / 2 );
-                const QPointF outterMidLeft(searchLeft, searchMidY);
-                const QPointF outterMidTop(searchMidX, searchTop);
-                const QPointF outterMidRight(searchRight, searchMidY);
-                const QPointF outterMidBtm(searchMidX, searchBottom);
-                const QPointF handleSize( HANDLE_SIZE * pixelScaleX, HANDLE_SIZE * pixelScaleY );
-                const QPointF innerMidLeftExt = TrackerNodeInteract::computeMidPointExtent(topLeft, btmLeft, innerMidLeft, handleSize);
-                const QPointF innerMidRightExt = TrackerNodeInteract::computeMidPointExtent(btmRight, topRight, innerMidRight, handleSize);
-                const QPointF innerMidTopExt = TrackerNodeInteract::computeMidPointExtent(topRight, topLeft, innerMidTop, handleSize);
-                const QPointF innerMidBtmExt = TrackerNodeInteract::computeMidPointExtent(btmLeft, btmRight, innerMidBtm, handleSize);
-                const QPointF searchTopLeft(searchLeft, searchTop);
-                const QPointF searchTopRight(searchRight, searchTop);
-                const QPointF searchBtmRight(searchRight, searchBottom);
-                const QPointF searchBtmLeft(searchLeft, searchBottom);
-                const QPointF searchTopMid(searchMidX, searchTop);
-                const QPointF searchRightMid(searchRight, searchMidY);
-                const QPointF searchLeftMid(searchLeft, searchMidY);
-                const QPointF searchBtmMid(searchMidX, searchBottom);
-                const QPointF outterMidLeftExt  = TrackerNodeInteract::computeMidPointExtent(searchTopLeft,  searchBtmLeft,  outterMidLeft,  handleSize);
-                const QPointF outterMidRightExt = TrackerNodeInteract::computeMidPointExtent(searchBtmRight, searchTopRight, outterMidRight, handleSize);
-                const QPointF outterMidTopExt   = TrackerNodeInteract::computeMidPointExtent(searchTopRight, searchTopLeft,  outterMidTop,   handleSize);
-                const QPointF outterMidBtmExt   = TrackerNodeInteract::computeMidPointExtent(searchBtmLeft,  searchBtmRight, outterMidBtm,   handleSize);
-                std::string name = (*it)->getLabel();
-                if (!isEnabled) {
-                    name += ' ';
-                    name += tr("(disabled)").toStdString();
-                }
-                CenterPointsMap centerPoints;
-                CurvePtr xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
-                CurvePtr yCurve = centerKnob->getCurve(ViewSpec::current(), 1);
-                CurvePtr errorCurve = errorKnob->getCurve(ViewSpec::current(), 0);
-
-                {
-                    KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();
-                    KeyFrameSet yKeyframes = yCurve->getKeyFrames_mt_safe();
-                    KeyFrameSet errKeyframes;
-                    if (showErrorColor) {
-                        errKeyframes = errorCurve->getKeyFrames_mt_safe();
-                    }
-
-                    // Try first to do an optimized case in O(N) where we assume that all 3 curves have the same keyframes
-                    // at the same time
-                    KeyFrameSet remainingXKeys,remainingYKeys, remainingErrKeys;
-                    if (xKeyframes.size() == yKeyframes.size() && (!showErrorColor || xKeyframes.size() == errKeyframes.size())) {
-                        KeyFrameSet::iterator errIt = errKeyframes.begin();
-                        KeyFrameSet::iterator xIt = xKeyframes.begin();
-                        KeyFrameSet::iterator yIt = yKeyframes.begin();
-
-                        bool setsHaveDifferentKeyTimes = false;
-                        while (xIt!=xKeyframes.end()) {
-                            if (xIt->getTime() != yIt->getTime() || (showErrorColor && xIt->getTime() != errIt->getTime())) {
-                                setsHaveDifferentKeyTimes = true;
-                                break;
-                            }
-                            CenterPointDisplayInfo& p = centerPoints[xIt->getTime()];
-                            p.x = xIt->getValue();
-                            p.y = yIt->getValue();
-                            if ( showErrorColor ) {
-                                p.err = errIt->getValue();
-                            }
-                            p.isValid = true;
-
-                            ++xIt;
-                            ++yIt;
-                            if (showErrorColor) {
-                                ++errIt;
-                            }
-
-                        }
-                        if (setsHaveDifferentKeyTimes) {
-                            remainingXKeys.insert(xIt, xKeyframes.end());
-                            remainingYKeys.insert(yIt, yKeyframes.end());
-                            if (showErrorColor) {
-                                remainingErrKeys.insert(errIt, errKeyframes.end());
-                            }
-                        }
-                    } else {
-                        remainingXKeys = xKeyframes;
-                        remainingYKeys = yKeyframes;
-                        if (showErrorColor) {
-                            remainingErrKeys = errKeyframes;
-                        }
-                    }
-                    for (KeyFrameSet::iterator xIt = remainingXKeys.begin(); xIt != remainingXKeys.end(); ++xIt) {
-                        CenterPointDisplayInfo& p = centerPoints[xIt->getTime()];
-                        p.x = xIt->getValue();
-                        p.isValid = false;
-                    }
-                    for (KeyFrameSet::iterator yIt = remainingYKeys.begin(); yIt != remainingYKeys.end(); ++yIt) {
-                        CenterPointsMap::iterator foundPoint = centerPoints.find(yIt->getTime());
-                        if (foundPoint == centerPoints.end()) {
-                            continue;
-                        }
-                        foundPoint->second.y = yIt->getValue();
-                        if (!showErrorColor) {
-                            foundPoint->second.isValid = true;
-                        }
-                    }
-                    for (KeyFrameSet::iterator errIt = remainingErrKeys.begin(); errIt != remainingErrKeys.end(); ++errIt) {
-                        CenterPointsMap::iterator foundPoint = centerPoints.find(errIt->getTime());
-                        if (foundPoint == centerPoints.end()) {
-                            continue;
-                        }
-                        foundPoint->second.err = errIt->getValue();
-                        foundPoint->second.isValid = true;
-                    }
-
-                }
-
-
-
-                for (int l = 0; l < 2; ++l) {
-                    // shadow (uses GL_PROJECTION)
-                    GL_GPU::glMatrixMode(GL_PROJECTION);
-                    int direction = (l == 0) ? 1 : -1;
-                    // translate (1,-1) pixels
-                    GL_GPU::glTranslated(direction * shadow.x, -direction * shadow.y, 0);
-                    GL_GPU::glMatrixMode(GL_MODELVIEW);
-
-                    ///Draw center position
-
-                    GL_GPU::glEnable(GL_LINE_SMOOTH);
-                    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                    GL_GPU::glBegin(GL_LINE_STRIP);
-                    GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
-                    for (CenterPointsMap::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
-                        if (it->second.isValid) {
-                            GL_GPU::glVertex2d(it->second.x, it->second.y);
-                        }
-                    }
-                    GL_GPU::glEnd();
-                    GL_GPU::glDisable(GL_LINE_SMOOTH);
-
-                    GL_GPU::glEnable(GL_POINT_SMOOTH);
-                    GL_GPU::glBegin(GL_POINTS);
-                    if (!showErrorColor) {
-                        GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
-                    }
-
-                    for (CenterPointsMap::iterator it2 = centerPoints.begin(); it2 != centerPoints.end(); ++it2) {
-                        if (!it2->second.isValid) {
-                            continue;
-                        }
-                        if (showErrorColor) {
-                            if (l != 0) {
-                                /*
-                                   Clamp the correlation to [CORRELATION_ERROR_MIN, 1] then
-                                   Map the correlation to [0, 0.33] since 0 is Red for HSV and 0.33 is Green.
-                                   Also clamp to the interval if the correlation is higher, and reverse.
-                                 */
-
-                                double error = boost::algorithm::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
-                                double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
-                                float r, g, b;
-                                Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
-                                GL_GPU::glColor3f(r, g, b);
-                            } else {
-                                GL_GPU::glColor3f(0., 0., 0.);
-                            }
-                        }
-                        GL_GPU::glVertex2d(it2->second.x, it2->second.y);
-                    }
-                    GL_GPU::glEnd();
-                    GL_GPU::glDisable(GL_POINT_SMOOTH);
-
-
-                    GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    GL_GPU::glBegin(GL_LINE_LOOP);
-                    GL_GPU::glVertex2d( topLeft.x(), topLeft.y() );
-                    GL_GPU::glVertex2d( topRight.x(), topRight.y() );
-                    GL_GPU::glVertex2d( btmRight.x(), btmRight.y() );
-                    GL_GPU::glVertex2d( btmLeft.x(), btmLeft.y() );
-                    GL_GPU::glEnd();
-
-                    GL_GPU::glBegin(GL_LINE_LOOP);
-                    GL_GPU::glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
-                    GL_GPU::glVertex2d( searchTopRight.x(), searchTopRight.y() );
-                    GL_GPU::glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
-                    GL_GPU::glVertex2d( searchBtmLeft.x(), searchBtmRight.y() );
-                    GL_GPU::glEnd();
-
-                    GL_GPU::glPointSize(POINT_SIZE);
-                    GL_GPU::glBegin(GL_POINTS);
-
-                    ///draw center
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringCenter) || (_imp->ui->eventState == eMouseStateDraggingCenter) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( center.x(), center.y() );
-
-                    if ( (offset.x() != 0) || (offset.y() != 0) ) {
-                        GL_GPU::glVertex2d( center.x() + offset.x(), center.y() + offset.y() );
-                    }
-
-                    //////DRAWING INNER POINTS
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( btmLeft.x(), btmLeft.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( btmRight.x(), btmRight.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidRight.x(), innerMidRight.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( topLeft.x(), topLeft.y() );
-                    }
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidTop.x(), innerMidTop.y() );
-                    }
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( topRight.x(), topRight.y() );
-                    }
-
-
-                    //////DRAWING OUTTER POINTS
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidRight.x(), outterMidRight.y() );
-                    }
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterTopLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidTop.x(), outterMidTop.y() );
-                    }
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->ui->eventState == eMouseStateDraggingOuterTopRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchTopRight.x(), searchTopRight.y() );
-                    }
-
-                    GL_GPU::glEnd();
-
-                    if ( (offset.x() != 0) || (offset.y() != 0) ) {
-                        GL_GPU::glBegin(GL_LINES);
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
-                        GL_GPU::glVertex2d( center.x(), center.y() );
-                        GL_GPU::glVertex2d( center.x() + offset.x(), center.y() + offset.y() );
-                        GL_GPU::glEnd();
-                    }
-
-                    ///now show small lines at handle positions
-                    GL_GPU::glBegin(GL_LINES);
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
-                    GL_GPU::glVertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( innerMidTop.x(), innerMidTop.y() );
-                    GL_GPU::glVertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( innerMidRight.x(), innerMidRight.y() );
-                    GL_GPU::glVertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
-                    GL_GPU::glVertex2d( innerMidBtmExt.x(), innerMidBtmExt.y() );
-
-                    //////DRAWING OUTTER HANDLES
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
-                    GL_GPU::glVertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( outterMidTop.x(), outterMidTop.y() );
-                    GL_GPU::glVertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( outterMidRight.x(), outterMidRight.y() );
-                    GL_GPU::glVertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
-
-                    if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                    } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    }
-                    GL_GPU::glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
-                    GL_GPU::glVertex2d( outterMidBtmExt.x(), outterMidBtmExt.y() );
-                    GL_GPU::glEnd();
-
-                    GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-
-                    overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2]);
-                } // for (int l = 0; l < 2; ++l) {
-            } // if (!isSelected) {
-        } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-
-        if (_imp->ui->showMarkerTexture && selectedFound) {
-            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
-        }
-        // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
-
-
-        if (_imp->ui->clickToAddTrackEnabled) {
-            ///draw a square of 20px around the mouse cursor
-            GL_GPU::glEnable(GL_BLEND);
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            GL_GPU::glEnable(GL_LINE_SMOOTH);
-            GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            GL_GPU::glLineWidth(1.5);
-            //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
-
-            const double addTrackSize = TO_DPIX(ADDTRACK_SIZE);
-
-            for (int l = 0; l < 2; ++l) {
-                // shadow (uses GL_PROJECTION)
-                GL_GPU::glMatrixMode(GL_PROJECTION);
-                int direction = (l == 0) ? 1 : -1;
-                // translate (1,-1) pixels
-                GL_GPU::glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                GL_GPU::glMatrixMode(GL_MODELVIEW);
-
-                if (l == 0) {
-                    GL_GPU::glColor4d(0., 0., 0., 0.8);
-                } else {
-                    GL_GPU::glColor4d(0., 1., 0., 0.8);
-                }
-
-                GL_GPU::glBegin(GL_LINE_LOOP);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glEnd();
-
-                ///draw a cross at the cursor position
-                GL_GPU::glBegin(GL_LINES);
-                GL_GPU::glVertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::glVertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() - addTrackSize * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() + addTrackSize * pixelScaleY);
-                GL_GPU::glEnd();
-            }
-        }
-    } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
-} // drawOverlay
-
-bool
-TrackerNode::onOverlayPenDown(double time,
-                              const RenderScale & /*renderScale*/,
-                              ViewIdx view,
-                              const QPointF & viewportPos,
-                              const QPointF & pos,
-                              double /*pressure*/,
-                              double /*timestamp*/,
-                              PenType /*pen*/)
-{
-    std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-
-    assert(overlay);
-    overlay->getPixelScale(pixelScale.first, pixelScale.second);
-    bool didSomething = false;
-    TrackerContextPtr context = getNode()->getTrackerContext();
-    /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
-        return true;
-       }*/
-    std::vector<TrackMarkerPtr > allMarkers;
-    context->getAllMarkers(&allMarkers);
-
-    bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-        if (!(*it)->isEnabled(time) || trackingPageSecret) {
-            continue;
-        }
-
-        bool isSelected = context->isMarkerSelected( (*it) );
-        KnobDoublePtr centerKnob = (*it)->getCenterKnob();
-        KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
-        KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
-        KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
-        KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
-        KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-        KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
-        KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
-        QPointF centerPoint;
-        centerPoint.rx() = centerKnob->getValueAtTime(time, 0);
-        centerPoint.ry() = centerKnob->getValueAtTime(time, 1);
-
-        QPointF offset;
-        offset.rx() = offsetKnob->getValueAtTime(time, 0);
-        offset.ry() = offsetKnob->getValueAtTime(time, 1);
-
-        if ( _imp->ui->isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
-            if (_imp->ui->controlDown > 0) {
-                _imp->ui->eventState = eMouseStateDraggingOffset;
-            } else {
-                _imp->ui->eventState = eMouseStateDraggingCenter;
-            }
-            _imp->ui->interactMarker = *it;
-            didSomething = true;
-        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( centerPoint.x() + offset.x(), centerPoint.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-            _imp->ui->eventState = eMouseStateDraggingOffset;
-            _imp->ui->interactMarker = *it;
-            didSomething = true;
-        }
-
-        if (!didSomething && isSelected) {
-            QPointF topLeft, topRight, btmRight, btmLeft;
-            topLeft.rx() = ptnTopLeft->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-            topLeft.ry() = ptnTopLeft->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
-
-            topRight.rx() = ptnTopRight->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-            topRight.ry() = ptnTopRight->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
-
-            btmRight.rx() = ptnBtmRight->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-            btmRight.ry() = ptnBtmRight->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
-
-            btmLeft.rx() = ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + centerPoint.x();
-            btmLeft.ry() = ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + centerPoint.y();
-
-            QPointF midTop, midRight, midBtm, midLeft;
-            midTop.rx() = ( topLeft.x() + topRight.x() ) / 2.;
-            midTop.ry() = ( topLeft.y() + topRight.y() ) / 2.;
-
-            midRight.rx() = ( btmRight.x() + topRight.x() ) / 2.;
-            midRight.ry() = ( btmRight.y() + topRight.y() ) / 2.;
-
-            midBtm.rx() = ( btmRight.x() + btmLeft.x() ) / 2.;
-            midBtm.ry() = ( btmRight.y() + btmLeft.y() ) / 2.;
-
-            midLeft.rx() = ( topLeft.x() + btmLeft.x() ) / 2.;
-            midLeft.ry() = ( topLeft.y() + btmLeft.y() ) / 2.;
-
-            if ( isSelected && _imp->ui->isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerTopMid;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerMidRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerMidLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingInnerBtmMid;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            }
-        }
-
-        if (!didSomething && isSelected) {
-            ///Test search window
-            const double searchLeft = searchWndBtmLeft->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-            const double searchRight = searchWndTopRight->getValueAtTime(time, 0) + centerPoint.x() + offset.x();
-            const double searchTop = searchWndTopRight->getValueAtTime(time, 1) + centerPoint.y() + offset.y();
-            const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1) + +centerPoint.y() + offset.y();
-            const double searchMidX = (searchLeft + searchRight) / 2.;
-            const double searchMidY = (searchTop + searchBottom) / 2.;
-            const QPointF searchTopLeft(searchLeft, searchTop);
-            const QPointF searchTopRight(searchRight, searchTop);
-            const QPointF searchBtmRight(searchRight, searchBottom);
-            const QPointF searchBtmLeft(searchLeft, searchBottom);
-            const QPointF searchTopMid(searchMidX, searchTop);
-            const QPointF searchRightMid(searchRight, searchMidY);
-            const QPointF searchLeftMid(searchLeft, searchMidY);
-            const QPointF searchBtmMid(searchMidX, searchBottom);
-
-            if ( _imp->ui->isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterTopMid;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterBtmMid;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterMidLeft;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            } else if ( _imp->ui->isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->eventState = eMouseStateDraggingOuterMidRight;
-                _imp->ui->interactMarker = *it;
-                didSomething = true;
-            }
-        }
-
-        //If we hit the interact, make sure it is selected
-        if (_imp->ui->interactMarker) {
-            if (!isSelected) {
-                context->beginEditSelection(TrackerContext::eTrackSelectionViewer);
-                if (!_imp->ui->shiftDown) {
-                    context->clearSelection(TrackerContext::eTrackSelectionViewer);
-                }
-                context->addTrackToSelection(_imp->ui->interactMarker, TrackerContext::eTrackSelectionViewer);
-                context->endEditSelection(TrackerContext::eTrackSelectionViewer);
-            }
-        }
-
-        if (didSomething) {
-            break;
-        }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-
-    if (_imp->ui->clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
-        TrackMarkerPtr marker = context->createMarker();
-        KnobDoublePtr centerKnob = marker->getCenterKnob();
-        centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, eValueChangedReasonNatronInternalEdited);
-        if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-            marker->setUserKeyframe(time);
-        }
-        pushUndoCommand( new AddTrackCommand(marker, context) );
-        _imp->ui->refreshSelectedMarkerTexture();
-        didSomething = true;
-    }
-
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
-        _imp->ui->eventState = eMouseStateDraggingSelectedMarkerResizeAnchor;
-        didSomething = true;
-    }
-
-    if ( !didSomething && _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture  && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        if (_imp->ui->shiftDown) {
-            _imp->ui->eventState = eMouseStateScalingSelectedMarker;
-        } else {
-            _imp->ui->eventState = eMouseStateDraggingSelectedMarker;
-        }
-        _imp->ui->interactMarker = _imp->ui->selectedMarker.lock();
-        didSomething = true;
-    }
-
-    if (!didSomething) {
-        int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
-        if (keyTime != INT_MAX) {
-            ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-            if (viewer) {
-                viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
-            }
-            didSomething = true;
-        }
-    }
-    if (!didSomething && !trackingPageSecret) {
-        std::list<TrackMarkerPtr > selectedMarkers;
-        context->getSelectedMarkers(&selectedMarkers);
-        if ( !selectedMarkers.empty() ) {
-            context->clearSelection(TrackerContext::eTrackSelectionViewer);
-
-            didSomething = true;
-        }
-    }
-
-    _imp->ui->lastMousePos = pos;
-
-    return didSomething;
-} // penDown
-
-bool
-TrackerNode::onOverlayPenMotion(double time,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx view,
-                                const QPointF & viewportPos,
-                                const QPointF & pos,
-                                double /*pressure*/,
-                                double /*timestamp*/)
-{
-    std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-
-    assert(overlay);
-    overlay->getPixelScale(pixelScale.first, pixelScale.second);
-    bool didSomething = false;
-    TrackerContextPtr context = getNode()->getTrackerContext();
-    Point delta;
-    delta.x = pos.x() - _imp->ui->lastMousePos.x();
-    delta.y = pos.y() - _imp->ui->lastMousePos.y();
-
-
-    if (_imp->ui->hoverState != eDrawStateInactive) {
-        _imp->ui->hoverState = eDrawStateInactive;
-        _imp->ui->hoverMarker.reset();
-        didSomething = true;
-    }
-
-    std::vector<TrackMarkerPtr > allMarkers;
-    context->getAllMarkers(&allMarkers);
-    bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
-    bool hoverProcess = false;
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-        if (!(*it)->isEnabled(time) || trackingPageSecret) {
-            continue;
-        }
-
-        bool isSelected = context->isMarkerSelected( (*it) );
-        KnobDoublePtr centerKnob = (*it)->getCenterKnob();
-        KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
-        KnobDoublePtr ptnTopLeft = (*it)->getPatternTopLeftKnob();
-        KnobDoublePtr ptnTopRight = (*it)->getPatternTopRightKnob();
-        KnobDoublePtr ptnBtmRight = (*it)->getPatternBtmRightKnob();
-        KnobDoublePtr ptnBtmLeft = (*it)->getPatternBtmLeftKnob();
-        KnobDoublePtr searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
-        KnobDoublePtr searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
-        QPointF center;
-        center.rx() = centerKnob->getValueAtTime(time, 0);
-        center.ry() = centerKnob->getValueAtTime(time, 1);
-
-        QPointF offset;
-        offset.rx() = offsetKnob->getValueAtTime(time, 0);
-        offset.ry() = offsetKnob->getValueAtTime(time, 1);
-        if ( _imp->ui->isNearbyPoint(centerKnob, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE, time) ) {
-            _imp->ui->hoverState = eDrawStateHoveringCenter;
-            _imp->ui->hoverMarker = *it;
-            hoverProcess = true;
-        } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-            _imp->ui->hoverState = eDrawStateHoveringCenter;
-            _imp->ui->hoverMarker = *it;
-            didSomething = true;
-        }
-
-
-        if (!hoverProcess) {
-            QPointF topLeft, topRight, btmRight, btmLeft;
-            topLeft.rx() = ptnTopLeft->getValueAtTime(time, 0) + offset.x() + center.x();
-            topLeft.ry() = ptnTopLeft->getValueAtTime(time, 1) + offset.y() + center.y();
-
-            topRight.rx() = ptnTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
-            topRight.ry() = ptnTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
-
-            btmRight.rx() = ptnBtmRight->getValueAtTime(time, 0) + offset.x() + center.x();
-            btmRight.ry() = ptnBtmRight->getValueAtTime(time, 1) + offset.y() + center.y();
-
-            btmLeft.rx() = ptnBtmLeft->getValueAtTime(time, 0) + offset.x() + center.x();
-            btmLeft.ry() = ptnBtmLeft->getValueAtTime(time, 1) + offset.y() + center.y();
-
-            QPointF midTop, midRight, midBtm, midLeft;
-            midTop.rx() = ( topLeft.x() + topRight.x() ) / 2.;
-            midTop.ry() = ( topLeft.y() + topRight.y() ) / 2.;
-
-            midRight.rx() = ( btmRight.x() + topRight.x() ) / 2.;
-            midRight.ry() = ( btmRight.y() + topRight.y() ) / 2.;
-
-            midBtm.rx() = ( btmRight.x() + btmLeft.x() ) / 2.;
-            midBtm.ry() = ( btmRight.y() + btmLeft.y() ) / 2.;
-
-            midLeft.rx() = ( topLeft.x() + btmLeft.x() ) / 2.;
-            midLeft.ry() = ( topLeft.y() + btmLeft.y() ) / 2.;
-
-
-            if ( isSelected && _imp->ui->isNearbyPoint(topLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(topRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(btmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midTop, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerTopMid;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerMidRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerMidLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( isSelected && _imp->ui->isNearbyPoint(midBtm, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringInnerBtmMid;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            }
-        }
-
-        if (!hoverProcess && isSelected) {
-            ///Test search window
-            const double searchLeft   = searchWndBtmLeft->getValueAtTime(time, 0)  + offset.x() + center.x();
-            const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1)  + offset.y() + center.y();
-            const double searchRight  = searchWndTopRight->getValueAtTime(time, 0) + offset.x() + center.x();
-            const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y() + center.y();
-            const double searchMidX   = (searchLeft + searchRight) / 2;
-            const double searchMidY   = (searchTop + searchBottom) / 2;
-            const QPointF searchTopLeft(searchLeft, searchTop);
-            const QPointF searchTopRight(searchRight, searchTop);
-            const QPointF searchBtmRight(searchRight, searchBottom);
-            const QPointF searchBtmLeft(searchLeft, searchBottom);
-            const QPointF searchTopMid(searchMidX, searchTop);
-            const QPointF searchRightMid(searchRight, searchMidY);
-            const QPointF searchLeftMid(searchLeft, searchMidY);
-            const QPointF searchBtmMid(searchMidX, searchBottom);
-
-            if ( _imp->ui->isNearbyPoint(searchTopLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmRight, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmLeft, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchTopMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterTopMid;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchBtmMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterBtmMid;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchLeftMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterMidLeft;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            } else if ( _imp->ui->isNearbyPoint(searchRightMid, viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
-                _imp->ui->hoverState = eDrawStateHoveringOuterMidRight;
-                _imp->ui->hoverMarker = *it;
-                hoverProcess = true;
-            }
-        }
-
-        if (hoverProcess) {
-            break;
-        }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
-
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
-        setCurrentCursor(eCursorFDiag);
-        hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        setCurrentCursor(eCursorSizeAll);
-        hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
-        setCurrentCursor(eCursorPointingHand);
-        hoverProcess = true;
-    } else {
-        setCurrentCursor(eCursorDefault);
-    }
-
-    if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->shiftDown && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
-        _imp->ui->hoverState = eDrawStateShowScalingHint;
-        hoverProcess = true;
-    }
-
-    if (hoverProcess) {
-        didSomething = true;
-    }
-
-    KnobDoublePtr centerKnob, offsetKnob, searchWndTopRight, searchWndBtmLeft;
-    KnobDoublePtr patternCorners[4];
-    if (_imp->ui->interactMarker) {
-        centerKnob = _imp->ui->interactMarker->getCenterKnob();
-        offsetKnob = _imp->ui->interactMarker->getOffsetKnob();
-
-        /*
-
-           TopLeft(0) ------------- Top right(3)
-         |                        |
-         |                        |
-         |                        |
-           Btm left (1) ------------ Btm right (2)
-
-         */
-        patternCorners[0] = _imp->ui->interactMarker->getPatternTopLeftKnob();
-        patternCorners[1] = _imp->ui->interactMarker->getPatternBtmLeftKnob();
-        patternCorners[2] = _imp->ui->interactMarker->getPatternBtmRightKnob();
-        patternCorners[3] = _imp->ui->interactMarker->getPatternTopRightKnob();
-        searchWndTopRight = _imp->ui->interactMarker->getSearchWindowTopRightKnob();
-        searchWndBtmLeft = _imp->ui->interactMarker->getSearchWindowBottomLeftKnob();
-    }
-    if (!trackingPageSecret) {
-        switch (_imp->ui->eventState) {
-        case eMouseStateDraggingCenter:
-        case eMouseStateDraggingOffset: {
-            assert(_imp->ui->interactMarker);
-            if (!centerKnob || !offsetKnob ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-
-            if (_imp->ui->eventState == eMouseStateDraggingOffset) {
-                offsetKnob->setValues(offsetKnob->getValueAtTime(time, 0) + delta.x,
-                                      offsetKnob->getValueAtTime(time, 1) + delta.y,
-                                      view,
-                                      eValueChangedReasonPluginEdited);
-            } else {
-                centerKnob->setValuesAtTime(time, centerKnob->getValueAtTime(time, 0) + delta.x,
-                                            centerKnob->getValueAtTime(time, 1) + delta.y,
-                                            view,
-                                            eValueChangedReasonPluginEdited);
-                for (int i = 0; i < 4; ++i) {
-                    for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
-                        patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
-                    }
-                }
-            }
-            _imp->ui->refreshSelectedMarkerTexture();
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingInnerBtmLeft:
-        case eMouseStateDraggingInnerTopRight:
-        case eMouseStateDraggingInnerTopLeft:
-        case eMouseStateDraggingInnerBtmRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            int index = 0;
-            if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
-                index = 1;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) {
-                index = 2;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) {
-                index = 3;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) {
-                index = 0;
-            }
-
-            int nextIndex = (index + 1) % 4;
-            int prevIndex = (index + 3) % 4;
-            int diagIndex = (index + 2) % 4;
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point cur, prev, next, diag;
-            cur.x = patternCorners[index]->getValueAtTime(time, 0) + delta.x  + center.x + offset.x;;
-            cur.y = patternCorners[index]->getValueAtTime(time, 1) + delta.y  + center.y + offset.y;
-
-            prev.x = patternCorners[prevIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            prev.y = patternCorners[prevIndex]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            next.x = patternCorners[nextIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            next.y = patternCorners[nextIndex]->getValueAtTime(time, 1)  + center.y + offset.y;
-
-            diag.x = patternCorners[diagIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            diag.y = patternCorners[diagIndex]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            Point nextVec;
-            nextVec.x = next.x - cur.x;
-            nextVec.y = next.y - cur.y;
-
-            Point prevVec;
-            prevVec.x = cur.x - prev.x;
-            prevVec.y = cur.y - prev.y;
-
-            Point nextDiagVec, prevDiagVec;
-            prevDiagVec.x = diag.x - next.x;
-            prevDiagVec.y = diag.y - next.y;
-
-            nextDiagVec.x = prev.x - diag.x;
-            nextDiagVec.y = prev.y - diag.y;
-
-            //Clamp so the 4 points remaing the same in the homography
-            if (prevVec.x * nextVec.y - prevVec.y * nextVec.x < 0.) {         // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, prev, next, &cur);
-            }
-            if (nextDiagVec.x * prevVec.y - nextDiagVec.y * prevVec.x < 0.) {         // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, prev, diag, &cur);
-            }
-            if (nextVec.x * prevDiagVec.y - nextVec.y * prevDiagVec.x < 0.) {         // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, next, diag, &cur);
-            }
-
-
-            Point searchWindowCorners[2];
-            searchWindowCorners[0].x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
-            searchWindowCorners[0].y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-
-            searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
-            searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
-
-            cur.x = boost::algorithm::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
-            cur.y = boost::algorithm::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
-
-            cur.x -= (center.x + offset.x);
-            cur.y -= (center.y + offset.y);
-
-            patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
-
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterBtmLeft: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p = {0, 0.};
-            p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::min(p.x, topLeft.x);
-            p.x = std::min(p.x, btmLeft.x);
-            p.x = std::min(p.x, btmRight.x);
-            p.x = std::min(p.x, topRight.x);
-
-            p.y = std::min(p.y, topLeft.y);
-            p.y = std::min(p.y, btmLeft.y);
-            p.y = std::min(p.y, btmRight.y);
-            p.y = std::min(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            } else {
-                searchWndBtmLeft->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterBtmRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::max(p.x, topLeft.x);
-            p.x = std::max(p.x, btmLeft.x);
-            p.x = std::max(p.x, btmRight.x);
-            p.x = std::max(p.x, topRight.x);
-
-            p.y = std::min(p.y, topLeft.y);
-            p.y = std::min(p.y, btmLeft.y);
-            p.y = std::min(p.y, btmRight.y);
-            p.y = std::min(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValueAtTime(time, p.y, view, 1);
-            } else {
-                searchWndBtmLeft->setValue(p.y, view, 1);
-            }
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValueAtTime(time, p.x, view, 0);
-            } else {
-                searchWndTopRight->setValue(p.x, view, 0);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterTopRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p = {0, 0};
-            if (searchWndTopRight) {
-                p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-                p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-            }
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::max(p.x, topLeft.x);
-            p.x = std::max(p.x, btmLeft.x);
-            p.x = std::max(p.x, btmRight.x);
-            p.x = std::max(p.x, topRight.x);
-
-            p.y = std::max(p.y, topLeft.y);
-            p.y = std::max(p.y, btmLeft.y);
-            p.y = std::max(p.y, btmRight.y);
-            p.y = std::max(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            } else {
-                searchWndTopRight->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterTopLeft: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::min(p.x, topLeft.x);
-            p.x = std::min(p.x, btmLeft.x);
-            p.x = std::min(p.x, btmRight.x);
-            p.x = std::min(p.x, topRight.x);
-
-            p.y = std::max(p.y, topLeft.y);
-            p.y = std::max(p.y, btmLeft.y);
-            p.y = std::max(p.y, btmRight.y);
-            p.y = std::max(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValueAtTime(time, p.x, view, 0);
-            } else {
-                searchWndBtmLeft->setValue(p.x, view, 0);
-            }
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValueAtTime(time, p.y, view, 1);
-            } else {
-                searchWndTopRight->setValue(p.y, view, 1);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingInnerBtmMid:
-        case eMouseStateDraggingInnerTopMid:
-        case eMouseStateDraggingInnerMidLeft:
-        case eMouseStateDraggingInnerMidRight:
-        case eMouseStateDraggingOuterBtmMid:
-        case eMouseStateDraggingOuterTopMid:
-        case eMouseStateDraggingOuterMidLeft:
-        case eMouseStateDraggingOuterMidRight: {
-            _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingSelectedMarkerResizeAnchor: {
-            QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
-            double dx = viewportPos.x() - lastPosWidget.x();
-            KnobIntPtr knob = _imp->ui->magWindowPxSizeKnob.lock();
-            int value = knob->getValue();
-            value += dx;
-            value = std::max(value, 10);
-            knob->setValue(value);
-            didSomething = true;
-            break;
-        }
-        case eMouseStateScalingSelectedMarker: {
-            TrackMarkerPtr marker = _imp->ui->selectedMarker.lock();
-            assert(marker);
-            RectD markerMagRect;
-            _imp->ui->computeSelectedMarkerCanonicalRect(&markerMagRect);
-            KnobDoublePtr centerKnob = marker->getCenterKnob();
-            KnobDoublePtr offsetKnob = marker->getOffsetKnob();
-            KnobDoublePtr searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
-            KnobDoublePtr searchTopRight = marker->getSearchWindowTopRightKnob();
-            if (!centerKnob || !offsetKnob || !searchBtmLeft || !searchTopRight) {
-                didSomething = false;
-                break;
-            }
-
-            Point center, offset, btmLeft, topRight;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-            btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-            topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
-
-            //Remove any offset to the center to see the marker in the magnification window
-            double xCenterPercent = (center.x - btmLeft.x + offset.x) / (topRight.x - btmLeft.x);
-            double yCenterPercent = (center.y - btmLeft.y + offset.y) / (topRight.y - btmLeft.y);
-            Point centerPoint;
-            centerPoint.x = markerMagRect.x1 + xCenterPercent * (markerMagRect.x2 - markerMagRect.x1);
-            centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
-
-            double prevDist = std::sqrt( (_imp->ui->lastMousePos.x() - centerPoint.x ) * ( _imp->ui->lastMousePos.x() - centerPoint.x) + ( _imp->ui->lastMousePos.y() - centerPoint.y) * ( _imp->ui->lastMousePos.y() - centerPoint.y) );
-            if (prevDist != 0) {
-                double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
-                double ratio = dist / prevDist;
-                _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
-                _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
-                didSomething = true;
-            }
-            break;
-        }
-        case eMouseStateDraggingSelectedMarker: {
-            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight ||
-                !patternCorners[0] || !patternCorners[1] || !patternCorners[2] | !patternCorners[3]) {
-                didSomething = false;
-                break;
-            }
-            double x = centerKnob->getValueAtTime(time, 0);
-            double y = centerKnob->getValueAtTime(time, 1);
-            double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
-            double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
-            x += dx;
-            y += dy;
-            centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
-            for (int i = 0; i < 4; ++i) {
-                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
-                    patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
-                }
-            }
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        default:
-            break;
-        } // switch
-    } // !trackingPageSecret
-    if (_imp->ui->clickToAddTrackEnabled) {
-        ///Refresh the overlay
-        didSomething = true;
-    }
-    _imp->ui->lastMousePos = pos;
-
-    return didSomething;
-} //penMotion
-
-bool
-TrackerNode::onOverlayPenDoubleClicked(double /*time*/,
-                                       const RenderScale & /*renderScale*/,
-                                       ViewIdx /*view*/,
-                                       const QPointF & /*viewportPos*/,
-                                       const QPointF & /*pos*/)
-{
-    return false;
-}
-
-bool
-TrackerNode::onOverlayPenUp(double /*time*/,
-                            const RenderScale & /*renderScale*/,
-                            ViewIdx /*view*/,
-                            const QPointF & /*viewportPos*/,
-                            const QPointF & /*pos*/,
-                            double /*pressure*/,
-                            double /*timestamp*/)
-{
-    bool didSomething = false;
-    TrackerMouseStateEnum state = _imp->ui->eventState;
-
-    if (state != eMouseStateIdle) {
-        _imp->ui->eventState = eMouseStateIdle;
-        didSomething = true;
-    }
-    if (_imp->ui->interactMarker) {
-        _imp->ui->interactMarker.reset();
-        didSomething = true;
-    }
-
-    return didSomething;
-} // penUp
-
-bool
-TrackerNode::onOverlayKeyDown(double /*time*/,
-                              const RenderScale & /*renderScale*/,
-                              ViewIdx /*view*/,
-                              Key key,
-                              KeyboardModifiers /*modifiers*/)
-{
-    bool didSomething = false;
-    bool isCtrl = false;
-    bool isAlt = false;
-
-    if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
-        ++_imp->ui->shiftDown;
-    } else if ( (key == Key_Control_L) || (key == Key_Control_R) ) {
-        ++_imp->ui->controlDown;
-        isCtrl = true;
-    } else if ( (key == Key_Alt_L) || (key == Key_Alt_R) ) {
-        ++_imp->ui->altDown;
-        isAlt = true;
-    }
-
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
-
-    if ( !trackingPageSecret && _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
-        _imp->ui->clickToAddTrackEnabled = true;
-        _imp->ui->addTrackButton.lock()->setValue(true);
-        didSomething = true;
-    }
-
-
-    return didSomething;
-} // keydown
-
-bool
-TrackerNode::onOverlayKeyUp(double /*time*/,
-                            const RenderScale & /*renderScale*/,
-                            ViewIdx /*view*/,
-                            Key key,
-                            KeyboardModifiers /*modifiers*/)
-{
-    bool didSomething = false;
-    bool isAlt = false;
-    bool isControl = false;
-
-    if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
-        if (_imp->ui->shiftDown) {
-            --_imp->ui->shiftDown;
-        }
-        if (_imp->ui->eventState == eMouseStateScalingSelectedMarker) {
-            _imp->ui->eventState = eMouseStateIdle;
-            didSomething = true;
-        }
-    } else if ( (key == Key_Control_L) || (key == Key_Control_R) ) {
-        if (_imp->ui->controlDown) {
-            --_imp->ui->controlDown;
-        }
-        isControl = true;
-    } else if ( (key == Key_Alt_L) || (key == Key_Alt_R) ) {
-        if (_imp->ui->altDown) {
-            --_imp->ui->altDown;
-        }
-        isAlt = true;
-    }
-
-
-    if ( _imp->ui->clickToAddTrackEnabled && (isControl || isAlt) ) {
-        _imp->ui->clickToAddTrackEnabled = false;
-        _imp->ui->addTrackButton.lock()->setValue(false);
-        didSomething = true;
-    }
-
-
-    return didSomething;
-} // KeyUp
-
-bool
-TrackerNode::onOverlayKeyRepeat(double /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/,
-                                Key /*key*/,
-                                KeyboardModifiers /* modifiers*/)
-{
-    return false;
-} // keyrepeat
-
-bool
-TrackerNode::onOverlayFocusGained(double /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /* view*/)
-{
-    return false;
-} // gainFocus
-
-bool
-TrackerNode::onOverlayFocusLost(double /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/)
-{
-    _imp->ui->altDown = 0;
-    _imp->ui->controlDown = 0;
-    _imp->ui->shiftDown = 0;
-
-
-    return true;
-} // loseFocus
-
-void
-TrackerNode::onInteractViewportSelectionCleared()
-{
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
-
-    if (trackingPageSecret) {
-        return;
-    }
-
-    getNode()->getTrackerContext()->clearSelection(TrackerContext::eTrackSelectionViewer);
-}
-
-void
-TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
-                                                bool onRelease)
-{
-    if (!onRelease) {
-        return;
-    }
-
-
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
-    if (trackingPageSecret) {
-        return;
-    }
-
-    std::vector<TrackMarkerPtr > allMarkers;
-    std::list<TrackMarkerPtr > selectedMarkers;
-    TrackerContextPtr context = getNode()->getTrackerContext();
-    context->getAllMarkers(&allMarkers);
-    for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( !allMarkers[i]->isEnabled( allMarkers[i]->getCurrentTime() ) ) {
-            continue;
-        }
-        KnobDoublePtr center = allMarkers[i]->getCenterKnob();
-        double x, y;
-        x = center->getValue(0);
-        y = center->getValue(1);
-        if ( (x >= rectangle.x1) && (x <= rectangle.x2) && (y >= rectangle.y1) && (y <= rectangle.y2) ) {
-            selectedMarkers.push_back(allMarkers[i]);
-        }
-    }
-
-    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
-    context->clearSelection(TrackerContext::eTrackSelectionInternal);
-    context->addTracksToSelection(selectedMarkers, TrackerContext::eTrackSelectionInternal);
-    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 }
 
 void
@@ -2432,6 +1626,351 @@ TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
         _imp->ui->refreshSelectedMarkerTexture();
     }
 }
+
+SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr
+TrackerKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
+{
+    TrackMarkerPtr isTrack = toTrackMarker(item);
+    assert(isTrack);
+    SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+    ret->verbatimTag = kSerializationTrackTag;
+    isTrack->toSerialization(ret.get());
+    return ret;
+}
+
+KnobTableItemPtr
+TrackerKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data)
+{
+    const SERIALIZATION_NAMESPACE::KnobTableItemSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::KnobTableItemSerialization*>(data.get());
+    if (!serialization) {
+        return KnobTableItemPtr();
+    }
+    TrackMarkerPtr marker;
+    {
+        marker = TrackMarker::create(shared_from_this());
+    }
+    marker->initializeKnobsPublic();
+    marker->fromSerialization(*serialization);
+    return marker;
+}
+
+void
+TrackerKnobItemsTable::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
+{
+    if (!markers) {
+        return;
+    }
+    std::vector<KnobTableItemPtr> items = getTopLevelItems();
+    for (std::vector<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        TrackMarkerPtr marker = toTrackMarker(*it);
+        assert(marker);
+        markers->push_back(marker);
+    }
+}
+
+void
+TrackerKnobItemsTable::getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers) const
+{
+    if (!markers) {
+        return;
+    }
+    std::vector<KnobTableItemPtr> items = getTopLevelItems();
+    for (std::vector<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        TrackMarkerPtr marker = toTrackMarker(*it);
+        assert(marker);
+        if (marker->isEnabled(marker->getCurrentTime())) {
+            markers->push_back(marker);
+        }
+    }
+}
+
+void
+TrackerKnobItemsTable::getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const
+{
+    if (!markers) {
+        return;
+    }
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        markers->push_back(toTrackMarker(*it));
+    }
+}
+
+bool
+TrackerKnobItemsTable::isMarkerSelected(const TrackMarkerPtr& marker) const
+{
+    std::list<KnobTableItemPtr> items = getSelectedItems();
+
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        if (*it == marker) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+TrackerNodePrivate::resetTransformCenter()
+{
+    std::list<TrackMarkerPtr> tracks;
+    knobsTable->getAllEnabledMarkers(&tracks);
+
+    double time = (double)referenceFrame.lock()->getValue();
+    std::vector<double> p(2);
+    if ( tracks.empty() ) {
+        RectD rod = getInputRoD(time, ViewIdx(0));
+        p[0] = (rod.x1 + rod.x2) / 2.;
+        p[1] = (rod.y1 + rod.y2) / 2.;
+    } else {
+        p[0] = p[1] = 0.;
+        for (std::list<TrackMarkerPtr>::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
+            KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+            p[0] += centerKnob->getValueAtTime(time, DimIdx(0));
+            p[1] += centerKnob->getValueAtTime(time, DimIdx(1));
+
+        }
+        p[0] /= tracks.size();
+        p[1] /= tracks.size();
+    }
+
+    KnobDoublePtr centerKnob = center.lock();
+    centerKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
+    centerKnob->setValueAcrossDimensions(p);
+}
+
+void
+TrackerNodePrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType)
+{
+    if ( !transformNode.lock() ) {
+        return;
+    }
+
+    KnobChoicePtr motionTypeKnob = motionType.lock();
+    if (!motionTypeKnob) {
+        return;
+    }
+    int motionType_i = motionTypeKnob->getValue();
+    TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
+    KnobBoolPtr disableTransformKnob = disableTransform.lock();
+    bool disableNodes = disableTransformKnob->getValue();
+
+    transformNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+
+    transformControlsSeparator.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    disableTransformKnob->setSecret(motionType == eTrackerMotionTypeNone);
+    if (transformType == eTrackerTransformNodeTransform) {
+        transformControlsSeparator.lock()->setLabel( tr("Transform Controls") );
+        disableTransformKnob->setLabel( tr("Disable Transform") );
+    } else if (transformType == eTrackerTransformNodeCornerPin) {
+        transformControlsSeparator.lock()->setLabel( tr("CornerPin Controls") );
+        disableTransformKnob->setLabel( tr("Disable CornerPin") );
+    }
+
+
+    smoothTransform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    smoothCornerPin.lock()->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+
+    toGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    fromGroup.lock()->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    cornerPinOverlayPoints.lock()->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    KnobDoublePtr matrix = cornerPinMatrix.lock();
+    if (matrix) {
+        matrix->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    }
+
+
+    translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    scale.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    scaleUniform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    rotate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    center.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    skewX.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    skewY.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    skewOrder.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    filter.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    clamp.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    blackOutside.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+
+    invertTransform.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    motionBlur.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    shutter.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    shutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    customShutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+
+    exportLink.lock()->setEnabled(motionType != eTrackerMotionTypeNone);
+    exportButton.lock()->setEnabled(motionType != eTrackerMotionTypeNone);
+
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    bool usePM = usePatternMatching.lock()->getValue();
+    enableTrackRed.lock()->setSecret(usePM);
+    enableTrackGreen.lock()->setSecret(usePM);
+    enableTrackBlue.lock()->setSecret(usePM);
+    maxError.lock()->setSecret(usePM);
+    maxIterations.lock()->setSecret(usePM);
+    bruteForcePreTrack.lock()->setSecret(usePM);
+    useNormalizedIntensities.lock()->setSecret(usePM);
+    preBlurSigma.lock()->setSecret(usePM);
+
+    patternMatchingScore.lock()->setSecret(!usePM);
+
+#endif
+} // TrackerNodePrivate::refreshVisibilityFromTransformTypeInternal
+
+void
+TrackerNodePrivate::refreshVisibilityFromTransformType()
+{
+    KnobChoicePtr transformTypeKnob = transformType.lock();
+
+    // The transform page may not be created yet
+    if (!transformTypeKnob) {
+        return;
+    }
+
+    int transformType_i = transformTypeKnob->getValue();
+    TrackerTransformNodeEnum transformType = (TrackerTransformNodeEnum)transformType_i;
+    refreshVisibilityFromTransformTypeInternal(transformType);
+}
+
+void
+TrackerNodePrivate::setSolverParamsEnabled(bool enabled)
+{
+    KnobChoicePtr motionTypeKnob = motionType.lock();
+
+    // The transform page may not be created yet
+    if (!motionTypeKnob) {
+        return;
+    }
+    motionTypeKnob->setEnabled(enabled);
+    setCurrentFrameButton.lock()->setEnabled(enabled);
+    robustModel.lock()->setEnabled(enabled);
+    referenceFrame.lock()->setEnabled(enabled);
+    transformType.lock()->setEnabled(enabled);
+    jitterPeriod.lock()->setEnabled(enabled);
+    smoothTransform.lock()->setEnabled(enabled);
+    smoothCornerPin.lock()->setEnabled(enabled);
+}
+
+void
+TrackerNodePrivate::setTransformOutOfDate(bool outdated)
+{
+    transformOutOfDateLabel.lock()->setSecret(!outdated);
+}
+
+NodePtr
+TrackerNodePrivate::getTrackerNode() const
+{
+    return publicInterface->getNode();
+}
+
+TrackerHelperPtr
+TrackerNodePrivate::getTracker() const
+{
+    return tracker;
+}
+
+TrackerHelperPtr
+TrackerNode::getTracker() const
+{
+    return _imp->tracker;
+}
+
+bool
+TrackerNodePrivate::getCenterOnTrack() const
+{
+    return ui->centerViewerButton.lock()->getValue();
+}
+
+bool
+TrackerNodePrivate::getUpdateViewer() const
+{
+    return ui->updateViewerButton.lock()->getValue();
+}
+
+void
+TrackerNodePrivate::getTrackChannels(bool* doRed, bool* doGreen, bool* doBlue) const
+{
+    *doRed = enableTrackRed.lock()->getValue();
+    *doGreen = enableTrackGreen.lock()->getValue();
+    *doBlue = enableTrackBlue.lock()->getValue();
+}
+
+bool
+TrackerNodePrivate::canDisableMarkersAutomatically() const
+{
+    return autoKeyEnabled.lock()->getValue();
+}
+
+double
+TrackerNodePrivate::getMaxError() const
+{
+    return maxError.lock()->getValue();
+}
+
+int
+TrackerNodePrivate::getMaxNIterations() const
+{
+    return maxIterations.lock()->getValue();
+}
+
+bool
+TrackerNodePrivate::isBruteForcePreTrackEnabled() const
+{
+    return bruteForcePreTrack.lock()->getValue();
+}
+
+bool
+TrackerNodePrivate::isNormalizeIntensitiesEnabled() const
+{
+    return useNormalizedIntensities.lock()->getValue();
+}
+
+double
+TrackerNodePrivate::getPreBlurSigma() const
+{
+    return preBlurSigma.lock()->getValue();
+}
+
+RectD
+TrackerNodePrivate::getNormalizationRoD(double time, ViewIdx view) const
+{
+    return getInputRoD(time, view);
+}
+
+TrackMarkerPtr
+TrackerNodePrivate::createMarker()
+{
+    TrackMarkerPtr track;
+
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    bool usePM = isTrackerPMEnabled();
+    if (!usePM) {
+        track = TrackMarker::create( knobsTable );
+    } else {
+        track = TrackMarkerPM::create( knobsTable );
+    }
+#else
+    track = TrackMarker::create(knobsTable);
+#endif
+
+    knobsTable->addItem(track, KnobTableItemPtr(), eTableChangeReasonInternal);
+
+    track->resetCenter();
+
+    return track;
+}
+
+void
+TrackerNodePrivate::trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer)
+{
+    std::list<TrackMarkerPtr > markers;
+    knobsTable->getAllEnabledMarkers(&markers);
+
+    tracker->trackMarkers(markers, start, end, frameStep, viewer);
+}
+
+
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

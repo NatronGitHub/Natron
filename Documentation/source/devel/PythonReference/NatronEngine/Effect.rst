@@ -18,6 +18,8 @@ Functions
 *    def :meth:`addUserPlane<NatronEngine.Effect.addUserPlane>` (planeName,channels)
 *    def :meth:`endChanges<NatronEngine.Effect.endChanges>` ()
 *    def :meth:`beginChanges<NatronEngine.Effect.beginChanges>` ()
+*    def :meth:`beginParametersUndoCommand<NatronEngine.Effect.beginParametersUndoCommand>` (commandName)
+*    def :meth:`endParametersUndoCommand<NatronEngine.Effect.endParametersUndoCommand>` ()
 *    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
 *    def :meth:`insertParamInViewerUI<NatronEngine.Effect.insertParamInViewerUI>` (parameter[, index=-1])
@@ -42,8 +44,7 @@ Functions
 *    def :meth:`getPremult<NatronEngine.Effect.getPremult>` ()
 *    def :meth:`getPixelAspectRatio<NatronEngine.Effect.getPixelAspectRatio>` ()
 *	 def :meth:`getRegionOfDefinition<NatronEngine.Effect.getRegionOfDefinition>` (time,view)
-*    def :meth:`getRotoContext<NatronEngine.Effect.getRotoContext>` ()
-*    def :meth:`getTrackerContext<NatronEngine.Effect.getTrackerContext>` ()
+*    def :meth:`getItemsTable<NatronEngine.Effect.getItemsTable>` ()
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
@@ -157,8 +158,19 @@ Member functions description
 	See :func:`beginChanges()<NatronEngine.Effect.beginChanges>`
 
 
+.. method:: NatronEngine.Effect.beginParametersUndoCommand (commandName)
+
+	:param commandName: :class:`str<PySide.QtCore.QString>`
+	
+Same as :func:`beginChanges()<NatronEngine.Effect.beginChanges>` except that all 
+parameter changes are gathered under the same undo/redo command and the user will be able
+to undo them all at once from the Edit menu. The *commandName* parameter is the text that 
+will be displayed in the Edit menu.
 
 
+.. method:: NatronEngine.Effect.endParametersUndoCommand ()
+
+Close a undo/redo command that was previously opened with :func:`beginParametersUndoCommand()<NatronEngine.Effect.beginParametersUndoCommand>`.
 
 .. method:: NatronEngine.Effect.canConnectInput(inputNumber, node)
 
@@ -390,26 +402,14 @@ for the "Output".
 This can be useful for example to set the position of a point parameter to the center
 of the region of definition.
 
-.. method:: NatronEngine.Effect.getRotoContext()
+.. method:: NatronEngine.Effect.getItemsTable()
 
 
-    :rtype: :class:`Roto<NatronEngine.Roto>`
+    :rtype: :class:`ItemsTable<NatronEngine.ItemsTable>`
 
-Returns the roto context for this node. Currently only the Roto node has a roto context.
-The roto context is in charge of maintaining all informations relative to :doc:`Beziers<BezierCurve>`
-and :doc:`Layers<Layer>`.
-Most of the nodes don't have a roto context though and this function will return None.
-
-
-.. method:: NatronEngine.Effect.getTrackerContext()
-
-
-    :rtype: :class:`Tracker<NatronEngine.Tracker>`
-
-Returns the tracker context for this node. Currently only the Tracker node has a tracker context.
-The tracker context is in charge of maintaining all informations relative to :doc:`Tracks<Track>`.
-Most of the nodes don't have a tracker context though and this function will return None.
-
+Returns the items table if this node has any. An :ref:`ItemsTable<ItemsTable>` is used
+for example in the Tracker node to display the tracks or in the RotoPaint node to display
+the shapes and strokes in the properties panel.
 
 
 .. method:: NatronEngine.Effect.getScriptName()

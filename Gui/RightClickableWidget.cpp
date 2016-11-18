@@ -35,8 +35,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 
-#include "Gui/CurveWidget.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerGL.h"
@@ -81,7 +81,7 @@ RightClickableWidget::enterEvent(QEvent* e)
     QWidget* currentFocus = qApp->focusWidget();
     bool canSetFocus = !currentFocus ||
                        dynamic_cast<ViewerGL*>(currentFocus) ||
-                       dynamic_cast<CurveWidget*>(currentFocus) ||
+                       dynamic_cast<AnimationModuleView*>(currentFocus) ||
                        dynamic_cast<Histogram*>(currentFocus) ||
                        dynamic_cast<NodeGraph*>(currentFocus) ||
                        dynamic_cast<QToolButton*>(currentFocus) ||

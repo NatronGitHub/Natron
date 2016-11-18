@@ -27,36 +27,84 @@
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <cstdlib>
 
 #include <QtCore/QThread>
 #include <QtCore/QObject>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 
-#include "Engine/Bezier.h"
-#include "Engine/Knob.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/RotoContext.h" // Bezier
+#include <QTreeWidgetItem>
+
+#include "Engine/Curve.h"
+#include "Engine/Image.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/CurveWidget.h"
+#include "Gui/AnimItemBase.h"
+#include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleViewPrivate.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/KnobGui.h"
 
 NATRON_NAMESPACE_ENTER;
 
-CurveGui::CurveGui(CurveWidget *curveWidget,
-                   CurvePtr curve,
-                   const QString & name,
-                   const QColor & color,
-                   int thickness)
-    : _internalCurve(curve)
-    , _curveWidget(curveWidget)
-    , _name(name)
-    , _color(color)
-    , _thickness(thickness)
-    , _visible(false)
-    , _selected(false)
+
+#define NATRON_NO_PREDEFINED_CURVE_COLORS 6
+#define NATRON_NO_PREDEFINED_CURVE_SATURATION 220
+#define NATRON_NO_PREDEFINED_CURVE_VALUE 150
+static const OfxRGBColourD curveColors[NATRON_NO_PREDEFINED_CURVE_COLORS] =
+{
+    // h s v
+    {0, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE},
+    {60, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE},
+    {120, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE},
+    {180, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE},
+    {240, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE},
+    {300, NATRON_NO_PREDEFINED_CURVE_SATURATION, NATRON_NO_PREDEFINED_CURVE_VALUE}
+};
+
+struct CurveGuiPrivate
+{
+    AnimationModuleView* curveWidget;
+    AnimItemBaseWPtr item;
+    DimIdx dimension;
+    ViewIdx view;
+    CurveWPtr internalCurve; // ptr to the internal curve
+
+    double color[4]; // the color that must be used to draw the curve
+    int lineWidth; // its thickness
+
+    CurveGuiPrivate(AnimationModuleView *curveWidget,
+                    const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view)
+    : curveWidget(curveWidget)
+    , item(item)
+    , dimension(dimension)
+    , view(view)
+    , internalCurve()
+    , color()
+    , lineWidth(1.)
+    {
+
+        QColor tmpColor;
+        int colorIdx = rand() % NATRON_NO_PREDEFINED_CURVE_COLORS;
+        assert(colorIdx >= 0 && colorIdx < NATRON_NO_PREDEFINED_CURVE_COLORS);
+        tmpColor.setHsv(curveColors[colorIdx].r, curveColors[colorIdx].g, curveColors[colorIdx].b);
+        color[0] = tmpColor.redF();
+        color[1] = tmpColor.greenF();
+        color[2] = tmpColor.blueF();
+        color[3] = 1.;
+
+        internalCurve = item->getCurve(dimension, view);
+        assert(internalCurve.lock());
+
+    }
+};
+
+CurveGui::CurveGui(AnimationModuleView *curveWidget,
+                   const AnimItemBasePtr& item, DimIdx dimension, ViewIdx view)
+: _imp(new CurveGuiPrivate(curveWidget, item, dimension, view))
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -67,6 +115,136 @@ CurveGui::~CurveGui()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 }
+
+AnimItemBasePtr
+CurveGui::getItem() const
+{
+    return _imp->item.lock();
+}
+
+ViewIdx
+CurveGui::getView() const
+{
+    return _imp->view;
+}
+
+DimIdx
+CurveGui::getDimension() const
+{
+    return _imp->dimension;
+}
+
+AnimItemDimViewIndexID
+CurveGui::getCurveID() const
+{
+    return AnimItemDimViewIndexID(getItem(), getView(), getDimension());
+}
+
+QString
+CurveGui::getName() const
+{
+    QString ret;
+    AnimItemBasePtr item = _imp->item.lock();
+    if (!item) {
+        return ret;
+    }
+    ret = item->getViewDimensionLabel(_imp->dimension, _imp->view);
+    return ret;
+}
+
+
+void
+CurveGui::getColor(double* color) const
+{
+    memcpy(color, _imp->color, sizeof(double) * 4);
+}
+
+void
+CurveGui::setColor(const double* color)
+{
+    memcpy(_imp->color, color, sizeof(double) * 4);
+}
+
+int
+CurveGui::getLineWidth() const
+{
+    return _imp->lineWidth;
+}
+
+void
+CurveGui::setLineWidth(int t)
+{
+    _imp->lineWidth = t;
+}
+
+Curve::YRange
+CurveGui::getCurveYRange() const
+{
+    return getInternalCurve()->getCurveYRange();
+}
+
+CurvePtr
+CurveGui::getInternalCurve() const
+{
+    return _imp->internalCurve.lock();
+}
+bool
+CurveGui::areKeyFramesTimeClampedToIntegers() const
+{
+    return getInternalCurve()->areKeyFramesTimeClampedToIntegers();
+}
+
+bool
+CurveGui::areKeyFramesValuesClampedToBooleans() const
+{
+    return getInternalCurve()->areKeyFramesValuesClampedToBooleans();
+}
+
+bool
+CurveGui::areKeyFramesValuesClampedToIntegers() const
+{
+    return getInternalCurve()->areKeyFramesValuesClampedToIntegers();
+}
+
+bool
+CurveGui::isYComponentMovable() const
+{
+    return getInternalCurve()->isYComponentMovable();
+}
+
+KeyFrameSet
+CurveGui::getKeyFrames() const
+{
+    return getInternalCurve()->getKeyFrames_mt_safe();
+}
+
+double
+CurveGui::evaluate(bool useExpr, double x) const
+{
+    AnimItemBasePtr item = _imp->item.lock();
+    if (!item) {
+        return 0;
+    }
+    try {
+        return item->evaluateCurve(useExpr, x, _imp->dimension, _imp->view);
+    } catch (...) {
+        return 0;
+    }
+}
+
+int
+CurveGui::getKeyFrameIndex(double time) const
+{
+    return getInternalCurve()->keyFrameIndex(time);
+}
+
+KeyFrame
+CurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
+                                       int index)
+{
+    return getInternalCurve()->setKeyFrameInterpolation(interp, index);
+}
+
 
 void
 CurveGui::nextPointForSegment(const double x, // < in curve coordinates
@@ -88,12 +266,14 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // If non periodic and out of curve range, draw straight lines from widget border to
     // the keyframe on the side
     if (!isPeriodic && x < keys.begin()->getTime()) {
-        *x2WidgetCoords = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(), 0).x();
+        *x2WidgetCoords = keys.begin()->getTime();
+        double y;
+        _imp->curveWidget->toWidgetCoordinates(x2WidgetCoords, &y);
         *x1Key = *keys.begin();
         *isx1Key = true;
         return;
     } else if (!isPeriodic && x >= keys.rbegin()->getTime()) {
-        *x2WidgetCoords = _curveWidget->width() - 1;
+        *x2WidgetCoords = _imp->curveWidget->width() - 1;
         return;
     }
 
@@ -102,7 +282,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // We're between 2 keyframes or the curve is periodic, get the upper and lower keyframes widget coordinates
 
     // Points to the first keyframe with a greater time (in widget coords) than x1
-    KeyFrameSet::const_iterator upperIt = keys.end();;
+    KeyFrameSet::const_iterator upperIt = keys.end();
 
     // If periodic, bring back x in the period range (in widget coordinates)
     double xClamped = x;
@@ -132,7 +312,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
             // Otherwise start from the begining
             itKeys = keys.begin();
         }
-
+        *lastUpperIt = keys.end();
         for (; itKeys != keys.end(); ++itKeys) {
             if (itKeys->getTime() > xClamped) {
                 upperIt = itKeys;
@@ -186,7 +366,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     double normalizeTimeRange = tnext - tprev;
     if (normalizeTimeRange == 0) {
         // Only 1 keyframe, draw a horizontal line
-        *x2WidgetCoords = _curveWidget->width() - 1;
+        *x2WidgetCoords = _imp->curveWidget->width() - 1;
         return;
     }
     assert(normalizeTimeRange > 0.);
@@ -200,7 +380,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     double secondDer = 6. * (1. - t) * (P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
     6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
 
-    double secondDerWidgetCoord = _curveWidget->toWidgetCoordinates(0, secondDer).y();
+    double secondDerWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, secondDer).y();
     double normalizedSecondDerWidgetCoord = std::abs(secondDerWidgetCoord / normalizeTimeRange);
 
     // compute delta_x so that the y difference between the derivative and the curve is at most
@@ -208,13 +388,13 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     double delta_x = std::max(2. / std::max(std::sqrt(normalizedSecondDerWidgetCoord), 0.1), 1.);
 
     // The x widget coordinate of the next keyframe
-    double tNextWidgetCoords = _curveWidget->toWidgetCoordinates(tnext, 0).x();
+    double tNextWidgetCoords = _imp->curveWidget->toWidgetCoordinates(tnext, 0).x();
 
     // The widget coordinate of the x passed in parameter but clamped to the curve period
-    double xClampedWidgetCoords = _curveWidget->toWidgetCoordinates(xClamped, 0).x();
+    double xClampedWidgetCoords = _imp->curveWidget->toWidgetCoordinates(xClamped, 0).x();
 
     // The real x passed in parameter in widget coordinates
-    double xWidgetCoords = _curveWidget->toWidgetCoordinates(x, 0).x();
+    double xWidgetCoords = _imp->curveWidget->toWidgetCoordinates(x, 0).x();
 
     double x2ClampedWidgetCoords = xClampedWidgetCoords + delta_x;
 
@@ -233,17 +413,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
 
 } // nextPointForSegment
 
-Curve::YRange
-CurveGui::getCurveYRange() const
-{
-    return getInternalCurve()->getCurveYRange();
-}
 
-CurvePtr
-CurveGui::getInternalCurve() const
-{
-    return _internalCurve;
-}
 
 static void
 drawLineStrip(const std::vector<float>& vertices,
@@ -285,6 +455,24 @@ drawLineStrip(const std::vector<float>& vertices,
     GL_GPU::glEnd();
 }
 
+class KeyFrameWithStringTimePredicate
+{
+public:
+    KeyFrameWithStringTimePredicate(double t)
+    : _t(t)
+    {
+    };
+
+    bool operator()(const KeyFrameWithString & f)
+    {
+        return f.key.getTime() == _t;
+    }
+
+private:
+    double _t;
+};
+
+
 void
 CurveGui::drawCurve(int curveIndex,
                     int curvesCount)
@@ -292,53 +480,40 @@ CurveGui::drawCurve(int curveIndex,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (!_visible) {
+    AnimItemBasePtr item = _imp->item.lock();
+    if (!item) {
         return;
     }
 
-    assert( QGLContext::currentContext() == _curveWidget->context() );
-
     std::vector<float> vertices, exprVertices;
-    double x1 = 0;
-    double x2;
-    const double widgetWidth = _curveWidget->width();
+    const double widgetWidth = _imp->curveWidget->width();
     KeyFrameSet keyframes;
-    BezierCPCurveGui* isBezierGui = dynamic_cast<BezierCPCurveGui*>(this);
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(this);
     bool hasDrawnExpr = false;
-    if (isKnobCurve) {
-        std::string expr;
-        KnobIPtr knob = isKnobCurve->getInternalKnob();
-        assert(knob);
-        expr = knob->getExpression( isKnobCurve->getDimension() );
-        if ( !expr.empty() ) {
-            //we have no choice but to evaluate the expression at each time
-            for (int i = x1; i < widgetWidth; ++i) {
-                double x = _curveWidget->toZoomCoordinates(i, 0).x();;
-                double y = knob->getValueAtWithExpression( x, ViewIdx(0), isKnobCurve->getDimension() );
-                exprVertices.push_back(x);
-                exprVertices.push_back(y);
-            }
-            hasDrawnExpr = true;
+    if (item->hasExpression(_imp->dimension, _imp->view)) {
+
+        //we have no choice but to evaluate the expression at each time
+        for (int i = 0; i < widgetWidth; ++i) {
+            double x = _imp->curveWidget->toZoomCoordinates(i, 0).x();
+            double y = evaluate(true /*useExpr*/, x);
+            exprVertices.push_back(x);
+            exprVertices.push_back(y);
         }
+        hasDrawnExpr = true;
+
     }
 
     bool isPeriodic = false;
     std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-    if (isBezierGui) {
-        std::set<double> keys;
-        isBezierGui->getBezier()->getKeyframeTimes(&keys);
-        int i = 0;
-        for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
-            keyframes.insert( KeyFrame(*it, i) );
-        }
-    } else {
-        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
-        isPeriodic = getInternalCurve()->isCurvePeriodic();
-        parametricRange = getInternalCurve()->getXRange();
-    }
+
+    keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+    isPeriodic = getInternalCurve()->isCurvePeriodic();
+    parametricRange = getInternalCurve()->getXRange();
+
     if ( !keyframes.empty() ) {
         try {
+            double x1 = 0;
+            double x2;
+
             bool isX1AKey = false;
             KeyFrame x1Key;
             KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
@@ -346,7 +521,7 @@ CurveGui::drawCurve(int curveIndex,
             while ( x1 < (widgetWidth - 1) ) {
                 double x, y;
                 if (!isX1AKey) {
-                    x = _curveWidget->toZoomCoordinates(x1, 0).x();
+                    x = _imp->curveWidget->toZoomCoordinates(x1, 0).x();
                     y = evaluate(false, x);
                 } else {
                     x = x1Key.getTime();
@@ -360,7 +535,7 @@ CurveGui::drawCurve(int curveIndex,
             }
             //also add the last point
             {
-                double x = _curveWidget->toZoomCoordinates(x1, 0).x();
+                double x = _imp->curveWidget->toZoomCoordinates(x1, 0).x();
                 double y = evaluate(false, x);
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
@@ -369,15 +544,37 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
 
-    QPointF btmLeft = _curveWidget->toZoomCoordinates(0, _curveWidget->height() - 1);
-    QPointF topRight = _curveWidget->toZoomCoordinates(_curveWidget->width() - 1, 0);
-    const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
+    QPointF btmLeft = _imp->curveWidget->toZoomCoordinates(0, _imp->curveWidget->height() - 1);
+    QPointF topRight = _imp->curveWidget->toZoomCoordinates(_imp->curveWidget->width() - 1, 0);
+
+
+
+    AnimationModuleSelectionModelPtr selectionModel = item->getModel()->getSelectionModel();
+    assert(selectionModel);
+    const AnimItemDimViewKeyFramesMap& selectedKeys = selectionModel->getCurrentKeyFramesSelection();
+
+
+    const KeyFrameWithStringSet* foundThisCurveSelectedKeys = 0;
+    {
+        AnimItemDimViewIndexID k;
+        k.item = item;
+        k.dim = _imp->dimension;
+        k.view = _imp->view;
+        AnimItemDimViewKeyFramesMap::const_iterator foundDimView = selectedKeys.find(k);
+
+        if (foundDimView != selectedKeys.end()) {
+            foundThisCurveSelectedKeys = &foundDimView->second;
+        }
+    }
+
 
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-        if (!isBezierGui && _selected) {
-            ///Draw y min/max axis so the user understands why the curve is clamped
+        // If this is the only curve selected, draw min/max
+        if (foundThisCurveSelectedKeys && selectedKeys.size()) {
+
+            // Draw y min/max axis so the user understands why the value is clamped
             Curve::YRange curveYRange = getCurveYRange();
             if (curveYRange.min != INT_MIN &&
                 curveYRange.min != -std::numeric_limits<double>::infinity() &&
@@ -394,16 +591,16 @@ CurveGui::drawCurve(int curveIndex,
                 GL_GPU::glEnd();
                 GL_GPU::glColor4d(1., 1., 1., 1.);
 
-                double xText = _curveWidget->toZoomCoordinates(10, 0).x();
+                double xText = _imp->curveWidget->toZoomCoordinates(10, 0).x();
 
-                _curveWidget->renderText( xText, curveYRange.min, tr("min"), minMaxColor, _curveWidget->font() );
-                _curveWidget->renderText( xText, curveYRange.max, tr("max"), minMaxColor, _curveWidget->font() );
+                _imp->curveWidget->renderText( xText, curveYRange.min, tr("min").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), minMaxColor.alphaF());
+                _imp->curveWidget->renderText( xText, curveYRange.max, tr("max").toStdString(), minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), minMaxColor.alphaF());
             }
         }
 
 
-        GL_GPU::glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-        GL_GPU::glPointSize(_thickness);
+        GL_GPU::glColor4f(_imp->color[0], _imp->color[1], _imp->color[2], _imp->color[3]);
+        GL_GPU::glPointSize(_imp->lineWidth);
         GL_GPU::glEnable(GL_BLEND);
         GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         GL_GPU::glEnable(GL_LINE_SMOOTH);
@@ -427,120 +624,141 @@ CurveGui::drawCurve(int curveIndex,
 
 
         double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
-        double textX = _curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
+        double textX = _imp->curveWidget->toZoomCoordinates(15, 0).x() + interval * (double)curveIndex;
         double textY;
 
+        CurvePtr internalCurve = _imp->internalCurve.lock();
+        QString curveName = getName();
+        QColor thisColor;
+        thisColor.setRgbF(Image::clamp(_imp->color[0], 0., 1.),
+                          Image::clamp(_imp->color[1], 0., 1.),
+                          Image::clamp(_imp->color[2], 0., 1.));
+
         try {
-            textY = evaluate(_internalCurve && !_internalCurve->isAnimated(), textX);
+            // Use expression to place the text if the curve is not animated
+            textY = evaluate(internalCurve && !internalCurve->isAnimated(), textX);
         } catch (...) {
-            textY = evaluate(true, textX);
+            // if it fails attempt without expression, this will most likely return a constant value
+            textY = evaluate(false /*useExpression*/, textX);
         }
 
         if ( ( textX >= btmLeft.x() ) && ( textX <= topRight.x() ) && ( textY >= btmLeft.y() ) && ( textY <= topRight.y() ) ) {
-            _curveWidget->renderText( textX, textY, _name, _color, _curveWidget->getFont() );
+            _imp->curveWidget->renderText( textX, textY, curveName.toStdString(), thisColor.redF(), thisColor.greenF(), thisColor.blueF(), thisColor.alphaF());
         }
-        GL_GPU::glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+        GL_GPU::glColor4f(_imp->color[0], _imp->color[1], _imp->color[2], _imp->color[3]);
 
         //draw keyframes
         GL_GPU::glPointSize(7.f);
         GL_GPU::glEnable(GL_POINT_SMOOTH);
 
-        const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-        SelectedKeys::const_iterator selectedKeyFramesIt;
-        SelectedKeys::const_iterator foundCurveSelected = selectedKeyFrames.end();
-        for (selectedKeyFramesIt = selectedKeyFrames.begin(); selectedKeyFramesIt != selectedKeyFrames.end(); ++selectedKeyFramesIt) {
-            if (selectedKeyFramesIt->first.get() == this) {
-                foundCurveSelected = selectedKeyFramesIt;
-                break;
-            }
+
+        KeyFrameWithStringSet::const_iterator foundSelectedKey;
+        if (foundThisCurveSelectedKeys) {
+            foundSelectedKey = foundThisCurveSelectedKeys->end();
         }
-
-        //bool isCurveSelected = foundCurveSelected != selectedKeyFrames.end();
-
         for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
             const KeyFrame & key = (*k);
 
+            // Do not draw keyframes out of range
             if ( ( key.getTime() < btmLeft.x() ) || ( key.getTime() > topRight.x() ) || ( key.getValue() < btmLeft.y() ) || ( key.getValue() > topRight.y() ) ) {
                 continue;
             }
 
-            GL_GPU::glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+            GL_GPU::glColor4f(_imp->color[0], _imp->color[1], _imp->color[2], _imp->color[3]);
 
-            //if the key is selected change its color to white
-            KeyPtr isSelected;
-            if ( foundCurveSelected != selectedKeyFrames.end() ) {
-                for (std::list<KeyPtr>::const_iterator it2 = foundCurveSelected->second.begin();
-                     it2 != foundCurveSelected->second.end(); ++it2) {
-                    if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {
-                        isSelected = *it2;
-                        GL_GPU::glColor4f(1.f, 1.f, 1.f, 1.f);
-                        break;
-                    }
+            bool drawKeySelected = false;
+            if (foundThisCurveSelectedKeys) {
+                KeyFrameWithStringSet::const_iterator start = foundSelectedKey == foundThisCurveSelectedKeys->end() ? foundThisCurveSelectedKeys->begin() : foundSelectedKey;
+                foundSelectedKey = std::find_if(start, foundThisCurveSelectedKeys->end(), KeyFrameWithStringTimePredicate(key.getTime()));
+                drawKeySelected = foundSelectedKey != foundThisCurveSelectedKeys->end();
+                if (!drawKeySelected) {
+                    // Also draw the keyframe as selected if it is inside the selection rectangle (but not yet selected)
+                    RectD selectionRect = _imp->curveWidget->getSelectionRectangle();
+                    drawKeySelected |= _imp->curveWidget->_imp->eventTriggeredFromCurveEditor && (!selectionRect.isNull() && selectionRect.contains(key.getTime(), key.getValue()));
+                }
+            }
+            // If the key is selected change its color
+            if (drawKeySelected) {
+                GL_GPU::glColor4f(0.8f, 0.8f, 0.8f, 1.f);
+            }
+
+
+            RectD keyframeBbox = _imp->curveWidget->_imp->getKeyFrameBoundingRectCanonical(_imp->curveWidget->_imp->curveEditorZoomContext, key.getTime(), key.getValue());
+
+            // draw texture of the keyframe
+            {
+                AnimationModuleViewPrivate::KeyframeTexture texType = AnimationModuleViewPrivate::kfTextureFromKeyframeType( key.getInterpolation(), drawKeySelected);
+                if (texType != AnimationModuleViewPrivate::kfTextureNone) {
+                    _imp->curveWidget->_imp->drawTexturedKeyframe(texType, keyframeBbox, false /*drawdimed*/);
                 }
             }
 
-            double x = key.getTime();
-            double y = key.getValue();
-            GL_GPU::glBegin(GL_POINTS);
-            GL_GPU::glVertex2f(x, y);
-            GL_GPU::glEnd();
-            glCheckErrorIgnoreOSXBug(GL_GPU);
-
-            if ( !isBezierGui && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
-                QFontMetrics m( _curveWidget->getFont() );
+            
+            // Draw tangents if not constant
+            bool drawTangents = drawKeySelected && internalCurve->isYComponentMovable() && (key.getInterpolation() != eKeyframeTypeConstant);
+            if (drawTangents) {
+                QFontMetrics m( _imp->curveWidget->font());
 
 
-                //draw the derivatives lines
+                // If interpolation is not free and not broken display with dashes the tangents lines
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     GL_GPU::glLineStipple(2, 0xAAAA);
                     GL_GPU::glEnable(GL_LINE_STIPPLE);
                 }
+                
+                QPointF leftTanPos, rightTanPos;
+                _imp->curveWidget->getKeyTangentPoints(k, keyframes, &leftTanPos, &rightTanPos);
+
+                // Draw the derivatives lines
                 GL_GPU::glBegin(GL_LINES);
                 GL_GPU::glColor4f(1., 0.35, 0.35, 1.);
-                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                GL_GPU::glVertex2f(x, y);
-                GL_GPU::glVertex2f(x, y);
-                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
+                GL_GPU::glVertex2f( leftTanPos.x(), leftTanPos.y() );
+                GL_GPU::glVertex2f(key.getTime(), key.getValue());
+                GL_GPU::glVertex2f(key.getTime(), key.getValue());
+                GL_GPU::glVertex2f( rightTanPos.x(), rightTanPos.y());
                 GL_GPU::glEnd();
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     GL_GPU::glDisable(GL_LINE_STIPPLE);
                 }
 
-                bool singleKey = selectedKeyFrames.size() == 1 && selectedKeyFrames.begin()->second.size() == 1;
-                if (singleKey) { //if one keyframe, also draw the coordinates
+
+                // Draw the tangents handles
+                GL_GPU::glBegin(GL_POINTS);
+                GL_GPU::glVertex2f( leftTanPos.x(), leftTanPos.y() );
+                GL_GPU::glVertex2f( rightTanPos.x(), rightTanPos.y());
+                GL_GPU::glEnd();
+
+                // If only one keyframe is selected, also draw the coordinates
+                if (selectedKeys.size() == 1 && foundThisCurveSelectedKeys && foundThisCurveSelectedKeys->size() == 1) {
                     double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor( (key.getLeftDerivative() * rounding) + 0.5 ) / rounding);
                     QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor( (key.getRightDerivative() * rounding) + 0.5 ) / rounding);
-                    double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0, isSelected->leftTan.second).y();
+                    double yLeftWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, leftTanPos.y()).y();
                     yLeftWidgetCoord += (m.height() + 4);
 
-                    double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0, isSelected->rightTan.second).y();
+                    double yRightWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, rightTanPos.y()).y();
                     yRightWidgetCoord += (m.height() + 4);
 
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
-                    _curveWidget->renderText( isSelected->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                              leftDerivStr, QColor(240, 240, 240), _curveWidget->getFont() );
-                    _curveWidget->renderText( isSelected->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                              rightDerivStr, QColor(240, 240, 240), _curveWidget->getFont() );
-                }
+                    _imp->curveWidget->renderText( leftTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                                              leftDerivStr.toStdString(), 0.9, 0.9, 0.9, 1.);
+                    _imp->curveWidget->renderText( rightTanPos.x(), _imp->curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                                                  rightDerivStr.toStdString(), 0.9, 0.9, 0.9, 1.);
 
 
-                if (singleKey) { //if one keyframe, also draw the coordinates
                     QString coordStr = QString::fromUtf8("x: %1, y: %2");
-                    coordStr = coordStr.arg(x).arg(y);
-                    double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0, key.getValue() ).y();
+                    coordStr = coordStr.arg(key.getTime()).arg(key.getValue());
+                    double yWidgetCoord = _imp->curveWidget->toWidgetCoordinates( 0, key.getValue() ).y();
                     yWidgetCoord += (m.height() + 4);
                     GL_GPU::glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError(GL_GPU);
-                    _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                              coordStr, QColor(240, 240, 240), _curveWidget->getFont() );
+                    _imp->curveWidget->renderText( key.getTime(), _imp->curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
+                                                  coordStr.toStdString(), 0.9, 0.9, 0.9, 1.);
+
                 }
-                GL_GPU::glBegin(GL_POINTS);
-                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
-                GL_GPU::glEnd();
-            } // if ( !isBezierGui && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+
+            } // drawTangents
 
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
@@ -548,270 +766,6 @@ CurveGui::drawCurve(int curveIndex,
     glCheckError(GL_GPU);
 } // drawCurve
 
-void
-CurveGui::setVisible(bool visible)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _visible = visible;
-}
-
-void
-CurveGui::setVisibleAndRefresh(bool visible)
-{
-    setVisible(visible);
-    _curveWidget->update();
-}
-
-bool
-CurveGui::areKeyFramesTimeClampedToIntegers() const
-{
-    return getInternalCurve()->areKeyFramesTimeClampedToIntegers();
-}
-
-bool
-CurveGui::areKeyFramesValuesClampedToBooleans() const
-{
-    return getInternalCurve()->areKeyFramesValuesClampedToBooleans();
-}
-
-bool
-CurveGui::areKeyFramesValuesClampedToIntegers() const
-{
-    return getInternalCurve()->areKeyFramesValuesClampedToIntegers();
-}
-
-bool
-CurveGui::isYComponentMovable() const
-{
-    return getInternalCurve()->isYComponentMovable();
-}
-
-KeyFrameSet
-CurveGui::getKeyFrames() const
-{
-    return getInternalCurve()->getKeyFrames_mt_safe();
-}
-
-KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           CurvePtr  curve,
-                           const KnobGuiPtr& knob,
-                           int dimension,
-                           const QString & name,
-                           const QColor & color,
-                           int thickness)
-    : CurveGui(curveWidget, curve, name, color, thickness)
-    , _internalKnob()
-    , _knob(knob)
-    , _dimension(dimension)
-{
-    // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0) {
-        setVisible(true);
-    }
-
-    if (knob) {
-        QObject::connect( knob.get(), SIGNAL(keyFrameSet()), this, SLOT(onKnobInternalCurveChanged()) );
-        QObject::connect( knob.get(), SIGNAL(keyFrameRemoved()), this, SLOT(onKnobInternalCurveChanged()) );
-        QObject::connect( knob.get(), SIGNAL(keyInterpolationChanged()), this, SLOT(onKnobInterpolationChanged()) );
-        QObject::connect( knob.get(), SIGNAL(keyInterpolationChanged()), this, SLOT(onKnobInterpolationChanged()) );
-        QObject::connect( knob.get(), SIGNAL(refreshCurveEditor()), this, SLOT(onKnobInternalCurveChanged()) );
-    }
-}
-
-KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           CurvePtr  curve,
-                           const KnobIPtr& knob,
-                           const RotoContextPtr& roto,
-                           int dimension,
-                           const QString & name,
-                           const QColor & color,
-                           int thickness)
-    : CurveGui(curveWidget, curve, name, color, thickness)
-    , _roto(roto)
-    , _internalKnob(knob)
-    , _knob()
-    , _dimension(dimension)
-{
-    // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0) {
-        setVisible(true);
-    }
-}
-
-KnobCurveGui::~KnobCurveGui()
-{
-}
-
-void
-KnobCurveGui::onKnobInternalCurveChanged()
-{
-    _curveWidget->updateSelectionAfterCurveChange(this);
-    _curveWidget->update();
-}
-
-void
-KnobCurveGui::onKnobInterpolationChanged()
-{
-    _curveWidget->updateSelectionAfterCurveChange(this);
-    _curveWidget->update();
-}
-
-double
-KnobCurveGui::evaluate(bool useExpr,
-                       double x) const
-{
-    KnobIPtr knob = getInternalKnob();
-
-    if (useExpr) {
-        return knob->getValueAtWithExpression(x, ViewIdx(0), _dimension);
-    } else {
-        KnobParametricPtr isParametric = toKnobParametric(knob);
-        if (isParametric) {
-            return isParametric->getParametricCurve(_dimension)->getValueAt(x, false);
-        } else {
-            assert(_internalCurve);
-
-            return _internalCurve->getValueAt(x, false);
-        }
-    }
-}
-
-CurvePtr
-KnobCurveGui::getInternalCurve() const
-{
-    KnobIPtr knob = getInternalKnob();
-    KnobParametricPtr isParametric = toKnobParametric(knob);
-
-    if (!knob || !isParametric) {
-        return CurveGui::getInternalCurve();
-    }
-
-    return isParametric->getParametricCurve(_dimension);
-}
-
-KnobIPtr
-KnobCurveGui::getInternalKnob() const
-{
-    KnobGuiPtr knob = getKnobGui();
-
-    return knob ? knob->getKnob() : _internalKnob;
-}
-
-int
-KnobCurveGui::getKeyFrameIndex(double time) const
-{
-    return getInternalCurve()->keyFrameIndex(time);
-}
-
-KeyFrame
-KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
-                                       int index)
-{
-    return getInternalCurve()->setKeyFrameInterpolation(interp, index);
-}
-
-BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
-                                   const BezierPtr& bezier,
-                                   const RotoContextPtr& roto,
-                                   const QString & name,
-                                   const QColor & color,
-                                   int thickness)
-    : CurveGui(curveWidget, CurvePtr(), name, color, thickness)
-    , _bezier(bezier)
-    , _rotoContext(roto)
-{
-    // even when there is only one keyframe, there may be tangents!
-    if (bezier->getKeyframesCount() > 0) {
-        setVisible(true);
-    }
-}
-
-BezierPtr
-BezierCPCurveGui::getBezier() const
-{
-    return _bezier;
-}
-
-BezierCPCurveGui::~BezierCPCurveGui()
-{
-}
-
-double
-BezierCPCurveGui::evaluate(bool /*useExpr*/,
-                           double x) const
-{
-    std::list<std::pair<double, KeyframeTypeEnum> > keys;
-
-    _bezier->getKeyframeTimesAndInterpolation(&keys);
-
-    std::list<std::pair<double, KeyframeTypeEnum> >::iterator upb = keys.end();
-    int dist = 0;
-    for (std::list<std::pair<double, KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
-        if (it->first > x) {
-            upb = it;
-            break;
-        }
-    }
-
-    if ( upb == keys.end() ) {
-        return keys.size() - 1;
-    } else if ( upb == keys.begin() ) {
-        return 0;
-    } else {
-        std::list<std::pair<double, KeyframeTypeEnum> >::iterator prev = upb;
-        if ( prev != keys.begin() ) {
-            --prev;
-        }
-        if (prev->second == eKeyframeTypeConstant) {
-            return dist - 1;
-        } else {
-            ///Always linear for bezier interpolation
-            assert( (upb->first - prev->first) != 0 );
-
-            return ( (double)(x - prev->first) / (upb->first - prev->first) ) + dist - 1;
-        }
-    }
-}
-
-Curve::YRange
-BezierCPCurveGui::getCurveYRange() const
-{
-    int keys = _bezier->getKeyframesCount();
-
-    return Curve::YRange(0, keys - 1);
-}
-
-KeyFrameSet
-BezierCPCurveGui::getKeyFrames() const
-{
-    KeyFrameSet ret;
-    std::set<double> keys;
-
-    _bezier->getKeyframeTimes(&keys);
-    int i = 0;
-    for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
-        ret.insert( KeyFrame(*it, i) );
-    }
-
-    return ret;
-}
-
-int
-BezierCPCurveGui::getKeyFrameIndex(double time) const
-{
-    return _bezier->getKeyFrameIndex(time);
-}
-
-KeyFrame
-BezierCPCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
-                                           int index)
-{
-    _bezier->setKeyFrameInterpolation(interp, index);
-
-    return KeyFrame();
-}
 
 NATRON_NAMESPACE_EXIT;
 

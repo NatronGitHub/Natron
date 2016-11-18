@@ -38,7 +38,10 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/DimensionIdx.h"
 #include "Serialization/SerializationBase.h"
+#include "Engine/Transform.h"
+
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
@@ -162,7 +165,8 @@ public:
      * An empty curve has a value of zero everywhere (@see getValueAt()).
      **/
     Curve(const KnobIPtr& owner,
-          int dimensionInOwner);
+          DimIdx dimensionInOwner,
+          ViewIdx viewInOwner);
 
     Curve(const Curve & other);
 
@@ -194,13 +198,13 @@ public:
      **/
     void clone(const Curve & other);
 
-    bool cloneAndCheckIfChanged(const Curve& other);
+    bool cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* range);
 
     /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset
      * and only the keyframes lying in the given range will be copied.
      **/
-    void clone(const Curve & other, SequenceTime offset, const RangeD* range);
+    void clone(const Curve & other, double offset, const RangeD* range);
 
     bool isAnimated() const WARN_UNUSED_RETURN;
 
@@ -209,6 +213,7 @@ public:
      * modify the Y component of the curve.
      **/
     bool isYComponentMovable() const WARN_UNUSED_RETURN;
+    void setYComponentMovable(bool canEdit);
 
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
@@ -225,13 +230,16 @@ public:
     ///existing key at this time.
     bool addKeyFrame(KeyFrame key);
 
+    // Returns true if a keyframe was added, false if it modified an existing one
+    ValueChangedReturnCodeEnum setOrAddKeyframe(KeyFrame key);
+
     void removeKeyFrameWithTime(double time);
 
     void removeKeyFrameWithIndex(int index);
 
-    void removeKeyFramesBeforeTime(double time, std::list<int>* keyframeRemoved);
+    void removeKeyFramesBeforeTime(double time, std::list<double>* keyframeRemoved);
 
-    void removeKeyFramesAfterTime(double time, std::list<int>* keyframeRemoved);
+    void removeKeyFramesAfterTime(double time, std::list<double>* keyframeRemoved);
 
     bool getNearestKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
@@ -280,20 +288,186 @@ public:
      **/
     KeyFrame setKeyFrameValueAndTime(double time, double value, int index, int* newIndex = NULL);
 
+    class KeyFrameWarp
+    {
+    protected:
+        bool _inverted;
+    public:
+
+
+        KeyFrameWarp() : _inverted(false) {}
+
+        virtual ~KeyFrameWarp() {}
+
+        void setWarpInverted(bool inverted)
+        {
+            _inverted = inverted;
+        }
+
+        virtual KeyFrame applyForwardWarp(const KeyFrame& key) const = 0;
+
+        virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const = 0;
+
+        virtual bool isIdentity() const = 0;
+
+        virtual bool mergeWith(const KeyFrameWarp& other) = 0;
+
+    };
+
+    class TranslationKeyFrameWarp : public KeyFrameWarp
+    {
+        double _dt, _dv;
+
+    public:
+
+        TranslationKeyFrameWarp(double dt, double dv)
+        : KeyFrameWarp()
+        , _dt(dt)
+        , _dv(dv)
+        {
+
+        }
+
+        double getDT() const
+        {
+            return _dt;
+        }
+
+        double getDV() const
+        {
+            return _dv;
+        }
+
+        virtual ~TranslationKeyFrameWarp()
+        {
+
+        }
+
+        virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
+        {
+            if (_inverted) {
+                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+            } else {
+                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+            }
+        }
+
+        virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const OVERRIDE FINAL
+        {
+            if (_inverted) {
+                return KeyFrame(key.getTime() + _dt, key.getValue() + _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+            } else {
+                return KeyFrame(key.getTime() - _dt, key.getValue() - _dv, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+            }
+        }
+
+        virtual bool isIdentity() const OVERRIDE FINAL
+        {
+            return _dt == 0 && _dv == 0;
+        }
+
+        virtual bool mergeWith(const KeyFrameWarp& other) OVERRIDE FINAL
+        {
+            const TranslationKeyFrameWarp* otherWarp = dynamic_cast<const TranslationKeyFrameWarp*>(&other);
+            if (otherWarp) {
+                _dt += otherWarp->_dt;
+                _dv += otherWarp->_dv;
+                return true;
+            }
+            return false;
+        }
+
+    };
+
+
+    class AffineKeyFrameWarp : public KeyFrameWarp
+    {
+        Transform::Matrix3x3 _transform, _inverseTransform;
+
+    public:
+
+        AffineKeyFrameWarp(const Transform::Matrix3x3& transform)
+        : KeyFrameWarp()
+        , _transform(transform)
+        , _inverseTransform(Transform::matInverse(transform))
+        {
+
+        }
+
+        virtual ~AffineKeyFrameWarp()
+        {
+
+        }
+
+        virtual KeyFrame applyForwardWarp(const KeyFrame& key) const OVERRIDE FINAL
+        {
+            if (_inverted) {
+                return applyWarp(_inverseTransform, key);
+            } else {
+                return applyWarp(_transform, key);
+            }
+        }
+
+        virtual KeyFrame applyBackwardWarp(const KeyFrame& key) const OVERRIDE FINAL
+        {
+            if (_inverted) {
+                return applyWarp(_transform, key);
+            } else {
+                return applyWarp(_inverseTransform, key);
+            }
+        }
+
+        virtual bool isIdentity() const OVERRIDE FINAL
+        {
+            return _transform.isIdentity();
+        }
+
+        virtual bool mergeWith(const KeyFrameWarp& other) OVERRIDE FINAL
+        {
+            const AffineKeyFrameWarp* otherWarp = dynamic_cast<const AffineKeyFrameWarp*>(&other);
+            if (otherWarp) {
+                _transform = Transform::matMul(_transform, otherWarp->_transform);
+                _inverseTransform = Transform::matMul(_inverseTransform, otherWarp->_inverseTransform);
+                return true;
+            }
+            return false;
+        }
+
+
+    private:
+
+        KeyFrame applyWarp(const Transform::Matrix3x3& mat, const KeyFrame& key) const
+        {
+            Transform::Point3D p;
+            p.x = key.getTime();
+            p.y = key.getValue();
+            p.z = 1;
+            p = Transform::matApply(mat, p);
+            return KeyFrame(p.x, p.y, key.getLeftDerivative(), key.getRightDerivative(), key.getInterpolation());
+
+        }
+
+    };
+
+
+    /**
+     * @brief Moves multiple keyframes in the set. 
+     * @param times The keyframes time to move. It is expected that the times are sorted by increasing order otherwise this function will fail.
+     * @param warp The warp to apply to each keyframe
+     * @param newKeys If non NULL, the new keyframes corresponding to the input times will be returned
+     * @param keysAdded A list of the keyframes that were created
+     * @param keysRemoved A list of the keyframes that were removed
+     * Note: it is guaranteed that keyframes in the added list are not to be found in the removed list and vice versa.
+     **/
+    bool transformKeyframesValueAndTime(const std::list<double>& times,
+                                        const KeyFrameWarp& warp,
+                                        std::vector<KeyFrame>* newKeys = NULL,
+                                        std::list<double>* keysAdded = 0,
+                                        std::list<double>* keysRemoved = 0);
+
 private:
 
     KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex);
-
-public:
-
-    /**
-     * @brief Same as setKeyFrameValueAndTime but with a delta
-     **/
-    bool moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey = NULL);
-
-private:
-
-    bool moveKeyFrameValueAndTimeInternal(const double time, const double dt, const double dv, KeyFrame* newKey);
 
 public:
 
@@ -339,6 +513,7 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index, int* newIndex = NULL);
+    bool setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret = 0);
 
 private:
 
@@ -357,7 +532,12 @@ public:
     /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
     void setYRange(double yMin, double yMax);
 
-    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, double time);
+    /**
+     * @brief Find a keyframe by time in the given keys set.
+     * @param fromIt A hint where to start the search. If fromIt == keys.end() then the search will cycle the whole keys set,
+     * otherwise it will start from the provided iterator.
+     **/
+    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, KeyFrameSet::const_iterator fromIt, double time);
 
     /**
      * @brief Smooth the curve.
@@ -374,7 +554,7 @@ private:
     void serialize(Archive & ar, const unsigned int version);
 
     ///////The following functions are not thread-safe
-    KeyFrameSet::const_iterator find(double time) const WARN_UNUSED_RETURN;
+    KeyFrameSet::const_iterator find(double time, KeyFrameSet::const_iterator fromIt) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator atIndex(int index) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;

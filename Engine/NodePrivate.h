@@ -162,6 +162,8 @@ public:
 
     void runInputChangedCallback(int index, const std::string& script);
 
+    void runAfterItemsSelectionChangedCallback(const std::string& script, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
+
     void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
 
     void onLayerChanged(bool isOutput);
@@ -193,13 +195,9 @@ public:
     bool isPersistent;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
-    NodesWList outputs, guiOutputs;
-    mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
-
-    ///The  inputs are the ones used while rendering and guiInputs the ones used by the gui whenever
-    ///the node is currently rendering. Once the render is finished, inputs are refreshed automatically to the value of
-    ///guiInputs
-    InputsV inputs, guiInputs;
+    NodesWList outputs;
+    mutable QMutex inputsMutex; //< protects inputs so the serialization thread can access them
+    InputsV inputs;
 
     //to the inputs in a thread-safe manner.
     EffectInstancePtr effect;  //< the effect hosted by this node
@@ -268,6 +266,7 @@ public:
     KnobStringWPtr inputChangedCallback;
     KnobStringWPtr nodeCreatedCallback;
     KnobStringWPtr nodeRemovalCallback;
+    KnobStringWPtr tableSelectionChangedCallback;
     KnobPageWPtr infoPage;
     KnobStringWPtr nodeInfos;
     KnobButtonWPtr refreshInfoButton;
@@ -286,14 +285,10 @@ public:
     std::map<int, ChannelSelector> channelsSelectors;
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
-    RotoContextPtr rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
-    TrackerContextPtr trackContext;
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
     std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
-
-    bool keyframesDisplayedOnTimeline;
 
     ///This is to avoid the slots connected to the main-thread to be called too much
     QMutex lastRenderStartedMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
@@ -301,11 +296,6 @@ public:
     int renderStartedCounter;
     std::vector<int> inputIsRenderingCounter;
     timeval lastInputNRenderStartedSlotCallTime;
-
-    ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
-    bool nodeIsDequeuing;
-    QMutex nodeIsDequeuingMutex;
-    QWaitCondition nodeIsDequeuingCond;
 
     ///Counter counting how many parallel renders are active on the node
     int nodeIsRendering;
@@ -349,6 +339,7 @@ public:
     std::vector<std::string> createdViews;
 
     //To concatenate calls to refreshIdentityState, accessed only on main-thread
+    mutable QMutex refreshIdentityStateRequestsCountMutex;
     int refreshIdentityStateRequestsCount;
     int isRefreshingInputRelatedData; // only used by the main thread
     std::map<Node::StreamWarningEnum, QString> streamWarnings;

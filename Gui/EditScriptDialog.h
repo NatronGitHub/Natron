@@ -42,6 +42,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -57,11 +60,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     EditScriptDialog(Gui* gui,
-                    const KnobGuiPtr& knobExpressionReceiver,
-                    QWidget* parent);
+                     const KnobGuiPtr& knobExpressionReceiver,
+                     DimSpec knobDimension,
+                     ViewSetSpec knobView,
+                     QWidget* parent);
 
     virtual ~EditScriptDialog();
-
+    
     void create(const QString& initialScript, bool makeUseRetButton);
 
     QString getExpression(bool* hasRetVariable) const;
@@ -73,6 +78,19 @@ public Q_SLOTS:
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
     void onHelpRequested();
+
+    void onAcceptedPressed()
+    {
+        Q_EMIT dialogFinished(true);
+    }
+    void onRejectedPressed()
+    {
+        Q_EMIT dialogFinished(false);
+    }
+
+Q_SIGNALS:
+
+    void dialogFinished(bool accepted);
 
 protected:
 

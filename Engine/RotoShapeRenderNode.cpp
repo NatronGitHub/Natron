@@ -34,7 +34,6 @@
 #include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoShapeRenderCairo.h"
@@ -184,7 +183,7 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
     NodePtr node = getNode();
     RectD maskRod;
     try {
-        node->getPaintStrokeRoD(time, &maskRod);
+        node->getPaintStrokeRoD(time, view, &maskRod);
     } catch (...) {
     }
     if ( rod->isNull() ) {
@@ -213,14 +212,14 @@ RotoShapeRenderNode::isIdentity(double time,
     RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
     assert(rotoItem);
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
-    if (!rotoItem || !rotoItem->isActivated(time) || (isBezier && (!isBezier->isCurveFinished() || isBezier->getControlPointsCount() <= 1))) {
+    if (!rotoItem || !rotoItem->isActivated(time, view) || (isBezier && (!isBezier->isCurveFinished(view) || isBezier->getControlPointsCount(view) <= 1))) {
         *inputTime = time;
         *inputNb = 0;
 
         return true;
     }
 
-    node->getPaintStrokeRoD(time, &maskRod);
+    node->getPaintStrokeRoD(time, view, &maskRod);
     
     RectI maskPixelRod;
     maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
@@ -260,15 +259,15 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(rotoItem.get());
-    Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
+    BezierPtr isBezier = toBezier(rotoItem);
 
     if (type == eRotoShapeRenderTypeSmear && !isStroke) {
         return eStatusFailed;
     }
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
-    assert(rotoItem->isActivated(args.time) && (!isBezier || (isBezier->isCurveFinished() && ( isBezier->getControlPointsCount() > 1 ))));
+    assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
     ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
     const OSGLContextPtr& glContext = args.glContext;
@@ -300,7 +299,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (isStroke) {
 
         if (!isDuringPainting) {
-            isStroke->evaluateStroke(mipmapLevel, args.time, &strokes, 0);
+            isStroke->evaluateStroke(mipmapLevel, args.time, args.view, &strokes, 0);
         } else {
             RectD lastStrokeMovementBbox;
             std::list<std::pair<Point, double> > lastStrokePoints;
@@ -340,7 +339,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
         if ( isBezier->isOpenBezier() ) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, args.time, mipmapLevel, &decastelJauPolygon, 0);
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(args.time, args.view, mipmapLevel, &decastelJauPolygon, 0);
             std::list<std::pair<Point, double> > points;
             for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
@@ -389,7 +388,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, args.view, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting) {
                     getApp()->updateStrokeData(lastCenterOut, distToNextOut);
                 }
@@ -397,19 +396,25 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #endif
             if (args.useOpenGL) {
                 double shapeColor[3];
-                rotoItem->getColor(args.time, shapeColor);
-                double opacity = rotoItem->getOpacity(args.time);
+                {
+                    KnobColorPtr colorKnob = rotoItem->getColorKnob();
+                    for (int i = 0; i < 3; ++i) {
+                        shapeColor[i] = colorKnob->getValueAtTime(args.time, DimIdx(i), args.view);
+                    }
+                }
+
+                double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
 
                 if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
-                    bool doBuildUp = rotoItem->getBuildupKnob()->getValueAtTime(args.time);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting) {
                         getApp()->updateStrokeData(lastCenterOut, distToNextOut);
                     }
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, opacity, args.time, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
+                                                       isBezier, opacity, args.time, args.view, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
                 }
             }
         }   break;
@@ -468,14 +473,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             bool renderedDot;
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
             }
 #endif
             if (args.useOpenGL) {
-                double opacity = rotoItem->getOpacity(args.time);
+                double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, mipmapLevel, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
             }
 
             if (isDuringPainting) {

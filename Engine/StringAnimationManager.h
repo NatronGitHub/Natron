@@ -57,25 +57,27 @@ public:
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
-    bool customInterpolation(double time, std::string* ret) const;
+    bool customInterpolation(double time, ViewIdx view, std::string* ret) const;
 
-    void insertKeyFrame(double time, const std::string & v, double* index);
+    void insertKeyFrame(double time, ViewIdx view, const std::string & v, double* index);
 
-    void removeKeyFrame(double time);
+    void removeKeyFrame(double time, ViewIdx view);
+
+    void removeKeyframes(const std::list<double>& keysRemoved, ViewIdx view);
 
     void clearKeyFrames();
 
-    void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
+    void stringFromInterpolatedIndex(double interpolated, ViewIdx view, std::string* returnValue) const;
 
-    void clone(const StringAnimationManager & other);
+    bool clone(const StringAnimationManager & other, ViewIdx view, ViewIdx otherView, SequenceTime offset, const RangeD* range);
 
-    bool cloneAndCheckIfChanged(const StringAnimationManager & other);
+    void load(const std::map<ViewIdx,std::map<double, std::string> > & keyframes);
 
-    void clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
+    void save(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const;
 
-    void load(const std::map<int, std::string> & keyframes);
+    void splitView(ViewIdx view);
 
-    void save(std::map<int, std::string>* keyframes) const;
+    void unSplitView(ViewIdx view);
 
 private:
 
