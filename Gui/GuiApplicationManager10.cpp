@@ -193,7 +193,8 @@ public:
         , _app(app)
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
-        
+        Q_UNUSED(_app);
+
 #ifdef Q_OS_MAC
         // see http://stackoverflow.com/questions/15143369/qt-on-os-x-how-to-detect-clicking-the-app-dock-icon
 
