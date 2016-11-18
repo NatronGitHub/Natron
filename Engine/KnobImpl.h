@@ -1604,7 +1604,9 @@ template <typename T>
 void
 Knob<T>::autoExpandDimensions(ViewIdx view)
 {
-    
+    if (!isAutoExpandDimensionsEnabled()) {
+        return;
+    }
 
     bool curVisible = getAllDimensionsVisible(view);
 

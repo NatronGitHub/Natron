@@ -396,6 +396,12 @@ public:
     virtual bool isAutoFoldDimensionsEnabled() const = 0;
 
     /**
+     * @brief When enabled, the knob can be automatically expanded folded dimensions
+     **/
+    virtual void setCanAutoExpandDimensions(bool enabled) = 0;
+    virtual bool isAutoExpandDimensionsEnabled() const = 0;
+
+    /**
      * @brief Check the knob state across all dimensions and if they have different values,  they are made all visible.
      **/
     virtual void autoExpandDimensions(ViewIdx view) = 0;
@@ -1401,6 +1407,8 @@ public:
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
     virtual void setCanAutoFoldDimensions(bool enabled) OVERRIDE FINAL ;
     virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCanAutoExpandDimensions(bool enabled) OVERRIDE FINAL;
+    virtual bool isAutoExpandDimensionsEnabled() const OVERRIDE FINAL;
 
 private:
     void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);

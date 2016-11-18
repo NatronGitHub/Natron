@@ -199,6 +199,9 @@ struct KnobHelperPrivate
     // When true, autoFoldDimensions can be called to check if dimensions can be folded or not.
     bool autoFoldEnabled;
 
+    // When true, autoExpandDimensions can be called to check if dimensions can be expanded or not.
+    bool autoExpandEnabled;
+
     // Protect curves
     mutable QMutex curvesMutex;
 
@@ -317,6 +320,7 @@ struct KnobHelperPrivate
     , dimension(nDims)
     , allDimensionsVisible()
     , autoFoldEnabled(true)
+    , autoExpandEnabled(true)
     , curves()
     , mastersMutex()
     , masters()
