@@ -1933,6 +1933,7 @@ KnobPage::moveOneStepDown(const KnobIPtr& k)
 
 /******************************KnobParametric**************************************/
 
+#pragma message WARN("KnobParametric does not support multi-view yet")
 
 KnobParametric::KnobParametric(const KnobHolderPtr& holder,
                                const std::string &label,

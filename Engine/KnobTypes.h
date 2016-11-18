@@ -1376,11 +1376,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     std::vector< CurvePtr > _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 
-#pragma message WARN("KnobParametric does not support multi-view yet")
-
 private: // derives from KnobI
-
-
     KnobParametric(const KnobHolderPtr& holder,
                    const std::string &label,
                    int dimension,
