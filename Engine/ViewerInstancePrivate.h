@@ -316,10 +316,17 @@ public:
 
     void fillGammaLut(double gamma)
     {
+        // gammaLookupMutex should already be locked
         gammaLookup.resize(GAMMA_LUT_NB_VALUES + 1);
+        if (gamma <= 0) {
+            // gamma = 0: everything is zero, except gamma(1)=1
+            std::fill(gammaLookup.begin(), gammaLookup.begin() + GAMMA_LUT_NB_VALUES, 0.f);
+            gammaLookup[GAMMA_LUT_NB_VALUES] = 1.f;
+            return;
+        }
         for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
             double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
-            double value = std::pow(parametricPos, gamma);
+            double value = std::pow(parametricPos, 1. / gamma);
             // set that in the lut
             gammaLookup[position] = (float)std::max( 0., std::min(1., value) );
         }

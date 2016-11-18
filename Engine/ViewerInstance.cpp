@@ -947,7 +947,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     {
         QWriteLocker k(&_imp->gammaLookupMutex);
         if ( _imp->gammaLookup.empty() ) {
-            _imp->fillGammaLut(1. / outArgs->params->gamma);
+            _imp->fillGammaLut(outArgs->params->gamma);
         }
     }
 
@@ -1848,7 +1848,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->srcPremult,
                                         updateParams->depth,
                                         updateParams->gain,
-                                        updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
+                                        updateParams->gamma,
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
@@ -1916,7 +1916,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->srcPremult,
                                         updateParams->depth,
                                         updateParams->gain,
-                                        updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
+                                        updateParams->gamma,
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
@@ -2263,19 +2263,17 @@ scaleToTexture8bits_generic(const RectI& roi,
                     break;
                 }
 
-                //args.gamma is in fact 1. / gamma at this point
-                if  (args.gamma == 0) {
-                    r = 0;
-                    g = 0.;
-                    b = 0.;
-                } else if (args.gamma == 1.) {
-                    r = r * args.gain + args.offset;
-                    g = g * args.gain + args.offset;
-                    b = b * args.gain + args.offset;
-                } else {
-                    r = viewer->interpolateGammaLut(r * args.gain + args.offset);
-                    g = viewer->interpolateGammaLut(g * args.gain + args.offset);
-                    b = viewer->interpolateGammaLut(b * args.gain + args.offset);
+                r = r * args.gain + args.offset;
+                g = g * args.gain + args.offset;
+                b = b * args.gain + args.offset;
+                if  (args.gamma <= 0) {
+                    r = (r < 1.) ? 0. : (r == 1. ? 1. : std::numeric_limits<double>::infinity() );
+                    g = (g < 1.) ? 0. : (g == 1. ? 1. : std::numeric_limits<double>::infinity() );
+                    b = (b < 1.) ? 0. : (b == 1. ? 1. : std::numeric_limits<double>::infinity() );
+                } else if (args.gamma != 1.) {
+                    r = viewer->interpolateGammaLut(r);
+                    g = viewer->interpolateGammaLut(g);
+                    b = viewer->interpolateGammaLut(b);
                 }
 
 
@@ -2988,7 +2986,7 @@ ViewerInstance::onGammaChanged(double value)
     }
     if (changed) {
         QWriteLocker k(&_imp->gammaLookupMutex);
-        _imp->fillGammaLut(1. / value);
+        _imp->fillGammaLut(value);
     }
     assert(_imp->uiContext);
     if (changed) {
