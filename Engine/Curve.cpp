@@ -822,7 +822,7 @@ interParams(const KeyFrameSet &keyFrames,
             KeyframeTypeEnum *interpNext)
 {
 
-    assert(keyFrames.size() > 1);
+    assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
     double period = xMax - xMin;
     if (isPeriodic) {
@@ -915,9 +915,15 @@ Curve::getValueAt(double t,
     QMutexLocker l(&_imp->_lock);
 
     if ( _imp->keyFrames.empty() ) {
-        throw std::runtime_error("Curve has no control points!");
-    } else if (_imp->keyFrames.size() == 1) {
-        return _imp->keyFrames.begin()->getValue();
+        //throw std::runtime_error("Curve has no control points!");
+
+        // A curve with no control points is considered to be 0
+        // this is to avoid returning StatFailed when KnobParametric::getValue() is called on a parametric curve without control point.
+        return 0.;
+
+        // There is no special case for a curve with one (1) keyframe: the result is a linear curve before and after the keyframe.
+    //} else if (_imp->keyFrames.size() == 1) {
+    //    return _imp->keyFrames.begin()->getValue();
     }
 
     double v;

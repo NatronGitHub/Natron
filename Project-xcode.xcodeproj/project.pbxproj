@@ -387,6 +387,7 @@
 		1E5EBABF1D4DF2640005A5A8 /* Presentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = Presentation.md; path = Documentation/Presentation.md; sourceTree = "<group>"; };
 		1E5EBAC01D4DF2640005A5A8 /* source */ = {isa = PBXFileReference; lastKnownFileType = folder; name = source; path = Documentation/source; sourceTree = "<group>"; };
 		1E5EBAC11D4DF2640005A5A8 /* TuttleOFX-README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "TuttleOFX-README.txt"; path = "Documentation/TuttleOFX-README.txt"; sourceTree = "<group>"; };
+		1E5FBCF91DDCAD4800348B8B /* Natron.spec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Natron.spec; sourceTree = "<group>"; };
 		1E70D14F1CF33A0C000D2932 /* BUGS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = BUGS.md; sourceTree = "<group>"; };
 		1E70D1501CF33A0C000D2932 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
 		1E70D1511CF33A0C000D2932 /* config.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.pri; sourceTree = "<group>"; };
@@ -578,16 +579,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1E5EBABB1D4DF2130005A5A8 /* READMEs */ = {
-			isa = PBXGroup;
-			children = (
-				1E70D1611CF33A0C000D2932 /* README.md */,
-				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
-				1EEB0B211D1ADC9A00F0D43D /* components */,
-			);
-			name = READMEs;
-			sourceTree = "<group>";
-		};
 		1E70D1621CF33AF3000D2932 /* QMake files */ = {
 			isa = PBXGroup;
 			children = (
@@ -603,7 +594,6 @@
 		1E70D1631CF33B22000D2932 /* Documentation */ = {
 			isa = PBXGroup;
 			children = (
-				1E5EBABB1D4DF2130005A5A8 /* READMEs */,
 				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
 				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
 				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
@@ -617,12 +607,16 @@
 				1E70D15B1CF33A0C000D2932 /* LICENSE_SHORT.txt */,
 				1E70D15C1CF33A0C000D2932 /* LICENSE.txt */,
 				1E70D15D1CF33A0C000D2932 /* Natron.rc */,
+				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
+				1E70D1611CF33A0C000D2932 /* README.md */,
 				1E5EBABC1D4DF2640005A5A8 /* ofx_plugin_programming_guide.html */,
 				1E5EBABD1D4DF2640005A5A8 /* ofxActionsSupported.rtf */,
 				1E5EBABE1D4DF2640005A5A8 /* ofxPropSupported.rtf */,
 				1E5EBABF1D4DF2640005A5A8 /* Presentation.md */,
-				1E5EBAC01D4DF2640005A5A8 /* source */,
 				1E5EBAC11D4DF2640005A5A8 /* TuttleOFX-README.txt */,
+				1E5FBCF91DDCAD4800348B8B /* Natron.spec */,
+				1E5EBAC01D4DF2640005A5A8 /* source */,
+				1EEB0B211D1ADC9A00F0D43D /* components */,
 			);
 			name = Documentation;
 			sourceTree = "<group>";

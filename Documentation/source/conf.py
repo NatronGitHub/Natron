@@ -49,7 +49,7 @@ copyright = u'2016, Natron Developers'
 
 
 # the list of currently maintained versions (those that have to be merged into the master branch)
-version_21 = '2.1.8'
+version_21 = '2.1.9'
 version_22 = '2.2.0'
 
 # The version for this branch
