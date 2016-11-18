@@ -77,6 +77,13 @@ OTHER_FILES += \
     global.pri \
     config.pri
 
+isEmpty(LLVM_PATH) {
+    message("enable-osmesa was passed to the config but you did not set LLVM_PATH, defaulting to /opt/llvm")
+}
+isEmpty(OSMESA_PATH) {
+    message("enable-osmesa was passed to the config but you did not set OSMESA_PATH, defaulting to /opt/osmesa")
+}
+
 include(global.pri)
 include(config.pri)
 include(libs.pri)
