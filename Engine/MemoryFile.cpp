@@ -78,7 +78,7 @@ struct MemoryFilePrivate
 
     void openInternal(MemoryFile::FileOpenModeEnum open_mode);
 
-    void closeMapping();
+    void closeMapping(bool dontneed);
 };
 
 MemoryFile::MemoryFile()
@@ -330,9 +330,12 @@ MemoryFile::resize(size_t new_size)
 }
 
 void
-MemoryFilePrivate::closeMapping()
+MemoryFilePrivate::closeMapping(bool dontneed)
 {
 #if defined(__NATRON_UNIX__)
+    if (dontneed) {
+        madvise(data, size, MADV_DONTNEED);
+    }
     if (::munmap(data, size) != 0) {
         std::stringstream ss;
         ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
@@ -387,7 +390,8 @@ MemoryFile::~MemoryFile()
 {
     if (_imp->data) {
         try {
-            _imp->closeMapping();
+            flush(eFlushTypeInvalidate, NULL, 0);
+            _imp->closeMapping(false);
         } catch (const std::exception & e) {
             std::cerr << e.what() << std::endl;
         }
@@ -400,7 +404,7 @@ MemoryFile::remove()
 {
     if ( !_imp->path.empty() ) {
         if (_imp->data) {
-            _imp->closeMapping();
+            _imp->closeMapping(true);
         }
         int ok = ::remove( _imp->path.c_str() );
         Q_UNUSED(ok);
