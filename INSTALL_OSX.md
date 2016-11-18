@@ -89,11 +89,15 @@ and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it inst
 
 Install homebrew from <http://brew.sh/>
 
+macOS 10.12 and later: Qt 4 is not supported in homebrew on masOS 10.12 and later, please enable the community-maintained recipe using:
+
+    brew tap cartr/qt4
+
 Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit qt
+    brew edit qt (on macOS 10.12 and later: brew edit cartr/qt4/qt)
 
 and before the line that starts with `head`, add the following code:
 
@@ -108,11 +112,10 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install expat cairo gnu-sed
-    brew install --build-from-source qt --with-mysql
+    brew install --build-from-source qt --with-mysql (on 
 
-Qt will not build on macOS Sierra, and the last command fails, but a sierra-compatible brew is available (to be used only in Sierra, since this builds Qt from sources and takes a while)
+On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
 
-    brew tap cartr/qt4
     brew install --build-from-source cartr/qt4/qt --with-mysql
 
 Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):

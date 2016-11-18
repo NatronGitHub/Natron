@@ -156,6 +156,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     TEST_CC=clang
     sw_vers -productVersion
+    xcodebuild -version -sdk
 
     # See Travis OSX setup:
     # http://docs.travis-ci.com/user/osx-ci-environment
@@ -180,13 +181,17 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # XQ_INSTALL_PID=$!
 
     echo "* Brew update"
-    #brew update
+    brew update >/dev/null
+    brew --config
     brew upgrade xctool || true
     echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
     #brew tap homebrew/boneyard # pyside was moved to boneyard
-    #brew tap FreeCAD/freecad  # FreeCAD has a bottled pyside, see https://github.com/FreeCAD/homebrew-freecad
+
+    # FreeCAD has a bottled pyside for OS X 10.10 Yosemite, see https://github.com/FreeCAD/homebrew-freecad/issues/32
+    # TODO: maintain a Natron-ports-cache, linke FreeCD-ports-cache https://github.com/FreeCAD/FreeCAD-ports-cache
+    brew tap FreeCAD/freecad
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
     # brew upgrade --cleanup
     echo "* Brew doctor"
