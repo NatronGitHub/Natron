@@ -16,128 +16,12 @@ writeHeader(QTextStream& ts)
         "#ifndef OSGLFUNCTIONS_H\n"
         "#define OSGLFUNCTIONS_H\n"
         "\n"
-        "#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)\n"
-        "#ifndef WIN32_LEAN_AND_MEAN\n"
-        "#define WIN32_LEAN_AND_MEAN 1\n"
-        "#endif\n"
-        "#include <windows.h>\n"
-        "#endif\n"
+        "#include <cstring> // memset\n"
         "\n"
-        "#include <stddef.h>\n"
-        "#ifndef GLEXT_64_TYPES_DEFINED\n"
-        "/* This code block is duplicated in glxext.h, so must be protected */\n"
-        "#define GLEXT_64_TYPES_DEFINED\n"
-        "/* Define int32_t, int64_t, and uint64_t types for UST/MSC */\n"
-        "/* (as used in the GL_EXT_timer_query extension). */\n"
-        "#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L\n"
-        "#include <inttypes.h>\n"
-        "#elif defined(__sun__) || defined(__digital__)\n"
-        "#include <inttypes.h>\n"
-        "#if defined(__STDC__)\n"
-        "#if defined(__arch64__) || defined(_LP64)\n"
-        "typedef long int int64_t;\n"
-        "typedef unsigned long int uint64_t;\n"
-        "#else\n"
-        "typedef long long int int64_t;\n"
-        "typedef unsigned long long int uint64_t;\n"
-        "#endif /* __arch64__ */\n"
-        "#endif /* __STDC__ */\n"
-        "#elif defined( __VMS ) || defined(__sgi)\n"
-        "#include <inttypes.h>\n"
-        "#elif defined(__SCO__) || defined(__USLC__)\n"
-        "#include <stdint.h>\n"
-        "#elif defined(__UNIXOS2__) || defined(__SOL64__)\n"
-        "typedef long int int32_t;\n"
-        "typedef long long int int64_t;\n"
-        "typedef unsigned long long int uint64_t;\n"
-        "#elif defined(_WIN32) && defined(__GNUC__)\n"
-        "#include <stdint.h>\n"
-        "#elif defined(_WIN32)\n"
-        "typedef __int32 int32_t;\n"
-        "typedef __int64 int64_t;\n"
-        "typedef unsigned __int64 uint64_t;\n"
-        "#else\n"
-        "/* Fallback if nothing above works */\n"
-        "#include <inttypes.h>\n"
-        "#endif\n"
-        "#endif\n"
-        "\n"
+        "#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG\n"
         "\n"
     ;
 } // writeHeader
-
-static void
-writePODs(QTextStream& ts)
-{
-    ts <<
-        "typedef unsigned int GLenum;\n"
-        "typedef unsigned char GLboolean;\n"
-        "typedef unsigned int GLbitfield;\n"
-        "typedef void GLvoid;\n"
-        "typedef signed char GLbyte;\n"
-        "typedef short GLshort;\n"
-        "typedef int GLint;\n"
-        "typedef int GLclampx;\n"
-        "typedef unsigned char GLubyte;\n"
-        "typedef unsigned short GLushort;\n"
-        "typedef unsigned int GLuint;\n"
-        "typedef int GLsizei;\n"
-        "typedef float GLfloat;\n"
-        "typedef float GLclampf;\n"
-        "typedef double GLdouble;\n"
-        "typedef double GLclampd;\n"
-        "\n"
-        "#if !defined(GL_VERSION_2_0)\n"
-        "typedef char GLchar;\n"
-        "#endif\n"
-        "#if !defined(GL_ARB_shader_objects)\n"
-        "typedef char GLcharARB;\n"
-        "#ifdef __APPLE__\n"
-        "typedef void *GLhandleARB;\n"
-        "#else\n"
-        "typedef unsigned int GLhandleARB;\n"
-        "#endif\n"
-        "#endif\n"
-        "#if !defined(ARB_ES2_compatibility) && !defined(GL_VERSION_4_1)\n"
-        "typedef GLint GLfixed;\n"
-        "#endif\n"
-        "#if !defined(GL_ARB_half_float_vertex) && !defined(GL_VERSION_3_0)\n"
-        "typedef unsigned short GLhalf;\n"
-        "#endif\n"
-        "#if !defined(GL_ARB_half_float_pixel)\n"
-        "typedef unsigned short GLhalfARB;\n"
-        "#endif\n"
-        "#if !defined(GL_ARB_sync) && !defined(GL_VERSION_3_2)\n"
-        "typedef int64_t GLint64;\n"
-        "typedef struct __GLsync *GLsync;\n"
-        "typedef uint64_t GLuint64;\n"
-        "#endif\n"
-        "#if !defined(GL_EXT_timer_query)\n"
-        "typedef int64_t GLint64EXT;\n"
-        "typedef uint64_t GLuint64EXT;\n"
-        "#endif\n"
-        "#if !defined(GL_VERSION_1_5)\n"
-        "#ifdef __APPLE__\n"
-        "typedef intptr_t GLintptr;\n"
-        "typedef intptr_t GLsizeiptr;\n"
-        "#else\n"
-        "typedef ptrdiff_t GLintptr;\n"
-        "typedef ptrdiff_t GLsizeiptr;\n"
-        "#endif\n"
-        "#endif\n"
-        "#if !defined(GL_ARB_vertex_buffer_object)\n"
-        "#ifdef __APPLE__\n"
-        "typedef intptr_t GLintptrARB;\n"
-        "typedef intptr_t GLsizeiptrARB;\n"
-        "#else\n"
-        "typedef ptrdiff_t GLintptrARB;\n"
-        "typedef ptrdiff_t GLsizeiptrARB;\n"
-        "#endif\n"
-        "#endif\n"
-        "\n"
-        "\n"
-    ;
-} // writePODs
 
 static void
 writeStartClass(const QString& namespaceName,
@@ -184,8 +68,7 @@ writeImplementationCppFile(const QString& namespaceName,
                            const std::list<FunctionSignature>& functions,
                            const QString& path,
                            const QString &API,
-                           bool templateValue,
-                           bool includeDebug)
+                           bool templateValue)
 {
     QString outputFilename = path + "/" + baseFileName + "_" + API + ".cpp";
     QFile of(outputFilename);
@@ -201,6 +84,7 @@ writeImplementationCppFile(const QString& namespaceName,
         " */\n"
         "\n"
         "#include \"" << baseFileName << ".h\"\n"
+        "#include \"Global/Macros.h\"\n"
         "\n";
     if (!templateValue) {
         ots <<
@@ -211,59 +95,28 @@ writeImplementationCppFile(const QString& namespaceName,
             "#endif // HAVE_OSMESA\n";
         ots << "\n\n";
     }
-    if (includeDebug) {
-        ots << "#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG\n\n";
-    }
-    if (templateValue) {
-        ots << "extern \"C\" {\n";
-        for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
-            if (includeDebug) {
-                ots <<
-                    "#ifdef GLAD_DEBUG\n"
-                    "extern " << it->funcPNType << " glad_debug_" << it->funcName << ";\n"
-                    "#else\n";
-            }
-            ots <<
-                "extern " << it->funcPNType << " glad_" << it->funcName << ";\n";
-            if (includeDebug) {
-                ots <<
-                    "#endif\n";
-            }
-        }
+
+    if (namespaceName == "Natron") {
         ots <<
-            "} // extern C\n"
-            "\n";
+            "NATRON_NAMESPACE_ENTER;\n\n";
+    } else {
+        ots <<
+            "namespace " << namespaceName << " {\n\n";
     }
-
-    ots <<
-        "namespace " << namespaceName << " {\n"
-        "\n";
-
     // Write the load functions
     ots <<
         "template <>\n"
         "void OSGLFunctions<" << (templateValue ? "true" : "false") << ">::load_functions() {\n";
     if (!templateValue) {
         ots <<
-            "#ifdef HAVE_OSMESA\n"
-            "\n";
+            "#ifdef HAVE_OSMESA\n";
     }
     for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
         if (templateValue) {
             // OpenGL functions are directly pointing to the ones loaded by glad
-            if (includeDebug) {
-                ots <<
-                    "#ifdef GLAD_DEBUG\n"
-                    "    _" << it->funcName << " = glad_debug_" << it->funcName << ";\n"
-                    "#else\n";
-            }
             {
                 ots <<
-                    "    _" << it->funcName << " = glad_" << it->funcName << ";\n";
-            }
-            if (includeDebug) {
-                ots <<
-                    "#endif\n";
+                    "    _" << it->funcName << " = glad_defined_" << it->funcName << ";\n";
             }
         } else {
             // Mesa functions are loaded
@@ -283,9 +136,13 @@ writeImplementationCppFile(const QString& namespaceName,
     ots <<
         "template class OSGLFunctions<" << (templateValue ? "true" : "false") << ">;\n"
         "\n";
-    ots <<
-        "} // namespace " << namespaceName << "\n"
-        "\n";
+    if (namespaceName == "Natron") {
+        ots <<
+            "NATRON_NAMESPACE_EXIT;\n";
+    } else {
+        ots <<
+            "} // namespace " << namespaceName << "\n";
+    }
 } // writeImplementationCppFile
 
 int
@@ -294,7 +151,7 @@ main(int argc,
 {
     if (argc != 6) {
         std::cout << "This program takes in input glad.h and outputs the include and implementation files for OSMesa OpenGL function and regular OpenGL functions." << std::endl;
-        std::cout << "Usage: generateGLIncludes <glad.h path> <output dir path> <namespace name> <baseFileName> <inlcude glad debug symbols>" << std::endl;
+        std::cout << "Usage: generateGLIncludes <glad.h path> <output dir path> <namespace name> <baseFileName>" << std::endl;
         std::cout << "Example: generateGLIncludes /Users/alexandre/development/Natron/Global/gladRel/include/glad/glad.h /Users/alexandre/development/Natron/Engine Natron OSGLFunctions 1" << std::endl;
 
         return 1;
@@ -318,11 +175,6 @@ main(int argc,
 
     QString namespaceName(argv[3]);
     QString baseFilename(argv[4]);
-    bool supportGladDebug;
-    {
-        QString supportDebugSymbolsStr(argv[5]);
-        supportGladDebug = (bool)supportDebugSymbolsStr.toInt();
-    }
     QString absoluteDirPath = outputDir.absolutePath();
     QString outputHeaderFilename = absoluteDirPath + "/" + baseFilename + ".h";
     QFile of_header(outputHeaderFilename);
@@ -453,13 +305,22 @@ main(int argc,
     }
 
     writeHeader(ots_header);
-    writePODs(ots_header);
     ots_header <<
-        definesStr << "\n"
-        "\n";
+        "// remove global macro definitions of OpenGL functions by glad.h, but first save them under a different name (for OSGLFunctions_gl.cpp)\n"
+        "\n"
+        "// fgrep \"#define gl\" glad.h |awk '{print $1, \"glad_defined_\" $2, $2}'\n";
+    // save glad's defines
+    for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
+      ots_header << "#define glad_defined_" << it->funcName << " " << it->funcName << '\n';
+    }
     ots_header <<
-        functionTypedefsStr << "\n"
-        "\n";
+        "\n"
+        "// fgrep \"#define gl\" glad.h |sed -e 's/#define/#undef/g' |awk '{print $1, $2}'\n";
+    // undef glad's defines
+    for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
+      ots_header << "#undef " << it->funcName << '\n';
+    }
+
     writeStartClass(namespaceName, ots_header);
 
     // Define the singleton
@@ -475,7 +336,7 @@ main(int argc,
         "    void load_functions();\n"
         "\n"
         "    // private constructor\n"
-        "    OSGLFunctions() { load_functions(); }\n"
+        "    OSGLFunctions() { std::memset(this, 0, sizeof(*this)); load_functions(); }\n"
         "\n";
 
     // Declare member functions
@@ -536,8 +397,8 @@ main(int argc,
 
     writeFooter(ots_header);
 
-    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "gl", true, supportGladDebug);
-    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "mesa", false, supportGladDebug);
+    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "gl", true);
+    writeImplementationCppFile(namespaceName, baseFilename, signatures, absoluteDirPath, "mesa", false);
 
 
     return 0;

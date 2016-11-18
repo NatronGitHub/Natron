@@ -220,7 +220,7 @@ AnimationModuleViewPrivate::drawCurveEditorView()
         RenderScale scale(1.);
         interact->setCallingViewport(_publicInterface);
         interact->drawAction(0, scale, 0, interact->hasColorPicker() ? &interact->getLastColorPickerColor() : 0);
-        glCheckErrorIgnoreOSXBug();
+        glCheckErrorIgnoreOSXBug(GL_GPU);
     }
 
     drawCurveEditorScale();
