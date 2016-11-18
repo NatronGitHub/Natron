@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <iostream>
 #include "Engine/AppManager.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 #include "Global/GLIncludes.h"
 

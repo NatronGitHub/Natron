@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "Engine/AppManager.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 
 #include "Global/MemoryInfo.h"
