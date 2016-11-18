@@ -830,11 +830,11 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
         convertOldFileKeyframesToPattern = isFile && getKnobName() == kOfxImageEffectFileParamName;
     }
 
-    _type = eSerializationValueVariantTypeNone;
+    _serialization->_dataType = eSerializationValueVariantTypeNone;
 
     bool loadValue = true;
     if (version >= VALUE_SERIALIZATION_INTRODUCES_DATA_TYPE) {
-        ar & ::boost::serialization::make_nvp("DataType", _type);
+        ar & ::boost::serialization::make_nvp("DataType", _serialization->_dataType);
     } else {
         bool isString = _typeName == NATRON_NAMESPACE::KnobString::typeNameStatic();
         bool isColor = _typeName == NATRON_NAMESPACE::KnobColor::typeNameStatic();
@@ -847,13 +847,13 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
 
 
         if (isInt) {
-            _type = eSerializationValueVariantTypeInteger;
+            _serialization->_dataType = eSerializationValueVariantTypeInteger;
         } else if (isDouble || isColor) {
-            _type = eSerializationValueVariantTypeDouble;
+            _serialization->_dataType = eSerializationValueVariantTypeDouble;
         } else if (isBool) {
-            _type = eSerializationValueVariantTypeBoolean;
+            _serialization->_dataType = eSerializationValueVariantTypeBoolean;
         } else if (isString || isOutputFile || isPath || isLayers || isFile || isChoice) {
-            _type = eSerializationValueVariantTypeString;
+            _serialization->_dataType = eSerializationValueVariantTypeString;
         }
 
         if (isChoice) {
@@ -890,12 +890,11 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
     }
 
     if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-        _serialization->_defaultValues[_dimension].type = _type;
         _serialization->_defaultValues[_dimension].serializeDefaultValue = false;
     }
 
     if (loadValue) {
-        switch (_type) {
+        switch (_serialization->_dataType) {
             case eSerializationValueVariantTypeNone:
                 break;
 

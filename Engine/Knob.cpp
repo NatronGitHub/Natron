@@ -2708,6 +2708,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
 static void
 initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
                                            const DimIdx dimension,
+                                           KnobSerialization* knobSer,
                                            DefaultValueSerialization* defValue)
 {
     // Serialize value and default value
@@ -2730,27 +2731,27 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
     // Only serialize default value for the main view
     if (isInt) {
 
-        defValue->type = eSerializationValueVariantTypeInteger;
+        knobSer->_dataType = eSerializationValueVariantTypeInteger;
         defValue->value.isInt = isInt->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isInt->hasDefaultValueChanged(dimension);
 
     } else if (isBool || isGrp || isButton) {
-        defValue->type = eSerializationValueVariantTypeBoolean;
+        knobSer->_dataType = eSerializationValueVariantTypeBoolean;
         defValue->value.isBool = isBoolBase->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isBoolBase->hasDefaultValueChanged(dimension);
     } else if (isColor || isDouble) {
 
-        defValue->type = eSerializationValueVariantTypeDouble;
+        knobSer->_dataType = eSerializationValueVariantTypeDouble;
         defValue->value.isDouble = isDoubleBase->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isDoubleBase->hasDefaultValueChanged(dimension);
 
     } else if (isStringBase) {
 
-        defValue->type = eSerializationValueVariantTypeString;
+        knobSer->_dataType = eSerializationValueVariantTypeString;
         defValue->value.isString = isStringBase->getDefaultValue(dimension);
         defValue->serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
     } else if (isChoice) {
-        defValue->type = eSerializationValueVariantTypeString;
+        knobSer->_dataType = eSerializationValueVariantTypeString;
         //serialization->_defaultValue.isString
         std::vector<std::string> entries = isChoice->getEntries();
         int defIndex = isChoice->getDefaultValue(dimension);
@@ -2871,8 +2872,6 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     KnobSeparatorPtr isSep = toKnobSeparator(knob);
     KnobButtonPtr btn = toKnobButton(knob);
 
-
-    serialization->_type = defValue.type;
 
     serialization->_serializeValue = false;
 
@@ -3111,7 +3110,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         // Serialize default values
         serialization->_defaultValues.resize(serialization->_dimension);
         for (int i = 0; i < serialization->_dimension; ++i) {
-            initializeDefaultValueSerializationStorage(thisShared, DimIdx(i), &serialization->_defaultValues[i]);
+            initializeDefaultValueSerializationStorage(thisShared, DimIdx(i), serialization, &serialization->_defaultValues[i]);
         }
 
         // Values
