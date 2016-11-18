@@ -65,7 +65,7 @@
 #endif
 
 #ifdef HAVE_OSMESA
-#include <GL/osmesa.h>
+#include "Engine/OSGLFunctions_mesa.h"
 #endif
 
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"

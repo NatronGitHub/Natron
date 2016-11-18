@@ -184,7 +184,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     } else if (state == eEventStateDraggingNode) {
         if ( !_imp->_hasMovedOnce ) {
             if ( modCASIsControl(e) ) { // control-click is the same as double-click, see NodeGraph::mouseDoubleClickEvent
-                NodeGui* nearbyNode;
+                NodeGuiPtr nearbyNode;
                 Edge* nearbyEdge;
                 NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 

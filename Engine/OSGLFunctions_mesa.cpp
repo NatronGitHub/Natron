@@ -2,15 +2,12 @@
  * THIS FILE WAS GENERATED AUTOMATICALLY FROM glad.h by tools/utils/generateGLIncludes, DO NOT EDIT
  */
 
+#ifdef HAVE_OSMESA
+#include "OSGLFunctions_mesa.h"
+#endif
+
 #include "OSGLFunctions.h"
 #include "Global/Macros.h"
-
-#ifdef HAVE_OSMESA
-#include <GL/gl_mangle.h>
-#include <GL/glu_mangle.h>
-#include <GL/osmesa.h>
-#endif // HAVE_OSMESA
-
 
 NATRON_NAMESPACE_ENTER;
 
