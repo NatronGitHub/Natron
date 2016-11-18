@@ -537,7 +537,7 @@ void
 SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization::serialize(Archive & ar,
           const unsigned int version)
 {
-    boost::serialization::void_cast_register<RotoDrawableItemSerialization, RotoItemSerialization>(
+    boost::serialization::void_cast_register<Compat::RotoDrawableItemSerialization, Compat::RotoItemSerialization>(
                                                                                                    static_cast<Compat::RotoDrawableItemSerialization *>(NULL),
                                                                                                    static_cast<Compat::RotoItemSerialization *>(NULL)
                                                                                                    );
