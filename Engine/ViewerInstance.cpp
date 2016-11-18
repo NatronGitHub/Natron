@@ -2706,10 +2706,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
             }
 
 
-            dst_pixels[x * 4] = Image::clamp(r, 0., 1.);
-            dst_pixels[x * 4 + 1] = Image::clamp(g, 0., 1.);
-            dst_pixels[x * 4 + 2] = Image::clamp(b, 0., 1.);
-            dst_pixels[x * 4 + 3] = Image::clamp(a, 0., 1.);
+            dst_pixels[x * 4] = r; // do not clamp! values may be more than 1 or less than 0
+            dst_pixels[x * 4 + 1] = g;
+            dst_pixels[x * 4 + 2] = b;
+            dst_pixels[x * 4 + 3] = a;
         }
         if (src_pixels) {
             src_pixels += srcRowElements;
