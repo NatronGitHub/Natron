@@ -405,7 +405,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
 
-                if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+                if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                     RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting) {

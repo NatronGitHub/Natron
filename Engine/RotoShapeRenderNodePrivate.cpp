@@ -64,7 +64,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                  const double distToNextIn,
                                                  const Point& lastCenterPointIn,
-                                                 const RotoStrokeItemPtr& stroke,
+                                                 const RotoDrawableItemPtr& stroke,
                                                  bool doBuildup,
                                                  double opacity,
                                                  double time,
@@ -100,12 +100,20 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         }
 
 
-        KnobBoolPtr pressureOpacityKnob = stroke->getPressureOpacityKnob();
-        KnobBoolPtr pressureSizeKnob = stroke->getPressureSizeKnob();
-        KnobBoolPtr pressureHardnessKnob = stroke->getPressureHardnessKnob();
-        pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
-        pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
-        pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
+        // This function is also used for opened bezier which do not have pressure.
+        RotoStrokeItemPtr isStroke = toRotoStrokeItem(stroke);
+        if (!isStroke) {
+            pressureAffectsOpacity = false;
+            pressureAffectsSize = false;
+            pressureAffectsHardness = false;
+        } else {
+            KnobBoolPtr pressureOpacityKnob = isStroke->getPressureOpacityKnob();
+            KnobBoolPtr pressureSizeKnob = isStroke->getPressureSizeKnob();
+            KnobBoolPtr pressureHardnessKnob = isStroke->getPressureHardnessKnob();
+            pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
+            pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
+            pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
+        }
         brushSizePixel = brushSize;
         if (mipmapLevel != 0) {
             brushSizePixel = std::max( 1., brushSizePixel / (1 << mipmapLevel) );

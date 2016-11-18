@@ -901,7 +901,7 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                          const std::list<std::list<std::pair<Point, double> > >& strokes,
                                          const double distToNextIn,
                                          const Point& lastCenterPointIn,
-                                         const RotoStrokeItemPtr& stroke,
+                                         const RotoDrawableItemPtr& stroke,
                                          bool doBuildup,
                                          double alpha,
                                          double time,
@@ -1994,7 +1994,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
 
     assert(isStroke || isBezier);
-    if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+    if ( isStroke  || ( isBezier && isBezier->isOpenBezier() ) ) {
         std::vector<cairo_pattern_t*> dotPatterns;
         if (isDuringPainting && isStroke) {
             dotPatterns = isStroke->getPatternCache();

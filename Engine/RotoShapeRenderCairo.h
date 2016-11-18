@@ -109,7 +109,7 @@ public:
                                    const std::list<std::list<std::pair<Point, double> > >& strokes,
                                    const double distToNextIn,
                                    const Point& lastCenterPointIn,
-                                   const RotoStrokeItemPtr& stroke,
+                                   const RotoDrawableItemPtr& stroke,
                                    bool doBuildup,
                                    double opacity,
                                    double time,
