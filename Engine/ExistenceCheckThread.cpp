@@ -150,11 +150,10 @@ ExistenceCheckerThread::run()
             }
 
             if (!receivedAcknowledgement) {
-                std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
+                std::cerr << tr("Crash reporter process does not seem to be responding anymore. This pipe %1 might be used somewhere else.").arg(_imp->comServerPipePath).toStdString() << std::endl;
                 /*
                    We did not receive te acknowledgement, hence quit
                  */
-                appPTR->abortAnyProcessing();
                 Q_EMIT otherProcessUnreachable();
 
                 return;

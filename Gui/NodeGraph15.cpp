@@ -182,7 +182,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         nodeHoldingEdge->refreshEdges();
         scene()->update();
     } else if (state == eEventStateDraggingNode) {
-        if ( !_imp->_selection.empty() ) {
+        if ( !_imp->_hasMovedOnce ) {
+            if ( modCASIsControl(e) ) { // control-click is the same as double-click, see NodeGraph::mouseDoubleClickEvent
+                NodeGui* nearbyNode;
+                Edge* nearbyEdge;
+                NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
+
+                if (nearbyItemCode == eNearbyItemNode || nearbyItemCode == eNearbyItemBackdropFrame) {
+                    showNodePanel(false, modCASIsShift(e), nearbyNode);
+                }
+            }
+        } else if ( !_imp->_selection.empty() ) {
             NodesGuiList nodesToMove;
             for (NodesGuiList::iterator it = _imp->_selection.begin();
                  it != _imp->_selection.end(); ++it) {
@@ -289,6 +299,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         }
     } else if (state == eEventStateSelectionRect) {
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
+
     }
     _imp->_nodesWithinBDAtPenDown.clear();
 

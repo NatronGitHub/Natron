@@ -5605,9 +5605,11 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
     double projectPAR = projectFormat.getPixelAspectRatio();
 
-    bool outputFormatSet = false;
-    RectI outputFormat = projectFormat;
+    RectI firstOptionalInputFormat, firstNonOptionalInputFormat;
 
+    // Format: Take format from the first non optional input if any. Otherwise from the first optional input.
+    // Otherwise fallback on project format
+    bool firstOptionalInputFormatSet = false, firstNonOptionalInputFormatSet = false;
 
     // now add the input gubbins to the per inputs metadatas
     for (int i = -1; i < (int)inputs.size(); ++i) {
@@ -5630,7 +5632,22 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
         metadata.setPixelAspectRatio(i, par);
 
-        if ( (i == -1) || isInputOptional(i) ) {
+        bool isOptional = i >= 0 && isInputOptional(i);
+        if (i >= 0) {
+            if (isOptional) {
+                if (!firstOptionalInputFormatSet && effect) {
+                    firstOptionalInputFormat = effect->getOutputFormat();
+                    firstOptionalInputFormatSet = true;
+                }
+            } else {
+                if (!firstNonOptionalInputFormatSet && effect) {
+                    firstNonOptionalInputFormat = effect->getOutputFormat();
+                    firstNonOptionalInputFormatSet = true;
+                }
+            }
+        }
+
+        if ( (i == -1) || isOptional ) {
             // "Optional input clips can always have their component types remapped"
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id482755
             ImageBitDepthEnum depth = deepestBitDepth;
@@ -5652,13 +5669,6 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setBitDepth(i, depth);
         } else {
 
-
-            if (!outputFormatSet && effect) {
-                // Get the format from the first non optional input
-                outputFormat = effect->getOutputFormat();
-                outputFormatSet = true;
-            }
-
             ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth = effect ? effect->getBitDepth(-1) : eImageBitDepthFloat;
 
@@ -5671,12 +5681,24 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setImageComponents(i, rawComps);
         }
     }
+    
     // default to a reasonable value if there is no input
     if (!premultSet || !inputParSet) {
         premult = eImagePremultiplicationOpaque;
     }
     // set output premultiplication
     metadata.setOutputPremult(premult);
+
+    RectI outputFormat;
+
+    if (firstNonOptionalInputFormatSet) {
+        outputFormat = firstNonOptionalInputFormat;
+    } else if (firstOptionalInputFormatSet) {
+        outputFormat = firstOptionalInputFormat;
+    } else {
+        outputFormat = projectFormat;
+    }
+
 
     metadata.setOutputFormat(outputFormat);
 

@@ -4069,9 +4069,16 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
         for (KnobsVec::iterator it = mainPageChildren.begin(); it != mainPageChildren.end(); ++it, ++i) {
             if (*it == lastKnobBeforeAdvancedOption) {
                 if (i > 0) {
+                    int j = i - 1;
                     KnobsVec::iterator prev = it;
                     --prev;
-                    if ( !toKnobSeparator(*prev) ) {
+
+                    while (j >= 0 && (*prev)->getIsSecret()) {
+                        --j;
+                        --prev;
+                    }
+
+                    if ( j >= 0 && !toKnobSeparator(*prev) ) {
                         KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(_imp->effect, std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
@@ -4087,7 +4094,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     createNodePage(settingsPage);
 
     NodeGroupPtr isGrpNode = isEffectNodeGroup();
-    if (!isGrpNode) {
+    if (!isGrpNode && !isBackdropNode) {
         createInfoPage();
     } else {
         if (isGrpNode->isSubGraphUserVisible()) {
@@ -4098,6 +4105,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
             }
         }
     }
+
 
 
     if (_imp->effect->isWriter()

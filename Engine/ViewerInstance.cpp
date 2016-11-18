@@ -805,6 +805,23 @@ ViewerInstance::fillGammaLut(double gamma)
     _imp->fillGammaLut(1. / gamma);
 }
 
+void
+ViewerInstance::getRegionsOfInterest(double /*time*/,
+                                     const RenderScale & /*scale*/,
+                                     const RectD & /*outputRoD*/,   //!< the RoD of the effect, in canonical coordinates
+                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                     ViewIdx /*view*/,
+                                     RoIMap* ret)
+{
+    int texIndex = getViewerIndexThreadLocal();
+    assert(texIndex == 0 || texIndex == 1);
+    EffectInstancePtr input = getInput(texIndex);
+    if (input) {
+        ret->insert( std::make_pair(input, renderWindow) );
+    }
+
+}
+
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                                        const bool isDraftMode,

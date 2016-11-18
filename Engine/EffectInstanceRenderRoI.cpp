@@ -227,6 +227,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                                                        const ParallelRenderArgsPtr& frameArgs,
                                                        double time,
                                                        ViewIdx view,
+                                                       RenderSafetyEnum safety,
                                                        const RenderScale& argsScale,
                                                        const RenderScale& renderMappedScale,
                                                        const RectI& roi,
@@ -454,14 +455,33 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
     if (*tryIdentityOptim) {
         optimizeRectsToRender(_publicInterface->shared_from_this(), *inputsRoDIntersectionPixel, rectsLeftToRender, time, view, renderMappedScale, &planesToRender->rectsToRender);
     } else {
-        for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
-            RectToRender r;
-            r.rect = *it;
-            r.isIdentity = false;
-            planesToRender->rectsToRender.push_back(r);
+        // If plug-in wants host frame threading and there is only 1 rect to render, split it
+        if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
+            QThreadPool* tp = QThreadPool::globalInstance();
+            int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
+
+            std::vector<RectI> splits;
+            if (nThreads > 1) {
+                splits = rectsLeftToRender.front().splitIntoSmallerRects(nThreads);
+            } else {
+                splits.push_back(rectsLeftToRender.front());
+            }
+            for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
+                RectToRender r;
+                r.rect = *it;
+                r.isIdentity = false;
+                planesToRender->rectsToRender.push_back(r);
+            }
+        } else {
+            for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
+                RectToRender r;
+                r.rect = *it;
+                r.isIdentity = false;
+                planesToRender->rectsToRender.push_back(r);
+            }
         }
     }
-
+    
 } // determineRectsToRender
 
 /**
@@ -1365,6 +1385,7 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
                                                            const FrameViewRequest* requestPassData,
                                                            const ImagePlanesToRenderPtr &planesToRender,
                                                            const OSGLContextAttacherPtr& glContextLocker,
+                                                           RenderSafetyEnum safety,
                                                            bool useTransforms,
                                                            StorageModeEnum storage,
                                                            const std::vector<ImageComponents>& outputComponents,
@@ -1453,7 +1474,7 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
         } else {
 
             // If plug-in wants host frame threading and there is only 1 rect to render, split it
-            if (frameArgs->currentThreadSafety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1) {
+            if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1) {
                 QThreadPool* tp = QThreadPool::globalInstance();
                 int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
 
@@ -1717,6 +1738,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                                                               const ImagePlanesToRenderPtr &planesToRender,
                                                               const ComponentsNeededMapPtr& neededComps,
                                                               const OSGLContextPtr& glRenderContext,
+                                                              RenderSafetyEnum safety,
                                                               ImageBitDepthEnum outputDepth,
                                                               const ImageComponents &outputClipPrefComps,
                                                               bool hasSomethingToRender,
@@ -1763,7 +1785,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
             // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is per image
 
             boost::scoped_ptr<QMutexLocker> locker;
-            RenderSafetyEnum safety = frameArgs->currentThreadSafety;
+
 
             EffectInstancePtr renderInstance;
             /**
@@ -2204,6 +2226,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
+    // Determine render safety for this render.
+    RenderSafetyEnum safety = frameArgs->currentThreadSafety;
+    if (safety == eRenderSafetyFullySafeFrame) {
+        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+        // If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
+        // but if the effect doesn't support tiles it won't work.
+        // Also check that the number of threads indicating by the settings are appropriate for this render mode.
+        if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
+            ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
+            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() )) {
+            safety = eRenderSafetyFullySafe;
+        }
+    }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Determine rectangles left to render /////////////////////////////////////////////////////
@@ -2211,7 +2247,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool fillGrownBoundsWithZeroes, tryIdentityOptim, redoCacheLookup;
     RectI inputsRoDIntersectionPixel;
     RectI lastStrokePixelRoD;
-    _imp->determineRectsToRender(isPlaneCached, frameArgs, args.time, args.view, args.scale, renderMappedScale, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, frameArgs->isDuringPaintStrokeCreation, args.mipMapLevel, par, cacheAlmostFull, args.inputImagesList, storage, glContextLocker, planesToRender, &redoCacheLookup, &fillGrownBoundsWithZeroes, &tryIdentityOptim, &lastStrokePixelRoD, &inputsRoDIntersectionPixel);
+    _imp->determineRectsToRender(isPlaneCached, frameArgs, args.time, args.view, safety, args.scale, renderMappedScale, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, frameArgs->isDuringPaintStrokeCreation, args.mipMapLevel, par, cacheAlmostFull, args.inputImagesList, storage, glContextLocker, planesToRender, &redoCacheLookup, &fillGrownBoundsWithZeroes, &tryIdentityOptim, &lastStrokePixelRoD, &inputsRoDIntersectionPixel);
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
 
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
@@ -2230,7 +2266,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
     if (redoCacheLookup) {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, requestPassData, planesToRender, glContextLocker, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, requestPassData, planesToRender, glContextLocker, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2247,7 +2283,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Launch actual internal render ///////////////////////////////////////////////////////////
     bool renderAborted;
-    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, outputDepth, outputClipPrefComps, hasSomethingToRender, storage, frameViewHash, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
+    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, safety, outputDepth, outputClipPrefComps, hasSomethingToRender, storage, frameViewHash, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
@@ -2348,24 +2384,6 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
     boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
     if ( !planesToRender->rectsToRender.empty() ) {
         renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
-    }
-
-    ///depending on the thread-safety of the plug-in we render with a different
-    ///amount of threads.
-    ///If the project lock is already locked at this point, don't start any other thread
-    ///as it would lead to a deadlock when the project is loading.
-    ///Just fall back to Fully_safe
-    int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-    if (safety == eRenderSafetyFullySafeFrame) {
-        ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
-        ///but if the effect doesn't support tiles it won't work.
-        ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
-        if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
-            ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
-            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
-            self->isRotoPaintNode() ) {
-            safety = eRenderSafetyFullySafe;
-        }
     }
 
 
