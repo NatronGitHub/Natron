@@ -1044,6 +1044,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     bool isMultiplanar = effect->isMultiPlanar();
     ImageComponents natronPlane;
     if (!ofxPlane) {
+
         if (renderData) {
             natronPlane = renderData->clipComponents;
         }
@@ -1052,11 +1053,10 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
            If the plugin is multi-planar, we are in the situation where it called the regular clipGetImage without a plane in argument
            so the components will not have been set on the TLS hence just use regular components.
          */
-        if ( (natronPlane.getNumComponents() == 0) && effect->isMultiPlanar() ) {
+        if (natronPlane.getNumComponents() == 0) {
             natronPlane = ofxComponentsToNatronComponents( getComponents() );
             assert( !natronPlane.isPairedComponents() );
         }
-        assert(natronPlane.getNumComponents() > 0);
     } else {
         natronPlane = ofxPlaneToNatronPlane(*ofxPlane);
     }
