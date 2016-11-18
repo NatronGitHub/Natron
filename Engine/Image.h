@@ -260,14 +260,14 @@ public:
     template <typename GL>
     static void setupGLViewport(const RectI& bounds, const RectI& roi)
     {
-        GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
-        GL::glMatrixMode(GL_PROJECTION);
-        GL::glLoadIdentity();
-        GL::glOrtho( roi.x1, roi.x2,
+        GL::Viewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        GL::MatrixMode(GL_PROJECTION);
+        GL::LoadIdentity();
+        GL::Ortho( roi.x1, roi.x2,
                     roi.y1, roi.y2,
                     -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
-        GL::glMatrixMode(GL_MODELVIEW);
-        GL::glLoadIdentity();
+        GL::MatrixMode(GL_MODELVIEW);
+        GL::LoadIdentity();
         glCheckError(GL);
     }
 
@@ -298,12 +298,12 @@ public:
         srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
         srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
 
-        GL::glBegin(GL_POLYGON);
+        GL::Begin(GL_POLYGON);
         for (int i = 0; i < 4; ++i) {
-            GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+            GL::TexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::Vertex2d(vertexCoords[i].x, vertexCoords[i].y);
         }
-        GL::glEnd();
+        GL::End();
         glCheckError(GL);
     }
 

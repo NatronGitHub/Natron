@@ -66,6 +66,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -1538,9 +1539,9 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
 
     GLuint pboID = glContext->getOrCreatePBOId();
     assert(pboID != 0);
-    GL::glEnable(GL_TEXTURE_2D);
+    GL::Enable(GL_TEXTURE_2D);
     // bind PBO to update texture source
-    GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+    GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
     std::size_t pixelSize = 4 * info.dataTypeSize;
     std::size_t dstRowBytes = roi.width() * pixelSize;
@@ -1553,7 +1554,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+    GL::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
@@ -1582,7 +1583,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
 
 
 
-    unsigned char* gpuData = (unsigned char*)GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    unsigned char* gpuData = (unsigned char*)GL::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     if (gpuData) {
         // Copy the RoI
         std::size_t roiRowBytes = realRoI.width() * pixelSize;
@@ -1638,7 +1639,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
             }
         }
 
-        GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        GLboolean result = GL::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
     }
@@ -1650,8 +1651,8 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
 
     // it is good idea to release PBOs with ID 0 after use.
     // Once bound with 0, all pixel operations are back to normal ways.
-    GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
+    GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    //GL::BindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
     glCheckError(GL);
     
     
@@ -2699,17 +2700,17 @@ static void setupGLForRender(const ImagePtr& image,
     if (GL::isGPU()) {
         viewportBounds = imageBounds;
         int textureTarget = image->getGLTextureTarget();
-        GL::glEnable(textureTarget);
+        GL::Enable(textureTarget);
         assert(image->getStorageMode() == eStorageModeGLTex);
 
-        GL::glActiveTexture(GL_TEXTURE0);
-        GL::glBindTexture( textureTarget, image->getGLTextureID() );
-        assert(GL::glIsTexture(image->getGLTextureID()));
-        assert(GL::glGetError() == GL_NO_ERROR);
+        GL::ActiveTexture(GL_TEXTURE0);
+        GL::BindTexture( textureTarget, image->getGLTextureID() );
+        assert(GL::IsTexture(image->getGLTextureID()));
+        assert(GL::GetError() == GL_NO_ERROR);
         glCheckError(GL);
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, image->getGLTextureID(), 0 /*LoD*/);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, image->getGLTextureID(), 0 /*LoD*/);
         glCheckError(GL);
-        assert(GL::glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+        assert(GL::CheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
         glCheckFramebufferError(GL);
     } else {
         viewportBounds = roi;
@@ -2734,12 +2735,12 @@ static void setupGLForRender(const ImagePtr& image,
     Image::setupGLViewport<GL>(viewportBounds, roi);
 
     // Enable scissor to make the plug-in not render outside of the viewport...
-    GL::glEnable(GL_SCISSOR_TEST);
-    GL::glScissor( roi.x1 - viewportBounds.x1, roi.y1 - viewportBounds.y1, roi.width(), roi.height() );
+    GL::Enable(GL_SCISSOR_TEST);
+    GL::Scissor( roi.x1 - viewportBounds.x1, roi.y1 - viewportBounds.y1, roi.width(), roi.height() );
 
     if (callGLFinish) {
         // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
-        GL::glFinish();
+        GL::Finish();
     }
 
 }
@@ -2747,12 +2748,12 @@ static void setupGLForRender(const ImagePtr& image,
 template <typename GL>
 static void finishGLRender()
 {
-    GL::glDisable(GL_SCISSOR_TEST);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GL::Disable(GL_SCISSOR_TEST);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
     if (!GL::isGPU()) {
-        GL::glFlush(); // waits until commands are submitted but does not wait for the commands to finish executing
-        GL::glFinish(); // waits for all previously submitted commands to complete executing
+        GL::Flush(); // waits until commands are submitted but does not wait for the commands to finish executing
+        GL::Finish(); // waits for all previously submitted commands to complete executing
     }
     glCheckError(GL);
 }
@@ -2847,7 +2848,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
 
         if (planes.useOpenGL) {
             if (glContext->isGPUContext()) {
-                GL_GPU::glBindTexture(mainImagePlane->getGLTextureTarget(), 0);
+                GL_GPU::BindTexture(mainImagePlane->getGLTextureTarget(), 0);
                 finishGLRender<GL_GPU>();
             } else {
                 finishGLRender<GL_CPU>();
@@ -3164,7 +3165,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
 
 
             GLuint fboID = glContext->getOrCreateFBOId();
-            GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL_GPU::BindFramebuffer(GL_FRAMEBUFFER, fboID);
             glCheckError(GL_GPU);
         }
     }

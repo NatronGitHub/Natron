@@ -642,11 +642,11 @@ nvx_get_GPU_mem_info()
 
     int v = 0;
     // Clear error
-    GLenum _glerror_ = GL_GPU::glGetError();
-    GL_GPU::glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &v);
+    GLenum _glerror_ = GL_GPU::GetError();
+    GL_GPU::GetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &v);
 
     // If error, return 0
-    _glerror_ = GL_GPU::glGetError();
+    _glerror_ = GL_GPU::GetError();
     if (_glerror_ != GL_NO_ERROR) {
         return 0;
     }
@@ -758,12 +758,12 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 continue;
             }
 
-            info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
-            info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
-            info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
-            info.glslVersionString = std::string( (const char*) GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
+            info.vendorName = std::string( (const char *) GL_GPU::GetString(GL_VENDOR) );
+            info.rendererName = std::string( (const char *) GL_GPU::GetString(GL_RENDERER) );
+            info.glVersionString = std::string( (const char *) GL_GPU::GetString(GL_VERSION) );
+            info.glslVersionString = std::string( (const char*) GL_GPU::GetString(GL_SHADING_LANGUAGE_VERSION) );
             info.maxMemBytes = nvx_get_GPU_mem_info();
-            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+            GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
             renderers.push_back(info);
 
             makeContextCurrent(0);
@@ -837,7 +837,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     continue;
                 }
 
-                GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+                GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
                 renderers.push_back(info);
                 
                 makeContextCurrent(0);
@@ -872,11 +872,11 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
 
         OpenGLRendererInfo info;
-        info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
-        info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
-        info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
-        info.glslVersionString = std::string( (const char *) GL_GPU::glGetString(GL_SHADING_LANGUAGE_VERSION) );
-        GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+        info.vendorName = std::string( (const char *) GL_GPU::GetString(GL_VENDOR) );
+        info.rendererName = std::string( (const char *) GL_GPU::GetString(GL_RENDERER) );
+        info.glVersionString = std::string( (const char *) GL_GPU::GetString(GL_VERSION) );
+        info.glslVersionString = std::string( (const char *) GL_GPU::GetString(GL_SHADING_LANGUAGE_VERSION) );
+        GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = nvx_get_GPU_mem_info();
         renderers.push_back(info);

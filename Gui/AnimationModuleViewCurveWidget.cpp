@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLFunctions.h"
 
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleSelectionModel.h"

@@ -37,6 +37,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h" // Image::clamp
+#include "Engine/OSGLFunctions.h"
 #include "Engine/StringAnimationManager.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -108,8 +109,8 @@ AnimationModuleViewPrivate::drawCurveEditorScale()
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         for (int axis = 0; axis < 2; ++axis) {
             const double rangePixel = (axis == 0) ? _publicInterface->width() : _publicInterface->height(); // AXIS-SPECIFIC
@@ -135,17 +136,17 @@ AnimationModuleViewPrivate::drawCurveEditorScale()
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
                 glCheckError(GL_GPU);
-                GL_GPU::glColor4f(gridR, gridG, gridB, alpha);
+                GL_GPU::Color4f(gridR, gridG, gridB, alpha);
 
-                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::Begin(GL_LINES);
                 if (axis == 0) {
-                    GL_GPU::glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                    GL_GPU::glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f( value, topRight.y() ); // AXIS-SPECIFIC
                 } else {
-                    GL_GPU::glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                    GL_GPU::glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f(topRight.x(), value); // AXIS-SPECIFIC
                 }
-                GL_GPU::glEnd();
+                GL_GPU::End();
                 glCheckErrorIgnoreOSXBug(GL_GPU);
 
                 if (tickSize > minTickSizeText) {
@@ -176,13 +177,13 @@ AnimationModuleViewPrivate::drawCurveEditorScale()
 
 
     glCheckError(GL_GPU);
-    GL_GPU::glColor4f(gridR, gridG, gridB, 1.);
-    GL_GPU::glBegin(GL_LINES);
-    GL_GPU::glVertex2f(AXIS_MIN, 0);
-    GL_GPU::glVertex2f(AXIS_MAX, 0);
-    GL_GPU::glVertex2f(0, AXIS_MIN);
-    GL_GPU::glVertex2f(0, AXIS_MAX);
-    GL_GPU::glEnd();
+    GL_GPU::Color4f(gridR, gridG, gridB, 1.);
+    GL_GPU::Begin(GL_LINES);
+    GL_GPU::Vertex2f(AXIS_MIN, 0);
+    GL_GPU::Vertex2f(AXIS_MAX, 0);
+    GL_GPU::Vertex2f(0, AXIS_MIN);
+    GL_GPU::Vertex2f(0, AXIS_MAX);
+    GL_GPU::End();
 
 
     glCheckErrorIgnoreOSXBug(GL_GPU);

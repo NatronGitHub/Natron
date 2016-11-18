@@ -32,7 +32,10 @@
 #include <QCheckBox>
 #include <QSplitter>
 #include <QDesktopWidget>
-#include <QGLShaderProgram>
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
+#include <QtOpenGL/QGLShaderProgram>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -45,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/HistogramCPU.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Texture.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
@@ -619,8 +623,8 @@ Histogram::paintGL()
     double zoomBottom = _imp->zoomCtx.bottom();
     double zoomTop = _imp->zoomCtx.top();
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        GL_GPU::glClearColor(0, 0, 0, 1);
-        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        GL_GPU::ClearColor(0, 0, 0, 1);
+        GL_GPU::Clear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
         return;
@@ -629,14 +633,14 @@ Histogram::paintGL()
     {
         GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
         GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
-        GL_GPU::glLoadIdentity();
-        GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GL_GPU::LoadIdentity();
+        GL_GPU::Ortho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
         GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
-        GL_GPU::glLoadIdentity();
+        GL_GPU::LoadIdentity();
         glCheckError(GL_GPU);
 
-        GL_GPU::glClearColor(0, 0, 0, 1);
-        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        GL_GPU::ClearColor(0, 0, 0, 1);
+        GL_GPU::Clear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
         _imp->drawScale();
@@ -677,7 +681,7 @@ Histogram::resizeGL(int width,
     if (height == 0) { // prevent division by 0
         height = 1;
     }
-    GL_GPU::glViewport (0, 0, width, height);
+    GL_GPU::Viewport (0, 0, width, height);
 
     QMutexLocker k(&_imp->zoomContextMutex);
     _imp->zoomCtx.setScreenSize(width, height);
@@ -1046,8 +1050,8 @@ HistogramPrivate::drawScale()
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         for (int axis = 0; axis < 2; ++axis) {
             const double rangePixel = (axis == 0) ? widget->width() : widget->height(); // AXIS-SPECIFIC
@@ -1072,17 +1076,17 @@ HistogramPrivate::drawScale()
                 const double tickSize = ticks[i - m1] * smallTickSize;
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-                GL_GPU::glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+                GL_GPU::Color4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
-                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::Begin(GL_LINES);
                 if (axis == 0) {
-                    GL_GPU::glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                    GL_GPU::glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f( value, topRight.y() ); // AXIS-SPECIFIC
                 } else {
-                    GL_GPU::glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                    GL_GPU::glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::Vertex2f(topRight.x(), value); // AXIS-SPECIFIC
                 }
-                GL_GPU::glEnd();
+                GL_GPU::End();
                 glCheckErrorIgnoreOSXBug(GL_GPU);
 
                 if (tickSize > minTickSizeText) {
@@ -1141,15 +1145,15 @@ HistogramPrivate::drawMissingImage()
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glColor4f(0.9, 0.9, 0, 1);
-        GL_GPU::glLineWidth(1.5);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
-        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
-        GL_GPU::glVertex2f( btmLeft.x(), btmLeft.y() );
-        GL_GPU::glVertex2f( topRight.x(), topRight.y() );
-        GL_GPU::glEnd();
-        GL_GPU::glLineWidth(1.);
+        GL_GPU::Color4f(0.9, 0.9, 0, 1);
+        GL_GPU::LineWidth(1.5);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::Vertex2f( btmLeft.x(), btmLeft.y() );
+        GL_GPU::Vertex2f( topRight.x(), topRight.y() );
+        GL_GPU::End();
+        GL_GPU::LineWidth(1.);
     }
     QString txt( tr("Missing image") );
     QFontMetrics m(_font);
@@ -1166,7 +1170,7 @@ HistogramPrivate::drawViewerPicker()
 {
     // always running in the main thread
 
-    GL_GPU::glLineWidth(2.);
+    GL_GPU::LineWidth(2.);
 
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
@@ -1184,58 +1188,58 @@ HistogramPrivate::drawViewerPicker()
     }
 
     if (mode == Histogram::eDisplayModeY) {
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
         double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( luminance, topLeft.y() );
-        GL_GPU::glVertex2d( luminance, btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( luminance, topLeft.y() );
+        GL_GPU::Vertex2d( luminance, btmRight.y() );
+        GL_GPU::End();
     } else if (mode == Histogram::eDisplayModeR) {
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( imgColor[0], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[0], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( imgColor[0], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[0], btmRight.y() );
+        GL_GPU::End();
     } else if (mode == Histogram::eDisplayModeG) {
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( imgColor[1], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[1], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( imgColor[1], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[1], btmRight.y() );
+        GL_GPU::End();
     } else if (mode == Histogram::eDisplayModeB) {
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( imgColor[2], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[2], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( imgColor[2], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[2], btmRight.y() );
+        GL_GPU::End();
     } else if (mode == Histogram::eDisplayModeA) {
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( imgColor[3], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[3], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( imgColor[3], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[3], btmRight.y() );
+        GL_GPU::End();
     } else if (mode == Histogram::eDisplayModeRGB) {
-        GL_GPU::glColor3f(0.851643, 0.196936, 0.196936);
-        GL_GPU::glBegin(GL_LINES);
-        GL_GPU::glVertex2d( imgColor[0], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[0], btmRight.y() );
+        GL_GPU::Color3f(0.851643, 0.196936, 0.196936);
+        GL_GPU::Begin(GL_LINES);
+        GL_GPU::Vertex2d( imgColor[0], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[0], btmRight.y() );
 
-        GL_GPU::glColor3f(0, 0.654707, 0);
-        GL_GPU::glVertex2d( imgColor[1], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[1], btmRight.y() );
+        GL_GPU::Color3f(0, 0.654707, 0);
+        GL_GPU::Vertex2d( imgColor[1], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[1], btmRight.y() );
 
-        GL_GPU::glColor3f(0.345293, 0.345293, 1);
-        GL_GPU::glVertex2d( imgColor[2], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[2], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.345293, 0.345293, 1);
+        GL_GPU::Vertex2d( imgColor[2], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[2], btmRight.y() );
+        GL_GPU::End();
 
-        GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
-        GL_GPU::glVertex2d( imgColor[3], topLeft.y() );
-        GL_GPU::glVertex2d( imgColor[3], btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
+        GL_GPU::Vertex2d( imgColor[3], topLeft.y() );
+        GL_GPU::Vertex2d( imgColor[3], btmRight.y() );
+        GL_GPU::End();
     }
 
-    GL_GPU::glLineWidth(1.);
+    GL_GPU::LineWidth(1.);
 } // HistogramPrivate::drawViewerPicker
 
 void
@@ -1386,15 +1390,15 @@ HistogramPrivate::drawHistogramCPU()
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        GL_GPU::glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        GL_GPU::BlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
 
         // see the code above to compute the magic colors
 
         double binSize = (vmax - vmin) / binsCount;
 
-        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::Begin(GL_LINES);
         for (unsigned int i = 0; i < binsCount; ++i) {
             double binMinX = vmin + i * binSize;
             if (mode == Histogram::eDisplayModeRGB) {
@@ -1407,19 +1411,19 @@ HistogramPrivate::drawHistogramCPU()
 
                 // use three colors with equal luminance (0.33), so that the blue is visible and their sum is white
                 //glColor3d(1, 0, 0);
-                GL_GPU::glColor3f(0.711519527404004, 0.164533420851110, 0.164533420851110);
-                GL_GPU::glVertex2d(binMinX, 0);
-                GL_GPU::glVertex2d(binMinX,  rTotNormalized);
+                GL_GPU::Color3f(0.711519527404004, 0.164533420851110, 0.164533420851110);
+                GL_GPU::Vertex2d(binMinX, 0);
+                GL_GPU::Vertex2d(binMinX,  rTotNormalized);
 
                 //glColor3d(0, 1, 0);
-                GL_GPU::glColor3f(0., 0.546986106552894, 0.);
-                GL_GPU::glVertex2d(binMinX, 0);
-                GL_GPU::glVertex2d(binMinX,  gTotNormalized);
+                GL_GPU::Color3f(0., 0.546986106552894, 0.);
+                GL_GPU::Vertex2d(binMinX, 0);
+                GL_GPU::Vertex2d(binMinX,  gTotNormalized);
 
                 //glColor3d(0, 0, 1);
-                GL_GPU::glColor3f(0.288480472595996, 0.288480472595996, 0.835466579148890);
-                GL_GPU::glVertex2d(binMinX, 0);
-                GL_GPU::glVertex2d(binMinX,  bTotNormalized);
+                GL_GPU::Color3f(0.288480472595996, 0.288480472595996, 0.835466579148890);
+                GL_GPU::Vertex2d(binMinX, 0);
+                GL_GPU::Vertex2d(binMinX,  bTotNormalized);
             } else {
                 if ( histogram1.empty() ) {
                     break;
@@ -1431,33 +1435,33 @@ HistogramPrivate::drawHistogramCPU()
                 switch (mode) {
                 case Histogram::eDisplayModeR:
                     //glColor3f(1, 0, 0);
-                    GL_GPU::glColor3f(0.851643, 0.196936, 0.196936);
+                    GL_GPU::Color3f(0.851643, 0.196936, 0.196936);
                     break;
                 case Histogram::eDisplayModeG:
                     //glColor3f(0, 1, 0);
-                    GL_GPU::glColor3f(0, 0.654707, 0);
+                    GL_GPU::Color3f(0, 0.654707, 0);
                     break;
                 case Histogram::eDisplayModeB:
                     //glColor3f(0, 0, 1);
-                    GL_GPU::glColor3f(0.345293, 0.345293, 1);
+                    GL_GPU::Color3f(0.345293, 0.345293, 1);
                     break;
                 case Histogram::eDisplayModeA:
                     //glColor3f(1, 1, 1);
-                    GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
+                    GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
                     break;
                 case Histogram::eDisplayModeY:
                     //glColor3f(0.7, 0.7, 0.7);
-                    GL_GPU::glColor3f(0.398979, 0.398979, 0.398979);
+                    GL_GPU::Color3f(0.398979, 0.398979, 0.398979);
                     break;
                 default:
                     assert(false);
                     break;
                 }
-                GL_GPU::glVertex2f(binMinX, 0);
-                GL_GPU::glVertex2f(binMinX,  vTotNormalized);
+                GL_GPU::Vertex2f(binMinX, 0);
+                GL_GPU::Vertex2f(binMinX,  vTotNormalized);
             }
         }
-        GL_GPU::glEnd(); // GL_LINES
+        GL_GPU::End(); // GL_LINES
         glCheckErrorIgnoreOSXBug(GL_GPU);
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError(GL_GPU);

@@ -32,9 +32,9 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
-#include <QGLWidget>
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QMutex>
 
 #include "Engine/RectD.h"

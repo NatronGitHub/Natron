@@ -33,11 +33,11 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
 #include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

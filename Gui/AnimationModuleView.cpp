@@ -24,7 +24,9 @@
 
 #include "AnimationModuleView.h"
 
-#include <QGLWidget>
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QApplication>
 
 #include <QThread>
@@ -37,6 +39,7 @@
 #include "Engine/Settings.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TimeLine.h"
+#include "Engine/OSGLFunctions.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/AnimationModule.h"
@@ -154,7 +157,7 @@ AnimationModuleView::resizeGL(int width,
     if (height == 0) {
         height = 1;
     }
-    GL_GPU::glViewport (0, 0, width, height);
+    GL_GPU::Viewport (0, 0, width, height);
 
     //int treeItemBottomWidgetCoordY = _imp->treeView ? _imp->treeView->getTreeBottomYWidgetCoords() : 0;
     
@@ -195,8 +198,8 @@ AnimationModuleView::paintGL()
     double bgR, bgG, bgB;
     getBackgroundColour(bgR, bgG, bgB);
 
-    GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
-    GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+    GL_GPU::ClearColor(bgR, bgG, bgB, 1.);
+    GL_GPU::Clear(GL_COLOR_BUFFER_BIT);
     glCheckErrorIgnoreOSXBug(GL_GPU);
 
 
@@ -227,18 +230,18 @@ AnimationModuleView::paintGL()
             displayMode = AnimationModuleEditor::eAnimationModuleDisplayViewModeCurveEditor;
         } else {
 
-            GL_GPU::glMatrixMode(GL_PROJECTION);
-            GL_GPU::glLoadIdentity();
-            GL_GPU::glOrtho(_imp->dopeSheetZoomContext.left(), _imp->dopeSheetZoomContext.right(), _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top(), 1, -1);
-            GL_GPU::glMatrixMode(GL_MODELVIEW);
-            GL_GPU::glLoadIdentity();
+            GL_GPU::MatrixMode(GL_PROJECTION);
+            GL_GPU::LoadIdentity();
+            GL_GPU::Ortho(_imp->dopeSheetZoomContext.left(), _imp->dopeSheetZoomContext.right(), _imp->dopeSheetZoomContext.bottom(), _imp->dopeSheetZoomContext.top(), 1, -1);
+            GL_GPU::MatrixMode(GL_MODELVIEW);
+            GL_GPU::LoadIdentity();
             glCheckError(GL_GPU);
             
             
-            GL_GPU::glEnable(GL_SCISSOR_TEST);
+            GL_GPU::Enable(GL_SCISSOR_TEST);
             int scissorY = drawCurveEditor ? h - treeItemBottomWidgetCoordY - 1 : 0;
             int scissorH = drawCurveEditor ? treeItemBottomWidgetCoordY + 1 : h;
-            GL_GPU::glScissor(0, scissorY, w, scissorH);
+            GL_GPU::Scissor(0, scissorY, w, scissorH);
             
             
             _imp->drawDopeSheetView();
@@ -246,22 +249,22 @@ AnimationModuleView::paintGL()
         
     }
 
-    GL_GPU::glMatrixMode(GL_PROJECTION);
-    GL_GPU::glLoadIdentity();
-    GL_GPU::glOrtho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
-    GL_GPU::glLoadIdentity();
+    GL_GPU::MatrixMode(GL_PROJECTION);
+    GL_GPU::LoadIdentity();
+    GL_GPU::Ortho(_imp->curveEditorZoomContext.left(), _imp->curveEditorZoomContext.right(), _imp->curveEditorZoomContext.bottom(), _imp->curveEditorZoomContext.top(), 1, -1);
+    GL_GPU::MatrixMode(GL_MODELVIEW);
+    GL_GPU::LoadIdentity();
     glCheckError(GL_GPU);
 
 
     if (drawCurveEditor) {
 
         if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked) {
-            GL_GPU::glScissor(0, 0, w, h - treeItemBottomWidgetCoordY);
+            GL_GPU::Scissor(0, 0, w, h - treeItemBottomWidgetCoordY);
         }
         _imp->drawCurveEditorView();
     }
-    GL_GPU::glDisable(GL_SCISSOR_TEST);
+    GL_GPU::Disable(GL_SCISSOR_TEST);
 
     if (displayMode == AnimationModuleEditor::eAnimationModuleDisplayViewModeStacked && drawCurveEditor) {
 
@@ -271,12 +274,12 @@ AnimationModuleView::paintGL()
         
         double treeItemBottomZoomCord = _imp->curveEditorZoomContext.toZoomCoordinates(0, treeItemBottomWidgetCoordY).y();
         if (treeItemBottomWidgetCoordY < h) {
-            GL_GPU::glLineWidth(1.5);
-            GL_GPU::glColor3d(0, 0, 0);
-            GL_GPU::glBegin(GL_LINES);
-            GL_GPU::glVertex2d(bottomLeft.x(), treeItemBottomZoomCord);
-            GL_GPU::glVertex2d(topRight.x(), treeItemBottomZoomCord);
-            GL_GPU::glEnd();
+            GL_GPU::LineWidth(1.5);
+            GL_GPU::Color3d(0, 0, 0);
+            GL_GPU::Begin(GL_LINES);
+            GL_GPU::Vertex2d(bottomLeft.x(), treeItemBottomZoomCord);
+            GL_GPU::Vertex2d(topRight.x(), treeItemBottomZoomCord);
+            GL_GPU::End();
         }
     }
     
@@ -405,24 +408,24 @@ AnimationModuleView::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
     glCheckAttribStack(GL_GPU);
-    GL_GPU::glPushAttrib(GL_ALL_ATTRIB_BITS);
+    GL_GPU::PushAttrib(GL_ALL_ATTRIB_BITS);
     glCheckClientAttribStack(GL_GPU);
-    GL_GPU::glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-    GL_GPU::glMatrixMode(GL_PROJECTION);
+    GL_GPU::PushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+    GL_GPU::MatrixMode(GL_PROJECTION);
     glCheckProjectionStack(GL_GPU);
-    GL_GPU::glPushMatrix();
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    GL_GPU::PushMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
     glCheckModelviewStack(GL_GPU);
-    GL_GPU::glPushMatrix();
+    GL_GPU::PushMatrix();
 
     // set defaults to work around OFX plugin bugs
-    GL_GPU::glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::Enable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glEnable(GL_TEXTURE_2D);					//Activate texturing
     //glActiveTexture (GL_TEXTURE0);
-    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
@@ -431,14 +434,14 @@ AnimationModuleView::restoreOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
-    GL_GPU::glMatrixMode(GL_PROJECTION);
-    GL_GPU::glPopMatrix();
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
-    GL_GPU::glPopMatrix();
-    GL_GPU::glPopClientAttrib();
-    GL_GPU::glPopAttrib();
+    GL_GPU::MatrixMode(GL_PROJECTION);
+    GL_GPU::PopMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
+    GL_GPU::PopMatrix();
+    GL_GPU::PopClientAttrib();
+    GL_GPU::PopAttrib();
 }
 
 bool

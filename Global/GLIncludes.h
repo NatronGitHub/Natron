@@ -19,7 +19,7 @@
 #ifndef NATRON_GLOBAL_GLINCLUDES_H
 #define NATRON_GLOBAL_GLINCLUDES_H
 
-#include "OSGLFunctions.h"
+#include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
 
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)
@@ -30,6 +30,7 @@
 
 #define QT_NO_OPENGL_ES_2
 
+#include "Global/GLObfuscate.h"
 #include "Global/Macros.h"
 
 #include <cassert>
@@ -98,7 +99,7 @@ glErrorString(GLenum errorCode)
 
 #define glCheckError(GL)                                              \
     {                                                                   \
-        GLenum _glerror_ = GL::glGetError();                        \
+        GLenum _glerror_ = GL::GetError();                        \
         if (_glerror_ != GL_NO_ERROR) {                                 \
             std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);  \
@@ -115,7 +116,7 @@ glErrorString(GLenum errorCode)
 #ifdef __APPLE__
 #define glCheckErrorIgnoreOSXBug(GL)                                      \
     {                                                                   \
-        GLenum _glerror_ = GL::glGetError();                          \
+        GLenum _glerror_ = GL::GetError();                          \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
             std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);  \
@@ -135,7 +136,7 @@ glErrorString(GLenum errorCode)
 
 #define glCheckErrorAssert(GL)                                            \
     {                                                                   \
-        GLenum _glerror_ = GL::glGetError();                         \
+        GLenum _glerror_ = GL::GetError();                         \
         if (_glerror_ != GL_NO_ERROR) {                                 \
             std::cout << "GL_ERROR: " << __FILE__ << ":" << __LINE__ << " "; \
             const char* _glerror_s_ = glErrorString(_glerror_);  \
@@ -152,7 +153,7 @@ glErrorString(GLenum errorCode)
 
 #define glCheckFramebufferError(GL)                                       \
     {                                                                   \
-        GLenum error = GL::glCheckFramebufferStatus(GL_FRAMEBUFFER);        \
+        GLenum error = GL::CheckFramebufferStatus(GL_FRAMEBUFFER);        \
         if (error != GL_FRAMEBUFFER_COMPLETE) {                         \
             std::cout << "GL_FRAMEBUFFER_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
             if (error == GL_FRAMEBUFFER_UNDEFINED) {                    \
@@ -202,7 +203,7 @@ glErrorString(GLenum errorCode)
 #define glCheckAttribStack(GL)                                            \
     {                                                                   \
         GLint d = -1;                                                   \
-        GL::glGetIntegerv(GL_ATTRIB_STACK_DEPTH, &d);                       \
+        GL::GetIntegerv(GL_ATTRIB_STACK_DEPTH, &d);                       \
         if (d >= 16) {                                                  \
             std::cout << "GL_ATTRIB_STACK_DEPTH:" << __FILE__ << " " << __LINE__ << " stack may overflow on a basic OpenGL system (depth is " << d << " >= 16)\n"; \
             glError();                                                  \
@@ -211,7 +212,7 @@ glErrorString(GLenum errorCode)
 #define glCheckClientAttribStack(GL)                                      \
     {                                                                   \
         GLint d = -1;                                                   \
-        GL::glGetIntegerv(GL_CLIENT_ATTRIB_STACK_DEPTH, &d);                \
+        GL::GetIntegerv(GL_CLIENT_ATTRIB_STACK_DEPTH, &d);                \
         if (d >= 16) {                                                  \
             std::cout << "GL_CLIENT_ATTRIB_STACK_DEPTH:" << __FILE__ << " " << __LINE__ << " stack may overflow on a basic OpenGL system (depth is " << d << " >= 16)\n"; \
             glError();                                                  \
@@ -221,7 +222,7 @@ glErrorString(GLenum errorCode)
 #define glCheckProjectionStack(GL)                                        \
     {                                                                   \
         GLint d = -1;                                                   \
-        GL::glGetIntegerv(GL_PROJECTION_STACK_DEPTH, &d);                   \
+        GL::GetIntegerv(GL_PROJECTION_STACK_DEPTH, &d);                   \
         if (d >= 2) {                                                   \
             std::cout << "GL_PROJECTION_STACK_DEPTH:" << __FILE__ << " " << __LINE__ << " stack may overflow on a basic OpenGL system (depth is " << d << " >= 2)\n"; \
             glError();                                                  \
@@ -231,7 +232,7 @@ glErrorString(GLenum errorCode)
 #define glCheckModelviewStack(GL)                                         \
     {                                                                   \
         GLint d = -1;                                                   \
-        GL::glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &d);                    \
+        GL::GetIntegerv(GL_MODELVIEW_STACK_DEPTH, &d);                    \
         if (d >= 32) {                                                  \
             std::cout << "GL_PROJECTION_STACK_DEPTH:" << __FILE__ << " " << __LINE__ << " stack may overflow on a basic OpenGL system (depth is " << d << " >= 32)\n"; \
             glError();                                                  \
@@ -265,15 +266,15 @@ public:
         GLint d = -1, m0 = -1, m = -1;
         m0 = 16; // https://www.opengl.org/sdk/docs/man2/xhtml/glPushAttrib.xml
 
-        GL::glGetIntegerv(GL_ATTRIB_STACK_DEPTH, &d);
-        GL::glGetIntegerv(GL_MAX_ATTRIB_STACK_DEPTH, &m);
+        GL::GetIntegerv(GL_ATTRIB_STACK_DEPTH, &d);
+        GL::GetIntegerv(GL_MAX_ATTRIB_STACK_DEPTH, &m);
 
         assert(m >= m0);
         if (d >= m0) {
             overflow(d, m0, m);
         }
 #endif
-        GL::glPushAttrib(mask);
+        GL::PushAttrib(mask);
 #ifdef DEBUG
         glCheckError(GL);
 #endif
@@ -281,7 +282,7 @@ public:
     }
 
     ~GLProtectAttrib() {
-        GL::glPopAttrib();
+        GL::PopAttrib();
     }
 
 private:
@@ -313,28 +314,28 @@ public:
         GLint d = -1, m0 = -1, m = -1;
         if (mode == GL_PROJECTION) {
             m0 = 2; // https://www.opengl.org/sdk/docs/man2/xhtml/glPushMatrix.xml
-            GL::glGetIntegerv(GL_PROJECTION_STACK_DEPTH, &d);
+            GL::GetIntegerv(GL_PROJECTION_STACK_DEPTH, &d);
             //std::cout << "GLProtectMatrix(GL_PROJECTION): depth is " << d << "\n";
-            GL::glGetIntegerv(GL_MAX_PROJECTION_STACK_DEPTH, &m);
+            GL::GetIntegerv(GL_MAX_PROJECTION_STACK_DEPTH, &m);
         } else {
             m0 = 32; // https://www.opengl.org/sdk/docs/man2/xhtml/glPushMatrix.xml
-            GL::glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &d);
-            GL::glGetIntegerv(GL_MAX_MODELVIEW_STACK_DEPTH, &m);
+            GL::GetIntegerv(GL_MODELVIEW_STACK_DEPTH, &d);
+            GL::GetIntegerv(GL_MAX_MODELVIEW_STACK_DEPTH, &m);
         }
         assert(m >= m0);
         if (d >= m0) {
             overflow(d, m0, m);
         }
 #endif
-        GL::glMatrixMode(_mode);
-        GL::glPushMatrix();
+        GL::MatrixMode(_mode);
+        GL::PushMatrix();
 
 
     }
 
     ~GLProtectMatrix() {
-        GL::glMatrixMode(_mode);
-        GL::glPopMatrix();
+        GL::MatrixMode(_mode);
+        GL::PopMatrix();
 
     }
 

@@ -28,6 +28,7 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/RotoBezierTriangulation.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNode.h"
@@ -180,33 +181,33 @@ RotoShapeRenderNodeOpenGLData::cleanup()
     bool isGPU = isGPUContext();
     if (_vboVerticesID) {
         if (isGPU) {
-            GL_GPU::glDeleteBuffers(1, &_vboVerticesID);
+            GL_GPU::DeleteBuffers(1, &_vboVerticesID);
         } else {
-            GL_CPU::glDeleteBuffers(1, &_vboVerticesID);
+            GL_CPU::DeleteBuffers(1, &_vboVerticesID);
         }
     }
 
     if (_vboColorsID) {
         if (isGPU) {
-            GL_GPU::glDeleteBuffers(1, &_vboColorsID);
+            GL_GPU::DeleteBuffers(1, &_vboColorsID);
         } else {
-            GL_CPU::glDeleteBuffers(1, &_vboColorsID);
+            GL_CPU::DeleteBuffers(1, &_vboColorsID);
         }
     }
 
     if (_vboHardnessID) {
         if (isGPU) {
-            GL_GPU::glDeleteBuffers(1, &_vboHardnessID);
+            GL_GPU::DeleteBuffers(1, &_vboHardnessID);
         } else {
-            GL_CPU::glDeleteBuffers(1, &_vboHardnessID);
+            GL_CPU::DeleteBuffers(1, &_vboHardnessID);
         }
     }
 
     if (_iboID) {
         if (isGPU) {
-            GL_GPU::glDeleteBuffers(1, &_iboID);
+            GL_GPU::DeleteBuffers(1, &_iboID);
         } else {
-            GL_CPU::glDeleteBuffers(1, &_iboID);
+            GL_CPU::DeleteBuffers(1, &_iboID);
         }
     }
 }
@@ -224,9 +225,9 @@ RotoShapeRenderNodeOpenGLData::getOrCreateIBOID()
 
     if (!_iboID) {
         if (isGPUContext()) {
-            GL_GPU::glGenBuffers(1, &_iboID);
+            GL_GPU::GenBuffers(1, &_iboID);
         } else {
-            GL_CPU::glGenBuffers(1, &_iboID);
+            GL_CPU::GenBuffers(1, &_iboID);
         }
     }
     return _iboID;
@@ -238,9 +239,9 @@ RotoShapeRenderNodeOpenGLData::getOrCreateVBOVerticesID()
 {
     if (!_vboVerticesID) {
         if (isGPUContext()) {
-            GL_GPU::glGenBuffers(1, &_vboVerticesID);
+            GL_GPU::GenBuffers(1, &_vboVerticesID);
         } else {
-            GL_CPU::glGenBuffers(1, &_vboVerticesID);
+            GL_CPU::GenBuffers(1, &_vboVerticesID);
         }
     }
     return _vboVerticesID;
@@ -252,9 +253,9 @@ RotoShapeRenderNodeOpenGLData::getOrCreateVBOColorsID()
 {
     if (!_vboColorsID) {
         if (isGPUContext()) {
-            GL_GPU::glGenBuffers(1, &_vboColorsID);
+            GL_GPU::GenBuffers(1, &_vboColorsID);
         } else {
-            GL_CPU::glGenBuffers(1, &_vboColorsID);
+            GL_CPU::GenBuffers(1, &_vboColorsID);
         }
     }
     return _vboColorsID;
@@ -265,9 +266,9 @@ RotoShapeRenderNodeOpenGLData::getOrCreateVBOHardnessID()
 {
     if (!_vboHardnessID) {
         if (isGPUContext()) {
-            GL_GPU::glGenBuffers(1, &_vboHardnessID);
+            GL_GPU::GenBuffers(1, &_vboHardnessID);
         } else {
-            GL_CPU::glGenBuffers(1, &_vboHardnessID);
+            GL_CPU::GenBuffers(1, &_vboHardnessID);
         }
     }
     return _vboHardnessID;
@@ -279,9 +280,9 @@ RotoShapeRenderNodeOpenGLData::getOrCreateVBOTexID()
 {
     if (!_vboTexID) {
         if (isGPUContext()) {
-            GL_GPU::glGenBuffers(1, &_vboTexID);
+            GL_GPU::GenBuffers(1, &_vboTexID);
         } else {
-            GL_CPU::glGenBuffers(1, &_vboTexID);
+            GL_CPU::GenBuffers(1, &_vboTexID);
         }
     }
     return _vboTexID;
@@ -540,11 +541,11 @@ template <typename GL>
 void setupTexParams(int target)
 {
 
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 }
 
@@ -554,15 +555,15 @@ void renderBezier_gl_internal_begin(bool doBuildUp)
 
 
 
-    GL::glEnable(GL_BLEND);
-    GL::glBlendColor(1, 1, 1, 1);
+    GL::Enable(GL_BLEND);
+    GL::BlendColor(1, 1, 1, 1);
     if (!doBuildUp) {
-        GL::glBlendEquation(GL_MAX);
-        GL::glBlendFunc(GL_ONE, GL_ZERO);
+        GL::BlendEquation(GL_MAX);
+        GL::BlendFunc(GL_ONE, GL_ZERO);
 
     } else {
-        GL::glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-        GL::glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+        GL::BlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
+        GL::BlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
     }
 
 
@@ -573,31 +574,31 @@ template <typename GL>
 void renderBezier_gl_singleDrawElements(int nbVertices, int nbIds, int vboVerticesID, int vboColorsID, int iboID, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* idsData, bool uploadVertices = true)
 {
 
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
     if (uploadVertices) {
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
     }
-    GL::glEnableClientState(GL_VERTEX_ARRAY);
-    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+    GL::EnableClientState(GL_VERTEX_ARRAY);
+    GL::VertexPointer(2, GL_FLOAT, 0, 0);
 
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
     if (uploadVertices) {
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
     }
-    GL::glEnableClientState(GL_COLOR_ARRAY);
-    GL::glColorPointer(4, GL_FLOAT, 0, 0);
+    GL::EnableClientState(GL_COLOR_ARRAY);
+    GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
-    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
-    GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
+    GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
+    GL::BufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
 
 
-    GL::glDrawElements(primitiveType, nbIds, GL_UNSIGNED_INT, 0);
+    GL::DrawElements(primitiveType, nbIds, GL_UNSIGNED_INT, 0);
 
-    GL::glDisableClientState(GL_COLOR_ARRAY);
-    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GL::glDisableClientState(GL_VERTEX_ARRAY);
+    GL::DisableClientState(GL_COLOR_ARRAY);
+    GL::BindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::DisableClientState(GL_VERTEX_ARRAY);
 
-    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError(GL);
 
 }
@@ -606,20 +607,20 @@ template <typename GL>
 void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsigned int primitiveType, const void* verticesData, const int* perDrawCount, const void** perDrawIdsPtr, int drawCount, bool uploadVertices = true)
 {
 
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
     if (uploadVertices) {
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
     }
-    GL::glEnableClientState(GL_VERTEX_ARRAY);
-    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+    GL::EnableClientState(GL_VERTEX_ARRAY);
+    GL::VertexPointer(2, GL_FLOAT, 0, 0);
 
-    GL::glMultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
+    GL::MultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
 
-    GL::glDisableClientState(GL_COLOR_ARRAY);
-    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GL::glDisableClientState(GL_VERTEX_ARRAY);
+    GL::DisableClientState(GL_COLOR_ARRAY);
+    GL::BindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::DisableClientState(GL_VERTEX_ARRAY);
 
-    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError(GL);
 
 }
@@ -827,10 +828,10 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         Q_UNUSED(hasUploadedVertices);
 
         if (glContext->isGPUContext()) {
-            GL_GPU::glDisable(GL_BLEND);
+            GL_GPU::Disable(GL_BLEND);
             glCheckError(GL_GPU);
         } else {
-            GL_CPU::glDisable(GL_BLEND);
+            GL_CPU::Disable(GL_BLEND);
             glCheckError(GL_CPU);
         }
         
@@ -1065,9 +1066,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     int target = GL_TEXTURE_2D;
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
-    GL::glDisable(GL_SCISSOR_TEST);
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
+    GL::Disable(GL_SCISSOR_TEST);
+    GL::Enable(target);
+    GL::ActiveTexture(GL_TEXTURE0);
     
     // With OSMesa we must copy the dstImage which already contains the previous drawing to a tmpTexture because the first
     // time we draw to the default framebuffer, mesa will clear out the framebuffer...
@@ -1076,7 +1077,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         // Since we need to render to texture in any case, upload the content of dstImage to a temporary texture
         tmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(dstImage, roi, glContext);
 
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::BindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
 
         
@@ -1091,7 +1092,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GLuint fboID = glContext->getOrCreateFBOId();
 
     if (GL::isGPU()) {
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        GL::BindTexture( target, dstImage->getGLTextureID() );
         setupTexParams<GL>(target);
     }
     RectI dstBounds = dstImage->getBounds();
@@ -1117,13 +1118,13 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         tmpTexture.reset( new Image(dstImage->getKey(), params) );
         // Copy the content of the existing dstImage
 
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::BindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
 
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        GL::BindTexture( target, dstImage->getGLTextureID() );
 
         GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
         assert(shader);
@@ -1142,15 +1143,15 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         firstPassDstImage = dstImage;
     }
 
-    GL::glBindTexture( target, 0 );
+    GL::BindTexture( target, 0 );
 
     renderBezier_gl_internal_begin<GL>(doBuildUp);
 
     if (!GL::isGPU() && firstPassDstImage == dstImage) {
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
     } else {
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
     }
     glCheckError(GL);
@@ -1167,38 +1168,38 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         Q_UNUSED(ok);
     }
 #if 1
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
-    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
-    GL::glEnableClientState(GL_VERTEX_ARRAY);
-    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+    GL::EnableClientState(GL_VERTEX_ARRAY);
+    GL::VertexPointer(2, GL_FLOAT, 0, 0);
 
 
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
-    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), hardnessData, GL_DYNAMIC_DRAW);
-    GL::glEnableVertexAttribArray(hardnessLoc);
-    GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0, 0);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
+    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), hardnessData, GL_DYNAMIC_DRAW);
+    GL::EnableVertexAttribArray(hardnessLoc);
+    GL::VertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0, 0);
 
 
-    GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-    GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
-    GL::glEnableClientState(GL_COLOR_ARRAY);
-    GL::glColorPointer(4, GL_FLOAT, 0, 0);
+    GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+    GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+    GL::EnableClientState(GL_COLOR_ARRAY);
+    GL::ColorPointer(4, GL_FLOAT, 0, 0);
 
 
-    GL::glMultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
+    GL::MultiDrawElements(primitiveType, perDrawCount, GL_UNSIGNED_INT, perDrawIdsPtr, drawCount);
 
-    GL::glDisableClientState(GL_COLOR_ARRAY);
-    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GL::glDisableClientState(GL_VERTEX_ARRAY);
-    GL::glDisableVertexAttribArray(hardnessLoc);
-    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    GL::DisableClientState(GL_COLOR_ARRAY);
+    GL::BindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::DisableClientState(GL_VERTEX_ARRAY);
+    GL::DisableVertexAttribArray(hardnessLoc);
+    GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 #else
     // old gl pipeline for debug
     const float* vptr = (const float*)verticesData;
     const float* cptr = (const float*)colorsData;
     const float* hptr = (const float*)hardnessData;
     for (int c = 0; c < drawCount; ++c) {
-        GL::glBegin(primitiveType);
+        GL::Begin(primitiveType);
         const unsigned int* iptr = (const unsigned int*)perDrawIdsPtr[c];
         for (int i = 0; i < perDrawCount[c]; ++i, ++iptr) {
             int vindex = *iptr;
@@ -1209,19 +1210,19 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
             double a = cptr[vindex * 4 + 3];
             double x = vptr[vindex * 2 + 0];
             double y = vptr[vindex * 2 + 1];
-            GL::glVertexAttrib1f(hardnessLoc, hardness);
-            GL::glColor4f(r, g, b, a);
-            GL::glVertex2f(x, y);
+            GL::VertexAttrib1f(hardnessLoc, hardness);
+            GL::Color4f(r, g, b, a);
+            GL::Vertex2f(x, y);
         }
 
-        GL::glEnd();
+        GL::End();
 
     }
 #endif
     glCheckError(GL);
 
     strokeShader->unbind();
-    GL::glDisable(GL_BLEND);
+    GL::Disable(GL_BLEND);
 
     // Geometry is rendered, in build-up mode we still have to apply a second shader
     // to correctly set alpha channel
@@ -1234,15 +1235,15 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         RectI outputBounds;
         if (GL::isGPU()) {
             outputBounds = dstBounds;
-            GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-            GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
         } else {
             outputBounds = roi;
             // In CPU mode render to the default framebuffer that is already backed by the dstImage
-            GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
         }
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::BindTexture( target, tmpTexture->getGLTextureID() );
         strokeSecondPassShader->bind();
         strokeSecondPassShader->setUniform("tex", 0);
         strokeSecondPassShader->setUniform("fillColor", fillColor);
@@ -1253,11 +1254,11 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     } else if (tmpTexture) {
         // With OSMesa  we copy back the content of the tmpTexture to the dstImage.
         assert(!GL::isGPU());
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL::BindTexture( target, tmpTexture->getGLTextureID() );
         Image::applyTextureMapping<GL>(roi, roi, roi);
     }
-    GL::glBindTexture( target, 0);
+    GL::BindTexture( target, 0);
 
 } // void renderStroke_gl_multiDrawElements
 
@@ -1465,13 +1466,13 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     int target = GL_TEXTURE_2D;
 
     // Disable scissors because we are going to use opengl outside of RoI
-    GL::glDisable(GL_SCISSOR_TEST);
+    GL::Disable(GL_SCISSOR_TEST);
 
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
+    GL::Enable(target);
+    GL::ActiveTexture(GL_TEXTURE0);
 
     // This is the output texture
-    GL::glBindTexture( target, dstImage->getGLTextureID() );
+    GL::BindTexture( target, dstImage->getGLTextureID() );
     setupTexParams<GL>(target);
 
     // Specifies the src and dst rectangle
@@ -1525,24 +1526,24 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         tmpTexture.reset( new Image(dstImage->getKey(), params) );
         // Copy the content of the existing dstImage
 
-        GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+        GL::BindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpTexture->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
 
         Image::setupGLViewport<GL>(prevDotBounds, prevDotBounds);
 
         // First clear to black the texture because the prevDotBounds might not be contained in the dstBounds
-        GL::glClearColor(0., 0., 0., 0.);
-        GL::glClear(GL_COLOR_BUFFER_BIT);
+        GL::ClearColor(0., 0., 0., 0.);
+        GL::Clear(GL_COLOR_BUFFER_BIT);
 
         // Now draw onto the intersection with the dstBOunds with the smear shader
 
         Image::setupGLViewport<GL>(prevDotBounds, roi);
 
 
-        GL::glBindTexture( target, dstImage->getGLTextureID() );
+        GL::BindTexture( target, dstImage->getGLTextureID() );
 
 
         OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)opacity};
@@ -1563,70 +1564,70 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
             assert(ok);
             Q_UNUSED(ok);
         }
-        GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesVertices.getData(), GL_DYNAMIC_DRAW);
-        GL::glEnableClientState(GL_VERTEX_ARRAY);
-        GL::glVertexPointer(2, GL_FLOAT, 0, 0);
+        GL::BindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesVertices.getData(), GL_DYNAMIC_DRAW);
+        GL::EnableClientState(GL_VERTEX_ARRAY);
+        GL::VertexPointer(2, GL_FLOAT, 0, 0);
 
-        GL::glBindBuffer(GL_ARRAY_BUFFER, vboTexID);
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesTexCoords.getData(), GL_DYNAMIC_DRAW);
-        GL::glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        GL::glTexCoordPointer(2, GL_FLOAT, 0, 0);
+        GL::BindBuffer(GL_ARRAY_BUFFER, vboTexID);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), myData->primitivesTexCoords.getData(), GL_DYNAMIC_DRAW);
+        GL::EnableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL::TexCoordPointer(2, GL_FLOAT, 0, 0);
 
-        GL::glBindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), myData->primitivesHardness.getData(), GL_DYNAMIC_DRAW);
-        GL::glEnableVertexAttribArray(hardnessLoc);
-        GL::glVertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0 /*stride*/, 0 /*data*/);
-
-
-        GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
-        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
-        GL::glEnableClientState(GL_COLOR_ARRAY);
-        GL::glColorPointer(4, GL_FLOAT, 0, 0);
+        GL::BindBuffer(GL_ARRAY_BUFFER, vboHardnessID);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * sizeof(GLfloat), myData->primitivesHardness.getData(), GL_DYNAMIC_DRAW);
+        GL::EnableVertexAttribArray(hardnessLoc);
+        GL::VertexAttribPointer(hardnessLoc, 1, GL_FLOAT, GL_FALSE ,0 /*stride*/, 0 /*data*/);
 
 
-        GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
+        GL::BindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+        GL::BufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), myData->primitivesColors.getData(), GL_DYNAMIC_DRAW);
+        GL::EnableClientState(GL_COLOR_ARRAY);
+        GL::ColorPointer(4, GL_FLOAT, 0, 0);
+
+
+        GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
         if (!wasIndicesValid) {
-            GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbVertices * sizeof(GLuint), myData->indices.getData(), GL_STATIC_DRAW);
+            GL::BufferData(GL_ELEMENT_ARRAY_BUFFER, nbVertices * sizeof(GLuint), myData->indices.getData(), GL_STATIC_DRAW);
         }
 
 
-        GL::glDrawElements(GL_TRIANGLE_FAN, nbVertices, GL_UNSIGNED_INT, 0);
+        GL::DrawElements(GL_TRIANGLE_FAN, nbVertices, GL_UNSIGNED_INT, 0);
 
-        GL::glDisableClientState(GL_COLOR_ARRAY);
-        GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
-        GL::glDisableClientState(GL_VERTEX_ARRAY);
-        GL::glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        GL::glDisableVertexAttribArray(hardnessLoc);
-        GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        GL::DisableClientState(GL_COLOR_ARRAY);
+        GL::BindBuffer(GL_ARRAY_BUFFER, 0);
+        GL::DisableClientState(GL_VERTEX_ARRAY);
+        GL::DisableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL::DisableVertexAttribArray(hardnessLoc);
+        GL::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glCheckError(GL);
         
         smearShader->unbind();
 
         if (!GL::isGPU()) {
-            GL::glFlush();
-            GL::glFinish();
+            GL::Flush();
+            GL::Finish();
         }
     }
 
     // Now copy to the destination rect with blending on
-    GL::glEnable(GL_BLEND);
-    GL::glBlendEquation(GL_FUNC_ADD);
-    GL::glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+    GL::Enable(GL_BLEND);
+    GL::BlendEquation(GL_FUNC_ADD);
+    GL::BlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 
 
-    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
     // Use a shader that does not copy the alpha
-    GL::glBindTexture( target, tmpTexture->getGLTextureID() );
+    GL::BindTexture( target, tmpTexture->getGLTextureID() );
     Image::applyTextureMapping<GL>(nextDotBounds, dstBounds, nextDotBounds);
-    GL::glBindTexture( target, 0);
-    GL::glDisable(GL_BLEND);
+    GL::BindTexture( target, 0);
+    GL::Disable(GL_BLEND);
     glCheckError(GL);
     if (!GL::isGPU()) {
-        GL::glFlush();
-        GL::glFinish();
+        GL::Flush();
+        GL::Finish();
 
     }
 
@@ -1701,13 +1702,13 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     // Also report the results to the dst image on the default framebuffer
     if (!glContext->isGPUContext()) {
         // Disable scissors because we are going to use opengl outside of RoI
-        GL_CPU::glDisable(GL_SCISSOR_TEST);
-        GL_CPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL_CPU::glBindTexture( GL_TEXTURE_2D, dstImage->getGLTextureID());
+        GL_CPU::Disable(GL_SCISSOR_TEST);
+        GL_CPU::BindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL_CPU::BindTexture( GL_TEXTURE_2D, dstImage->getGLTextureID());
         setupTexParams<GL_CPU>(GL_TEXTURE_2D);
         RectI bounds = dstImage->getBounds();
         Image::applyTextureMapping<GL_CPU>(bounds, bounds, bounds);
-        GL_CPU::glBindTexture( GL_TEXTURE_2D, 0);
+        GL_CPU::BindTexture( GL_TEXTURE_2D, 0);
     }
     return hasRenderedDot;
 } // RotoShapeRenderGL::renderSmear_gl

@@ -34,6 +34,7 @@
 #include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoShapeRenderCairo.h"
@@ -454,8 +455,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     rod.toPixelEnclosing(0, outputPlane.second->getPixelAspectRatio(), &pixelRoD);
                     _imp->osmesaSmearTmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(bgImg, pixelRoD, glContext);
                     // Make sure the texture is ready before rendering the smear
-                    GL_CPU::glFlush();
-                    GL_CPU::glFinish();
+                    GL_CPU::Flush();
+                    GL_CPU::Finish();
                 } else {
                     outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
                 }

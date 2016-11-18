@@ -29,6 +29,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "Engine/OSGLFunctions.h"
 #ifdef __NATRON_WIN32__
 #include "Engine/OSGLContext_win.h"
 #elif defined(__NATRON_OSX__)
@@ -383,16 +384,16 @@ OSGLContext::~OSGLContext()
     setContextCurrentNoRender();
     if (_imp->pboID) {
         if (_imp->useGPUContext) {
-            GL_GPU::glDeleteBuffers(1, &_imp->pboID);
+            GL_GPU::DeleteBuffers(1, &_imp->pboID);
         } else {
-            GL_CPU::glDeleteBuffers(1, &_imp->pboID);
+            GL_CPU::DeleteBuffers(1, &_imp->pboID);
         }
     }
     if (_imp->fboID) {
         if (_imp->useGPUContext) {
-            GL_GPU::glDeleteFramebuffers(1, &_imp->fboID);
+            GL_GPU::DeleteFramebuffers(1, &_imp->fboID);
         } else {
-            GL_CPU::glDeleteFramebuffers(1, &_imp->fboID);
+            GL_CPU::DeleteFramebuffers(1, &_imp->fboID);
         }
     }
 
@@ -404,9 +405,9 @@ OSGLContext::checkOpenGLVersion(bool gpuAPI)
 
     const char *verstr;
     if (gpuAPI) {
-        verstr = (const char *) GL_GPU::glGetString(GL_VERSION);
+        verstr = (const char *) GL_GPU::GetString(GL_VERSION);
     } else {
-        verstr = (const char *) GL_CPU::glGetString(GL_VERSION);
+        verstr = (const char *) GL_CPU::GetString(GL_VERSION);
     }
     int major, minor;
 
@@ -437,14 +438,14 @@ OSGLContext::getMaxOpenGLWidth()
     if (_imp->useGPUContext) {
         if (maxGPUWidth == 0) {
             setContextCurrentNoRender();
-            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUWidth);
+            GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUWidth);
         }
         return maxGPUWidth;
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUWidth == 0) {
             setContextCurrentNoRender();
-            GL_CPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUWidth);
+            GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUWidth);
             int osmesaMaxWidth = OSGLContext_osmesa::getMaxWidth();
             maxCPUWidth = std::min(maxCPUWidth, osmesaMaxWidth);
         }
@@ -461,14 +462,14 @@ OSGLContext::getMaxOpenGLHeight()
     if (_imp->useGPUContext) {
         if (maxGPUHeight == 0) {
             setContextCurrentNoRender();
-            GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUHeight);
+            GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUHeight);
         }
         return maxGPUHeight;
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUHeight == 0) {
             setContextCurrentNoRender();
-            GL_CPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUHeight);
+            GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUHeight);
             int osmesaMaxHeight = OSGLContext_osmesa::getMaxHeight();
             maxCPUHeight = std::min(maxCPUHeight, osmesaMaxHeight);
         }
@@ -482,9 +483,9 @@ OSGLContext::getOrCreatePBOId()
 {
     if (!_imp->pboID) {
         if (_imp->useGPUContext) {
-            GL_GPU::glGenBuffers(1, &_imp->pboID);
+            GL_GPU::GenBuffers(1, &_imp->pboID);
         } else {
-            GL_CPU::glGenBuffers(1, &_imp->pboID);
+            GL_CPU::GenBuffers(1, &_imp->pboID);
         }
     }
     return _imp->pboID;
@@ -495,9 +496,9 @@ OSGLContext::getOrCreateFBOId()
 {
     if (!_imp->fboID) {
         if (_imp->useGPUContext) {
-            GL_GPU::glGenFramebuffers(1, &_imp->fboID);
+            GL_GPU::GenFramebuffers(1, &_imp->fboID);
         } else {
-            GL_CPU::glGenFramebuffers(1, &_imp->fboID);
+            GL_CPU::GenFramebuffers(1, &_imp->fboID);
         }
     }
     return _imp->fboID;

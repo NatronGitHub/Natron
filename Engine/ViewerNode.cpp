@@ -37,6 +37,7 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoPaint.h"
@@ -3102,9 +3103,9 @@ ViewerNodePrivate::drawUserRoI()
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glDisable(GL_BLEND);
+        GL_GPU::Disable(GL_BLEND);
 
-        GL_GPU::glColor4f(0.9, 0.9, 0.9, 1.);
+        GL_GPU::Color4f(0.9, 0.9, 0.9, 1.);
 
         RectD userRoI;
         if ( uiState == eViewerNodeInteractMouseStateBuildingUserRoI ||
@@ -3125,111 +3126,111 @@ ViewerNodePrivate::drawUserRoI()
         
         
         if (buildUserRoIOnNextPress) {
-            GL_GPU::glLineStipple(2, 0xAAAA);
-            GL_GPU::glEnable(GL_LINE_STIPPLE);
+            GL_GPU::LineStipple(2, 0xAAAA);
+            GL_GPU::Enable(GL_LINE_STIPPLE);
         }
 
         ///base rect
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2f(userRoI.x1, userRoI.y1); //bottom left
-        GL_GPU::glVertex2f(userRoI.x1, userRoI.y2); //top left
-        GL_GPU::glVertex2f(userRoI.x2, userRoI.y2); //top right
-        GL_GPU::glVertex2f(userRoI.x2, userRoI.y1); //bottom right
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_LINE_LOOP);
+        GL_GPU::Vertex2f(userRoI.x1, userRoI.y1); //bottom left
+        GL_GPU::Vertex2f(userRoI.x1, userRoI.y2); //top left
+        GL_GPU::Vertex2f(userRoI.x2, userRoI.y2); //top right
+        GL_GPU::Vertex2f(userRoI.x2, userRoI.y1); //bottom right
+        GL_GPU::End();
 
 
-        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::Begin(GL_LINES);
         ///border ticks
         double borderTickWidth = USER_ROI_BORDER_TICK_SIZE * pixelScale.x;
         double borderTickHeight = USER_ROI_BORDER_TICK_SIZE * pixelScale.y;
-        GL_GPU::glVertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
-        GL_GPU::glVertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::Vertex2f(userRoI.x1, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::Vertex2f(userRoI.x1 - borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
 
-        GL_GPU::glVertex2f(userRoI.x2, (userRoI.y1 + userRoI.y2) / 2);
-        GL_GPU::glVertex2f(userRoI.x2 + borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::Vertex2f(userRoI.x2, (userRoI.y1 + userRoI.y2) / 2);
+        GL_GPU::Vertex2f(userRoI.x2 + borderTickWidth, (userRoI.y1 + userRoI.y2) / 2);
 
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 + borderTickHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y2 + borderTickHeight );
 
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, userRoI.y1 - borderTickHeight );
 
         ///middle cross
         double crossWidth = USER_ROI_CROSS_RADIUS * pixelScale.x;
         double crossHeight = USER_ROI_CROSS_RADIUS * pixelScale.y;
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 - crossHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2, (userRoI.y1 + userRoI.y2) / 2 + crossHeight );
 
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  - crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2  + crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
-        GL_GPU::glEnd();
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2  - crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2  + crossWidth, (userRoI.y1 + userRoI.y2) / 2 );
+        GL_GPU::End();
 
 
         ///draw handles hint for the user
-        GL_GPU::glBegin(GL_QUADS);
+        GL_GPU::Begin(GL_QUADS);
 
         double rectHalfWidth = (USER_ROI_SELECTION_POINT_SIZE * pixelScale.x) / 2.;
         double rectHalfHeight = (USER_ROI_SELECTION_POINT_SIZE * pixelScale.y) / 2.;
         //left
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
 
         //top
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 - rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y2 - rectHalfHeight );
 
         //right
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight);
 
         //bottom
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 - rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, userRoI.y1 - rectHalfHeight );
 
         //middle
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
-        GL_GPU::glVertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 - rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 + rectHalfHeight );
+        GL_GPU::Vertex2f( (userRoI.x1 +  userRoI.x2) / 2 + rectHalfWidth, (userRoI.y1 + userRoI.y2) / 2 - rectHalfHeight );
 
 
         //top left
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
 
         //top right
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, userRoI.y2 - rectHalfHeight);
 
         //bottom right
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x2 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
 
 
         //bottom left
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
-        GL_GPU::glVertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 - rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 - rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 + rectHalfHeight);
+        GL_GPU::Vertex2f(userRoI.x1 + rectHalfWidth, userRoI.y1 - rectHalfHeight);
 
-        GL_GPU::glEnd();
+        GL_GPU::End();
 
         if (buildUserRoIOnNextPress) {
-            GL_GPU::glDisable(GL_LINE_STIPPLE);
+            GL_GPU::Disable(GL_LINE_STIPPLE);
         }
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 } // drawUserRoI
@@ -3248,16 +3249,16 @@ ViewerNodePrivate::drawArcOfCircle(const QPointF & center,
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
 
         if ( (hoverState == eHoverStateWipeMix) || (uiState == eViewerNodeInteractMouseStateDraggingWipeMixHandle) ) {
-            GL_GPU::glColor3f(0, 1, 0);
+            GL_GPU::Color3f(0, 1, 0);
         }
-        GL_GPU::glBegin(GL_POINTS);
+        GL_GPU::Begin(GL_POINTS);
         while (alpha <= endAngle) {
             x = center.x()  + radiusX * std::cos(alpha);
             y = center.y()  + radiusY * std::sin(alpha);
-            GL_GPU::glVertex2d(x, y);
+            GL_GPU::Vertex2d(x, y);
             alpha += 0.01;
         }
-        GL_GPU::glEnd();
+        GL_GPU::End();
     } // GLProtectAttrib a(GL_CURRENT_BIT);
 }
 
@@ -3322,11 +3323,11 @@ ViewerNodePrivate::drawWipeControl()
         double baseColor[3];
         for (int l = 0; l < 2; ++l) {
             // shadow (uses GL_PROJECTION)
-            GL_GPU::glMatrixMode(GL_PROJECTION);
+            GL_GPU::MatrixMode(GL_PROJECTION);
             int direction = (l == 0) ? 1 : -1;
             // translate (1,-1) pixels
-            GL_GPU::glTranslated(direction * pixelScale.x, -direction * pixelScale.y, 0);
-            GL_GPU::glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+            GL_GPU::Translated(direction * pixelScale.x, -direction * pixelScale.y, 0);
+            GL_GPU::MatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
             if (l == 0) {
                 // Draw a shadow for the cross hair
@@ -3335,80 +3336,80 @@ ViewerNodePrivate::drawWipeControl()
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
             }
 
-            GL_GPU::glEnable(GL_BLEND);
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            GL_GPU::glEnable(GL_LINE_SMOOTH);
-            GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            GL_GPU::glLineWidth(1.5);
-            GL_GPU::glBegin(GL_LINES);
+            GL_GPU::Enable(GL_BLEND);
+            GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::Enable(GL_LINE_SMOOTH);
+            GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            GL_GPU::LineWidth(1.5);
+            GL_GPU::Begin(GL_LINES);
             if ( (hoverState == eHoverStateWipeRotateHandle) || (uiState == eViewerNodeInteractMouseStateRotatingWipeHandle) ) {
-                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+                GL_GPU::Color4f(0., 1. * l, 0., 1.);
             }
-            GL_GPU::glColor4f(baseColor[0], baseColor[1], baseColor[2], 1.);
-            GL_GPU::glVertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
-            GL_GPU::glVertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
-            GL_GPU::glVertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
-            GL_GPU::glVertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
-            GL_GPU::glVertex2d( center.x(), center.y() );
-            GL_GPU::glVertex2d( mixPos.x(), mixPos.y() );
-            GL_GPU::glEnd();
-            GL_GPU::glLineWidth(1.);
+            GL_GPU::Color4f(baseColor[0], baseColor[1], baseColor[2], 1.);
+            GL_GPU::Vertex2d( rotateAxisLeft.x(), rotateAxisLeft.y() );
+            GL_GPU::Vertex2d( rotateAxisRight.x(), rotateAxisRight.y() );
+            GL_GPU::Vertex2d( oppositeAxisBottom.x(), oppositeAxisBottom.y() );
+            GL_GPU::Vertex2d( oppositeAxisTop.x(), oppositeAxisTop.y() );
+            GL_GPU::Vertex2d( center.x(), center.y() );
+            GL_GPU::Vertex2d( mixPos.x(), mixPos.y() );
+            GL_GPU::End();
+            GL_GPU::LineWidth(1.);
 
             ///if hovering the rotate handle or dragging it show a small bended arrow
             if ( (hoverState == eHoverStateWipeRotateHandle) || (uiState == eViewerNodeInteractMouseStateRotatingWipeHandle) ) {
                 GLProtectMatrix<GL_GPU> p(GL_MODELVIEW);
 
-                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+                GL_GPU::Color4f(0., 1. * l, 0., 1.);
                 double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH * pixelScale.x / 2;
                 ///draw an arrow slightly bended. This is an arc of circle of radius 5 in X, and 10 in Y.
                 OfxPointD arrowRadius;
                 arrowRadius.x = 5. * pixelScale.x;
                 arrowRadius.y = 10. * pixelScale.y;
 
-                GL_GPU::glTranslatef(center.x(), center.y(), 0.);
-                GL_GPU::glRotatef(angle * 180.0 / M_PI, 0, 0, 1);
+                GL_GPU::Translatef(center.x(), center.y(), 0.);
+                GL_GPU::Rotatef(angle * 180.0 / M_PI, 0, 0, 1);
                 //  center the oval at x_center, y_center
-                GL_GPU::glTranslatef (arrowCenterX, 0., 0);
+                GL_GPU::Translatef (arrowCenterX, 0., 0);
                 //  draw the oval using line segments
-                GL_GPU::glBegin (GL_LINE_STRIP);
-                GL_GPU::glVertex2f (0, arrowRadius.y);
-                GL_GPU::glVertex2f (arrowRadius.x, 0.);
-                GL_GPU::glVertex2f (0, -arrowRadius.y);
-                GL_GPU::glEnd ();
+                GL_GPU::Begin (GL_LINE_STRIP);
+                GL_GPU::Vertex2f (0, arrowRadius.y);
+                GL_GPU::Vertex2f (arrowRadius.x, 0.);
+                GL_GPU::Vertex2f (0, -arrowRadius.y);
+                GL_GPU::End ();
 
 
-                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::Begin(GL_LINES);
                 ///draw the top head
-                GL_GPU::glVertex2f(0., arrowRadius.y);
-                GL_GPU::glVertex2f(0., arrowRadius.y -  arrowRadius.x );
+                GL_GPU::Vertex2f(0., arrowRadius.y);
+                GL_GPU::Vertex2f(0., arrowRadius.y -  arrowRadius.x );
 
-                GL_GPU::glVertex2f(0., arrowRadius.y);
-                GL_GPU::glVertex2f(4. * pixelScale.x, arrowRadius.y - 3. * pixelScale.y); // 5^2 = 3^2+4^2
+                GL_GPU::Vertex2f(0., arrowRadius.y);
+                GL_GPU::Vertex2f(4. * pixelScale.x, arrowRadius.y - 3. * pixelScale.y); // 5^2 = 3^2+4^2
 
                 ///draw the bottom head
-                GL_GPU::glVertex2f(0., -arrowRadius.y);
-                GL_GPU::glVertex2f(0., -arrowRadius.y + 5. * pixelScale.y);
+                GL_GPU::Vertex2f(0., -arrowRadius.y);
+                GL_GPU::Vertex2f(0., -arrowRadius.y + 5. * pixelScale.y);
 
-                GL_GPU::glVertex2f(0., -arrowRadius.y);
-                GL_GPU::glVertex2f(4. * pixelScale.x, -arrowRadius.y + 3. * pixelScale.y); // 5^2 = 3^2+4^2
+                GL_GPU::Vertex2f(0., -arrowRadius.y);
+                GL_GPU::Vertex2f(4. * pixelScale.x, -arrowRadius.y + 3. * pixelScale.y); // 5^2 = 3^2+4^2
 
-                GL_GPU::glEnd();
+                GL_GPU::End();
 
-                GL_GPU::glColor4f(baseColor[0], baseColor[1], baseColor[2], 1.);
+                GL_GPU::Color4f(baseColor[0], baseColor[1], baseColor[2], 1.);
             }
 
-            GL_GPU::glPointSize(5.);
-            GL_GPU::glEnable(GL_POINT_SMOOTH);
-            GL_GPU::glBegin(GL_POINTS);
-            GL_GPU::glVertex2d( center.x(), center.y() );
+            GL_GPU::PointSize(5.);
+            GL_GPU::Enable(GL_POINT_SMOOTH);
+            GL_GPU::Begin(GL_POINTS);
+            GL_GPU::Vertex2d( center.x(), center.y() );
             if ( ( (hoverState == eHoverStateWipeMix) &&
                   (uiState != eViewerNodeInteractMouseStateRotatingWipeHandle) )
                 || (uiState == eViewerNodeInteractMouseStateDraggingWipeMixHandle) ) {
-                GL_GPU::glColor4f(0., 1. * l, 0., 1.);
+                GL_GPU::Color4f(0., 1. * l, 0., 1.);
             }
-            GL_GPU::glVertex2d( mixPos.x(), mixPos.y() );
-            GL_GPU::glEnd();
-            GL_GPU::glPointSize(1.);
+            GL_GPU::Vertex2d( mixPos.x(), mixPos.y() );
+            GL_GPU::End();
+            GL_GPU::PointSize(1.);
             
             drawArcOfCircle(center, mixX, mixY, angle + M_PI_4 / 2, angle + 3. * M_PI_4 / 2);
         }

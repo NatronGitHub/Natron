@@ -35,6 +35,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -928,29 +929,29 @@ pasteFromGL(const Image & src,
         // OpenGL texture to OpenGL texture
 
         GLuint fboID = glContext->getOrCreateFBOId();
-        GL::glDisable(GL_SCISSOR_TEST);
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glEnable(target);
-        GL::glActiveTexture(GL_TEXTURE0);
+        GL::Disable(GL_SCISSOR_TEST);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::Enable(target);
+        GL::ActiveTexture(GL_TEXTURE0);
 
-        GL::glBindTexture( target, texID );
+        GL::BindTexture( target, texID );
 
-        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
         glCheckFramebufferError(GL);
-        GL::glBindTexture( target, src.getGLTextureID() );
+        GL::BindTexture( target, src.getGLTextureID() );
 
-        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
         assert(shader);
@@ -960,7 +961,7 @@ pasteFromGL(const Image & src,
         Image::applyTextureMapping<GL>(srcBounds, dstBounds, srcRoi);
 
         shader->unbind();
-        GL::glBindTexture(target, 0);
+        GL::BindTexture(target, 0);
         
         glCheckError(GL);
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
@@ -979,10 +980,10 @@ pasteFromGL(const Image & src,
             return;
         }
         GLuint pboID = glContext->getOrCreatePBOId();
-        GL::glEnable(target);
+        GL::Enable(target);
 
         // bind PBO to update texture source
-        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+        GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
         std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
 
@@ -993,10 +994,10 @@ pasteFromGL(const Image & src,
         // If you do that, the previous data in PBO will be discarded and
         // glMapBufferARB() returns a new allocated pointer immediately
         // even if GPU is still working with the previous data.
-        GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+        GL::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
         // map the buffer object into client's memory
-        void* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        void* gpuData = GL::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
@@ -1009,16 +1010,16 @@ pasteFromGL(const Image & src,
 
             memcpy(gpuData, srcdata, dataSize);
 
-            GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            GLboolean result = GL::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
             assert(result == GL_TRUE);
             Q_UNUSED(result);
         }
 
         // bind the texture
-        GL::glBindTexture( target, texID );
+        GL::BindTexture( target, texID );
         // copy pixels from PBO to texture object
         // Use offset instead of pointer (last parameter is 0).
-        GL::glTexSubImage2D(target,
+        GL::TexSubImage2D(target,
                             0,              // level
                             roi.x1, roi.y1,               // xoffset, yoffset
                             roi.width(), roi.height(),
@@ -1026,8 +1027,8 @@ pasteFromGL(const Image & src,
                             src.getGLTextureType(),       // type
                             0);
 
-        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        GL::glBindTexture(target, 0);
+        GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        GL::BindTexture(target, 0);
         glCheckError(GL);
     } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to RAM image
@@ -1049,16 +1050,16 @@ pasteFromGL(const Image & src,
 
         int srcTarget = src.getGLTextureTarget();
 
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glEnable(srcTarget);
-        GL::glBindTexture( srcTarget, src.getGLTextureID() );
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::Enable(srcTarget);
+        GL::BindTexture( srcTarget, src.getGLTextureID() );
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
         //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
-        GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
+        GL::Viewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
         glCheckFramebufferError(GL);
         // Ensure all drawing commands are finished
-        GL::glFlush();
-        GL::glFinish();
+        GL::Flush();
+        GL::Finish();
         glCheckError(GL);
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
         ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
@@ -1067,10 +1068,10 @@ pasteFromGL(const Image & src,
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
-            GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            GL::glBindTexture(srcTarget, 0);
+            GL::ReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            GL::BindTexture(srcTarget, 0);
         }
-        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
         glCheckError(GL);
 
         // Ok now convert from RGBA to this image format if needed
@@ -1428,25 +1429,25 @@ void fillGL(const RectI & roi,
 
     GLuint fboID = glContext->getOrCreateFBOId();
 
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture( target, texID );
+    GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::Enable(target);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindTexture( target, texID );
 
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
 
     Image::setupGLViewport<GL>(bounds, roi);
-    GL::glClearColor(r, g, b, a);
-    GL::glClear(GL_COLOR_BUFFER_BIT);
+    GL::ClearColor(r, g, b, a);
+    GL::Clear(GL_COLOR_BUFFER_BIT);
 
-    GL::glBindTexture(target, 0);
+    GL::BindTexture(target, 0);
     glCheckError(GL);
 }
 

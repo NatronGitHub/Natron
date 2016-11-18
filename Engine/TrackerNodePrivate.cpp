@@ -34,6 +34,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
@@ -106,7 +107,7 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 TrackerNodeInteract::~TrackerNodeInteract()
 {
     if (pboID != 0) {
-        GL_GPU::glDeleteBuffers(1, &pboID);
+        GL_GPU::DeleteBuffers(1, &pboID);
     }
 }
 
@@ -590,23 +591,23 @@ TrackerNodeInteract::drawEllipse(double x,
                                  double b,
                                  double a)
 {
-    GL_GPU::glColor3f(r * l * a, g * l * a, b * l * a);
+    GL_GPU::Color3f(r * l * a, g * l * a, b * l * a);
 
-    GL_GPU::glPushMatrix();
+    GL_GPU::PushMatrix();
     //  center the oval at x_center, y_center
-    GL_GPU::glTranslatef( (float)x, (float)y, 0.f );
+    GL_GPU::Translatef( (float)x, (float)y, 0.f );
     //  draw the oval using line segments
-    GL_GPU::glBegin(GL_LINE_LOOP);
+    GL_GPU::Begin(GL_LINE_LOOP);
     // we don't need to be pixel-perfect here, it's just an interact!
     // 40 segments is enough.
     double m = 2 * 3.14159265358979323846264338327950288419717 / 40.;
     for (int i = 0; i < 40; ++i) {
         double theta = i * m;
-        GL_GPU::glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
+        GL_GPU::Vertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
     }
-    GL_GPU::glEnd();
+    GL_GPU::End();
 
-    GL_GPU::glPopMatrix();
+    GL_GPU::PopMatrix();
 }
 
 TrackerNodeInteract::KeyFrameTexIDs
@@ -751,17 +752,17 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 Point innerBtmRight = toMagWindowPoint(btmRight, canonicalSearchWindow, textureRectCanonical);
 
                 //Map texture
-                GL_GPU::glColor4f(1., 1., 1., 1.);
-                GL_GPU::glEnable(GL_TEXTURE_2D);
-                GL_GPU::glBindTexture( GL_TEXTURE_2D, it2->second->getTexID() );
-                GL_GPU::glBegin(GL_POLYGON);
-                GL_GPU::glTexCoord2d(0, 0); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-                GL_GPU::glTexCoord2d(0, 1); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-                GL_GPU::glTexCoord2d(1, 1); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-                GL_GPU::glTexCoord2d(1, 0); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-                GL_GPU::glEnd();
+                GL_GPU::Color4f(1., 1., 1., 1.);
+                GL_GPU::Enable(GL_TEXTURE_2D);
+                GL_GPU::BindTexture( GL_TEXTURE_2D, it2->second->getTexID() );
+                GL_GPU::Begin(GL_POLYGON);
+                GL_GPU::TexCoord2d(0, 0); GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+                GL_GPU::TexCoord2d(0, 1); GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+                GL_GPU::TexCoord2d(1, 1); GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+                GL_GPU::TexCoord2d(1, 0); GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+                GL_GPU::End();
 
-                GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
+                GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
 
                 QPointF textPos = overlay->toCanonicalCoordinates( QPointF(xOffsetPixels + 5, fontHeight + 5 ) );
                 overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2], overlayColor[3]);
@@ -772,13 +773,13 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 overlay->renderText(framePos.x(), framePos.y(), frameText.toStdString(), overlayColor[0], overlayColor[1], overlayColor[2], overlayColor[3]);
 
                 //Draw contour
-                GL_GPU::glEnable(GL_LINE_SMOOTH);
-                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                GL_GPU::glEnable(GL_BLEND);
-                GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                GL_GPU::Enable(GL_LINE_SMOOTH);
+                GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                GL_GPU::Enable(GL_BLEND);
+                GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                 if (time == currentTime) {
-                    GL_GPU::glColor4f(0.93, 0.54, 0, 1);
+                    GL_GPU::Color4f(0.93, 0.54, 0, 1);
                 } else {
                     KeyFrameTexIDs::const_iterator next = it2;
                     ++next;
@@ -790,38 +791,38 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                     }
                     if ( ( next == keysToRender.end() ) && (time < currentTime) ) {
                         //Beyond the last keyframe
-                        GL_GPU::glColor4f(0.93, 0.54, 0, 1);
+                        GL_GPU::Color4f(0.93, 0.54, 0, 1);
                     } else if ( ( prev == keysToRender.end() ) && (time > currentTime) ) {
                         //Before the first keyframe
-                        GL_GPU::glColor4f(0.93, 0.54, 0, 1);
+                        GL_GPU::Color4f(0.93, 0.54, 0, 1);
                     } else {
                         if (time < currentTime) {
                             assert( next != keysToRender.end() );
                             if (next->first > currentTime) {
-                                GL_GPU::glColor4f(1, 0.75, 0.47, 1);
+                                GL_GPU::Color4f(1, 0.75, 0.47, 1);
                             } else {
-                                GL_GPU::glColor4f(1., 1., 1., 0.5);
+                                GL_GPU::Color4f(1., 1., 1., 0.5);
                             }
                         } else {
                             //time > currentTime
                             assert( prev != keysToRender.end() );
                             if (prev->first < currentTime) {
-                                GL_GPU::glColor4f(1, 0.75, 0.47, 1);
+                                GL_GPU::Color4f(1, 0.75, 0.47, 1);
                             } else {
-                                GL_GPU::glColor4f(1., 1., 1., 0.5);
+                                GL_GPU::Color4f(1., 1., 1., 0.5);
                             }
                         }
                     }
                 }
 
-                GL_GPU::glLineWidth(1.5);
+                GL_GPU::LineWidth(1.5);
                 glCheckError(GL_GPU);
-                GL_GPU::glBegin(GL_LINE_LOOP);
-                GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-                GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-                GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-                GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-                GL_GPU::glEnd();
+                GL_GPU::Begin(GL_LINE_LOOP);
+                GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+                GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+                GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+                GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+                GL_GPU::End();
 
                 glCheckError(GL_GPU);
 
@@ -829,24 +830,24 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 //Draw internal marker
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
-                    GL_GPU::glMatrixMode(GL_PROJECTION);
+                    GL_GPU::MatrixMode(GL_PROJECTION);
                     int direction = (l == 0) ? 1 : -1;
                     // translate (1,-1) pixels
-                    GL_GPU::glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
-                    GL_GPU::glMatrixMode(GL_MODELVIEW);
+                    GL_GPU::Translated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
+                    GL_GPU::MatrixMode(GL_MODELVIEW);
 
-                    GL_GPU::glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
+                    GL_GPU::Color4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
 
-                    GL_GPU::glBegin(GL_LINE_LOOP);
-                    GL_GPU::glVertex2d(innerTopLeft.x, innerTopLeft.y);
-                    GL_GPU::glVertex2d(innerTopRight.x, innerTopRight.y);
-                    GL_GPU::glVertex2d(innerBtmRight.x, innerBtmRight.y);
-                    GL_GPU::glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
-                    GL_GPU::glEnd();
+                    GL_GPU::Begin(GL_LINE_LOOP);
+                    GL_GPU::Vertex2d(innerTopLeft.x, innerTopLeft.y);
+                    GL_GPU::Vertex2d(innerTopRight.x, innerTopRight.y);
+                    GL_GPU::Vertex2d(innerBtmRight.x, innerBtmRight.y);
+                    GL_GPU::Vertex2d(innerBtmLeft.x, innerBtmLeft.y);
+                    GL_GPU::End();
 
-                    GL_GPU::glBegin(GL_POINTS);
-                    GL_GPU::glVertex2d(centerPointCanonical.x, centerPointCanonical.y);
-                    GL_GPU::glEnd();
+                    GL_GPU::Begin(GL_POINTS);
+                    GL_GPU::Vertex2d(centerPointCanonical.x, centerPointCanonical.y);
+                    GL_GPU::End();
                 }
 
                 xOffsetPixels += TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
@@ -936,38 +937,38 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     topRightTex = Transform::matApply(m, topRightTex);
 
     //Map texture
-    GL_GPU::glColor4f(1., 1., 1., 1.);
-    GL_GPU::glEnable(GL_TEXTURE_2D);
-    GL_GPU::glBindTexture( GL_TEXTURE_2D, selectedMarkerTexture->getTexID() );
-    GL_GPU::glBegin(GL_POLYGON);
-    GL_GPU::glTexCoord2d(btmLeftTex.x, btmRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-    GL_GPU::glTexCoord2d(topLeftTex.x, topLeftTex.y); GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-    GL_GPU::glTexCoord2d(topRightTex.x, topRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-    GL_GPU::glTexCoord2d(btmRightTex.x, btmRightTex.y); GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    GL_GPU::glEnd();
+    GL_GPU::Color4f(1., 1., 1., 1.);
+    GL_GPU::Enable(GL_TEXTURE_2D);
+    GL_GPU::BindTexture( GL_TEXTURE_2D, selectedMarkerTexture->getTexID() );
+    GL_GPU::Begin(GL_POLYGON);
+    GL_GPU::TexCoord2d(btmLeftTex.x, btmRightTex.y); GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+    GL_GPU::TexCoord2d(topLeftTex.x, topLeftTex.y); GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+    GL_GPU::TexCoord2d(topRightTex.x, topRightTex.y); GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+    GL_GPU::TexCoord2d(btmRightTex.x, btmRightTex.y); GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::End();
 
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
 
     //Draw contour
-    GL_GPU::glEnable(GL_LINE_SMOOTH);
-    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    GL_GPU::glEnable(GL_BLEND);
-    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    GL_GPU::glColor4f(1., 1., 1., 0.5);
-    GL_GPU::glLineWidth(1.5);
+    GL_GPU::Enable(GL_LINE_SMOOTH);
+    GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    GL_GPU::Enable(GL_BLEND);
+    GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL_GPU::Color4f(1., 1., 1., 0.5);
+    GL_GPU::LineWidth(1.5);
     glCheckError(GL_GPU);
-    GL_GPU::glBegin(GL_LINE_LOOP);
-    GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
-    GL_GPU::glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
-    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
-    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    GL_GPU::glEnd();
+    GL_GPU::Begin(GL_LINE_LOOP);
+    GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
+    GL_GPU::Vertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
+    GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y2);
+    GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::End();
 
-    GL_GPU::glColor4f(0.8, 0.8, 0.8, 1.);
-    GL_GPU::glPointSize(POINT_SIZE);
-    GL_GPU::glBegin(GL_POINTS);
-    GL_GPU::glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
-    GL_GPU::glEnd();
+    GL_GPU::Color4f(0.8, 0.8, 0.8, 1.);
+    GL_GPU::PointSize(POINT_SIZE);
+    GL_GPU::Begin(GL_POINTS);
+    GL_GPU::Vertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
+    GL_GPU::End();
     glCheckError(GL_GPU);
 
     int fontHeight = overlay->getWidgetFontHeight();
@@ -978,24 +979,24 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
     for (int l = 0; l < 2; ++l) {
         // shadow (uses GL_PROJECTION)
-        GL_GPU::glMatrixMode(GL_PROJECTION);
+        GL_GPU::MatrixMode(GL_PROJECTION);
         int direction = (l == 0) ? 1 : -1;
         // translate (1,-1) pixels
-        GL_GPU::glTranslated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
-        GL_GPU::glMatrixMode(GL_MODELVIEW);
+        GL_GPU::Translated(direction * pixelScale.first / 256, -direction * pixelScale.second / 256, 0);
+        GL_GPU::MatrixMode(GL_MODELVIEW);
 
-        GL_GPU::glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
+        GL_GPU::Color4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
 
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2d(innerTopLeft.x, innerTopLeft.y);
-        GL_GPU::glVertex2d(innerTopRight.x, innerTopRight.y);
-        GL_GPU::glVertex2d(innerBtmRight.x, innerBtmRight.y);
-        GL_GPU::glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_LINE_LOOP);
+        GL_GPU::Vertex2d(innerTopLeft.x, innerTopLeft.y);
+        GL_GPU::Vertex2d(innerTopRight.x, innerTopRight.y);
+        GL_GPU::Vertex2d(innerBtmRight.x, innerBtmRight.y);
+        GL_GPU::Vertex2d(innerBtmLeft.x, innerBtmLeft.y);
+        GL_GPU::End();
 
-        GL_GPU::glBegin(GL_POINTS);
-        GL_GPU::glVertex2d(centerPoint.x, centerPoint.y);
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_POINTS);
+        GL_GPU::Vertex2d(centerPoint.x, centerPoint.y);
+        GL_GPU::End();
 
         ///Draw ellipse if scaling
         if ( (eventState == eMouseStateScalingSelectedMarker) || (hoverState == eDrawStateShowScalingHint) ) {
@@ -1182,14 +1183,14 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     region.y2 = roi.y2;
 
     GLint currentBoundPBO = 0;
-    GL_GPU::glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
+    GL_GPU::GetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
 
     if (pboID == 0) {
-        GL_GPU::glGenBuffers(1, &pboID);
+        GL_GPU::GenBuffers(1, &pboID);
     }
 
     // bind PBO to update texture source
-    GL_GPU::glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
+    GL_GPU::BindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
 
     // Note that glMapBufferARB() causes sync issue.
     // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
@@ -1198,10 +1199,10 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    GL_GPU::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+    GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // map the buffer object into client's memory
-    GLvoid *buf = GL_GPU::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    GLvoid *buf = GL_GPU::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError(GL_GPU);
     assert(buf);
     if (buf) {
@@ -1264,7 +1265,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
             }
         }
         
-        GLboolean result = GL_GPU::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
     }
@@ -1276,7 +1277,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     tex->fillOrAllocateTexture(region, RectI(), false, 0);
 
     // restore previously bound PBO
-    GL_GPU::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    GL_GPU::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
     glCheckError(GL_GPU);
 } // TrackerNodeInteract::convertImageTosRGBOpenGLTexture
@@ -1923,48 +1924,48 @@ TrackerNode::drawOverlay(double time,
             // When the tracking page is secret, still show markers, but as if deselected
             if (!isSelected || trackingPageSecret) {
                 ///Draw a custom interact, indicating the track isn't selected
-                GL_GPU::glEnable(GL_LINE_SMOOTH);
-                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                GL_GPU::glLineWidth(1.5f);
+                GL_GPU::Enable(GL_LINE_SMOOTH);
+                GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                GL_GPU::LineWidth(1.5f);
 
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
-                    GL_GPU::glMatrixMode(GL_PROJECTION);
+                    GL_GPU::MatrixMode(GL_PROJECTION);
                     int direction = (l == 0) ? 1 : -1;
                     // translate (1,-1) pixels
-                    GL_GPU::glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                    GL_GPU::glMatrixMode(GL_MODELVIEW);
+                    GL_GPU::Translated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                    GL_GPU::MatrixMode(GL_MODELVIEW);
 
                     if (l == 0) {
-                        GL_GPU::glColor4d(0., 0., 0., 1.);
+                        GL_GPU::Color4d(0., 0., 0., 1.);
                     } else {
-                        GL_GPU::glColor4f(thisMarkerColor[0], thisMarkerColor[1], thisMarkerColor[2], 1.);
+                        GL_GPU::Color4f(thisMarkerColor[0], thisMarkerColor[1], thisMarkerColor[2], 1.);
                     }
 
 
                     double x = centerKnob->getValueAtTime(time, DimIdx(0));
                     double y = centerKnob->getValueAtTime(time, DimIdx(1));
 
-                    GL_GPU::glPointSize(POINT_SIZE);
-                    GL_GPU::glBegin(GL_POINTS);
-                    GL_GPU::glVertex2d(x, y);
-                    GL_GPU::glEnd();
+                    GL_GPU::PointSize(POINT_SIZE);
+                    GL_GPU::Begin(GL_POINTS);
+                    GL_GPU::Vertex2d(x, y);
+                    GL_GPU::End();
 
-                    GL_GPU::glBegin(GL_LINES);
-                    GL_GPU::glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
-                    GL_GPU::glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
+                    GL_GPU::Begin(GL_LINES);
+                    GL_GPU::Vertex2d(x - CROSS_SIZE * pixelScaleX, y);
+                    GL_GPU::Vertex2d(x + CROSS_SIZE * pixelScaleX, y);
 
 
-                    GL_GPU::glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
-                    GL_GPU::glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
-                    GL_GPU::glEnd();
+                    GL_GPU::Vertex2d(x, y - CROSS_SIZE * pixelScaleY);
+                    GL_GPU::Vertex2d(x, y + CROSS_SIZE * pixelScaleY);
+                    GL_GPU::End();
                 }
-                GL_GPU::glPointSize(1.);
+                GL_GPU::PointSize(1.);
             } else { // if (isSelected) {
-                GL_GPU::glEnable(GL_LINE_SMOOTH);
-                GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                GL_GPU::Enable(GL_LINE_SMOOTH);
+                GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
                 GLdouble projection[16];
-                GL_GPU::glGetDoublev( GL_PROJECTION_MATRIX, projection);
+                GL_GPU::GetDoublev( GL_PROJECTION_MATRIX, projection);
                 OfxPointD shadow; // how much to translate GL_PROJECTION to get exactly one pixel on screen
                 shadow.x = 2. / (projection[0] * viewportSize[0]);
                 shadow.y = 2. / (projection[5] * viewportSize[1]);
@@ -2125,30 +2126,30 @@ TrackerNode::drawOverlay(double time,
 
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
-                    GL_GPU::glMatrixMode(GL_PROJECTION);
+                    GL_GPU::MatrixMode(GL_PROJECTION);
                     int direction = (l == 0) ? 1 : -1;
                     // translate (1,-1) pixels
-                    GL_GPU::glTranslated(direction * shadow.x, -direction * shadow.y, 0);
-                    GL_GPU::glMatrixMode(GL_MODELVIEW);
+                    GL_GPU::Translated(direction * shadow.x, -direction * shadow.y, 0);
+                    GL_GPU::MatrixMode(GL_MODELVIEW);
 
                     ///Draw center position
 
-                    GL_GPU::glEnable(GL_LINE_SMOOTH);
-                    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                    GL_GPU::glBegin(GL_LINE_STRIP);
-                    GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
+                    GL_GPU::Enable(GL_LINE_SMOOTH);
+                    GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                    GL_GPU::Begin(GL_LINE_STRIP);
+                    GL_GPU::Color3f(0.5 * l, 0.5 * l, 0.5 * l);
                     for (CenterPointsMap::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
                         if (it->second.isValid) {
-                            GL_GPU::glVertex2d(it->second.x, it->second.y);
+                            GL_GPU::Vertex2d(it->second.x, it->second.y);
                         }
                     }
-                    GL_GPU::glEnd();
-                    GL_GPU::glDisable(GL_LINE_SMOOTH);
+                    GL_GPU::End();
+                    GL_GPU::Disable(GL_LINE_SMOOTH);
 
-                    GL_GPU::glEnable(GL_POINT_SMOOTH);
-                    GL_GPU::glBegin(GL_POINTS);
+                    GL_GPU::Enable(GL_POINT_SMOOTH);
+                    GL_GPU::Begin(GL_POINTS);
                     if (!showErrorColor) {
-                        GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
+                        GL_GPU::Color3f(0.5 * l, 0.5 * l, 0.5 * l);
                     }
 
                     for (CenterPointsMap::iterator it2 = centerPoints.begin(); it2 != centerPoints.end(); ++it2) {
@@ -2167,201 +2168,201 @@ TrackerNode::drawOverlay(double time,
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
-                                GL_GPU::glColor3f(r, g, b);
+                                GL_GPU::Color3f(r, g, b);
                             } else {
-                                GL_GPU::glColor3f(0., 0., 0.);
+                                GL_GPU::Color3f(0., 0., 0.);
                             }
                         }
-                        GL_GPU::glVertex2d(it2->second.x, it2->second.y);
+                        GL_GPU::Vertex2d(it2->second.x, it2->second.y);
                     }
-                    GL_GPU::glEnd();
-                    GL_GPU::glDisable(GL_POINT_SMOOTH);
+                    GL_GPU::End();
+                    GL_GPU::Disable(GL_POINT_SMOOTH);
 
 
-                    GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
-                    GL_GPU::glBegin(GL_LINE_LOOP);
-                    GL_GPU::glVertex2d( topLeft.x(), topLeft.y() );
-                    GL_GPU::glVertex2d( topRight.x(), topRight.y() );
-                    GL_GPU::glVertex2d( btmRight.x(), btmRight.y() );
-                    GL_GPU::glVertex2d( btmLeft.x(), btmLeft.y() );
-                    GL_GPU::glEnd();
+                    GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                    GL_GPU::Begin(GL_LINE_LOOP);
+                    GL_GPU::Vertex2d( topLeft.x(), topLeft.y() );
+                    GL_GPU::Vertex2d( topRight.x(), topRight.y() );
+                    GL_GPU::Vertex2d( btmRight.x(), btmRight.y() );
+                    GL_GPU::Vertex2d( btmLeft.x(), btmLeft.y() );
+                    GL_GPU::End();
 
-                    GL_GPU::glBegin(GL_LINE_LOOP);
-                    GL_GPU::glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
-                    GL_GPU::glVertex2d( searchTopRight.x(), searchTopRight.y() );
-                    GL_GPU::glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
-                    GL_GPU::glVertex2d( searchBtmLeft.x(), searchBtmRight.y() );
-                    GL_GPU::glEnd();
+                    GL_GPU::Begin(GL_LINE_LOOP);
+                    GL_GPU::Vertex2d( searchTopLeft.x(), searchTopLeft.y() );
+                    GL_GPU::Vertex2d( searchTopRight.x(), searchTopRight.y() );
+                    GL_GPU::Vertex2d( searchBtmRight.x(), searchBtmRight.y() );
+                    GL_GPU::Vertex2d( searchBtmLeft.x(), searchBtmRight.y() );
+                    GL_GPU::End();
 
-                    GL_GPU::glPointSize(POINT_SIZE);
-                    GL_GPU::glBegin(GL_POINTS);
+                    GL_GPU::PointSize(POINT_SIZE);
+                    GL_GPU::Begin(GL_POINTS);
 
                     ///draw center
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringCenter) || (_imp->ui->eventState == eMouseStateDraggingCenter) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( center.x(), center.y() );
+                    GL_GPU::Vertex2d( center.x(), center.y() );
 
                     if ( (offset.x() != 0) || (offset.y() != 0) ) {
-                        GL_GPU::glVertex2d( center.x() + offset.x(), center.y() + offset.y() );
+                        GL_GPU::Vertex2d( center.x() + offset.x(), center.y() + offset.y() );
                     }
 
                     //////DRAWING INNER POINTS
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( btmLeft.x(), btmLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( btmLeft.x(), btmLeft.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( innerMidBtm.x(), innerMidBtm.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmRight) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( btmRight.x(), btmRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( btmRight.x(), btmRight.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( innerMidLeft.x(), innerMidLeft.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidRight.x(), innerMidRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( innerMidRight.x(), innerMidRight.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( topLeft.x(), topLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( topLeft.x(), topLeft.y() );
                     }
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( innerMidTop.x(), innerMidTop.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( innerMidTop.x(), innerMidTop.y() );
                     }
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopRight) || (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( topRight.x(), topRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( topRight.x(), topRight.y() );
                     }
 
 
                     //////DRAWING OUTTER POINTS
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( searchBtmLeft.x(), searchBtmLeft.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( outterMidBtm.x(), outterMidBtm.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmRight) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchBtmRight.x(), searchBtmRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( searchBtmRight.x(), searchBtmRight.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( outterMidLeft.x(), outterMidLeft.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidRight.x(), outterMidRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( outterMidRight.x(), outterMidRight.y() );
                     }
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterTopLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( searchTopLeft.x(), searchTopLeft.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( outterMidTop.x(), outterMidTop.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( outterMidTop.x(), outterMidTop.y() );
                     }
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopRight) || (_imp->ui->eventState == eMouseStateDraggingOuterTopRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
-                        GL_GPU::glVertex2d( searchTopRight.x(), searchTopRight.y() );
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Vertex2d( searchTopRight.x(), searchTopRight.y() );
                     }
 
-                    GL_GPU::glEnd();
+                    GL_GPU::End();
 
                     if ( (offset.x() != 0) || (offset.y() != 0) ) {
-                        GL_GPU::glBegin(GL_LINES);
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
-                        GL_GPU::glVertex2d( center.x(), center.y() );
-                        GL_GPU::glVertex2d( center.x() + offset.x(), center.y() + offset.y() );
-                        GL_GPU::glEnd();
+                        GL_GPU::Begin(GL_LINES);
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
+                        GL_GPU::Vertex2d( center.x(), center.y() );
+                        GL_GPU::Vertex2d( center.x() + offset.x(), center.y() + offset.y() );
+                        GL_GPU::End();
                     }
 
                     ///now show small lines at handle positions
-                    GL_GPU::glBegin(GL_LINES);
+                    GL_GPU::Begin(GL_LINES);
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
-                    GL_GPU::glVertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
+                    GL_GPU::Vertex2d( innerMidLeft.x(), innerMidLeft.y() );
+                    GL_GPU::Vertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( innerMidTop.x(), innerMidTop.y() );
-                    GL_GPU::glVertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
+                    GL_GPU::Vertex2d( innerMidTop.x(), innerMidTop.y() );
+                    GL_GPU::Vertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( innerMidRight.x(), innerMidRight.y() );
-                    GL_GPU::glVertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
+                    GL_GPU::Vertex2d( innerMidRight.x(), innerMidRight.y() );
+                    GL_GPU::Vertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
-                    GL_GPU::glVertex2d( innerMidBtmExt.x(), innerMidBtmExt.y() );
+                    GL_GPU::Vertex2d( innerMidBtm.x(), innerMidBtm.y() );
+                    GL_GPU::Vertex2d( innerMidBtmExt.x(), innerMidBtmExt.y() );
 
                     //////DRAWING OUTTER HANDLES
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
-                    GL_GPU::glVertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
+                    GL_GPU::Vertex2d( outterMidLeft.x(), outterMidLeft.y() );
+                    GL_GPU::Vertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( outterMidTop.x(), outterMidTop.y() );
-                    GL_GPU::glVertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
+                    GL_GPU::Vertex2d( outterMidTop.x(), outterMidTop.y() );
+                    GL_GPU::Vertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( outterMidRight.x(), outterMidRight.y() );
-                    GL_GPU::glVertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
+                    GL_GPU::Vertex2d( outterMidRight.x(), outterMidRight.y() );
+                    GL_GPU::Vertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
-                        GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
+                        GL_GPU::Color3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                        GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
-                    GL_GPU::glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
-                    GL_GPU::glVertex2d( outterMidBtmExt.x(), outterMidBtmExt.y() );
-                    GL_GPU::glEnd();
+                    GL_GPU::Vertex2d( outterMidBtm.x(), outterMidBtm.y() );
+                    GL_GPU::Vertex2d( outterMidBtmExt.x(), outterMidBtmExt.y() );
+                    GL_GPU::End();
 
-                    GL_GPU::glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                    GL_GPU::Color3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
 
                     overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2], markerColor[3]);
                 } // for (int l = 0; l < 2; ++l) {
@@ -2376,43 +2377,43 @@ TrackerNode::drawOverlay(double time,
 
         if (_imp->ui->clickToAddTrackEnabled) {
             ///draw a square of 20px around the mouse cursor
-            GL_GPU::glEnable(GL_BLEND);
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            GL_GPU::glEnable(GL_LINE_SMOOTH);
-            GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            GL_GPU::glLineWidth(1.5);
+            GL_GPU::Enable(GL_BLEND);
+            GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::Enable(GL_LINE_SMOOTH);
+            GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+            GL_GPU::LineWidth(1.5);
             //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
 
             const double addTrackSize = TO_DPIX(ADDTRACK_SIZE);
 
             for (int l = 0; l < 2; ++l) {
                 // shadow (uses GL_PROJECTION)
-                GL_GPU::glMatrixMode(GL_PROJECTION);
+                GL_GPU::MatrixMode(GL_PROJECTION);
                 int direction = (l == 0) ? 1 : -1;
                 // translate (1,-1) pixels
-                GL_GPU::glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
-                GL_GPU::glMatrixMode(GL_MODELVIEW);
+                GL_GPU::Translated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                GL_GPU::MatrixMode(GL_MODELVIEW);
 
                 if (l == 0) {
-                    GL_GPU::glColor4d(0., 0., 0., 0.8);
+                    GL_GPU::Color4d(0., 0., 0., 0.8);
                 } else {
-                    GL_GPU::glColor4d(0., 1., 0., 0.8);
+                    GL_GPU::Color4d(0., 1., 0., 0.8);
                 }
 
-                GL_GPU::glBegin(GL_LINE_LOOP);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
-                GL_GPU::glEnd();
+                GL_GPU::Begin(GL_LINE_LOOP);
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
+                GL_GPU::End();
 
                 ///draw a cross at the cursor position
-                GL_GPU::glBegin(GL_LINES);
-                GL_GPU::glVertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::glVertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() - addTrackSize * pixelScaleY);
-                GL_GPU::glVertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() + addTrackSize * pixelScaleY);
-                GL_GPU::glEnd();
+                GL_GPU::Begin(GL_LINES);
+                GL_GPU::Vertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
+                GL_GPU::Vertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() - addTrackSize * pixelScaleY);
+                GL_GPU::Vertex2d(_imp->ui->lastMousePos.x(), _imp->ui->lastMousePos.y() + addTrackSize * pixelScaleY);
+                GL_GPU::End();
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);

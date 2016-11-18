@@ -30,8 +30,6 @@
 
 #include <QDebug>
 
-#include "Global/GLIncludes.h"
-
 //#import <Cocoa/Cocoa.h>
 #include <AvailabilityMacros.h>
 
@@ -48,6 +46,8 @@
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLRenderers.h>
 
+#include "Global/GLIncludes.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/AppManager.h"
 
@@ -594,13 +594,13 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             continue;
         }
         // get renderer strings
-        info.rendererName = std::string( (char*)GL_GPU::glGetString (GL_RENDERER) );
-        info.vendorName = std::string( (char*)GL_GPU::glGetString (GL_VENDOR) );
-        info.glVersionString = std::string( (char*)GL_GPU::glGetString (GL_VERSION) );
-        info.glslVersionString = std::string( (char*)GL_GPU::glGetString (GL_SHADING_LANGUAGE_VERSION) );
+        info.rendererName = std::string( (char*)GL_GPU::GetString (GL_RENDERER) );
+        info.vendorName = std::string( (char*)GL_GPU::GetString (GL_VENDOR) );
+        info.glVersionString = std::string( (char*)GL_GPU::GetString (GL_VERSION) );
+        info.glslVersionString = std::string( (char*)GL_GPU::GetString (GL_SHADING_LANGUAGE_VERSION) );
         //std::string strExt((char*)glGetString (GL_EXTENSIONS));
 
-        GL_GPU::glGetIntegerv (GL_MAX_TEXTURE_SIZE,
+        GL_GPU::GetIntegerv (GL_MAX_TEXTURE_SIZE,
                        &info.maxTextureSize);
 
         CGLDestroyContext (cglContext);

@@ -108,18 +108,18 @@ public:
     virtual ~GLShader()
     {
         if (_vertexAttached) {
-            GL::glDetachShader(_shaderID, _vertexID);
-            GL::glDeleteShader(_vertexID);
+            GL::DetachShader(_shaderID, _vertexID);
+            GL::DeleteShader(_vertexID);
 
         }
         if (_fragmentAttached) {
-            GL::glDetachShader(_shaderID, _fragmentID);
-            GL::glDeleteShader(_fragmentID);
+            GL::DetachShader(_shaderID, _fragmentID);
+            GL::DeleteShader(_fragmentID);
 
         }
 
         if (_shaderID != 0) {
-            GL::glDeleteProgram(_shaderID);
+            GL::DeleteProgram(_shaderID);
         }
     }
 
@@ -127,26 +127,26 @@ public:
     {
         if (_firstTime) {
             _firstTime = false;
-            _shaderID = GL::glCreateProgram();
+            _shaderID = GL::CreateProgram();
         }
 
         GLuint shader = 0;
         if (type == eShaderTypeVertex) {
-            _vertexID = GL::glCreateShader(GL_VERTEX_SHADER);
+            _vertexID = GL::CreateShader(GL_VERTEX_SHADER);
 
             shader = _vertexID;
         } else if (type == eShaderTypeFragment) {
-            _fragmentID = GL::glCreateShader(GL_FRAGMENT_SHADER);
+            _fragmentID = GL::CreateShader(GL_FRAGMENT_SHADER);
 
             shader = _fragmentID;
         } else {
             assert(false);
         }
 
-        GL::glShaderSource(shader, 1, (const GLchar**)&src, 0);
-        GL::glCompileShader(shader);
+        GL::ShaderSource(shader, 1, (const GLchar**)&src, 0);
+        GL::CompileShader(shader);
         GLint isCompiled;
-        GL::glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+        GL::GetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
         if (isCompiled == GL_FALSE) {
             if (error) {
                 getShaderInfoLog(shader, error);
@@ -155,7 +155,7 @@ public:
             return false;
         }
 
-        GL::glAttachShader(_shaderID, shader);
+        GL::AttachShader(_shaderID, shader);
         if (type == eShaderTypeVertex) {
             _vertexAttached = true;
         } else {
@@ -167,14 +167,14 @@ public:
 
     virtual void bind() OVERRIDE FINAL
     {
-        GL::glUseProgram(_shaderID);
+        GL::UseProgram(_shaderID);
     }
 
     virtual bool link(std::string* error = 0) OVERRIDE FINAL
     {
-        GL::glLinkProgram(_shaderID);
+        GL::LinkProgram(_shaderID);
         GLint isLinked;
-        GL::glGetProgramiv(_shaderID, GL_LINK_STATUS, &isLinked);
+        GL::GetProgramiv(_shaderID, GL_LINK_STATUS, &isLinked);
         if (isLinked == GL_FALSE) {
             if (error) {
                 getShaderInfoLog(_shaderID, error);
@@ -188,7 +188,7 @@ public:
 
     virtual void unbind() OVERRIDE FINAL
     {
-        GL::glUseProgram(0);
+        GL::UseProgram(0);
     }
 
     virtual U32 getShaderID() const OVERRIDE FINAL
@@ -198,10 +198,10 @@ public:
 
     virtual bool setUniform(const char* name, int value) OVERRIDE FINAL
     {
-        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+        GLint location = GL::GetUniformLocation(_shaderID, (const GLchar*)name);
 
         if (location != -1) {
-            GL::glUniform1iv(location, 1, &value);
+            GL::Uniform1iv(location, 1, &value);
 
             return true;
         }
@@ -211,10 +211,10 @@ public:
 
     virtual bool setUniform(const char* name, float value) OVERRIDE FINAL
     {
-        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+        GLint location = GL::GetUniformLocation(_shaderID, (const GLchar*)name);
 
         if (location != -1) {
-            GL::glUniform1fv(location, 1, &value);
+            GL::Uniform1fv(location, 1, &value);
 
             return true;
         }
@@ -224,10 +224,10 @@ public:
 
     virtual bool setUniform(const char* name, const OfxRGBAColourF& values) OVERRIDE FINAL
     {
-        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+        GLint location = GL::GetUniformLocation(_shaderID, (const GLchar*)name);
 
         if (location != -1) {
-            GL::glUniform4fv(location, 1, &values.r);
+            GL::Uniform4fv(location, 1, &values.r);
 
             return true;
         }
@@ -237,7 +237,7 @@ public:
 
     virtual bool getAttribLocation(const char* name, GLint* loc) const OVERRIDE FINAL
     {
-        *loc = GL::glGetAttribLocation(_shaderID, (const GLchar*)name);
+        *loc = GL::GetAttribLocation(_shaderID, (const GLchar*)name);
         return *loc != -1;
     }
 
@@ -247,10 +247,10 @@ private:
                           std::string* error)
     {
         GLint maxLength;
-        GL::glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+        GL::GetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
         char* infoLog = (char*)malloc(maxLength);
-        GL::glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
+        GL::GetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
         error->append(infoLog);
         free(infoLog);
     }

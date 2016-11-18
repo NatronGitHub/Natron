@@ -30,11 +30,14 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QApplication> // qApp
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
 #include <QtOpenGL/QGLShaderProgram>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 
 #include "Engine/Lut.h" // Color
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Settings.h"
 #include "Engine/Texture.h"
 #include "Engine/ViewerNode.h"
@@ -148,14 +151,14 @@ ViewerGL::Implementation::~Implementation()
     if ( appPTR && appPTR->isOpenGLLoaded() ) {
         glCheckError(GL_GPU);
         for (U32 i = 0; i < this->pboIds.size(); ++i) {
-            GL_GPU::glDeleteBuffers(1, &this->pboIds[i]);
+            GL_GPU::DeleteBuffers(1, &this->pboIds[i]);
         }
         glCheckError(GL_GPU);
-        GL_GPU::glDeleteBuffers(1, &this->vboVerticesId);
-        GL_GPU::glDeleteBuffers(1, &this->vboTexturesId);
-        GL_GPU::glDeleteBuffers(1, &this->iboTriangleStripId);
+        GL_GPU::DeleteBuffers(1, &this->vboVerticesId);
+        GL_GPU::DeleteBuffers(1, &this->vboTexturesId);
+        GL_GPU::DeleteBuffers(1, &this->iboTriangleStripId);
         glCheckError(GL_GPU);
-        GL_GPU::glDeleteTextures(1, &this->checkerboardTextureID);
+        GL_GPU::DeleteTextures(1, &this->checkerboardTextureID);
     }
 }
 
@@ -294,14 +297,14 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
             this->bindTextureAndActivateShader(textureIndex, useShader);
 
-            GL_GPU::glBegin(GL_POLYGON);
+            GL_GPU::Begin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF & tCoord = polygonTexCoords[i];
                 const QPointF & vCoord = polygonPoints[i];
-                GL_GPU::glTexCoord2d( tCoord.x(), tCoord.y() );
-                GL_GPU::glVertex2d( vCoord.x(), vCoord.y() );
+                GL_GPU::TexCoord2d( tCoord.x(), tCoord.y() );
+                GL_GPU::Vertex2d( vCoord.x(), vCoord.y() );
             }
-            GL_GPU::glEnd();
+            GL_GPU::End();
 
             this->unbindTextureAndReleaseShader(useShader);
         } else {
@@ -366,13 +369,13 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
 
         if ( background && internalNode->isCheckerboardEnabled() && (polygonMode != eDrawPolygonModeWipeRight) ) {
-            bool isblend = GL_GPU::glIsEnabled(GL_BLEND);
+            bool isblend = GL_GPU::IsEnabled(GL_BLEND);
             if (isblend) {
-                GL_GPU::glDisable(GL_BLEND);
+                GL_GPU::Disable(GL_BLEND);
             }
             this->drawCheckerboardTexture(rod);
             if (isblend) {
-                GL_GPU::glEnable(GL_BLEND);
+                GL_GPU::Enable(GL_BLEND);
             }
         }
 
@@ -380,28 +383,28 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
         glCheckError(GL_GPU);
 
-        GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
-        GL_GPU::glBufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), vertices);
-        GL_GPU::glEnableClientState(GL_VERTEX_ARRAY);
-        GL_GPU::glVertexPointer(2, GL_FLOAT, 0, 0);
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
+        GL_GPU::BufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), vertices);
+        GL_GPU::EnableClientState(GL_VERTEX_ARRAY);
+        GL_GPU::VertexPointer(2, GL_FLOAT, 0, 0);
 
-        GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
-        GL_GPU::glBufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), renderingTextureCoordinates);
-        GL_GPU::glClientActiveTexture(GL_TEXTURE0);
-        GL_GPU::glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        GL_GPU::glTexCoordPointer(2, GL_FLOAT, 0, 0);
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
+        GL_GPU::BufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), renderingTextureCoordinates);
+        GL_GPU::ClientActiveTexture(GL_TEXTURE0);
+        GL_GPU::EnableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL_GPU::TexCoordPointer(2, GL_FLOAT, 0, 0);
 
-        GL_GPU::glDisableClientState(GL_COLOR_ARRAY);
+        GL_GPU::DisableClientState(GL_COLOR_ARRAY);
 
-        GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, 0);
 
-        GL_GPU::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
-        GL_GPU::glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
+        GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
+        GL_GPU::DrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
-        GL_GPU::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        GL_GPU::glDisableClientState(GL_VERTEX_ARRAY);
-        GL_GPU::glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        GL_GPU::DisableClientState(GL_VERTEX_ARRAY);
+        GL_GPU::DisableClientState(GL_TEXTURE_COORD_ARRAY);
         glCheckError(GL_GPU);
 
         this->unbindTextureAndReleaseShader(useShader);
@@ -422,21 +425,21 @@ ViewerGL::Implementation::initializeGL()
     displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, true) );
 
 
-    GL_GPU::glGenBuffers(1, &this->vboVerticesId);
-    GL_GPU::glGenBuffers(1, &this->vboTexturesId);
-    GL_GPU::glGenBuffers(1, &this->iboTriangleStripId);
+    GL_GPU::GenBuffers(1, &this->vboVerticesId);
+    GL_GPU::GenBuffers(1, &this->vboTexturesId);
+    GL_GPU::GenBuffers(1, &this->iboTriangleStripId);
 
-    GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
-    GL_GPU::glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
+    GL_GPU::BufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
 
-    GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
-    GL_GPU::glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
-    GL_GPU::glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
+    GL_GPU::BufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, 0);
 
-    GL_GPU::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
-    GL_GPU::glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28 * sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
+    GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
+    GL_GPU::BufferData(GL_ELEMENT_ARRAY_BUFFER, 28 * sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
 
-    GL_GPU::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError(GL_GPU);
 
     initializeCheckerboardTexture(true);
@@ -596,14 +599,14 @@ public:
     {
         didBlend = premult != eImagePremultiplicationOpaque;
         if (didBlend) {
-            GL_GPU::glEnable(GL_BLEND);
+            GL_GPU::Enable(GL_BLEND);
         }
         switch (premult) {
         case eImagePremultiplicationPremultiplied:
-            GL_GPU::glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationUnPremultiplied:
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationOpaque:
             break;
@@ -613,7 +616,7 @@ public:
     ~BlendSetter()
     {
         if (didBlend) {
-            GL_GPU::glDisable(GL_BLEND);
+            GL_GPU::Disable(GL_BLEND);
         }
     }
 };
@@ -625,9 +628,9 @@ ViewerGL::Implementation::bindTextureAndActivateShader(int i,
                                                        bool useShader)
 {
     assert(displayTextures[i].texture);
-    GL_GPU::glActiveTexture(GL_TEXTURE0);
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
-    GL_GPU::glBindTexture( GL_TEXTURE_2D, displayTextures[i].texture->getTexID() );
+    GL_GPU::ActiveTexture(GL_TEXTURE0);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
+    GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[i].texture->getTexID() );
     // debug (so the OpenGL debugger can make a breakpoint here)
     //GLfloat d;
     //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
@@ -644,7 +647,7 @@ ViewerGL::Implementation::unbindTextureAndReleaseShader(bool useShader)
         shaderRGB->release();
     }
     glCheckError(GL_GPU);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, prevBoundTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, prevBoundTexture);
 }
 
 void
@@ -653,31 +656,31 @@ ViewerGL::Implementation::drawSelectionRectangle()
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        GL_GPU::glEnable(GL_LINE_SMOOTH);
-        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_LINE_SMOOTH);
+        GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        GL_GPU::glColor4f(0.5, 0.8, 1., 0.4);
+        GL_GPU::Color4f(0.5, 0.8, 1., 0.4);
         QPointF btmRight = selectionRectangle.bottomRight();
         QPointF topLeft = selectionRectangle.topLeft();
 
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
-        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
-        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
-        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
 
-        GL_GPU::glLineWidth(1.5);
+        GL_GPU::LineWidth(1.5);
 
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
-        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
-        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
-        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_LINE_LOOP);
+        GL_GPU::Vertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
         glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -704,29 +707,29 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
     GLuint savedTexture;
 
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib<GL_GPU> a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_SCISSOR_TEST);
-        GL_GPU::glScissor( rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y() );
+        GL_GPU::Enable(GL_SCISSOR_TEST);
+        GL_GPU::Scissor( rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y() );
 
-        GL_GPU::glEnable(GL_TEXTURE_2D);
-        GL_GPU::glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glTexCoord2d(0., 0.);
-        GL_GPU::glVertex2d( topLeft.x(), btmRight.y() );
-        GL_GPU::glTexCoord2d(0., yTilesCountF);
-        GL_GPU::glVertex2d( topLeft.x(), topLeft.y() );
-        GL_GPU::glTexCoord2d(xTilesCountF, yTilesCountF);
-        GL_GPU::glVertex2d( btmRight.x(), topLeft.y() );
-        GL_GPU::glTexCoord2d(xTilesCountF, 0.);
-        GL_GPU::glVertex2d( btmRight.x(), btmRight.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::TexCoord2d(0., 0.);
+        GL_GPU::Vertex2d( topLeft.x(), btmRight.y() );
+        GL_GPU::TexCoord2d(0., yTilesCountF);
+        GL_GPU::Vertex2d( topLeft.x(), topLeft.y() );
+        GL_GPU::TexCoord2d(xTilesCountF, yTilesCountF);
+        GL_GPU::Vertex2d( btmRight.x(), topLeft.y() );
+        GL_GPU::TexCoord2d(xTilesCountF, 0.);
+        GL_GPU::Vertex2d( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
         //glDisable(GL_SCISSOR_TEST);
     } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
     glCheckError(GL_GPU);
 }
 
@@ -747,26 +750,26 @@ ViewerGL::Implementation::drawCheckerboardTexture(const QPolygonF& polygon)
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
     GLuint savedTexture;
 
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_TEXTURE_2D);
-        GL_GPU::glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Begin(GL_POLYGON);
         for (QPolygonF::const_iterator it = polygon.begin();
              it != polygon.end();
              ++it) {
-            GL_GPU::glTexCoord2d( xTilesCountF * ( it->x() - topLeft.x() )  / ( btmRight.x() - topLeft.x() ),
+            GL_GPU::TexCoord2d( xTilesCountF * ( it->x() - topLeft.x() )  / ( btmRight.x() - topLeft.x() ),
                           yTilesCountF * ( it->y() - btmRight.y() ) / ( topLeft.y() - btmRight.y() ) );
-            GL_GPU::glVertex2d( it->x(), it->y() );
+            GL_GPU::Vertex2d( it->x(), it->y() );
         }
-        GL_GPU::glEnd();
+        GL_GPU::End();
 
 
         //glDisable(GL_SCISSOR_TEST);
     } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
     glCheckError(GL_GPU);
 }
 
@@ -774,21 +777,21 @@ void
 ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
 {
     if (mustCreateTexture) {
-        GL_GPU::glGenTextures(1, &checkerboardTextureID);
+        GL_GPU::GenTextures(1, &checkerboardTextureID);
     }
     GLuint savedTexture;
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_TEXTURE_2D);
-        GL_GPU::glBindTexture (GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture (GL_TEXTURE_2D, checkerboardTextureID);
 
-        GL_GPU::glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        GL_GPU::glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        GL_GPU::glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        GL_GPU::glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         double color1[4];
         double color2[4];
@@ -805,9 +808,9 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
         std::memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
         std::memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
 
-        GL_GPU::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
+        GL_GPU::TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
     } // GLProtectAttrib a(GL_ENABLE_BIT);
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
 
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 }

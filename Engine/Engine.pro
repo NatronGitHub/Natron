@@ -466,6 +466,7 @@ HEADERS += \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \
+    ../Global/GLObfuscate.h \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \

@@ -30,8 +30,6 @@
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
 #if QT_VERSION >= 0x050000
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
@@ -47,7 +45,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
 #include <QtOpenGL/QGLShaderProgram>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QTreeWidget>
 #include <QTabBar>
 
@@ -57,6 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
@@ -176,7 +178,7 @@ ViewerGL::resizeGL(int w,
     }
     glCheckError(GL_GPU);
     assert( w == width() && h == height() ); // if this crashes here, then the viewport size has to be stored to compute glShadow
-    GL_GPU::glViewport (0, 0, w, h);
+    GL_GPU::Viewport (0, 0, w, h);
     bool zoomSinceLastFit;
     int oldWidth, oldHeight;
     {
@@ -229,14 +231,14 @@ public:
     {
         didBlend = premult != eImagePremultiplicationOpaque;
         if (didBlend) {
-            GL_GPU::glEnable(GL_BLEND);
+            GL_GPU::Enable(GL_BLEND);
         }
         switch (premult) {
         case eImagePremultiplicationPremultiplied:
-            GL_GPU::glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationUnPremultiplied:
-            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationOpaque:
             break;
@@ -246,7 +248,7 @@ public:
     ~BlendSetter()
     {
         if (didBlend) {
-            GL_GPU::glDisable(GL_BLEND);
+            GL_GPU::Disable(GL_BLEND);
         }
     }
 };
@@ -289,15 +291,15 @@ ViewerGL::paintGL()
         // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
 
 
-        GL_GPU::glMatrixMode(GL_PROJECTION);
-        GL_GPU::glLoadIdentity();
-        GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        GL_GPU::MatrixMode(GL_PROJECTION);
+        GL_GPU::LoadIdentity();
+        GL_GPU::Ortho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         _imp->glShadow.setX( (zoomRight - zoomLeft) / width() );
         _imp->glShadow.setY( (zoomTop - zoomBottom) / height() );
         //glScalef(RoD.width, RoD.width, 1.0); // for compatibility with Nuke
         //glTranslatef(1, 1, 0);     // for compatibility with Nuke
-        GL_GPU::glMatrixMode(GL_MODELVIEW);
-        GL_GPU::glLoadIdentity();
+        GL_GPU::MatrixMode(GL_MODELVIEW);
+        GL_GPU::LoadIdentity();
         //glTranslatef(-1, -1, 0);        // for compatibility with Nuke
         //glScalef(1/RoD.width, 1./RoD.width, 1.0); // for compatibility with Nuke
 
@@ -309,7 +311,7 @@ ViewerGL::paintGL()
 
 
         GLuint savedTexture;
-        GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+        GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
         {
             GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
@@ -351,9 +353,9 @@ ViewerGL::paintGL()
                           false);
 
 
-            GL_GPU::glEnable (GL_TEXTURE_2D);
-            GL_GPU::glColor4d(1., 1., 1., 1.);
-            GL_GPU::glBlendColor(1, 1, 1, wipeMix);
+            GL_GPU::Enable (GL_TEXTURE_2D);
+            GL_GPU::Color4d(1., 1., 1., 1.);
+            GL_GPU::BlendColor(1, 1, 1, wipeMix);
 
             bool checkerboard = viewerNode->isCheckerboardEnabled();
             if (checkerboard) {
@@ -401,10 +403,10 @@ ViewerGL::paintGL()
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
-                    GL_GPU::glEnable(GL_BLEND);
-                    GL_GPU::glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+                    GL_GPU::Enable(GL_BLEND);
+                    GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
                     _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
-                    GL_GPU::glDisable(GL_BLEND);
+                    GL_GPU::Disable(GL_BLEND);
                 }
 
                 break;
@@ -416,10 +418,10 @@ ViewerGL::paintGL()
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[1]) {
-                    GL_GPU::glEnable(GL_BLEND);
-                    GL_GPU::glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+                    GL_GPU::Enable(GL_BLEND);
+                    GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
                     _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
-                    GL_GPU::glDisable(GL_BLEND);
+                    GL_GPU::Disable(GL_BLEND);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
@@ -439,11 +441,11 @@ ViewerGL::paintGL()
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
-                    GL_GPU::glEnable(GL_BLEND);
-                    GL_GPU::glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
-                    GL_GPU::glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+                    GL_GPU::Enable(GL_BLEND);
+                    GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+                    GL_GPU::BlendEquation(GL_FUNC_REVERSE_SUBTRACT);
                     _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
-                    GL_GPU::glDisable(GL_BLEND);
+                    GL_GPU::Disable(GL_BLEND);
                 }
                 break;
             }
@@ -458,11 +460,11 @@ ViewerGL::paintGL()
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
-                    GL_GPU::glEnable(GL_BLEND);
-                    GL_GPU::glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+                    GL_GPU::Enable(GL_BLEND);
+                    GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     //glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
                     _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
-                    GL_GPU::glDisable(GL_BLEND);
+                    GL_GPU::Disable(GL_BLEND);
                 }
                 break;
             }
@@ -475,22 +477,22 @@ ViewerGL::paintGL()
                 RectD canonicalTexRect;
                 texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
 
-                GL_GPU::glActiveTexture(GL_TEXTURE0);
-                GL_GPU::glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
-                GL_GPU::glBegin(GL_POLYGON);
-                GL_GPU::glTexCoord2d(0, 0); GL_GPU::glVertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
-                GL_GPU::glTexCoord2d(0, 1); GL_GPU::glVertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
-                GL_GPU::glTexCoord2d(1, 1); GL_GPU::glVertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
-                GL_GPU::glTexCoord2d(1, 0); GL_GPU::glVertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
-                GL_GPU::glEnd();
-                GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
+                GL_GPU::ActiveTexture(GL_TEXTURE0);
+                GL_GPU::BindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                GL_GPU::Begin(GL_POLYGON);
+                GL_GPU::TexCoord2d(0, 0); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
+                GL_GPU::TexCoord2d(0, 1); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
+                GL_GPU::TexCoord2d(1, 1); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
+                GL_GPU::TexCoord2d(1, 0); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
+                GL_GPU::End();
+                GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
 
                 glCheckError(GL_GPU);
             }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
-        GL_GPU::glBindTexture(GL_TEXTURE_2D, savedTexture);
+        GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
 
         glCheckError(GL_GPU);
         if (viewerNode->isOverlayEnabled()) {
@@ -526,8 +528,8 @@ ViewerGL::clearColorBuffer(double r,
     {
         GLProtectAttrib<GL_GPU> att(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
 
-        GL_GPU::glClearColor(r, g, b, a);
-        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
+        GL_GPU::ClearColor(r, g, b, a);
+        GL_GPU::Clear(GL_COLOR_BUFFER_BIT);
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
     glCheckErrorIgnoreOSXBug(GL_GPU);
 }
@@ -548,7 +550,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glDisable(GL_BLEND);
+        GL_GPU::Disable(GL_BLEND);
 
 
         ViewerNodePtr viewerNode = _imp->viewerTab->getInternalNode();
@@ -575,25 +577,25 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
                 QPoint btmLeft( canonicalFormat.left(), canonicalFormat.bottom() );
                 QPoint btmRight( canonicalFormat.right(), canonicalFormat.bottom() );
 
-                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::Begin(GL_LINES);
 
-                GL_GPU::glColor4f( _imp->displayWindowOverlayColor.redF(),
+                GL_GPU::Color4f( _imp->displayWindowOverlayColor.redF(),
                                   _imp->displayWindowOverlayColor.greenF(),
                                   _imp->displayWindowOverlayColor.blueF(),
                                   _imp->displayWindowOverlayColor.alphaF() );
-                GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
-                GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
+                GL_GPU::Vertex3f(btmRight.x(), btmRight.y(), 1);
+                GL_GPU::Vertex3f(btmLeft.x(), btmLeft.y(), 1);
 
-                GL_GPU::glVertex3f(btmLeft.x(), btmLeft.y(), 1);
-                GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
+                GL_GPU::Vertex3f(btmLeft.x(), btmLeft.y(), 1);
+                GL_GPU::Vertex3f(topLeft.x(), topLeft.y(), 1);
 
-                GL_GPU::glVertex3f(topLeft.x(), topLeft.y(), 1);
-                GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
+                GL_GPU::Vertex3f(topLeft.x(), topLeft.y(), 1);
+                GL_GPU::Vertex3f(topRight.x(), topRight.y(), 1);
 
-                GL_GPU::glVertex3f(topRight.x(), topRight.y(), 1);
-                GL_GPU::glVertex3f(btmRight.x(), btmRight.y(), 1);
+                GL_GPU::Vertex3f(topRight.x(), topRight.y(), 1);
+                GL_GPU::Vertex3f(btmRight.x(), btmRight.y(), 1);
                 
-                GL_GPU::glEnd();
+                GL_GPU::End();
                 glCheckErrorIgnoreOSXBug(GL_GPU);
             }
 
@@ -614,33 +616,33 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
                 QPointF topLeft2( dataW.left(), dataW.top() );
                 QPointF btmLeft2( dataW.left(), dataW.bottom() );
                 QPointF btmRight2( dataW.right(), dataW.bottom() );
-                GL_GPU::glLineStipple(2, 0xAAAA);
-                GL_GPU::glEnable(GL_LINE_STIPPLE);
-                GL_GPU::glBegin(GL_LINES);
-                GL_GPU::glColor4f( _imp->rodOverlayColor.redF(),
+                GL_GPU::LineStipple(2, 0xAAAA);
+                GL_GPU::Enable(GL_LINE_STIPPLE);
+                GL_GPU::Begin(GL_LINES);
+                GL_GPU::Color4f( _imp->rodOverlayColor.redF(),
                            _imp->rodOverlayColor.greenF(),
                            _imp->rodOverlayColor.blueF(),
                            _imp->rodOverlayColor.alphaF() );
-                GL_GPU::glVertex3f(btmRight2.x(), btmRight2.y(), 1);
-                GL_GPU::glVertex3f(btmLeft2.x(), btmLeft2.y(), 1);
+                GL_GPU::Vertex3f(btmRight2.x(), btmRight2.y(), 1);
+                GL_GPU::Vertex3f(btmLeft2.x(), btmLeft2.y(), 1);
 
-                GL_GPU::glVertex3f(btmLeft2.x(), btmLeft2.y(), 1);
-                GL_GPU::glVertex3f(topLeft2.x(), topLeft2.y(), 1);
+                GL_GPU::Vertex3f(btmLeft2.x(), btmLeft2.y(), 1);
+                GL_GPU::Vertex3f(topLeft2.x(), topLeft2.y(), 1);
 
-                GL_GPU::glVertex3f(topLeft2.x(), topLeft2.y(), 1);
-                GL_GPU::glVertex3f(topRight2.x(), topRight2.y(), 1);
+                GL_GPU::Vertex3f(topLeft2.x(), topLeft2.y(), 1);
+                GL_GPU::Vertex3f(topRight2.x(), topRight2.y(), 1);
 
-                GL_GPU::glVertex3f(topRight2.x(), topRight2.y(), 1);
-                GL_GPU::glVertex3f(btmRight2.x(), btmRight2.y(), 1);
-                GL_GPU::glEnd();
-                GL_GPU::glDisable(GL_LINE_STIPPLE);
+                GL_GPU::Vertex3f(topRight2.x(), topRight2.y(), 1);
+                GL_GPU::Vertex3f(btmRight2.x(), btmRight2.y(), 1);
+                GL_GPU::End();
+                GL_GPU::Disable(GL_LINE_STIPPLE);
                 glCheckErrorIgnoreOSXBug(GL_GPU);
             }
         }
 
 
         glCheckError(GL_GPU);
-        GL_GPU::glColor4f(1., 1., 1., 1.);
+        GL_GPU::Color4f(1., 1., 1., 1.);
         double scale = 1. / (1 << mipMapLevel);
 
         /*
@@ -671,16 +673,16 @@ ViewerGL::drawPickerRectangle()
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
 
-        GL_GPU::glColor3f(0.9, 0.7, 0.);
+        GL_GPU::Color3f(0.9, 0.7, 0.);
         QPointF topLeft = _imp->pickerRect.topLeft();
         QPointF btmRight = _imp->pickerRect.bottomRight();
         ///base rect
-        GL_GPU::glBegin(GL_LINE_LOOP);
-        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() ); //bottom left
-        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() ); //top left
-        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() ); //top right
-        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() ); //bottom right
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_LINE_LOOP);
+        GL_GPU::Vertex2f( topLeft.x(), btmRight.y() ); //bottom left
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() ); //top left
+        GL_GPU::Vertex2f( btmRight.x(), topLeft.y() ); //top right
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() ); //bottom right
+        GL_GPU::End();
     } // GLProtectAttrib a(GL_CURRENT_BIT);
 }
 
@@ -690,12 +692,12 @@ ViewerGL::drawPickerPixel()
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        GL_GPU::glEnable(GL_POINT_SMOOTH);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_POINT_SMOOTH);
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
-            GL_GPU::glPointSize( 1. * _imp->zoomCtx.factor() );
+            GL_GPU::PointSize( 1. * _imp->zoomCtx.factor() );
         }
 
         QPointF pos = _imp->lastPickerPos;
@@ -704,10 +706,10 @@ ViewerGL::drawPickerPixel()
         if (mipMapLevel != 0) {
             pos *= (1 << mipMapLevel);
         }
-        GL_GPU::glColor3f(0.9, 0.7, 0.);
-        GL_GPU::glBegin(GL_POINTS);
-        GL_GPU::glVertex2d( pos.x(), pos.y() );
-        GL_GPU::glEnd();
+        GL_GPU::Color3f(0.9, 0.7, 0.);
+        GL_GPU::Begin(GL_POINTS);
+        GL_GPU::Vertex2d( pos.x(), pos.y() );
+        GL_GPU::End();
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
@@ -830,19 +832,19 @@ ViewerGL::drawPersistentMessage()
     {
         GLProtectAttrib<GL_GPU> a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glDisable(GL_BLEND);
+        GL_GPU::Disable(GL_BLEND);
 
         if (_imp->persistentMessageType == 1) { // error
-            GL_GPU::glColor4f(0.5, 0., 0., 1.);
+            GL_GPU::Color4f(0.5, 0., 0., 1.);
         } else { // warning
-            GL_GPU::glColor4f(0.65, 0.65, 0., 1.);
+            GL_GPU::Color4f(0.65, 0.65, 0., 1.);
         }
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() ); //top left
-        GL_GPU::glVertex2f( topLeft.x(), bottomRight.y() ); //bottom left
-        GL_GPU::glVertex2f( bottomRight.x(), bottomRight.y() ); //bottom right
-        GL_GPU::glVertex2f( bottomRight.x(), topLeft.y() ); //top right
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() ); //top left
+        GL_GPU::Vertex2f( topLeft.x(), bottomRight.y() ); //bottom left
+        GL_GPU::Vertex2f( bottomRight.x(), bottomRight.y() ); //bottom right
+        GL_GPU::Vertex2f( bottomRight.x(), topLeft.y() ); //top right
+        GL_GPU::End();
 
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
@@ -875,7 +877,7 @@ ViewerGL::getPboID(int index)
 
     if ( index >= (int)_imp->pboIds.size() ) {
         GLuint handle;
-        GL_GPU::glGenBuffers(1, &handle);
+        GL_GPU::GenBuffers(1, &handle);
         _imp->pboIds.push_back(handle);
 
         return handle;
@@ -1060,7 +1062,7 @@ ViewerGL::isExtensionSupported(const char *extension)
     if ( where || (*extension == '\0') ) {
         return 0;
     }
-    extensions = GL_GPU::glGetString(GL_EXTENSIONS);
+    extensions = GL_GPU::GetString(GL_EXTENSIONS);
     start = extensions;
     for (;; ) {
         where = (GLubyte *) strstr( (const char *) start, extension );
@@ -1259,12 +1261,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
-    GLenum e = GL_GPU::glGetError();
+    GLenum e = GL_GPU::GetError();
     Q_UNUSED(e);
 
     GLint currentBoundPBO = 0;
-    GL_GPU::glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
-    GLenum err = GL_GPU::glGetError();
+    GL_GPU::GetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
+    GLenum err = GL_GPU::GetError();
     if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
         qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
     }
@@ -1321,7 +1323,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
 
     // bind PBO to update texture source
-    GL_GPU::glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+    GL_GPU::BindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
 
     // Note that glMapBufferARB() causes sync issue.
     // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
@@ -1330,17 +1332,17 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    GL_GPU::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+    GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // map the buffer object into client's memory
-    GLvoid *ret = GL_GPU::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    GLvoid *ret = GL_GPU::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError(GL_GPU);
     assert(ret);
     assert(ramBuffer);
     if (ret) {
         // update data directly on the mapped buffer
         std::memcpy(ret, (void*)ramBuffer, bytesCount);
-        GLboolean result = GL_GPU::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
     }
@@ -1352,7 +1354,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     tex->fillOrAllocateTexture(textureRectangle, tileRect, true, 0);
 
     // restore previously bound PBO
-    GL_GPU::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    GL_GPU::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError(GL_GPU);
 
@@ -3068,8 +3070,8 @@ ViewerGL::getTextureColorAt(int x,
 
     if (type == Texture::eDataTypeByte) {
         U32 pixel;
-        GL_GPU::glReadBuffer(GL_FRONT);
-        GL_GPU::glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
+        GL_GPU::ReadBuffer(GL_FRONT);
+        GL_GPU::ReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
         U8 red = 0, green = 0, blue = 0, alpha = 0;
         blue |= pixel;
         green |= (pixel >> 8);
@@ -3082,7 +3084,7 @@ ViewerGL::getTextureColorAt(int x,
         glCheckError(GL_GPU);
     } else if (type == Texture::eDataTypeFloat) {
         GLfloat pixel[4];
-        GL_GPU::glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        GL_GPU::ReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
         *r = (double)pixel[0];
         *g = (double)pixel[1];
         *b = (double)pixel[2];
@@ -3125,24 +3127,24 @@ ViewerGL::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    GL_GPU::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
     glCheckAttribStack(GL_GPU);
-    GL_GPU::glPushAttrib(GL_ALL_ATTRIB_BITS);
+    GL_GPU::PushAttrib(GL_ALL_ATTRIB_BITS);
     glCheckClientAttribStack(GL_GPU);
-    GL_GPU::glPushClientAttrib(GL_ALL_ATTRIB_BITS);
-    GL_GPU::glMatrixMode(GL_PROJECTION);
+    GL_GPU::PushClientAttrib(GL_ALL_ATTRIB_BITS);
+    GL_GPU::MatrixMode(GL_PROJECTION);
     glCheckProjectionStack(GL_GPU);
-    GL_GPU::glPushMatrix();
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
+    GL_GPU::PushMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
     glCheckModelviewStack(GL_GPU);
-    GL_GPU::glPushMatrix();
+    GL_GPU::PushMatrix();
 
     // set defaults to work around OFX plugin bugs
-    GL_GPU::glEnable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::Enable(GL_BLEND); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glEnable(GL_TEXTURE_2D);					//Activate texturing
     //glActiveTexture (GL_TEXTURE0);
-    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
+    GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // or TuttleHistogramKeyer doesn't work - maybe other OFX plugins rely on this
     //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // GL_MODULATE is the default, set it
 }
 
@@ -3152,14 +3154,14 @@ ViewerGL::restoreOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    GL_GPU::glBindTexture(GL_TEXTURE_2D, _imp->savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, _imp->savedTexture);
     //glActiveTexture(_imp->activeTexture);
-    GL_GPU::glMatrixMode(GL_PROJECTION);
-    GL_GPU::glPopMatrix();
-    GL_GPU::glMatrixMode(GL_MODELVIEW);
-    GL_GPU::glPopMatrix();
-    GL_GPU::glPopClientAttrib();
-    GL_GPU::glPopAttrib();
+    GL_GPU::MatrixMode(GL_PROJECTION);
+    GL_GPU::PopMatrix();
+    GL_GPU::MatrixMode(GL_MODELVIEW);
+    GL_GPU::PopMatrix();
+    GL_GPU::PopClientAttrib();
+    GL_GPU::PopAttrib();
 }
 
 void
@@ -3486,8 +3488,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
 
            if ( (type == Texture::eDataTypeByte) ) {
             std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
-            GL_GPU::glReadBuffer(GL_FRONT);
-            GL_GPU::glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+            GL_GPU::ReadBuffer(GL_FRONT);
+            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
                          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels.front());
             double rF,gF,bF,aF;
             for (U32 i = 0 ; i < pixels.size(); ++i) {
@@ -3519,7 +3521,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             glCheckError(GL_GPU);
            } else if ( (type == Texture::eDataTypeFloat)) {
             std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
-            GL_GPU::glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
+            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
                          GL_RGBA, GL_FLOAT, &pixels.front());
 
             int rowSize = rectPixel.width() * 4;

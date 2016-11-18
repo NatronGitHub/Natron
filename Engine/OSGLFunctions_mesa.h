@@ -10,6 +10,10 @@
 #define OSGLFunctions_mesa_h
 
 #include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
+#include "Global/GLObfuscate.h"
+
+#undef GLAPI
+#undef GLAPIENTRY
 
 /**********************************************************************
  * Begin system-specific stuff.

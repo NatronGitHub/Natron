@@ -28,8 +28,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
@@ -42,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -194,9 +193,9 @@ ViewerTab::drawOverlays(double time,
 
             GLdouble oglMat[16];
             transformToOpenGLMatrix(mat, oglMat);
-            GL_GPU::glMatrixMode(GL_MODELVIEW);
-            GL_GPU::glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
-            GL_GPU::glMultMatrixd(oglMat);
+            GL_GPU::MatrixMode(GL_MODELVIEW);
+            GL_GPU::GetFloatv(GL_MODELVIEW_MATRIX, oldMat);
+            GL_GPU::MultMatrixd(oglMat);
         }
 
 #endif
@@ -210,8 +209,8 @@ ViewerTab::drawOverlays(double time,
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
-            GL_GPU::glMatrixMode(GL_MODELVIEW);
-            GL_GPU::glLoadMatrixf(oldMat);
+            GL_GPU::MatrixMode(GL_MODELVIEW);
+            GL_GPU::LoadMatrixf(oldMat);
         }
 #endif
     }

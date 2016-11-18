@@ -59,10 +59,10 @@ writeEndClass(const QString& namespaceName,
         "typedef OSGLFunctions<false> GL_CPU;\n"
         "\n";
     if (namespaceName == "Natron") {
-        ots <<
+        ts <<
             "NATRON_NAMESPACE_EXIT;\n";
     } else {
-        ots <<
+        ts <<
             "} // namespace " << namespaceName << "\n";
     }
 
@@ -77,6 +77,7 @@ writeFooter(QTextStream& ts)
 struct FunctionSignature
 {
     QString funcName;
+    QString funcNameNoGL;
     QString signature;
     QString returnType;
     QString funcPNType;
@@ -318,7 +319,8 @@ main(int argc,
                     ++i;
                 }
             }
-
+            signature.funcNameNoGL = signature.funcName;
+            signature.funcNameNoGL.remove(0,2); // remove "gl"
             signatures.push_back(signature);
         } // if (foundFuncDef != -1 && foundPNFToken != -1) {
 
@@ -326,6 +328,7 @@ main(int argc,
     }
 
     writeHeader(ots_header);
+#if 0 // moved to Global/GLObfuscate.h
     ots_header <<
         "// remove global macro definitions of OpenGL functions by glad.h\n"
         "// fgrep \"#define gl\" glad.h |sed -e 's/#define/#undef/g' |awk '{print $1, $2}'\n";
@@ -333,6 +336,7 @@ main(int argc,
     for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
       ots_header << "#undef " << it->funcName << '\n';
     }
+#endif
 
     writeStartClass(namespaceName, ots_header);
 
@@ -378,7 +382,7 @@ main(int argc,
         "    }\n";
 
     for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
-        QString lineStart = "    static " +  it->returnType + " " + it->funcName;
+        QString lineStart = "    static " +  it->returnType + " " + it->funcNameNoGL;
         QString indentedSig = it->signature;
         indentedSig.replace( ", ", ",\n" + QString(lineStart.size() + 1, ' ') );
         ots_header << "\n" <<

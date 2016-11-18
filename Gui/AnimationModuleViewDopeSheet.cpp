@@ -41,6 +41,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/StringAnimationManager.h"
@@ -281,8 +282,8 @@ AnimationModuleViewPrivate::drawDopeSheetScale() const
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         const double rangePixel = _publicInterface->width();
         const double range_min = bottomLeft.x();
@@ -317,13 +318,13 @@ AnimationModuleViewPrivate::drawDopeSheetScale() const
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            GL_GPU::glColor4f(gridR, gridG, gridB, alpha);
+            GL_GPU::Color4f(gridR, gridG, gridB, alpha);
 
             // Draw the vertical lines belonging to the grid
-            GL_GPU::glBegin(GL_LINES);
-            GL_GPU::glVertex2f( value, bottomLeft.y() );
-            GL_GPU::glVertex2f( value, topRight.y() );
-            GL_GPU::glEnd();
+            GL_GPU::Begin(GL_LINES);
+            GL_GPU::Vertex2f( value, bottomLeft.y() );
+            GL_GPU::Vertex2f( value, topRight.y() );
+            GL_GPU::End();
 
             glCheckErrorIgnoreOSXBug(GL_GPU);
 
@@ -425,8 +426,8 @@ AnimationModuleViewPrivate::drawDopeSheetRows() const
 
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-        GL_GPU::glEnable(GL_BLEND);
-        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         std::list<NodeAnimPtr> nodesAnimOrdered;
         int nTopLevelTreeItems = treeView->topLevelItemCount();
@@ -473,14 +474,14 @@ AnimationModuleViewPrivate::drawDopeSheetNodeRow(QTreeWidgetItem* /*treeItem*/, 
 
     settings->getAnimationModuleEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
 
-    GL_GPU::glColor4f(rootR, rootG, rootB, rootA);
+    GL_GPU::Color4f(rootR, rootG, rootB, rootA);
 
-    GL_GPU::glBegin(GL_POLYGON);
-    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
-    GL_GPU::glVertex2f( rowRect.left(), rowRect.bottom() );
-    GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
-    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
-    GL_GPU::glEnd();
+    GL_GPU::Begin(GL_POLYGON);
+    GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::Vertex2f( rowRect.left(), rowRect.bottom() );
+    GL_GPU::Vertex2f( rowRect.right(), rowRect.bottom() );
+    GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::End();
 
     {
         AnimationModulePtr animModel = toAnimationModule(_model.lock());
@@ -528,14 +529,14 @@ AnimationModuleViewPrivate::drawDopeSheetAnimItemRow(QTreeWidgetItem* treeItem, 
         settings->getAnimationModuleEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
     }
 
-    GL_GPU::glColor4f(bkR, bkG, bkB, bkA);
+    GL_GPU::Color4f(bkR, bkG, bkB, bkA);
 
-    GL_GPU::glBegin(GL_POLYGON);
-    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
-    GL_GPU::glVertex2f( rowRect.left(), rowRect.bottom() );
-    GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
-    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
-    GL_GPU::glEnd();
+    GL_GPU::Begin(GL_POLYGON);
+    GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::Vertex2f( rowRect.left(), rowRect.bottom() );
+    GL_GPU::Vertex2f( rowRect.right(), rowRect.bottom() );
+    GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::End();
 
     AnimationModuleBasePtr model = _model.lock();
     bool drawdimed = !model->isCurveVisible(item, dimension, view);
@@ -550,13 +551,13 @@ AnimationModuleViewPrivate::drawDopeSheetNodeRowSeparation(const NodeAnimPtr ite
     QRectF nameItemRect = treeView->visualItemRect( item->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
-    GL_GPU::glLineWidth(TO_DPIY(NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX));
-    GL_GPU::glColor4f(0.f, 0.f, 0.f, 1.f);
+    GL_GPU::LineWidth(TO_DPIY(NATRON_ANIMATION_TREE_VIEW_NODE_SEPARATOR_PX));
+    GL_GPU::Color4f(0.f, 0.f, 0.f, 1.f);
 
-    GL_GPU::glBegin(GL_LINES);
-    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
-    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
-    GL_GPU::glEnd();
+    GL_GPU::Begin(GL_LINES);
+    GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::End();
 }
 
 void
@@ -610,26 +611,26 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
             GLProtectAttrib<GL_GPU> aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            GL_GPU::glLineWidth(2);
+            GL_GPU::LineWidth(2);
 
-            GL_GPU::glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+            GL_GPU::Color4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
-            GL_GPU::glBegin(GL_LINES);
+            GL_GPU::Begin(GL_LINES);
 
             //horizontal line
-            GL_GPU::glVertex2f(lineBegin, clipRectCenterY);
-            GL_GPU::glVertex2f(lineEnd, clipRectCenterY);
+            GL_GPU::Vertex2f(lineBegin, clipRectCenterY);
+            GL_GPU::Vertex2f(lineEnd, clipRectCenterY);
 
             //left end
-            GL_GPU::glVertex2d(lineBegin, clipRectZoomCoords.y1);
-            GL_GPU::glVertex2d(lineBegin, clipRectZoomCoords.y2);
+            GL_GPU::Vertex2d(lineBegin, clipRectZoomCoords.y1);
+            GL_GPU::Vertex2d(lineBegin, clipRectZoomCoords.y2);
 
 
             //right end
-            GL_GPU::glVertex2d(lineEnd, clipRectZoomCoords.y1);
-            GL_GPU::glVertex2d(lineEnd, clipRectZoomCoords.y2);
+            GL_GPU::Vertex2d(lineEnd, clipRectZoomCoords.y1);
+            GL_GPU::Vertex2d(lineEnd, clipRectZoomCoords.y2);
 
-            GL_GPU::glEnd();
+            GL_GPU::End();
         }
 
         QColor fadedColor;
@@ -637,23 +638,23 @@ AnimationModuleViewPrivate::drawDopeSheetRange(const NodeAnimPtr &item) const
         // Fill the range rect
 
 
-        GL_GPU::glColor4f(fadedColor.redF(), fadedColor.greenF(), fadedColor.blueF(), 1.f);
+        GL_GPU::Color4f(fadedColor.redF(), fadedColor.greenF(), fadedColor.blueF(), 1.f);
 
-        GL_GPU::glBegin(GL_POLYGON);
-        GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
-        GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
-        GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
-        GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
+        GL_GPU::Vertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
+        GL_GPU::Vertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
+        GL_GPU::Vertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
+        GL_GPU::End();
 
         if (isSelected) {
-            GL_GPU::glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
-            GL_GPU::glBegin(GL_LINE_LOOP);
-            GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
-            GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
-            GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
-            GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
-            GL_GPU::glEnd();
+            GL_GPU::Color4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+            GL_GPU::Begin(GL_LINE_LOOP);
+            GL_GPU::Vertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
+            GL_GPU::Vertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
+            GL_GPU::Vertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
+            GL_GPU::Vertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
+            GL_GPU::End();
         }
 
         if ( isSelected && (item->getItemType() == eAnimatedItemTypeReader) ) {
@@ -774,14 +775,14 @@ AnimationModuleViewPrivate::drawDopeSheetGroupOverlay(const NodeAnimPtr &item,
     {
         GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        GL_GPU::glColor4f(r, g, b, 0.30f);
+        GL_GPU::Color4f(r, g, b, 0.30f);
 
-        GL_GPU::glBegin(GL_QUADS);
-        GL_GPU::glVertex2f( overlayRect.left(), overlayRect.top() );
-        GL_GPU::glVertex2f( overlayRect.left(), overlayRect.bottom() );
-        GL_GPU::glVertex2f( overlayRect.right(), overlayRect.bottom() );
-        GL_GPU::glVertex2f( overlayRect.right(), overlayRect.top() );
-        GL_GPU::glEnd();
+        GL_GPU::Begin(GL_QUADS);
+        GL_GPU::Vertex2f( overlayRect.left(), overlayRect.top() );
+        GL_GPU::Vertex2f( overlayRect.left(), overlayRect.bottom() );
+        GL_GPU::Vertex2f( overlayRect.right(), overlayRect.bottom() );
+        GL_GPU::Vertex2f( overlayRect.right(), overlayRect.top() );
+        GL_GPU::End();
     }
 }
 

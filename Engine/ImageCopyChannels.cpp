@@ -30,6 +30,7 @@
 #include <QtCore/QDebug>
 
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 
 
 // disable some warnings due to unused parameters
@@ -600,28 +601,28 @@ copyUnProcessedChannelsGL(const RectI& roi,
     assert(shader);
     GLuint fboID = glContext->getOrCreateFBOId();
 
-    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-    GL::glEnable(target);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture( target, texID );
+    GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::Enable(target);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindTexture( target, texID );
 
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
     glCheckError(GL);
-    GL::glActiveTexture(GL_TEXTURE1);
-    GL::glBindTexture( target, originalTexID );
+    GL::ActiveTexture(GL_TEXTURE1);
+    GL::BindTexture( target, originalTexID );
 
-    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 
     shader->bind();
@@ -638,9 +639,9 @@ copyUnProcessedChannelsGL(const RectI& roi,
     shader->unbind();
 
     glCheckError(GL);
-    GL::glBindTexture(target, 0);
-    GL::glActiveTexture(GL_TEXTURE0);
-    GL::glBindTexture(target, 0);
+    GL::BindTexture(target, 0);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindTexture(target, 0);
     glCheckError(GL);
 
 }
