@@ -319,6 +319,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
 
         // Prevent multiple calls to knobChanged
         blockValueChanges();
+        setCanAutoExpandDimensions(false);
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -327,6 +328,7 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
         if (i == values.size() - 1 && values.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
+            setCanAutoExpandDimensions(true);
         }
         ret = setValue(values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -495,6 +497,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
 
         // Prevent multiple calls to knobChanged
         blockValueChanges();
+        setCanAutoExpandDimensions(false);
     }
 
     // Group changes under the same undo/redo action if possible
@@ -512,6 +515,7 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         if (next == keys.end() && keys.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
+            setCanAutoExpandDimensions(true);
         }
         ret = setValueAtTime(it->time, it->value, view, dimension, reason, newKeys ? &k : 0, hasChanged);
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
@@ -557,6 +561,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     if (values.size() > 1) {
         beginChanges();
         blockValueChanges();
+        setCanAutoExpandDimensions(false);
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -564,6 +569,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     for (std::size_t i = 0; i < values.size(); ++i) {
         if (i == values.size() - 1 && values.size() > 1) {
             unblockValueChanges();
+            setCanAutoExpandDimensions(true);
         }
         ret = setValueAtTime(time, values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -594,6 +600,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     beginChanges();
     blockValueChanges();
+    setCanAutoExpandDimensions(false);
 
 
     for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
@@ -612,6 +619,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
         for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].second.begin(); it!=keysPerDimension[i].second.end(); ++it) {
             if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].second.end()) {
                 unblockValueChanges();
+                setCanAutoExpandDimensions(true);
             }
             ret = setValueAtTime(it->time, it->value, view, dimension, reason, 0 /*outKey*/, hasChanged);
             hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);

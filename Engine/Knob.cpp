@@ -283,6 +283,23 @@ KnobHelper::isAutoFoldDimensionsEnabled() const
 }
 
 void
+KnobHelper::setCanAutoExpandDimensions(bool enabled)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->autoExpandEnabled = enabled;
+    }
+}
+
+bool
+KnobHelper::isAutoExpandDimensionsEnabled() const
+{
+    QMutexLocker k(&_imp->stateMutex);
+    return _imp->autoExpandEnabled;
+}
+
+
+void
 KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
 {
     {
