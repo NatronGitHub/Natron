@@ -136,6 +136,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+    const QSize smallIconSize( TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE) );
     int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     QColor currentColor;
     if (headerMode != eHeaderModeNoHeader) {
@@ -182,7 +183,7 @@ DockablePanel::DockablePanel(Gui* gui,
             appPTR->getIcon(NATRON_PIXMAP_VIEWER_CENTER, iconSize, &pixCenter);
             _imp->_centerNodeButton = new Button( QIcon(pixCenter), QString(), getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(mediumBSize);
-            _imp->_centerNodeButton->setIconSize(mediumIconSize);
+            _imp->_centerNodeButton->setIconSize(smallIconSize);
             _imp->_centerNodeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Centers the node graph on this item."), NATRON_NAMESPACE::WhiteSpaceNormal) );
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton, SIGNAL(clicked()), this, SLOT(onCenterButtonClicked()) );
@@ -210,7 +211,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
             _imp->_helpButton->setToolTip( helpString() );
             _imp->_helpButton->setFixedSize(mediumBSize);
-            _imp->_helpButton->setIconSize(mediumIconSize);
+            _imp->_helpButton->setIconSize(smallIconSize);
             _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
 
             QObject::connect( _imp->_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()) );
@@ -224,7 +225,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_hideUnmodifiedButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Show/Hide all parameters without modifications."), NATRON_NAMESPACE::WhiteSpaceNormal) );
             _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
             _imp->_hideUnmodifiedButton->setFixedSize(mediumBSize);
-            _imp->_hideUnmodifiedButton->setIconSize(mediumIconSize);
+            _imp->_hideUnmodifiedButton->setIconSize(smallIconSize);
             _imp->_hideUnmodifiedButton->setCheckable(true);
             _imp->_hideUnmodifiedButton->setChecked(false);
             QObject::connect( _imp->_hideUnmodifiedButton, SIGNAL(clicked(bool)), this, SLOT(onHideUnmodifiedButtonClicked(bool)) );
@@ -240,21 +241,21 @@ DockablePanel::DockablePanel(Gui* gui,
 
         _imp->_minimize = new Button(QIcon(pixM), QString(), _imp->_headerWidget);
         _imp->_minimize->setFixedSize(mediumBSize);
-        _imp->_minimize->setIconSize(mediumIconSize);
+        _imp->_minimize->setIconSize(smallIconSize);
         _imp->_minimize->setCheckable(true);
         _imp->_minimize->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_minimize, SIGNAL(toggled(bool)), this, SLOT(minimizeOrMaximize(bool)) );
 
         _imp->_floatButton = new Button(QIcon(pixF), QString(), _imp->_headerWidget);
         _imp->_floatButton->setFixedSize(mediumBSize);
-        _imp->_floatButton->setIconSize(mediumIconSize);
+        _imp->_floatButton->setIconSize(smallIconSize);
         _imp->_floatButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_floatButton, SIGNAL(clicked()), this, SLOT(floatPanel()) );
 
 
         _imp->_cross = new Button(QIcon(pixC), QString(), _imp->_headerWidget);
         _imp->_cross->setFixedSize(mediumBSize);
-        _imp->_cross->setIconSize(mediumIconSize);
+        _imp->_cross->setIconSize(smallIconSize);
         _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross, SIGNAL(clicked()), this, SLOT(closePanel()) );
 
@@ -304,7 +305,7 @@ DockablePanel::DockablePanel(Gui* gui,
         icUndo.addPixmap(pixUndo_gray, QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo, QString(), _imp->_headerWidget);
         _imp->_undoButton->setFixedSize(mediumBSize);
-        _imp->_undoButton->setIconSize(mediumIconSize);
+        _imp->_undoButton->setIconSize(smallIconSize);
         _imp->_undoButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Undo the last change made to this operator."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
@@ -317,7 +318,7 @@ DockablePanel::DockablePanel(Gui* gui,
         icRedo.addPixmap(pixRedo_gray, QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo, QString(), _imp->_headerWidget);
         _imp->_redoButton->setFixedSize(mediumBSize);
-        _imp->_redoButton->setIconSize(mediumIconSize);
+        _imp->_redoButton->setIconSize(smallIconSize);
         _imp->_redoButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Redo the last change undone to this operator."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
@@ -328,7 +329,7 @@ DockablePanel::DockablePanel(Gui* gui,
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore, QString(), _imp->_headerWidget);
         _imp->_restoreDefaultsButton->setFixedSize(mediumBSize);
-        _imp->_restoreDefaultsButton->setIconSize(mediumIconSize);
+        _imp->_restoreDefaultsButton->setIconSize(smallIconSize);
         _imp->_restoreDefaultsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for this operator."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton, SIGNAL(clicked()), this, SLOT(onRestoreDefaultsButtonClicked()) );

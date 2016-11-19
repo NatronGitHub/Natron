@@ -271,13 +271,16 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         ///Now draw the frame
 
         QColor fillColor;
+        bool useDefaultBackground = false;
+
         if (_clicked || _dirty) {
-            fillColor = Qt::black;
+            useDefaultBackground = true;
         } else {
             double r, g, b;
             switch (_animation) {
             case 0:
             default: {
+                useDefaultBackground = true;
                 appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
                 break;
             }
@@ -299,25 +302,29 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                               Color::floatToInt<256>(b) );
         }
 
-        double fw = frameWidth();
+        double fw = 2;
         QPen pen;
         if ( !hasFocus() ) {
-            pen.setColor(Qt::black);
+            pen.setColor( QColor(30, 30, 30) );
         } else {
-            double r, g, b;
-            appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
-            QColor c;
-            c.setRgb( Color::floatToInt<256>(r),
-                      Color::floatToInt<256>(g),
-                      Color::floatToInt<256>(b) );
-            fw = 2;
+            pen.setColor( QColor(114, 114, 114) );
         }
         p.setPen(pen);
 
 
         QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
+
+        QLinearGradient defaultBackground( roundedRect.topLeft(), roundedRect.bottomLeft() );
+        defaultBackground.setColorAt( 0, QColor(81, 81, 81) );
+        defaultBackground.setColorAt( 1, QColor(73, 73, 73) );
+
         bRect.adjust(fw, fw, -fw, -fw);
-        p.fillRect(bRect, fillColor);
+        if (useDefaultBackground) {
+            p.fillRect(bRect, defaultBackground);
+        } else {
+            p.fillRect(bRect, fillColor);
+        }
+
         double roundPixels = 3;
         QPainterPath path;
         path.addRoundedRect(roundedRect, roundPixels, roundPixels);

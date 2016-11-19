@@ -53,11 +53,16 @@
 
 #define NATRON_FONT_SIZE_6 6
 #define NATRON_FONT_SIZE_8 8
+#define NATRON_FONT_SIZE_9 9
 #define NATRON_FONT_SIZE_10 10
 #define NATRON_FONT_SIZE_11 11
 #define NATRON_FONT_SIZE_12 12
 #define NATRON_FONT_SIZE_13 13
+#ifdef __APPLE__
 #define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
+#else
+#define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_9
+#endif
 
 #define NATRON_MAX_RECENT_FILES 5
 
