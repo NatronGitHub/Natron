@@ -1590,7 +1590,9 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     tableView->setExpanded(tableModel->getItemIndex(mitem.item), true);
 
     // Create custom widgets for knobs
-    createCustomWidgetRecursively(item);
+    for (int i = 0; i < nCols; ++i) {
+        createItemCustomWidgetAtCol(item, itemRow, i);
+    }
 
     QObject::connect(item.get(), SIGNAL(labelChanged(QString,TableChangeReasonEnum)), _publicInterface, SLOT(onItemLabelChanged(QString,TableChangeReasonEnum)), Qt::UniqueConnection);
     QObject::connect(item.get(), SIGNAL(labelIconChanged(TableChangeReasonEnum)), _publicInterface, SLOT(onItemIconChanged(TableChangeReasonEnum)), Qt::UniqueConnection);

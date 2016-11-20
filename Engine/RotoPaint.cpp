@@ -2313,10 +2313,12 @@ RotoPaint::onKnobsLoaded()
     KnobButtonPtr defaultAction = _imp->ui->selectAllAction.lock();
     KnobGroupPtr defaultRole = _imp->ui->selectToolGroup.lock();;
 
-    _imp->ui->setCurrentTool(defaultAction);
-    _imp->ui->onRoleChangedInternal(defaultRole);
-    _imp->ui->onToolChangedInternal(defaultAction);
+    if (defaultAction && defaultRole) {
+        _imp->ui->setCurrentTool(defaultAction);
+        _imp->ui->onRoleChangedInternal(defaultRole);
+        _imp->ui->onToolChangedInternal(defaultAction);
 
+    }
     _imp->refreshSourceKnobs();
 }
 
@@ -2887,7 +2889,10 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
     int comp_i = -1;
 
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+
         int op = (*it)->getOperatorKnob()->getValue();
+
+
         if (!operatorSet) {
             operatorSet = true;
             comp_i = op;
@@ -2901,6 +2906,13 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
         if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeComp) {
             return false;
         }
+
+
+        // If the comp item has a mask on the merge node, forget concatenating
+        if (type == eRotoStrokeTypeComp && (*it)->getMergeNode()->getInput(2)) {
+            return false;
+        }
+
         
     }
     if (operatorSet) {
@@ -3481,7 +3493,7 @@ RotoPaintPrivate::refreshSourceKnobs()
         {
             KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
             if (maskSourceKnob) {
-                maskSourceKnob->populateChoices(inputAChoices);
+                maskSourceKnob->populateChoices(maskChoices);
                 std::string activeEntryText;
                 int curIdx = maskSourceKnob->getValue();
                 if (curIdx >= 0 && curIdx < (int)maskChoices.size()) {

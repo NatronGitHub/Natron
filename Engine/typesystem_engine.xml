@@ -221,6 +221,7 @@
     <enum-type name="OrientationEnum"/>
     <enum-type name="RotoStrokeType"/>
     <enum-type name="ViewerContextLayoutTypeEnum"/>
+    <enum-type name="TableChangeReasonEnum"/>
     </namespace-type>
     
    

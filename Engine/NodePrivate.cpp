@@ -940,8 +940,6 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
     ss << ")\n";
     ss << "del deselectedItemsSequenceArg\n";
     ss << "del selectedItemsSequenceArg\n";
-    ss << "del itemSelected\n";
-    ss << "del itemDeselected\n";
 
     std::string script = ss.str();
     std::string err;

@@ -603,12 +603,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         if (reason == eValueChangedReasonUserEdited) {
             rotoPaintEffect->refreshRotoPaintTree();
         }
-    } else if (knob == _imp->invertKnob.lock()) {
-        // Since the invert state might have changed, we may have to change the rotopaint tree layout
-        if (reason == eValueChangedReasonUserEdited) {
-            rotoPaintEffect->refreshRotoPaintTree();
-        }
-    } else if (knob == _imp->mergeAInputChoice.lock()) {
+    } else if (knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock()) {
         refreshNodesConnections(rotoPaintEffect->isRotoPaintTreeConcatenatable());
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         refreshNodesConnections(rotoPaintEffect->isRotoPaintTreeConcatenatable());
@@ -689,7 +684,7 @@ RotoDrawableItem::clearPaintBuffers()
 }
 
 void
-RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
+RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
 {
     KnobItemsTablePtr model = getModel();
     if (!model) {
@@ -747,7 +742,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
                 NodePtr inputNode = input->getNode();
                 if (inputNode->getLabel() == inputAName) {
 
-                    mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(i);;
+                    mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(i);
                     assert(mergeInputAUpstreamNode);
                     break;
                 }
@@ -890,7 +885,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
     // If the tree is concatenated, do not use this merge node, instead
     // use the global merge node at the bottom of the RotoPaint tree.
     // Otherwise connect the merge node B input to the effect.
-    if (!isTreeConcatenated) {
+    //if (!isTreeConcatenated) {
 
         // For the merge node,
         // A input index is 1
@@ -906,12 +901,13 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
             }
         }
 
-    } else {
+    //}
+    /*else {
 
         _imp->mergeNode->disconnectInput(0);
         _imp->mergeNode->disconnectInput(1);
         _imp->mergeNode->disconnectInput(2);
-    }
+    }*/
 
     // Connect to a mask if needed
     if (_imp->maskNode) {
@@ -943,12 +939,18 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
                 }
             }
         }
-        if ( _imp->mergeNode->getInput(2) != maskInputNode) {
-            //Connect the merge node mask to the mask node
-            _imp->mergeNode->replaceInput(maskInputNode, 2);
+        if (maskInputNode) {
+            if ( _imp->mergeNode->getInput(2) != maskInputNode) {
+                //Connect the merge node mask to the mask node
+                _imp->mergeNode->replaceInput(maskInputNode, 2);
+            }
+        } else {
+            if ( _imp->mergeNode->getInput(2) ) {
+                _imp->mergeNode->disconnectInput(2);
+            }
         }
     }
-
+    
 } // RotoDrawableItem::refreshNodesConnections
 
 void

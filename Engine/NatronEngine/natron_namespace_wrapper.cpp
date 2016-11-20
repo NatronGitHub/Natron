@@ -322,6 +322,21 @@ static PyObject* NATRON_NAMESPACE_MergingFunctionEnum_CppToPython_NATRON_NAMESPA
 
 }
 
+static void NATRON_NAMESPACE_TableChangeReasonEnum_PythonToCpp_NATRON_NAMESPACE_TableChangeReasonEnum(PyObject* pyIn, void* cppOut) {
+    *((::NATRON_NAMESPACE::TableChangeReasonEnum*)cppOut) = (::NATRON_NAMESPACE::TableChangeReasonEnum) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_NATRON_NAMESPACE_TableChangeReasonEnum_PythonToCpp_NATRON_NAMESPACE_TableChangeReasonEnum_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX]))
+        return NATRON_NAMESPACE_TableChangeReasonEnum_PythonToCpp_NATRON_NAMESPACE_TableChangeReasonEnum;
+    return 0;
+}
+static PyObject* NATRON_NAMESPACE_TableChangeReasonEnum_CppToPython_NATRON_NAMESPACE_TableChangeReasonEnum(const void* cppIn) {
+    int castCppIn = *((::NATRON_NAMESPACE::TableChangeReasonEnum*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX], castCppIn);
+
+}
+
 static void NATRON_NAMESPACE_RotoStrokeType_PythonToCpp_NATRON_NAMESPACE_RotoStrokeType(PyObject* pyIn, void* cppOut) {
     *((::NATRON_NAMESPACE::RotoStrokeType*)cppOut) = (::NATRON_NAMESPACE::RotoStrokeType) Shiboken::Enum::getValue(pyIn);
 
@@ -1482,6 +1497,37 @@ void init_NATRON_NAMESPACE(PyObject* module)
     }
     // End of 'MergingFunctionEnum' enum.
 
+    // Initialization of enum 'TableChangeReasonEnum'.
+    SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
+        "TableChangeReasonEnum",
+        "NatronEngine.Natron.TableChangeReasonEnum",
+        "Natron::TableChangeReasonEnum");
+    if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eTableChangeReasonInternal", (long) NATRON_NAMESPACE::eTableChangeReasonInternal))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eTableChangeReasonViewer", (long) NATRON_NAMESPACE::eTableChangeReasonViewer))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eTableChangeReasonPanel", (long) NATRON_NAMESPACE::eTableChangeReasonPanel))
+        return ;
+    // Register converter for enum 'NATRON_NAMESPACE::TableChangeReasonEnum'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX],
+            NATRON_NAMESPACE_TableChangeReasonEnum_CppToPython_NATRON_NAMESPACE_TableChangeReasonEnum);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            NATRON_NAMESPACE_TableChangeReasonEnum_PythonToCpp_NATRON_NAMESPACE_TableChangeReasonEnum,
+            is_NATRON_NAMESPACE_TableChangeReasonEnum_PythonToCpp_NATRON_NAMESPACE_TableChangeReasonEnum_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_TABLECHANGEREASONENUM_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "Natron::TableChangeReasonEnum");
+        Shiboken::Conversions::registerConverterName(converter, "TableChangeReasonEnum");
+    }
+    // End of 'TableChangeReasonEnum' enum.
+
     // Initialization of enum 'RotoStrokeType'.
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ROTOSTROKETYPE_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
         "RotoStrokeType",
@@ -1706,6 +1752,7 @@ void init_NATRON_NAMESPACE(PyObject* module)
     qRegisterMetaType< ::NATRON_NAMESPACE::ImagePremultiplicationEnum >("Natron::ImagePremultiplicationEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ImageBitDepthEnum >("Natron::ImageBitDepthEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::MergingFunctionEnum >("Natron::MergingFunctionEnum");
+    qRegisterMetaType< ::NATRON_NAMESPACE::TableChangeReasonEnum >("Natron::TableChangeReasonEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::RotoStrokeType >("Natron::RotoStrokeType");
     qRegisterMetaType< ::NATRON_NAMESPACE::OrientationEnum >("Natron::OrientationEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtonEnum >("Natron::StandardButtonEnum");
