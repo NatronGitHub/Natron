@@ -30,6 +30,8 @@
 
 #include <QDebug>
 
+#include "Global/GLIncludes.h"
+
 //#import <Cocoa/Cocoa.h>
 #include <AvailabilityMacros.h>
 
@@ -46,7 +48,6 @@
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLRenderers.h>
 
-#include "Global/GLIncludes.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/AppManager.h"
