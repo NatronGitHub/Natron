@@ -981,12 +981,16 @@ KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimensi
     }
     if (columnName != kKnobTableItemColumnLabel) {
         KnobIPtr knob = getKnobByName(columnName);
-        assert(knob);
-        // Prevent-auto dimension switching for table items knobs.
-        knob->setCanAutoFoldDimensions(false);
-        column->knob = knob;
+        if (knob) {
+            // Prevent-auto dimension switching for table items knobs.
+            knob->setCanAutoFoldDimensions(false);
+            column->knob = knob;
+            column->columnName = columnName;
+        }
+    } else {
+        column->columnName = columnName;
     }
-    column->columnName = columnName;
+
     column->dimensionIndex = dimension;
 }
 

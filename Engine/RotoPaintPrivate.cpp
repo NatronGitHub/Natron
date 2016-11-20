@@ -1042,7 +1042,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
             return;
         }
         strokeBeingPaint.reset( new RotoStrokeItem( strokeType, p->knobsTable ) );
-        strokeBeingPaint->createNodes(false);
+        strokeBeingPaint->initializeKnobsPublic();
     }
 
 
@@ -1092,7 +1092,9 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     pressureSizeKnob->setValue(pressSize);
     pressureHardnessKnob->setValue(pressHarness);
     buildUpKnob->setValue(buildUp);
-    effectKnob->setValue(effectValue);
+    if (effectKnob) {
+        effectKnob->setValue(effectValue);
+    }
     if (!prepareForLater) {
         KnobIntPtr lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue( time );

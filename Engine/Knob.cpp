@@ -2999,7 +2999,6 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
                                           DimIdx targetDimension,
                                           ViewIdx view)
 {
-    assert(obj._serializeValue);
 
     KnobIPtr thisShared = shared_from_this();
     KnobBoolBasePtr isBoolBase = toKnobBoolBase(thisShared);
