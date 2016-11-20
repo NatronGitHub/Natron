@@ -77,8 +77,6 @@ public:
 public Q_SLOTS:
 
 
-    void onComboBoxMinimumSizeChanged(const QSize& size);
-
     void onDeleteItemsActionTriggered();
     void onCopyItemsActionTriggered();
     void onPasteItemsActionTriggered();

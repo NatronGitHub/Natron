@@ -212,6 +212,33 @@ RotoStrokeItem::getBaseItemName() const
 
 }
 
+std::string
+RotoStrokeItem::getSerializationClassName() const
+{
+    switch (_imp->type) {
+        case eRotoStrokeTypeBlur:
+            return kSerializationStrokeBrushTypeBlur;
+        case eRotoStrokeTypeSmear:
+            return kSerializationStrokeBrushTypeSmear;
+        case eRotoStrokeTypeSolid:
+            return kSerializationStrokeBrushTypeSolid;
+        case eRotoStrokeTypeClone:
+            return kSerializationStrokeBrushTypeClone;
+        case eRotoStrokeTypeReveal:
+            return kSerializationStrokeBrushTypeReveal;
+        case eRotoStrokeTypeDodge:
+            return kSerializationStrokeBrushTypeDodge;
+        case eRotoStrokeTypeBurn:
+            return kSerializationStrokeBrushTypeBurn;
+        case eRotoStrokeTypeEraser:
+            return kSerializationStrokeBrushTypeEraser;
+        default:
+            break;
+    }
+    return std::string();
+
+}
+
 static void
 evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
@@ -867,34 +894,6 @@ RotoStrokeItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     {
         QMutexLocker k(&_imp->lock);
-        switch (_imp->type) {
-            case eRotoStrokeTypeBlur:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeBlur;
-                break;
-            case eRotoStrokeTypeSmear:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeSmear;
-                break;
-            case eRotoStrokeTypeSolid:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeSolid;
-                break;
-            case eRotoStrokeTypeClone:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeClone;
-                break;
-            case eRotoStrokeTypeReveal:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeReveal;
-                break;
-            case eRotoStrokeTypeDodge:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeDodge;
-                break;
-            case eRotoStrokeTypeBurn:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeBurn;
-                break;
-            case eRotoStrokeTypeEraser:
-                s->_brushType = kRotoStrokeItemSerializationBrushTypeEraser;
-                break;
-            default:
-                break;
-        }
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
             SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves p;
@@ -913,21 +912,21 @@ RotoStrokeItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase
 RotoStrokeType
 RotoStrokeItem::strokeTypeFromSerializationString(const std::string& s)
 {
-    if (s == kRotoStrokeItemSerializationBrushTypeBlur) {
+    if (s == kSerializationStrokeBrushTypeBlur) {
         return eRotoStrokeTypeBlur;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeSmear) {
+    } else if (s == kSerializationStrokeBrushTypeSmear) {
         return eRotoStrokeTypeSmear;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeSolid) {
+    } else if (s == kSerializationStrokeBrushTypeSolid) {
         return eRotoStrokeTypeSolid;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeClone) {
+    } else if (s == kSerializationStrokeBrushTypeClone) {
         return eRotoStrokeTypeClone;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeReveal) {
+    } else if (s == kSerializationStrokeBrushTypeReveal) {
         return eRotoStrokeTypeReveal;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeDodge) {
+    } else if (s == kSerializationStrokeBrushTypeDodge) {
         return eRotoStrokeTypeDodge;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeBurn) {
+    } else if (s == kSerializationStrokeBrushTypeBurn) {
         return eRotoStrokeTypeBurn;
-    } else if (s == kRotoStrokeItemSerializationBrushTypeEraser) {
+    } else if (s == kSerializationStrokeBrushTypeEraser) {
         return eRotoStrokeTypeEraser;
     } else {
         throw std::runtime_error("Unknown brush type: " + s);
@@ -944,7 +943,6 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
     RotoDrawableItem::fromSerialization(obj);
     {
         QMutexLocker k(&_imp->lock);
-        _imp->type = strokeTypeFromSerializationString(s->_brushType);
         for (std::list<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves>::const_iterator it = s->_subStrokes.begin(); it!=s->_subStrokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves stroke;
             stroke.xCurve.reset(new Curve);

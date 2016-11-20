@@ -38,7 +38,7 @@
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNodePrivate.h"
-#include "Engine/TrackerUndoCommand.h"
+#include "Engine/KnobItemsTableUndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/GLIncludes.h"
@@ -743,7 +743,7 @@ createDuplicateKnob( const std::string& knobName,
         return boost::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
-    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect, page, group, -1, KnobI::eDuplicateKnobTypeAlias, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
     if (otherNode) {
         KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
@@ -935,6 +935,42 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->motionModel = param;
         trackingPage->addKnob(param);
     }
+
+    // Add a separator before the table
+    {
+        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(""));
+        param->setName("trackTableSep");
+        trackingPage->addKnob(param);
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerAddTrackParamLabel), 1, false);
+        param->setName(kTrackerAddTrackParam);
+        param->setHintToolTip( tr(kTrackerAddTrackParamHint) );
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        trackingPage->addKnob(param);
+        _imp->addTrackFromPanelButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerRemoveTracksParamLabel), 1, false);
+        param->setName(kTrackerRemoveTracksParam);
+        param->setHintToolTip( tr(kTrackerRemoveTracksParamHint) );
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        trackingPage->addKnob(param);
+        _imp->removeSelectedTracksButton = param;
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerAverageTracksParamLabel), 1, false);
+        param->setName(kTrackerAverageTracksParam);
+        param->setHintToolTip( tr(kTrackerAverageTracksParamHint) );
+        param->setEvaluateOnChange(false);
+        trackingPage->addKnob(param);
+        _imp->averageTracksButton = param;
+
+    }
+
 } // initializeTrackingPageKnobs
 
 void
@@ -1359,12 +1395,6 @@ TrackerNode::initializeKnobs()
     initializeTrackRangeDialogKnobs(trackingPage);
     initializeViewerUIKnobs(trackingPage);
 
-    // Add a separator before the table
-    {
-        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(""));
-        param->setName("trackTableSep");
-        trackingPage->addKnob(param);
-    }
     setItemsTable(_imp->knobsTable, "trackTableSep");
 
 
@@ -1414,10 +1444,11 @@ TrackerNode::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->ui->selectAllTracksMenuAction.lock() ) {
         _imp->knobsTable->selectAll(eTableChangeReasonInternal);
     } else if ( k == _imp->ui->removeTracksMenuAction.lock() ) {
-        std::list<TrackMarkerPtr > markers;
-        _imp->knobsTable->getSelectedMarkers(&markers);
-        if ( !markers.empty() ) {
-            pushUndoCommand( new RemoveTracksCommand( markers ) );
+        std::list<KnobTableItemPtr> items = _imp->knobsTable->getSelectedItems();
+        if ( !items.empty() ) {
+            pushUndoCommand( new RemoveItemsCommand(items) );
+        } else {
+            return false;
         }
     } else if ( ( k == _imp->ui->nudgeTracksOnTopMenuAction.lock() ) && (reason == eValueChangedReasonUserEdited) ) {
         if ( !_imp->ui->nudgeSelectedTracks(0, 1) ) {
@@ -1504,6 +1535,19 @@ TrackerNode::knobChanged(const KnobIPtr& k,
 #endif
     else if ( k == _imp->disableTransform.lock() ) {
         _imp->refreshVisibilityFromTransformType();
+    } else if ( k == _imp->addTrackFromPanelButton.lock() ) {
+        TrackMarkerPtr marker = _imp->createMarker();
+        pushUndoCommand( new AddItemsCommand(marker) );
+    } else if ( k == _imp->removeSelectedTracksButton.lock() ) {
+        std::list<KnobTableItemPtr> items = _imp->knobsTable->getSelectedItems();
+        if ( !items.empty() ) {
+            pushUndoCommand( new RemoveItemsCommand(items) );
+        } else {
+            return false;
+        }
+
+    } else if ( k == _imp->averageTracksButton.lock() ) {
+        _imp->averageSelectedTracks();
     } else {
         ret = false;
     }
@@ -1633,7 +1677,6 @@ TrackerKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& item)
     TrackMarkerPtr isTrack = toTrackMarker(item);
     assert(isTrack);
     SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-    ret->verbatimTag = kSerializationTrackTag;
     isTrack->toSerialization(ret.get());
     return ret;
 }
@@ -1969,6 +2012,143 @@ TrackerNodePrivate::trackSelectedMarkers(int start, int end, int frameStep, Over
 
     tracker->trackMarkers(markers, start, end, frameStep, viewer);
 }
+
+void
+TrackerNodePrivate::averageSelectedTracks()
+{
+
+    std::list<TrackMarkerPtr > markers;
+    knobsTable->getSelectedMarkers(&markers);
+    if ( markers.empty() ) {
+        Dialogs::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
+
+        return;
+    }
+
+    TrackMarkerPtr marker = createMarker();
+    publicInterface->pushUndoCommand(new AddItemsCommand(marker));
+
+    KnobDoublePtr centerKnob = marker->getCenterKnob();
+
+#ifdef AVERAGE_ALSO_PATTERN_QUAD
+    KnobDoublePtr topLeftKnob = marker->getPatternTopLeftKnob();
+    KnobDoublePtr topRightKnob = marker->getPatternTopRightKnob();
+    KnobDoublePtr btmRightKnob = marker->getPatternBtmRightKnob();
+    KnobDoublePtr btmLeftKnob = marker->getPatternBtmLeftKnob();
+#endif
+
+    RangeD keyframesRange;
+    keyframesRange.min = INT_MAX;
+    keyframesRange.max = INT_MIN;
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        KnobDoublePtr markCenter = (*it)->getCenterKnob();
+        double mini, maxi;
+        bool hasKey = markCenter->getFirstKeyFrameTime(ViewGetSpec(0), DimIdx(0), &mini);
+        if (!hasKey) {
+            continue;
+        }
+        if (mini < keyframesRange.min) {
+            keyframesRange.min = mini;
+        }
+        hasKey = markCenter->getLastKeyFrameTime(ViewGetSpec(0), DimIdx(0), &maxi);
+
+        ///both dimensions must have keyframes
+        assert(hasKey);
+        if (maxi > keyframesRange.max) {
+            keyframesRange.max = maxi;
+        }
+    }
+
+    bool hasKeyFrame = keyframesRange.min != INT_MIN && keyframesRange.max != INT_MAX;
+    for (double t = keyframesRange.min; t <= keyframesRange.max; t += 1) {
+        Point avgCenter;
+        avgCenter.x = avgCenter.y = 0.;
+
+#ifdef AVERAGE_ALSO_PATTERN_QUAD
+        Point avgTopLeft, avgTopRight, avgBtmRight, avgBtmLeft;
+        avgTopLeft.x = avgTopLeft.y = avgTopRight.x = avgTopRight.y = avgBtmRight.x = avgBtmRight.y = avgBtmLeft.x = avgBtmLeft.y = 0;
+#endif
+
+
+        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+            KnobDoublePtr markCenter = (*it)->getCenterKnob();
+
+#ifdef AVERAGE_ALSO_PATTERN_QUAD
+            KnobDoublePtr markTopLeft = (*it)->getPatternTopLeftKnob();
+            KnobDoublePtr markTopRight = (*it)->getPatternTopRightKnob();
+            KnobDoublePtr markBtmRight = (*it)->getPatternBtmRightKnob();
+            KnobDoublePtr markBtmLeft = (*it)->getPatternBtmLeftKnob();
+#endif
+
+            avgCenter.x += markCenter->getValueAtTime(t, DimIdx(0));
+            avgCenter.y += markCenter->getValueAtTime(t, DimIdx(1));
+
+#        ifdef AVERAGE_ALSO_PATTERN_QUAD
+            avgTopLeft.x += markTopLeft->getValueAtTime(t, DimIdx(0));
+            avgTopLeft.y += markTopLeft->getValueAtTime(t, DimIdx(1));
+
+            avgTopRight.x += markTopRight->getValueAtTime(t, DimIdx(0));
+            avgTopRight.y += markTopRight->getValueAtTime(t, DimIdx(1));
+
+            avgBtmRight.x += markBtmRight->getValueAtTime(t, DimIdx(0));
+            avgBtmRight.y += markBtmRight->getValueAtTime(t, DimIdx(1));
+
+            avgBtmLeft.x += markBtmLeft->getValueAtTime(t, DimIdx(0));
+            avgBtmLeft.y += markBtmLeft->getValueAtTime(t, DimIdx(1));
+#         endif
+        }
+
+        int n = markers.size();
+        if (n) {
+            avgCenter.x /= n;
+            avgCenter.y /= n;
+
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
+            avgTopLeft.x /= n;
+            avgTopLeft.y /= n;
+
+            avgTopRight.x /= n;
+            avgTopRight.y /= n;
+
+            avgBtmRight.x /= n;
+            avgBtmRight.y /= n;
+
+            avgBtmLeft.x /= n;
+            avgBtmLeft.y /= n;
+#         endif
+        }
+
+        if (!hasKeyFrame) {
+            centerKnob->setValue(avgCenter.x, ViewSetSpec::all(), DimIdx(0));
+            centerKnob->setValue(avgCenter.y, ViewSetSpec::all(), DimIdx(1));
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
+            topLeftKnob->setValue(avgTopLeft.x, ViewSetSpec::all(), DimIdx(0));
+            topLeftKnob->setValue(avgTopLeft.y, ViewSetSpec::all(), DimIdx(1));
+            topRightKnob->setValue(avgTopRight.x, ViewSetSpec::all(), DimIdx(0));
+            topRightKnob->setValue(avgTopRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmRightKnob->setValue(avgBtmRight.x, ViewSetSpec::all(), DimIdx(0));
+            btmRightKnob->setValue(avgBtmRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmLeftKnob->setValue(avgBtmLeft.x, ViewSetSpec::all(), DimIdx(0));
+            btmLeftKnob->setValue(avgBtmLeft.y, ViewSetSpec::all(), DimIdx(1));
+#         endif
+            break;
+        } else {
+            centerKnob->setValueAtTime(t, avgCenter.x, ViewSetSpec::all(), DimIdx(0));
+            centerKnob->setValueAtTime(t, avgCenter.y, ViewSetSpec::all(), DimIdx(1));
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
+            topLeftKnob->setValueAtTime(t, avgTopLeft.x, ViewSetSpec::all(), DimIdx(0));
+            topLeftKnob->setValueAtTime(t, avgTopLeft.y, ViewSetSpec::all(), DimIdx(1));
+            topRightKnob->setValueAtTime(t, avgTopRight.x, ViewSetSpec::all(), DimIdx(0));
+            topRightKnob->setValueAtTime(t, avgTopRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmRightKnob->setValueAtTime(t, avgBtmRight.x, ViewSetSpec::all(), DimIdx(0));
+            btmRightKnob->setValueAtTime(t, avgBtmRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmLeftKnob->setValueAtTime(t, avgBtmLeft.x, ViewSetSpec::all(), DimIdx(0));
+            btmLeftKnob->setValueAtTime(t, avgBtmLeft.y, ViewSetSpec::all(), DimIdx(1));
+#         endif
+        }
+    }
+
+} // averageSelectedTracks
 
 
 

@@ -361,8 +361,8 @@ public:
     bool isItemSelected(const TableItemConstPtr& item) const;
     void setItemSelected(const TableItemPtr& item, bool select);
 
-    QWidget * cellWidget(int row, int column) const;
-    void setCellWidget(int row, int column, QWidget *widget);
+    QWidget * cellWidget(int row, int column, QModelIndex parent) const;
+    void setCellWidget(int row, int column, QModelIndex parent, QWidget *widget);
     void removeCellWidget(int row, int column);
 
     TableItemPtr itemAt(const QPoint &p) const;

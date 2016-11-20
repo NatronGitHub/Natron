@@ -47,6 +47,7 @@
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoPoint.h"
 #include "Engine/RotoUndoCommand.h"
+#include "Engine/KnobItemsTableUndoCommand.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -387,7 +388,22 @@ RotoPaint::initGeneralPageKnobs()
         _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
-    
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
+        param->setHintToolTip( tr(kRotoAddGroupParamHint) );
+        param->setName(kRotoAddGroupParam);
+        param->setAddNewLine(false);
+        _imp->addGroupButtonKnob = param;
+        generalPage->addKnob(param);
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoRemoveItemParamLabel), 1);
+        param->setHintToolTip( tr(kRotoRemoveItemParamHint) );
+        param->setName(kRotoRemoveItemParam);
+        _imp->removeItemButtonKnob = param;
+        generalPage->addKnob(param);
+    }
 } // initGeneralPageKnobs
 
 void
@@ -775,6 +791,29 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
         param->setName(kRotoInvertedParam);
         param->setDefaultValue(false);
         _imp->knobsTable->addPerItemKnobMaster(param);
+        page->addKnob(param);
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
+        param->setHintToolTip( tr(kRotoAddGroupParamHint) );
+        param->setName(kRotoAddGroupParam);
+        param->setAddNewLine(false);
+        _imp->addGroupButtonKnob = param;
+        page->addKnob(param);
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddLayerParamLabel), 1);
+        param->setHintToolTip( tr(kRotoAddLayerParamHint) );
+        param->setName(kRotoAddLayerParam);
+        param->setAddNewLine(false);
+        _imp->addLayerButtonKnob = param;
+        page->addKnob(param);
+    }
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoRemoveItemParamLabel), 1);
+        param->setHintToolTip( tr(kRotoRemoveItemParamHint) );
+        param->setName(kRotoRemoveItemParam);
+        _imp->removeItemButtonKnob = param;
         page->addKnob(param);
     }
 
@@ -2157,7 +2196,6 @@ RotoPaint::initializeKnobs()
 
     KnobPagePtr generalPage = AppManager::checkIfKnobExistsWithNameOrCreate<KnobPage>(thisShared, kRotoPaintGeneralPageParam, tr(kRotoPaintGeneralPageParamLabel));
     assert(generalPage);
-    setItemsTable(_imp->knobsTable, kRotoPaintGeneralPageParam);
 
     if (_imp->nodeType == eRotoPaintTypeComp) {
         initCompNodeKnobs(generalPage);
@@ -2169,7 +2207,11 @@ RotoPaint::initializeKnobs()
         initClonePageKnobs();
         initMotionBlurPageKnobs();
     }
-    
+
+    setItemsTable(_imp->knobsTable, kRotoInvertedParam);
+
+
+
     // The mix knob is per-item
     {
         KnobDoublePtr mixKnob = getNode()->getOrCreateHostMixKnob(generalPage);
@@ -2343,14 +2385,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             if (selection.empty()) {
                 return false;
             } else {
-                SelectedItems drawables;
-                for (std::list<KnobTableItemPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
-                    RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
-                    if (drawable) {
-                        drawables.push_back(drawable);
-                    }
-                }
-                pushUndoCommand( new RemoveCurveUndoCommand(_imp->ui, drawables) );
+                pushUndoCommand( new RemoveItemsCommand(selection) );
             }
         }
     } else if ( k == _imp->ui->smoothItemMenuAction.lock() ) {
@@ -2444,6 +2479,19 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->globalShutterKnob.lock()->setSecret(isPerShapeMB);
         _imp->globalShutterTypeKnob.lock()->setSecret(isPerShapeMB);
         _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
+    } else if ( k == _imp->removeItemButtonKnob.lock()) {
+        std::list<KnobTableItemPtr> selection = _imp->knobsTable->getSelectedItems();
+        if (selection.empty()) {
+            return false;
+        } else {
+            pushUndoCommand( new RemoveItemsCommand(selection) );
+        }
+    } else if ( k == _imp->addGroupButtonKnob.lock()) {
+        RotoLayerPtr item = addLayer();
+        pushUndoCommand(new AddItemsCommand(item));
+    } else if ( k == _imp->addLayerButtonKnob.lock()) {
+        CompNodeItemPtr item = makeCompNodeItem();
+        pushUndoCommand(new AddItemsCommand(item));
     } else {
         ret = false;
     }
@@ -2786,17 +2834,25 @@ RotoPaintKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPA
     }
     SERIALIZATION_NAMESPACE::RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization>(data);
     if (isStroke) {
-        RotoStrokeItemPtr ret(new RotoStrokeItem(RotoStrokeItem::strokeTypeFromSerializationString(isStroke->_brushType), _imp->knobsTable));
+        RotoStrokeItemPtr ret(new RotoStrokeItem(RotoStrokeItem::strokeTypeFromSerializationString(isStroke->verbatimTag), _imp->knobsTable));
         ret->initializeKnobsPublic();
         ret->fromSerialization(*isStroke);
         return ret;
     }
-    
+
     // By default, assume this is a layer
-    RotoLayerPtr ret(new RotoLayer(_imp->knobsTable));
-    ret->initializeKnobsPublic();
-    ret->fromSerialization(*data);
-    return ret;
+    if (data->verbatimTag == kSerializationRotoGroupTag) {
+        RotoLayerPtr ret(new RotoLayer(_imp->knobsTable));
+        ret->initializeKnobsPublic();
+        ret->fromSerialization(*data);
+        return ret;
+    } else if (data->verbatimTag == kSerializationCompLayerTag) {
+        CompNodeItemPtr ret(new CompNodeItem(_imp->knobsTable));
+        ret->initializeKnobsPublic();
+        ret->fromSerialization(*data);
+        return ret;
+    }
+    return KnobTableItemPtr();
     
 }
 
@@ -2807,10 +2863,10 @@ RotoPaintKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& ite
     RotoLayerPtr isLayer = toRotoLayer(item);
     BezierPtr isBezier = toBezier(item);
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
-    if (isLayer) {
+    CompNodeItemPtr compItem = toCompNodeItem(item);
+    if (isLayer || compItem) {
         SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr ret(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-        ret->verbatimTag = "Layer";
-        isLayer->toSerialization(ret.get());
+        item->toSerialization(ret.get());
         return ret;
     } else if (isBezier) {
         SERIALIZATION_NAMESPACE::BezierSerializationPtr ret(new SERIALIZATION_NAMESPACE::BezierSerialization(isBezier->isOpenBezier()));
@@ -2841,14 +2897,11 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
                 return false;
             }
         }
-        RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
-        if (!isStroke) {
-            assert( toBezier(*it) );
-        } else {
-            if (isStroke->getBrushType() != eRotoStrokeTypeSolid) {
-                return false;
-            }
+        RotoStrokeType type = (*it)->getBrushType();
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeComp) {
+            return false;
         }
+        
     }
     if (operatorSet) {
         *blendingMode = comp_i;
@@ -3048,18 +3101,19 @@ RotoPaint::refreshRotoPaintTree()
 
             // If we concatenate the tree, connect the global merge to the effect
 
-            NodePtr effectNode = (*it)->getEffectNode();
-            assert(effectNode);
-            //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<
-            //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
-            globalMerge->connectInput(effectNode, globalMergeIndex);
+            NodePtr mergeInputA = (*it)->getMergeNode()->getInput(1);
+            if (mergeInputA) {
+                //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<
+                //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
+                globalMerge->connectInput(mergeInputA, globalMergeIndex);
 
-            // Refresh for next node
-            NodePtr nextMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
-            if (nextMerge != globalMerge) {
-                assert( !nextMerge->getInput(0) );
-                nextMerge->connectInput(globalMerge, 0);
-                globalMerge = nextMerge;
+                // Refresh for next node
+                NodePtr nextMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+                if (nextMerge != globalMerge) {
+                    assert( !nextMerge->getInput(0) );
+                    nextMerge->connectInput(globalMerge, 0);
+                    globalMerge = nextMerge;
+                }
             }
         }
     }
@@ -3224,6 +3278,20 @@ RotoPaint::getLayerForNewItem()
     return parentLayer;
 }
 
+CompNodeItemPtr
+RotoPaint::makeCompNodeItem()
+{
+    CompNodeItemPtr item(new CompNodeItem(_imp->knobsTable));
+
+    RotoLayerPtr parentLayer = getLayerForNewItem();
+    _imp->knobsTable->insertItem(0, item, parentLayer, eTableChangeReasonInternal);
+
+    _imp->knobsTable->beginEditSelection();
+    _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
+    _imp->knobsTable->addToSelection(item, eTableChangeReasonInternal);
+    _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
+    return item;
+}
 
 
 BezierPtr

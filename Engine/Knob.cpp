@@ -2419,7 +2419,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                     const KnobPagePtr& page,
                                     const KnobGroupPtr& group,
                                     int indexInParent,
-                                    bool makeAlias,
+                                    KnobI::DuplicateKnobTypeEnum duplicateType,
                                     const std::string& newScriptName,
                                     const std::string& newLabel,
                                     const std::string& newToolTip,
@@ -2495,7 +2495,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         output = newKnob;
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
-        if (!makeAlias) {
+        if (duplicateType != eDuplicateKnobTypeAlias) {
             newKnob->populateChoices( isChoice->getEntries(), isChoice->getEntriesHelp() );
         }
         output = newKnob;
@@ -2580,31 +2580,38 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     if (isUserKnob && otherIsEffect) {
         otherIsEffect->getNode()->declarePythonKnobs();
     }
-    if (!makeAlias && otherIsEffect && isEffect) {
-        NodeCollectionPtr collec;
-        collec = isEffect->getNode()->getGroup();
+    switch (duplicateType) {
+        case KnobI::eDuplicateKnobTypeAlias: {
+            setKnobAsAliasOfThis(output, true);
+        }   break;
+        case KnobI::eDuplicateKnobTypeExprLinked: {
+            if (otherIsEffect && isEffect) {
+                NodeCollectionPtr collec;
+                collec = isEffect->getNode()->getGroup();
 
-        NodeGroupPtr isCollecGroup = toNodeGroup(collec);
-        std::stringstream ss;
-        if (isCollecGroup) {
-            ss << "thisGroup." << newScriptName;
-        } else {
-            ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
-        }
-        if (output->getNDimensions() > 1) {
-            ss << ".get()[dimension]";
-        } else {
-            ss << ".get()";
-        }
+                NodeGroupPtr isCollecGroup = toNodeGroup(collec);
+                std::stringstream ss;
+                if (isCollecGroup) {
+                    ss << "thisGroup." << newScriptName;
+                } else {
+                    ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
+                }
+                if (output->getNDimensions() > 1) {
+                    ss << ".get()[dimension]";
+                } else {
+                    ss << ".get()";
+                }
 
-        try {
-            std::string script = ss.str();
-            clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
-            setExpression(DimSpec::all(), ViewSetSpec::all(), script, false /*hasRetVariable*/, false /*failIfInvalid*/);
-        } catch (...) {
-        }
-    } else {
-        setKnobAsAliasOfThis(output, true);
+                try {
+                    std::string script = ss.str();
+                    clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
+                    setExpression(DimSpec::all(), ViewSetSpec::all(), script, false /*hasRetVariable*/, false /*failIfInvalid*/);
+                } catch (...) {
+                }
+            }
+        }   break;
+        case KnobI::eDuplicateKnobTypeCopy:
+            break;
     }
     if (refreshParams) {
         otherHolder->recreateUserKnobs(true);

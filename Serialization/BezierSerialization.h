@@ -25,8 +25,6 @@
 #include "Serialization/BezierCPSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
-#define kSerializationOpenedBezierTag "OpenedBezier"
-#define kSerializationClosedBezierTag "Bezier"
 
 SERIALIZATION_NAMESPACE_ENTER;
 
@@ -40,7 +38,6 @@ public:
         : KnobTableItemSerialization()
         , _isOpenBezier(openedBezier)
     {
-        openedBezier ? verbatimTag = kSerializationOpenedBezierTag : kSerializationClosedBezierTag;
         _emitMap = false;
     }
 

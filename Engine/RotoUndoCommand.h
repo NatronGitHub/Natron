@@ -205,36 +205,6 @@ private:
 };
 
 
-class RemoveCurveUndoCommand
-    : public UndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(RemoveCurveUndoCommand)
-
-private:
-    struct RemovedCurve
-    {
-        RotoDrawableItemPtr curve;
-        RotoLayerPtr layer;
-        int indexInLayer;
-    };
-
-public:
-
-
-    RemoveCurveUndoCommand(const RotoPaintInteractPtr& roto,
-                           const std::list<RotoDrawableItemPtr > & curves);
-
-    virtual ~RemoveCurveUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-    RotoPaintInteractWPtr _roto;
-    bool _firstRedoCalled;
-    std::list<RemovedCurve> _curves;
-};
-
 class AddStrokeUndoCommand
     : public UndoCommand
 {

@@ -216,12 +216,15 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     containerLayout->addWidget(ret->getFieldContainer());
 
     foundItem->columnItems[col].guiKnob = ret;
-    
+
+
+    QModelIndex itemIdx = tableModel->getItemIndex(foundItem->item);
+
     // Set the widget
     {
         ModelItemsVec::iterator foundItem = findItem(item);
         assert((int)foundItem->columnItems.size() == tableModel->columnCount());
-        tableView->setCellWidget(row, col, container);
+        tableView->setCellWidget(row, col, itemIdx.parent(), container);
     }
     
     return true;
@@ -640,26 +643,6 @@ KnobItemsTableGui::getInternalTable() const
     return _imp->internalModel.lock();
 }
 
-void
-KnobItemsTableGui::onComboBoxMinimumSizeChanged(const QSize& size)
-{
-    ComboBox* combobox = dynamic_cast<ComboBox*>(sender());
-    if (!combobox) {
-        return;
-    }
-#if QT_VERSION < 0x050000
-    _imp->tableView->header()->setResizeMode(QHeaderView::Fixed);
-#else
-    _imp->tableView->header()->setSectionResizeMode(QHeaderView::Fixed);
-#endif
-    int col = combobox->property("ComboboxColumn").toInt();
-    _imp->tableView->setColumnWidth( col, size.width() );
-#if QT_VERSION < 0x050000
-    _imp->tableView->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
-    _imp->tableView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
-}
 
 
 class RemoveItemsUndoCommand
@@ -1545,7 +1528,7 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     // The item should not exist in the table GUI yet.
     assert(findItem(item) == items.end());
     
-    int itemRow = item->getItemRow();
+    int itemRow = item->getIndexInParent();
     
     int nCols = tableModel->columnCount();
     

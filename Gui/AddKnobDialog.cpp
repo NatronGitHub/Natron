@@ -1852,7 +1852,7 @@ AddKnobDialog::onOkClicked()
                                                                     page,
                                                                     group,
                                                                     oldIndexInParent,
-                                                                    true,
+                                                                    KnobI::eDuplicateKnobTypeAlias,
                                                                     stdName,
                                                                     _imp->labelLineEdit->text().toStdString(),
                                                                     _imp->tooltipArea->toPlainText().toStdString(),

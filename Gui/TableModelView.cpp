@@ -1451,18 +1451,20 @@ TableView::closePersistentEditor(const TableItemPtr &item)
 
 QWidget*
 TableView::cellWidget(int row,
-                      int column) const
+                      int column,
+                      QModelIndex parent) const
 {
-    QModelIndex index = model()->index( row, column, QModelIndex() );
+    QModelIndex index = model()->index( row, column, parent );
     return QAbstractItemView::indexWidget(index);
 }
 
 void
 TableView::setCellWidget(int row,
                          int column,
+                         QModelIndex parent,
                          QWidget *widget)
 {
-    QModelIndex index = model()->index( row, column, QModelIndex() );
+    QModelIndex index = model()->index( row, column, parent );
     QAbstractItemView::setIndexWidget(index, widget);
 }
 
@@ -1470,7 +1472,7 @@ void
 TableView::removeCellWidget(int row,
                             int column)
 {
-    setCellWidget(row, column, 0);
+    setCellWidget(row, column, QModelIndex(), 0);
 }
 
 TableItemPtr

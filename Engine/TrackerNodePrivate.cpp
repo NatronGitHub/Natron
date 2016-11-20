@@ -2622,7 +2622,7 @@ TrackerNode::onOverlayPenDown(double time,
         if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
             marker->setKeyFrame(time, ViewSetSpec(0), 0);
         }
-        pushUndoCommand( new AddTrackCommand(marker) );
+        pushUndoCommand( new AddItemsCommand(marker) );
         _imp->ui->refreshSelectedMarkerTexture();
         didSomething = true;
     }

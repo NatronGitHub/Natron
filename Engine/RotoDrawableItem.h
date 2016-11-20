@@ -200,7 +200,6 @@ public:
     NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
 
-
     void resetTransformCenter();
 
     virtual void initializeKnobs() OVERRIDE;
@@ -258,7 +257,17 @@ public:
     }
 
     virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
+
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
 };
+
+inline CompNodeItemPtr
+toCompNodeItem(const KnobHolderPtr& item)
+{
+    return boost::dynamic_pointer_cast<CompNodeItem>(item);
+}
 
 NATRON_NAMESPACE_EXIT;
 

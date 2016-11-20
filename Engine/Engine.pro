@@ -127,6 +127,7 @@ SOURCES += \
     KnobFile.cpp \
     KnobTypes.cpp \
     KnobItemsTable.cpp \
+    KnobItemsTableUndoCommand.cpp \
     LibraryBinary.cpp \
     Log.cpp \
     Lut.cpp \
@@ -214,7 +215,6 @@ SOURCES += \
     TrackerNodePrivate.cpp \
     TrackerNodeTransformExport.cpp \
     TrackScheduler.cpp \
-    TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     Utils.cpp \
@@ -348,6 +348,7 @@ HEADERS += \
     KnobFile.h \
     KnobTypes.h \
     KnobItemsTable.h \
+    KnobItemsTableUndoCommand.h \
     LibraryBinary.h \
     Log.h \
     LogEntry.h \
@@ -449,7 +450,6 @@ HEADERS += \
     TrackerNodePrivate.h \
     TrackerParamsProvider.h \
     TrackScheduler.h \
-    TrackerUndoCommand.h \
     TrackMarker.h \
     TLSHolder.h \
     TLSHolderImpl.h \

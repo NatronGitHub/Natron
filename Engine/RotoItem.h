@@ -64,6 +64,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintRevealBaseName "Reveal"
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
+#define kRotoCompItemBaseName "Layer"
 
 
 #define kParamRotoItemEnabled "enabled"

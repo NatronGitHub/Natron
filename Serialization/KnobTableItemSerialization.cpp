@@ -31,9 +31,8 @@ SERIALIZATION_NAMESPACE_ENTER;
 
 static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const std::string& tag)
 {
-    if (tag == kSerializationRotoLayerTag) {
+    if (tag == kSerializationRotoGroupTag || tag == kSerializationCompLayerTag) {
         KnobTableItemSerializationPtr ret(new KnobTableItemSerialization);
-        ret->verbatimTag = kSerializationRotoLayerTag;
         return ret;
     } else if (tag == kSerializationClosedBezierTag) {
         BezierSerializationPtr ret(new BezierSerialization(false));
@@ -41,7 +40,15 @@ static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const s
     } else if (tag == kSerializationOpenedBezierTag) {
         BezierSerializationPtr ret(new BezierSerialization(true));
         return ret;
-    } else if (tag == kSerializationStrokeTag) {
+    } else if (tag == kSerializationStrokeBrushTypeSolid ||
+               tag == kSerializationStrokeBrushTypeEraser ||
+               tag == kSerializationStrokeBrushTypeClone ||
+               tag == kSerializationStrokeBrushTypeReveal ||
+               tag == kSerializationStrokeBrushTypeBlur ||
+               tag == kSerializationStrokeBrushTypeSharpen ||
+               tag == kSerializationStrokeBrushTypeSmear ||
+               tag == kSerializationStrokeBrushTypeDodge ||
+               tag == kSerializationStrokeBrushTypeBurn) {
         RotoStrokeItemSerializationPtr ret(new RotoStrokeItemSerialization);
         return ret;
     } else if (tag == kSerializationTrackTag) {
@@ -124,6 +131,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
             if (!child) {
                 continue;
             }
+            child->verbatimTag = nodeTag;
             child->decode(childrenNode[i]);
             children.push_back(child);
         }
@@ -200,6 +208,7 @@ KnobItemsTableSerialization::decode(const YAML::Node& node)
         for (std::size_t i = 0; i < itemsNode.size(); ++i) {
             const std::string& nodeTag = itemsNode[i].Tag();
             KnobTableItemSerializationPtr s = createSerializationObjectForItemTag(nodeTag);
+            s->verbatimTag = nodeTag;
             if (!s) {
                 continue;
             }

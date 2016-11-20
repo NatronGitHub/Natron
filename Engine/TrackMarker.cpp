@@ -139,6 +139,12 @@ TrackMarker::getBaseItemName() const
     return tr("Track").toStdString();
 }
 
+std::string
+TrackMarker::getSerializationClassName() const
+{
+    return kSerializationTrackTag;
+}
+
 void
 TrackMarker::initializeKnobs()
 {

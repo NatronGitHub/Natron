@@ -1161,6 +1161,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
         return;
     }
 
+    serialization->verbatimTag = getSerializationClassName();
 
     std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
@@ -1224,6 +1225,9 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
         return;
     }
 
+    if (serialization->verbatimTag != getSerializationClassName()) {
+        return;
+    }
     std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
         QMutexLocker k(&_imp->lock);
@@ -1518,7 +1522,10 @@ KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
     if (!masterKnob) {
         return;
     }
-    
+
+    // You cannot add knobs that do not belong to the node
+    assert(masterKnob->getHolder() == getNode()->getEffectInstance());
+
     masterKnob->setEnabled(false);
     masterKnob->setIsPersistent(false);
 
@@ -1855,7 +1862,7 @@ KnobItemsTable::createMasterKnobDuplicateOnItem(const KnobTableItemPtr& item, co
         assert(false);
         return KnobIPtr();
     }
-    KnobIPtr ret = masterKnob->createDuplicateOnHolder(item, KnobPagePtr(), KnobGroupPtr(), -1, true, paramName, masterKnob->getLabel(), masterKnob->getHintToolTip(), false /*refreshParamsGui*/, false /*isUserKnob*/);
+    KnobIPtr ret = masterKnob->createDuplicateOnHolder(item, KnobPagePtr(), KnobGroupPtr(), -1 /*index in parent*/, KnobI::eDuplicateKnobTypeCopy /*dupType*/, paramName, masterKnob->getLabel(), masterKnob->getHintToolTip(), false /*refreshParamsGui*/, false /*isUserKnob*/);
     if (ret) {
         // Set back persistence to true on the item knob
         ret->setIsPersistent(true);

@@ -132,7 +132,7 @@ public:
 
     KnobIntWPtr timeOffset;
     KnobChoiceWPtr timeOffsetMode;
-
+    KnobDoubleWPtr mixKnob;
 
     RotoDrawableItemPrivate()
     : effectNode()
@@ -283,97 +283,97 @@ RotoDrawableItem::createNodes(bool connectNodes)
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
         }
         assert(_imp->effectNode);
+    }
+
+    if (type == eRotoStrokeTypeBlur) {
+        assert(isStroke);
+        // Link effect knob to size
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+        knob->slaveTo(isStroke->getBrushEffectKnob());
+
+    } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
+        // Link transform knobs
+        KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+        translateKnob->slaveTo(isStroke->getBrushCloneTranslateKnob());
+
+        KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+        rotateKnob->slaveTo(isStroke->getBrushCloneRotateKnob());
+
+        KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+        scaleKnob->slaveTo(isStroke->getBrushCloneScaleKnob());
+
+        KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+        uniformKnob->slaveTo(isStroke->getBrushCloneScaleUniformKnob());
+
+        KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+        skewxKnob->slaveTo(isStroke->getBrushCloneSkewXKnob());
+
+        KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+        skewyKnob->slaveTo(isStroke->getBrushCloneSkewYKnob());
+
+        KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+        skewOrderKnob->slaveTo(isStroke->getBrushCloneSkewOrderKnob());
+
+        KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+        centerKnob->slaveTo(isStroke->getBrushCloneCenterKnob());
+
+        KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+        filterKnob->slaveTo(isStroke->getBrushCloneFilterKnob());
+
+        KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+        boKnob->slaveTo(isStroke->getBrushCloneBlackOutsideKnob());
 
 
-        if (type == eRotoStrokeTypeBlur) {
-            assert(isStroke);
-            // Link effect knob to size
-            KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            knob->slaveTo(isStroke->getBrushEffectKnob());
+    }
 
-        } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-            // Link transform knobs
-            KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            translateKnob->slaveTo(isStroke->getBrushCloneTranslateKnob());
+    if (type == eRotoStrokeTypeSmear) {
+        // For smear setup the type parameter
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
+        assert(knob);
+        KnobChoicePtr typeChoice = toKnobChoice(knob);
+        assert(typeChoice);
+        typeChoice->setValue(1);
+    }
 
-            KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            rotateKnob->slaveTo(isStroke->getBrushCloneRotateKnob());
+    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) || (type == eRotoStrokeTypeComp) ) {
+        {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
-            KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            scaleKnob->slaveTo(isStroke->getBrushCloneScaleKnob());
-
-            KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            uniformKnob->slaveTo(isStroke->getBrushCloneScaleUniformKnob());
-
-            KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            skewxKnob->slaveTo(isStroke->getBrushCloneSkewXKnob());
-
-            KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            skewyKnob->slaveTo(isStroke->getBrushCloneSkewYKnob());
-
-            KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            skewOrderKnob->slaveTo(isStroke->getBrushCloneSkewOrderKnob());
-
-            KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            centerKnob->slaveTo(isStroke->getBrushCloneCenterKnob());
-
-            KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            filterKnob->slaveTo(isStroke->getBrushCloneFilterKnob());
-
-            KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            boKnob->slaveTo(isStroke->getBrushCloneBlackOutsideKnob());
-
-
-        }
-
-        if (type == eRotoStrokeTypeSmear) {
-            // For smear setup the type parameter
-            KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
-            assert(knob);
-            KnobChoicePtr typeChoice = toKnobChoice(knob);
-            assert(typeChoice);
-            typeChoice->setValue(1);
-        }
-
-        if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) || (type == eRotoStrokeTypeComp) ) {
-            {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
-                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect ));
-                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-
-                _imp->timeOffsetNode = app->createNode(args);
-                assert(_imp->timeOffsetNode);
-                if (!_imp->timeOffsetNode) {
-                    throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET)).toStdString());
-                }
-
-                // Link time offset knob
-                KnobIPtr offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-                offsetKnob->slaveTo(_imp->timeOffset.lock());
+            _imp->timeOffsetNode = app->createNode(args);
+            assert(_imp->timeOffsetNode);
+            if (!_imp->timeOffsetNode) {
+                throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET)).toStdString());
             }
 
-            // Do not create a framehold node for the comp item
-            if (type != eRotoStrokeTypeComp) {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
-                CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect ));
-                args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
-                args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-                _imp->frameHoldNode = app->createNode(args);
-                assert(_imp->frameHoldNode);
-                if (!_imp->frameHoldNode) {
-                    throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD)).toStdString());
-                }
-                // Link frame hold first frame knob
-                KnobIPtr offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-                offsetKnob->slaveTo(_imp->timeOffset.lock());
+            // Link time offset knob
+            KnobIPtr offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+            offsetKnob->slaveTo(_imp->timeOffset.lock());
+        }
+
+        // Do not create a framehold node for the comp item
+        if (type != eRotoStrokeTypeComp) {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
+            CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            _imp->frameHoldNode = app->createNode(args);
+            assert(_imp->frameHoldNode);
+            if (!_imp->frameHoldNode) {
+                throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD)).toStdString());
             }
+            // Link frame hold first frame knob
+            KnobIPtr offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+            offsetKnob->slaveTo(_imp->timeOffset.lock());
         }
     }
+
 
 
     // Create the merge node used by any roto item
@@ -621,7 +621,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
 } // RotoDrawableItem::onKnobValueChanged
 
 
-
 NodePtr
 RotoDrawableItem::getEffectNode() const
 {
@@ -757,7 +756,6 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
 
         mergeInputB = upstreamNode;
 
-
         if (mergeInputAUpstreamNode) {
             mergeInputA = _imp->timeOffsetNode;
             if (_imp->timeOffsetNode->getInput(0) != mergeInputAUpstreamNode) {
@@ -765,7 +763,7 @@ RotoDrawableItem::refreshNodesConnections(bool isTreeConcatenated)
             }
         } else {
             // No node upstream, make the merge be a pass-through of input B (upstreamNode)
-            mergeInputA.reset();
+            mergeInputA = upstreamNode;
             if ( _imp->timeOffsetNode->getInput(0) ) {
                 _imp->timeOffsetNode->disconnectInput(0);
             }
@@ -1323,6 +1321,18 @@ CompNodeItem::getBoundingBox(double /*time*/, ViewGetSpec /*view*/) const
     return RectD();
 }
 
+std::string
+CompNodeItem::getBaseItemName() const
+{
+    return std::string(kRotoCompItemBaseName);
+}
+
+std::string
+CompNodeItem::getSerializationClassName() const
+{
+    return kSerializationCompLayerTag;
+}
+
 void
 RotoDrawableItem::initializeKnobs()
 {
@@ -1332,7 +1342,7 @@ RotoDrawableItem::initializeKnobs()
     KnobHolderPtr thisShared = shared_from_this();
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     Bezier* isBezier = dynamic_cast<Bezier*>(this);
-    RotoStrokeType type = isStroke ? isStroke->getBrushType() : eRotoStrokeTypeSolid;
+    RotoStrokeType type = getBrushType();
 
     // Only solids may have an opacity
     if (type == eRotoStrokeTypeSolid) {
@@ -1365,7 +1375,7 @@ RotoDrawableItem::initializeKnobs()
         std::vector<std::string> tooltips;
         Merge::getOperatorStrings(&operators, &tooltips);
         param->populateChoices(operators, tooltips);
-        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeCopy) );
+        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeOver) );
         _imp->compOperator = param;
     }
 
@@ -1415,9 +1425,11 @@ RotoDrawableItem::initializeKnobs()
         _imp->timeOffset = createDuplicateOfTableKnob<KnobInt>(kRotoBrushTimeOffsetParam);
         if (type != eRotoStrokeTypeComp) {
             _imp->timeOffsetMode = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushTimeOffsetModeParam);
+        } else {
+            _imp->mergeMaskInputChoice = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemMergeMaskParam);
         }
     }
-
+    _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kHostMixingKnobName);
 
     createNodes();
 

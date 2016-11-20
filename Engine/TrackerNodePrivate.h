@@ -50,7 +50,7 @@
 #include "Engine/Texture.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackerParamsProvider.h"
-#include "Engine/TrackerUndoCommand.h"
+#include "Engine/KnobItemsTableUndoCommand.h"
 
 #include "Global/GLIncludes.h"
 
@@ -285,6 +285,18 @@
 
 #define kTrackerParamPerTrackParamsSeparator "perTrackParams"
 #define kTrackerParamPerTrackParamsSeparatorLabel "Per-Track Parameters"
+
+#define kTrackerAddTrackParam "addTrackButton"
+#define kTrackerAddTrackParamLabel "New Track"
+#define kTrackerAddTrackParamHint "Creates a new track marker"
+
+#define kTrackerRemoveTracksParam "removeTracksButton"
+#define kTrackerRemoveTracksParamLabel "Remove"
+#define kTrackerRemoveTracksParamHint "Remove the selected track(s)"
+
+#define kTrackerAverageTracksParam "averageTracksButton"
+#define kTrackerAverageTracksParamLabel "Average"
+#define kTrackerAverageTracksParamHint "Average the selected tracks into a single track"
 
 #define kTrackerParamExportDataSeparator "exportDataSection"
 #define kTrackerParamExportDataSeparatorLabel "Export"
@@ -657,6 +669,10 @@ public:
     KnobDoubleWPtr cornerPinMatrix;
     KnobChoiceWPtr cornerPinOverlayPoints;
 
+    KnobButtonWPtr addTrackFromPanelButton;
+    KnobButtonWPtr averageTracksButton;
+    KnobButtonWPtr removeSelectedTracksButton;
+
     NodeWPtr cornerPinNode, transformNode;
 
     boost::shared_ptr<TrackerKnobItemsTable> knobsTable;
@@ -756,6 +772,8 @@ public:
     virtual double getPreBlurSigma() const OVERRIDE FINAL;
     virtual RectD getNormalizationRoD(double time, ViewIdx view) const OVERRIDE FINAL;
     ////////////////////
+
+    void averageSelectedTracks();
 };
 
 

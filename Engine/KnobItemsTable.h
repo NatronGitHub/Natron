@@ -252,6 +252,10 @@ public:
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE;
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE;
 
+    /**
+     * @brief Used to set identify the class in the serialization.
+     **/
+    virtual std::string getSerializationClassName() const = 0;
 
 
 

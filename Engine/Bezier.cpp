@@ -4040,6 +4040,12 @@ Bezier::getBaseItemName() const
     return _imp->baseName;
 }
 
+std::string
+Bezier::getSerializationClassName() const
+{
+    return _imp->isOpenBezier ? kSerializationOpenedBezierTag : kSerializationClosedBezierTag;
+}
+
 void
 Bezier::initializeKnobs()
 {

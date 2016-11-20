@@ -559,8 +559,8 @@ void
 ProgressTaskInfo::setCellWidgets(int row,
                                  TableView* view)
 {
-    view->setCellWidget(row, COL_PROGRESS, _imp->progressBar);
-    view->setCellWidget(row, COL_CONTROLS, _imp->controlsButtonsContainer);
+    view->setCellWidget(row, COL_PROGRESS, QModelIndex(), _imp->progressBar);
+    view->setCellWidget(row, COL_CONTROLS, QModelIndex(), _imp->controlsButtonsContainer);
 }
 
 void
