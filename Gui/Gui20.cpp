@@ -169,7 +169,7 @@ void
 Gui::loadStyleSheet()
 {
     SettingsPtr settings = appPTR->getCurrentSettings();
-    QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
+    QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol, boxGradientTopCol, boxGradientBottomCol;
 
     //settings->
     {
@@ -229,6 +229,16 @@ Gui::loadStyleSheet()
         settings->getAltTextColor(&r, &g, &b);
         altCol = to_qcolor(r, g, b);
     }
+    {
+        double r, g, b;
+        settings->getBoxGradientTopColor(&r, &g, &b);
+        boxGradientTopCol = to_qcolor(r, g, b);
+    }
+    {
+        double r, g, b;
+        settings->getBoxGradientBottomColor(&r, &g, &b);
+        boxGradientBottomCol = to_qcolor(r, g, b);
+    }
 
     // First, set the global palette colors
     // Note: the following colors may be wrong, please test and fix these on Linux with an empty mainstyle.css
@@ -275,7 +285,9 @@ Gui::loadStyleSheet()
                              .arg( qcolor_to_qstring(disCol) ) // %8: disabled editable text
                              .arg( qcolor_to_qstring(eCol) ) // %9: expression background color
                              .arg( qcolor_to_qstring(altCol) ) // %10 = altered text color
-                             .arg( qcolor_to_qstring(lightSelCol) ) ); // %11 = mouse over selection color
+                             .arg( qcolor_to_qstring(lightSelCol) ) // %11 = mouse over selection color
+                             .arg( qcolor_to_qstring(boxGradientTopCol) ) // %12 = box gradient top
+                             .arg( qcolor_to_qstring(boxGradientBottomCol) ) ); // %13 = box gradient bottom
     } else {
         Dialogs::errorDialog( tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString() );
     }

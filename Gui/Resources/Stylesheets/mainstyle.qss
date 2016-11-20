@@ -2,6 +2,7 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
 /*%10 = altered text colour, %11 = mouse over selection color*/
+/*%12 = box gradient top, %13 = box gradient bottom*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -251,32 +252,29 @@ ClickableLabel[readOnly="true"][dirty="true"] {
     color : %8;
 }
 
-
-
 TabWidget{background-color: %4;}
 
 NodeSettingsPanel{
     background-color : %2;
     color: %5;
 }
-QPushButton{
+QPushButton {
     color: %5;
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
+    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
     border-width: 1px;
-    border-color: #1e1e1e;
+    border-color: %4;
     border-style: solid;
     border-radius: 3px;
     padding: 3px;
-    /*font-size: 12px;*/
     font-size:90%;
     padding-left: 5px;
     padding-right: 5px;
 }
-QPushButton:pressed{
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
+QPushButton:pressed {
+    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %4, stop: 1 %2);
 }
 QPushButton:hover {
-    border: 1px solid #727272;
+    border: 1px solid %1;
 }
 QPushButton:focus {
     border: 2px solid %1;
@@ -396,7 +394,7 @@ QLineEdit {
     border-color: #1e1e1e;
     padding: 1px;
     color: %5;
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
+    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
     selection-color: %8;
     selection-background-color: %1;
 }
@@ -454,7 +452,7 @@ QTabBar::tab#DockablePanelTabWidget {
 }
 
 QTabBar::tab:!selected:hover {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:0.4 #343434, stop:0.2 #343434, stop:0.1 #e26b02);
+    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:0.4 #343434, stop:0.2 #343434, stop:0.1 %1);
 }
 
 QTabBar::tab:selected {
@@ -549,10 +547,8 @@ SpinBox[altered="true"][dirty="false"] {
     color: %10;
 }
 
-
-
 LineEdit[animation="0"] {
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
+    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
 }
 LineEdit[animation="1"] {
     background-color: %6;
@@ -730,6 +726,7 @@ QHeaderView::section
 
 QWidget:item:hover,
 QWidget:item:selected {
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);
+    color: %4;
+    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %1, stop: 1 #d7801a);
 }
 

@@ -304,19 +304,35 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
 
         double fw = 2;
         QPen pen;
+        QColor frameColor;
+        double frameColorR, frameColorG, frameColorB;
         if ( !hasFocus() ) {
-            pen.setColor( QColor(30, 30, 30) );
+            appPTR->getCurrentSettings()->getSunkenColor(&frameColorR, &frameColorG, &frameColorB);
         } else {
-            pen.setColor( QColor(114, 114, 114) );
+            appPTR->getCurrentSettings()->getSelectionColor(&frameColorR, &frameColorG, &frameColorB);
         }
+        frameColor.setRgb( Color::floatToInt<256>(frameColorR),
+                           Color::floatToInt<256>(frameColorG),
+                           Color::floatToInt<256>(frameColorB) );
+        pen.setColor(frameColor);
         p.setPen(pen);
-
 
         QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
 
         QLinearGradient defaultBackground( roundedRect.topLeft(), roundedRect.bottomLeft() );
-        defaultBackground.setColorAt( 0, QColor(81, 81, 81) );
-        defaultBackground.setColorAt( 1, QColor(73, 73, 73) );
+        QColor defaultBackgroundColor1, defaultBackgroundColor2;
+        double bgColor1R, bgColor1G, bgColor1B, bgColor2R, bgColor2G, bgColor2B;
+
+        appPTR->getCurrentSettings()->getBoxGradientTopColor(&bgColor1R, &bgColor1G, &bgColor1B);
+        appPTR->getCurrentSettings()->getBoxGradientBottomColor(&bgColor2R, &bgColor2G, &bgColor2B);
+        defaultBackgroundColor1.setRgb( Color::floatToInt<256>(bgColor1R),
+                                        Color::floatToInt<256>(bgColor1G),
+                                        Color::floatToInt<256>(bgColor1B) );
+        defaultBackgroundColor2.setRgb( Color::floatToInt<256>(bgColor2R),
+                                        Color::floatToInt<256>(bgColor2G),
+                                        Color::floatToInt<256>(bgColor2B) );
+        defaultBackground.setColorAt( 0, defaultBackgroundColor1);
+        defaultBackground.setColorAt( 1, defaultBackgroundColor2);
 
         bRect.adjust(fw, fw, -fw, -fw);
         if (useDefaultBackground) {
