@@ -186,13 +186,6 @@ QTreeWidget::branch:open:has-children:has-siblings  {
     image: url(:/Resources/Images/groupbox_unfolded.png);
 }
 
-QHeaderView:section {
-    color: %5;
-    background-color: %2;
-    selection-color: %1;
-    selection-background-color : %1; /* same as selection-color??? */
-}
-
 /*See http://doc.qt.io/qt-5/stylesheet-syntax.html for classes in namespaces*/
 
 /*Basic background: No multiple selection, no animation, no sunken style*/
@@ -720,8 +713,10 @@ QAbstractItemView
 
 QHeaderView::section
 {
-    /*background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343, stop:1 #656565);*/
     background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:.4 #343434);
+    border-style: none;
+    border: 1px solid %3;
+    padding: 4px;
 }
 
 QWidget:item:hover,
