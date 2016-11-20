@@ -1042,7 +1042,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
             return;
         }
         strokeBeingPaint.reset( new RotoStrokeItem( strokeType, p->knobsTable ) );
-        strokeBeingPaint->createNodes(false);
+        strokeBeingPaint->initializeKnobsPublic();
     }
 
 
@@ -1092,7 +1092,9 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     pressureSizeKnob->setValue(pressSize);
     pressureHardnessKnob->setValue(pressHarness);
     buildUpKnob->setValue(buildUp);
-    effectKnob->setValue(effectValue);
+    if (effectKnob) {
+        effectKnob->setValue(effectValue);
+    }
     if (!prepareForLater) {
         KnobIntPtr lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue( time );
@@ -1437,8 +1439,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
     for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
         BezierPtr isBezier = toBezier(*it);
         RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
-        assert(isStroke || isBezier);
-        if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+        if ( !isBezier || isBezier->isOpenBezier() ) {
             continue;
         }
 

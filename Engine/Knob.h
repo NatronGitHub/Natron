@@ -1298,11 +1298,24 @@ public:
 
     virtual void setMastersPersistenceIgnore(bool ignored) = 0;
 
+    enum DuplicateKnobTypeEnum
+    {
+        // The new knob will act as an alias of this parameter
+        eDuplicateKnobTypeAlias,
+
+        // The new knob will be expression linked
+        eDuplicateKnobTypeExprLinked,
+
+        // The new knob will just be a copy of this knob
+        // but will not be linked
+        eDuplicateKnobTypeCopy
+    };
+
     virtual KnobIPtr createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                             const KnobPagePtr& page,
                                             const KnobGroupPtr& group,
                                             int indexInParent,
-                                            bool makeAlias,
+                                            DuplicateKnobTypeEnum duplicateType,
                                             const std::string& newScriptName,
                                             const std::string& newLabel,
                                             const std::string& newToolTip,
@@ -1678,7 +1691,7 @@ public:
                                             const KnobPagePtr& page,
                                             const KnobGroupPtr& group,
                                             int indexInParent,
-                                            bool makeAlias,
+                                            DuplicateKnobTypeEnum duplicateType,
                                             const std::string& newScriptName,
                                             const std::string& newLabel,
                                             const std::string& newToolTip,

@@ -29,7 +29,10 @@
 #include <QtCore/QDir>
 #include <QSettings>
 #include <QtCore/QMutex>
-#include <QtCore/QCoreApplication>
+#include <QApplication>
+#ifdef Q_OS_MAC
+#include <QMacStyle>
+#endif
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -263,6 +266,57 @@ GuiAppInstance::createMainWindow()
     setMainWindowPointer(_imp->_gui);
 }
 
+#ifdef Q_OS_MAC
+#if QT_VERSION < 0x050000
+class Qt4RetinaFixStyle : public QMacStyle
+{
+public:
+
+    Qt4RetinaFixStyle()
+    : QMacStyle()
+    {
+
+    }
+
+    virtual ~Qt4RetinaFixStyle()
+    {
+
+    }
+
+    virtual int pixelMetric(PixelMetric metric, const QStyleOption *opt, const QWidget *widget) const OVERRIDE FINAL
+    {
+        if (metric == PM_SmallIconSize || metric == PM_ToolBarIconSize) {
+            int ret = QMacStyle::pixelMetric(metric, opt, widget);
+            Gui* gui = getGui();
+            if (gui) {
+                double scale = gui->getHighDPIScaleFactor();
+                if (scale > 1) {
+                    ret /= scale;
+                }
+            }
+            return ret;
+        } else {
+            return QMacStyle::pixelMetric(metric, opt, widget);
+        }
+    }
+
+private:
+
+    Gui* getGui() const
+    {
+        const AppInstanceVec& apps = appPTR->getAppInstances();
+        for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+            GuiAppInstancePtr a = toGuiAppInstance(*it);
+            if (a) {
+                return a->getGui();
+            }
+        }
+        return 0;
+    }
+};
+#endif
+#endif
+
 void
 GuiAppInstance::loadInternal(const CLArgs& cl,
                              bool makeEmptyInstance)
@@ -278,6 +332,18 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     }
 
     createMainWindow();
+
+#ifdef Q_OS_MAC
+#if QT_VERSION < 0x050000
+    // On Qt4 for Mac, Retina is not well supported, see:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    // Note that setting the application style will override any
+    // style set on the command line with the -style option.
+    if (getAppID() == 0) {
+        QApplication::setStyle(new Qt4RetinaFixStyle);
+    }
+#endif
+#endif
 
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 

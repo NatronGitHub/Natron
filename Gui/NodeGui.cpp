@@ -3825,7 +3825,7 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     KnobPagePtr page = AppManager::createKnob<KnobPage>(getKnobsHolder(), tr("Page"));
     KnobsVec children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), page, KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), page, KnobGroupPtr(), i, KnobI::eDuplicateKnobTypeAlias, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
         duplicate->setAddNewLine( children[i]->isNewLineActivated() );
     }
 

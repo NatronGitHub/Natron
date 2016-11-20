@@ -24,8 +24,22 @@
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
-#define kSerializationRotoLayerTag "Layer"
+#define kSerializationRotoGroupTag "Group"
 #define kSerializationTrackTag "Track"
+#define kSerializationCompLayerTag "Layer"
+#define kSerializationOpenedBezierTag "OpenedBezier"
+#define kSerializationClosedBezierTag "Bezier"
+#define kSerializationOpenedBezierTag "OpenedBezier"
+#define kSerializationStrokeBrushTypeSolid "Solid"
+#define kSerializationStrokeBrushTypeEraser "Eraser"
+#define kSerializationStrokeBrushTypeClone "Clone"
+#define kSerializationStrokeBrushTypeReveal "Reveal"
+#define kSerializationStrokeBrushTypeBlur "Blur"
+#define kSerializationStrokeBrushTypeSharpen "Sharpen"
+#define kSerializationStrokeBrushTypeSmear "Smear"
+#define kSerializationStrokeBrushTypeDodge "Dodge"
+#define kSerializationStrokeBrushTypeBurn "Burn"
+
 
 SERIALIZATION_NAMESPACE_ENTER;
 

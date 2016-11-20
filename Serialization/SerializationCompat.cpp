@@ -45,7 +45,7 @@ void
 Compat::RotoLayerSerialization::convertRotoLayerSerialization(SERIALIZATION_NAMESPACE::KnobTableItemSerialization* outSerialization)
 {
     Compat::RotoItemSerialization::convertRotoItemSerialization(outSerialization);
-
+    outSerialization->verbatimTag = kSerializationRotoGroupTag;
     for (std::list <boost::shared_ptr<Compat::RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
         Compat::BezierSerialization* isBezier = dynamic_cast<Compat::BezierSerialization*>(it->get());
         Compat::RotoLayerSerialization* isLayer = dynamic_cast<Compat::RotoLayerSerialization*>(it->get());
@@ -71,6 +71,7 @@ Compat::BezierSerialization::convertBezierSerialization(SERIALIZATION_NAMESPACE:
 {
     SERIALIZATION_NAMESPACE::BezierSerialization::Shape& s = outSerialization->_shapes["Main"];
     outSerialization->_isOpenBezier = _isOpenBezier;
+    outSerialization->verbatimTag = _isOpenBezier ? kSerializationOpenedBezierTag : kSerializationClosedBezierTag;
     s.closed = _closed;
     for (std::list<ControlPoint>::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
         SERIALIZATION_NAMESPACE::BezierSerialization::ControlPoint c;
@@ -84,7 +85,7 @@ Compat::BezierSerialization::convertBezierSerialization(SERIALIZATION_NAMESPACE:
 void
 Compat::RotoStrokeItemSerialization::convertStrokeSerialization(SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization* outSerialization)
 {
-    outSerialization->_brushType = _brushType;
+    outSerialization->verbatimTag = _brushType;
     for (std::list<PointCurves>::const_iterator it = _subStrokes.begin(); it != _subStrokes.end(); ++it) {
         SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves p;
         p.pressure = it->pressure;
@@ -100,6 +101,7 @@ Compat::TrackSerialization::convertTrackSerialization(SERIALIZATION_NAMESPACE::K
 {
     outSerialization->scriptName = _scriptName;
     outSerialization->label = _label;
+    outSerialization->verbatimTag = kSerializationTrackTag;
     CurveSerialization& userKeys = outSerialization->animationCurves["Main"];
     for (std::list<int>::const_iterator it = _userKeys.begin(); it != _userKeys.end(); ++it) {
         KeyFrameSerialization k;

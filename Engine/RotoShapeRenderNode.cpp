@@ -39,6 +39,7 @@
 #include "Engine/RotoShapeRenderNodePrivate.h"
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoShapeRenderGL.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/ParallelRenderArgs.h"
 
 
@@ -377,15 +378,20 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             // Get per-shape motion blur parameters
 
             double startTime = args.time, mbFrameStep = 1., endTime = args.time;
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
+
             if (isBezier) {
-                int mbType_i = rotoItem->getContext()->getMotionBlurTypeKnob()->getValue();
+                RotoPaintPtr rotoPaintNode;
+                KnobItemsTablePtr model = isBezier->getModel();
+                if (model) {
+                    rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
+                }
+
+                int mbType_i = rotoPaintNode->getMotionBlurTypeKnob()->getValue();
                 bool applyPerShapeMotionBlur = mbType_i == 0;
                 if (applyPerShapeMotionBlur) {
-                    isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+                    isBezier->getMotionBlurSettings(args.time, args.view, &startTime, &endTime, &mbFrameStep);
                 }
             }
-#endif
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {

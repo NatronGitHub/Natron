@@ -31,11 +31,7 @@ RotoStrokeItemSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
     KnobTableItemSerialization::encode(em);
-    bool isSolid = _brushType != kRotoStrokeItemSerializationBrushTypeSolid;
-
-    if (!isSolid) {
-        em << YAML::Key << "Type" << YAML::Value << _brushType;
-    }
+   
     if (!_subStrokes.empty()) {
         em << YAML::Key << "SubStrokes" << YAML::Value;
         em << YAML::BeginSeq;
@@ -65,12 +61,6 @@ RotoStrokeItemSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
     KnobTableItemSerialization::decode(node);
-
-    if (node["Type"]) {
-        _brushType = node["Type"].as<std::string>();
-    } else {
-        _brushType = kRotoStrokeItemSerializationBrushTypeSolid;
-    }
 
     if (node["SubStrokes"]) {
         YAML::Node strokesNode = node["SubStrokes"];

@@ -22,17 +22,6 @@
 #include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
-#define kRotoStrokeItemSerializationBrushTypeSolid "Solid"
-#define kRotoStrokeItemSerializationBrushTypeEraser "Eraser"
-#define kRotoStrokeItemSerializationBrushTypeClone "Clone"
-#define kRotoStrokeItemSerializationBrushTypeReveal "Reveal"
-#define kRotoStrokeItemSerializationBrushTypeBlur "Blur"
-#define kRotoStrokeItemSerializationBrushTypeSmear "Smear"
-#define kRotoStrokeItemSerializationBrushTypeDodge "Dodge"
-#define kRotoStrokeItemSerializationBrushTypeBurn "Burn"
-
-#define kSerializationStrokeTag "Stroke"
-
 SERIALIZATION_NAMESPACE_ENTER;
 
 
@@ -42,8 +31,6 @@ class RotoStrokeItemSerialization
 
 public:
 
-
-    std::string _brushType;
     struct PointCurves
     {
         CurveSerializationPtr x,y,pressure;
@@ -53,10 +40,8 @@ public:
 
     RotoStrokeItemSerialization()
         : KnobTableItemSerialization()
-        , _brushType()
         , _subStrokes()
     {
-        verbatimTag = kSerializationStrokeTag;
         _emitMap = false;
     }
 

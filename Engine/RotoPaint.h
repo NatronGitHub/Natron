@@ -348,7 +348,17 @@ enum RotoPaintItemLifeTimeTypeEnum
 #define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
 "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
+#define kRotoAddGroupParam "addGroupButton"
+#define kRotoAddGroupParamLabel "New Group"
+#define kRotoAddGroupParamHint "Adds a new group into which items can be contained"
 
+#define kRotoAddLayerParam "addLayerButton"
+#define kRotoAddLayerParamLabel "New Comp Layer"
+#define kRotoAddLayerParamHint "Adds a new compositing layer"
+
+#define kRotoRemoveItemParam "removeItemButton"
+#define kRotoRemoveItemParamLabel "Remove"
+#define kRotoRemoveItemParamHint "Remove the selected item(s) from the table"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -463,11 +473,13 @@ public:
     BezierPtr makeSquare(double x, double y, double initialSize, double time);
     RotoStrokeItemPtr makeStroke(RotoStrokeType type,
                                  bool clearSel);
+    CompNodeItemPtr makeCompNodeItem();
 
     RotoLayerPtr getLayerForNewItem();
 
     KnobChoicePtr getMergeAInputChoiceKnob() const;
 
+    KnobChoicePtr getMotionBlurTypeKnob() const;
 
 public Q_SLOTS:
 

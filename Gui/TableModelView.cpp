@@ -47,6 +47,8 @@
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/ComboBox.h"
 #include "Gui/SpinBox.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -183,6 +185,45 @@ struct TableItemPrivate
         }
     }
 
+};
+
+struct TableModelPrivate
+{
+    TableModel::TableModelTypeEnum type;
+
+    // For table type, this is all items. For trees, this is only toplevel items
+    TableItemVec topLevelItems;
+
+    // The header item
+    TableItemPtr headerItem;
+
+    int colCount;
+
+    Gui* gui;
+
+    TableModelPrivate(int columns, TableModel::TableModelTypeEnum type)
+    : type(type)
+    , topLevelItems()
+    , headerItem()
+    , colCount(columns)
+    , gui(0)
+    {
+        assert(columns > 0);
+        if (columns == 0) {
+            throw std::invalid_argument("TableModel: Must have at least 1 column");
+        }
+    }
+
+    int getTopLevelItemIndex(const TableItemConstPtr item) const
+    {
+        for (std::size_t i = 0; i < topLevelItems.size(); ++i) {
+            if (topLevelItems[i] == item) {
+                return (int)i;
+            }
+        }
+
+        return -1;
+    }
 };
 
 TableItem::TableItem(const TableModelPtr& model)
@@ -341,6 +382,13 @@ TableItem::getRowInParent() const
 }
 
 void
+TableItem::setIcon(int col, const QIcon &aicon)
+{
+    setData(col, Qt::DecorationRole, aicon);
+}
+
+
+void
 TableItem::setFlags(int col, Qt::ItemFlags flags)
 {
     _imp->ensureColumnOk(col);
@@ -386,41 +434,7 @@ TableItem::setData(int col, int role, const QVariant &value)
 
 
 ///////////////TableModel
-struct TableModelPrivate
-{
-    TableModel::TableModelTypeEnum type;
 
-    // For table type, this is all items. For trees, this is only toplevel items
-    TableItemVec topLevelItems;
-
-    // The header item
-    TableItemPtr headerItem;
-
-    int colCount;
-
-    TableModelPrivate(int columns, TableModel::TableModelTypeEnum type)
-    : type(type)
-    , topLevelItems()
-    , headerItem()
-    , colCount(columns)
-    {
-        assert(columns > 0);
-        if (columns == 0) {
-            throw std::invalid_argument("TableModel: Must have at least 1 column");
-        }
-    }
-
-    int getTopLevelItemIndex(const TableItemConstPtr item) const
-    {
-        for (std::size_t i = 0; i < topLevelItems.size(); ++i) {
-            if (topLevelItems[i] == item) {
-                return (int)i;
-            }
-        }
-
-        return -1;
-    }
-};
 
 TableModel::TableModel(int columns, TableModelTypeEnum type)
     : QAbstractTableModel()
@@ -1203,12 +1217,14 @@ TableModel::onItemChanged(const TableItemPtr& item, int col, int role, bool valu
 struct TableViewPrivate
 {
     TableModelWPtr model;
+    Gui* gui;
     std::list<TableItemPtr> draggedItems;
     
     QPoint lastMousePressPosition;
     
-    TableViewPrivate()
+    TableViewPrivate(Gui* gui)
     : model()
+    , gui(gui)
     , draggedItems()
     , lastMousePressPosition()
     {
@@ -1344,10 +1360,11 @@ TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
     }
 }
 
+
 /////////////// TableView
 TableView::TableView(Gui* gui, QWidget* parent)
     : QTreeView(parent)
-    , _imp( new TableViewPrivate() )
+    , _imp( new TableViewPrivate(gui) )
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
@@ -1365,27 +1382,23 @@ TableView::TableView(Gui* gui, QWidget* parent)
     setAttribute(Qt::WA_MacShowFocusRect, 0);
     setAcceptDrops(true);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
-
-#if QT_VERSION < 0x050000
-    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
-    // https://bugreports.qt.io/browse/QTBUG-23870
-    double scale = gui->getHighDPIScaleFactor();
-    if (scale > 1) {
-        QSize iconSize = header()->iconSize();
-        iconSize.setHeight(iconSize.height() / scale);
-        header()->setIconSize(iconSize);
-    }
-#endif
 }
 
 TableView::~TableView()
 {
 }
 
+Gui*
+TableView::getGui() const
+{
+    return _imp->gui;
+}
+
 void
 TableView::setTableModel(const TableModelPtr& model)
 {
     _imp->model = model;
+    model->_imp->gui = _imp->gui;
     setModel(model.get());
 }
 
@@ -1438,18 +1451,20 @@ TableView::closePersistentEditor(const TableItemPtr &item)
 
 QWidget*
 TableView::cellWidget(int row,
-                      int column) const
+                      int column,
+                      QModelIndex parent) const
 {
-    QModelIndex index = model()->index( row, column, QModelIndex() );
+    QModelIndex index = model()->index( row, column, parent );
     return QAbstractItemView::indexWidget(index);
 }
 
 void
 TableView::setCellWidget(int row,
                          int column,
+                         QModelIndex parent,
                          QWidget *widget)
 {
-    QModelIndex index = model()->index( row, column, QModelIndex() );
+    QModelIndex index = model()->index( row, column, parent );
     QAbstractItemView::setIndexWidget(index, widget);
 }
 
@@ -1457,7 +1472,7 @@ void
 TableView::removeCellWidget(int row,
                             int column)
 {
-    setCellWidget(row, column, 0);
+    setCellWidget(row, column, QModelIndex(), 0);
 }
 
 TableItemPtr

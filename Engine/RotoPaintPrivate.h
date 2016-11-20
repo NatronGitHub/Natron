@@ -600,6 +600,8 @@ struct RotoPaintPrivate
     KnobDoubleWPtr extraMatrixKnob;
     KnobDoubleWPtr centerKnob;
 
+    KnobButtonWPtr addGroupButtonKnob, addLayerButtonKnob, removeItemButtonKnob;
+    
     RotoPaintPrivate(RotoPaint* publicInterface,
                      RotoPaint::RotoPaintTypeEnum type);
 

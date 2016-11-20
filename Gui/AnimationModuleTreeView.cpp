@@ -113,6 +113,9 @@ itemSelectionToTreeItemsSet(AnimationModuleTreeView* treeView, const QItemSelect
 static void
 addItemToSelection(AnimationModuleTreeView* treeView, QTreeWidgetItem* item, QItemSelection *selection)
 {
+    if (!item) {
+        return;
+    }
     int cc = item->columnCount();
     QModelIndex indexCol0 = treeView->indexFromItemPublic(item);
     QModelIndex indexColLast = treeView->model()->index(indexCol0.row(), cc - 1, indexCol0.parent());

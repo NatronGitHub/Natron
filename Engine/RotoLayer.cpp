@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "RotoLayer.h"
-
+#include "Serialization/KnobTableItemSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -48,6 +48,12 @@ std::string
 RotoLayer::getBaseItemName() const
 {
     return tr(kRotoLayerBaseName).toStdString();
+}
+
+std::string
+RotoLayer::getSerializationClassName() const
+{
+    return kSerializationRotoGroupTag;
 }
 
 NATRON_NAMESPACE_EXIT;

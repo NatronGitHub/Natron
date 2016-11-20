@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TRACKERUNDOCOMMAND_H
-#define TRACKERUNDOCOMMAND_H
+#ifndef NATRON_ENGINE_KNOBITEMSTABLEUNDOCOMMAND_H
+#define NATRON_ENGINE_KNOBITEMSTABLEUNDOCOMMAND_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -42,51 +42,75 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class AddTrackCommand
+class AddItemsCommand
     : public UndoCommand
 {
-    Q_DECLARE_TR_FUNCTIONS(AddTrackCommand)
+    Q_DECLARE_TR_FUNCTIONS(AddItemCommand)
 
 public:
 
-    AddTrackCommand(const TrackMarkerPtr &marker);
+    //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
+    struct ItemToAdd
+    {
+        int indexInParent;
+        KnobTableItemPtr item;
+        KnobTableItemPtr parentItem;
+    };
+
+    /**
+     * @brief Add multiple items at once
+     **/
+    AddItemsCommand(const std::list<ItemToAdd>& items);
+
+    /**
+     * Add a single item to the given parent at the given index
+     **/
+    AddItemsCommand(const KnobTableItemPtr &item, const KnobTableItemPtr& parent, int indexInParent);
+
+    /**
+     * Add a single item. The item is assumed to be already in its parent 
+     **/
+    AddItemsCommand(const KnobTableItemPtr &item);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
 private:
 
-    //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
     bool _isFirstRedo;
-    std::map<int, TrackMarkerPtr> _markers;
+
+
+    std::list<ItemToAdd> _items;
 };
 
 
-class RemoveTracksCommand
+class RemoveItemsCommand
     : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(RemoveTracksCommand)
 
 public:
 
-    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers);
+    //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
+    struct ItemToRemove
+    {
+        KnobTableItemPtr item;
+        KnobTableItemWPtr prevItem;
+    };
+
+    RemoveItemsCommand(const std::list<KnobTableItemPtr> &items);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
 private:
 
-    //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
-    struct TrackToRemove
-    {
-        TrackMarkerPtr track;
-        boost::weak_ptr<TrackMarker> prevTrack;
-    };
 
-    std::list<TrackToRemove> _markers;
+
+    std::list<ItemToRemove> _items;
 };
 
 NATRON_NAMESPACE_EXIT;
 
 
-#endif // TRACKERUNDOCOMMAND_H
+#endif // NATRON_ENGINE_KNOBITEMSTABLEUNDOCOMMAND_H

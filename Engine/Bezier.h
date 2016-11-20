@@ -626,6 +626,8 @@ public:
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+
     virtual bool canSplitViews() const OVERRIDE FINAL
     {
         return true;

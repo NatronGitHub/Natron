@@ -195,6 +195,7 @@ public:
 
     virtual std::string getBaseItemName() const OVERRIDE;
 
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
 
 protected:
 

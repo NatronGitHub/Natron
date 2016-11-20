@@ -168,10 +168,7 @@ public:
         return qvariant_cast<QIcon>( getData(col, Qt::DecorationRole) );
     }
 
-    inline void setIcon(int col, const QIcon &aicon)
-    {
-        setData(col, Qt::DecorationRole, aicon);
-    }
+    void setIcon(int col, const QIcon &aicon);
 
     inline QString getStatusTip(int col) const
     {
@@ -364,8 +361,8 @@ public:
     bool isItemSelected(const TableItemConstPtr& item) const;
     void setItemSelected(const TableItemPtr& item, bool select);
 
-    QWidget * cellWidget(int row, int column) const;
-    void setCellWidget(int row, int column, QWidget *widget);
+    QWidget * cellWidget(int row, int column, QModelIndex parent) const;
+    void setCellWidget(int row, int column, QModelIndex parent, QWidget *widget);
     void removeCellWidget(int row, int column);
 
     TableItemPtr itemAt(const QPoint &p) const;
@@ -375,6 +372,8 @@ public:
 
     TableItemPtr editedItem() const;
     TableItemPtr currentItem() const;
+
+    Gui* getGui() const;
 
 Q_SIGNALS:
 
@@ -439,6 +438,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class TableItem;
+    friend class TableView;
 
 public:
 
