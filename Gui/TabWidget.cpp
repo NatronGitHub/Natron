@@ -282,16 +282,7 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addSpacing(10);
 
     _imp->tabBar = new TabBar(this, _imp->header);
-#if QT_VERSION < 0x050000
-    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
-    // https://bugreports.qt.io/browse/QTBUG-23870
-    double scale = gui->getHighDPIScaleFactor();
-    if (scale > 1) {
-        QSize iconSize = _imp->tabBar->iconSize();
-        iconSize.setHeight(iconSize.height() / scale);
-        _imp->tabBar->setIconSize(iconSize);
-    }
-#endif
+
     _imp->tabBar->setShape(QTabBar::RoundedNorth);
     _imp->tabBar->setDrawBase(false);
     QObject::connect( _imp->tabBar, SIGNAL(currentChanged(int)), this, SLOT(setCurrentIndex(int)) );
@@ -1373,22 +1364,12 @@ QSize
 TabBar::sizeHint() const
 {
     return QTabBar::sizeHint();
-#if 0
-    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
-    s.setHeight(s.height() / scale);
-    return s;
-#endif
 }
 
 QSize
 TabBar::minimumSizeHint() const
 {
     return QTabBar::minimumSizeHint();
-#if 0
-    double scale = _tabWidget->getGui()->getHighDPIScaleFactor();
-    s.setHeight(s.height() / scale);
-    return s;
-#endif
 }
 
 void
@@ -1790,16 +1771,6 @@ TabWidget::onSetAsAnchorActionTriggered()
         (*it)->setAsAnchor(*it == this);
     }
 }
-
-#if 0
-void
-TabWidget::onShowHideTabBarActionTriggered()
-{
-    _imp->tabBarVisible = !_imp->tabBarVisible;
-    _imp->header->setVisible(_imp->tabBarVisible);
-}
-#endif
-
 void
 TabWidget::setTabHeaderVisible(bool visible)
 {

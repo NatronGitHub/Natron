@@ -1092,7 +1092,7 @@ SequenceFileDialog::setRootIndex(const QModelIndex & index)
     _view->update();
 }
 
-SequenceDialogView::SequenceDialogView(Gui* gui, SequenceFileDialog* fd)
+SequenceDialogView::SequenceDialogView(Gui* /*gui*/, SequenceFileDialog* fd)
     : QTreeView(fd), _fd(fd)
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1109,16 +1109,6 @@ SequenceDialogView::SequenceDialogView(Gui* gui, SequenceFileDialog* fd)
     //setAttribute(Qt::WA_MacShowFocusRect,0);
     setAcceptDrops(true);
 
-#if QT_VERSION < 0x050000
-    // Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
-    // https://bugreports.qt.io/browse/QTBUG-23870
-    double scale = gui->getHighDPIScaleFactor();
-    if (scale > 1) {
-        QSize iconSize = header()->iconSize();
-        iconSize.setHeight(iconSize.height() / scale);
-        header()->setIconSize(iconSize);
-    }
-#endif
 }
 
 void
@@ -2939,13 +2929,13 @@ SequenceFileDialog::createViewerPreviewNode()
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
 
-    ViewerInstancePtr viewerInstance = _preview->viewerNodeInternal->isEffectViewerInstance();
-    assert(viewerInstance);
-    if (!viewerInstance) {
+    ViewerNodePtr viewerNode = _preview->viewerNodeInternal->isEffectViewerNode();
+    assert(viewerNode);
+    if (!viewerNode) {
         // coverity[dead_error_line]
         return;
     }
-    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewerInstance->getUiContext() );
+    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewerNode->getUiContext() );
     assert(viewerGL);
     if (!viewerGL) {
         // coverity[dead_error_line]
