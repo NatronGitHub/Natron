@@ -167,12 +167,12 @@ parseTokenFrom(int fromDim,
 
     // Extract parameters in between the 2 parenthesis
     std::vector<std::string> params;
+    extractParameters(pos, endingParenthesis, str, &params);
 
-    if (!returnsTuple) {
-        extractParameters(pos, endingParenthesis, str, &params);
-    } else {
-        // If the function returns a tuple like get()[dimension], do not extract parameters
-        // Rather find the parameter in-between the tuple brackets
+
+    if (returnsTuple) {
+        // If the function returns a tuple like get()[dimension],
+        // also find the parameter in-between the tuple brackets
         //try to find the tuple
         std::size_t it = endingParenthesis + 1;
         while (it < str.size() && str.at(it) == ' ') {
@@ -196,7 +196,7 @@ parseTokenFrom(int fromDim,
     }
 
     if (dimensionParamPos == -1) {
-        ++dimensionParamPos;
+        dimensionParamPos = 1;
     }
 
     if ( (dimensionParamPos < 0) || ( (int)params.size() <= dimensionParamPos ) ) {

@@ -1437,8 +1437,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
     for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
         BezierPtr isBezier = toBezier(*it);
         RotoStrokeItemPtr isStroke = toRotoStrokeItem(*it);
-        assert(isStroke || isBezier);
-        if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
+        if ( !isBezier || isBezier->isOpenBezier() ) {
             continue;
         }
 

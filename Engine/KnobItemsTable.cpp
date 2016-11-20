@@ -1091,8 +1091,10 @@ getNextNonContainerItemInternal(const std::vector<KnobTableItemPtr>& siblings, c
         }
     }
 
-    // The item must be in the siblings vector
-    assert( found != siblings.end() );
+    // The item must be in the siblings vector, otherwise it is considered not in the model.
+    if( found == siblings.end() ){
+        return KnobTableItemPtr();
+    }
 
     if ( found != siblings.end() ) {
         // If there's a next items in the siblings, return it

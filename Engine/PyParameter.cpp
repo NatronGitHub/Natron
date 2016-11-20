@@ -1113,7 +1113,7 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
         return;
     }
 
-    if (thisDimension < 0 || thisDimension >= getValueCallerKnob->getNDimensions()) {
+    if (thisDimension != -1 && (thisDimension < 0 || thisDimension >= getValueCallerKnob->getNDimensions())) {
         PythonSetInvalidDimensionError(thisDimension);
         return;
     }
@@ -1130,7 +1130,13 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
         return;
     }
 
-    getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+    if (thisDimension == -1) {
+        for (int i = 0; i < getValueCallerKnob->getNDimensions(); ++i) {
+            getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+        }
+    } else {
+        getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+    }
 }
 
 bool

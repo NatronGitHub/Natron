@@ -468,6 +468,7 @@ public:
 
     KnobChoicePtr getMergeAInputChoiceKnob() const;
 
+    KnobChoicePtr getMotionBlurTypeKnob() const;
 
 public Q_SLOTS:
 

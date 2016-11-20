@@ -3107,9 +3107,7 @@ Bezier::getMotionBlurSettings(const double time,
                               double* timeStep) const
 {
     *startTime = time, *timeStep = 1., *endTime = time;
-#ifndef NATRON_ROTO_ENABLE_MOTION_BLUR
-    Q_UNUSED(view);
-#else
+
     double motionBlurAmnt = getMotionBlurAmountKnob()->getValueAtTime(time, DimIdx(0), view);
     if ( isOpenBezier() || (motionBlurAmnt == 0) ) {
         return;
@@ -3140,7 +3138,6 @@ Bezier::getMotionBlurSettings(const double time,
     }
 
 
-#endif
 }
 
 RectD
@@ -3148,13 +3145,18 @@ Bezier::getBoundingBox(double time, ViewGetSpec view) const
 {
     double startTime = time, mbFrameStep = 1., endTime = time;
 
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-    int mbType_i = getContext()->getMotionBlurTypeKnob()->getValue();
+    RotoPaintPtr rotoPaintNode;
+    KnobItemsTablePtr model = getModel();
+    if (model) {
+        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
+    }
+
+
+    int mbType_i = rotoPaintNode->getMotionBlurTypeKnob()->getValue();
     bool applyPerShapeMotionBlur = mbType_i == 0;
     if (applyPerShapeMotionBlur) {
-        getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
+        getMotionBlurSettings(time, view, &startTime, &endTime, &mbFrameStep);
     }
-#endif
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     RectD bbox;
@@ -3769,8 +3771,6 @@ Bezier::isFeatherPolygonClockwiseOrientedInternal(double time, ViewGetSpec view)
 bool
 Bezier::isFeatherPolygonClockwiseOriented(double time, ViewGetSpec view) const
 {
-    QMutexLocker k(&_imp->itemMutex);
-
     return isFeatherPolygonClockwiseOrientedInternal(time, view);
 }
 

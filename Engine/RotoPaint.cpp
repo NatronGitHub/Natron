@@ -2167,9 +2167,7 @@ RotoPaint::initializeKnobs()
         initStrokePageKnobs();
         initTransformPageKnobs();
         initClonePageKnobs();
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
         initMotionBlurPageKnobs();
-#endif
     }
     
     // The mix knob is per-item
@@ -3116,18 +3114,17 @@ RotoPaintPrivate::getGlobalMotionBlurSettings(const double time,
                                               double* timeStep) const
 {
     *startTime = time, *timeStep = 1., *endTime = time;
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
 
-    double motionBlurAmnt = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    double motionBlurAmnt = globalMotionBlurKnob.lock()->getValueAtTime(time);
     if (motionBlurAmnt == 0) {
         return;
     }
     int nbSamples = std::floor(motionBlurAmnt * 10 + 0.5);
-    double shutterInterval = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    double shutterInterval = globalMotionBlurKnob.lock()->getValueAtTime(time);
     if (shutterInterval == 0) {
         return;
     }
-    int shutterType_i = _imp->globalMotionBlurKnob.lock()->getValueAtTime(time);
+    int shutterType_i = globalMotionBlurKnob.lock()->getValueAtTime(time);
     if (nbSamples != 0) {
         *timeStep = shutterInterval / nbSamples;
     }
@@ -3141,14 +3138,11 @@ RotoPaintPrivate::getGlobalMotionBlurSettings(const double time,
         *startTime = time - shutterInterval;
         *endTime = time;
     } else if (shutterType_i == 3) { // custom
-        *startTime = time + _imp->globalCustomOffsetKnob.lock()->getValueAtTime(time);
+        *startTime = time + globalCustomOffsetKnob.lock()->getValueAtTime(time);
         *endTime = *startTime + shutterInterval;
     } else {
         assert(false);
     }
-
-    
-#endif
 }
 
 
@@ -3341,6 +3335,12 @@ KnobChoicePtr
 RotoPaint::getMergeAInputChoiceKnob() const
 {
     return _imp->mergeInputAChoiceKnob.lock();
+}
+
+KnobChoicePtr
+RotoPaint::getMotionBlurTypeKnob() const
+{
+    return _imp->motionBlurTypeKnob.lock();
 }
 
 void
