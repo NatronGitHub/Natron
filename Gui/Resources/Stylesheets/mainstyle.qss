@@ -1,8 +1,7 @@
 /* -*- mode: css -*- */
-/*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
+/*%1 = selection-color  %2 = medium background (base) %3 = soft background (raised) %4 = strong background (sunken) %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
 /*%10 = unmodified text colour, %11 = mouse over selection color*/
-/*%12 = box gradient top, %13 = box gradient bottom*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -196,7 +195,7 @@ NodeSettingsPanel{
 }
 QPushButton {
     color: %5;
-    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
+    background-color: %3;
     border-width: 1px;
     border-color: %4;
     border-style: solid;
@@ -207,7 +206,7 @@ QPushButton {
     padding-right: 5px;
 }
 QPushButton:pressed {
-    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %4, stop: 1 %2);
+    background-color: %2;
 }
 QPushButton:hover {
     border: 1px solid %1;
@@ -329,7 +328,7 @@ QLineEdit {
     border-radius: 3px;
     border-color: #1e1e1e;
     padding: 1px;
-    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
+    background-color: %3;
     selection-color: %8;
     selection-background-color: %1;
 }
@@ -385,11 +384,11 @@ QTabBar::tab#DockablePanelTabWidget {
 }
 
 QTabBar::tab:!selected:hover {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:0.4 #343434, stop:0.2 #343434, stop:0.1 %1);
+    background-color: %4;
 }
 
 QTabBar::tab:selected {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:.4 #343434);
+    background-color: %3;
     min-height:+10;
 }
 
@@ -475,7 +474,7 @@ SpinBox[multipleSelection="true"] {
 
 
 LineEdit[animation="0"] {
-    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %12, stop: 1 %13);
+    background-color: %3;
 }
 LineEdit[animation="1"] {
     background-color: %6;
@@ -595,15 +594,7 @@ AnimatedCheckBox[multipleSelection="true"]::indicator:unchecked{
 QMenuBar
 {
     color: %5;
-    /*background-color: %2;*/
-    background-color: QLinearGradient(
-        x1:0, y1:0,
-        x2:0, y2:1,
-        stop:1 #212121,
-        stop:0.4 #343434/*,
-        stop:0.2 #343434,
-        stop:0.1 #ffaa00*/
-    );
+    background-color: %2;
 }
 
 QMenuBar::item
@@ -639,7 +630,7 @@ QAbstractItemView
 
 QHeaderView::section
 {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:.4 #343434);
+    background-color: %2;
     border-style: none;
     border: 1px solid %3;
     padding: 4px;
@@ -648,6 +639,6 @@ QHeaderView::section
 QWidget:item:hover,
 QWidget:item:selected {
     color: %4;
-    background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %1, stop: 1 #d7801a);
+    background-color: %1;
 }
 

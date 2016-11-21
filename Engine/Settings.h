@@ -322,9 +322,6 @@ public:
     void getAnimationModuleEditorScaleColor(double* r, double* g, double* b) const;
     void getAnimationModuleEditorGridColor(double* r, double* g, double* b) const;
     void getSliderColor(double* r, double* g, double* b) const;
-    void getBoxGradientTopColor(double *r, double *g, double *b) const;
-    void getBoxGradientBottomColor(double *r, double *g, double *b) const;
-
 
     void getSEKeywordColor(double* r, double* g, double* b) const;
     void getSEOperatorColor(double* r, double* g, double* b) const;
@@ -575,9 +572,6 @@ private:
     KnobColorPtr _cachedFrameColor;
     KnobColorPtr _diskCachedFrameColor;
     KnobColorPtr _sliderColor;
-    KnobColorPtr _boxGradientTopColor;
-    KnobColorPtr _boxGradientBottomColor;
-
 
     // Appearance/Dope Sheet
     KnobPagePtr _animationColorsTab;

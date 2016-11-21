@@ -859,16 +859,6 @@ Settings::initializeKnobsGuiColors()
     _sliderColor->setName("slider");
     _sliderColor->setSimplified(true);
     _guiColorsTab->addKnob(_sliderColor);
-
-    _boxGradientTopColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Box gradient top"), 3);
-    _boxGradientTopColor->setName("boxGradientTop");
-    _boxGradientTopColor->setSimplified(true);
-    _guiColorsTab->addKnob(_boxGradientTopColor);
-
-    _boxGradientBottomColor =  AppManager::createKnob<KnobColor>(shared_from_this(), tr("Box gradient bottom"), 3);
-    _boxGradientBottomColor->setName("boxGradientBottom");
-    _boxGradientBottomColor->setSimplified(true);
-    _guiColorsTab->addKnob(_boxGradientBottomColor);
 } // Settings::initializeKnobsGuiColors
 
 
@@ -1711,13 +1701,6 @@ Settings::setDefaultValues()
     _sliderColor->setDefaultValue(0.45, DimIdx(1));
     _sliderColor->setDefaultValue(0.44, DimIdx(2));
 
-    _boxGradientTopColor->setDefaultValue(0.316, DimIdx(0));
-    _boxGradientTopColor->setDefaultValue(0.316, DimIdx(1));
-    _boxGradientTopColor->setDefaultValue(0.316, DimIdx(2));
-
-    _boxGradientBottomColor->setDefaultValue(0.285, DimIdx(0));
-    _boxGradientBottomColor->setDefaultValue(0.285, DimIdx(1));
-    _boxGradientBottomColor->setDefaultValue(0.285, DimIdx(2));
 
     _scriptEditorFontChoice->setDefaultValue(0);
     _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
@@ -3467,26 +3450,6 @@ Settings::getSliderColor(double* r,
     *r = _sliderColor->getValue(DimIdx(0));
     *g = _sliderColor->getValue(DimIdx(1));
     *b = _sliderColor->getValue(DimIdx(2));
-}
-
-void
-Settings::getBoxGradientTopColor(double *r,
-                                 double *g,
-                                 double *b) const
-{
-    *r = _boxGradientTopColor->getValue(DimIdx(0));
-    *g = _boxGradientTopColor->getValue(DimIdx(1));
-    *b = _boxGradientTopColor->getValue(DimIdx(2));
-}
-
-void
-Settings::getBoxGradientBottomColor(double *r,
-                                    double *g,
-                                    double *b) const
-{
-    *r = _boxGradientBottomColor->getValue(DimIdx(0));
-    *g = _boxGradientBottomColor->getValue(DimIdx(1));
-    *b = _boxGradientBottomColor->getValue(DimIdx(2));
 }
 
 int
