@@ -143,6 +143,8 @@ protected:
 
 protected:
 
+    void setVisibleSlider(bool visible);
+
     void setWidgetsVisibleInternal(bool visible);
 
     /**

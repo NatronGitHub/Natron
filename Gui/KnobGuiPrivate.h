@@ -168,6 +168,15 @@ struct KnobGuiPrivate
     QWidget* mainContainer;
     QHBoxLayout* mainLayout;
 
+    // If non null, this is the stretch object at the end of the layout
+    QSpacerItem* endOfLineSpacer;
+
+    // True if endOfLineSpacer is currently added to the layout, false otherwise
+    bool spacerAdded;
+
+    // If endOfLineSpacer is non null, specifies if we must add the spacer by default
+    bool mustAddSpacerByDefault;
+
     // If this knob is not on a new line, this is a reference (weak) to the first knob
     // on the layout line.
     KnobGuiWPtr firstKnobOnLine;

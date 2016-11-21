@@ -293,7 +293,7 @@
         <file>Resources/Images/viewer_roiEnabled.png</file>
         <file>Resources/Images/visible.png</file>
         <file>Resources/Images/writeImage.png</file>
-        <file>Resources/Images/zebra_off.png</file>
+        <file>Resources/Images/zebra_off.png</file> 
         <file>Resources/Images/zebra_on.png</file>
         <file>Resources/Stylesheets/mainstyle.qss</file>
         <file>Resources/Images/rotoNodeIcon.png</file>

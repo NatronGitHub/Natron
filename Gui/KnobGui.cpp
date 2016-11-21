@@ -674,6 +674,8 @@ KnobGui::createGUI(QWidget* parentWidget)
     KnobGuiWidgetsPtr firstViewWidgets = _imp->views.begin()->second.widgets;
     assert(firstViewWidgets);
 
+
+
     _imp->createLabel(parentWidget);
 
     // For the viewer layout, if a knob creates a new line, prepend the layout with
@@ -697,19 +699,15 @@ KnobGui::createGUI(QWidget* parentWidget)
         _imp->addWidgetsToPreviousKnobLayout();
     }
 
-
     if ( firstViewWidgets->shouldAddStretch() ) {
         if ((_imp->layoutType == eKnobLayoutTypePage && knob->isNewLineActivated()) ||
             (_imp->layoutType == eKnobLayoutTypeViewerUI && knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine)) {
-            KnobGuiPtr firstKnobGuiOnLine = _imp->firstKnobOnLine.lock();
-            if (firstKnobGuiOnLine) {
-                firstKnobGuiOnLine->_imp->mainLayout->addStretch();
-            } else {
-                _imp->mainLayout->addStretch();
+            _imp->endOfLineSpacer = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
+            if (_imp->mustAddSpacerByDefault) {
+                addSpacerItemAtEndOfLine();
             }
         }
     }
-
 
 
     if (_imp->descriptionLabel) {
@@ -737,7 +735,45 @@ KnobGui::createGUI(QWidget* parentWidget)
 
 } // KnobGui::createGUI
 
+void
+KnobGui::addSpacerItemAtEndOfLine()
+{
+    if (!_imp->endOfLineSpacer) {
+        _imp->mustAddSpacerByDefault = true;
+        return;
+    }
+    if (_imp->spacerAdded) {
+        return;
+    }
+    _imp->spacerAdded = true;
+    KnobGuiPtr firstKnobGuiOnLine = _imp->firstKnobOnLine.lock();
+    if (firstKnobGuiOnLine) {
+        firstKnobGuiOnLine->_imp->mainLayout->addSpacerItem(_imp->endOfLineSpacer);
+    } else {
+        _imp->mainLayout->addSpacerItem(_imp->endOfLineSpacer);
+    }
 
+}
+
+void
+KnobGui::removeSpacerItemAtEndOfLine()
+{
+    if (!_imp->endOfLineSpacer) {
+        _imp->mustAddSpacerByDefault = false;
+        return;
+    }
+    if (!_imp->spacerAdded) {
+        return;
+    }
+    _imp->spacerAdded = false;
+    KnobGuiPtr firstKnobGuiOnLine = _imp->firstKnobOnLine.lock();
+    if (firstKnobGuiOnLine) {
+        firstKnobGuiOnLine->_imp->mainLayout->removeItem(_imp->endOfLineSpacer);
+    } else {
+        _imp->mainLayout->removeItem(_imp->endOfLineSpacer);
+    }
+
+}
 
 void
 KnobGui::onRightClickClicked(const QPoint & pos)

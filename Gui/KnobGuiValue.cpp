@@ -201,7 +201,7 @@ KnobGuiValue::valueAccordingToType(const bool doNormalize,
 bool
 KnobGuiValue::shouldAddStretch() const
 {
-    return isSliderDisabled();
+    return true; //isSliderDisabled();
 }
 
 KnobGuiValue::KnobGuiValue(const KnobGuiPtr& knob, ViewIdx view)
@@ -593,13 +593,24 @@ KnobGuiValue::onRectangleFormatButtonClicked()
 }
 
 void
+KnobGuiValue::setVisibleSlider(bool visible)
+{
+    if (_imp->slider) {
+        _imp->slider->setVisible(visible);
+        if (!visible) {
+            getKnobGui()->addSpacerItemAtEndOfLine();
+        } else {
+            getKnobGui()->removeSpacerItemAtEndOfLine();
+        }
+    }
+}
+
+void
 KnobGuiValue::setAllDimensionsVisible(bool visible)
 {
     if (!_imp->dimensionSwitchButton) {
         if (_imp->spinBoxes.size() > 1) {
-            if (_imp->slider) {
-                _imp->slider->hide();
-            }
+            setVisibleSlider(false);
         }
 
         return;
@@ -612,9 +623,7 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
     onDimensionsMadeVisible(visible);
 
     if (visible) {
-        if (_imp->slider) {
-            _imp->slider->hide();
-        }
+        setVisibleSlider(false);
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
                 if (_imp->spinBoxes[i].first) {
@@ -626,9 +635,7 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
             }
         }
     } else {
-        if (_imp->slider) {
-            _imp->slider->show();
-        }
+        setVisibleSlider(true);
 
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
@@ -723,7 +730,7 @@ KnobGuiValue::onDisplayMinMaxChanged(DimSpec /*dimension*/)
     }
 
     bool sliderVisible = shouldSliderBeVisible(displayMin, displayMax);
-    _imp->slider->setVisible(sliderVisible);
+    setVisibleSlider(sliderVisible);
 
     if (displayMax > displayMin) {
         _imp->slider->setMinimumAndMaximum(displayMin, displayMax);
@@ -1027,9 +1034,7 @@ KnobGuiValue::setWidgetsVisibleInternal(bool visible)
             _imp->spinBoxes[i].second->setVisible(visible);
         }
     }
-    if (_imp->slider) {
-        _imp->slider->setVisible(visible);
-    }
+    setVisibleSlider(visible);
     if (_imp->dimensionSwitchButton) {
         _imp->dimensionSwitchButton->setVisible(visible);
     }

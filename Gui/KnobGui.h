@@ -252,6 +252,9 @@ public:
 
     TabGroup* getOrCreateTabWidget();
 
+    void addSpacerItemAtEndOfLine();
+    void removeSpacerItemAtEndOfLine();
+
 public Q_SLOTS:
 
     void onProjectViewsChanged();
