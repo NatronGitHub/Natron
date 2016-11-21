@@ -296,24 +296,24 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         } else {
             double r, g, b;
             switch ((AnimationLevelEnum)animation) {
-            case eAnimationLevelNone:
-            default: {
-                useDefaultBackground = true;
-                appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
-                break;
-            }
-            case eAnimationLevelInterpolatedValue: {
-                appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
-                break;
-            }
-            case eAnimationLevelOnKeyframe: {
-                appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
-                break;
-            }
-            case eAnimationLevelExpression: {
-                appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
-                break;
-            }
+                case eAnimationLevelNone:
+                default: {
+                    useDefaultBackground = true;
+                    appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
+                    break;
+                }
+                case eAnimationLevelInterpolatedValue: {
+                    appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
+                    break;
+                }
+                case eAnimationLevelOnKeyframe: {
+                    appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+                    break;
+                }
+                case eAnimationLevelExpression: {
+                    appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+                    break;
+                }
             }
             fillColor.setRgb( Color::floatToInt<256>(r),
                               Color::floatToInt<256>(g),
@@ -351,14 +351,16 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         }
     }
     QColor textColor;
-    if (_readOnly) {
-        textColor.setRgb(100, 100, 100);
+    if (_readOnly || !_enabled) {
+        textColor.setRgb(0, 0, 0);
+    } else if (selected) {
+        double aR, aG, aB;
+        appPTR->getCurrentSettings()->getSelectionColor(&aR, &aG, &aB);
+        textColor.setRgbF(aR, aG, aB);
     } else if (!modified) {
         double aR, aG, aB;
         appPTR->getCurrentSettings()->getAltTextColor(&aR, &aG, &aB);
         textColor.setRgbF(aR, aG, aB);
-    } else if (!_enabled) {
-        textColor = Qt::black;
     } else {
         double r, g, b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);

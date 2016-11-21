@@ -35,6 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+#include <QPixmap>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -85,13 +86,15 @@ public Q_SLOTS:
 
 private:
 
+    void loadPixmaps(bool applyColorOverlay, const QColor& overlayColor);
+
+    QPixmap loadPixmapInternal(bool checked, bool applyColorOverlay, const QColor& overlayColor);
+
     virtual void onLabelChanged() OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
-    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL
-    {
-    }
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL;
     virtual void reflectSelectionState(bool selected) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
 

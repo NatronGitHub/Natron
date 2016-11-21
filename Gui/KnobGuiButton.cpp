@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QToolTip>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QImage>
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>
@@ -91,74 +92,124 @@ KnobGuiButton::KnobGuiButton(const KnobGuiPtr& knob, ViewIdx view)
     _knob = toKnobButton(knob->getKnob());
 }
 
-void
-KnobGuiButton::createWidget(QHBoxLayout* layout)
+static double overFunctor(double a, double b, double alphaA)
+{
+    return a + b * (a - alphaA);
+}
+
+QPixmap
+KnobGuiButton::loadPixmapInternal(bool checked, bool applyColorOverlay, const QColor& overlayColor)
 {
     KnobGuiPtr knobUI = getKnobGui();
     KnobButtonPtr knob = _knob.lock();
-    QString label = QString::fromUtf8( knob->getLabel().c_str() );
-    QString onIconFilePath, offIconFilePath;
-    if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
-        onIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(true).c_str() );
-        offIconFilePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(false).c_str() );
-    } else {
-        onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
-        offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
-    }
-
     EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
     KnobTableItemPtr isTableItem = toKnobTableItem(knob->getHolder());
     if (isTableItem) {
         isEffect = isTableItem->getModel()->getNode()->getEffectInstance();
     }
 
-    // If the icon path is not absolute, prepend the plug-in resource path
-    if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
+    QString filePath;
+    if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
+        filePath = QString::fromUtf8( knob->getInViewerContextIconFilePath(checked).c_str() );
+    } else {
+        filePath = QString::fromUtf8( knob->getIconLabel(checked).c_str() );
+    }
+    if ( !filePath.isEmpty() && !QFile::exists(filePath) ) {
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
             if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
                 resourcesPath += QLatin1Char('/');
             }
-            onIconFilePath.prepend(resourcesPath);
+            filePath.prepend(resourcesPath);
         }
     }
-    if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        if (isEffect) {
-            //Prepend the resources path
-            QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
-            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
-                resourcesPath += QLatin1Char('/');
-            }
-            offIconFilePath.prepend(resourcesPath);
+
+    if ( !filePath.isEmpty() ) {
+#if 0
+        QPixmap pix;
+        if (pix.load(filePath)) {
+            return pix;
         }
+#else
+        QImage img;
+        if ( img.load(filePath) ) {
+            if (applyColorOverlay) {
+
+                int depth = img.depth();
+                if (depth != 32) {
+                    img = img.convertToFormat(QImage::Format_ARGB32);
+                }
+                depth = img.depth();
+                assert(depth == 32);
+                for (int y = 0; y < img.height(); ++y) {
+                    QRgb* pix = (QRgb*)img.scanLine(y);
+                    for (int x = 0; x < img.width(); ++x) {
+                        QRgb srcPix = pix[x];
+                        double a = qAlpha(srcPix) / 255.f;
+                        double r = qRed(srcPix) / 255.f * a;
+                        double g = qGreen(srcPix) / 255.f * a;
+                        double b = qBlue(srcPix) / 255.f * a;
+
+                        r = Image::clamp(overFunctor(overlayColor.redF(), r, overlayColor.alphaF()), 0., 1.);
+                        g = Image::clamp(overFunctor(overlayColor.greenF(), g, overlayColor.alphaF()), 0., 1.);
+                        b = Image::clamp(overFunctor(overlayColor.blueF(), b, overlayColor.alphaF()), 0., 1.);
+                        a = Image::clamp(overFunctor(overlayColor.alphaF(), a, overlayColor.alphaF()) * a, 0., 1.);
+
+                        QRgb p = qRgba(r * 255, g * 255, b * 255, a * 255);
+                        img.setPixel(x, y, p);
+                    }
+                }
+            }
+            QPixmap pix = QPixmap::fromImage(img);
+            return pix;
+        }
+#endif
+    }
+    return QPixmap();
+} // loadPixmapInternal
+
+void
+KnobGuiButton::loadPixmaps(bool applyColorOverlay, const QColor& overlayColor)
+{
+    QPixmap uncheckedPix = loadPixmapInternal(false, applyColorOverlay, overlayColor);
+    QPixmap checkedPix = loadPixmapInternal(true, applyColorOverlay, overlayColor);
+    QIcon icon;
+    if (!uncheckedPix.isNull()) {
+        icon.addPixmap(uncheckedPix, QIcon::Normal, QIcon::Off);
+    }
+    if (!checkedPix.isNull()) {
+        icon.addPixmap(checkedPix, QIcon::Normal, QIcon::On);
+    }
+    if (!icon.isNull()) {
+        _button->setIcon(icon);
+    } else {
+        KnobButtonPtr knob = _knob.lock();
+        QString label = QString::fromUtf8( knob->getLabel().c_str() );
+        _button->setText(label);
+    }
+} // loadPixmap
+
+void
+KnobGuiButton::createWidget(QHBoxLayout* layout)
+{
+    KnobGuiPtr knobUI = getKnobGui();
+    KnobButtonPtr knob = _knob.lock();
+
+    _button = new Button( layout->parentWidget() );
+    if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeTableItemWidget) {
+        _button->setIconSize( QSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE)) );
+    } else {
+        _button->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
+    }
+
+    loadPixmaps(false, QColor());
+
+    if (!_button->icon().isNull()) {
+        _button->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     }
 
     bool checkable = knob->getIsCheckable();
-    QIcon icon;
-    QPixmap pixChecked, pixUnchecked;
-    if ( !offIconFilePath.isEmpty() ) {
-        if ( pixUnchecked.load(offIconFilePath) ) {
-            icon.addPixmap(pixUnchecked, QIcon::Normal, QIcon::Off);
-        }
-    }
-    if ( !onIconFilePath.isEmpty() ) {
-        if ( pixChecked.load(onIconFilePath) ) {
-            icon.addPixmap(pixChecked, QIcon::Normal, QIcon::On);
-        }
-    }
-
-    if ( !icon.isNull() ) {
-        _button = new Button( icon, QString(), layout->parentWidget() );
-        _button->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-        if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeTableItemWidget) {
-            _button->setIconSize( QSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE)) );
-        } else {
-            _button->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
-        }
-    } else {
-        _button = new Button( label, layout->parentWidget() );
-    }
     if (checkable) {
         _button->setCheckable(true);
         bool checked = knob->getValue();
@@ -244,9 +295,24 @@ KnobGuiButton::setEnabled(const std::vector<bool>& perDimEnabled)
 }
 
 void
-KnobGuiButton::reflectSelectionState(bool /*selected*/)
+KnobGuiButton::reflectMultipleSelection(bool dirty)
 {
+    QColor c;
+    c.setRgbF(0.2, 0.2, 0.2);
+    c.setAlphaF(0.2);
+    loadPixmaps(dirty, c);
+}
 
+
+void
+KnobGuiButton::reflectSelectionState(bool selected)
+{
+    QColor c;
+    double r,g,b;
+    appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
+    c.setRgbF(r,g,b);
+    c.setAlphaF(0.2);
+    loadPixmaps(selected, c);
 }
 
 
