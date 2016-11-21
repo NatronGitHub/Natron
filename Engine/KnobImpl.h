@@ -699,9 +699,9 @@ Knob<T>::getValue(int dimension,
 {
     assert( !view.isAll() );
     bool useGuiValues = QThread::currentThread() == qApp->thread();
-    if (useGuiValues) {
-        //Never clamp when using gui values
-        clamp = false;
+
+    if (getName() == "multi") {
+        debugHook();
     }
 
     if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
@@ -728,7 +728,13 @@ Knob<T>::getValue(int dimension,
 
     QMutexLocker l(&_valueMutex);
     if (useGuiValues) {
-        return _guiValues[dimension];
+        if (clamp) {
+            T ret = _guiValues[dimension];
+
+            return clampToMinMax(ret, dimension);
+        } else {
+            return _guiValues[dimension];
+        }
     } else {
         if (clamp) {
             T ret = _values[dimension];
