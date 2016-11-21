@@ -61,7 +61,7 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("size", "Size")
     param.setMinimum(0, 0)
-    param.setMaximum(100, 0)
+    #param.setMaximum(100, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(100, 0)
     param.setDefaultValue(10, 0)
@@ -78,16 +78,16 @@ def createInstance(app,group):
     del param
 
     param = lastNode.createColorParam("off", "Darks", False)
-    param.setMinimum(-1, 0)
-    param.setMaximum(1, 0)
+    #param.setMinimum(-1, 0)
+    #param.setMaximum(1, 0)
     param.setDisplayMinimum(-1, 0)
     param.setDisplayMaximum(1, 0)
-    param.setMinimum(-1, 1)
-    param.setMaximum(1, 1)
+    #param.setMinimum(-1, 1)
+    #param.setMaximum(1, 1)
     param.setDisplayMinimum(-1, 1)
     param.setDisplayMaximum(1, 1)
-    param.setMinimum(-1, 2)
-    param.setMaximum(1, 2)
+    #param.setMinimum(-1, 2)
+    #param.setMaximum(1, 2)
     param.setDisplayMinimum(-1, 2)
     param.setDisplayMaximum(1, 2)
 
@@ -103,19 +103,19 @@ def createInstance(app,group):
 
     param = lastNode.createColorParam("mult", "Lights", False)
     param.setMinimum(0, 0)
-    param.setMaximum(2, 0)
+    #param.setMaximum(2, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(2, 0)
     param.setDefaultValue(1, 0)
     param.restoreDefaultValue(0)
     param.setMinimum(0, 1)
-    param.setMaximum(2, 1)
+    #param.setMaximum(2, 1)
     param.setDisplayMinimum(0, 1)
     param.setDisplayMaximum(2, 1)
     param.setDefaultValue(1, 1)
     param.restoreDefaultValue(1)
     param.setMinimum(0, 2)
-    param.setMaximum(2, 2)
+    #param.setMaximum(2, 2)
     param.setDisplayMinimum(0, 2)
     param.setDisplayMaximum(2, 2)
     param.setDefaultValue(1, 2)
@@ -146,7 +146,7 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("erode", "Erode")
     param.setMinimum(0, 0)
-    param.setMaximum(5, 0)
+    #param.setMaximum(5, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(5, 0)
 
@@ -175,7 +175,7 @@ def createInstance(app,group):
 
     param = lastNode.createDoubleParam("multi", "Patch Black")
     param.setMinimum(0, 0)
-    param.setMaximum(5, 0)
+    #param.setMaximum(5, 0)
     param.setDisplayMinimum(0, 0)
     param.setDisplayMaximum(5, 0)
 
