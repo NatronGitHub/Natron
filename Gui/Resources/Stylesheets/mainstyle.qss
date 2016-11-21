@@ -384,7 +384,7 @@ QTabBar::tab#DockablePanelTabWidget {
 }
 
 QTabBar::tab:!selected:hover {
-    background-color: %4;
+    background-color: %3;
 }
 
 QTabBar::tab:selected {
