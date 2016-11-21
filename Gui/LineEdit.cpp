@@ -45,6 +45,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
+#include "Engine/Image.h"
+#include "Engine/Settings.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 
@@ -52,29 +55,18 @@ NATRON_NAMESPACE_ENTER;
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
-    , animation(0)
-    , dirty(false)
-    , altered(false)
+    , StyledKnobWidgetBase()
+    , _customColor()
+    , _customColorSet(false)
+    , isBold(false)
+    , borderDisabled(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect, 0);
-    connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
     setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
 LineEdit::~LineEdit()
 {
-}
-
-void
-LineEdit::paintEvent(QPaintEvent* e)
-{
-    /*QPalette p = this->palette();
-       QColor c(200,200,200,255);
-
-       p.setColor( QPalette::Highlight, c );
-       p.setColor( QPalette::HighlightedText, c );
-       this->setPalette( p );*/
-    QLineEdit::paintEvent(e);
 }
 
 void
@@ -95,11 +87,6 @@ LineEdit::dropEvent(QDropEvent* e)
     }
 }
 
-void
-LineEdit::onEditingFinished()
-{
-    //clearFocus();
-}
 
 void
 LineEdit::dragEnterEvent(QDragEnterEvent* e)
@@ -120,36 +107,67 @@ LineEdit::dragLeaveEvent(QDragLeaveEvent* e)
 }
 
 void
-LineEdit::setAnimation(int v)
+LineEdit::refreshStylesheet()
 {
-    if (v != animation) {
-        animation = v;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+    double fgColor[3];
+    bool fgColorSet = false;
+    if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
+        fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
     }
+    if (!fgColorSet) {
+        if (_customColorSet) {
+            fgColor[0] = _customColor.redF();
+            fgColor[1] = _customColor.greenF();
+            fgColor[2] = _customColor.blueF();
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet) {
+        if (!getIsModified()) {
+            appPTR->getCurrentSettings()->getAltTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        } else {
+            appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        }
+        fgColorSet = true;
+    }
+    QColor fgCol;
+    fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+
+    setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+                                    "color: rgb(%1, %2, %3);\n"
+                                    "%4\n"
+                                    "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue())
+                  .arg(isBold ? QString::fromUtf8("font-weight: bold;") : QString()));
+
+
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
 void
-LineEdit::setDirty(bool b)
+LineEdit::setCustomTextColor(const QColor& color)
 {
-    if (dirty != b) {
-        dirty = b;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+    _customColorSet = true;
+    if (color != _customColor) {
+        _customColor = color;
+        refreshStylesheet();
     }
 }
 
+
 void
-LineEdit::setAltered(bool b)
+LineEdit::setBorderDisabled(bool disabled)
 {
-    if (altered != b) {
-        altered = b;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
+    borderDisabled = disabled;
+    refreshStylesheet();
+}
+
+bool
+LineEdit::getBorderDisabled() const
+{
+    return borderDisabled;
 }
 
 void

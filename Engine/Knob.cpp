@@ -1280,21 +1280,43 @@ KnobHelper::isEnabled(DimIdx dimension, ViewGetSpec view) const
     if (dimension < 0 || dimension >= getNDimensions()) {
         throw std::invalid_argument("KnobHelper::isEnabled: dimension out of range");
     }
-    QMutexLocker k(&_imp->stateMutex);
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-    PerViewEnabledMap::const_iterator foundView = _imp->enabled[dimension].find(view_i);
-    if (foundView == _imp->enabled[dimension].end()) {
+
+    // Check the enabled bit, if true check link state
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        ViewIdx view_i = getViewIdxFromGetSpec(view);
+        PerViewEnabledMap::const_iterator foundView = _imp->enabled[dimension].find(view_i);
+        if (foundView == _imp->enabled[dimension].end()) {
+            return false;
+        }
+        if (!foundView->second) {
+            return false;
+        }
+    }
+
+    // Check expression
+    std::string hasExpr = getExpression(dimension, view);
+    if (!hasExpr.empty()) {
         return false;
     }
-    return foundView->second;
-}
+
+    // check hard link
+    MasterKnobLink linkData;
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+    if (getMaster(dimension, view_i, &linkData)) {
+        return false;
+    }
+
+    return true;
+} // isEnabled
+
 
 
 void
-KnobHelper::setDirty(bool d)
+KnobHelper::setKnobSelectedMultipleTimes(bool d)
 {
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_setDirty(d);
+        _signalSlotHandler->s_selectedMultipleTimes(d);
     }
 }
 
@@ -1822,11 +1844,20 @@ KnobHelper::refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension)
 {
     AnimationLevelEnum level = eAnimationLevelNone;
 
-    if (isAnimated(dimension, view) && getExpression(dimension, view).empty() ) {
+    std::string expr = getExpression(dimension, view);
+    if (!expr.empty()) {
+        level = eAnimationLevelExpression;
+    } else {
 
-        CurvePtr c = getCurve(view, dimension);
-        double time = getCurrentTime();
-        if (c && c->getKeyFramesCount() > 0) {
+        CurvePtr c;
+        if (canAnimate() && isAnimationEnabled()) {
+            c = getCurve(view, dimension);
+        }
+
+        if (!c || !c->isAnimated()) {
+            level = eAnimationLevelNone;
+        } else {
+            double time = getCurrentTime();
             KeyFrame kf;
             int nKeys = c->getNKeyFramesInRange(time, time + 1);
             if (nKeys > 0) {
@@ -1834,10 +1865,9 @@ KnobHelper::refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension)
             } else {
                 level = eAnimationLevelInterpolatedValue;
             }
-        } else {
-            level = eAnimationLevelNone;
         }
     }
+
     bool changed = false;
     {
         QMutexLocker l(&_imp->animationLevelMutex);
@@ -2541,6 +2571,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         output = newKnob;
     } else if (isBtn) {
         KnobButtonPtr newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
+        KnobButton* thisKnobButton = dynamic_cast<KnobButton*>(this);
+        newKnob->setCheckable(thisKnobButton->getIsCheckable());
         output = newKnob;
     } else if (isParametric) {
         KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getNDimensions(), isUserKnob);
@@ -2560,6 +2592,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     if ( canAnimate() ) {
         output->setAnimationEnabled( isAnimationEnabled() );
     }
+    output->setIconLabel(getIconLabel(false), false);
+    output->setIconLabel(getIconLabel(true), true);
     output->setEvaluateOnChange( getEvaluateOnChange() );
     output->setHintToolTip(newToolTip);
     output->setAddNewLine(true);

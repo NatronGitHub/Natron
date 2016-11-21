@@ -175,8 +175,6 @@ public:
 
     bool isOnNewLine() const;
 
-    ////calls setReadOnly and also set the label black
-    void setReadOnly_(bool readOnly, DimSpec dimension, ViewIdx view);
 
     int getKnobsCountOnSameLine() const;
 
@@ -317,7 +315,7 @@ public Q_SLOTS:
     ///Actually restores all dimensions, the parameter is disregarded.
     void resetDefault(DimSpec dimension, ViewSetSpec view);
 
-    void onSetDirty(bool d);
+    void onKnobMultipleSelectionChanged(bool d);
 
     void onInternalKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
 
@@ -378,6 +376,8 @@ Q_SIGNALS:
     void s_refreshDimensionsVisibilityLater();
 
 private:
+
+    void setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view);
 
     void refreshModificationsStateNow();
 

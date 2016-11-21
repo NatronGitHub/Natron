@@ -1673,7 +1673,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
             // The master knob is set "dirty" if multiple selected items have the given knob, to indicate to the user
             // that modifying the master knob modifies all selected items.
-            masterKnob->setDirty(nItemsWithKnob > 1);
+            masterKnob->setKnobSelectedMultipleTimes(nItemsWithKnob > 1);
 
             // We need this otherwise the copyKnob() function would emit the value changed signal of the master knob
             // which would in turn call onMasterKnobValueChanged and recurse.

@@ -88,7 +88,6 @@ KnobGuiGroup::KnobGuiGroup(const KnobGuiPtr& knob, ViewIdx view)
     , _checked(false)
     , _button(0)
     , _children()
-    , _childrenToEnable()
     , _knob( toKnobGroup(knob->getKnob()) )
 {
 }
@@ -215,40 +214,29 @@ KnobGuiGroup::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiGroup::setEnabled()
+KnobGuiGroup::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobGroupPtr knob = _knob.lock();
-    bool enabled = knob->isEnabled(DimIdx(0));
-
     if (_button) {
-        _button->setEnabled(enabled);
+        _button->setEnabled(perDimEnabled[0]);
     }
 
-    if (enabled) {
-        for (U32 i = 0; i < _childrenToEnable.size(); ++i) {
-            for (U32 j = 0; j < _childrenToEnable[i].second.size(); ++j) {
-                KnobGuiPtr k = _childrenToEnable[i].first.lock();
-                if (!k) {
-                    continue;
-                }
-                k->getKnob()->setEnabled(_childrenToEnable[i].second[j], DimSpec::all(), ViewSetSpec::all());
-            }
-        }
-    } else {
-        _childrenToEnable.clear();
+    if (perDimEnabled[0]) {
         for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
             KnobGuiPtr k = it->lock();
             if (!k) {
                 continue;
             }
-            std::vector<int> dimensions;
-            for (int j = 0; j < k->getKnob()->getNDimensions(); ++j) {
-                if ( k->getKnob()->isEnabled(DimIdx(j)) ) {
-                    k->getKnob()->setEnabled(false, DimIdx(j), ViewSetSpec::all());
-                    dimensions.push_back(j);
-                }
+            k->setEnabledSlot();
+        }
+
+    } else {
+        for (std::list<KnobGuiWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            KnobGuiPtr k = it->lock();
+            if (!k) {
+                continue;
             }
-            _childrenToEnable.push_back( std::make_pair(*it, dimensions) );
+            k->onFrozenChanged(true);
         }
     }
 }

@@ -33,44 +33,26 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
 class LineEdit
     : public QLineEdit
+    , public StyledKnobWidgetBase
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+    Q_PROPERTY(bool borderDisabled READ getBorderDisabled WRITE setBorderDisabled)
+    Q_PROPERTY(bool isBold READ getIsBold WRITE setIsBold)
 
 public:
     explicit LineEdit(QWidget* parent = 0);
+
     virtual ~LineEdit() OVERRIDE;
-
-    int getAnimation() const
-    {
-        return animation;
-    }
-
-    void setAnimation(int v);
-
-    bool getDirty() const
-    {
-        return dirty;
-    }
-
-    void setDirty(bool b);
-
-    void setAltered(bool b);
-    bool getAltered() const
-    {
-        return altered;
-    }
 
     void setReadOnly_NoFocusRect(bool readOnly)
     {
@@ -80,20 +62,26 @@ public:
         setAttribute(Qt::WA_MacShowFocusRect, 0);
     }
 
+    void setBorderDisabled(bool disabled);
+
+    bool getBorderDisabled() const;
+
+    bool getIsBold() const;
+
+    void setIsBold(bool b);
+
+    void setCustomTextColor(const QColor& color);
+
 Q_SIGNALS:
 
     void textDropped();
 
     void textPasted();
 
-public Q_SLOTS:
-
-    void onEditingFinished();
-
 protected:
 
+    virtual void refreshStylesheet() OVERRIDE;
 
-    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void dropEvent(QDropEvent* e) OVERRIDE;
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE;
@@ -101,11 +89,11 @@ protected:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE;
 
 private:
-
-
-    int animation;
-    bool dirty;
-    bool altered;
+    
+    QColor _customColor;
+    bool _customColorSet;
+    bool isBold;
+    bool borderDisabled;
 };
 
 NATRON_NAMESPACE_EXIT;

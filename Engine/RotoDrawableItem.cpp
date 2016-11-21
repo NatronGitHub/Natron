@@ -104,7 +104,7 @@ public:
     KnobChoiceWPtr lifeTime;
     KnobBoolWPtr customRange;
     KnobIntWPtr lifeTimeFrame;
-    KnobBoolWPtr invertKnob; //< invert the rendering
+    KnobButtonWPtr invertKnob; //< invert the rendering
     KnobColorWPtr color;
     KnobChoiceWPtr compOperator;
 
@@ -1101,7 +1101,7 @@ KnobDoublePtr RotoDrawableItem::getOpacityKnob() const
     return _imp->opacity.lock();
 }
 
-KnobBoolPtr RotoDrawableItem::getInvertedKnob() const
+KnobButtonPtr RotoDrawableItem::getInvertedKnob() const
 {
     return _imp->invertKnob.lock();
 }
@@ -1384,7 +1384,7 @@ RotoDrawableItem::initializeKnobs()
     // Item types that output a mask may not have an invert parameter
     if (type != eRotoStrokeTypeSolid &&
         type != eRotoStrokeTypeSmear) {
-        _imp->invertKnob = createDuplicateOfTableKnob<KnobBool>(kRotoInvertedParam);
+        _imp->invertKnob = createDuplicateOfTableKnob<KnobButton>(kRotoInvertedParam);
     }
 
     // Color is only useful for solids

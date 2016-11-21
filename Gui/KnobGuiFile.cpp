@@ -370,26 +370,18 @@ KnobGuiFile::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiFile::setEnabled()
+KnobGuiFile::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    bool enabled = _knob.lock()->isEnabled(DimIdx(0), getView());
 
-    _openFileButton->setEnabled(enabled);
-    _lineEdit->setReadOnly_NoFocusRect(!enabled);
+    _openFileButton->setEnabled(perDimEnabled[0]);
+    _lineEdit->setReadOnly_NoFocusRect(!perDimEnabled[0]);
 }
 
-void
-KnobGuiFile::setReadOnly(bool readOnly,
-                         DimSpec /*dimension*/)
-{
-    _openFileButton->setEnabled(!readOnly);
-    _lineEdit->setReadOnly_NoFocusRect(readOnly);
-}
 
 void
-KnobGuiFile::setDirty(bool dirty)
+KnobGuiFile::reflectMultipleSelection(bool dirty)
 {
-    _lineEdit->setDirty(dirty);
+    _lineEdit->setIsSelectedMultipleTimes(dirty);
 }
 
 
@@ -462,20 +454,12 @@ KnobGuiFile::onSimplifyTriggered()
 
 void
 KnobGuiFile::reflectAnimationLevel(DimIdx /*dimension*/,
-                                   AnimationLevelEnum /*level*/)
-{
-    _lineEdit->setAnimation(0);
-}
-
-void
-KnobGuiFile::reflectExpressionState(DimIdx /*dimension*/,
-                                    bool hasExpr)
+                                   AnimationLevelEnum level)
 {
     bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
-
-    _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
-    _openFileButton->setEnabled(!hasExpr || isEnabled);
+    _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
+    _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
+    _lineEdit->setAnimation(level);
 }
 
 void
@@ -739,32 +723,20 @@ KnobGuiPath::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiPath::setEnabled()
+KnobGuiPath::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobPathPtr knob = _knob.lock();
     if ( knob->isMultiPath() ) {
-        KnobGuiTable::setEnabled();
+        KnobGuiTable::setEnabled(perDimEnabled);
     } else {
-        bool enabled = knob->isEnabled(DimIdx(0), getView());
-        _lineEdit->setReadOnly_NoFocusRect(!enabled);
-        _openFileButton->setEnabled(enabled);
+        _lineEdit->setReadOnly_NoFocusRect(!perDimEnabled[0]);
+        _openFileButton->setEnabled(perDimEnabled[0]);
     }
 }
 
-void
-KnobGuiPath::setReadOnly(bool readOnly,
-                         DimSpec dimension)
-{
-    if ( _knob.lock()->isMultiPath() ) {
-        KnobGuiTable::setReadOnly(readOnly, dimension);
-    } else {
-        _lineEdit->setReadOnly_NoFocusRect(readOnly);
-        _openFileButton->setEnabled(!readOnly);
-    }
-}
 
 void
-KnobGuiPath::setDirty(bool /*dirty*/)
+KnobGuiPath::reflectMultipleSelection(bool /*dirty*/)
 {
 }
 
@@ -838,26 +810,20 @@ KnobGuiPath::onSimplifyTriggered()
 
 void
 KnobGuiPath::reflectAnimationLevel(DimIdx /*dimension*/,
-                                   AnimationLevelEnum /*level*/)
-{
-    if ( !_knob.lock()->isMultiPath() ) {
-        _lineEdit->setAnimation(0);
-    }
-}
-
-void
-KnobGuiPath::reflectExpressionState(DimIdx /*dimension*/,
-                                    bool hasExpr)
+                                   AnimationLevelEnum level)
 {
     KnobPathPtr knob = _knob.lock();
 
     if ( !knob->isMultiPath() ) {
-        bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
-        _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
-        _openFileButton->setEnabled(!hasExpr || isEnabled);
+        _lineEdit->setAnimation(level);
+        bool isEnabled = knob->isEnabled(DimIdx(0), getView());
+        _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
+        _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
     }
+
 }
+
+
 
 void
 KnobGuiPath::updateToolTip()

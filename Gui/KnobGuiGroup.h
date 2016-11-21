@@ -40,7 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
@@ -88,23 +87,19 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
-    virtual void setEnabled()  OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled)  OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
-    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL
     {
     }
 
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
-    virtual void setReadOnly(bool /*readOnly*/,
-                             DimSpec /*dimension*/) OVERRIDE FINAL
-    {
-    }
+
 
 private:
     bool _checked;
     GroupBoxLabel *_button;
     std::list<KnobGuiWPtr> _children;
-    std::vector< std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     //enabled too
     KnobGroupWPtr _knob;
 };

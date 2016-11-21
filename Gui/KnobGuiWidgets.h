@@ -93,19 +93,13 @@ public:
     /**
      * @brief Implement to refresh enabledness on the knob
      **/
-    virtual void setEnabled() = 0;
-
-
-    /**
-     * @brief Implement to set the knob read-only
-     **/
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) = 0;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) = 0;
 
     /**
-     * @brief Implement to set the knob dirty or not. A Knob is dirty when
-     * multiple objects depend on the knob.
+     * @brief Implement to reflect that multiple knobs will be modified if this knob is modified.
+     * This is useful for master knobs in a KnobItemsTable
      **/
-    virtual void setDirty(bool dirty) = 0;
+    virtual void reflectMultipleSelection(bool selectedMultipleTimes) = 0;
 
     /**
      * @brief Returns whether to create a label or not. If not, the label will never be shown
@@ -156,11 +150,6 @@ public:
     virtual void reflectAnimationLevel(DimIdx /*dimension*/, AnimationLevelEnum /*level*/)
     {
     }
-
-    /**
-     * @brief Can be implemented to reflect that the knob has an expression
-     **/
-    virtual void reflectExpressionState(DimIdx /*dimension*/, bool /*hasExpr*/) {}
 
     /**
      * @brief Can be implemented to reflect that the knob has modifications

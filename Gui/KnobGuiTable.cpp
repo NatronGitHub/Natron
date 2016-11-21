@@ -458,27 +458,17 @@ KnobGuiTable::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiTable::setEnabled()
+KnobGuiTable::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    bool enabled = getKnobGui()->getKnob()->isEnabled(DimIdx(0), getView());
 
     if (_imp->table) {
-        _imp->table->setEnabled(enabled);
-        _imp->addPathButton->setEnabled(enabled);
-        _imp->removePathButton->setEnabled(enabled);
+        _imp->table->setEnabled(perDimEnabled[0]);
+        _imp->addPathButton->setEnabled(perDimEnabled[0]);
+        _imp->removePathButton->setEnabled(perDimEnabled[0]);
     }
 }
 
-void
-KnobGuiTable::setReadOnly(bool readOnly,
-                          DimSpec /*dimension*/)
-{
-    if (_imp->table) {
-        _imp->table->setEnabled(!readOnly);
-        _imp->addPathButton->setEnabled(!readOnly);
-        _imp->removePathButton->setEnabled(!readOnly);
-    }
-}
+
 
 void
 KnobGuiTable::onItemAboutToDrop()

@@ -437,7 +437,8 @@ enum AnimationLevelEnum
 {
     eAnimationLevelNone = 0,
     eAnimationLevelInterpolatedValue = 1,
-    eAnimationLevelOnKeyframe = 2
+    eAnimationLevelOnKeyframe = 2,
+    eAnimationLevelExpression = 3
 };
 
 enum ImageComponentsEnum

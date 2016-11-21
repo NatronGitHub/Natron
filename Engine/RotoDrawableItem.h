@@ -164,7 +164,7 @@ public:
     KnobBoolPtr getCustomRangeKnob() const;
 
     KnobDoublePtr getOpacityKnob() const;
-    KnobBoolPtr getInvertedKnob() const;
+    KnobButtonPtr getInvertedKnob() const;
     KnobChoicePtr getOperatorKnob() const;
     KnobColorPtr getColorKnob() const;
     KnobColorPtr getOverlayColorKnob() const;

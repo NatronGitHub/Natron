@@ -44,7 +44,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
@@ -53,22 +52,19 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
 class AnimatingTextEdit
     : public QTextEdit
+    , public StyledKnobWidgetBase
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-
+    GCC_DIAG_SUGGEST_OVERRIDE_ON 
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
 public:
 
     AnimatingTextEdit(const KnobGuiPtr& knob,
@@ -78,32 +74,14 @@ public:
 
     virtual ~AnimatingTextEdit();
 
-    int getAnimation() const
-    {
-        return animation;
-    }
-
-    void setAnimation(int v);
-
-    bool isReadOnlyNatron() const
-    {
-        return readOnlyNatron;
-    }
-
-    void setReadOnlyNatron(bool ro);
-
-    bool getDirty() const
-    {
-        return dirty;
-    }
-
-    void setDirty(bool b);
 
 Q_SIGNALS:
 
     void editingFinished();
 
 private:
+
+    virtual void refreshStylesheet() OVERRIDE FINAL;
 
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
@@ -120,10 +98,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
 private:
-    int animation;
-    bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
-    bool dirty;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
@@ -216,12 +191,10 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
 

@@ -915,26 +915,91 @@ KnobGui::isOnNewLine() const
 }
 
 void
-KnobGui::setEnabledSlot()
+KnobGui::setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view)
 {
     if ( !getGui() ) {
         return;
     }
     if (!_imp->customInteract) {
-        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-            if (it->second.widgets) {
-                it->second.widgets->setEnabled();
+        KnobGuiPrivate::PerViewWidgetsMap::iterator foundView = _imp->views.find(view);
+        if (foundView != _imp->views.end()) {
+            if (foundView->second.widgets) {
+                foundView->second.widgets->setEnabled(perDimEnabled);
             }
         }
+
     }
+
+}
+
+void
+KnobGui::setEnabledSlot()
+{
     KnobIPtr knob = getKnob();
+
+    bool labelEnabled = false;
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        std::vector<bool> enabled;
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+            enabled.push_back(knob->isEnabled(DimIdx(i), it->first));
+            if (enabled.back()) {
+                // If all dim/view are disabled, draw label disabled
+                labelEnabled = true;
+            }
+        }
+        setViewEnabledInternal(enabled, it->first);
+    }
+
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setEnabled( knob->isEnabled(DimIdx(0)) );
+        _imp->descriptionLabel->setEnabled( labelEnabled );
     }
     if (_imp->tabGroup) {
-        _imp->tabGroup->setEnabled( !knob->isEnabled(DimIdx(0)));
+        _imp->tabGroup->setEnabled(labelEnabled);
     }
 }
+
+void
+KnobGui::onFrozenChanged(bool frozen)
+{
+    KnobIPtr knob = getKnob();
+    KnobButtonPtr isBtn = toKnobButton(knob);
+
+    if ( isBtn && !isBtn->isRenderButton() ) {
+        return;
+    }
+
+    bool labelEnabled = false;
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        std::vector<bool> enabled;
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+            if (frozen) {
+                enabled.push_back(false);
+            } else {
+                enabled.push_back(knob->isEnabled(DimIdx(i), it->first));
+            }
+            if (enabled.back()) {
+                // If all dim/view are disabled, draw label disabled
+                labelEnabled = true;
+            }
+        }
+        setViewEnabledInternal(enabled, it->first);
+    }
+
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setEnabled( labelEnabled );
+    }
+    if (_imp->tabGroup) {
+        _imp->tabGroup->setEnabled(labelEnabled);
+    }
+
+}
+
+bool
+KnobGui::isGuiFrozenForPlayback() const
+{
+    return getGui() ? getGui()->isGUIFrozen() : false;
+}
+
 
 void
 KnobGui::onSplitViewActionTriggered()

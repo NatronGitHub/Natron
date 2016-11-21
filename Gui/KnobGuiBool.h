@@ -44,7 +44,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
@@ -129,12 +128,10 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void onLabelChanged() OVERRIDE FINAL;
 

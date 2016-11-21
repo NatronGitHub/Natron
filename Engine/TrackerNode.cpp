@@ -213,7 +213,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setCheckable(true);
         param->setDefaultValue(false);
         param->setSecret(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "addTrack.png");
+        param->setIconLabel("Images/addTrack.png");
         addOverlaySlaveParam(param);
         trackingPage->addKnob(param);
         _imp->ui->addTrackButton = param;
@@ -228,8 +228,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setDefaultValue(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOn.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackBackwardOff.png", false);
+        param->setIconLabel("Images/trackBackwardOn.png", true);
+        param->setIconLabel("Images/trackBackwardOff.png", false);
         trackingPage->addKnob(param);
         _imp->ui->trackBwButton = param;
     }
@@ -240,7 +240,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackPrev.png");
+        param->setIconLabel("Images/trackPrev.png");
         trackingPage->addKnob(param);
         _imp->ui->trackPrevButton = param;
     }
@@ -252,7 +252,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png");
+        param->setIconLabel("Images/pauseDisabled.png");
         trackingPage->addKnob(param);
         _imp->ui->stopTrackingButton = param;
     }
@@ -264,7 +264,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackNext.png");
+        param->setIconLabel("Images/trackNext.png");
         trackingPage->addKnob(param);
         _imp->ui->trackNextButton = param;
     }
@@ -277,8 +277,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setDefaultValue(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackForwardOn.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackForwardOff.png", false);
+        param->setIconLabel("Images/trackForwardOn.png", true);
+        param->setIconLabel("Images/trackForwardOff.png", false);
         trackingPage->addKnob(param);
         _imp->ui->trackFwButton = param;
     }
@@ -289,7 +289,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackRange.png");
+        param->setIconLabel("Images/trackRange.png");
         trackingPage->addKnob(param);
         _imp->ui->trackRangeButton = param;
     }
@@ -300,7 +300,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackAllKeyframes.png");
+        param->setIconLabel("Images/trackAllKeyframes.png");
         trackingPage->addKnob(param);
         _imp->ui->trackAllKeyframesButton = param;
     }
@@ -311,7 +311,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "trackCurrentKeyframe.png");
+        param->setIconLabel("Images/trackCurrentKeyframe.png");
         trackingPage->addKnob(param);
         _imp->ui->trackCurrentKeyframeButton = param;
     }
@@ -322,7 +322,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "addUserKey.png");
+        param->setIconLabel("Images/addUserKey.png");
         trackingPage->addKnob(param);
         _imp->ui->setKeyFrameButton = param;
     }
@@ -333,7 +333,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "removeUserKey.png");
+        param->setIconLabel("Images/removeUserKey.png");
         trackingPage->addKnob(param);
         _imp->ui->removeKeyFrameButton = param;
     }
@@ -344,7 +344,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimation.png");
+        param->setIconLabel("Images/clearAnimation.png");
         trackingPage->addKnob(param);
         _imp->ui->clearAllAnimationButton = param;
     }
@@ -355,7 +355,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimationBw.png");
+        param->setIconLabel("Images/clearAnimationBw.png");
         trackingPage->addKnob(param);
         _imp->ui->clearBwAnimationButton = param;
     }
@@ -366,7 +366,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setEvaluateOnChange(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "clearAnimationFw.png");
+        param->setIconLabel("Images/clearAnimationFw.png");
         trackingPage->addKnob(param);
         _imp->ui->clearFwAnimationButton = param;
     }
@@ -380,8 +380,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setDefaultValue(true);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
+        param->setIconLabel("Images/refreshActive.png", true);
+        param->setIconLabel("Images/refresh.png", false);
         trackingPage->addKnob(param);
         _imp->ui->updateViewerButton = param;
     }
@@ -395,7 +395,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setDefaultValue(false);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "centerOnTrack.png");
+        param->setIconLabel("Images/centerOnTrack.png");
         trackingPage->addKnob(param);
         _imp->ui->centerViewerButton = param;
     }
@@ -409,8 +409,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setDefaultValue(true);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOn.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "createKeyOnMoveOff.png", false);
+        param->setIconLabel("Images/createKeyOnMoveOn.png", true);
+        param->setIconLabel("Images/createKeyOnMoveOff.png", false);
         trackingPage->addKnob(param);
         _imp->ui->createKeyOnMoveButton = param;
     }
@@ -425,8 +425,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(param);
-        param->setIconLabel(NATRON_IMAGES_PATH "showTrackError.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "hideTrackError.png", false);
+        param->setIconLabel("Images/showTrackError.png", true);
+        param->setIconLabel("Images/hideTrackError.png", false);
         trackingPage->addKnob(param);
         _imp->ui->showCorrelationButton = param;
     }
@@ -440,7 +440,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(param);
-        param->setIconLabel(NATRON_IMAGES_PATH "resetTrackOffset.png");
+        param->setIconLabel("Images/resetTrackOffset.png");
         trackingPage->addKnob(param);
         _imp->ui->resetOffsetButton = param;
     }
@@ -453,7 +453,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(param);
-        param->setIconLabel(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
+        param->setIconLabel("Images/restoreDefaultEnabled.png");
         trackingPage->addKnob(param);
         _imp->ui->resetTrackButton = param;
     }
@@ -477,7 +477,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setName(kTrackerUIParamDefaultMarkerPatternWinSize);
         param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel));
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerPatternWinSizeHint) );
-        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "patternSize.png");
+        param->setInViewerContextIconFilePath("Images/patternSize.png");
         param->setAnimationEnabled(false);
         param->setRange(1, INT_MAX);
         param->disableSlider();
@@ -494,7 +494,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         param->setName(kTrackerUIParamDefaultMarkerSearchWinSize);
         param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel));
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerSearchWinSizeHint) );
-        param->setInViewerContextIconFilePath(NATRON_IMAGES_PATH "searchSize.png");
+        param->setInViewerContextIconFilePath("Images/searchSize.png");
         param->setAnimationEnabled(false);
         param->setRange(1, INT_MAX);
         param->disableSlider();

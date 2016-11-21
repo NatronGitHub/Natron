@@ -55,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/TimeLine.h"
 
 #include "Gui/Button.h"
@@ -105,9 +106,14 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
     }
 
+    EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
+    KnobTableItemPtr isTableItem = toKnobTableItem(knob->getHolder());
+    if (isTableItem) {
+        isEffect = isTableItem->getModel()->getNode()->getEffectInstance();
+    }
 
+    // If the icon path is not absolute, prepend the plug-in resource path
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
-        EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
@@ -118,7 +124,6 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         }
     }
     if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        EffectInstancePtr isEffect = toEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
@@ -174,6 +179,12 @@ KnobGuiButton::~KnobGuiButton()
 }
 
 void
+KnobGuiButton::disableButtonBorder()
+{
+    _button->setStyleSheet(QString::fromUtf8("QPushButton {border: none;}"));
+}
+
+void
 KnobGuiButton::removeSpecificGui()
 {
     _button->deleteLater();
@@ -221,20 +232,13 @@ KnobGuiButton::updateGUI()
 }
 
 void
-KnobGuiButton::setEnabled()
+KnobGuiButton::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobButtonPtr knob = _knob.lock();
-    bool b = knob->isEnabled(DimIdx(0), getView());
 
-    _button->setEnabled(b);
+    _button->setEnabled(perDimEnabled[0]);
 }
 
-void
-KnobGuiButton::setReadOnly(bool readOnly,
-                           DimSpec /*dimension*/)
-{
-    _button->setEnabled(!readOnly);
-}
 
 void
 KnobGuiButton::onLabelChanged()

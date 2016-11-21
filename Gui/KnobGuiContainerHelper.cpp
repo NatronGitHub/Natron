@@ -506,9 +506,9 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
     if (!pixmapSet) {
         /*labelStr += ":";*/
         if ( setBold ) {
-            widget->setBold(true);
+            widget->setIsBold(true);
         }
-        widget->setText_overload(labelText );
+        widget->setText(labelText );
         return !labelText.isEmpty();
     }
     return false;

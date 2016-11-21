@@ -40,7 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"

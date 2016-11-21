@@ -381,10 +381,13 @@ RotoPaint::initGeneralPageKnobs()
     initLifeTimeKnobs(generalPage);
 
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoInvertedParamLabel), 1);
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoInvertedParamLabel), 1);
         param->setHintToolTip( tr(kRotoInvertedHint) );
         param->setName(kRotoInvertedParam);
+        param->setCheckable(true);
         param->setDefaultValue(false);
+        param->setIconLabel("Images/inverted.png", true);
+        param->setIconLabel("Images/uninverted.png", false);
         _imp->knobsTable->addPerItemKnobMaster(param);
         generalPage->addKnob(param);
     }
@@ -786,10 +789,13 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
         _imp->mergeMaskChoiceKnob = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(effect, tr(kRotoInvertedParamLabel), 1);
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoInvertedParamLabel), 1);
         param->setHintToolTip( tr(kRotoInvertedHint) );
         param->setName(kRotoInvertedParam);
+        param->setCheckable(true);
         param->setDefaultValue(false);
+        param->setIconLabel("Images/inverted.png", true);
+        param->setIconLabel("Images/uninverted.png", false);
         _imp->knobsTable->addPerItemKnobMaster(param);
         page->addKnob(param);
     }
@@ -1337,8 +1343,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     autoKeyingEnabled->setDefaultValue(true);
     autoKeyingEnabled->setSecret(true);
     autoKeyingEnabled->setInViewerContextCanHaveShortcut(true);
-    autoKeyingEnabled->setIconLabel(NATRON_IMAGES_PATH "autoKeyingEnabled.png", true);
-    autoKeyingEnabled->setIconLabel(NATRON_IMAGES_PATH "autoKeyingDisabled.png", false);
+    autoKeyingEnabled->setIconLabel("Images/autoKeyingEnabled.png", true);
+    autoKeyingEnabled->setIconLabel("Images/autoKeyingDisabled.png", false);
     generalPage->addKnob(autoKeyingEnabled);
     _imp->ui->autoKeyingEnabledButton = autoKeyingEnabled;
 
@@ -1350,8 +1356,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     featherLinkEnabled->setSecret(true);
     featherLinkEnabled->setInViewerContextCanHaveShortcut(true);
     featherLinkEnabled->setHintToolTip( tr(kRotoUIParamFeatherLinkEnabledHint) );
-    featherLinkEnabled->setIconLabel(NATRON_IMAGES_PATH "featherLinkEnabled.png", true);
-    featherLinkEnabled->setIconLabel(NATRON_IMAGES_PATH "featherLinkDisabled.png", false);
+    featherLinkEnabled->setIconLabel("Images/featherLinkEnabled.png", true);
+    featherLinkEnabled->setIconLabel("Images/featherLinkDisabled.png", false);
     generalPage->addKnob(featherLinkEnabled);
     _imp->ui->featherLinkEnabledButton = featherLinkEnabled;
 
@@ -1364,8 +1370,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     displayFeatherEnabled->setSecret(true);
     displayFeatherEnabled->setInViewerContextCanHaveShortcut(true);
     addOverlaySlaveParam(displayFeatherEnabled);
-    displayFeatherEnabled->setIconLabel(NATRON_IMAGES_PATH "featherEnabled.png", true);
-    displayFeatherEnabled->setIconLabel(NATRON_IMAGES_PATH "featherDisabled.png", false);
+    displayFeatherEnabled->setIconLabel("Images/featherEnabled.png", true);
+    displayFeatherEnabled->setIconLabel("Images/featherDisabled.png", false);
     generalPage->addKnob(displayFeatherEnabled);
     _imp->ui->displayFeatherEnabledButton = displayFeatherEnabled;
 
@@ -1377,8 +1383,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     stickySelection->setDefaultValue(false);
     stickySelection->setSecret(true);
     stickySelection->setInViewerContextCanHaveShortcut(true);
-    stickySelection->setIconLabel(NATRON_IMAGES_PATH "stickySelectionEnabled.png", true);
-    stickySelection->setIconLabel(NATRON_IMAGES_PATH "stickySelectionDisabled.png", false);
+    stickySelection->setIconLabel("Images/stickySelectionEnabled.png", true);
+    stickySelection->setIconLabel("Images/stickySelectionDisabled.png", false);
     generalPage->addKnob(stickySelection);
     _imp->ui->stickySelectionEnabledButton = stickySelection;
 
@@ -1390,8 +1396,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     bboxClickAnywhere->setDefaultValue(false);
     bboxClickAnywhere->setSecret(true);
     bboxClickAnywhere->setInViewerContextCanHaveShortcut(true);
-    bboxClickAnywhere->setIconLabel(NATRON_IMAGES_PATH "viewer_roiEnabled.png", true);
-    bboxClickAnywhere->setIconLabel(NATRON_IMAGES_PATH "viewer_roiDisabled.png", false);
+    bboxClickAnywhere->setIconLabel("Images/viewer_roiEnabled.png", true);
+    bboxClickAnywhere->setIconLabel("Images/viewer_roiDisabled.png", false);
     generalPage->addKnob(bboxClickAnywhere);
     _imp->ui->bboxClickAnywhereButton = bboxClickAnywhere;
 
@@ -1403,8 +1409,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     rippleEditEnabled->setDefaultValue(false);
     rippleEditEnabled->setSecret(true);
     rippleEditEnabled->setInViewerContextCanHaveShortcut(true);
-    rippleEditEnabled->setIconLabel(NATRON_IMAGES_PATH "rippleEditEnabled.png", true);
-    rippleEditEnabled->setIconLabel(NATRON_IMAGES_PATH "rippleEditDisabled.png", false);
+    rippleEditEnabled->setIconLabel("Images/rippleEditEnabled.png", true);
+    rippleEditEnabled->setIconLabel("Images/rippleEditDisabled.png", false);
     generalPage->addKnob(rippleEditEnabled);
     _imp->ui->rippleEditEnabledButton = rippleEditEnabled;
 
@@ -1414,7 +1420,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     addKeyframe->setHintToolTip( tr(kRotoUIParamAddKeyFrameHint) );
     addKeyframe->setSecret(true);
     addKeyframe->setInViewerContextCanHaveShortcut(true);
-    addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addKF.png");
+    addKeyframe->setIconLabel("Images/addKF.png");
     generalPage->addKnob(addKeyframe);
     _imp->ui->addKeyframeButton = addKeyframe;
 
@@ -1424,7 +1430,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     removeKeyframe->setEvaluateOnChange(false);
     removeKeyframe->setSecret(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeKF.png");
+    removeKeyframe->setIconLabel("Images/removeKF.png");
     generalPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
@@ -1437,8 +1443,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     showTransform->setDefaultValue(true);
     showTransform->setInViewerContextCanHaveShortcut(true);
     showTransform->setInViewerContextLayoutType(eViewerContextLayoutTypeAddNewLine);
-    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoShowTransformOverlay.png", true);
-    showTransform->setIconLabel(NATRON_IMAGES_PATH "rotoHideTransformOverlay.png", false);
+    showTransform->setIconLabel("Images/rotoShowTransformOverlay.png", true);
+    showTransform->setIconLabel("Images/rotoHideTransformOverlay.png", false);
     generalPage->addKnob(showTransform);
     addOverlaySlaveParam(showTransform);
     _imp->ui->showTransformHandle = showTransform;
@@ -1501,8 +1507,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     pressureOpacity->setDefaultValue(true);
     pressureOpacity->setSecret(true);
     pressureOpacity->setInViewerContextCanHaveShortcut(true);
-    pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
-    pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
+    pressureOpacity->setIconLabel("Images/rotopaint_pressure_on.png", true);
+    pressureOpacity->setIconLabel("Images/rotopaint_pressure_off.png", false);
     generalPage->addKnob(pressureOpacity);
     _imp->ui->pressureOpacityButton = pressureOpacity;
 
@@ -1526,8 +1532,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     pressureSize->setDefaultValue(false);
     pressureSize->setSecret(true);
     pressureSize->setInViewerContextCanHaveShortcut(true);
-    pressureSize->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
-    pressureSize->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
+    pressureSize->setIconLabel("Images/rotopaint_pressure_on.png", true);
+    pressureSize->setIconLabel("Images/rotopaint_pressure_off.png", false);
     generalPage->addKnob(pressureSize);
     _imp->ui->pressureSizeButton = pressureSize;
 
@@ -1551,8 +1557,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     pressureHardness->setDefaultValue(false);
     pressureHardness->setSecret(true);
     pressureHardness->setInViewerContextCanHaveShortcut(true);
-    pressureHardness->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
-    pressureHardness->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
+    pressureHardness->setIconLabel("Images/rotopaint_pressure_on.png", true);
+    pressureHardness->setIconLabel("Images/rotopaint_pressure_off.png", false);
     generalPage->addKnob(pressureHardness);
     _imp->ui->pressureHardnessButton = pressureHardness;
 
@@ -1565,8 +1571,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     buildUp->setDefaultValue(true);
     buildUp->setSecret(true);
     buildUp->setInViewerContextCanHaveShortcut(true);
-    buildUp->setIconLabel(NATRON_IMAGES_PATH "rotopaint_buildup_on.png", true);
-    buildUp->setIconLabel(NATRON_IMAGES_PATH "rotopaint_buildup_off.png", false);
+    buildUp->setIconLabel("Images/rotopaint_buildup_on.png", true);
+    buildUp->setIconLabel("Images/rotopaint_buildup_off.png", false);
     generalPage->addKnob(buildUp);
     _imp->ui->buildUpButton = buildUp;
 
@@ -1765,7 +1771,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(true);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "cursor.png");
+        tool->setIconLabel("Images/cursor.png");
         tool->setIsPersistent(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectAllAction = tool;
@@ -1778,7 +1784,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "selectPoints.png");
+        tool->setIconLabel("Images/selectPoints.png");
         tool->setIsPersistent(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectPointsAction = tool;
@@ -1791,7 +1797,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "selectCurves.png");
+        tool->setIconLabel("Images/selectCurves.png");
         tool->setIsPersistent(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectCurvesAction = tool;
@@ -1804,7 +1810,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "selectFeather.png");
+        tool->setIconLabel("Images/selectFeather.png");
         tool->setIsPersistent(false);
         selectionToolButton->addKnob(tool);
         _imp->ui->selectFeatherPointsAction = tool;
@@ -1817,7 +1823,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(true);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "addPoints.png");
+        tool->setIconLabel("Images/addPoints.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->addPointsAction = tool;
@@ -1830,7 +1836,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "removePoints.png");
+        tool->setIconLabel("Images/removePoints.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->removePointsAction = tool;
@@ -1843,7 +1849,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "cuspPoints.png");
+        tool->setIconLabel("Images/cuspPoints.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->cuspPointsAction = tool;
@@ -1856,7 +1862,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "smoothPoints.png");
+        tool->setIconLabel("Images/smoothPoints.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->smoothPointsAction = tool;
@@ -1869,7 +1875,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "openCloseCurve.png");
+        tool->setIconLabel("Images/openCloseCurve.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->openCloseCurveAction = tool;
@@ -1883,7 +1889,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "removeFeather.png");
+        tool->setIconLabel("Images/removeFeather.png");
         tool->setIsPersistent(false);
         editPointsToolButton->addKnob(tool);
         _imp->ui->removeFeatherAction = tool;
@@ -1897,7 +1903,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(true);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "bezier32.png");
+        tool->setIconLabel("Images/bezier32.png");
         tool->setIsPersistent(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawBezierAction = tool;
@@ -1911,7 +1917,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "ellipse.png");
+        tool->setIconLabel("Images/ellipse.png");
         tool->setIsPersistent(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawEllipseAction = tool;
@@ -1925,7 +1931,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "rectangle.png");
+        tool->setIconLabel("Images/rectangle.png");
         tool->setIsPersistent(false);
         editBezierToolButton->addKnob(tool);
         _imp->ui->drawRectangleAction = tool;
@@ -1938,7 +1944,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(true);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_solid.png");
+        tool->setIconLabel("Images/rotopaint_solid.png");
         tool->setIsPersistent(false);
         paintToolButton->addKnob(tool);
         _imp->ui->brushAction = tool;
@@ -1951,7 +1957,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "rotoToolPencil.png");
+        tool->setIconLabel("Images/rotoToolPencil.png");
         tool->setIsPersistent(false);
         paintToolButton->addKnob(tool);
         _imp->ui->pencilAction = tool;
@@ -1965,7 +1971,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
         tool->setDefaultValue(false);
         tool->setSecret(true);
         tool->setEvaluateOnChange(false);
-        tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_eraser.png");
+        tool->setIconLabel("Images/rotopaint_eraser.png");
         tool->setIsPersistent(false);
         paintToolButton->addKnob(tool);
         _imp->ui->eraserAction = tool;
@@ -1979,7 +1985,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(true);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_clone.png");
+            tool->setIconLabel("Images/rotopaint_clone.png");
             tool->setIsPersistent(false);
             cloneToolButton->addKnob(tool);
             _imp->ui->cloneAction = tool;
@@ -1992,7 +1998,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(false);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_reveal.png");
+            tool->setIconLabel("Images/rotopaint_reveal.png");
             tool->setIsPersistent(false);
             cloneToolButton->addKnob(tool);
             _imp->ui->revealAction = tool;
@@ -2007,7 +2013,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(true);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_blur.png");
+            tool->setIconLabel("Images/rotopaint_blur.png");
             tool->setIsPersistent(false);
             effectToolButton->addKnob(tool);
             _imp->ui->blurAction = tool;
@@ -2020,7 +2026,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(false);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_smear.png");
+            tool->setIconLabel("Images/rotopaint_smear.png");
             tool->setIsPersistent(false);
             effectToolButton->addKnob(tool);
             _imp->ui->smearAction = tool;
@@ -2033,7 +2039,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(true);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_dodge.png");
+            tool->setIconLabel("Images/rotopaint_dodge.png");
             tool->setIsPersistent(false);
             mergeToolButton->addKnob(tool);
             _imp->ui->dodgeAction = tool;
@@ -2046,7 +2052,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
             tool->setDefaultValue(false);
             tool->setSecret(true);
             tool->setEvaluateOnChange(false);
-            tool->setIconLabel(NATRON_IMAGES_PATH "rotopaint_burn.png");
+            tool->setIconLabel("Images/rotopaint_burn.png");
             tool->setIsPersistent(false);
             mergeToolButton->addKnob(tool);
             _imp->ui->burnAction = tool;
@@ -2265,20 +2271,22 @@ RotoPaint::initializeKnobs()
     if (_imp->nodeType != eRotoPaintTypeComp) {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
-        _imp->knobsTable->setColumnIcon(2, "locked.png");
-        _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
-        _imp->knobsTable->setColumnIcon(4, "colorwheel_overlay.png");
-        _imp->knobsTable->setColumnIcon(5, "colorwheel.png");
+        _imp->knobsTable->setColumnText(2, "Solo");
+        _imp->knobsTable->setColumnIcon(3, "locked.png");
+        _imp->knobsTable->setColumnIcon(4, "roto_merge.png");
+        _imp->knobsTable->setColumnIcon(5, "colorwheel_overlay.png");
+        _imp->knobsTable->setColumnIcon(6, "colorwheel.png");
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
-        _imp->knobsTable->setColumnIcon(2, "roto_merge.png");
-        _imp->knobsTable->setColumnText(3, tr(kHostMixingKnobLabel).toStdString());
-        _imp->knobsTable->setColumnText(4, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
-        _imp->knobsTable->setColumnText(5, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
-        _imp->knobsTable->setColumnIcon(6, "uninverted.png");
-        _imp->knobsTable->setColumnText(7, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
-        _imp->knobsTable->setColumnText(8, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(2, "Solo");
+        _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
+        _imp->knobsTable->setColumnText(4, tr(kHostMixingKnobLabel).toStdString());
+        _imp->knobsTable->setColumnText(5, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(6, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(7, "uninverted.png");
+        _imp->knobsTable->setColumnText(8, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
+        _imp->knobsTable->setColumnText(9, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
     }
 
     _imp->refreshSourceKnobs();
@@ -2454,11 +2462,11 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->ui->lockShapeMenuAction.lock() ) {
         _imp->ui->lockSelectedCurves();
     } else if (k == _imp->lifeTimeKnob.lock()) {
-        int lifetime_i = _imp->lifeTimeKnob.lock()->getValue();
-        _imp->customRangeKnob.lock()->setSecret(lifetime_i != 3);
+        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTimeKnob.lock()->getValue();
+        _imp->customRangeKnob.lock()->setSecret(lifetime != eRotoPaintItemLifeTimeTypeCustom);
         KnobIntPtr frame = _imp->lifeTimeFrameKnob.lock();
-        frame->setSecret(lifetime_i == 3);
-        if (lifetime_i != 3) {
+        frame->setSecret(lifetime == eRotoPaintItemLifeTimeTypeCustom || lifetime == eRotoPaintItemLifeTimeTypeAll);
+        if (lifetime != eRotoPaintItemLifeTimeTypeCustom) {
             frame->setValue(time);
         }
     } else if ( k == _imp->resetCenterKnob.lock() ) {

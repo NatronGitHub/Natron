@@ -55,7 +55,9 @@
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/KnobGui.h"
+#include "Gui/KnobGuiButton.h"
 #include "Gui/KnobGuiChoice.h"
+#include "Gui/KnobGuiValue.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiMacros.h"
@@ -209,14 +211,52 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
 
     QWidget* container = new QWidget(tableView);
     QHBoxLayout* containerLayout = new QHBoxLayout(container);
+
+    {
+        double bgColor[3];
+        appPTR->getCurrentSettings()->getRaisedColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+        QColor c;
+        c.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
+        QString rgbaStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue());
+        container->setStyleSheet(QString::fromUtf8("QWidget {background-color: %1}").arg(rgbaStr));
+    }
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
-    containerLayout->setAlignment(Qt::AlignCenter);
+
+    KnobChoicePtr isChoice = toKnobChoice(knob);
+
+    Qt::Alignment align;
+    if (isChoice) {
+        // Align combobox on the left and
+        align = (Qt::AlignLeft | Qt::AlignVCenter);
+    } else {
+        align = Qt::AlignCenter;
+    }
+    
+    containerLayout->setAlignment(align);
     ret->createGUI(container);
     containerLayout->addWidget(ret->getFieldContainer());
 
     foundItem->columnItems[col].guiKnob = ret;
 
+    KnobGuiWidgetsPtr firstViewWidgets = ret->getWidgetsForView(ViewIdx(0));
+    assert(firstViewWidgets);
+
+    if (isChoice) {
+        // remove the shape of the combobox so it looks integrated
+        KnobGuiChoice* widget = dynamic_cast<KnobGuiChoice*>(firstViewWidgets.get());
+        assert(widget);
+        widget->getCombobox()->setDrawShapeEnabled(false);
+    }
+    KnobGuiButton* isButton = dynamic_cast<KnobGuiButton*>(firstViewWidgets.get());
+    KnobGuiValue* isValue = dynamic_cast<KnobGuiValue*>(firstViewWidgets.get());
+    if (isButton) {
+        // For buttons, just show the icon
+        isButton->disableButtonBorder();
+    } else if (isValue) {
+        // For spinboxes, disable border
+        isValue->disableSpinBoxesBorder();
+    }
 
     QModelIndex itemIdx = tableModel->getItemIndex(foundItem->item);
 

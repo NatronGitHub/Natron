@@ -349,12 +349,9 @@ KnobGuiParametric::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiParametric::setEnabled()
+KnobGuiParametric::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobParametricPtr knob = _imp->knob.lock();
-    bool b = knob->isEnabled(DimIdx(0), getView())  && !knob->isSlave(DimIdx(0), getView()) && knob->getExpression(DimIdx(0), getView()).empty();
-
-    _imp->tree->setEnabled(b);
+    _imp->tree->setEnabled(perDimEnabled[0]);
 }
 
 void

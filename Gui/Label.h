@@ -34,15 +34,20 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class Label
     : public QLabel
+    , public StyledKnobWidgetBase
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    //Q_PROPERTY(QColor textColor READ getTextColor WRITE setTextColor)
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+
+    Q_PROPERTY(bool isBold READ getIsBold WRITE setIsBold)
 
 public:
 
@@ -53,24 +58,32 @@ public:
     Label(QWidget *parent = 0,
           Qt::WindowFlags f = 0);
 
-    const QColor& getTextColor() const;
-
-    void setTextColor(const QColor& color);
+    void setCustomTextColor(const QColor& color);
 
     virtual bool canAlter() const
     {
         return true;
     }
 
-    void setAltered(bool altered);
+    bool getIsBold() const;
+
+    void setIsBold(bool b);
+
+    virtual void setIsModified(bool b) OVERRIDE;
 
 protected:
 
-    void refreshStyle();
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+
+    virtual void refreshStylesheet() OVERRIDE FINAL;
 
 private:
 
-    QColor textColor;
+    void init();
+
+    QColor _customColor;
+    bool _customColorSet;
+    bool isBold;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -96,12 +96,10 @@ private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
 
 private:
@@ -159,12 +157,10 @@ private:
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     void updateLastOpened(const QString &str);
 

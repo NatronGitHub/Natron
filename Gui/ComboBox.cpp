@@ -82,15 +82,14 @@ strippedText(QString s)
 
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
+    , StyledKnobWidgetBase()
     , _readOnly(false)
     , _enabled(true)
-    , _animation(0)
     , _clicked(false)
-    , _dirty(false)
-    , _altered(false)
     , _cascading(false)
     , _cascadingIndex(0)
     , _currentIndex(-1)
+    , _drawShape(true)
     , _currentText()
     , _separators()
     , _rootNode( new ComboBoxMenuNode() )
@@ -106,11 +105,30 @@ ComboBox::ComboBox(QWidget* parent)
 
     setCurrentIndex(0);
 
-    _rootNode->isMenu = new MenuWithToolTips(this);
 
+    _rootNode->isMenu = createMenu();
     setSizePolicy( QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed, QSizePolicy::Label) );
     setFocusPolicy(Qt::StrongFocus);
     setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+}
+
+MenuWithToolTips*
+ComboBox::createMenu()
+{
+    double col[3];
+    appPTR->getCurrentSettings()->getRaisedColor(&col[0], &col[1], &col[2]);
+    QColor c;
+    c.setRgbF(Image::clamp(col[0], 0., 1.), Image::clamp(col[1], 0., 1.), Image::clamp(col[2], 0., 1.));
+    QString bgColorStr = QString::fromUtf8("rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue());
+    MenuWithToolTips* ret = new MenuWithToolTips(this);
+    ret->setStyleSheet(QString::fromUtf8("QMenu { background-color: %1; }").arg(bgColorStr));
+    return ret;
+}
+
+void
+ComboBox::setDrawShapeEnabled(bool enabled)
+{
+    _drawShape = enabled;
 }
 
 QSize
@@ -273,26 +291,26 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         QColor fillColor;
         bool useDefaultBackground = false;
 
-        if (_clicked || _dirty) {
+        if (_clicked || multipleSelection) {
             useDefaultBackground = true;
         } else {
             double r, g, b;
-            switch (_animation) {
-            case 0:
+            switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelNone:
             default: {
                 useDefaultBackground = true;
                 appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
                 break;
             }
-            case 1: {
+            case eAnimationLevelInterpolatedValue: {
                 appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
                 break;
             }
-            case 2: {
+            case eAnimationLevelOnKeyframe: {
                 appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
                 break;
             }
-            case 3: {
+            case eAnimationLevelExpression: {
                 appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
                 break;
             }
@@ -319,37 +337,23 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
 
         QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
 
-        QLinearGradient defaultBackground( roundedRect.topLeft(), roundedRect.bottomLeft() );
-        QColor defaultBackgroundColor1, defaultBackgroundColor2;
-        double bgColor1R, bgColor1G, bgColor1B, bgColor2R, bgColor2G, bgColor2B;
-
-        appPTR->getCurrentSettings()->getBoxGradientTopColor(&bgColor1R, &bgColor1G, &bgColor1B);
-        appPTR->getCurrentSettings()->getBoxGradientBottomColor(&bgColor2R, &bgColor2G, &bgColor2B);
-        defaultBackgroundColor1.setRgb( Color::floatToInt<256>(bgColor1R),
-                                        Color::floatToInt<256>(bgColor1G),
-                                        Color::floatToInt<256>(bgColor1B) );
-        defaultBackgroundColor2.setRgb( Color::floatToInt<256>(bgColor2R),
-                                        Color::floatToInt<256>(bgColor2G),
-                                        Color::floatToInt<256>(bgColor2B) );
-        defaultBackground.setColorAt( 0, defaultBackgroundColor1);
-        defaultBackground.setColorAt( 1, defaultBackgroundColor2);
 
         bRect.adjust(fw, fw, -fw, -fw);
-        if (useDefaultBackground) {
-            p.fillRect(bRect, defaultBackground);
-        } else {
-            p.fillRect(bRect, fillColor);
-        }
 
-        double roundPixels = 3;
-        QPainterPath path;
-        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
-        p.drawPath(path);
+        p.fillRect(bRect, fillColor);
+
+
+        if (_drawShape) {
+            double roundPixels = 3;
+            QPainterPath path;
+            path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+            p.drawPath(path);
+        }
     }
     QColor textColor;
     if (_readOnly) {
         textColor.setRgb(100, 100, 100);
-    } else if (_altered) {
+    } else if (!modified) {
         double aR, aG, aB;
         appPTR->getCurrentSettings()->getAltTextColor(&aR, &aG, &aB);
         textColor.setRgbF(aR, aG, aB);
@@ -423,7 +427,7 @@ ComboBox::mousePressEvent(QMouseEvent* e)
 {
     if (buttonDownIsLeft(e) && !_readOnly) {
         _clicked = true;
-        createMenu();
+        populateMenu();
         update();
         QFrame::mousePressEvent(e);
     }
@@ -496,7 +500,7 @@ setEnabledRecursive(bool enabled,
 }
 
 void
-ComboBox::createMenu()
+ComboBox::populateMenu()
 {
     if (!_cascading) {
         _rootNode->isMenu->clear();
@@ -716,7 +720,7 @@ ComboBox::addItem(const QString & item,
                     node->isLeaf = action;
                     menuToFind->isMenu->addAction(node->isLeaf);
                 } else {
-                    node->isMenu = new MenuWithToolTips(this);
+                    node->isMenu = createMenu();
                     node->isMenu->setTitle(realSplits[i]);
                     menuToFind->isMenu->addAction( node->isMenu->menuAction() );
                     menuToFind = node.get();
@@ -1110,7 +1114,7 @@ void
 ComboBox::setReadOnly(bool readOnly)
 {
     _readOnly = readOnly;
-    update();
+    refreshStylesheet();
 }
 
 bool
@@ -1123,41 +1127,15 @@ void
 ComboBox::setEnabled_natron(bool enabled)
 {
     _enabled = enabled;
-    update();
-}
-
-int
-ComboBox::getAnimation() const
-{
-    return _animation;
+    refreshStylesheet();
 }
 
 void
-ComboBox::setAnimation(int i)
+ComboBox::refreshStylesheet()
 {
-    _animation = i;
     update();
 }
 
-void
-ComboBox::setDirty(bool b)
-{
-    _dirty = b;
-    update();
-}
-
-void
-ComboBox::setAltered(bool b)
-{
-    _altered = b;
-    update();
-}
-
-bool
-ComboBox::getAltered() const
-{
-    return _altered;
-}
 
 NATRON_NAMESPACE_EXIT;
 

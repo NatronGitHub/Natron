@@ -40,7 +40,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
@@ -75,6 +74,8 @@ public:
     bool getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const;
 
     virtual void setAllDimensionsVisible(bool visible) OVERRIDE FINAL;
+
+    void disableSpinBoxesBorder();
 
 public Q_SLOTS:
 
@@ -163,12 +164,10 @@ protected:
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE;
 
     virtual bool shouldAddStretch() const OVERRIDE ;
-    virtual void setEnabled() OVERRIDE ;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE ;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE ;
     virtual void updateGUI() OVERRIDE ;
-    virtual void setDirty(bool dirty) OVERRIDE ;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE ;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE ;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE ;
     virtual void updateToolTip() OVERRIDE ;
     virtual void reflectModificationsState() OVERRIDE ;
     virtual void refreshDimensionName(DimIdx dim) OVERRIDE ;
@@ -257,11 +256,9 @@ private:
 
     virtual void updateGUI() OVERRIDE FINAL ;
 
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(DimIdx dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;

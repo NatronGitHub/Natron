@@ -393,31 +393,7 @@ KnobGui::resetDefault(DimSpec dimension, ViewSetSpec view)
     }
 }
 
-void
-KnobGui::setReadOnly_(bool readOnly,
-                      DimSpec dimension, ViewIdx view)
-{
-    if (!_imp->customInteract) {
-        KnobGuiPrivate::PerViewWidgetsMap::const_iterator foundView = _imp->views.find(view);
-        if (foundView != _imp->views.end()) {
-            if (foundView->second.widgets) {
-                foundView->second.widgets->setReadOnly(readOnly, dimension);
-            }
-        }
-    }
-    ///This code doesn't work since the knob dimensions are still enabled even if readonly
-    bool hasDimensionEnabled = false;
-    for (int i = 0; i < getKnob()->getNDimensions(); ++i) {
-        if (dimension.isAll() || i == dimension) {
-            if ( getKnob()->isEnabled(DimIdx(i)) ) {
-                hasDimensionEnabled = true;
-            }
-        }
-    }
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setReadOnly(!hasDimensionEnabled);
-    }
-}
+
 
 KnobGui::KnobLayoutTypeEnum
 KnobGui::getLayoutType() const
@@ -433,12 +409,12 @@ KnobGui::hasWidgetBeenCreated() const
 }
 
 void
-KnobGui::onSetDirty(bool d)
+KnobGui::onKnobMultipleSelectionChanged(bool d)
 {
     if (!_imp->customInteract) {
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             if (it->second.widgets) {
-                it->second.widgets->setDirty(d);
+                it->second.widgets->reflectMultipleSelection(d);
             }
         }
     }
@@ -643,31 +619,6 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
     pushUndoCommand( new MultipleKnobEditsUndoCommand(knob, commandName, reason, setValueRetCode, createNewCommand, setKeyFrame, oldValue, newValue, dim, time, view) );
 }
 
-void
-KnobGui::onFrozenChanged(bool frozen)
-{
-    KnobIPtr knob = getKnob();
-    KnobButtonPtr isBtn = toKnobButton(knob);
-
-    if ( isBtn && !isBtn->isRenderButton() ) {
-        return;
-    }
-    int nDim = knob->getNDimensions();
-    std::list<ViewIdx> views = knob->getViewsList();
-    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-        for (int i = 0; i < nDim; ++i) {
-            if ( frozen || (!knob->isSlave(DimIdx(i), *it) && knob->isEnabled(DimIdx(i), *it)) ) {
-                setReadOnly_(frozen, DimIdx(i), *it);
-            }
-        }
-    }
-}
-
-bool
-KnobGui::isGuiFrozenForPlayback() const
-{
-    return getGui() ? getGui()->isGUIFrozen() : false;
-}
 
 void
 KnobGui::setWarningValue(KnobWarningEnum warn,
@@ -716,10 +667,9 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     if (foundView == _imp->views.end()) {
         return;
     }
-    foundView->second.widgets->reflectExpressionState( dimension, !exp.empty() );
-    if ( exp.empty() ) {
-        foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
-    } else {
+    foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
+    if ( !exp.empty() ) {
+
         NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
         if (isNodeSettings) {
             NodeGuiPtr node = isNodeSettings->getNode();
@@ -789,11 +739,11 @@ KnobGui::refreshModificationsStateNow()
     }
     bool hasModif = knob->hasModifications();
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setAltered(!hasModif);
+        _imp->descriptionLabel->setIsModified(hasModif);
     }
 
     for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        it->second.viewLabel->setAltered(!hasModif);
+        it->second.viewLabel->setIsModified(hasModif);
         if (it->second.widgets) {
             it->second.widgets->reflectModificationsState();
         }
@@ -841,7 +791,7 @@ KnobGui::onLabelChanged()
         if (descriptionLabel.empty()) {
             _imp->descriptionLabel->hide();
         } else {
-            _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
+            _imp->descriptionLabel->setText( QString::fromUtf8( descriptionLabel.c_str() ) );
             _imp->descriptionLabel->show();
         }
     }

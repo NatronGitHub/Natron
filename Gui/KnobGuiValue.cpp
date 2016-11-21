@@ -652,6 +652,17 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
 }
 
 void
+KnobGuiValue::disableSpinBoxesBorder()
+{
+    for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
+        if ( _imp->spinBoxes[i].first) {
+            _imp->spinBoxes[i].first->setBorderDisabled(true);
+        }
+    }
+
+}
+
+void
 KnobGuiValue::onDimensionSwitchClicked(bool clicked)
 {
     // User clicked once on the dimension switch, disable auto switch
@@ -834,27 +845,21 @@ void
 KnobGuiValue::reflectAnimationLevel(DimIdx dimension,
                                     AnimationLevelEnum level)
 {
-    int value;
+    if (!_imp->spinBoxes[dimension].first) {
+        return;
+    }
+    KnobIPtr knob = _imp->knob.lock();
 
-    switch (level) {
-    case eAnimationLevelNone:
-        value = 0;
-        break;
-    case eAnimationLevelInterpolatedValue:
-        value = 1;
-            break;
-        case eAnimationLevelOnKeyframe:
-            value = 2;
-            break;
-        default:
-            value = 0;
-            break;
+    if (_imp->slider) {
+        bool isEnabled0 = knob->isEnabled(DimIdx(0));
+        _imp->slider->setReadOnly(!isEnabled0 || level == eAnimationLevelExpression);
     }
-    if (_imp->spinBoxes[dimension].first) {
-        if ( value != _imp->spinBoxes[dimension].first->getAnimation() ) {
-            _imp->spinBoxes[dimension].first->setAnimation(value);
-        }
+    bool isEnabled = knob->isEnabled(dimension);
+    _imp->spinBoxes[dimension].first->setReadOnly_NoFocusRect(!isEnabled || level == eAnimationLevelExpression);
+    if ( level != (AnimationLevelEnum)_imp->spinBoxes[dimension].first->getAnimation() ) {
+        _imp->spinBoxes[dimension].first->setAnimation((int)level);
     }
+
 }
 
 void
@@ -1044,84 +1049,35 @@ KnobGuiValue::setWidgetsVisibleInternal(bool visible)
 }
 
 void
-KnobGuiValue::setEnabled()
+KnobGuiValue::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    KnobIPtr knob = _imp->getKnob();
-    ViewIdx view = getView();
-    bool enabled0 = knob->isEnabled(DimIdx(0), view)  && !knob->isSlave(DimIdx(0), view) && knob->getExpression(DimIdx(0), view).empty();
+    assert(perDimEnabled.size() == _imp->spinBoxes.size());
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        bool b = knob->isEnabled(DimIdx(i), view) && !knob->isSlave(DimIdx(i), view);
         if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setReadOnly_NoFocusRect(!b);
+            _imp->spinBoxes[i].first->setReadOnly_NoFocusRect(!perDimEnabled[i]);
         }
         if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setEnabled(b);
+            _imp->spinBoxes[i].second->setEnabled(perDimEnabled[i]);
         }
     }
     if (_imp->slider) {
-        _imp->slider->setReadOnly( !enabled0 );
+        _imp->slider->setReadOnly( !perDimEnabled[0] );
     }
 
-    setEnabledExtraGui(enabled0);
+    setEnabledExtraGui(perDimEnabled[0]);
 }
 
 void
-KnobGuiValue::setReadOnly(bool readOnly,
-                          DimSpec dimension)
-{
-    assert( dimension < (int)_imp->spinBoxes.size() );
-    for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (dimension.isAll() || (int)i == dimension) {
-            if (_imp->spinBoxes[i].first) {
-                _imp->spinBoxes[dimension].first->setReadOnly_NoFocusRect(readOnly);
-            }
-        }
-    }
-    if ( _imp->slider && (dimension == 0) ) {
-        _imp->slider->setReadOnly(readOnly);
-    }
-}
-
-void
-KnobGuiValue::setDirty(bool dirty)
+KnobGuiValue::reflectMultipleSelection(bool dirty)
 {
     for (U32 i = 0; i < _imp->spinBoxes.size(); ++i) {
         if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setDirty(dirty);
+            _imp->spinBoxes[i].first->setIsSelectedMultipleTimes(dirty);
         }
     }
 }
 
-void
-KnobGuiValue::reflectExpressionState(DimIdx dimension,
-                                     bool hasExpr)
-{
-    KnobIPtr knob = _imp->getKnob();
-
-    if (hasExpr) {
-        if (_imp->spinBoxes[dimension].first) {
-            _imp->spinBoxes[dimension].first->setAnimation(3);
-        }
-        //_spinBoxes[dimension].first->setReadOnly_NoFocusRect(true);
-        if (_imp->slider) {
-            _imp->slider->setReadOnly(true);
-        }
-    } else {
-        AnimationLevelEnum lvl = knob->getAnimationLevel(dimension, getView());
-        if (_imp->spinBoxes[dimension].first) {
-            _imp->spinBoxes[dimension].first->setAnimation( (int)lvl );
-        }
-        bool isEnabled = knob->isEnabled(dimension);
-        if (_imp->spinBoxes[dimension].first) {
-            _imp->spinBoxes[dimension].first->setReadOnly_NoFocusRect(!isEnabled);
-        }
-        if (_imp->slider) {
-            bool isEnabled0 = knob->isEnabled(DimIdx(0), getView());
-            _imp->slider->setReadOnly(!isEnabled0);
-        }
-    }
-}
 
 void
 KnobGuiValue::updateToolTip()
@@ -1147,14 +1103,14 @@ KnobGuiValue::reflectModificationsState()
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
         if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setAltered(!hasModif);
+            _imp->spinBoxes[i].first->setIsModified(hasModif);
         }
         if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setAltered(!hasModif);
+            _imp->spinBoxes[i].second->setIsModified(hasModif);
         }
     }
     if (_imp->slider) {
-        _imp->slider->setAltered(!hasModif);
+        _imp->slider->setIsModified(hasModif);
     }
 }
 
@@ -1359,35 +1315,22 @@ KnobGuiInt::updateGUI()
 }
 
 void
-KnobGuiInt::setEnabled()
+KnobGuiInt::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     if (!_shortcutRecorder) {
-        KnobGuiValue::setEnabled();
+        KnobGuiValue::setEnabled(perDimEnabled);
     } else {
-        KnobIntPtr knob = _knob.lock();
-        bool enabled0 = knob->isEnabled(DimIdx(0))  && !knob->isSlave(DimIdx(0), getView()) && knob->getExpression(DimIdx(0), getView()).empty();
-        _shortcutRecorder->setReadOnly_NoFocusRect(!enabled0);
+        _shortcutRecorder->setReadOnly_NoFocusRect(!perDimEnabled[0]);
     }
 }
 
 void
-KnobGuiInt::setReadOnly(bool readOnly, DimSpec dimension)
+KnobGuiInt::reflectMultipleSelection(bool dirty)
 {
     if (!_shortcutRecorder) {
-        KnobGuiValue::setReadOnly(readOnly, dimension);
+        KnobGuiValue::reflectMultipleSelection(dirty);
     } else {
-        _shortcutRecorder->setReadOnly_NoFocusRect(readOnly);
-
-    }
-}
-
-void
-KnobGuiInt::setDirty(bool dirty)
-{
-    if (!_shortcutRecorder) {
-        KnobGuiValue::setDirty(dirty);
-    } else {
-        _shortcutRecorder->setDirty(dirty);
+        _shortcutRecorder->setIsSelectedMultipleTimes(dirty);
     }
 }
 
@@ -1398,37 +1341,9 @@ KnobGuiInt::reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level)
         KnobGuiValue::reflectAnimationLevel(dimension, level);
     } else {
         KnobIntPtr knob = _knob.lock();
-        int value;
-
-        switch (level) {
-            case eAnimationLevelNone:
-                value = 0;
-                break;
-            case eAnimationLevelInterpolatedValue:
-                value = 1;
-                break;
-            case eAnimationLevelOnKeyframe:
-                value = 2;
-                
-                break;
-            default:
-                value = 0;
-                break;
-        }
-
-        _shortcutRecorder->setAnimation(value);
-    }
-}
-
-void
-KnobGuiInt::reflectExpressionState(DimIdx dimension, bool hasExpr)
-{
-    if (!_shortcutRecorder) {
-        KnobGuiValue::reflectExpressionState(dimension, hasExpr);
-    } else {
         bool isEnabled = _knob.lock()->isEnabled();
-        _shortcutRecorder->setAnimation(3);
-        _shortcutRecorder->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
+        _shortcutRecorder->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
+        _shortcutRecorder->setAnimation((int)level);
     }
 }
 
@@ -1451,7 +1366,7 @@ KnobGuiInt::reflectModificationsState()
         bool hasModif = _knob.lock()->hasModifications();
 
         if (_shortcutRecorder) {
-            _shortcutRecorder->setAltered(!hasModif);
+            _shortcutRecorder->setIsModified(hasModif);
         }
     }
 }

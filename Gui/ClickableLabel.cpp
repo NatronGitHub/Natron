@@ -44,11 +44,6 @@ ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
     : Label(text, parent)
     , _toggled(false)
-    , _bold(false)
-    , _dirty(false)
-    , _readOnly(false)
-    , _animation(0)
-    , _sunkenStyle(false)
 {
 }
 
@@ -56,11 +51,6 @@ ClickableLabel::ClickableLabel(const QPixmap &icon,
                                QWidget *parent)
     : Label(parent)
     , _toggled(false)
-    , _bold(false)
-    , _dirty(false)
-    , _readOnly(false)
-    , _animation(0)
-    , _sunkenStyle(false)
 {
     setPixmap(icon);
 }
@@ -75,87 +65,6 @@ ClickableLabel::mousePressEvent(QMouseEvent* e)
     Label::mousePressEvent(e);
 }
 
-void
-ClickableLabel::changeEvent(QEvent* e)
-{
-    if (e->type() == QEvent::EnabledChange) {
-        if ( !isEnabled() ) {
-            QString paintTxt = text();
-            paintTxt.prepend( QString::fromUtf8("<font color=\"#000000\">") );
-            paintTxt.append( QString::fromUtf8("</font>") );
-            setText(paintTxt);
-        } else {
-            QString str = text();
-            str = str.remove( QString::fromUtf8("<font color=\"#000000\">") );
-            str = str.remove( QString::fromUtf8("</font>") );
-            setText(str);
-        }
-    }
-}
-
-void
-ClickableLabel::setText_overload(const QString & str)
-{
-    QString paintTxt = str;
-
-    if ( !isEnabled() ) {
-        paintTxt.prepend( QString::fromUtf8("<font color=\"#000000\">") );
-        paintTxt.append( QString::fromUtf8("</font>") );
-    }
-    if (_bold) {
-        paintTxt.prepend( QString::fromUtf8("<b>") );
-        paintTxt.append( QString::fromUtf8("</b>") );
-    }
-    setText(paintTxt);
-}
-
-void
-ClickableLabel::setBold(bool b)
-{
-    _bold = b;
-}
-
-bool
-ClickableLabel::canAlter() const
-{
-    return !_bold;
-}
-
-void
-ClickableLabel::setReadOnly(bool readOnly)
-{
-    if (_readOnly != readOnly) {
-        _readOnly = readOnly;
-        refreshStyle();
-    }
-}
-
-void
-ClickableLabel::setAnimation(int i)
-{
-    if (_animation != i) {
-        _animation = i;
-        refreshStyle();
-    }
-}
-
-void
-ClickableLabel::setDirty(bool b)
-{
-    if (_dirty != b) {
-        _dirty = b;
-        refreshStyle();
-    }
-}
-
-void
-ClickableLabel::setSunken(bool s)
-{
-    if (_sunkenStyle != s) {
-        _sunkenStyle = s;
-        refreshStyle();
-    }
-}
 
 KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
@@ -271,6 +180,6 @@ KnobClickableLabel::focusOutEvent(QFocusEvent* e)
 }
 
 NATRON_NAMESPACE_EXIT;
-
 NATRON_NAMESPACE_USING;
 #include "moc_ClickableLabel.cpp"
+

@@ -67,14 +67,18 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoCompItemBaseName "Layer"
 
 
-#define kParamRotoItemEnabled "enabled"
+#define kParamRotoItemEnabled "enabledButton"
 #define kParamRotoItemEnabledLabel "Enabled"
 #define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered.\n" \
 "This is a global switch that is saved with the project and supersedes the life time parameter."
 
-#define kParamRotoItemLocked "locked"
+#define kParamRotoItemLocked "lockedButton"
 #define kParamRotoItemLockedLabel "Locked"
 #define kParamRotoItemLockedHint "When checked, the parameter is no longer editable in the viewer and its parameters are greyed out."
+
+#define kParamRotoItemSolo "soloButton"
+#define kParamRotoItemSoloLabel "Solo"
+#define kParamRotoItemSoloHint "Includes the current item in renders, ignoring others without this switch set"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -107,9 +111,9 @@ public:
 
     bool isLockedRecursive() const;
 
-    KnobBoolPtr getLockedKnob() const;
+    KnobButtonPtr getLockedKnob() const;
 
-    KnobBoolPtr getActivatedKnob() const;
+    KnobButtonPtr getActivatedKnob() const;
 
     virtual std::string getBaseItemName() const OVERRIDE = 0;
 

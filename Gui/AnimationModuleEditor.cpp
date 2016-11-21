@@ -258,17 +258,17 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->buttonsLayout->addSpacing(TO_DPIX(10));
 
     _imp->keyframeLabel = new Label(_imp->buttonsContainer);
-    _imp->keyframeLabel->setAltered(true);
+    _imp->keyframeLabel->setIsModified(false);
     _imp->keyframeLabel->setText(tr("Keyframe:"));
 
     _imp->keyframeLeftSlopeLabel = new Label(_imp->buttonsContainer);
-    _imp->keyframeLeftSlopeLabel->setAltered(true);
+    _imp->keyframeLeftSlopeLabel->setIsModified(false);
     QString leftSlopeTT = convertFromPlainText(tr("Left tangent of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeLeftSlopeLabel->setToolTip(leftSlopeTT);
     _imp->keyframeLeftSlopeLabel->setText(tr("L"));
     QColor slopeColor;
     slopeColor.setRgbF(1., 0.35, 0.35);
-    _imp->keyframeLeftSlopeLabel->setTextColor(slopeColor);
+    _imp->keyframeLeftSlopeLabel->setCustomTextColor(slopeColor);
 
     _imp->keyframeLeftSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->keyframeLeftSlopeSpinBox->setUseLineColor(true, slopeColor);
@@ -276,7 +276,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     QObject::connect(_imp->keyframeLeftSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onLeftSlopeSpinBoxValueChanged(double)));
 
     _imp->keyframeTimeLabel = new Label(_imp->buttonsContainer);
-    _imp->keyframeTimeLabel->setAltered(true);
+    _imp->keyframeTimeLabel->setIsModified(false);
     QString timeTT = convertFromPlainText(tr("Frame number of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeTimeLabel->setText(tr("Frame"));
     _imp->keyframeTimeLabel->setToolTip(timeTT);
@@ -288,7 +288,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     QString valueTT = convertFromPlainText(tr("Value of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeValueLabel = new Label(_imp->buttonsContainer);
     _imp->keyframeValueLabel->setToolTip(valueTT);
-    _imp->keyframeValueLabel->setAltered(true);
+    _imp->keyframeValueLabel->setIsModified(false);
     _imp->keyframeValueLabel->setText(tr("Value"));
 
     _imp->keyframeValueSpinBox = new SpinBox(_imp->buttonsContainer);
@@ -301,11 +301,11 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     QObject::connect(_imp->keyframeValueLineEdit, SIGNAL(editingFinished()), this, SLOT(onKeyframeValueLineEditEditFinished()));
 
     _imp->keyframeRightSlopeLabel = new Label(_imp->buttonsContainer);
-    _imp->keyframeRightSlopeLabel->setAltered(true);
+    _imp->keyframeRightSlopeLabel->setIsModified(false);
     _imp->keyframeRightSlopeLabel->setText(tr("R"));
     QString rightSlopeTT = convertFromPlainText(tr("Right slope of the currently selected keyframe"), WhiteSpaceNormal);
     _imp->keyframeRightSlopeLabel->setToolTip(rightSlopeTT);
-    _imp->keyframeRightSlopeLabel->setTextColor(slopeColor);
+    _imp->keyframeRightSlopeLabel->setCustomTextColor(slopeColor);
 
     _imp->keyframeRightSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->keyframeRightSlopeSpinBox->setToolTip(rightSlopeTT);
@@ -399,7 +399,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     }
 
     _imp->knobLabel = new Label(_imp->buttonsContainer);
-    _imp->knobLabel->setAltered(true);
+    _imp->knobLabel->setIsModified(false);
     _imp->knobLabel->setText( tr("No curve selected") );
     _imp->knobExpressionLineEdit = new LineEdit(_imp->buttonsContainer);
     _imp->knobExpressionLineEdit->setPlaceholderText(tr("curve (No Expression)"));

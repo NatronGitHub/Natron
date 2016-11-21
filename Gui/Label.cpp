@@ -29,6 +29,8 @@
 #include <QApplication>
 #include <QStyle>
 #include <QPalette>
+#include <QColor>
+
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Gui/GuiApplicationManager.h"
@@ -45,78 +47,113 @@ static QColor rgbToQColor(double r, double g, double b)
     return c;
 }
 
+void
+Label::init()
+{
+    isBold = false;
+    _customColorSet = false;
+    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
+}
+
 Label::Label(const QString &text,
              QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(text, parent, f)
-    , textColor()
+    , StyledKnobWidgetBase()
 
 {
-    double r,g,b;
-    appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-    setTextColor(rgbToQColor(r, g, b));
-
-    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
+    init();
 }
 
 Label::Label(QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(parent, f)
-    , textColor()
+    , StyledKnobWidgetBase()
 {
-    double r,g,b;
-    appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-    setTextColor(rgbToQColor(r, g, b));
-
-    setFont( QApplication::font() ); // necessary, or the labels will get the default font size
+    init();
 }
 
+void
+Label::setCustomTextColor(const QColor& color)
+{
+    _customColorSet = true;
+    if (color != _customColor) {
+        _customColor = color;
+        refreshStylesheet();
+    }
+}
 
+bool
+Label::getIsBold() const
+{
+    return isBold;
+}
 
 void
-Label::refreshStyle()
+Label::setIsBold(bool b)
 {
-    setStyleSheet(QString::fromUtf8("QLabel {color: rgb(%1, %2, %3);}\n"
-                                    "QLabel:!enabled { color: black; }").arg(textColor.red()).arg(textColor.green()).arg(textColor.blue()));
+    isBold = b;
+    refreshStylesheet();
+}
+
+void
+Label::refreshStylesheet()
+{
+
+    double fgColor[3];
+    bool fgColorSet = false;
+    if (!isEnabled()) {
+        fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
+    }
+    if (!fgColorSet) {
+        if (_customColorSet) {
+            fgColor[0] = _customColor.redF();
+            fgColor[1] = _customColor.greenF();
+            fgColor[2] = _customColor.blueF();
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet) {
+        if (!getIsModified()) {
+            appPTR->getCurrentSettings()->getAltTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        } else {
+            appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        }
+        fgColorSet = true;
+    }
+    QColor fgCol;
+    fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+
+    setStyleSheet(QString::fromUtf8("QLabel {\n"
+                                    "color: rgb(%1, %2, %3);\n"
+                                    "%4\n"
+                                    "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue())
+                                          .arg(isBold ? QString::fromUtf8("font-weight: bold;") : QString()));
     style()->unpolish(this);
     style()->polish(this);
-   // QPalette pal = QPalette(palette());
-   // pal.setColor(QPalette::Foreground, textColor);
-   // setPalette(pal);
     update();
 }
 
-const QColor&
-Label::getTextColor() const
-{
-    return textColor;
-}
-
 void
-Label::setTextColor(const QColor& color)
+Label::changeEvent(QEvent* e)
 {
-    if (color != textColor) {
-        textColor = color;
-        refreshStyle();
+    if (e->type() == QEvent::EnabledChange) {
+        refreshStylesheet();
     }
+    QLabel::changeEvent(e);
 }
 
+
 void
-Label::setAltered(bool a)
+Label::setIsModified(bool a)
 {
-    if ( !canAlter() ) {
+    if ( _customColorSet || isBold ) {
         return;
     }
-    double r,g,b;
-
-    if (a) {
-        appPTR->getCurrentSettings()->getAltTextColor(&r, &g, &b);
-    } else {
-        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-    }
-    setTextColor(rgbToQColor(r, g, b));
-
+    StyledKnobWidgetBase::setIsModified(a);
 }
+
 
 NATRON_NAMESPACE_EXIT;
 

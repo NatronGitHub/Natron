@@ -313,6 +313,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     // Re-slave the knobs to the gui
     if (contextEnabledKnob) {
+#pragma message WARN("Check this")
         for (std::size_t i = 0; i < tracks.size(); ++i) {
             // unslave the enabled knob, since it is slaved to the gui but we may modify it
             KnobBoolPtr enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
@@ -323,7 +324,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             contextEnabledKnob->unblockListenersNotification();
             enabledKnob->slaveTo(contextEnabledKnob);
         }
-        contextEnabledKnob->setDirty(tracks.size() > 1);
+        contextEnabledKnob->setKnobSelectedMultipleTimes(tracks.size() > 1);
     }
 
 

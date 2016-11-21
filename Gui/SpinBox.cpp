@@ -114,8 +114,6 @@ struct SpinBoxPrivate
 SpinBox::SpinBox(QWidget* parent,
                  SpinBoxTypeEnum type)
     : LineEdit(parent)
-    , animation(0)
-    , dirty(false)
     , ignoreWheelEvent(false)
     , _imp( new SpinBoxPrivate(type) )
 {
@@ -922,27 +920,6 @@ SpinBox::setIncrement(double d)
 #endif
 }
 
-void
-SpinBox::setAnimation(int i)
-{
-    if (animation != i) {
-        animation = i;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
-
-void
-SpinBox::setDirty(bool d)
-{
-    if (dirty != d) {
-        dirty = d;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
 
 QMenu*
 SpinBox::getRightClickMenu()

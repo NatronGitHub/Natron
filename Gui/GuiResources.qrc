@@ -294,7 +294,7 @@
         <file>Resources/Images/visible.png</file>
         <file>Resources/Images/writeImage.png</file>
         <file>Resources/Images/zebra_off.png</file> 
-        <file>Resources/Images/zebra_on.png</file>
+        <file>Resources/Images/zebra_on.png</file> 
         <file>Resources/Stylesheets/mainstyle.qss</file>
         <file>Resources/Images/rotoNodeIcon.png</file>
         <file>Resources/Images/interp_constant.png</file>
@@ -302,7 +302,7 @@
         <file>Resources/Images/interp_constant_selected.png</file>
         <file>Resources/Images/interp_curve.png</file>
         <file>Resources/Images/interp_curve_selected.png</file>
-        <file>Resources/Images/interp_linear_selected.png</file>
+        <file>Resources/Images/interp_linear_selected.png</file> 
         <file>Resources/Images/keyframe_node_root.png</file>
         <file>Resources/Images/keyframe_node_root_selected.png</file>
         <file>Resources/Images/interp_break.png</file>

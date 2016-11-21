@@ -250,23 +250,10 @@ void
 KnobGuiBool::reflectAnimationLevel(DimIdx /*dimension*/,
                                    AnimationLevelEnum level)
 {
-    int value;
-
-    switch (level) {
-    case eAnimationLevelNone:
-        value = 0;
-        break;
-    case eAnimationLevelInterpolatedValue:
-        value = 1;
-        break;
-    case eAnimationLevelOnKeyframe:
-        value = 2;
-        break;
-    default:
-        value = 0;
-        break;
-    }
+    int value = (int)level;
     if ( value != _checkBox->getAnimation() ) {
+        bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+        _checkBox->setReadOnly(level == eAnimationLevelExpression || !isEnabled);
         _checkBox->setAnimation(value);
     }
 }
@@ -323,35 +310,17 @@ KnobGuiBool::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiBool::setEnabled()
+KnobGuiBool::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobBoolPtr knob = _knob.lock();
-    bool b = knob->isEnabled(DimIdx(0), getView())  && knob->getExpression(DimIdx(0), getView()).empty();
 
-    _checkBox->setReadOnly(!b);
+    _checkBox->setReadOnly(!perDimEnabled[0]);
 }
 
 void
-KnobGuiBool::setReadOnly(bool readOnly,
-                         DimSpec /*dimension*/)
+KnobGuiBool::reflectMultipleSelection(bool dirty)
 {
-    _checkBox->setReadOnly(readOnly);
-}
-
-void
-KnobGuiBool::setDirty(bool dirty)
-{
-    _checkBox->setDirty(dirty);
-}
-
-void
-KnobGuiBool::reflectExpressionState(DimIdx /*dimension*/,
-                                    bool hasExpr)
-{
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
-
-    _checkBox->setAnimation(3);
-    _checkBox->setReadOnly(hasExpr || !isEnabled);
+    _checkBox->setIsSelectedMultipleTimes(dirty);
 }
 
 void

@@ -40,21 +40,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Global/Macros.h"
 #include "Gui/Label.h"
-#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
 class ClickableLabel
     : public Label
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool readOnly READ isReadOnly WRITE setReadOnly)
-    Q_PROPERTY(bool sunkenStyle READ isSunken WRITE setSunken)
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -74,42 +69,9 @@ public:
         _toggled = b;
     }
 
-    void setDirty(bool b);
-
-    bool getDirty() const
-    {
-        return _dirty;
-    }
-
-    ///Updates the text as setText does but also keeps the current color info
-    void setText_overload(const QString & str);
-
-    int getAnimation() const
-    {
-        return _animation;
-    }
-
-    void setAnimation(int i);
-
-    bool isReadOnly() const
-    {
-        return _readOnly;
-    }
-
-    void setReadOnly(bool readOnly);
-
-    bool isSunken() const
-    {
-        return _sunkenStyle;
-    }
-
-    void setSunken(bool s);
-
-    void setBold(bool b);
-
-    virtual bool canAlter() const OVERRIDE FINAL;
 
 Q_SIGNALS:
+
     void clicked(bool);
 
 protected:
@@ -117,16 +79,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
 
 private:
-
-    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
-
-private:
     bool _toggled;
-    bool _bold;
-    bool _dirty;
-    bool _readOnly;
-    int _animation;
-    bool _sunkenStyle;
 };
 
 

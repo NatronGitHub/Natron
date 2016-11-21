@@ -44,13 +44,10 @@ struct SpinBoxPrivate;
 class SpinBox
     : public LineEdit
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     enum SpinBoxTypeEnum
@@ -82,22 +79,8 @@ public:
     ///as the increments are relative to the position of the cursor in the spinbox.
     void setIncrement(double d);
 
-    ///For the stylesheet: it controls the background color to represent the animated states of parameters
-    void setAnimation(int i);
-    int getAnimation() const
-    {
-        return animation;
-    }
-
     ///Get a pointer to the right click menu, this can be used to add extra entries. @see KnobGuiTypes.cpp
     QMenu* getRightClickMenu();
-
-    ///For the stylesheet: it controls whether the background should be paint in black or not.
-    void setDirty(bool d);
-    bool getDirty() const
-    {
-        return dirty;
-    }
 
     void setUseLineColor(bool use, const QColor& color);
 
@@ -147,10 +130,6 @@ private:
     void setValue_internal(double d, bool reformat);
 
     void setText(const QString &str, int cursorPos);
-
-    ///Used by the stylesheet , they are Q_PROPERTIES
-    int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
-    bool dirty;
 
 protected:
 

@@ -43,7 +43,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 
 #define DROP_DOWN_ICON_SIZE 6
@@ -65,21 +65,21 @@ struct ComboBoxMenuNode
 
 class ComboBox
     : public QFrame
+    , public StyledKnobWidgetBase
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
 
 private:
     bool _readOnly;
     bool _enabled;
-    int _animation;
     bool _clicked;
-    bool _dirty;
-    bool _altered;
     bool _cascading;
     int _cascadingIndex;
     int _currentIndex;
+    bool _drawShape;
     QString _currentText;
     QPixmap _currentPixmap;
     std::vector<int> _separators;
@@ -117,6 +117,8 @@ public:
     void insertItem( int index, const QString &item, QIcon icon = QIcon(), QKeySequence = QKeySequence(), const QString & toolTip = QString() );
 
     void addAction(QAction* action);
+
+    void setDrawShapeEnabled(bool enabled);
 
 private:
 
@@ -162,15 +164,10 @@ public:
     QString getCurrentIndexText() const;
 
 
-    void setDirty(bool b);
-    int getAnimation() const;
-    void setAnimation(int i);
     void setReadOnly(bool readOnly);
 
     bool getEnabled_natron() const;
 
-    void setAltered(bool b);
-    bool getAltered() const;
 
     virtual QSize minimumSizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -204,6 +201,8 @@ Q_SIGNALS:
 
 protected:
 
+    virtual void refreshStylesheet() OVERRIDE;
+
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE;
@@ -212,6 +211,7 @@ protected:
 
 private:
 
+    MenuWithToolTips* createMenu();
 
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
@@ -219,7 +219,7 @@ private:
 
 
     void growMaximumWidthFromText(const QString & str);
-    void createMenu();
+    void populateMenu();
 
     ///changes the current index and returns true if the index really changed, false if it is the same.
     bool setCurrentIndex_internal(int index);

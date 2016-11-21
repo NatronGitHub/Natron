@@ -289,7 +289,7 @@ TableItem::insertChild(int row, const TableItemPtr& child)
     child->_imp->setModelAndInitColumns(model);
     
     QModelIndex thisIdx = model->getItemIndex(thisShared);
-    if (row == -1 || row == (int)_imp->children.size()) {
+    if (row == -1 || row >= (int)_imp->children.size()) {
         model->beginInsertRows(thisIdx, _imp->children.size(), _imp->children.size());
         child->_imp->indexInParent = _imp->children.size();
         _imp->children.push_back(child);
@@ -297,7 +297,9 @@ TableItem::insertChild(int row, const TableItemPtr& child)
     } else {
         model->beginInsertRows(thisIdx, row, row);
         TableItemVec::iterator it = _imp->children.begin();
-        std::advance(it, row);
+        if (row > 0) {
+            std::advance(it, row);
+        }
         it = _imp->children.insert(it, child);
         int index = row;
         for (TableItemVec::iterator p = it; p != _imp->children.end(); ++it, ++index) {

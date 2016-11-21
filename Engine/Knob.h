@@ -133,9 +133,9 @@ public:
         Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, time, setKeyFrame);
     }
 
-    void s_setDirty(bool b)
+    void s_selectedMultipleTimes(bool b)
     {
-        Q_EMIT dirty(b);
+        Q_EMIT selectedMultipleTimes(b);
     }
 
     void s_setFrozen(bool f)
@@ -233,8 +233,7 @@ Q_SIGNALS:
     // in a multiple edit undo/redo action
     void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewVariantMap oldValue, Variant newValue, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
 
-    // Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
-    void dirty(bool);
+    void selectedMultipleTimes(bool);
 
     // Emitted when min/max changes for a value knob
     void minMaxChanged(DimSpec index);
@@ -1052,14 +1051,12 @@ public:
     virtual bool evaluateValueChangeOnTimeChange() const { return false; }
 
     /**
-     * @brief When dirty, the knob is actually representing several elements that do not hold the same value.
-     * For example for the roto node, a knob actually represent the value of the opacity of the selected curve.
-     * If they're multiple curves selected,then the value of the knob is dirty
-     * since we have no means to know the specifics values for each curve.
-     * This is purely a GUI stuff and should only be called when the GUI is created. This is here just for means to
-     * notify the GUI.
+     * @brief For a master knob in a KnobItemsTable, it indicates to the gui that multiple
+     * items in the table are selected and the knob should be displayed with a specific state
+     * to reflect the user that modifying the value will impact all selected rows of the 
+     * KnobItemsTable.
      **/
-    virtual void setDirty(bool d) = 0;
+    virtual void setKnobSelectedMultipleTimes(bool d) = 0;
 
     /**
      * @brief Call this to change the knob name. The name is not the text label displayed on
@@ -1637,7 +1634,7 @@ public:
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
-    virtual void setDirty(bool d) OVERRIDE FINAL;
+    virtual void setKnobSelectedMultipleTimes(bool d) OVERRIDE FINAL;
     virtual void setName(const std::string & name, bool throwExceptions = false) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;

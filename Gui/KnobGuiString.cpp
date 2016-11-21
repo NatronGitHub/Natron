@@ -85,17 +85,14 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
-//=============================STRING_KNOB_GUI===================================
 
 AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob,
                                      DimSpec dimension,
                                      ViewIdx view,
                                      QWidget* parent)
     : QTextEdit(parent)
-    , animation(0)
-    , readOnlyNatron(false)
+    , StyledKnobWidgetBase()
     , _hasChanged(false)
-    , dirty(false)
     , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
     setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
@@ -106,38 +103,32 @@ AnimatingTextEdit::~AnimatingTextEdit()
 }
 
 void
-AnimatingTextEdit::setAnimation(int v)
+AnimatingTextEdit::refreshStylesheet()
 {
-    if (v != animation) {
-        animation = v;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+
+    double fgColor[3];
+    bool fgColorSet = false;
+    if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
+        fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
     }
+
+
+    if (fgColorSet) {
+        QColor fgCol;
+        fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+
+        setStyleSheet(QString::fromUtf8("QTextEdit {\n"
+                                        "color: rgb(%1, %2, %3);\n"
+                                        "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()));
+    }
+
+
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
-void
-AnimatingTextEdit::setReadOnlyNatron(bool ro)
-{
-    setReadOnly(ro);
-    if (readOnlyNatron != ro) {
-        readOnlyNatron = ro;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
-
-void
-AnimatingTextEdit::setDirty(bool b)
-{
-    if (dirty != b) {
-        dirty = b;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
 
 void
 AnimatingTextEdit::enterEvent(QEvent* e)
@@ -409,7 +400,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         KnobGuiWidgets::enableRightClickMenu(knobUI, _textEdit, DimIdx(0), getView());
 
         if ( knob->isCustomHTMLText() ) {
-            _textEdit->setReadOnlyNatron(true);
+            _textEdit->setEnabled(false);
         }
 
         if (useRichText) {
@@ -775,27 +766,26 @@ KnobGuiString::setWidgetsVisible(bool visible)
 
 
 void
-KnobGuiString::setEnabled()
+KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobStringPtr knob = _knob.lock();
-    bool b = knob->isEnabled(DimIdx(0), getView())  &&  knob->getExpression(DimIdx(0), getView()).empty();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
         //_textEdit->setEnabled(b);
         //_textEdit->setReadOnly(!b);
         if ( !knob->isCustomHTMLText() ) {
-            _textEdit->setReadOnlyNatron(!b);
+            _textEdit->setEnabled(perDimEnabled[0]);
         }
     } else if ( knob->isLabel() ) {
         if (_label) {
-            _label->setEnabled(b);
+            _label->setEnabled(perDimEnabled[0]);
         }
     } else {
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
         if ( !knob->isCustomKnob() ) {
-            _lineEdit->setReadOnly(!b);
+            _lineEdit->setReadOnly(!perDimEnabled[0]);
         }
     }
 }
@@ -805,76 +795,32 @@ KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     KnobStringPtr knob = _knob.lock();
-    int value;
-
-    switch (level) {
-    case eAnimationLevelNone:
-        value = 0;
-        break;
-    case eAnimationLevelInterpolatedValue:
-        value = 1;
-        break;
-    case eAnimationLevelOnKeyframe:
-        value = 2;
-
-        break;
-    default:
-        value = 0;
-        break;
-    }
+    bool isEnabled = knob->isEnabled(DimIdx(0), getView());
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
-        _textEdit->setAnimation(value);
+        _textEdit->setAnimation(level);
+        _textEdit->setEnabled(level != eAnimationLevelExpression && isEnabled);
     } else if ( knob->isLabel() ) {
         //assert(_label);
     } else {
         assert(_lineEdit);
-        _lineEdit->setAnimation(value);
+        _lineEdit->setAnimation(level);
+        _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
+
     }
 }
 
 void
-KnobGuiString::setReadOnly(bool readOnly,
-                           DimSpec /*dimension*/)
+KnobGuiString::reflectMultipleSelection(bool dirty)
 {
     if (_textEdit) {
-        if ( !_knob.lock()->isCustomHTMLText() ) {
-            _textEdit->setReadOnlyNatron(readOnly);
-        }
+        _textEdit->setIsSelectedMultipleTimes(dirty);
     } else if (_lineEdit) {
-        if ( !_knob.lock()->isCustomKnob() ) {
-            _lineEdit->setReadOnly_NoFocusRect(readOnly);
-        }
+        _lineEdit->setIsSelectedMultipleTimes(dirty);
     }
 }
 
-void
-KnobGuiString::setDirty(bool dirty)
-{
-    if (_textEdit) {
-        _textEdit->setDirty(dirty);
-    } else if (_lineEdit) {
-        _lineEdit->setDirty(dirty);
-    }
-}
-
-void
-KnobGuiString::reflectExpressionState(DimIdx /*dimension*/,
-                                      bool hasExpr)
-{
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
-
-    if (_textEdit) {
-        _textEdit->setAnimation(3);
-        if ( !_knob.lock()->isCustomHTMLText() ) {
-            _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
-        }
-    } else if (_lineEdit) {
-        _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
-    }
-}
 
 void
 KnobGuiString::updateToolTip()
@@ -906,7 +852,7 @@ KnobGuiString::reflectModificationsState()
     bool hasModif = _knob.lock()->hasModifications();
 
     if (_lineEdit) {
-        _lineEdit->setAltered(!hasModif);
+        _lineEdit->setIsModified(hasModif);
     }
 }
 

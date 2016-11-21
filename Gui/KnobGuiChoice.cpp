@@ -519,15 +519,6 @@ KnobGuiChoice::onItemNewSelected()
 }
 
 void
-KnobGuiChoice::reflectExpressionState(DimIdx /*dimension*/,
-                                      bool hasExpr)
-{
-    _comboBox->setAnimation(3);
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
-    _comboBox->setEnabled_natron(!hasExpr && isEnabled);
-}
-
-void
 KnobGuiChoice::updateToolTip()
 {
     getKnobGui()->toolTip(_comboBox, getView());
@@ -567,24 +558,12 @@ void
 KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
-    int value;
 
-    switch (level) {
-    case eAnimationLevelNone:
-        value = 0;
-        break;
-    case eAnimationLevelInterpolatedValue:
-        value = 1;
-        break;
-    case eAnimationLevelOnKeyframe:
-        value = 2;
-        break;
-    default:
-        value = 0;
-        break;
-    }
-    if ( value != _comboBox->getAnimation() ) {
-        _comboBox->setAnimation(value);
+    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+    _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
+
+    if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {
+        _comboBox->setAnimation((int)level);
     }
 }
 
@@ -595,25 +574,17 @@ KnobGuiChoice::setWidgetsVisible(bool visible)
 }
 
 void
-KnobGuiChoice::setEnabled()
+KnobGuiChoice::setEnabled(const std::vector<bool>& perDimEnabled)
 {
     KnobChoicePtr knob = _knob.lock();
-    bool b = knob->isEnabled(DimIdx(0), getView()) && knob->getExpression(DimIdx(0), getView()).empty();
 
-    _comboBox->setEnabled_natron(b);
+    _comboBox->setEnabled_natron(perDimEnabled[0]);
 }
 
 void
-KnobGuiChoice::setReadOnly(bool readOnly,
-                           DimSpec /*dimension*/)
+KnobGuiChoice::reflectMultipleSelection(bool dirty)
 {
-    _comboBox->setEnabled_natron(!readOnly);
-}
-
-void
-KnobGuiChoice::setDirty(bool dirty)
-{
-    _comboBox->setDirty(dirty);
+    _comboBox->setIsSelectedMultipleTimes(dirty);
 }
 
 
@@ -622,7 +593,7 @@ KnobGuiChoice::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();
 
-    _comboBox->setAltered(!hasModif);
+    _comboBox->setIsModified(hasModif);
 }
 
 NATRON_NAMESPACE_EXIT;

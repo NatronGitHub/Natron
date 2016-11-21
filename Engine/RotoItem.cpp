@@ -101,14 +101,18 @@ struct RotoItemPrivate
     // should be visible/rendered or not at any time.
     // This is different from the "activated" knob for RotoDrawableItem's which in that
     // case allows to define a life-time
-    KnobBoolWPtr activatedKnob;
+    KnobButtonWPtr activatedKnob;
     
     // A locked item should not be modifiable by the GUI
-    KnobBoolWPtr lockedKnob;
+    KnobButtonWPtr lockedKnob;
+
+    // Includes the current item in renders, ignoring layers without this switch set
+    KnobButtonWPtr soloKnob;
     
     RotoItemPrivate()
     : activatedKnob()
     , lockedKnob()
+    , soloKnob()
     {
     }
 };
@@ -147,10 +151,12 @@ void
 RotoItem::initializeKnobs()
 {
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kParamRotoItemEnabledLabel));
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemEnabledLabel));
         param->setName(kParamRotoItemEnabled);
         param->setHintToolTip(tr(kParamRotoItemEnabledHint));
-        param->setIsPersistent(false);
+        param->setIconLabel("Images/visible.png", true);
+        param->setIconLabel("Images/unvisible.png", false);
+        param->setCheckable(true);
         param->setDefaultValue(true);
         _imp->activatedKnob = param;
     }
@@ -160,16 +166,32 @@ RotoItem::initializeKnobs()
 
     if (type == RotoPaint::eRotoPaintTypeRoto ||
         type == RotoPaint::eRotoPaintTypeRotoPaint) {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kParamRotoItemLockedLabel));
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemLockedLabel));
         param->setName(kParamRotoItemLocked);
         param->setHintToolTip(tr(kParamRotoItemLockedHint));
+        param->setIconLabel("Images/locked.png", true);
+        param->setIconLabel("Images/unlocked.png", false);
+        param->setCheckable(true);
         param->setDefaultValue(true);
-        param->setSecret(true);
         _imp->lockedKnob = param;
+    }
+
+    if (type == RotoPaint::eRotoPaintTypeComp) {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemSoloLabel));
+        param->setName(kParamRotoItemSolo);
+        param->setHintToolTip(tr(kParamRotoItemSoloHint));
+        //param->setIconLabel("Images/soloOn.png", true);
+        //param->setIconLabel("Images/soloOff.png", false);
+        param->setCheckable(true);
+        param->setDefaultValue(true);
+        _imp->soloKnob = param;
     }
 
     addColumn(kKnobTableItemColumnLabel, DimIdx(0));
     addColumn(kParamRotoItemEnabled, DimIdx(0));
+    if (type == RotoPaint::eRotoPaintTypeComp) {
+        addColumn(kParamRotoItemSolo, DimIdx(0));
+    }
     if (type == RotoPaint::eRotoPaintTypeRoto ||
         type == RotoPaint::eRotoPaintTypeRotoPaint) {
         addColumn(kParamRotoItemLocked, DimIdx(0));
@@ -194,7 +216,7 @@ RotoItem::setGloballyActivated(bool a,
 bool
 RotoItem::isGloballyActivated() const
 {
-    KnobBoolPtr knob = _imp->activatedKnob.lock();
+    KnobButtonPtr knob = _imp->activatedKnob.lock();
     return knob ? knob->getValue() : true;
 }
 
@@ -268,13 +290,13 @@ RotoItem::getLocked() const
     return _imp->lockedKnob.lock()->getValue();
 }
 
-KnobBoolPtr
+KnobButtonPtr
 RotoItem::getLockedKnob() const
 {
     return _imp->lockedKnob.lock();
 }
 
-KnobBoolPtr
+KnobButtonPtr
 RotoItem::getActivatedKnob() const
 {
     return _imp->activatedKnob.lock();
@@ -301,7 +323,11 @@ isLocked_imp(const RotoLayerPtr& item)
 bool
 RotoItem::isLockedRecursive() const
 {
-    bool thisItemLocked = _imp->lockedKnob.lock()->getValue();
+    KnobButtonPtr lockedKnob = _imp->lockedKnob.lock();
+    if (!lockedKnob) {
+        return false;
+    }
+    bool thisItemLocked = lockedKnob->getValue();
     if (thisItemLocked) {
         return true;
     }
@@ -320,6 +346,7 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
                              ViewSetSpec /*view*/,
                              bool /*originatedFromMainThread*/)
 {
+#pragma message WARN("check this")
     if (knob == _imp->lockedKnob.lock()) {
         KnobItemsTablePtr model = getModel();
         if (!model) {
@@ -341,7 +368,7 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
 
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            knob->setDirty(dirty);
+            knob->setKnobSelectedMultipleTimes(dirty);
             knob->setEnabled(enabled);
         }
         return true;

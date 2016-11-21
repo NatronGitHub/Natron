@@ -42,7 +42,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 NATRON_NAMESPACE_ENTER;
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
-    : QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false), checked(false)
+    : QFrame(parent), readOnly(false), checked(false)
 {
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy( QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed, QSizePolicy::Label) );
@@ -51,23 +51,9 @@ AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
 }
 
 void
-AnimatedCheckBox::setAnimation(int i)
-{
-    animation = i;
-    update();
-}
-
-void
 AnimatedCheckBox::setReadOnly(bool readOnly)
 {
     this->readOnly = readOnly;
-    update();
-}
-
-void
-AnimatedCheckBox::setDirty(bool b)
-{
-    dirty = b;
     update();
 }
 
@@ -88,6 +74,14 @@ AnimatedCheckBox::setChecked(bool c)
 {
     checked = c;
     Q_EMIT toggled(checked);
+    update();
+}
+
+void
+AnimatedCheckBox::refreshStylesheet()
+{
+    style()->unpolish(this);
+    style()->polish(this);
     update();
 }
 
@@ -168,11 +162,11 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
             activeColor = Qt::black;
         } else if (readOnly) {
             activeColor.setRgbF(0.5, 0.5, 0.5);
-        } else if (altered) {
+        } else if (!modified) {
             double r, g, b;
             appPTR->getCurrentSettings()->getAltTextColor(&r, &g, &b);
             activeColor.setRgbF(r, g, b);
-        } else if (dirty) {
+        } else if (multipleSelection) {
             activeColor = Qt::black;
         } else {
             double r, g, b;

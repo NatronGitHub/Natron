@@ -73,22 +73,16 @@ public Q_SLOTS:
 
 protected:
 
-    virtual void setDirty(bool /*dirty*/) OVERRIDE
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE
     {
     }
 
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE;
     virtual void setWidgetsVisible(bool visible) OVERRIDE;
-    virtual void setEnabled() OVERRIDE;
-    virtual void setReadOnly(bool readOnly, DimSpec dimension) OVERRIDE;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE;
     virtual void updateGUI() OVERRIDE;
     virtual void reflectAnimationLevel(DimIdx /*dimension*/,
                                        AnimationLevelEnum /*level*/) OVERRIDE
-    {
-    }
-
-    virtual void reflectExpressionState(DimIdx /*dimension*/,
-                                        bool /*hasExpr*/) OVERRIDE
     {
     }
 

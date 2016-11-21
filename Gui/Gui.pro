@@ -205,6 +205,7 @@ SOURCES += \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
+    StyledKnobWidgetBase.cpp \
     TabGroup.cpp \
     TableItemAnim.cpp \
     TableModelView.cpp \
@@ -344,6 +345,7 @@ HEADERS += \
     SpinBoxValidator.h \
     SplashScreen.h \
     Splitter.h \
+    StyledKnobWidgetBase.h \
     TableItemAnim.h \
     TabGroup.h \
     TableModelView.h \
