@@ -15,7 +15,9 @@
 ### Plugins
 
 - ColorWheel: antialiased rendering
+- Rectangle: add rounded corners
 - PIKColor: fix black rims issue #1502, rework & optimize
+- PIKColor: remove hard limits on parameters b85f558
 - Grade & Gamma: fix behaviour when gamma=0
 
 ## Version 2.1.8
