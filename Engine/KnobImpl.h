@@ -700,9 +700,12 @@ Knob<T>::getValue(int dimension,
     assert( !view.isAll() );
     bool useGuiValues = QThread::currentThread() == qApp->thread();
 
-    if (getName() == "multi") {
-        debugHook();
-    }
+#ifdef DEBUG
+    // to put a breakpoint on a getValue on a specific Knob
+    //if (getName() == "multi") {
+    //    debugHook();
+    //}
+#endif
 
     if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
         return T();
