@@ -147,6 +147,17 @@ LineEdit::refreshStylesheet()
 }
 
 void
+LineEdit::setReadOnly_NoFocusRect(bool readOnly)
+{
+    setReadOnly(readOnly);
+
+    // setReadonly set the flag but on mac a bug makes
+    // it redraw the whole UI and slow down the software
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
+    refreshStylesheet();
+}
+
+void
 LineEdit::setCustomTextColor(const QColor& color)
 {
     _customColorSet = true;

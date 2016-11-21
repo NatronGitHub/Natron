@@ -54,14 +54,7 @@ public:
 
     virtual ~LineEdit() OVERRIDE;
 
-    void setReadOnly_NoFocusRect(bool readOnly)
-    {
-        setReadOnly(readOnly);
-
-        //setReadonly set the flag but we don't want it
-        setAttribute(Qt::WA_MacShowFocusRect, 0);
-    }
-
+    void setReadOnly_NoFocusRect(bool readOnly);
     void setBorderDisabled(bool disabled);
 
     bool getBorderDisabled() const;
