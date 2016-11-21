@@ -1016,16 +1016,18 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 }
             }
         } else {
-            tile.rect.set(outArgs->params->roi);
-            tile.rectRounded = outArgs->params->roi;
-            tile.rect.closestPo2 = 1 << mipmapLevel;
-            tile.rect.par = outArgs->params->pixelAspectRatio;
-            tile.bytesCount = tile.rect.area() * 4;
-            assert(tile.bytesCount > 0);
-            if (outArgs->params->depth == eImageBitDepthFloat) {
-                tile.bytesCount *= sizeof(float);
+            if (!outArgs->params->roi.isNull()) {
+                tile.rect.set(outArgs->params->roi);
+                tile.rectRounded = outArgs->params->roi;
+                tile.rect.closestPo2 = 1 << mipmapLevel;
+                tile.rect.par = outArgs->params->pixelAspectRatio;
+                tile.bytesCount = tile.rect.area() * 4;
+                assert(tile.bytesCount > 0);
+                if (outArgs->params->depth == eImageBitDepthFloat) {
+                    tile.bytesCount *= sizeof(float);
+                }
+                outArgs->params->tiles.push_back(tile);
             }
-            outArgs->params->tiles.push_back(tile);
         }
 
     } else {

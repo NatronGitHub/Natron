@@ -3060,6 +3060,13 @@ ViewerGL::setFormat(const std::string& formatName, const RectD& format, double p
         }
     }
 
+    if (_imp->userRoI.isNull()) {
+        _imp->userRoI.x1 = format.width() / 4. + format.x1;
+        _imp->userRoI.x2 = format.width() - format.width() / 4. + format.x1;
+        _imp->userRoI.y1 = format.height() / 4. + format.y1;
+        _imp->userRoI.y2 = format.height() - format.height() / 4. + format.y1;
+    }
+
     _imp->currentViewerInfo_resolutionOverlay[textureIndex] = QString::fromUtf8(formatName.c_str());
 }
 
