@@ -98,6 +98,7 @@ private:
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
     virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
+    virtual void reflectSelectionState(bool selected) OVERRIDE ;
     virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
@@ -159,6 +160,7 @@ private:
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
     virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
+    virtual void reflectSelectionState(bool selected) OVERRIDE ;
     virtual void updateGUI() OVERRIDE FINAL;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;

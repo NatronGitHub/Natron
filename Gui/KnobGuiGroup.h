@@ -92,7 +92,10 @@ private:
     virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL
     {
     }
+    virtual void reflectSelectionState(bool /*selected*/) OVERRIDE FINAL
+    {
 
+    }
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
 
 

@@ -1080,6 +1080,17 @@ KnobGuiValue::reflectMultipleSelection(bool dirty)
 
 
 void
+KnobGuiValue::reflectSelectionState(bool selected)
+{
+    for (U32 i = 0; i < _imp->spinBoxes.size(); ++i) {
+        if (_imp->spinBoxes[i].first) {
+            _imp->spinBoxes[i].first->setIsSelected(selected);
+        }
+    }
+
+}
+
+void
 KnobGuiValue::updateToolTip()
 {
     KnobGuiPtr knob = getKnobGui();
@@ -1332,6 +1343,18 @@ KnobGuiInt::reflectMultipleSelection(bool dirty)
     } else {
         _shortcutRecorder->setIsSelectedMultipleTimes(dirty);
     }
+}
+
+
+void
+KnobGuiInt::reflectSelectionState(bool selected)
+{
+    if (!_shortcutRecorder) {
+        KnobGuiValue::reflectSelectionState(selected);
+    } else {
+        _shortcutRecorder->setIsSelected(selected);
+    }
+
 }
 
 void

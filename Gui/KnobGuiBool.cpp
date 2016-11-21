@@ -324,6 +324,12 @@ KnobGuiBool::reflectMultipleSelection(bool dirty)
 }
 
 void
+KnobGuiBool::reflectSelectionState(bool selected)
+{
+    _checkBox->setIsSelected(selected);
+}
+
+void
 KnobGuiBool::updateToolTip()
 {
     KnobGuiPtr knob = getKnobGui();

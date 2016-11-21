@@ -915,6 +915,19 @@ KnobGui::isOnNewLine() const
 }
 
 void
+KnobGui::reflectKnobSelectionState(bool selected)
+{
+    if (_imp->customInteract) {
+        return;
+    }
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            it->second.widgets->reflectSelectionState(selected);
+        }
+    }
+}
+
+void
 KnobGui::setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view)
 {
     if ( !getGui() ) {

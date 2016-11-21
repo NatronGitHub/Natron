@@ -76,7 +76,10 @@ protected:
     virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE
     {
     }
+    virtual void reflectSelectionState(bool /*selected*/) OVERRIDE
+    {
 
+    }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE;
     virtual void setWidgetsVisible(bool visible) OVERRIDE;
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE;

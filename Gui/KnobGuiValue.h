@@ -167,6 +167,7 @@ protected:
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE ;
     virtual void updateGUI() OVERRIDE ;
     virtual void reflectMultipleSelection(bool dirty) OVERRIDE ;
+    virtual void reflectSelectionState(bool selected) OVERRIDE ;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE ;
     virtual void updateToolTip() OVERRIDE ;
     virtual void reflectModificationsState() OVERRIDE ;
@@ -258,6 +259,7 @@ private:
 
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
     virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
+    virtual void reflectSelectionState(bool selected) OVERRIDE ;
     virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;

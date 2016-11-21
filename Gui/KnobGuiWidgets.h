@@ -102,6 +102,12 @@ public:
     virtual void reflectMultipleSelection(bool selectedMultipleTimes) = 0;
 
     /**
+     * @brief For a table item represented by a row in a KnobItemsTableGui, this should reflect for
+     * a knob at a specific dimension the selected state of the row.
+     **/
+    virtual void reflectSelectionState(bool selected) = 0;
+
+    /**
      * @brief Returns whether to create a label or not. If not, the label will never be shown
      **/
     virtual bool mustCreateLabelWidget() const

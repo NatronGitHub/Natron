@@ -115,6 +115,13 @@ Label::refreshStylesheet()
         }
     }
     if (!fgColorSet) {
+        if (selected) {
+            appPTR->getCurrentSettings()->getSelectionColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet) {
+
         if (!getIsModified()) {
             appPTR->getCurrentSettings()->getAltTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
         } else {

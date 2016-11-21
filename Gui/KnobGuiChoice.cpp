@@ -589,6 +589,13 @@ KnobGuiChoice::reflectMultipleSelection(bool dirty)
 
 
 void
+KnobGuiChoice::reflectSelectionState(bool selected)
+{
+    _comboBox->setIsSelected(selected);
+}
+
+
+void
 KnobGuiChoice::reflectModificationsState()
 {
     bool hasModif = _knob.lock()->hasModifications();

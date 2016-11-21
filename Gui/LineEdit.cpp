@@ -106,6 +106,19 @@ LineEdit::dragLeaveEvent(QDragLeaveEvent* e)
     e->accept();
 }
 
+bool
+LineEdit::getIsBold() const
+{
+    return isBold;
+}
+
+void
+LineEdit::setIsBold(bool b)
+{
+    isBold = b;
+    refreshStylesheet();
+}
+
 void
 LineEdit::refreshStylesheet()
 {
@@ -120,6 +133,12 @@ LineEdit::refreshStylesheet()
             fgColor[0] = _customColor.redF();
             fgColor[1] = _customColor.greenF();
             fgColor[2] = _customColor.blueF();
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet) {
+        if (selected) {
+            appPTR->getCurrentSettings()->getSelectionColor(&fgColor[0], &fgColor[1], &fgColor[2]);
             fgColorSet = true;
         }
     }

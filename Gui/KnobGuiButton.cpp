@@ -151,7 +151,11 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     if ( !icon.isNull() ) {
         _button = new Button( icon, QString(), layout->parentWidget() );
         _button->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
-        _button->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
+        if (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeTableItemWidget) {
+            _button->setIconSize( QSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE)) );
+        } else {
+            _button->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
+        }
     } else {
         _button = new Button( label, layout->parentWidget() );
     }
@@ -237,6 +241,12 @@ KnobGuiButton::setEnabled(const std::vector<bool>& perDimEnabled)
     KnobButtonPtr knob = _knob.lock();
 
     _button->setEnabled(perDimEnabled[0]);
+}
+
+void
+KnobGuiButton::reflectSelectionState(bool /*selected*/)
+{
+
 }
 
 

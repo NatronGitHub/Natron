@@ -384,6 +384,12 @@ KnobGuiFile::reflectMultipleSelection(bool dirty)
     _lineEdit->setIsSelectedMultipleTimes(dirty);
 }
 
+void
+KnobGuiFile::reflectSelectionState(bool selected)
+{
+    _lineEdit->setIsSelected(selected);
+}
+
 
 void
 KnobGuiFile::addRightClickMenuEntries(QMenu* menu)
@@ -736,10 +742,21 @@ KnobGuiPath::setEnabled(const std::vector<bool>& perDimEnabled)
 
 
 void
-KnobGuiPath::reflectMultipleSelection(bool /*dirty*/)
+KnobGuiPath::reflectMultipleSelection(bool dirty)
 {
+    if (_lineEdit) {
+        _lineEdit->setIsSelectedMultipleTimes(dirty);
+    }
 }
 
+
+void
+KnobGuiPath::reflectSelectionState(bool selected)
+{
+    if (_lineEdit) {
+        _lineEdit->setIsSelected(selected);
+    }
+}
 
 void
 KnobGuiPath::addRightClickMenuEntries(QMenu* menu)

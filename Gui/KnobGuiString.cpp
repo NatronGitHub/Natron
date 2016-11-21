@@ -821,6 +821,17 @@ KnobGuiString::reflectMultipleSelection(bool dirty)
     }
 }
 
+void
+KnobGuiString::reflectSelectionState(bool selected)
+{
+    if (_textEdit) {
+        _textEdit->setIsSelected(selected);
+    } else if (_lineEdit) {
+        _lineEdit->setIsSelected(selected);
+    }
+
+}
+
 
 void
 KnobGuiString::updateToolTip()

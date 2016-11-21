@@ -182,6 +182,10 @@ struct KnobItemsTableGuiPrivate
     void createItemsVecRecursive(const std::vector<KnobTableItemPtr>& items);
 
     void setItemIcon(const TableItemPtr& tableItem, int col, const KnobTableItemPtr& item);
+
+    void refreshKnobsSelectionState(const std::list<KnobTableItemPtr>& selected, const std::list<KnobTableItemPtr>& deselected);
+
+    void refreshKnobItemSelection(const KnobTableItemPtr& item, bool selected);
 };
 
 bool
@@ -204,9 +208,9 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     foundItem->columnItems[col].guiKnob.reset();
 
     // Create the Knob Gui
-    KnobGuiPtr ret = KnobGui::create(knob, KnobGui::eKnobLayoutTypeTableItemWidget, _publicInterface);
+    foundItem->columnItems[col].guiKnob = KnobGui::create(knob, KnobGui::eKnobLayoutTypeTableItemWidget, _publicInterface);
     if (!dim.isAll()) {
-        ret->setSingleDimensionalEnabled(true, DimIdx(dim));
+        foundItem->columnItems[col].guiKnob->setSingleDimensionalEnabled(true, DimIdx(dim));
     }
 
     QWidget* container = new QWidget(tableView);
@@ -234,12 +238,11 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     }
     
     containerLayout->setAlignment(align);
-    ret->createGUI(container);
-    containerLayout->addWidget(ret->getFieldContainer());
+    foundItem->columnItems[col].guiKnob->createGUI(container);
+    containerLayout->addWidget(foundItem->columnItems[col].guiKnob->getFieldContainer());
 
-    foundItem->columnItems[col].guiKnob = ret;
 
-    KnobGuiWidgetsPtr firstViewWidgets = ret->getWidgetsForView(ViewIdx(0));
+    KnobGuiWidgetsPtr firstViewWidgets = foundItem->columnItems[col].guiKnob->getWidgetsForView(ViewIdx(0));
     assert(firstViewWidgets);
 
     if (isChoice) {
@@ -485,16 +488,7 @@ KnobItemsTableGui::getKnobsForItem(const KnobTableItemPtr& item) const
     return ret;
 }
 
-static void drawSelectionHighlight(QPainter * painter,
-                                   const QRect & rect,
-                                   QColor selectionColor)
-{
 
-    painter->setOpacity(0.5);
-    painter->fillRect(rect, selectionColor);
-    painter->setOpacity(1.);
-
-}
 
 void
 KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
@@ -505,23 +499,6 @@ KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & opt
         optionCpy.state &= ~QStyle::State_Selected;
         TableView::drawRow(painter, optionCpy, index);
     }
-    QColor selectionColor;
-    {
-        double sR,sG,sB;
-        appPTR->getCurrentSettings()->getSelectionColor(&sR, &sG, &sB);
-        selectionColor.setRgbF(Image::clamp(sR, 0., 1.), Image::clamp(sG, 0., 1.), Image::clamp(sB, 0., 1.));
-        selectionColor.setAlphaF(1);
-    }
-    TableItemPtr item = _imp->tableModel->getItem(index);
-    ModelItemsVec::iterator foundItem = _imp->findItem(item);
-    if (foundItem != _imp->items.end()) {
-        KnobTableItemPtr internalItem = foundItem->internalItem.lock();
-        bool isSelected = _imp->internalModel.lock()->isItemSelected(internalItem);
-        if (isSelected) {
-            drawSelectionHighlight(painter, option.rect, selectionColor);
-        }
-    }
-
 }
 
 void
@@ -1309,10 +1286,10 @@ KnobItemsTableGuiPrivate::selectionFromIndexList(const QModelIndexList& indexes,
     std::set<KnobTableItemPtr> uniqueItems;
     for (QModelIndexList::const_iterator it = indexes.begin(); it != indexes.end(); ++it) {
         //Check that the item is valid
-        assert(it->isValid() && it->row() >= 0 && it->row() < (int)items.size() && it->column() >= 0 && it->column() < tableModel->columnCount());
+        assert(it->isValid() && it->column() >= 0 && it->column() < tableModel->columnCount());
         
         // Get the table item corresponding to the index
-        TableItemPtr tableItem = tableModel->getItem(it->row());
+        TableItemPtr tableItem = tableModel->getItem(it->row(), it->parent());
         assert(tableItem);
         
         // Get the internal knobtableitem corresponding to the table item
@@ -1376,6 +1353,8 @@ KnobItemsTableGui::onModelSelectionChanged(const QItemSelection& selected,const 
     _imp->selectionToItems(selected, &selectedItems);
     _imp->selectionToItems(deselected, &deselectedItems);
 
+    _imp->refreshKnobsSelectionState(selectedItems, deselectedItems);
+
 #pragma message WARN("refresh keyframes here")
 
     // Select the items in the model internally
@@ -1401,6 +1380,8 @@ KnobItemsTableGui::onModelSelectionChanged(const std::list<KnobTableItemPtr>& ad
     _imp->itemsToSelection(addedToSelection, &selectionToAdd);
     _imp->itemsToSelection(removedFromSelection, &selectionToRemove);
     QItemSelectionModel* selectionModel = _imp->tableView->selectionModel();
+
+    _imp->refreshKnobsSelectionState(addedToSelection, removedFromSelection);
     
     // Ensure we don't recurse indefinitely in the selection
     ++_imp->selectingModelRecursion;
@@ -1638,6 +1619,31 @@ KnobItemsTableGuiPrivate::createTableItems(const KnobTableItemPtr& item)
     QObject::connect(item.get(), SIGNAL(labelIconChanged(TableChangeReasonEnum)), _publicInterface, SLOT(onItemIconChanged(TableChangeReasonEnum)), Qt::UniqueConnection);
 
     
+} // createTableItems
+
+void
+KnobItemsTableGuiPrivate::refreshKnobItemSelection(const KnobTableItemPtr& item, bool selected)
+{
+    ModelItemsVec::iterator found = findItem(item);
+    if (found == items.end()) {
+        return;
+    }
+    for (std::size_t i = 0; i < found->columnItems.size(); ++i) {
+        if (found->columnItems[i].guiKnob) {
+            found->columnItems[i].guiKnob->reflectKnobSelectionState(selected);
+        }
+    }
+}
+
+void
+KnobItemsTableGuiPrivate::refreshKnobsSelectionState(const std::list<KnobTableItemPtr>& selected, const std::list<KnobTableItemPtr>& deselected)
+{
+    for (std::list<KnobTableItemPtr>::const_iterator it = selected.begin(); it != selected.end(); ++it) {
+        refreshKnobItemSelection(*it, true);
+    }
+    for (std::list<KnobTableItemPtr>::const_iterator it = deselected.begin(); it != deselected.end(); ++it) {
+        refreshKnobItemSelection(*it, false);
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

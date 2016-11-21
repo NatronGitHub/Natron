@@ -92,7 +92,7 @@ private:
     virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL
     {
     }
-
+    virtual void reflectSelectionState(bool selected) OVERRIDE FINAL;
     virtual void updateGUI() OVERRIDE FINAL;
 
 private:

@@ -253,6 +253,8 @@ public:
     void addSpacerItemAtEndOfLine();
     void removeSpacerItemAtEndOfLine();
 
+    void reflectKnobSelectionState(bool selected);
+
 public Q_SLOTS:
 
     void onProjectViewsChanged();
