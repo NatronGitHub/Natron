@@ -11,6 +11,7 @@
 - Fix bugs in curves drawing.
 - Curves with a single keyframe can now have a slope.
 - Fix gamma=0 in the viewer
+- Fix potential crashes when using KDE on Linux
 
 ### Plugins
 
