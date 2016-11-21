@@ -300,10 +300,12 @@ KnobItemsTableGuiPrivate::createCustomWidgetRecursively(const KnobTableItemPtr& 
 class AnimatedKnobItemDelegate
 : public QStyledItemDelegate
 {
+    KnobItemsTableGuiPrivate* _imp;
 public:
 
-    explicit AnimatedKnobItemDelegate()
+    explicit AnimatedKnobItemDelegate(KnobItemsTableGuiPrivate* imp)
     : QStyledItemDelegate()
+    , _imp(imp)
     {
 
     }
@@ -320,10 +322,27 @@ AnimatedKnobItemDelegate::paint(QPainter * painter,
                                 const QStyleOptionViewItem & option,
                                 const QModelIndex & index) const
 {
-    QStyleOptionViewItemV4 optionsCpy(option);
-    // Remove the selected bit so that we draw our custom selection highlight instead of the default one.
-    optionsCpy.state &= ~QStyle::State_Selected;
-    QStyledItemDelegate::paint(painter, optionsCpy, index);
+    double textColor[3];
+    if (option.state & QStyle::State_Selected) {
+        appPTR->getCurrentSettings()->getSelectionColor(&textColor[0], &textColor[1], &textColor[2]);
+    } else {
+        appPTR->getCurrentSettings()->getTextColor(&textColor[0], &textColor[1], &textColor[2]);
+    }
+    TableItemPtr item = _imp->tableModel->getItem(index);
+    assert(item);
+
+    QColor c;
+    c.setRgbF(textColor[0], textColor[1], textColor[2]);
+    QPen pen = painter->pen();
+    pen.setColor(c);
+    painter->setPen(pen);
+
+
+    QRect geom = _imp->tableView->style()->subElementRect(QStyle::SE_ItemViewItemText, &option);
+    QString text = item->getData(index.column(), Qt::DisplayRole).toString();
+    QRect r;
+    painter->drawText(geom, Qt::TextSingleLine, text, &r);
+
 
 } // paint
 
@@ -354,6 +373,7 @@ private:
                                         Qt::DropActions supportedActions,
                                         Qt::DropAction defaultAction) OVERRIDE FINAL;
 
+    virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
 };
 
@@ -375,7 +395,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 #endif
     _imp->tableView->header()->setStretchLastSection(true);
 
-    AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate();
+    AnimatedKnobItemDelegate* delegate = new AnimatedKnobItemDelegate(_imp.get());
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->tableView->setItemDelegate(delegate);
@@ -488,17 +508,110 @@ KnobItemsTableGui::getKnobsForItem(const KnobTableItemPtr& item) const
     return ret;
 }
 
+void
+KnobItemsTableView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
+{
+    QStyleOptionViewItemV2 opt = viewOptions();
+    QStyle::State extraFlags = QStyle::State_None;
+    if (isEnabled()) {
+        extraFlags |= QStyle::State_Enabled;
+    }
+    if (window()->isActiveWindow()) {
+        extraFlags |= QStyle::State_Active;
+    }
+    QPoint oldBO = painter->brushOrigin();
+    if (verticalScrollMode() == QAbstractItemView::ScrollPerPixel) {
+        painter->setBrushOrigin(QPoint(0, verticalOffset()));
+    }
 
+    const int indent = indentation();
+    QRect primitive(rect.right() + 1, rect.top(), indent, rect.height());
+
+
+
+    TableItemPtr item = _imp->tableModel->getItem(index);
+    assert(item);
+    bool hasChildren = item->getChildren().size() > 0;
+    bool expanded = isExpanded(index);
+    int nIteration = 0;
+    do {
+
+        QStyleOptionViewItemV2 itemOpt = opt;
+        itemOpt.state &= ~QStyle::State_MouseOver;
+        itemOpt.state &= ~QStyle::State_Selected;
+        itemOpt.state |= extraFlags;
+
+        primitive.moveLeft(primitive.left() - indent);
+        itemOpt.rect = primitive;
+
+        TableItemPtr parentItem = item->getParentItem();
+        bool moreSiblings = false;
+        if (parentItem) {
+            moreSiblings = parentItem->getChildren().size() > 1 && item->getRowInParent() < (int)parentItem->getChildren().size() - 1;
+        }
+
+        if (nIteration == 0) {
+            itemOpt.state |= (expanded ? QStyle::State_Open : QStyle::State_None);
+            itemOpt.state |= (hasChildren ? QStyle::State_Children : QStyle::State_None);
+        }
+
+        style()->drawPrimitive(QStyle::PE_IndicatorBranch, &itemOpt, painter, this);
+        item = item->getParentItem();
+        ++nIteration;
+
+    } while (item);
+    painter->setBrushOrigin(oldBO);
+
+
+} // drawBranches
 
 void
 KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
 {
+    // The full row rectangle
+    QRect rowRect = option.rect;
+
+    // The rectangle at which the item starts if it is a child of another item
+    QRect itemRect = visualRect(index);
+
+    QRect branchRect( 0, rowRect.y(), itemRect.x(), rowRect.height() );
+
+
+    TableItemPtr item = _imp->tableModel->getItem(index);
+    assert(item);
+    ModelItemsVec::iterator found = _imp->findItem(item);
+    assert(found != _imp->items.end());
+
+    // Draw the label section which is the only one using a regular item and not a KnobGui
+    KnobTableItemPtr internalItem = found->internalItem.lock();
+    bool isSelected = internalItem->getModel()->isItemSelected(internalItem);
+    int labelCol = internalItem->getLabelColumnIndex();
+    int xOffset = itemRect.x();
     {
-        QStyleOptionViewItem optionCpy = option;
-        // Remove the selected bit so that we draw our custom selection highlight instead of the default one.
-        optionCpy.state &= ~QStyle::State_Selected;
-        TableView::drawRow(painter, optionCpy, index);
+        int colX = columnViewportPosition(labelCol);
+        int colW = header()->sectionSize(labelCol);
+
+        int x;
+        if (labelCol == 0) {
+            x = xOffset + colX;
+        } else {
+            x = colX;
+        }
+        QStyleOptionViewItemV4 opt = option;
+
+        opt.rect.setRect(x, option.rect.y(), colW, option.rect.height());
+        style()->drawPrimitive(QStyle::PE_PanelItemViewRow, &opt, painter, this);
+
+        if (isSelected) {
+            opt.state |= QStyle::State_Selected;
+        }
+        QModelIndex modelIndex = _imp->tableModel->index(index.row(), labelCol, index.parent());
+        itemDelegate(modelIndex)->paint(painter, opt, modelIndex);
     }
+    
+
+    drawBranches(painter, branchRect, index);
+
 }
 
 void
