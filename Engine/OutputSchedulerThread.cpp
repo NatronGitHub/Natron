@@ -2256,7 +2256,7 @@ private:
             }
             assert(activeInputToRender);
             NodePtr activeInputNode = activeInputToRender->getNode();
-            U64 activeInputToRenderHash = activeInputToRender->getHash();
+            U64 activeInputToRenderHash = isWriteNode ? isWriteNode->getHash() : activeInputToRender->getHash();
             const double par = activeInputToRender->getAspectRatio(-1);
             const bool isRenderDueToRenderInteraction = false;
             const bool isSequentialRender = true;
