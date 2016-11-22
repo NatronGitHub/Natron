@@ -625,6 +625,7 @@ Knob<T>::isDefaultValueSet(DimIdx dimension) const
     return _defaultValues[dimension].defaultValueSet;
 }
 
+
 template<typename T>
 void
 Knob<T>::setDefaultValue(const T & v,

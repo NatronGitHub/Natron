@@ -622,12 +622,18 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     assert(input && output);
+    bool connectOutputToInput = true;
     if (writeNode) {
         writeNode->replaceInput(input, 0);
         NodePtr readNode = readBackNode.lock();
         if (readNode) {
-            output->replaceInput(readNode, 0);
-            readNode->replaceInput(writeNode, 0);
+
+            bool readFile = readBackKnob.lock()->getValue();
+            if (readFile) {
+                output->replaceInput(readNode, 0);
+                connectOutputToInput = false;
+            }
+            readNode->replaceInput(input, 0);
             // sync the output colorspace of the reader from input colorspace of the writer
 
             KnobIPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
@@ -635,12 +641,12 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             if (inputReadColorSpace && outputWriteColorSpace) {
                 inputReadColorSpace->slaveTo(outputWriteColorSpace);
             }
-        } else {
-            output->replaceInput(writeNode, 0);
         }
-    } else {
+    }
+    if (connectOutputToInput) {
         output->replaceInput(input, 0);
     }
+
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
@@ -762,9 +768,6 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     // Make the write node be a pass-through while we do not render
     NodePtr writeNode = embeddedPlugin.lock();
-    if (writeNode) {
-        writeNode->setNodeDisabled(true);
-    }
 
     bool readFromFile = readBackKnob.lock()->getValue();
     if (readFromFile) {
@@ -1096,7 +1099,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
             NodePtr input = _imp->inputNode.lock(), output = _imp->outputNode.lock();
             if (input && writer && output) {
                 writer->replaceInput(input, 0);
-                output->replaceInput(writer, 0);
+                output->replaceInput(input, 0);
             }
         }
     } else if ( (k->getName() == kParamFirstFrame) ||
@@ -1152,33 +1155,27 @@ WriteNode::getFrameRange(double *first,
 void
 WriteNode::onSequenceRenderStarted()
 {
-    NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
-
-    if (writerNodePlugin) {
-        writerNodePlugin->setNodeDisabled(false);
-    }
-    bool readFile = _imp->readBackKnob.lock()->getValue();
     NodePtr readNode = _imp->readBackNode.lock();
-    // If read from file is checked, temporarily disable the read node
-    if (readFile && readNode) {
-        readNode->setNodeDisabled(true);
+    NodePtr outputNode = _imp->outputNode.lock();
+    if (outputNode->getInput(0) == readNode) {
+        outputNode->replaceInput(_imp->inputNode.lock(), 0);
     }
+
 }
 
 void
 WriteNode::onSequenceRenderFinished()
 {
-    NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
 
-    if (writerNodePlugin) {
-        writerNodePlugin->setNodeDisabled(true);
-    }
     bool readFile = _imp->readBackKnob.lock()->getValue();
+
     NodePtr readNode = _imp->readBackNode.lock();
-    // If read from file was checked, re-enable
+    NodePtr outputNode = _imp->outputNode.lock();
     if (readFile && readNode) {
-        readNode->setNodeDisabled(false);
+        outputNode->replaceInput(readNode, 0);
     }
+
+
 }
 
 NATRON_NAMESPACE_EXIT;

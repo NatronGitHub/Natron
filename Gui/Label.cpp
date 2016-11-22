@@ -38,15 +38,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-static QColor rgbToQColor(double r, double g, double b)
-{
-    QColor c;
-    c.setRgbF(Image::clamp(r, 0., 1.),
-               Image::clamp(g, 0., 1.),
-               Image::clamp(b, 0., 1.));
-    return c;
-}
-
 void
 Label::init()
 {

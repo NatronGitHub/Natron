@@ -11,11 +11,14 @@
 - Fix bugs in curves drawing.
 - Curves with a single keyframe can now have a slope.
 - Fix gamma=0 in the viewer
+- Fix potential crashes when using KDE on Linux
 
 ### Plugins
 
 - ColorWheel: antialiased rendering
+- Rectangle: add rounded corners
 - PIKColor: fix black rims issue #1502, rework & optimize
+- PIKColor: remove hard limits on parameters b85f558
 - Grade & Gamma: fix behaviour when gamma=0
 
 ## Version 2.1.8
