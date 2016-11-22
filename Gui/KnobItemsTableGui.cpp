@@ -41,6 +41,7 @@
 #include <QClipboard>
 #include <QPixmapCache>
 #include <QWidget>
+#include <QTextLayout>
 
 #include "Engine/Utils.h"
 #include "Engine/Image.h"
@@ -317,31 +318,149 @@ private:
 };
 
 
+
+static QSizeF viewItemTextLayout(QTextLayout &textLayout, int lineWidth)
+{
+    qreal height = 0;
+    qreal widthUsed = 0;
+    textLayout.beginLayout();
+    while (true) {
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid())
+            break;
+        line.setLineWidth(lineWidth);
+        line.setPosition(QPointF(0, height));
+        height += line.height();
+        widthUsed = qMax(widthUsed, line.naturalTextWidth());
+    }
+    textLayout.endLayout();
+    return QSizeF(widthUsed, height);
+}
+
+static void drawItemText(QPainter *p, const QStyleOptionViewItemV4 *option, const QRect &rect, QStyle* style)
+{
+    const QWidget *widget = option->widget;
+    const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
+
+    QRect textRect = rect.adjusted(textMargin, 0, -textMargin, 0); // remove width padding
+    const bool wrapText = option->features & QStyleOptionViewItemV2::WrapText;
+    QTextOption textOption;
+    textOption.setWrapMode(wrapText ? QTextOption::WordWrap : QTextOption::ManualWrap);
+    textOption.setTextDirection(option->direction);
+    textOption.setAlignment(QStyle::visualAlignment(option->direction, option->displayAlignment));
+    QTextLayout textLayout;
+    textLayout.setTextOption(textOption);
+    textLayout.setFont(option->font);
+    textLayout.setText(option->text);
+
+    viewItemTextLayout(textLayout, textRect.width());
+
+    QString elidedText;
+    qreal height = 0;
+    qreal width = 0;
+    int elidedIndex = -1;
+    const int lineCount = textLayout.lineCount();
+    for (int j = 0; j < lineCount; ++j) {
+        const QTextLine line = textLayout.lineAt(j);
+        if (j + 1 <= lineCount - 1) {
+            const QTextLine nextLine = textLayout.lineAt(j + 1);
+            if ((nextLine.y() + nextLine.height()) > textRect.height()) {
+                int start = line.textStart();
+                int length = line.textLength() + nextLine.textLength();
+                //const QStackTextEngine engine(textLayout.text().mid(start, length), option->font);
+                elidedText = textLayout.text().mid(start, length); //engine.elidedText(option->textElideMode, textRect.width());
+                height += line.height();
+                width = textRect.width();
+                elidedIndex = j;
+                break;
+            }
+        }
+        if (line.naturalTextWidth() > textRect.width()) {
+            int start = line.textStart();
+            int length = line.textLength();
+            //const QStackTextEngine engine(textLayout.text().mid(start, length), option->font);
+            elidedText = textLayout.text().mid(start, length);//engine.elidedText(option->textElideMode, textRect.width());
+            height += line.height();
+            width = textRect.width();
+            elidedIndex = j;
+            break;
+        }
+        width = qMax<qreal>(width, line.width());
+        height += line.height();
+    }
+
+    const QRect layoutRect = QStyle::alignedRect(option->direction, option->displayAlignment,
+                                                 QSize(int(width), int(height)), textRect);
+    const QPointF position = layoutRect.topLeft();
+    for (int i = 0; i < lineCount; ++i) {
+        const QTextLine line = textLayout.lineAt(i);
+        if (i == elidedIndex) {
+            qreal x = position.x() + line.x();
+            qreal y = position.y() + line.y() + line.ascent();
+            p->save();
+            p->setFont(option->font);
+            p->drawText(QPointF(x, y), elidedText);
+            p->restore();
+            break;
+        }
+        line.draw(p, position);
+    }
+} // drawItemText
+
 void
 AnimatedKnobItemDelegate::paint(QPainter * painter,
                                 const QStyleOptionViewItem & option,
                                 const QModelIndex & index) const
 {
-    double textColor[3];
-    if (option.state & QStyle::State_Selected) {
-        appPTR->getCurrentSettings()->getSelectionColor(&textColor[0], &textColor[1], &textColor[2]);
-    } else {
-        appPTR->getCurrentSettings()->getTextColor(&textColor[0], &textColor[1], &textColor[2]);
+
+    QStyleOptionViewItemV4 opt = option;
+    initStyleOption(&opt, index);
+
+    // Paint the label column
+    // Use the selection color for the text color
+
+    painter->save();
+
+
+    const QWidget* widget = opt.widget;
+    QStyle* style = _imp->tableView->style();
+
+
+    // draw the icon
+    if (!opt.icon.isNull()) {
+        QRect iconRect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &opt, widget);
+        QIcon::Mode mode = QIcon::Normal;
+        if (!(opt.state & QStyle::State_Enabled)) {
+            mode = QIcon::Disabled;
+        } else if (opt.state & QStyle::State_Selected) {
+            mode = QIcon::Selected;
+        }
+        QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
+        opt.icon.paint(painter, iconRect, opt.decorationAlignment, mode, state);
     }
-    TableItemPtr item = _imp->tableModel->getItem(index);
-    assert(item);
 
-    QColor c;
-    c.setRgbF(textColor[0], textColor[1], textColor[2]);
-    QPen pen = painter->pen();
-    pen.setColor(c);
-    painter->setPen(pen);
+    // Set pen color
+    {
+        double textColor[3];
+        if (opt.state & QStyle::State_Selected) {
+            appPTR->getCurrentSettings()->getSelectionColor(&textColor[0], &textColor[1], &textColor[2]);
+        } else {
+            appPTR->getCurrentSettings()->getTextColor(&textColor[0], &textColor[1], &textColor[2]);
+        }
 
 
-    QRect geom = _imp->tableView->style()->subElementRect(QStyle::SE_ItemViewItemText, &option);
-    QString text = item->getData(index.column(), Qt::DisplayRole).toString();
-    QRect r;
-    painter->drawText(geom, Qt::TextSingleLine, text, &r);
+        QColor c;
+        c.setRgbF(textColor[0], textColor[1], textColor[2]);
+        QPen pen = painter->pen();
+        pen.setColor(c);
+        painter->setPen(pen);
+    }
+
+    // draw the text
+    QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, widget);
+    drawItemText(painter, &opt, textRect, style);
+
+    painter->restore();
 
 
 } // paint
