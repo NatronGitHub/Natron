@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/GlobalDefines.h"
 #include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
@@ -78,7 +79,7 @@ public Q_SLOTS:
 
     void saveChangesAndClose();
 
-    void onSettingChanged(const KnobIPtr& knob);
+    void onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
     void openHelp();
 

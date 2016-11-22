@@ -38,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidgetItem>
 #include <QStyledItemDelegate>
 #include <QHeaderView>
+#include <QStyle>
 #include <QPainter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -250,6 +251,9 @@ public:
     QTreeWidget* tree;
     std::vector<PreferenceTab> tabs;
     int currentTabIndex;
+    QWidget* warningContainer;
+    Label* warningLabelIcon;
+    Label* warningLabelDesc;
     DialogButtonBox* buttonBox;
     Button* restoreDefaultsB;
     Button* prefsHelp;
@@ -287,6 +291,9 @@ public:
         , tree(0)
         , tabs()
         , currentTabIndex(-1)
+        , warningContainer(0)
+        , warningLabelIcon(0)
+        , warningLabelDesc(0)
         , buttonBox(0)
         , restoreDefaultsB(0)
         , prefsHelp(0)
@@ -665,6 +672,7 @@ PreferencesPanel::createGui()
     _imp->mainLayout = new QVBoxLayout(this);
 
     _imp->splitter = new Splitter(Qt::Horizontal, _imp->gui, this);
+    _imp->splitter->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
     _imp->tree = new QTreeWidget(_imp->splitter);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -695,16 +703,40 @@ PreferencesPanel::createGui()
     }
     _imp->tree->setFixedWidth(maxLength + 100);
 
-    _imp->buttonBox = new DialogButtonBox(Qt::Horizontal);
-    _imp->restoreDefaultsB = new Button( tr("Restore Defaults") );
+
+
+    _imp->warningContainer = new QWidget(this);
+    QHBoxLayout* warningsContainerLayout = new QHBoxLayout(_imp->warningContainer);
+    warningsContainerLayout->setSpacing(TO_DPIX(5));
+    warningsContainerLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->warningLabelIcon = new Label(_imp->warningContainer);
+
+    {
+        int pixSize = TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+        QIcon ic = style()->standardIcon(QStyle::SP_MessageBoxWarning, 0, _imp->warningLabelIcon);
+        QPixmap pix = ic.pixmap(QSize(pixSize, pixSize));
+        _imp->warningLabelIcon->setPixmap(pix);
+    }
+    warningsContainerLayout->addWidget(_imp->warningLabelIcon);
+
+
+    _imp->warningLabelDesc = new Label(_imp->warningContainer);
+    _imp->warningLabelDesc->setIsBold(true);
+    _imp->warningLabelDesc->setIsModified(true);
+    _imp->warningLabelDesc->setText(tr("One of the settings changed requires a restart of %1 to take effect.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    warningsContainerLayout->addWidget(_imp->warningLabelDesc);
+    _imp->warningContainer->hide();
+
+    _imp->buttonBox = new DialogButtonBox(Qt::Horizontal, this);
+    _imp->restoreDefaultsB = new Button( tr("Restore Defaults"), _imp->buttonBox );
     _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
-    _imp->prefsHelp = new Button( tr("Help") );
+    _imp->prefsHelp = new Button( tr("Help"), _imp->buttonBox );
     _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
-    _imp->cancelB = new Button( tr("Discard") );
+    _imp->cancelB = new Button( tr("Discard"), _imp->buttonBox );
     _imp->cancelB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->okB = new Button( tr("Save") );
+    _imp->okB = new Button( tr("Save"),_imp->buttonBox );
     _imp->okB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save changes on disk and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->buttonBox->addButton(_imp->restoreDefaultsB, QDialogButtonBox::ResetRole);
     _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::HelpRole);
@@ -712,13 +744,14 @@ PreferencesPanel::createGui()
     _imp->buttonBox->addButton(_imp->okB, QDialogButtonBox::AcceptRole);
 
     _imp->mainLayout->addWidget(_imp->splitter);
+    _imp->mainLayout->addWidget(_imp->warningContainer);
     _imp->mainLayout->addWidget(_imp->buttonBox);
 
     QObject::connect( _imp->restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
     QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
     QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
     QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
-    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr)), this, SLOT(onSettingChanged(KnobIPtr)) );
+    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr,ValueChangedReasonEnum)), this, SLOT(onSettingChanged(KnobIPtr,ValueChangedReasonEnum)) );
 
 
     // Create plug-ins view
@@ -1050,8 +1083,14 @@ PreferencesPanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 }
 
 void
-PreferencesPanel::onSettingChanged(const KnobIPtr& knob)
+PreferencesPanel::onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason)
 {
+    if (reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonNatronGuiEdited && reason != eValueChangedReasonRestoreDefault) {
+        return;
+    }
+    if (appPTR->getCurrentSettings()->doesKnobChangeRequiresRestart(knob)) {
+        _imp->warningContainer->show();
+    }
     for (U32 i = 0; i < _imp->changedKnobs.size(); ++i) {
         if (_imp->changedKnobs[i] == knob) {
             return;
@@ -1117,7 +1156,7 @@ PreferencesPanel::saveChangesAndClose()
     ///Steal focus from other widgets so that we are sure all LineEdits and Spinboxes get the focusOut event and their editingFinished
     ///signal is emitted.
     _imp->okB->setFocus();
-    appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, true, _imp->pluginSettingsChanged);
+    appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, _imp->pluginSettingsChanged);
     appPTR->saveShortcuts();
     _imp->closeIsOK = true;
     close();
@@ -1142,7 +1181,7 @@ PreferencesPanel::closeEvent(QCloseEvent*)
         SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !_imp->changedKnobs.empty() ) {
             settings->beginChanges();
-            settings->restoreKnobsFromSettings(_imp->changedKnobs);
+            settings->restoreSettings(_imp->changedKnobs);
             settings->endChanges();
         }
         if (_imp->pluginSettingsChanged) {

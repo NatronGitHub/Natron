@@ -146,25 +146,21 @@ public:
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
 
-    ///save the settings to the application's settings
-    void saveSettings(const KnobsVec& settings, bool doWarnings, bool pluginSettings);
-
     void savePluginsSettings();
 
     void saveAllSettings();
 
-    void saveSetting(const KnobIPtr& knob)
-    {
-        KnobsVec knobs;
+    ///save the settings to the application's settings
+    void saveSettings(const KnobsVec& settings, bool pluginSettings);
 
-        knobs.push_back(knob);
-        saveSettings(knobs, false, false);
-    }
+    void saveSetting(const KnobIPtr& knob);
+
+    bool doesKnobChangeRequiresRestart(const KnobIPtr& knob);
 
     ///restores the settings from disk
-    void restoreSettings();
+    void restoreAllSettings();
 
-    void restoreKnobsFromSettings(const KnobsVec& knobs);
+    void restoreSettings(const KnobsVec& settings);
 
     bool isAutoPreviewOnForNewProjects() const;
 
@@ -374,7 +370,7 @@ public:
 
 Q_SIGNALS:
 
-    void settingChanged(const KnobIPtr& knob);
+    void settingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
 private:
 

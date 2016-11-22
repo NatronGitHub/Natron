@@ -874,7 +874,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
 
     ///Call restore after initializing knobs
-    _imp->_settings->restoreSettings();
+    _imp->_settings->restoreAllSettings();
 
     ///basically show a splashScreen load fonts etc...
     return initGui(cl);
@@ -1187,6 +1187,9 @@ AppManager::onViewerTileCacheSizeChanged()
     if (_imp->_viewerCache) {
         _imp->_viewerCache->clear();
         _imp->setViewerCacheTileSize();
+    }
+    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        (*it)->renderAllViewers(true);
     }
 }
 

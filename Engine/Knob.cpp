@@ -148,8 +148,9 @@ KnobHelper::deleteKnob()
         }
 
         knob->setExpressionInvalid( DimSpec::all(), ViewSetSpec::all(), false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
-        knob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
-
+        if (knob.get() != this) {
+            knob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
+        }
     }
 
     KnobHolderPtr holder = getHolder();

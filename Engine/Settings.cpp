@@ -161,7 +161,6 @@ public:
     // Color-Management
     KnobPagePtr _ocioTab;
     KnobChoicePtr _ocioConfigKnob;
-    KnobBoolPtr _warnOcioConfigKnobChanged;
     KnobBoolPtr _ocioStartupCheck;
     KnobFilePtr _customOcioConfigFile;
 
@@ -304,6 +303,8 @@ public:
 
     Settings* _publicInterface;
 
+    std::set<KnobIWPtr> knobsRequiringRestart;
+
     // Count the number of stylesheet changes during restore defaults
     // to avoid reloading it many times
     int _nRedrawStyleSheetRequests;
@@ -313,8 +314,11 @@ public:
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
 
+
+
     SettingsPrivate(Settings* publicInterface)
     : _publicInterface(publicInterface)
+    , knobsRequiringRestart()
     , _nRedrawStyleSheetRequests(0)
     , _restoringDefaults(false)
     , _restoringSettings(false)
@@ -343,9 +347,6 @@ public:
     void initializeKnobsDopeSheetColors();
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
-
-
-    void warnChangedKnobs(const KnobsVec& knobs);
 
     void setCachingLabels();
     void setDefaultValues();
@@ -388,6 +389,16 @@ getDefaultOcioConfigPaths()
 #endif
 }
 
+bool
+Settings::doesKnobChangeRequiresRestart(const KnobIPtr& knob)
+{
+    std::set<KnobIWPtr>::iterator found = _imp->knobsRequiringRestart.find(knob);
+    if (found == _imp->knobsRequiringRestart.end()) {
+        return false;
+    }
+    return true;
+}
+
 void
 Settings::initializeKnobs()
 {
@@ -427,6 +438,7 @@ SettingsPrivate::initializeKnobsGeneral()
     _checkForUpdates = AppManager::createKnob<KnobBool>( thisShared, tr("Always check for updates on start-up") );
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    knobsRequiringRestart.insert(_checkForUpdates);
     _generalTab->addKnob(_checkForUpdates);
 
     _enableCrashReports = AppManager::createKnob<KnobBool>( thisShared, tr("Enable crash reporting") );
@@ -439,6 +451,7 @@ SettingsPrivate::initializeKnobsGeneral()
                                             "enabled, they will be automatically uploaded.\n"
                                             "Changing this requires a restart of the application to take effect.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _enableCrashReports->setAddNewLine(false);
+    knobsRequiringRestart.insert(_enableCrashReports);
     _generalTab->addKnob(_enableCrashReports);
 
     _testCrashReportButton = AppManager::createKnob<KnobButton>( thisShared, tr("Test Crash Reporting") );
@@ -478,12 +491,12 @@ SettingsPrivate::initializeKnobsGeneral()
 
     _hostName = AppManager::createKnob<KnobChoice>( thisShared, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
-    _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
+    knobsRequiringRestart.insert(_hostName);
+    _hostName->setHintToolTip( tr("WARNING: Changing this requires clearing the OpenFX plug-ins load cache from the Cache menu.\n"
+                                  "%1 will appear with the name of the selected application to the OpenFX plug-ins. "
                                   "Changing it to the name of another application can help loading plugins which "
                                   "restrict their usage to specific OpenFX host(s). "
-                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name. Changing this requires "
-                                  "a restart of the application and requires clearing "
-                                  "the OpenFX plugins cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _knownHostNames.clear();
     std::vector<std::string> visibleHostEntries, hostEntriesHelp;
     assert(_knownHostNames.size() == (int)eKnownHostNameNatron);
@@ -569,6 +582,7 @@ SettingsPrivate::initializeKnobsGeneral()
 
     _customHostName = AppManager::createKnob<KnobString>( thisShared, tr("Custom Host name") );
     _customHostName->setName("customHostName");
+    knobsRequiringRestart.insert(_customHostName);
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
                                         "restrict their usage to specific OpenFX hosts. You shoud leave "
@@ -794,10 +808,12 @@ SettingsPrivate::initializeKnobsGPU()
     _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenGL renderer") );
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
+    knobsRequiringRestart.insert(_availableOpenGLRenderers);
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
     _osmesaRenderers = AppManager::createKnob<KnobChoice>(thisShared, tr("CPU OpenGL renderer"));
     _osmesaRenderers->setName("cpuOpenGLRenderer");
+    knobsRequiringRestart.insert(_osmesaRenderers);
     _osmesaRenderers->setHintToolTip(tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. You may select which driver OSMesa uses to perform it's CPU rendering. llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
     _gpuPage->addKnob(_osmesaRenderers);
 
@@ -959,6 +975,7 @@ SettingsPrivate::initializeKnobsColorManagement()
     KnobHolderPtr thisShared = _publicInterface->shared_from_this();
     _ocioTab = AppManager::createKnob<KnobPage>( thisShared, tr("Color-Management") );
     _ocioConfigKnob = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenColorIO config") );
+    knobsRequiringRestart.insert(_ocioConfigKnob);
     _ocioConfigKnob->setName("ocioConfig");
 
     std::vector<std::string> configs;
@@ -993,6 +1010,7 @@ SettingsPrivate::initializeKnobsColorManagement()
 
     _customOcioConfigFile = AppManager::createKnob<KnobFile>( thisShared, tr("Custom OpenColorIO config file") );
     _customOcioConfigFile->setName("ocioCustomConfigFile");
+    knobsRequiringRestart.insert(_customOcioConfigFile);
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
         _customOcioConfigFile->setEnabled(true);
@@ -1004,10 +1022,6 @@ SettingsPrivate::initializeKnobsColorManagement()
                                               "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_customOcioConfigFile);
 
-    _warnOcioConfigKnobChanged = AppManager::createKnob<KnobBool>( thisShared, tr("Warn on OpenColorIO config change") );
-    _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
-    _warnOcioConfigKnobChanged->setHintToolTip( tr("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.") );
-    _ocioTab->addKnob(_warnOcioConfigKnobChanged);
 
     _ocioStartupCheck = AppManager::createKnob<KnobBool>( thisShared, tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
@@ -1030,14 +1044,17 @@ SettingsPrivate::initializeKnobsAppearance()
     _systemFontChoice->setHintToolTip( tr("List of all fonts available on your system") );
     _systemFontChoice->setName("systemFont");
     _systemFontChoice->setAddNewLine(false);
+    knobsRequiringRestart.insert(_systemFontChoice);
     _appearanceTab->addKnob(_systemFontChoice);
 
     _fontSize = AppManager::createKnob<KnobInt>( thisShared, tr("Font size") );
     _fontSize->setName("fontSize");
+    knobsRequiringRestart.insert(_fontSize);
     _appearanceTab->addKnob(_fontSize);
 
     _qssFile = AppManager::createKnob<KnobFile>( thisShared, tr("Stylesheet file (.qss)") );
     _qssFile->setName("stylesheetFile");
+    knobsRequiringRestart.insert(_qssFile);
     _qssFile->setHintToolTip( tr("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
                                  "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _appearanceTab->addKnob(_qssFile);
@@ -1607,7 +1624,7 @@ SettingsPrivate::initializeKnobsPlugins()
     _pluginsTab->setName("plugins");
 
     _extraPluginPaths = AppManager::createKnob<KnobPath>( thisShared, tr("OpenFX plug-ins search path") );
-
+    knobsRequiringRestart.insert(_extraPluginPaths);
     _extraPluginPaths->setName("extraPluginsSearchPaths");
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -1636,6 +1653,7 @@ SettingsPrivate::initializeKnobsPlugins()
 
     _templatesPluginPaths = AppManager::createKnob<KnobPath>( thisShared, tr("PyPlugs search path") );
     _templatesPluginPaths->setName("groupPluginsSearchPath");
+    knobsRequiringRestart.insert(_templatesPluginPaths);
     _templatesPluginPaths->setHintToolTip( tr("Search path where %1 should scan for Python group scripts (PyPlugs). "
                                               "The search paths for groups can also be specified using the "
                                               "NATRON_PLUGIN_PATH environment variable.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1643,7 +1661,7 @@ SettingsPrivate::initializeKnobsPlugins()
     _pluginsTab->addKnob(_templatesPluginPaths);
 
     _loadBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Use bundled plug-ins") );
-
+    knobsRequiringRestart.insert(_loadBundledPlugins);
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
                                             "with the binary distribution.\n"
@@ -1652,7 +1670,7 @@ SettingsPrivate::initializeKnobsPlugins()
     _pluginsTab->addKnob(_loadBundledPlugins);
 
     _preferBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Prefer bundled plug-ins over system-wide plugins") );
-
+    knobsRequiringRestart.insert(_preferBundledPlugins);
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
                                               "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -1786,7 +1804,6 @@ SettingsPrivate::setDefaultValues()
     _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewerKeys->setDefaultValue(true);
 
-    _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
 
     _aggressiveCaching->setDefaultValue(false);
@@ -1996,45 +2013,6 @@ SettingsPrivate::setDefaultValues()
     _publicInterface->endChanges();
 } // setDefaultValues
 
-void
-SettingsPrivate::warnChangedKnobs(const KnobsVec& knobs)
-{
-    bool didFontWarn = false;
-    bool didOCIOWarn = false;
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( ( ( knobs[i] == _fontSize ) ||
-               ( knobs[i] == _systemFontChoice ) )
-             && !didFontWarn ) {
-            didOCIOWarn = true;
-            Dialogs::warningDialog( tr("Font change").toStdString(),
-                                    tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        } else if ( ( ( knobs[i] == _ocioConfigKnob ) ||
-                      ( knobs[i] == _customOcioConfigFile ) )
-                    && !didOCIOWarn ) {
-            didOCIOWarn = true;
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if (warnOcioChanged) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                    _publicInterface->saveSetting( _warnOcioConfigKnobChanged );
-                }
-            }
-        } else if ( knobs[i] == _texturesMode ) {
-            AppInstanceVec apps = appPTR->getAppInstances();
-            for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
-                std::list<ViewerInstancePtr> allViewers;
-                (*it)->getProject()->getViewers(&allViewers);
-                for (std::list<ViewerInstancePtr>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-                    (*it)->renderCurrentFrame(true);
-                }
-            }
-        }
-    }
-} // Settings::warnChangedKnobs
 
 void
 Settings::saveAllSettings()
@@ -2045,7 +2023,7 @@ Settings::saveAllSettings()
     for (U32 i = 0; i < knobs.size(); ++i) {
         k[i] = knobs[i];
     }
-    saveSettings(k, false, true);
+    saveSettings(k, true);
 }
 
 void
@@ -2139,8 +2117,16 @@ Settings::savePluginsSettings()
 }
 
 void
+Settings::saveSetting(const KnobIPtr& knob)
+{
+    KnobsVec knobs;
+
+    knobs.push_back(knob);
+    saveSettings(knobs, false /*savePluginSettings*/);
+}
+
+void
 Settings::saveSettings(const KnobsVec& knobs,
-                       bool doWarnings,
                        bool pluginSettings)
 {
     if (pluginSettings) {
@@ -2217,13 +2203,10 @@ Settings::saveSettings(const KnobsVec& knobs,
         } // for (int j = 0; j < knobs[i]->getNDimensions(); ++j) {
     } // for (U32 i = 0; i < knobs.size(); ++i) {
 
-    if (doWarnings) {
-        _imp->warnChangedKnobs(changedKnobs);
-    }
 } // saveSettings
 
 void
-Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
+Settings::restoreSettings(const KnobsVec& knobs)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -2276,15 +2259,41 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
         }
         knobs[i]->unblockValueChanges();
     }
-} // Settings::restoreKnobsFromSettings
+
+    _imp->_settingsExisted = false;
+    try {
+        _imp->_settingsExisted = _imp->_natronSettingsExist->getValue();
+
+        if (!_imp->_settingsExisted) {
+            _imp->_natronSettingsExist->setValue(true);
+            saveSetting( _imp->_natronSettingsExist );
+        }
+
+        int appearanceVersion = _imp->_defaultAppearanceVersion->getValue();
+        if ( _imp->_settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
+            _imp->_defaultAppearanceOutdated = true;
+            _imp->_defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
+            saveSetting(_imp->_defaultAppearanceVersion );
+        }
+
+        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
+        appPTR->setNThreadsToRender( getNumberOfThreads() );
+        appPTR->setUseThreadPool( _imp->_useThreadPool->getValue() );
+        appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
+    } catch (std::logic_error) {
+        // ignore
+    }
+
+
+} // restoreSettings
 
 void
-Settings::restoreSettings()
+Settings::restoreAllSettings()
 {
     _imp->_restoringSettings = true;
 
     const KnobsVec& knobs = getKnobs();
-    restoreKnobsFromSettings(knobs);
+    restoreSettings(knobs);
 
     if (!_imp->_ocioRestored) {
         ///Load even though there's no settings!
@@ -2339,29 +2348,6 @@ Settings::restoreSettings()
         }
     }
 
-    _imp->_settingsExisted = false;
-    try {
-        _imp->_settingsExisted = _imp->_natronSettingsExist->getValue();
-
-        if (!_imp->_settingsExisted) {
-            _imp->_natronSettingsExist->setValue(true);
-            saveSetting( _imp->_natronSettingsExist );
-        }
-
-        int appearanceVersion = _imp->_defaultAppearanceVersion->getValue();
-        if ( _imp->_settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
-            _imp->_defaultAppearanceOutdated = true;
-            _imp->_defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting(_imp->_defaultAppearanceVersion );
-        }
-
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-        appPTR->setNThreadsToRender( getNumberOfThreads() );
-        appPTR->setUseThreadPool( _imp->_useThreadPool->getValue() );
-        appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
-    } catch (std::logic_error) {
-        // ignore
-    }
 
     _imp->_restoringSettings = false;
 } // restoreSettings
@@ -2469,7 +2455,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                              ViewSetSpec /*view*/,
                              bool /*originatedFromMainThread*/)
 {
-    Q_EMIT settingChanged(k);
+
+    Q_EMIT settingChanged(k, reason);
     bool ret = true;
 
     if ( k == _imp->_maxViewerDiskCacheGB ) {
@@ -2513,17 +2500,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         bool useTP = _imp->_useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _imp->_customOcioConfigFile ) {
-        if ( _imp->_customOcioConfigFile->isEnabled(DimIdx(DimIdx(0))) ) {
+        if ( _imp->_customOcioConfigFile->isEnabled(DimIdx(0)) ) {
             _imp->tryLoadOpenColorIOConfig();
-            bool warnOcioChanged = _imp->_warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() && !_imp->_restoringDefaults ) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _imp->_warnOcioConfigKnobChanged->setValue(false);
-                }
-            }
         }
     } else if ( k == _imp->_maxUndoRedoNodeGraph ) {
         appPTR->setUndoRedoStackLimit( _imp->_maxUndoRedoNodeGraph->getValue() );
@@ -2601,12 +2579,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                } else {
                    ret = false;
                }
-    if (ret) {
-        if ( ( ( k == _imp->_hostName ) || ( k == _imp->_customHostName ) ) && !_imp->_restoringSettings && !_imp->_restoringDefaults ) {
-            Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        }
-    }
-    
+
     return ret;
 } // onKnobValueChanged
 
