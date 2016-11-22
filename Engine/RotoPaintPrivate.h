@@ -580,7 +580,6 @@ struct RotoPaintPrivate
     KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
 
     KnobChoiceWPtr mergeInputAChoiceKnob;
-    KnobChoiceWPtr mergeMaskChoiceKnob;
     KnobDoubleWPtr cloneTranslateKnob;
     KnobDoubleWPtr cloneRotateKnob;
     KnobDoubleWPtr cloneScaleKnob;

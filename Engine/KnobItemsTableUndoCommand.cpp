@@ -176,6 +176,7 @@ RemoveItemsCommand::redo()
     }
 
     model->beginEditSelection();
+    model->clearSelection(eTableChangeReasonInternal);
     for (std::list<ItemToRemove>::const_iterator it = _items.begin(); it != _items.end(); ++it) {
         model->removeItem(it->item, eTableChangeReasonInternal);
     }

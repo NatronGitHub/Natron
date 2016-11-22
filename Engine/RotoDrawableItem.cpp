@@ -468,7 +468,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     MergingFunctionEnum op;
     if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
         op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
-    } else if (type == eRotoStrokeTypeSolid) {
+    } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeComp) {
         op = eMergeOver;
     } else {
         op = eMergeCopy;
@@ -1384,7 +1384,16 @@ RotoDrawableItem::initializeKnobs()
     // Item types that output a mask may not have an invert parameter
     if (type != eRotoStrokeTypeSolid &&
         type != eRotoStrokeTypeSmear) {
-        _imp->invertKnob = createDuplicateOfTableKnob<KnobButton>(kRotoInvertedParam);
+        {
+            KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kRotoInvertedParamLabel), 1);
+            param->setHintToolTip( tr(kRotoInvertedHint) );
+            param->setName(kRotoInvertedParam);
+            param->setCheckable(true);
+            param->setDefaultValue(false);
+            param->setIconLabel("Images/inverted.png", true);
+            param->setIconLabel("Images/uninverted.png", false);
+            _imp->invertKnob = param;
+        }
     }
 
     // Color is only useful for solids
@@ -1422,13 +1431,33 @@ RotoDrawableItem::initializeKnobs()
         type == eRotoStrokeTypeClone ||
         type == eRotoStrokeTypeComp) {
         // Source control
-        _imp->mergeAInputChoice = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemMergeAInputParam);
 
-        _imp->timeOffset = createDuplicateOfTableKnob<KnobInt>(kRotoBrushTimeOffsetParam);
+        {
+            KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
+            param->setName(kRotoDrawableItemMergeAInputParam);
+            param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoDrawableItemMergeAInputParamHint_CompNode : kRotoDrawableItemMergeAInputParamHint_RotoPaint) );
+            param->setDefaultValue(0);
+            param->setAddNewLine(false);
+            _imp->mergeAInputChoice = param;
+        }
+
+        {
+            KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kRotoBrushTimeOffsetParamLabel), 1);
+            param->setName(kRotoBrushTimeOffsetParam);
+            param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoBrushTimeOffsetParamHint_Comp : kRotoBrushTimeOffsetParamHint_Clone) );
+            _imp->timeOffset = param;
+        }
         if (type != eRotoStrokeTypeComp) {
             _imp->timeOffsetMode = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushTimeOffsetModeParam);
         } else {
-            _imp->mergeMaskInputChoice = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemMergeMaskParam);
+            {
+                KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
+                param->setName(kRotoDrawableItemMergeMaskParam);
+                param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
+                param->setDefaultValue(0);
+                param->setAddNewLine(false);
+                _imp->mergeMaskInputChoice = param;
+            }
         }
     }
     _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kHostMixingKnobName);

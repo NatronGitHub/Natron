@@ -504,9 +504,6 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
     _imp->tableView = new KnobItemsTableView(_imp.get(), panel->getGui(), parent);
 
-    // Very important or else a bug in Qt selection frame will ask to redraw the whole interface, making everything laggy
-    _imp->tableView->setAttribute(Qt::WA_MacShowFocusRect, 0);
-
 #if QT_VERSION < 0x050000
     _imp->tableView->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
@@ -568,12 +565,12 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
 
     _imp->tableView->setUniformRowHeights(table->getRowsHaveUniformHeight());
+    _imp->tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
 
 
     if (knobTableType == KnobItemsTable::eKnobItemsTableTypeTree) {
         _imp->tableView->setItemsExpandable(true);
         _imp->tableView->setRootIsDecorated(true);
-        _imp->tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
         _imp->tableView->setExpandsOnDoubleClick(true);
     }
 
@@ -1550,7 +1547,6 @@ KnobItemsTableGuiPrivate::itemsToSelection(const std::list<KnobTableItemPtr>& in
     
     for (std::list<KnobTableItemPtr>::const_iterator it = inItems.begin(); it!=inItems.end(); ++it) {
         ModelItemsVec::iterator found = findItem(*it);
-        assert(found != items.end());
         if (found == items.end()) {
             continue;
         }

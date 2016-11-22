@@ -381,8 +381,6 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
 
     removeItem(item, reason);
 
-    item->ensureItemInitialized();
-
     if (parent) {
         parent->insertChild(index, item);
     } else {
@@ -401,7 +399,10 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
             }
         }
     }
-    
+
+    item->ensureItemInitialized();
+
+
     if (!getPythonPrefix().empty()) {
         declareItemAsPythonField(item);
     }
@@ -432,11 +433,10 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
                 }
             }
         }
-        if (removed) {
-            Q_EMIT itemRemoved(item, reason);
-        }
     }
     if (removed) {
+        Q_EMIT itemRemoved(item, reason);
+
         if (!getPythonPrefix().empty()) {
             removeItemAsPythonField(item);
         }

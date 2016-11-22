@@ -339,6 +339,7 @@ RotoPaint::initLifeTimeKnobs(const KnobPagePtr& generalPage)
         param->setHintToolTip( tr(kRotoLifeTimeCustomRangeParamHint) );
         param->setName(kRotoLifeTimeCustomRangeParam);
         param->setAddNewLine(true);
+        param->setAnimationEnabled(true);
         param->setSecret(defaultLifeTime != eRotoPaintItemLifeTimeTypeCustom);
         param->setDefaultValue(true);
         _imp->knobsTable->addPerItemKnobMaster(param);
@@ -380,17 +381,7 @@ RotoPaint::initGeneralPageKnobs()
     }
     initLifeTimeKnobs(generalPage);
 
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoInvertedParamLabel), 1);
-        param->setHintToolTip( tr(kRotoInvertedHint) );
-        param->setName(kRotoInvertedParam);
-        param->setCheckable(true);
-        param->setDefaultValue(false);
-        param->setIconLabel("Images/inverted.png", true);
-        param->setIconLabel("Images/uninverted.png", false);
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        generalPage->addKnob(param);
-    }
+  
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
         param->setHintToolTip( tr(kRotoAddGroupParamHint) );
@@ -753,52 +744,10 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
 {
     EffectInstancePtr effect = shared_from_this();
 
-    {
-        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(effect, tr("Per-Layer parameters"), 3);
-        param->setName("perLayerSeparator");
-        page->addKnob(param);
-    }
+
     initLifeTimeKnobs(page);
 
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
-        param->setName(kRotoDrawableItemMergeAInputParam);
-        param->setHintToolTip( tr(kRotoDrawableItemMergeAInputParamHint_CompNode) );
-        param->setDefaultValue(0);
-        param->setAddNewLine(false);
-        page->addKnob(param);
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        _imp->mergeInputAChoiceKnob = param;
-    }
-    {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoBrushTimeOffsetParamLabel), 1);
-        param->setName(kRotoBrushTimeOffsetParam);
-        param->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint_Comp) );
-        page->addKnob(param);
-        _imp->knobsTable->addPerItemKnobMaster(param);
-    }
 
-    {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(effect, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
-        param->setName(kRotoDrawableItemMergeMaskParam);
-        param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
-        param->setDefaultValue(0);
-        param->setAddNewLine(false);
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        page->addKnob(param);
-        _imp->mergeMaskChoiceKnob = param;
-    }
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoInvertedParamLabel), 1);
-        param->setHintToolTip( tr(kRotoInvertedHint) );
-        param->setName(kRotoInvertedParam);
-        param->setCheckable(true);
-        param->setDefaultValue(false);
-        param->setIconLabel("Images/inverted.png", true);
-        param->setIconLabel("Images/uninverted.png", false);
-        _imp->knobsTable->addPerItemKnobMaster(param);
-        page->addKnob(param);
-    }
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
         param->setHintToolTip( tr(kRotoAddGroupParamHint) );
@@ -2214,7 +2163,7 @@ RotoPaint::initializeKnobs()
         initMotionBlurPageKnobs();
     }
 
-    setItemsTable(_imp->knobsTable, kRotoInvertedParam);
+    setItemsTable(_imp->knobsTable, kRotoPaintGeneralPageParam);
 
 
 
@@ -2245,7 +2194,12 @@ RotoPaint::initializeKnobs()
         enabled->setAddNewLine(i == 3);
         enabled->setDefaultValue(defaultValues[i]);
         enabled->setHintToolTip( tr("Enable drawing onto this channel") );
-        generalPage->addKnob(enabled);
+        if (_imp->nodeType == eRotoPaintTypeComp) {
+            // For comp node, insert checkboxes on top
+            generalPage->insertKnob(i, enabled);
+        } else {
+            generalPage->addKnob(enabled);
+        }
         _imp->enabledKnobs[i] = enabled;
     }
 
@@ -3435,10 +3389,7 @@ void
 RotoPaintPrivate::refreshSourceKnobs()
 {
     KnobChoicePtr inputAKnob = mergeInputAChoiceKnob.lock();
-    KnobChoicePtr maskChoicesKnob = mergeMaskChoiceKnob.lock();
-    if (!inputAKnob && !maskChoicesKnob) {
-        return;
-    }
+
     std::vector<std::string> inputAChoices, maskChoices;
     maskChoices.push_back("None");
     if (nodeType != RotoPaint::eRotoPaintTypeComp) {
@@ -3470,16 +3421,7 @@ RotoPaintPrivate::refreshSourceKnobs()
             activeEntryText = inputAKnob->getActiveEntryText();
         }
     }
-    if (maskChoicesKnob) {
-        maskChoicesKnob->populateChoices(maskChoices);
-        std::string activeEntryText;
-        int curIdx = maskChoicesKnob->getValue();
-        if (curIdx >= 0 && curIdx < (int)maskChoices.size()) {
-            activeEntryText = maskChoices[curIdx];
-        } else {
-            activeEntryText = maskChoicesKnob->getActiveEntryText();
-        }
-    }
+
 
     // Refresh all items menus aswell
     std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0));

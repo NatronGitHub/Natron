@@ -1371,8 +1371,8 @@ TrackerNode::initializeKnobs()
     QObject::connect(_imp->knobsTable.get(), SIGNAL(selectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)),
                      _imp->ui.get(), SLOT(onModelSelectionChanged(std::list<KnobTableItemPtr>,std::list<KnobTableItemPtr>,TableChangeReasonEnum)));
     _imp->knobsTable->setIconsPath(NATRON_IMAGES_PATH);
-    _imp->knobsTable->setColumnText(0, tr(kTrackerParamEnabledLabel).toStdString());
-    _imp->knobsTable->setColumnText(1, tr("Label").toStdString());
+    _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
+    _imp->knobsTable->setColumnText(1, tr(kTrackerParamEnabledLabel).toStdString());
     _imp->knobsTable->setColumnText(2, tr(kTrackerParamMotionModelLabel).toStdString());
     _imp->knobsTable->setColumnText(3, tr("%1 X").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());
     _imp->knobsTable->setColumnText(4, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamCenterLabel)).toStdString());

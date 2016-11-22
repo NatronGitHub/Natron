@@ -302,7 +302,7 @@ TableItem::insertChild(int row, const TableItemPtr& child)
         }
         it = _imp->children.insert(it, child);
         int index = row;
-        for (TableItemVec::iterator p = it; p != _imp->children.end(); ++it, ++index) {
+        for (TableItemVec::iterator p = it; p != _imp->children.end(); ++p, ++index) {
             (*p)->_imp->indexInParent = index;
         }
         model->endInsertRows();
@@ -909,7 +909,7 @@ TableModel::hasChildren(const QModelIndex & parent) const
 {
 
     if (_imp->type != eTableModelTypeTree) {
-        return false;
+        return QAbstractItemModel::hasChildren();
     }
     if (!parent.isValid()) {
         return _imp->topLevelItems.size() > 0;
@@ -1369,7 +1369,6 @@ TableView::TableView(Gui* gui, QWidget* parent)
     , _imp( new TableViewPrivate(gui) )
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
-    setRootIsDecorated(false);
     setItemsExpandable(false);
 
     ///The table model here doesn't support sorting
