@@ -357,7 +357,7 @@ OfxHost::setProperties()
 } // OfxHost::setProperties
 
 static
-Settings::KnownHostNameEnum
+KnownHostNameEnum
 getHostNameProxy(const std::string& pluginID,
                  int pluginVersionMajor,
                  int pluginVersionMinor)
@@ -379,7 +379,7 @@ getHostNameProxy(const std::string& pluginID,
         // https://www.neatvideo.com/download.html
 
         // tested with neat video 4.0.9, maj=4,min=0
-        return Settings::eKnownHostNameNuke;
+        return eKnownHostNameNuke;
     } else if ( !pluginID.compare(0, hitfilm.size(), hitfilm) ) {
         // HitFilm plugins (work with Vegas, Resolve and TitlerPro,
         // Vegas and TitlerPro support more plugins than Resolve
@@ -389,19 +389,19 @@ getHostNameProxy(const std::string& pluginID,
         // tested with HitFilm Ignite 1.0.0118
         // Clone Stamp from HitFilm Ignite is officially only compatible with Nuke
         if ( pluginID == (hitfilm + ".CloneStamp") ) {
-            return Settings::eKnownHostNameNuke;
+            return eKnownHostNameNuke;
         }
 
-        return Settings::eKnownHostNameVegas;
+        return eKnownHostNameVegas;
     } else if ( !pluginID.compare(0, redgiant.size(), redgiant) ) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
-        return Settings::eKnownHostNameVegas;
+        return eKnownHostNameVegas;
     } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ||
                 !pluginID.compare(0, tiffen.size(), tiffen) ) {
         // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
 
         // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
-        return Settings::eKnownHostNameNuke;
+        return eKnownHostNameNuke;
         //} else if (!pluginID.compare(0, digitalanarchy.size(), digitalanarchy)) {
         //    // Digital Anarchy plug-ins work with Scratch, Resolve, and any OFX host, but they are tested with Scratch.
         //    // http://digitalanarchy.com/demos/psd_mac.html
@@ -409,7 +409,7 @@ getHostNameProxy(const std::string& pluginID,
     }
     //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
 
-    return Settings::eKnownHostNameNone;
+    return eKnownHostNameNone;
 } // getHostNameProxy
 
 const std::string &
@@ -439,8 +439,8 @@ OfxHost::getStringProperty(const std::string &name,
         if ( pluginID.empty() ) {
             qDebug() << "OfxHost::getStringProperty(" kOfxPropName "): Error: no plugin ID! (ignoring)";
         } else {
-            Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
-            if (e != Settings::eKnownHostNameNone) {
+            KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
+            if (e != eKnownHostNameNone) {
                 const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
 
                 return ret;

@@ -31,6 +31,11 @@
 #include <map>
 #include <vector>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
@@ -42,7 +47,36 @@
 
 NATRON_NAMESPACE_ENTER;
 
+enum KnownHostNameEnum
+{
+    eKnownHostNameNatron = 0,
+    eKnownHostNameNuke,
+    eKnownHostNameFusion,
+    eKnownHostNameCatalyst,
+    eKnownHostNameVegas,
+    eKnownHostNameToxik,
+    eKnownHostNameScratch,
+    eKnownHostNameDustBuster,
+    eKnownHostNameResolve,
+    eKnownHostNameResolveLite,
+    eKnownHostNameMistika,
+    eKnownHostNamePablo,
+    eKnownHostNameMotionStudio,
+    eKnownHostNameShake,
+    eKnownHostNameBaselight,
+    eKnownHostNameFrameCycler,
+    eKnownHostNameNucoda,
+    eKnownHostNameAvidDS,
+    eKnownHostNameDX,
+    eKnownHostNameTitlerPro,
+    eKnownHostNameNewBlueOFXBridge,
+    eKnownHostNameRamen,
+    eKnownHostNameTuttleOfx,
+    eKnownHostNameNone,
+};
+
 /*The current settings in the preferences menu.*/
+struct SettingsPrivate;
 class Settings
     : public KnobHolder
 {
@@ -51,33 +85,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    enum KnownHostNameEnum
-    {
-        eKnownHostNameNatron = 0,
-        eKnownHostNameNuke,
-        eKnownHostNameFusion,
-        eKnownHostNameCatalyst,
-        eKnownHostNameVegas,
-        eKnownHostNameToxik,
-        eKnownHostNameScratch,
-        eKnownHostNameDustBuster,
-        eKnownHostNameResolve,
-        eKnownHostNameResolveLite,
-        eKnownHostNameMistika,
-        eKnownHostNamePablo,
-        eKnownHostNameMotionStudio,
-        eKnownHostNameShake,
-        eKnownHostNameBaselight,
-        eKnownHostNameFrameCycler,
-        eKnownHostNameNucoda,
-        eKnownHostNameAvidDS,
-        eKnownHostNameDX,
-        eKnownHostNameTitlerPro,
-        eKnownHostNameNewBlueOFXBridge,
-        eKnownHostNameRamen,
-        eKnownHostNameTuttleOfx,
-        eKnownHostNameNone,
-    };
+
 
     enum EnableOpenGLEnum
     {
@@ -97,9 +105,7 @@ public:
         return SettingsPtr( new Settings() );
     }
 
-    virtual ~Settings()
-    {
-    }
+    virtual ~Settings();
 
     virtual bool canKnobsAnimate() const OVERRIDE FINAL
     {
@@ -220,10 +226,7 @@ public:
     bool getIconsBlackAndWhite() const;
 
     std::string getHostName() const;
-    const std::string& getKnownHostName(KnownHostNameEnum e) const
-    {
-        return _knownHostNames[(int)e];
-    }
+    const std::string& getKnownHostName(KnownHostNameEnum e) const;
 
     std::string getDefaultLayoutFile() const;
 
@@ -377,251 +380,8 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    void initializeKnobsGeneral();
-    void initializeKnobsThreading();
-    void initializeKnobsRendering();
-    void initializeKnobsGPU();
-    void initializeKnobsProjectSetup();
-    void initializeKnobsDocumentation();
-    void initializeKnobsUserInterface();
-    void initializeKnobsColorManagement();
-    void initializeKnobsCaching();
-    void initializeKnobsViewers();
-    void initializeKnobsNodeGraph();
-    void initializeKnobsPlugins();
-    void initializeKnobsPython();
-    void initializeKnobsAppearance();
-    void initializeKnobsGuiColors();
-    void initializeKnobsDopeSheetColors();
-    void initializeKnobsNodeGraphColors();
-    void initializeKnobsScriptEditorColors();
+    boost::scoped_ptr<SettingsPrivate> _imp;
 
-
-    void warnChangedKnobs(const KnobsVec& knobs);
-
-    void setCachingLabels();
-    void setDefaultValues();
-
-    bool tryLoadOpenColorIOConfig();
-
-
-    KnobBoolPtr _natronSettingsExist;
-
-
-    // General
-    KnobPagePtr _generalTab;
-    KnobBoolPtr _checkForUpdates;
-    KnobBoolPtr _enableCrashReports;
-    KnobButtonPtr _testCrashReportButton;
-    KnobBoolPtr _autoSaveUnSavedProjects;
-    KnobIntPtr _autoSaveDelay;
-    KnobBoolPtr _saveSafetyMode;
-    KnobChoicePtr _hostName;
-    KnobStringPtr _customHostName;
-
-    // General/Threading
-    KnobPagePtr _threadingPage;
-    KnobIntPtr _numberOfThreads;
-    KnobIntPtr _numberOfParallelRenders;
-    KnobBoolPtr _useThreadPool;
-    KnobIntPtr _nThreadsPerEffect;
-    KnobBoolPtr _renderInSeparateProcess;
-    KnobBoolPtr _queueRenders;
-
-    // General/Rendering
-    KnobPagePtr _renderingPage;
-    KnobBoolPtr _convertNaNValues;
-    KnobBoolPtr _pluginUseImageCopyForSource;
-    KnobBoolPtr _activateRGBSupport;
-    KnobBoolPtr _activateTransformConcatenationSupport;
-
-    // General/GPU rendering
-    KnobPagePtr _gpuPage;
-    KnobStringPtr _openglRendererString;
-    KnobChoicePtr _availableOpenGLRenderers;
-    KnobChoicePtr _osmesaRenderers;
-    KnobIntPtr _nOpenGLContexts;
-    KnobChoicePtr _enableOpenGL;
-
-
-
-    // General/Projects setup
-    KnobPagePtr _projectsPage;
-    KnobBoolPtr _firstReadSetProjectFormat;
-    KnobBoolPtr _autoPreviewEnabledForNewProjects;
-    KnobBoolPtr _fixPathsOnProjectPathChanged;
-    KnobBoolPtr _enableMappingFromDriveLettersToUNCShareNames;
-
-    // General/Documentation
-    KnobPagePtr _documentationPage;
-    KnobIntPtr _wwwServerPort;
-    KnobChoicePtr _documentationSource;
-
-    // General/User Interface
-    KnobPagePtr _uiPage;
-    KnobBoolPtr _notifyOnFileChange;
-
-    KnobBoolPtr _filedialogForWriters;
-
-    KnobBoolPtr _renderOnEditingFinished;
-    KnobBoolPtr _linearPickers;
-    KnobIntPtr _maxPanelsOpened;
-    KnobBoolPtr _useCursorPositionIncrements;
-    KnobFilePtr _defaultLayoutFile;
-    KnobBoolPtr _loadProjectsWorkspace;
-
-    // Color-Management
-    KnobPagePtr _ocioTab;
-    KnobChoicePtr _ocioConfigKnob;
-    KnobBoolPtr _warnOcioConfigKnobChanged;
-    KnobBoolPtr _ocioStartupCheck;
-    KnobFilePtr _customOcioConfigFile;
-
-    // Caching
-    KnobPagePtr _cachingTab;
-    KnobBoolPtr _aggressiveCaching;
-    ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    KnobStringPtr _maxPlaybackLabel;
-
-    ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
-    ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
-    KnobIntPtr _maxRAMPercent;
-    KnobStringPtr _maxRAMLabel;
-
-    ///The percentage of the system total's RAM you want to keep free from cache usage
-    ///When the cache grows and reaches a point where it is about to cross that threshold
-    ///it starts freeing the LRU entries regardless of the _maxRAMPercent and _maxPlaybackPercent
-    ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
-    ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
-    ///10% seems a reasonable value.
-    KnobIntPtr _unreachableRAMPercent;
-    KnobStringPtr _unreachableRAMLabel;
-
-    ///The total disk space allowed for all Natron's caches
-    KnobIntPtr _maxViewerDiskCacheGB;
-    KnobIntPtr _maxDiskCacheNodeGB;
-    KnobPathPtr _diskCachePath;
-    KnobButtonPtr _wipeDiskCache;
-
-    // Viewer
-    KnobPagePtr _viewersTab;
-    KnobChoicePtr _texturesMode;
-    KnobIntPtr _powerOf2Tiling;
-    KnobIntPtr _checkerboardTileSize;
-    KnobColorPtr _checkerboardColor1;
-    KnobColorPtr _checkerboardColor2;
-    KnobBoolPtr _autoWipe;
-    KnobBoolPtr _autoProxyWhenScrubbingTimeline;
-    KnobChoicePtr _autoProxyLevel;
-    KnobIntPtr _maximumNodeViewerUIOpened;
-    KnobBoolPtr _viewerKeys;
-
-    // Nodegraph
-    KnobPagePtr _nodegraphTab;
-    KnobBoolPtr _autoScroll;
-    KnobBoolPtr _autoTurbo;
-    KnobBoolPtr _snapNodesToConnections;
-    KnobBoolPtr _useBWIcons;
-    KnobIntPtr _maxUndoRedoNodeGraph;
-    KnobIntPtr _disconnectedArrowLength;
-    KnobBoolPtr _hideOptionalInputsAutomatically;
-    KnobBoolPtr _useInputAForMergeAutoConnect;
-    KnobBoolPtr _usePluginIconsInNodeGraph;
-    KnobBoolPtr _useAntiAliasing;
-
-
-    // Plugins
-    KnobPagePtr _pluginsTab;
-    KnobPathPtr _extraPluginPaths;
-    KnobPathPtr _templatesPluginPaths;
-    KnobBoolPtr _preferBundledPlugins;
-    KnobBoolPtr _loadBundledPlugins;
-
-    // Python
-    KnobPagePtr _pythonPage;
-    KnobStringPtr _onProjectCreated;
-    KnobStringPtr _defaultOnProjectLoaded;
-    KnobStringPtr _defaultOnProjectSave;
-    KnobStringPtr _defaultOnProjectClose;
-    KnobStringPtr _defaultOnNodeCreated;
-    KnobStringPtr _defaultOnNodeDelete;
-    KnobBoolPtr _echoVariableDeclarationToPython;
-
-    // Appearance
-    KnobPagePtr _appearanceTab;
-    KnobChoicePtr _systemFontChoice;
-    KnobIntPtr _fontSize;
-    KnobFilePtr _qssFile;
-    KnobIntPtr _defaultAppearanceVersion;
-
-    // Appearance/Main Window
-    KnobPagePtr _guiColorsTab;
-    KnobColorPtr _sunkenColor;
-    KnobColorPtr _baseColor;
-    KnobColorPtr _raisedColor;
-    KnobColorPtr _selectionColor;
-    KnobColorPtr _textColor;
-    KnobColorPtr _altTextColor;
-    KnobColorPtr _timelinePlayheadColor;
-    KnobColorPtr _timelineBGColor;
-    KnobColorPtr _timelineBoundsColor;
-    KnobColorPtr _interpolatedColor;
-    KnobColorPtr _keyframeColor;
-    KnobColorPtr _trackerKeyframeColor;
-    KnobColorPtr _exprColor;
-    KnobColorPtr _cachedFrameColor;
-    KnobColorPtr _diskCachedFrameColor;
-    KnobColorPtr _sliderColor;
-
-    // Appearance/Dope Sheet
-    KnobPagePtr _animationColorsTab;
-    KnobColorPtr _animationViewBackgroundColor;
-    KnobColorPtr _dopesheetRootSectionBackgroundColor;
-    KnobColorPtr _dopesheetKnobSectionBackgroundColor;
-    KnobColorPtr _animationViewScaleColor;
-    KnobColorPtr _animationViewGridColor;
-
-    // Appearance/Script Editor
-    KnobPagePtr _scriptEditorColorsTab;
-    KnobColorPtr _curLineColor;
-    KnobColorPtr _keywordColor;
-    KnobColorPtr _operatorColor;
-    KnobColorPtr _braceColor;
-    KnobColorPtr _defClassColor;
-    KnobColorPtr _stringsColor;
-    KnobColorPtr _commentsColor;
-    KnobColorPtr _selfColor;
-    KnobColorPtr _numbersColor;
-    KnobChoicePtr _scriptEditorFontChoice;
-    KnobIntPtr _scriptEditorFontSize;
-
-    // Appearance/Node Graph
-    KnobPagePtr _nodegraphColorsTab;
-    KnobColorPtr _defaultNodeColor;
-    KnobColorPtr _defaultBackdropColor;
-    KnobColorPtr _defaultGeneratorColor;
-    KnobColorPtr _defaultReaderColor;
-    KnobColorPtr _defaultWriterColor;
-    KnobColorPtr _defaultColorGroupColor;
-    KnobColorPtr _defaultFilterGroupColor;
-    KnobColorPtr _defaultTransformGroupColor;
-    KnobColorPtr _defaultTimeGroupColor;
-    KnobColorPtr _defaultDrawGroupColor;
-    KnobColorPtr _defaultKeyerGroupColor;
-    KnobColorPtr _defaultChannelGroupColor;
-    KnobColorPtr _defaultMergeGroupColor;
-    KnobColorPtr _defaultViewsGroupColor;
-    KnobColorPtr _defaultDeepGroupColor;
-    std::vector<std::string> _knownHostNames;
-
-    // Count the number of stylesheet changes during restore defaults
-    // to avoid reloading it many times
-    int _nRedrawStyleSheetRequests;
-    bool _restoringDefaults;
-    bool _restoringSettings;
-    bool _ocioRestored;
-    bool _settingsExisted;
-    bool _defaultAppearanceOutdated;
 };
 
 NATRON_NAMESPACE_EXIT;
