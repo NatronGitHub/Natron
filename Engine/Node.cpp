@@ -9514,14 +9514,12 @@ Node::refreshMaskEnabledNess(int inputNb)
     if ( found != _imp->maskSelectors.end() ) {
         KnobBoolPtr enabled = found->second.enabled.lock();
         assert(enabled);
-        enabled->blockValueChanges();
         bool curValue = enabled->getValue();
         bool newValue = inp ? true : false;
         changed = curValue != newValue;
         if (changed) {
             enabled->setValue(newValue);
         }
-        enabled->unblockValueChanges();
     }
 
     return changed;

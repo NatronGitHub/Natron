@@ -3414,13 +3414,6 @@ RotoPaintPrivate::refreshSourceKnobs()
     }
     if (inputAKnob) {
         inputAKnob->populateChoices(inputAChoices);
-        std::string activeEntryText;
-        int curIdx = inputAKnob->getValue();
-        if (curIdx >= 0 && curIdx < (int)inputAChoices.size()) {
-            activeEntryText = inputAChoices[curIdx];
-        } else {
-            activeEntryText = inputAKnob->getActiveEntryText();
-        }
     }
 
 
@@ -3431,28 +3424,12 @@ RotoPaintPrivate::refreshSourceKnobs()
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
             if (itemSourceKnob) {
                 itemSourceKnob->populateChoices(inputAChoices);
-                std::string activeEntryText;
-                int curIdx = itemSourceKnob->getValue();
-                if (curIdx >= 0 && curIdx < (int)inputAChoices.size()) {
-                    activeEntryText = inputAChoices[curIdx];
-                } else {
-                    activeEntryText = itemSourceKnob->getActiveEntryText();
-                }
-                itemSourceKnob->setActiveEntryText(activeEntryText);
             }
         }
         {
             KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
             if (maskSourceKnob) {
                 maskSourceKnob->populateChoices(maskChoices);
-                std::string activeEntryText;
-                int curIdx = maskSourceKnob->getValue();
-                if (curIdx >= 0 && curIdx < (int)maskChoices.size()) {
-                    activeEntryText = maskChoices[curIdx];
-                } else {
-                    activeEntryText = maskSourceKnob->getActiveEntryText();
-                }
-                maskSourceKnob->setActiveEntryText(activeEntryText);
             }
         }
     }

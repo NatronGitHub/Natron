@@ -1176,8 +1176,11 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
             } else {
                 viewName = "Main";
             }
-            SERIALIZATION_NAMESPACE::CurveSerialization &c = serialization->animationCurves[viewName];
+            SERIALIZATION_NAMESPACE::CurveSerialization c;
             it->second->toSerialization(&c);
+            if (!c.keys.empty()) {
+                serialization->animationCurves[viewName] = c;
+            }
         }
     }
 

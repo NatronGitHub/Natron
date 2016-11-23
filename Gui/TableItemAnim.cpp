@@ -113,6 +113,7 @@ TableItemAnim::~TableItemAnim()
     }
 
     if (!isTearingDown) {
+#pragma message WARN("Fix this")
         delete _imp->nameItem;
     }
     _imp->nameItem = 0;
