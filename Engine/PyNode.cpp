@@ -35,12 +35,20 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include "natronengine_python.h"
+#include <shiboken.h> // produces many warnings
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/PyAppInstance.h"
 #include "Engine/PyRoto.h"
 #include "Engine/PyTracker.h"
 #include "Engine/Project.h"
@@ -242,6 +250,28 @@ Effect::isReaderNode()
     return n->getEffectInstance()->isReader();
 }
 
+Group*
+Effect::getContainerGroup() const
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodeCollectionPtr container = n->getGroup();
+    if (!container) {
+        return 0;
+    }
+    NodeGroupPtr isGroup = toNodeGroup(container);
+    if (isGroup) {
+        return App::createEffectFromNodeWrapper(isGroup->getNode());
+    } else {
+        assert(container == n->getApp()->getProject());
+        return App::createAppFromAppInstance(n->getApp());
+    }
+}
+
 bool
 Effect::isWriterNode()
 {
@@ -344,7 +374,7 @@ Effect::getInput(int inputNumber) const
     NodePtr node = n->getRealInput(inputNumber);
 
     if (node) {
-        return new Effect(node);
+        return App::createEffectFromNodeWrapper(node);
     }
 
     return 0;
@@ -366,7 +396,7 @@ Effect::getInput(const QString& inputLabel) const
                 return 0;
             }
 
-            return new Effect(ret);
+            return App::createEffectFromNodeWrapper(node);
         }
     }
     return 0;
@@ -465,6 +495,60 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         PythonSetNullError();
         return 0;
     }
+
+    KnobHolderPtr holder = knob->getHolder();
+    if (holder) {
+        // First, try to re-use an existing Effect object that was created for this node.
+        // If not found, create one.
+        NodePtr node;
+        KnobTableItemPtr isItem = toKnobTableItem(holder);
+        EffectInstancePtr isEffect = toEffectInstance(holder);
+        if (isItem) {
+            KnobItemsTablePtr model = isItem->getModel();
+            if (!model) {
+                return 0;
+            }
+            node = model->getNode();
+        } else if (isEffect) {
+            node = isEffect->getNode();
+        }
+
+
+        std::stringstream ss;
+        ss << kPythonTmpCheckerVariable << " = ";
+        ss << holder->getApp()->getAppIDString();
+        if (node) {
+            ss << "." << node->getFullyQualifiedName();
+        }
+        if (isItem) {
+            ss << "." << isItem->getModel()->getPythonPrefix() << "." << isItem->getFullyQualifiedName();
+        }
+        ss << "." << knob->getName();
+        std::string script = ss.str();
+        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+        // Clear errors if our call to interpretPythonScript failed, we don't want the
+        // calling function to fail aswell.
+        PyErr_Clear();
+        if (ok) {
+            PyObject* pyParam = 0;
+            PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+            if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
+                pyParam = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            }
+            Param* cppParam = 0;
+            if (pyParam && Shiboken::Object::isValid(pyParam)) {
+                cppParam = (Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)pyParam);
+            }
+            NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
+
+            if (cppParam) {
+                return cppParam;
+            }
+        }
+
+    }
+
+
     int dims = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
     KnobDoublePtr isDouble = toKnobDouble(knob);
@@ -757,7 +841,9 @@ UserParamHolder::createIntParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new IntParam(knob);
+        IntParam* ret = dynamic_cast<IntParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -780,7 +866,9 @@ UserParamHolder::createInt2DParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new Int2DParam(knob);
+        Int2DParam* ret = dynamic_cast<Int2DParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -803,7 +891,9 @@ UserParamHolder::createInt3DParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new Int3DParam(knob);
+        Int3DParam* ret = dynamic_cast<Int3DParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -826,7 +916,9 @@ UserParamHolder::createDoubleParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new DoubleParam(knob);
+        DoubleParam* ret = dynamic_cast<DoubleParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -849,7 +941,9 @@ UserParamHolder::createDouble2DParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new Double2DParam(knob);
+        Double2DParam* ret = dynamic_cast<Double2DParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -872,7 +966,9 @@ UserParamHolder::createDouble3DParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new Double3DParam(knob);
+        Double3DParam* ret = dynamic_cast<Double3DParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -895,7 +991,9 @@ UserParamHolder::createBooleanParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new BooleanParam(knob);
+        BooleanParam* ret = dynamic_cast<BooleanParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -918,7 +1016,9 @@ UserParamHolder::createChoiceParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new ChoiceParam(knob);
+        ChoiceParam* ret = dynamic_cast<ChoiceParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -941,8 +1041,9 @@ UserParamHolder::createColorParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new ColorParam(knob);
+        ColorParam* ret = dynamic_cast<ColorParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -964,8 +1065,9 @@ UserParamHolder::createStringParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new StringParam(knob);
+        StringParam* ret = dynamic_cast<StringParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -988,7 +1090,9 @@ UserParamHolder::createFileParam(const QString& name,
             userPage->addKnob(knob);
         }
         knob->setDialogType(KnobFile::eKnobFileDialogTypeOpenFile);
-        return new FileParam(knob);
+        FileParam* ret = dynamic_cast<FileParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1011,7 +1115,9 @@ UserParamHolder::createOutputFileParam(const QString& name,
             userPage->addKnob(knob);
         }
         knob->setDialogType(KnobFile::eKnobFileDialogTypeSaveFile);
-        return new FileParam(knob);
+        FileParam* ret = dynamic_cast<FileParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1034,7 +1140,9 @@ UserParamHolder::createPathParam(const QString& name,
             userPage->addKnob(knob);
         }
 
-        return new PathParam(knob);
+        PathParam* ret = dynamic_cast<PathParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1056,8 +1164,9 @@ UserParamHolder::createButtonParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new ButtonParam(knob);
+        ButtonParam* ret = dynamic_cast<ButtonParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1079,8 +1188,9 @@ UserParamHolder::createSeparatorParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new SeparatorParam(knob);
+        SeparatorParam* ret = dynamic_cast<SeparatorParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1102,8 +1212,9 @@ UserParamHolder::createGroupParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new GroupParam(knob);
+        GroupParam* ret = dynamic_cast<GroupParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1120,7 +1231,9 @@ UserParamHolder::createPageParam(const QString& name,
     }
     KnobPagePtr knob = holder->createPageKnob( name.toStdString(), label.toStdString() );
     if (knob) {
-        return new PageParam(knob);
+        PageParam* ret = dynamic_cast<PageParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1143,8 +1256,9 @@ UserParamHolder::createParametricParam(const QString& name,
         if (userPage) {
             userPage->addKnob(knob);
         }
-
-        return new ParametricParam(knob);
+        ParametricParam* ret = dynamic_cast<ParametricParam*>(Effect::createParamWrapperForKnob(knob));
+        assert(ret);
+        return ret;
     } else {
         return 0;
     }
@@ -1204,6 +1318,60 @@ UserParamHolder::refreshUserParamsGUI()
     holder->recreateUserKnobs(false);
 }
 
+ItemsTable*
+Effect::createItemsTableWrapper(const KnobItemsTablePtr& table)
+{
+    if (!table) {
+        return 0;
+    }
+
+    NodePtr node = table->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+
+    // First, try to re-use an existing ItemsTable object that was created for this node.
+    // If not found, create one.
+    std::stringstream ss;
+    ss << kPythonTmpCheckerVariable << " = ";
+    ss << node->getApp()->getAppIDString() << "." << node->getFullyQualifiedName() << "." << table->getPythonPrefix();
+    std::string script = ss.str();
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+    // Clear errors if our call to interpretPythonScript failed, we don't want the
+    // calling function to fail aswell.
+    PyErr_Clear();
+    if (ok) {
+        PyObject* pyTable = 0;
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
+            pyTable = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+        }
+        ItemsTable* cppTable = 0;
+        if (pyTable && Shiboken::Object::isValid(pyTable)) {
+            cppTable = (ItemsTable*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], (SbkObject*)pyTable);
+        }
+        NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
+
+        if (cppTable) {
+            return cppTable;
+        }
+    }
+
+    // create one
+
+    RotoPaintKnobItemsTable* isRotoPaintTable = dynamic_cast<RotoPaintKnobItemsTable*>(table.get());
+    if (isRotoPaintTable) {
+        return new Roto(table);
+    }
+    TrackerNodePtr isTrackerNode = toTrackerNode(node->getEffectInstance());
+    if (isTrackerNode) {
+        return new Tracker(table, isTrackerNode->getTracker());
+    }
+    return new ItemsTable(table);
+
+
+} // createItemsTableWrapper
 
 ItemsTable*
 Effect::getItemsTable() const
@@ -1215,20 +1383,10 @@ Effect::getItemsTable() const
         return 0;
     }
     KnobItemsTablePtr table = n->getEffectInstance()->getItemsTable();
-
-    if (table) {
-        RotoPaintKnobItemsTable* isRotoPaintTable = dynamic_cast<RotoPaintKnobItemsTable*>(table.get());
-        if (isRotoPaintTable) {
-            return new Roto(table);
-        }
-        TrackerNodePtr isTrackerNode = toTrackerNode(n->getEffectInstance());
-        if (isTrackerNode) {
-            return new Tracker(table, isTrackerNode->getTracker());
-        }
-        return new ItemsTable(table);
+    if (!table) {
+        return 0;
     }
-
-    return 0;
+    return Effect::createItemsTableWrapper(table);
 }
 
 
@@ -1349,7 +1507,7 @@ Effect::getAvailableLayers() const
     for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {
-            Effect* effect = new Effect(node);
+            Effect* effect = App::createEffectFromNodeWrapper(node);
             ImageLayer layer(it->first);
             ret.insert( std::make_pair(layer, effect) );
         }

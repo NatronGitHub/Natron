@@ -32,8 +32,8 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-Track::Track(const TrackMarkerPtr& marker, const ItemsTable* table)
-: ItemBase(marker, table)
+Track::Track(const TrackMarkerPtr& marker)
+: ItemBase(marker)
 , _marker(marker)
 {
 }
@@ -105,18 +105,11 @@ Tracker::createTrack()
     TrackMarkerPtr track = TrackMarker::create(model);
     track->resetCenter();
     model->addItem(track, KnobTableItemPtr(), eTableChangeReasonInternal);
-    return new Track(track, this);
+    Track* ret = dynamic_cast<Track*>( ItemsTable::createPyItemWrapper(track) );
+    assert(ret);
+    return ret;
 }
 
-ItemBase*
-Tracker::createPyItemWrapper(const KnobTableItemPtr& item) const
-{
-    TrackMarkerPtr isTrack = toTrackMarker(item);
-    if (isTrack) {
-        return new Track(isTrack, this);
-    }
-    return ItemsTable::createPyItemWrapper(item);
-}
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;

@@ -194,7 +194,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 #endif
     _imp->table->header()->setStretchLastSection(true);
     _imp->table->setUniformRowHeights(true);
-
+    _imp->table->setRootIsDecorated(false);
     _imp->table->setDragDropMode(QAbstractItemView::InternalMove);
 
     _imp->table->setItemDelegate( new KnobTableItemDelegate(knob, _imp->table) );

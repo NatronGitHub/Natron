@@ -460,6 +460,9 @@ void init_NATRON_NAMESPACE(PyObject* module)
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eAnimationLevelOnKeyframe", (long) NATRON_NAMESPACE::eAnimationLevelOnKeyframe))
         return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eAnimationLevelExpression", (long) NATRON_NAMESPACE::eAnimationLevelExpression))
+        return ;
     // Register converter for enum 'NATRON_NAMESPACE::AnimationLevelEnum'.
     {
         SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX],

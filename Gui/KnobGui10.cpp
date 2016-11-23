@@ -36,6 +36,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/EffectInstance.h"
@@ -49,6 +50,7 @@
 #include "Gui/AnimationModule.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/NodeAnim.h"
+#include "Gui/TableItemAnim.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
@@ -285,25 +287,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     if (!model) {
         return;
     }
-
-    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
-
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == knob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
+    KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
     }
@@ -364,24 +348,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     if (!internalKnob) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
-
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == internalKnob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
+    KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
     }
@@ -437,22 +404,9 @@ KnobGui::onInterpolationActionTriggered()
     if (!internalKnob) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (!isEffect) {
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
         return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
-
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == internalKnob) {
-            knobAnim = *it;
-            break;
-        }
     }
 
     AnimItemDimViewKeyFramesMap keysToSet;
@@ -470,7 +424,33 @@ KnobGui::onInterpolationActionTriggered()
     pushUndoCommand(new SetKeysInterpolationCommand(keysToSet, model, interp));
 }
 
+KnobAnimPtr
+KnobGui::findKnobAnim() const
+{
 
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return KnobAnimPtr();
+    }
+    KnobIPtr internalKnob = getKnob();
+
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    KnobTableItemPtr isTableItem = toKnobTableItem(internalKnob->getHolder());
+    if (isEffect) {
+        NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+        if (!node) {
+            return KnobAnimPtr();
+        }
+        return node->findKnobAnim(internalKnob);
+    } else if (isTableItem) {
+        TableItemAnimPtr item = model->findTableItemAnim(isTableItem);
+        if (!item) {
+            return KnobAnimPtr();
+        }
+        return item->findKnobAnim(internalKnob);
+    }
+    return KnobAnimPtr();
+}
 
 void
 KnobGui::onSetKeyActionTriggered()
@@ -491,28 +471,11 @@ KnobGui::onSetKeyActionTriggered()
     if (!internalKnob) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
 
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == internalKnob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
+    KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
     }
-
 
     KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
     KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
@@ -581,28 +544,10 @@ KnobGui::onRemoveKeyActionTriggered()
     if (!internalKnob) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
-
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == internalKnob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
+    KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
     }
-
 
     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
@@ -1149,24 +1094,7 @@ KnobGui::onProjectViewsChanged()
         return;
     }
 
-    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
-
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == knob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
+    KnobAnimPtr knobAnim = findKnobAnim();
     if (!knobAnim) {
         return;
     }

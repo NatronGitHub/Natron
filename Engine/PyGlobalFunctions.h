@@ -196,7 +196,7 @@ public:
             return 0;
         }
 
-        return new App(app);
+        return App::createAppFromAppInstance(app);
     }
 
     inline App* getActiveInstance() const
@@ -207,7 +207,7 @@ public:
             return 0;
         }
 
-        return new App(app);
+        return App::createAppFromAppInstance(app);
     }
 
     inline AppSettings* getSettings() const

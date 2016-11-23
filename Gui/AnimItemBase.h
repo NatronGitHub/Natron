@@ -235,6 +235,8 @@ class KnobsHolderAnimBase
 {
 public:
 
+    KnobAnimPtr findKnobAnim(const KnobIPtr& knob) const;
+
     virtual const std::vector<KnobAnimPtr>& getKnobs() const = 0;
 
     virtual void refreshKnobsVisibility() = 0;

@@ -25,6 +25,7 @@
 
 #include "Knob.h"
 #include "KnobPrivate.h"
+#include "Engine/KnobItemsTable.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -300,13 +301,19 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
+
+    NodePtr node;
     EffectInstancePtr effect = toEffectInstance(h);
-    assert(effect);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
+    KnobTableItemPtr tableItem = toKnobTableItem(h);
+    if (effect) {
+        node = effect->getNode();
+    } else if (tableItem) {
+        KnobItemsTablePtr model = tableItem->getModel();
+        if (model) {
+            node = model->getNode();
+        }
     }
 
-    NodePtr node = effect->getNode();
     assert(node);
     if (!node) {
         throw std::runtime_error("This parameter cannot have an expression");
@@ -360,11 +367,21 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
 
+
     // Define thisNode
     ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
 
+    if (tableItem) {
+        const std::string& tablePythonPrefix = tableItem->getModel()->getPythonPrefix();
+        ss << tabStr << "thisItem = thisNode." << tablePythonPrefix << tableItem->getFullyQualifiedName() << "\n";
+    }
+
     // Define thisParam
-    ss << tabStr << "thisParam = thisNode." << name << "\n";
+    if (tableItem) {
+        ss << tabStr << "thisParam = thisItem." << name << "\n";
+    } else {
+        ss << tabStr << "thisParam = thisNode." << name << "\n";
+    }
 
     // Define dimension variable
     ss << tabStr << "dimension = " << dimension << "\n";
@@ -480,7 +497,7 @@ KnobHelper::validateExpression(const std::string& expression,
     if (!hasRetVariable) {
         std::size_t foundNewLine = expression.find("\n");
         if (foundNewLine != std::string::npos) {
-            throw std::invalid_argument("unexpected new line character \'\\n\'");
+            throw std::invalid_argument(tr("unexpected new line character \'\\n\'").toStdString());
         }
         //preprend the line with "ret = ..."
         std::string toInsert("    ret = ");
@@ -496,18 +513,22 @@ KnobHelper::validateExpression(const std::string& expression,
 
     KnobHolderPtr holder = getHolder();
     if (!holder) {
-        throw std::runtime_error("This parameter cannot have an expression");
+        throw std::runtime_error(tr("This parameter cannot have an expression").toStdString());
     }
 
+    NodePtr node;
     EffectInstancePtr effect = toEffectInstance(holder);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
+    KnobTableItemPtr tableItem = toKnobTableItem(holder);
+    if (effect) {
+        node = effect->getNode();
+    } else if (tableItem) {
+        KnobItemsTablePtr model = tableItem->getModel();
+        if (model) {
+            node = model->getNode();
+        }
     }
-
-    NodePtr node = effect->getNode();
-    assert(node);
     if (!node) {
-        throw std::runtime_error("This parameter cannot have an expression");
+        throw std::runtime_error(tr("Only parameters of a Node can have an expression").toStdString());
     }
     std::string appID = holder->getApp()->getAppIDString();
     std::string nodeName = node->getFullyQualifiedName();

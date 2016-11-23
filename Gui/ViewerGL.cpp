@@ -2009,7 +2009,7 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
         if (!nodePanel) {
             continue;
         }
-        NodeGuiPtr node = nodePanel->getNode();
+        NodeGuiPtr node = nodePanel->getNodeGui();
         if (!node) {
             continue;
         }
@@ -2549,7 +2549,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
             continue;
         }
 
-        NodePtr node = isNodePanel->getNode()->getNode();
+        NodePtr node = isNodePanel->getNodeGui()->getNode();
         if (!node) {
             continue;
         }

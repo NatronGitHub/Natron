@@ -317,7 +317,9 @@ GuiApp::getSelectedNodes(Group* group) const
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
         if ( node->isActivated() ) {
-            ret.push_back( new Effect(node) );
+            Effect* eff = App::createEffectFromNodeWrapper(node);
+            assert(eff);
+            ret.push_back(eff);
         }
     }
 
@@ -506,7 +508,7 @@ GuiApp::getActiveViewer() const
         return 0;
     }
 
-    return new Effect(node);
+    return App::createEffectFromNodeWrapper(node);
 }
 
 PyPanel*

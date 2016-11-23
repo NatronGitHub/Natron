@@ -47,6 +47,7 @@
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobAnim.h"
+#include "Gui/NodeAnim.h"
 #include "Gui/KnobItemsTableGui.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -307,7 +308,7 @@ TableItemAnim::initialize(QTreeWidgetItem* parentItem)
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
     _imp->nameItem->setText(0, itemLabel);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemRoot);
-
+    _imp->nameItem->setExpanded(true);
     int nCols = getModel()->getTreeColumnsCount();
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
         _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
@@ -419,9 +420,32 @@ TableItemAnim::refreshKnobsVisibility()
 }
 
 void
+TableItemAnim::refreshVisibilityConditional(bool refreshHolder)
+{
+    NodeAnimPtr parentNode = _imp->parentNode.lock();
+    if (refreshHolder && parentNode) {
+        parentNode->refreshVisibility();
+        return;
+    }
+    refreshKnobsVisibility();
+    bool showItem = false;
+    for (std::vector<TableItemAnimPtr>::const_iterator it = _imp->children.begin(); it!=_imp->children.end(); ++it) {
+        (*it)->refreshVisibilityConditional(false);
+        if (!(*it)->getRootItem()->isHidden()) {
+            showItem = true;
+        }
+    }
+    if (!showItem) {
+        showItem = _imp->tableItem.lock()->getHasAnimation();
+    }
+    _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
+    _imp->nameItem->setHidden(!showItem);
+}
+
+void
 TableItemAnim::refreshVisibility()
 {
-    refreshKnobsVisibility();
+    refreshVisibilityConditional(true);
 }
 
 void

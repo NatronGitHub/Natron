@@ -161,6 +161,7 @@ EditExpressionDialog::getCustomHelp()
     return getHelpPart1() + sep +
            getHelpThisNodeVariable() + sep +
            getHelpThisGroupVariable() + sep +
+           getHelpThisItemVariable() + sep +
            getHelpThisParamVariable() + sep +
            getHelpDimensionVariable() + sep +
            getHelpPart2();
@@ -178,6 +179,7 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString, QString>
     variables.push_back( std::make_pair( QString::fromUtf8("thisNode"), tr("the current node") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("thisGroup"), tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("thisParam"), tr("the current param being edited") ) );
+    variables.push_back( std::make_pair( QString::fromUtf8("thisItem"), tr("When thisParam belongs to a tableItem (such as a Bezier in the RotoPaint node or a Track in the Tracker node), it references the item") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("dimension"), tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("frame"), tr("the current time on the timeline or the time passed to the get function") ) );
     variables.push_back( std::make_pair( QString::fromUtf8("view"), tr("the view name on which the expression is run") ) );

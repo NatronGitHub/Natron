@@ -46,11 +46,10 @@ class ItemBase
     Q_DECLARE_TR_FUNCTIONS(ItemsTable)
 
     KnobTableItemWPtr _item;
-    const ItemsTable* _table;
 
 public:
 
-    ItemBase(const KnobTableItemPtr& item, const ItemsTable* table);
+    ItemBase(const KnobTableItemPtr& item);
 
     virtual ~ItemBase();
 
@@ -123,9 +122,7 @@ public:
 
     bool isModelParentingEnabled() const;
 
-protected:
-
-    virtual ItemBase* createPyItemWrapper(const KnobTableItemPtr& item) const;
+    static ItemBase* createPyItemWrapper(const KnobTableItemPtr& item);
 
 };
 

@@ -440,7 +440,7 @@ ManageUserParamsDialog::onPickClicked()
         if (!nodePanel) {
             throw std::logic_error("ManageUserParamsDialog::onPickClicked");
         }
-        NodeGuiPtr nodeGui = nodePanel->getNode();
+        NodeGuiPtr nodeGui = nodePanel->getNodeGui();
         assert(nodeGui);
         if (!nodeGui) {
             throw std::logic_error("ManageUserParamsDialog::onPickClicked");

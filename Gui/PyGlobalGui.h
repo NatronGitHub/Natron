@@ -58,29 +58,8 @@ public:
     {
     }
 
-    QPixmap getIcon(PixmapEnum val) const
-    {
-        QPixmap ret;
-
-        appPTR->getIcon(val, &ret);
-
-        return ret;
-    }
-
-    GuiApp* getGuiInstance(int idx) const
-    {
-        AppInstancePtr app = appPTR->getAppInstance(idx);
-
-        if (!app) {
-            return 0;
-        }
-        GuiAppInstancePtr guiApp = toGuiAppInstance(app);
-        if (!guiApp) {
-            return 0;
-        }
-
-        return new GuiApp(guiApp);
-    }
+    QPixmap getIcon(PixmapEnum val) const;
+    GuiApp* getGuiInstance(int idx) const;
 
     void informationDialog(const QString& title,
                            const QString& message)

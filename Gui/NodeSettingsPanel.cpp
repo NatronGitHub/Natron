@@ -105,7 +105,7 @@ NodeSettingsPanel::NodeSettingsPanel(Gui* gui,
 
 NodeSettingsPanel::~NodeSettingsPanel()
 {
-    NodeGuiPtr node = getNode();
+    NodeGuiPtr node = getNodeGui();
 
     if (node) {
         node->removeSettingsPanel();
@@ -125,7 +125,7 @@ NodeSettingsPanel::setSelected(bool s)
 void
 NodeSettingsPanel::centerOnItem()
 {
-    getNode()->centerGraphOnIt();
+    getNodeGui()->centerGraphOnIt();
 }
 
 
@@ -133,7 +133,7 @@ NodeSettingsPanel::centerOnItem()
 QColor
 NodeSettingsPanel::getCurrentColor() const
 {
-    return getNode()->getCurrentColor();
+    return getNodeGui()->getCurrentColor();
 }
 
 
@@ -142,7 +142,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
 {
     Menu menu(this);
     //menu.setFont(QFont(appFont,appFontSize));
-    NodeGuiPtr node = getNode();
+    NodeGuiPtr node = getNodeGui();
     NodePtr master = node->getNode()->getMasterNode();
 
     Menu* loadPresetsMenu = new Menu(tr("Load presets"),&menu);
@@ -268,7 +268,7 @@ NodeSettingsPanel::onLoadPresetsActionTriggered()
     }
     QString preset = action->data().toString();
     try {
-        getNode()->getNode()->loadPresets(preset.toStdString());
+        getNodeGui()->getNode()->loadPresets(preset.toStdString());
     } catch (const std::exception &e) {
         Dialogs::errorDialog( tr("Load Presets").toStdString(), e.what(), false );
     }
@@ -285,7 +285,7 @@ NodeSettingsPanel::onImportPresetsFromFileActionTriggered()
         return;
     }
     try {
-        getNode()->getNode()->loadPresetsFromFile(filename);
+        getNodeGui()->getNode()->loadPresetsFromFile(filename);
     } catch (const std::exception &e) {
         Dialogs::errorDialog( tr("Load Presets").toStdString(), e.what(), false );
     }
@@ -395,6 +395,11 @@ SavePresetsDialog::getPresetPath() const
     return filePathEdit->text();
 }
 
+NodeGuiPtr
+NodeSettingsPanel::getNodeGui() const
+{
+    return _nodeGUI.lock();
+}
 
 void
 NodeSettingsPanel::onExportPresetsActionTriggered()
@@ -422,7 +427,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     extractKeySequence(keySeq, qtMods, qtKey);
     
     try {
-        getNode()->getNode()->exportNodeToPresets(presetFilePath.toStdString(),
+        getNodeGui()->getNode()->exportNodeToPresets(presetFilePath.toStdString(),
                                                 presetName.toStdString(),
                                                 presetIconFile.toStdString(),
                                                 QtEnumConvert::fromQtKey(qtKey),

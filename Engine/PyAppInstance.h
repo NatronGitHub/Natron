@@ -41,8 +41,12 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+
 #include "Engine/PyNode.h"
 #include "Engine/EngineFwd.h"
+
+// Used as a temp variable to retrieve existing objects without creating new object.
+#define kPythonTmpCheckerVariable "_tmp_checker_"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -333,6 +337,10 @@ public:
     QString getViewName(int viewIndex) const;
 
     void addProjectLayer(const ImageLayer& layer);
+
+    static Effect* createEffectFromNodeWrapper(const NodePtr& node);
+
+    static App* createAppFromAppInstance(const AppInstancePtr& app);
 
 protected:
 

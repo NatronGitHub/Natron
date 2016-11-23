@@ -236,12 +236,15 @@ NodeAnim::initializeKnobsAnim()
 
     NodeAnimPtr thisShared = shared_from_this();
 
+
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         // If the knob is not animted, don't create an item
         if ( !(*it)->canAnimate() || !(*it)->isAnimationEnabled() ) {
             continue;
         }
+
+
 
         KnobAnimPtr knobAnimObject(KnobAnim::create(getModel(), thisShared, _imp->nameItem, *it));
         _imp->knobs.push_back(knobAnimObject);
@@ -324,10 +327,11 @@ NodeAnim::onTableItemInserted(int index, const KnobTableItemPtr& item, TableChan
         parentAnim = findTableItem(parentItem);
     }
     KnobItemsTableGuiPtr table = getNodeGui()->getKnobItemsTable();
-    TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, _imp->nameItem));
     if (parentItem) {
+        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, parentAnim->getRootItem()));
         parentAnim->insertChild(index, anim);
     } else {
+        TableItemAnimPtr anim(TableItemAnim::create(getModel(), table, shared_from_this(), item, _imp->nameItem));
         if (index < 0 || index >= (int)_imp->topLevelTableItems.size()) {
             _imp->topLevelTableItems.push_back(anim);
         } else {
@@ -459,6 +463,17 @@ NodeAnim::refreshVisibility()
                     break;
                 case eAnimatedItemTypeGroup:
                 {
+                    // For a group node, if the sub-graph can be edited
+                    // always show the group node.
+                    // If it cannot ever be created (Write, Tracker, Roto...)
+                    // Then only show up the node as a common node.
+                    NodeGroupPtr isGroup = toNodeGroup(nodeGui->getNode()->getEffectInstance());
+                    assert(isGroup);
+                    if (isGroup->isSubGraphUserVisible()) {
+                        showNode = true;
+                    } else {
+                        showNode = AnimationModule::isNodeAnimated(nodeGui);
+                    }
                     /*// Check if there's at list one animated node in the group
                     if (AnimationModule::isNodeAnimated(nodeGui)) {
                         showNode = true;
@@ -515,6 +530,10 @@ NodeAnim::refreshKnobsVisibility()
 
         }
         (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
+    }
+
+    for (std::vector<TableItemAnimPtr>::const_iterator it = _imp->topLevelTableItems.begin(); it!=_imp->topLevelTableItems.end(); ++it) {
+        (*it)->refreshVisibilityConditional(false /*refreshNode*/);
     }
 }
 

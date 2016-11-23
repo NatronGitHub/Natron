@@ -102,6 +102,7 @@ protected:
     virtual QString compileExpression(const QString& expr) = 0;
     static QString getHelpPart1();
     static QString getHelpThisNodeVariable();
+    static QString getHelpThisItemVariable();
     static QString getHelpThisGroupVariable();
     static QString getHelpThisParamVariable();
     static QString getHelpDimensionVariable();

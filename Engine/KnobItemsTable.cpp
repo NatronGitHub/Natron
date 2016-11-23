@@ -1537,6 +1537,17 @@ KnobItemsTable::findDeepestSelectedItemContainer() const
     return minContainer;
 }
 
+bool
+KnobItemsTable::isPerItemKnobMaster(const KnobIPtr& masterKnob)
+{
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->perItemMasterKnobs.begin(); it!=_imp->perItemMasterKnobs.end(); ++it) {
+        if (it->lock() == masterKnob) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
 {

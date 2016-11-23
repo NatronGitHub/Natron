@@ -1024,7 +1024,11 @@
             You cannot create Effects directly by calling their constructor, instead you must use the
             function :doc:`App.createNode` to create them.
         </inject-documentation>
-        
+        <modify-function signature="getContainerGroup()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="getInput(int)const">
             <inject-documentation format="target">
                 Returns the node at the given input.
@@ -1217,6 +1221,21 @@
     
     <object-type name="Param">
         <modify-function signature="getParent()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParentEffect()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParentItemBase()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getApp()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1461,7 +1480,36 @@
         <enum-type name="TypeEnum"/>
     </object-type>
     <object-type name="FileParam"/>
-    <object-type name="PathParam"/>
+    <object-type name="PathParam">
+        <modify-function signature="getTable(std::list&lt;std::vector&lt;std::string&gt; &gt;*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PySequence"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;std::vector&lt;std::string&gt; &gt; table;
+                %CPPSELF.%FUNCTION_NAME(&amp;table);
+
+                std::size_t outListSize = table.size();
+                PyObject* outList = PyList_New((int) outListSize);
+
+                std::size_t i = 0;
+                for (std::list&lt;std::vector&lt;std::string&gt; &gt;::iterator it = table.begin(); it != table.end(); ++it, ++i) {
+                    std::size_t subListSize = it->size();
+                    PyObject* subList = PyList_New((int) subListSize);
+                    for (std::size_t j = 0; j &lt; subListSize; ++j) {
+                        std::string cppItem = (*it)[j];
+                        PyList_SET_ITEM(subList, j, %CONVERTTOPYTHON[std::string](cppItem));
+                    }
+                    PyList_SET_ITEM(outList, i, subList);
+                }
+
+                return outList;
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="ParametricParam">
         <modify-function signature="getNthControlPoint(int,int,double*,double*,double*,double*)const">
             <modify-argument index="3">

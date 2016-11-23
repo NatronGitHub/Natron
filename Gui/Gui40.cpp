@@ -842,7 +842,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         for (std::list<DockablePanelI*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
-                NodePtr node = nodePanel->getNode()->getNode();
+                NodePtr node = nodePanel->getNodeGui()->getNode();
                 node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
             }
         }
@@ -877,7 +877,7 @@ Gui::refreshTimelineGuiKeyframes()
         if (!isNodePanel) {
             continue;
         }
-        NodeGuiPtr node = isNodePanel->getNode();
+        NodeGuiPtr node = isNodePanel->getNodeGui();
         if (!node) {
             continue;
         }

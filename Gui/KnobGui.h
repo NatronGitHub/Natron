@@ -379,6 +379,8 @@ Q_SIGNALS:
 
 private:
 
+    KnobAnimPtr findKnobAnim() const;
+
     void setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view);
 
     void refreshModificationsStateNow();

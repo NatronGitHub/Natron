@@ -139,7 +139,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     if (!nodePanel) {
         throw std::logic_error("PickKnobDialog::PickKnobDialog()");
     }
-    NodeGuiPtr nodeGui = nodePanel->getNode();
+    NodeGuiPtr nodeGui = nodePanel->getNodeGui();
     NodePtr node = nodeGui->getNode();
     NodeGroupPtr isGroup = node->isEffectNodeGroup();
     NodeCollectionPtr collec = node->getGroup();

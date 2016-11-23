@@ -34,13 +34,22 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include "natronengine_python.h"
+#include <shiboken.h> // produces many warnings
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Node.h"
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 
+#include "Engine/PyAppInstance.h"
+#include "Engine/PyNode.h"
+#include "Engine/PyItemsTable.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -65,10 +74,74 @@ Param::getParent() const
     KnobIPtr parent = knob->getParentKnob();
 
     if (parent) {
-        return new Param(parent);
+        return Effect::createParamWrapperForKnob(parent);
     } else {
         return 0;
     }
+}
+
+Effect*
+Param::getParentEffect() const
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return 0;
+    }
+    NodePtr node;
+    KnobTableItemPtr isItem = toKnobTableItem(holder);
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+    if (isItem) {
+        KnobItemsTablePtr model = isItem->getModel();
+        if (!model) {
+            return 0;
+        }
+        node = model->getNode();
+    } else if (isEffect) {
+        node = isEffect->getNode();
+    }
+    if (!node) {
+        return 0;
+    }
+    return App::createEffectFromNodeWrapper(node);
+}
+
+ItemBase*
+Param::getParentItemBase() const
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return 0;
+    }
+    KnobTableItemPtr isItem = toKnobTableItem(holder);
+    if (!isItem) {
+        return 0;
+    }
+    return ItemsTable::createPyItemWrapper(isItem);
+}
+
+App*
+Param::getApp() const
+{
+    KnobIPtr knob = getInternalKnob();
+    if (!knob) {
+        PythonSetNullError();
+        return 0;
+    }
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return 0;
+    }
+    return App::createAppFromAppInstance(holder->getApp());
 }
 
 int
@@ -3486,6 +3559,36 @@ PathParam::setAsMultiPathTable()
     }
 
     k->setMultiPath(true);
+}
+
+bool
+PathParam::isMultiPathTable() const
+{
+    KnobPathPtr k = _sKnob.lock();
+    if (!k) {
+        PythonSetNullError();
+        return false;
+    }
+    return k->isMultiPath();
+}
+
+void
+PathParam::getTable(std::list<std::vector<std::string> >* table) const
+{
+    KnobPathPtr k = _sKnob.lock();
+    if (!k) {
+        PythonSetNullError();
+        return;
+    }
+    if (!k->isMultiPath()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot call getTable on a path parameter which is not multi-path").toStdString().c_str());
+        return;
+    }
+    try {
+        k->getTable(table);
+    } catch (const std::exception& e) {
+        PyErr_SetString(PyExc_ValueError, tr("Error while decoding table: %1").arg(QString::fromUtf8(e.what())).toStdString().c_str());
+    }
 }
 
 ////////////////////ButtonParam

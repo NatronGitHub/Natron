@@ -45,8 +45,8 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-BezierCurve::BezierCurve(const BezierPtr& item, const ItemsTable* table)
-    : ItemBase(item, table)
+BezierCurve::BezierCurve(const BezierPtr& item)
+    : ItemBase(item)
     , _bezier(item)
 {
 }
@@ -461,8 +461,8 @@ BezierCurve::getBoundingBox(double time, const QString& view) const
 
 }
 
-StrokeItem::StrokeItem(const RotoStrokeItemPtr& item, const ItemsTable* table)
-: ItemBase(item, table)
+StrokeItem::StrokeItem(const RotoStrokeItemPtr& item)
+: ItemBase(item)
 , _stroke(item)
 {
 
@@ -701,20 +701,6 @@ Roto::createStroke(NATRON_NAMESPACE::RotoStrokeType type)
     model->insertItem(0, stroke, baseLayer, eTableChangeReasonInternal);
     
     return createPyItemWrapper(stroke);
-}
-
-ItemBase*
-Roto::createPyItemWrapper(const KnobTableItemPtr& item) const
-{
-    BezierPtr isBezier = toBezier(item);
-    if (isBezier) {
-        return new BezierCurve(isBezier, this);
-    }
-    RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
-    if (isStroke) {
-        return new StrokeItem(isStroke, this);
-    }
-    return ItemsTable::createPyItemWrapper(item);
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

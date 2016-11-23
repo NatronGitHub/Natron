@@ -119,7 +119,7 @@ public:
     NodeAnimPtr findNodeAnim(const NodePtr& node) const;
     NodeAnimPtr findNodeAnim(const KnobIPtr &knob) const;
     KnobAnimPtr findKnobAnim(const KnobGuiConstPtr& knobGui) const;
-
+    TableItemAnimPtr findTableItemAnim(const KnobTableItemPtr& item) const;
     /**
      * @brief If the given node is in a group, return the parent group anim
      **/

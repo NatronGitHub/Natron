@@ -433,6 +433,13 @@ DockablePanel::useScrollAreaForTabs() const
     return _imp->_useScrollAreasForTabs;
 }
 
+NodeGuiPtr
+DockablePanel::getNodeGui() const
+{
+    return NodeGuiPtr();
+}
+
+
 QWidget*
 DockablePanel::createKnobHorizontalFieldContainer(QWidget* parent) const
 {
@@ -536,7 +543,7 @@ DockablePanel::onKnobsRecreated()
     if (isNodePanel) {
 
         Gui* gui = getGui();
-        NodeGuiPtr node = isNodePanel->getNode();
+        NodeGuiPtr node = isNodePanel->getNodeGui();
         if (gui && node) {
             getGui()->removeNodeGuiFromAnimationModuleEditor(node);
             getGui()->addNodeGuiToAnimationModuleEditor(node);
@@ -663,7 +670,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
 {
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {
-        NodeGuiPtr node = isNodePanel->getNode();
+        NodeGuiPtr node = isNodePanel->getNodeGui();
         if (!node) {
             return;
         }
@@ -700,7 +707,7 @@ DockablePanel::onLineEditNameEditingFinished()
     QString newName = _imp->_nameLineEdit->text();
     QString oldName;
     if (panel) {
-        node = panel->getNode();
+        node = panel->getNodeGui();
         assert(node);
         oldName = QString::fromUtf8( node->getNode()->getLabel().c_str() );
     }
@@ -913,7 +920,7 @@ DockablePanel::setClosedInternal(bool closed)
 
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
-        NodeGuiPtr nodeGui = nodePanel->getNode();
+        NodeGuiPtr nodeGui = nodePanel->getNodeGui();
         NodePtr internalNode = nodeGui->getNode();
 
         Gui* gui = getGui();
@@ -1136,7 +1143,7 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
     if (!nodePanel) {
         return;
     }
-    NodePtr node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNodeGui()->getNode();
     if (!node) {
         return;
     }
@@ -1211,7 +1218,7 @@ DockablePanel::onOverlayButtonClicked()
     if (!nodePanel) {
         return;
     }
-    NodePtr node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNodeGui()->getNode();
     if (!node) {
         return;
     }
@@ -1262,7 +1269,7 @@ DockablePanel::resetHostOverlayColor()
     if (!nodePanel) {
         return;
     }
-    NodePtr node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNodeGui()->getNode();
     if (!node) {
         return;
     }
@@ -1299,7 +1306,7 @@ DockablePanel::onPanelSelected(const QPoint& /*pos*/)
     if (!isNodePanel) {
         return;
     }
-    NodeGuiPtr node = isNodePanel->getNode();
+    NodeGuiPtr node = isNodePanel->getNodeGui();
     if (!node) {
         return;
     }
@@ -1389,7 +1396,7 @@ DockablePanel::setKeyOnAllParameters()
     if (!isNodePanel) {
         return;
     }
-    NodeGuiPtr nodeUi = isNodePanel->getNode();
+    NodeGuiPtr nodeUi = isNodePanel->getNodeGui();
     if (!nodeUi) {
         return;
     }
@@ -1459,7 +1466,7 @@ DockablePanel::removeAnimationOnAllParameters()
     if (!isNodePanel) {
         return;
     }
-    NodeGuiPtr nodeUi = isNodePanel->getNode();
+    NodeGuiPtr nodeUi = isNodePanel->getNodeGui();
     if (!nodeUi) {
         return;
     }
@@ -1534,7 +1541,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!panel) {
         throw std::logic_error("");
     }
-    NodeGuiPtr node = panel->getNode();
+    NodeGuiPtr node = panel->getNodeGui();
     assert(node);
     if (!node) {
         throw std::logic_error("");
