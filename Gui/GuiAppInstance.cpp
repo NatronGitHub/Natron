@@ -981,6 +981,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     _imp->declareAppAndParamsString = script;
+    assert(!PyErr_Occurred());
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
         throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");

@@ -662,6 +662,12 @@ PreferencesPanel::getGui() const
     return _imp->gui;
 }
 
+NodeGuiPtr
+PreferencesPanel::getNodeGui() const
+{
+    return NodeGuiPtr();
+}
+
 void
 PreferencesPanel::createGui()
 {

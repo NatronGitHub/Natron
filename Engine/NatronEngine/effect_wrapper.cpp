@@ -22,6 +22,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyItemsTable.h>
 #include <PyNode.h>
+#include <PyNodeGroup.h>
 #include <PyParameter.h>
 #include <RectD.h>
 #include <list>
@@ -582,6 +583,35 @@ static PyObject* Sbk_EffectFunc_getColor(PyObject* self)
             // End of code injection
 
 
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_getContainerGroup(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getContainerGroup()const
+            Group * cppResult = const_cast<const ::Effect*>(cppSelf)->getContainerGroup();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
         }
     }
 
@@ -1778,6 +1808,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_NOARGS},
     {"getBitDepth", (PyCFunction)Sbk_EffectFunc_getBitDepth, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
+    {"getContainerGroup", (PyCFunction)Sbk_EffectFunc_getContainerGroup, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getFrameRate", (PyCFunction)Sbk_EffectFunc_getFrameRate, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},

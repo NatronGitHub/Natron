@@ -48,7 +48,7 @@ class BezierCurve
 public:
 
 
-    BezierCurve(const BezierPtr& item, const ItemsTable* table);
+    BezierCurve(const BezierPtr& item);
 
     virtual ~BezierCurve();
 
@@ -106,7 +106,7 @@ class StrokeItem
     
 public:
 
-    StrokeItem(const RotoStrokeItemPtr& item, const ItemsTable* table);
+    StrokeItem(const RotoStrokeItemPtr& item);
 
     virtual ~StrokeItem();
 
@@ -135,9 +135,6 @@ public:
     BezierCurve* createEllipse(double x, double y, double diameter, bool fromCenter, double time);
     BezierCurve* createRectangle(double x, double y, double size, double time);
 
-private:
-
-    virtual ItemBase* createPyItemWrapper(const KnobTableItemPtr& item) const OVERRIDE FINAL;
 
 };
 

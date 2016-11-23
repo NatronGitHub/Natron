@@ -680,6 +680,11 @@ public:
     void addPerItemKnobMaster(const KnobIPtr& masterKnob);
 
     /**
+     * @brief Returns true if the given masterKnob was registered as a master knob previously in addPerItemKnobMaster
+     **/
+    bool isPerItemKnobMaster(const KnobIPtr& masterKnob);
+
+    /**
      * @brief Call declareItemAsPythonField on all items in the model that are attributes of the given python prefix.
      * The pythonPrefix will be an attribute of the node object itself.
      **/

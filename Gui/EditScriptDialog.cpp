@@ -271,6 +271,12 @@ EditScriptDialog::getHelpThisNodeVariable()
 }
 
 QString
+EditScriptDialog::getHelpThisItemVariable()
+{
+    return tr("<p>If the parameter is held by a table item (such as a Track in the Tracker node or a Shape in RotoPaint, thetable item can be referenced by the variable <i>thisItem</i> for convenience.</p>");
+}
+
+QString
 EditScriptDialog::getHelpThisGroupVariable()
 {
     return tr("<p>The parent group containing the thisNode can be referenced by the variable <i>thisGroup</i> for convenience, if and "

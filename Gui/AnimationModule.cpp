@@ -430,6 +430,41 @@ AnimationModule::getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
     }
 }
 
+static TableItemAnimPtr findTableItemAnimRecursive(const TableItemAnimPtr& anim, const KnobTableItemPtr& item)
+{
+    if (anim->getInternalItem() == item) {
+        return anim;
+    }
+    const std::vector<TableItemAnimPtr>& children = anim->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        TableItemAnimPtr r = findTableItemAnimRecursive(children[i], item);
+        if (r) {
+            return r;
+        }
+    }
+    return TableItemAnimPtr();
+}
+
+TableItemAnimPtr
+AnimationModule::findTableItemAnim(const KnobTableItemPtr& item) const
+{
+    KnobItemsTablePtr model = item->getModel();
+    if (!model) {
+        return TableItemAnimPtr();
+    }
+    for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        const std::vector<TableItemAnimPtr>& toplevelItems = (*it)->getTopLevelItems();
+        for (std::size_t i = 0; i < toplevelItems.size(); ++i) {
+            TableItemAnimPtr r = findTableItemAnimRecursive(toplevelItems[i], item);
+            if (r) {
+                return r;
+            }
+        }
+    }
+    return TableItemAnimPtr();
+
+}
+
 NodeAnimPtr AnimationModule::findNodeAnim(const NodePtr& node) const
 {
     if (!node) {

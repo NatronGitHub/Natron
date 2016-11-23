@@ -121,6 +121,7 @@ private:
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE FINAL;
     boost::scoped_ptr<PreferencesPanelPrivate> _imp;
 };
 

@@ -142,6 +142,7 @@ public:
                                unsigned int majorVersion,
                                unsigned int minorVersion);
 
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE ;
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
     virtual bool isPagingEnabled() const OVERRIDE FINAL;
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;

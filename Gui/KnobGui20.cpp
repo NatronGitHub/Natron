@@ -100,35 +100,18 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
     if (!internalKnob) {
         return;
     }
-    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
-    if (!isEffect) {
-        return;
-    }
-    NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
-    if (!node) {
-        return;
-    }
 
-    const std::vector<KnobAnimPtr>& knobs = node->getKnobs();
+    NodeGuiPtr nodeUI = getContainer()->getNodeGui();
 
-    KnobAnimPtr knobAnim;
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-        if ((*it)->getInternalKnob() == internalKnob) {
-            knobAnim = *it;
-            break;
-        }
-    }
-
-    if (!knobAnim) {
-        return;
-    }
-
-    if (!keysAdded.empty() || !keysRemoved.empty()) {
-        node->getNodeGui()->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
+    if (nodeUI && (!keysAdded.empty() || !keysRemoved.empty())) {
+        nodeUI->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
     }
 
     // Refresh the knob anim visibility in a queued connection
-    knobAnim->emit_s_refreshKnobVisibilityLater();
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (knobAnim) {
+        knobAnim->emit_s_refreshKnobVisibilityLater();
+    }
 
 
 }
@@ -672,7 +655,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 
         NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
         if (isNodeSettings) {
-            NodeGuiPtr node = isNodeSettings->getNode();
+            NodeGuiPtr node = isNodeSettings->getNodeGui();
             if (node) {
                 node->onKnobExpressionChanged(this);
             }

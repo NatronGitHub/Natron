@@ -29,6 +29,7 @@
 #include "Engine/AnimatingObjectI.h"
 #include "Engine/Curve.h"
 #include "Engine/StringAnimationManager.h"
+#include "Gui/KnobAnim.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -261,6 +262,18 @@ AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimens
     }
     return curve->getValueAt(x, false /*doClamp*/);
    
+}
+
+KnobAnimPtr
+KnobsHolderAnimBase::findKnobAnim(const KnobIPtr& knob) const
+{
+    const std::vector<KnobAnimPtr>& knobs = getKnobs();
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->getInternalKnob() == knob) {
+            return knobs[i];
+        }
+    }
+    return KnobAnimPtr();
 }
 
 

@@ -4038,31 +4038,35 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         PyObject *errCatcher = 0;
         PyObject *outCatcher = 0;
 
-        if ( error && PyObject_HasAttrString(mainModule, "catchErr") ) {
+        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
             errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
         }
 
-        if ( output && PyObject_HasAttrString(mainModule, "catchOut") ) {
+        if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
             outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
         }
 
         PyErr_Print(); //make python print any errors
 
         PyObject *errorObj = 0;
-        if (errCatcher && error) {
+        if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = PyStringToStdString(errorObj);
+            if (error) {
+                *error = PyStringToStdString(errorObj);
+            }
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
             Py_DECREF(errCatcher);
         }
         PyObject *outObj = 0;
-        if (outCatcher && output) {
+        if (outCatcher) {
             outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
             assert(outObj);
-            *output = PyStringToStdString(outObj);
+            if (output) {
+                *output = PyStringToStdString(outObj);
+            }
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(outCatcher, "value", unicode);
             Py_DECREF(outObj);

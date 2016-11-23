@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 
@@ -398,6 +401,35 @@ static PyObject* Sbk_ParamFunc_getAddNewLine(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ParamFunc_getApp(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getApp()const
+            App * cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getApp();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ParamFunc_getCanAnimate(PyObject* self)
 {
     ParamWrapper* cppSelf = 0;
@@ -719,6 +751,64 @@ static PyObject* Sbk_ParamFunc_getParent(PyObject* self)
             // getParent()const
             Param * cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getParent();
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getParentEffect(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParentEffect()const
+            Effect * cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getParentEffect();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ParamFunc_getParentItemBase(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParentItemBase()const
+            ItemBase * cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->getParentItemBase();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -2090,6 +2180,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"copy", (PyCFunction)Sbk_ParamFunc_copy, METH_VARARGS|METH_KEYWORDS},
     {"curve", (PyCFunction)Sbk_ParamFunc_curve, METH_VARARGS|METH_KEYWORDS},
     {"getAddNewLine", (PyCFunction)Sbk_ParamFunc_getAddNewLine, METH_NOARGS},
+    {"getApp", (PyCFunction)Sbk_ParamFunc_getApp, METH_NOARGS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
     {"getEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_getEvaluateOnChange, METH_NOARGS},
     {"getHasViewerUI", (PyCFunction)Sbk_ParamFunc_getHasViewerUI, METH_NOARGS},
@@ -2101,6 +2192,8 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getLabel", (PyCFunction)Sbk_ParamFunc_getLabel, METH_NOARGS},
     {"getNumDimensions", (PyCFunction)Sbk_ParamFunc_getNumDimensions, METH_NOARGS},
     {"getParent", (PyCFunction)Sbk_ParamFunc_getParent, METH_NOARGS},
+    {"getParentEffect", (PyCFunction)Sbk_ParamFunc_getParentEffect, METH_NOARGS},
+    {"getParentItemBase", (PyCFunction)Sbk_ParamFunc_getParentItemBase, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ParamFunc_getScriptName, METH_NOARGS},
     {"getTypeName", (PyCFunction)Sbk_ParamFunc_getTypeName, METH_NOARGS},
     {"getViewerUIIconFilePath", (PyCFunction)Sbk_ParamFunc_getViewerUIIconFilePath, METH_VARARGS|METH_KEYWORDS},

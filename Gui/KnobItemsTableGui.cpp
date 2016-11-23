@@ -765,12 +765,10 @@ KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
     // Make up drag data
     SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
 
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->panel);
-    if (isNodePanel) {
-        NodeGuiPtr nodeUI = isNodePanel->getNode();
-        assert(nodeUI);
-        obj.nodeScriptName = nodeUI->getNode()->getFullyQualifiedName();
-    }
+    NodeGuiPtr nodeUI = _imp->panel->getNodeGui();
+    assert(nodeUI);
+    obj.nodeScriptName = nodeUI->getNode()->getFullyQualifiedName();
+
     for (std::list<KnobTableItemPtr>::iterator it = items.begin(); it!= items.end(); ++it) {
         SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
         (*it)->toSerialization(s.get());
@@ -845,6 +843,12 @@ KnobItemsTableView::keyPressEvent(QKeyEvent* e)
     } else {
         TableView::keyPressEvent(e);
     }
+}
+
+NodeGuiPtr
+KnobItemsTableGui::getNodeGui() const
+{
+    return _imp->panel->getNodeGui();
 }
 
 Gui*

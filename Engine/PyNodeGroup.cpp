@@ -30,6 +30,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyNode.h"
+#include "Engine/PyAppInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -58,7 +59,7 @@ Group::getNode(const QString& fullySpecifiedName) const
     }
     NodePtr node = _collection.lock()->getNodeByFullySpecifiedName( fullySpecifiedName.toStdString() );
     if ( node && node->isActivated() ) {
-        return new Effect(node);
+        return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
     }
@@ -78,7 +79,9 @@ Group::getChildren() const
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
-            ret.push_back( new Effect(*it) );
+            Effect* effect = App::createEffectFromNodeWrapper(*it);
+            assert(effect);
+            ret.push_back(effect);
         }
     }
 

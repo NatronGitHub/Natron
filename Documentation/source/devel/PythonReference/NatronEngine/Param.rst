@@ -28,6 +28,9 @@ Functions
 *    def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
 *    def :meth:`getNumDimensions<NatronEngine.Param.getNumDimensions>` ()
 *    def :meth:`getParent<NatronEngine.Param.getParent>` ()
+*    def :meth:`getParentEffect<NatronEngine.Param.getParentEffect>` ()
+*    def :meth:`getParentItemBase<NatronEngine.Param.getParentItemBase>` ()
+*    def :meth:`getApp<NatronEngine.Param.getApp>` ()
 *    def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
 *    def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
 *    def :meth:`getViewerUILayoutType<NatronEngine.Param.getViewerUILayoutType>` ()
@@ -317,9 +320,39 @@ If this param is within a :doc:`group<GroupParam>`, then the parent will be the 
 Otherwise the param's parent will be the:doc:`page<PageParam>` onto which the param
 appears in the settings panel.
 
+.. method:: NatronEngine.Param.getParentEffect()
 
 
+    :rtype: :class:`NatronEngine.Effect`
 
+	 If the holder of this parameter is an effect, this is the effect.
+     If the holder of this parameter is a table item, this will return the effect holding the item
+     itself.
+     
+    
+.. method:: NatronEngine.Param.getParentItemBase()
+
+
+    :rtype: :class:`NatronEngine.ItemBase`
+
+	 If the holder of this parameter is a table item, this is the table item.
+	 
+	 
+     
+ .. method:: NatronEngine.Param.getApp()
+
+
+    :rtype: :class:`NatronEngine.App`
+
+	 If the holder of this parameter is the app itself (so it is a project setting), this is
+     the app object.
+     If the holder of this parameter is an effect, this is the application object containing
+     the effect. 
+     If the holder of this parameter is a table item, this will return the application
+     containing the effect holding the item itself.
+
+     
+     
 .. method:: NatronEngine.Param.getScriptName()
 
 

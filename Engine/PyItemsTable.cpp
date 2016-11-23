@@ -32,19 +32,29 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include "natronengine_python.h"
+#include <shiboken.h> // produces many warnings
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
 #include "Engine/Project.h"
 #include "Engine/KnobItemsTable.h"
 #include "Engine/PyNode.h"
+#include "Engine/Node.h"
+#include "Engine/PyRoto.h"
+#include "Engine/RotoStrokeItem.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/PyTracker.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-ItemBase::ItemBase(const KnobTableItemPtr& item, const ItemsTable* table)
+ItemBase::ItemBase(const KnobTableItemPtr& item)
 : _item(item)
-, _table(table)
 {
-    assert(item && table);
+    assert(item);
 }
 
 ItemBase::~ItemBase()
@@ -184,7 +194,7 @@ ItemBase::getParent() const
     if (!parent) {
         return 0;
     }
-    return _table->createPyItemWrapper(parent);
+    return ItemsTable::createPyItemWrapper(parent);
 }
 
 int
@@ -209,7 +219,7 @@ ItemBase::getChildren() const
     }
     std::vector<KnobTableItemPtr> children = item->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        ItemBase* item = _table->createPyItemWrapper(children[i]);
+        ItemBase* item = ItemsTable::createPyItemWrapper(children[i]);
         if (item) {
             ret.push_back(item);
         }
@@ -390,9 +400,68 @@ ItemsTable::getSelectedItems() const
 }
 
 ItemBase*
-ItemsTable::createPyItemWrapper(const KnobTableItemPtr& item) const
+ItemsTable::createPyItemWrapper(const KnobTableItemPtr& item)
 {
-    return new ItemBase(item, this);
+
+    if (!item) {
+        return 0;
+    }
+
+    KnobItemsTablePtr model = item->getModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+
+    // First, try to re-use an existing ItemsTable object that was created for this node.
+    // If not found, create one.
+    std::stringstream ss;
+    ss << kPythonTmpCheckerVariable << " = ";
+    ss << node->getApp()->getAppIDString() << "." << node->getFullyQualifiedName() << "." << model->getPythonPrefix();
+    ss << "." << item->getFullyQualifiedName();
+    std::string script = ss.str();
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+    // Clear errors if our call to interpretPythonScript failed, we don't want the
+    // calling function to fail aswell.
+    PyErr_Clear();
+    if (ok) {
+        PyObject* pyItem = 0;
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
+            pyItem = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+        }
+        ItemBase* cppItem = 0;
+        if (pyItem && Shiboken::Object::isValid(pyItem)) {
+            cppItem = (ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)pyItem);
+        }
+        NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
+
+        if (cppItem) {
+            return cppItem;
+        }
+    }
+
+
+    BezierPtr isBezier = toBezier(item);
+    if (isBezier) {
+        return new BezierCurve(isBezier);
+    }
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(item);
+    if (isStroke) {
+        return new StrokeItem(isStroke);
+    }
+
+    TrackMarkerPtr isTrack = toTrackMarker(item);
+    if (isTrack) {
+        return new Track(isTrack);
+    }
+    return new ItemBase(item);
 }
 
 void

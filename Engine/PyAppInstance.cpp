@@ -29,6 +29,12 @@
 
 #include <QtCore/QDebug>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include "natronengine_python.h"
+#include <shiboken.h> // produces many warnings
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Project.h"
@@ -154,6 +160,75 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
 
 }
 
+Effect*
+App::createEffectFromNodeWrapper(const NodePtr& node)
+{
+    assert(node);
+
+    // First, try to re-use an existing Effect object that was created for this node.
+    // If not found, create one.
+    std::stringstream ss;
+    ss << kPythonTmpCheckerVariable << " = ";
+    ss << node->getApp()->getAppIDString() << "." << node->getFullyQualifiedName();
+    ss << "\ndel " << kPythonTmpCheckerVariable;
+    std::string script = ss.str();
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+    // Clear errors if our call to interpretPythonScript failed, we don't want the
+    // calling function to fail aswell.
+    PyErr_Clear();
+    if (ok) {
+        PyObject* pyEffect = 0;
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
+            pyEffect = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+        }
+        Effect* cppEffect = 0;
+        if (pyEffect && Shiboken::Object::isValid(pyEffect)) {
+            cppEffect = (Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)pyEffect);
+        }
+        if (cppEffect) {
+            return cppEffect;
+        }
+    }
+
+    // Ok not found, create one
+    return new Effect(node);
+}
+
+App*
+App::createAppFromAppInstance(const AppInstancePtr& app)
+{
+    assert(app);
+
+    // First, try to re-use an existing Effect object that was created for this node.
+    // If not found, create one.
+    std::stringstream ss;
+    ss << kPythonTmpCheckerVariable << " = " << app->getAppIDString() ;
+    std::string script = ss.str();
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+    // Clear errors if our call to interpretPythonScript failed, we don't want the
+    // calling function to fail aswell.
+    PyErr_Clear();
+    if (ok) {
+        PyObject* pyApp = 0;
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable )) {
+            pyApp = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+        }
+        App* cppApp = 0;
+        if (pyApp && Shiboken::Object::isValid(pyApp)) {
+            cppApp = (App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)pyApp);
+        }
+        NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
+
+        if (cppApp) {
+            return cppApp;
+        }
+    }
+
+    // Ok not found, create one
+    return new App(app);
+}
 
 Effect*
 App::createNode(const QString& pluginID,
@@ -169,7 +244,7 @@ App::createNode(const QString& pluginID,
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
-        return new Effect(node);
+        return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
     }
@@ -189,7 +264,7 @@ App::createReader(const QString& filename,
 
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
-        return new Effect(node);
+        return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
     }
@@ -207,7 +282,7 @@ App::createWriter(const QString& filename,
     makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, args.get());
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
-        return new Effect(node);
+        return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
     }
@@ -489,7 +564,7 @@ App::loadProject(const QString& filename)
         return 0;
     }
 
-    return new App(app);
+    return App::createAppFromAppInstance(app);
 }
 
 ///Close the current project but keep the window
@@ -516,7 +591,7 @@ App::newProject()
         return 0;
     }
 
-    return new App(app);
+    return App::createAppFromAppInstance(app);
 }
 
 std::list<QString>

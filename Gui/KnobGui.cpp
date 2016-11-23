@@ -84,11 +84,7 @@ KnobGui::initialize()
     // Set the pointer to the GUI
     knob->setKnobGuiPointer(thisShared);
 
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->container);
-    NodeGuiPtr nodeUI;
-    if (isNodePanel) {
-        nodeUI = isNodePanel->getNode();
-    }
+    NodeGuiPtr nodeUI = getContainer()->getNodeGui();
 
     if (nodeUI) {
         // Refresh the timeline keyframes on the NodeGui from the existing keyframes on the internal knob

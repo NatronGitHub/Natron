@@ -19,7 +19,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
+#include <list>
+#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -37,6 +42,82 @@ PathParamWrapper::~PathParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_PathParamFunc_getTable(PyObject* self)
+{
+    PathParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (PathParamWrapper*)((::PathParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getTable(std::list<std::vector<std::string> >*)const
+            // Begin code injection
+
+            std::list<std::vector<std::string> > table;
+            cppSelf->getTable(&table);
+
+            std::size_t outListSize = table.size();
+            PyObject* outList = PyList_New((int) outListSize);
+
+            std::size_t i = 0;
+            for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it, ++i) {
+                std::size_t subListSize = it->size();
+                PyObject* subList = PyList_New((int) subListSize);
+                for (std::size_t j = 0; j < subListSize; ++j) {
+                    std::string cppItem = (*it)[j];
+                    PyList_SET_ITEM(subList, j, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppItem));
+                }
+                PyList_SET_ITEM(outList, i, subList);
+            }
+
+            return outList;
+
+            // End of code injection
+
+
+            pyResult = Py_None;
+            Py_INCREF(Py_None);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PathParamFunc_isMultiPathTable(PyObject* self)
+{
+    PathParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (PathParamWrapper*)((::PathParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isMultiPathTable()const
+            bool cppResult = const_cast<const ::PathParamWrapper*>(cppSelf)->isMultiPathTable();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_PathParamFunc_setAsMultiPathTable(PyObject* self)
 {
     PathParamWrapper* cppSelf = 0;
@@ -61,6 +142,8 @@ static PyObject* Sbk_PathParamFunc_setAsMultiPathTable(PyObject* self)
 }
 
 static PyMethodDef Sbk_PathParam_methods[] = {
+    {"getTable", (PyCFunction)Sbk_PathParamFunc_getTable, METH_NOARGS},
+    {"isMultiPathTable", (PyCFunction)Sbk_PathParamFunc_isMultiPathTable, METH_NOARGS},
     {"setAsMultiPathTable", (PyCFunction)Sbk_PathParamFunc_setAsMultiPathTable, METH_NOARGS},
 
     {0} // Sentinel

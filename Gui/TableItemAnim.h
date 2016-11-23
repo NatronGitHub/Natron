@@ -88,6 +88,8 @@ public:
     virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ////
 
+    void refreshVisibilityConditional(bool refreshHolder);
+
     virtual void refreshVisibility() OVERRIDE FINAL;
 
     virtual void refreshKnobsVisibility() OVERRIDE FINAL;

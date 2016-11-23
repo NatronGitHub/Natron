@@ -244,6 +244,8 @@ public:
 
     bool isWriterNode();
 
+    Group* getContainerGroup() const;
+
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
@@ -383,6 +385,8 @@ public:
 
     static Param* createParamWrapperForKnob(const KnobIPtr& knob);
 
+    static ItemsTable* createItemsTableWrapper(const KnobItemsTablePtr& table);
+
     void setSubGraphEditable(bool editable);
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
@@ -403,6 +407,7 @@ public:
     void removeParamFromViewerUI(Param* param);
 
     void clearViewerUIParameters();
+
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

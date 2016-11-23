@@ -191,6 +191,7 @@ SOURCES += \
     ProgressTaskInfo.cpp \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
+    PyGlobalGui.cpp \
     PythonPanels.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \

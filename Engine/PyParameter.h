@@ -27,6 +27,9 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+#include <vector>
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
@@ -92,6 +95,26 @@ public:
      * param of the effect.
      **/
     Param* getParent() const;
+
+    /*
+     @brief If the holder of this parameter is an effect, this is a pointer to the effect.
+     If the holder of this parameter is a table item, this will return the effect holding the item
+     itself.
+     */
+    Effect* getParentEffect() const;
+
+    /*
+     @brief If the holder of this parameter is a table item, this is a pointer to the table item
+     */
+    ItemBase* getParentItemBase() const;
+
+    /*
+     @brief If the holder of this parameter is the app itself (so it is a project setting), this is a pointer
+     to the app. If the holder of this parameter is an effect, this is a pointer to the application containing
+     the effect. If the holder of this parameter is a table item, this will return the application
+     containing the effect holding the item itself.
+     */
+    App* getApp() const;
 
     /**
      * @brief Returns the number of dimensions that the parameter have.
@@ -1135,6 +1158,10 @@ public:
      * be a table much like the Project paths table of the Project settings. This cannot animate.
      **/
     void setAsMultiPathTable();
+
+    bool isMultiPathTable() const;
+
+    void getTable(std::list<std::vector<std::string> >* table) const;
 };
 
 /////////////////ButtonParam

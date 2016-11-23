@@ -30,6 +30,7 @@ Functions
 *    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
 *    def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 *    def :meth:`getColor<NatronEngine.Effect.getColor>` ()
+*    def :meth:`getContainerGroup<NatronEngine.Effect.getContainerGroup>` ()
 *    def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 *    def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 *    def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
@@ -266,6 +267,14 @@ Removes any input Effect connected to the given *inputNumber* of this node.
 Returns the color of this node as it appears on the node graph as [R,G,B] 3-dimensional tuple.
 
 
+.. method:: NatronEngine.Effect.getContainerGroup()
+
+	:rtype: :class:`Group<NatronEngine.Group>`
+	
+	
+	If this node is a node inside the top-level node-graph of the application, this returns
+	the *app* object (of class :ref:`App<App>`). Otherwise if this node is a child of a
+	group node, this will return the :ref:`Effect<Effect>` object of the group node.
 
 
 

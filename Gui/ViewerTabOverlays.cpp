@@ -98,7 +98,7 @@ ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
         if (!panel) {
             continue;
         }
-        NodeGuiPtr node = panel->getNode();
+        NodeGuiPtr node = panel->getNodeGui();
         NodePtr internalNode = node->getNode();
         if (node && internalNode) {
             if ( internalNode->shouldDrawOverlay() ) {

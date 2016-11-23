@@ -64,6 +64,7 @@ public:
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL;
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL;
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE FINAL;
     //////
 
     std::vector<KnobGuiPtr> getKnobsForItem(const KnobTableItemPtr& item) const;

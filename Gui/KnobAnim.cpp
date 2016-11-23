@@ -31,6 +31,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AnimatingObjectI.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/Project.h"
 
 #include "Gui/AnimationModule.h"
@@ -373,12 +374,29 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
         return;
     }
 
+
+
     KnobIPtr knob = getInternalKnob();
     if (!knob) {
         return;
     }
+
+    bool isTableItemMasterKnob = false;
+    assert(knob->getHolder());
+    EffectInstancePtr holderIsEffect = toEffectInstance(knob->getHolder());
+    if (holderIsEffect) {
+        KnobItemsTablePtr table = holderIsEffect->getItemsTable();
+        if (table) {
+            // Do not show anim for a master knob because all items in the table already have one.
+            if (table->isPerItemKnobMaster(knob)) {
+                isTableItemMasterKnob = true;
+            }
+        }
+    }
+
+
     bool showItem = false;
-    if (!knob->getIsSecret()) {
+    if (!isTableItemMasterKnob && !knob->getIsSecret()) {
         std::list<ViewIdx> views = knob->getViewsList();
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
             bool hasDimVisible = false;

@@ -44,7 +44,7 @@ class Track : public ItemBase
 {
 public:
 
-    Track(const TrackMarkerPtr& marker, const ItemsTable* table);
+    Track(const TrackMarkerPtr& marker);
 
     ~Track();
 
@@ -80,8 +80,6 @@ public:
     void stopTracking();
 
 private:
-
-    virtual ItemBase* createPyItemWrapper(const KnobTableItemPtr& item) const OVERRIDE FINAL;
 
     TrackerHelperWPtr _tracker;
 
