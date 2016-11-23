@@ -94,6 +94,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamInputSpaceLabel "File Colorspace"
 #define kParamFrameRate "frameRate"
 #define kParamCustomFps "customFps"
+#define kParamInputSpaceSet "ocioInputSpaceSet"
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
@@ -112,7 +113,10 @@ NATRON_NAMESPACE_ENTER;
  */
 struct GenericKnob
 {
+    // The script-name of the knob.
     const char* scriptName;
+
+    // Whether the value should be saved when changing filename.
     bool mustKeepValue;
 };
 
@@ -139,6 +143,7 @@ static GenericKnob genericReaderKnobNames[] =
     {kParamInputSpaceLabel, false},
     {kParamFrameRate, false},
     {kParamCustomFps, false},
+    {kParamInputSpaceSet, true},
 
 
     {kOCIOParamConfigFile, true},
@@ -639,6 +644,15 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
     }
 
+    // If the plug-in is the same, do not create a new decoder.
+    if (embeddedPlugin && embeddedPlugin->getPluginID() == readerPluginID) {
+        boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+        assert(fileKnob);
+        if (fileKnob) {
+            fileKnob->setValue(filename);
+        }
+        return;
+    }
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyReadNode();

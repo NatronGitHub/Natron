@@ -90,6 +90,7 @@ NATRON_NAMESPACE_ENTER;
 #define kNatronOfxParamProcessG      "NatronOfxParamProcessG"
 #define kNatronOfxParamProcessB      "NatronOfxParamProcessB"
 #define kNatronOfxParamProcessA      "NatronOfxParamProcessA"
+#define kParamOutputSpaceSet "ocioOutputSpaceSet"
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
@@ -130,6 +131,7 @@ static GenericKnob genericWriterKnobNames[] =
     {kNatronOfxParamProcessG, true},
     {kNatronOfxParamProcessB, true},
     {kNatronOfxParamProcessA, true},
+    {kParamOutputSpaceSet, true},
 
 
     {kOCIOParamConfigFile, true},
@@ -738,6 +740,19 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
     }
 
+
+    // If the plug-in is the same, do not create a new decoder.
+    {
+        NodePtr writeNode = embeddedPlugin.lock();
+        if (writeNode && writeNode->getPluginID() == writerPluginID) {
+            boost::shared_ptr<KnobOutputFile> fileKnob = outputFileKnob.lock();
+            assert(fileKnob);
+            if (fileKnob) {
+                fileKnob->setValue(filename);
+            }
+            return;
+        }
+    }
 
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
