@@ -81,12 +81,13 @@ KnobGui::initialize()
 
     assert(thisShared);
 
-    // Set the pointer to the GUI only for the settings panel knob gui
+    // Set the pointer to the GUI
+    knob->setKnobGuiPointer(thisShared);
+
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->container);
     NodeGuiPtr nodeUI;
     if (isNodePanel) {
         nodeUI = isNodePanel->getNode();
-        knob->setKnobGuiPointer(thisShared);
     }
 
     if (nodeUI) {

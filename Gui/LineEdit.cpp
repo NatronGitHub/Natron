@@ -122,6 +122,34 @@ LineEdit::setIsBold(bool b)
 void
 LineEdit::refreshStylesheet()
 {
+    double bgColor[3];
+    bool bgColorSet = false;
+
+    if (multipleSelection) {
+        bgColor[0] = bgColor[1] = bgColor[2] = 0;
+        bgColorSet = true;
+    }
+    if (!bgColorSet && !borderDisabled) {
+        // If border is not disabled, draw the background with
+        // a color reflecting the animation level
+        switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelExpression:
+                appPTR->getCurrentSettings()->getExprColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                appPTR->getCurrentSettings()->getInterpolatedColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelOnKeyframe:
+                appPTR->getCurrentSettings()->getKeyframeColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelNone:
+                break;
+        }
+    }
+    
     double fgColor[3];
     bool fgColorSet = false;
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
@@ -142,21 +170,50 @@ LineEdit::refreshStylesheet()
             fgColorSet = true;
         }
     }
+    if (!fgColorSet && borderDisabled) {
+        // When border is disabled, reflect the animation level on the text color instead of the
+        // background
+        switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelExpression:
+                appPTR->getCurrentSettings()->getExprColor(&bgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                appPTR->getCurrentSettings()->getInterpolatedColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelOnKeyframe:
+                appPTR->getCurrentSettings()->getKeyframeColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelNone:
+                break;
+        }
+
+    }
     if (!fgColorSet) {
         if (!getIsModified()) {
             appPTR->getCurrentSettings()->getAltTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
         } else {
             appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
         }
-        fgColorSet = true;
     }
     QColor fgCol;
     fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
 
+    QString bgColorStyleSheetStr;
+    if (bgColorSet) {
+        QColor bgCol;
+        bgCol.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
+        bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
+;
+    }
     setStyleSheet(QString::fromUtf8("QLineEdit {\n"
                                     "color: rgb(%1, %2, %3);\n"
                                     "%4\n"
+                                    "%5\n"
                                     "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue())
+                  .arg(bgColorStyleSheetStr)
                   .arg(isBold ? QString::fromUtf8("font-weight: bold;") : QString()));
 
 

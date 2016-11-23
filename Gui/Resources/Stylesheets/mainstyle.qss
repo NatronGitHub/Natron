@@ -456,43 +456,6 @@ QToolButton {
     color: %5;
 }
 
-SpinBox[animation="0"] {
-    background-color: %3;
-}
-SpinBox[animation="1"] {
-    background-color: %6;
-}
-SpinBox[animation="2"] {
-    background-color: %7;
-}
-SpinBox[animation="3"] {
-    background-color: %9;
-}
-SpinBox[multipleSelection="true"] {
-    background-color: black;
-}
-
-
-LineEdit[animation="0"] {
-    background-color: %3;
-}
-LineEdit[animation="1"] {
-    background-color: %6;
-}
-LineEdit[animation="2"] {
-    background-color: %7;
-}
-LineEdit[animation="3"] {
-    background-color: %9;
-}
-LineEdit[multipleSelection="true"] {
-    background-color: black;
-}
-
-LineEdit[borderDisabled="true"]{
-    border: none;
-}
-
 
 QTextEdit{
     color: %5;
@@ -507,89 +470,9 @@ QTextEdit:focus {
     padding: 2px 4px;
 }
 
-AnimatingTextEdit[animation="0"] {
-    background-color: %3;
+LineEdit[borderDisabled="true"]{
+    border: none;
 }
-AnimatingTextEdit[animation="1"] {
-    background-color: %6;
-}
-AnimatingTextEdit[animation="2"] {
-    background-color: %7;
-}
-AnimatingTextEdit[animation="3"] {
-    background-color: %9;
-}
-
-AnimatingTextEdit[multipleSelection="true"] {
-    background-color: black;
-}
-
-/*AnimatedCheckBox[animation="1"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation1_checked.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:unchecked:focus {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation2_checked.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
-    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked:focus{
-    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation3_unchecked.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation3_checked.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked:hover{
-    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked:focus{
-    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
-}
-AnimatedCheckBox[readOnly="true"]::indicator:checked{
-    image: url(:/Resources/Images/checkbox_checked_readonly.png);
-}
-AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
-    image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
-}
-AnimatedCheckBox[multipleSelection="true"]::indicator:checked{
-    image: url(:/Resources/Images/checkbox_dirty_checked.png);
-}
-AnimatedCheckBox[multipleSelection="true"]::indicator:unchecked{
-    image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
-}*/
 
 QMenuBar
 {

@@ -289,7 +289,7 @@
         <file>Resources/Images/updateViewerEnabled.png</file>
         <file>Resources/Images/ViewerPanelIcon.png</file>
         <file>Resources/Images/viewer_icon.png</file>
-        <file>Resources/Images/viewer_roiDisabled.png</file> 
+        <file>Resources/Images/viewer_roiDisabled.png</file>  
         <file>Resources/Images/viewer_roiEnabled.png</file>
         <file>Resources/Images/visible.png</file>
         <file>Resources/Images/writeImage.png</file> 

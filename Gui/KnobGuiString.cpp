@@ -106,11 +106,48 @@ void
 AnimatingTextEdit::refreshStylesheet()
 {
 
+    double bgColor[3];
+    bool bgColorSet = false;
+
+    if (multipleSelection) {
+        bgColor[0] = bgColor[1] = bgColor[2] = 0;
+        bgColorSet = true;
+    }
+
+    if (!bgColorSet) {
+        // draw the background with
+        // a color reflecting the animation level
+        switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelExpression:
+                appPTR->getCurrentSettings()->getExprColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                appPTR->getCurrentSettings()->getInterpolatedColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelOnKeyframe:
+                appPTR->getCurrentSettings()->getKeyframeColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelNone:
+                break;
+        }
+    }
+
     double fgColor[3];
     bool fgColorSet = false;
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
         fgColor[0] = fgColor[1] = fgColor[2] = 0.;
         fgColorSet = true;
+    }
+
+    QString bgColorStyleSheetStr;
+    if (bgColorSet) {
+        QColor bgCol;
+        bgCol.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
+        bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
+        ;
     }
 
 
@@ -120,7 +157,8 @@ AnimatingTextEdit::refreshStylesheet()
 
         setStyleSheet(QString::fromUtf8("QTextEdit {\n"
                                         "color: rgb(%1, %2, %3);\n"
-                                        "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()));
+                                        "%4\n"
+                                        "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()).arg(bgColorStyleSheetStr));
     }
 
 
