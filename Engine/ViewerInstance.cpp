@@ -1739,7 +1739,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             RectI tileBounds;
             tileBounds.x1 = tileBounds.y1 = 0;
             tileBounds.x2 = tileBounds.y2 = inArgs.params->tileSize;
-
+            assert(!tileBounds.isNull());
+            if (tileBounds.isNull()) {
+                return eViewerRenderRetCodeRedraw;
+            }
             std::string inputToRenderName = inArgs.activeInputToRender->getNode()->getScriptName_mt_safe();
             for (std::list<UpdateViewerParams::CachedTile>::iterator it = updateParams->tiles.begin(); it != updateParams->tiles.end(); ++it) {
                 if (it->isCached) {
