@@ -550,6 +550,10 @@ void
 TrackerNodeInteract::computeSelectedMarkerCanonicalRect(RectD* rect) const
 {
     assert(selectedMarkerTexture);
+    if (!selectedMarkerTexture) {
+        rect->clear();
+        return;
+    }
     int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
 }
