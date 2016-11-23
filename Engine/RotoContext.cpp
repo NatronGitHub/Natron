@@ -944,7 +944,8 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
 bool
 RotoContext::isRotoPaintTreeConcatenatable() const
 {
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    // Do not use only activated items when defining the shape of the RotoPaint tree otherwise we would have to adjust the tree at each frame.
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false /*onlyActivatedItems*/);
     int bop;
 
     return isRotoPaintTreeConcatenatableInternal(items, &bop);
@@ -4664,7 +4665,8 @@ RotoContext::refreshRotoPaintTree()
         return;
     }
 
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    // Do not use only activated items when defining the shape of the RotoPaint tree otherwise we would have to adjust the tree at each frame.
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false /*onlyActivatedItems*/);
     int blendingOperator;
     bool canConcatenate = isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
