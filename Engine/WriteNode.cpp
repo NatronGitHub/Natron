@@ -749,7 +749,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             assert(fileKnob);
             if (fileKnob) {
                 // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
             }
             return;
         }
