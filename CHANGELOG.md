@@ -6,11 +6,12 @@
 
 ## Version 2.1.9
 
-- Fix a bug where removing all control points from ColorLookup would crash the application
+- Read/Write: Do not automatically set parameters when changing the filename (#1492). Creating a new Reader/Writer still sets those automatically.
 - ctrl-click on a node in the nodegraph (cmd-click on Mac) now opens its control-panel (same as double-click)
-- Fix bugs in curves drawing.
 - Curves with a single keyframe can now have a slope.
 - Fix gamma=0 in the viewer
+- Fix a bug where removing all control points from ColorLookup would crash the application
+- Fix bugs in curves drawing.
 - Fix potential crashes when using KDE on Linux
 - Fix a bug where Roto strokes drawn at a different frame of the current frame would disappear
 
