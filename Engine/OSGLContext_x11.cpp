@@ -820,6 +820,10 @@ OSGLContext_x11::makeContextCurrent(const OSGLContext_x11* context)
 
     assert(glxInfo);
 
+    if (!glxInfo->_imp->x11.display) {
+        return false;
+    }
+
     if (context) {
         return glxInfo->_imp->MakeCurrent(glxInfo->_imp->x11.display, context->_imp->glxWindowHandle, context->_imp->glxContextHandle);
     } else {

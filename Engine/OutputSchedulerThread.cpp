@@ -2265,6 +2265,7 @@ private:
             assert(activeInputToRender);
 
             NodePtr activeInputNode = activeInputToRender->getNode();
+
             const double par = activeInputToRender->getAspectRatio(-1);
             const bool isRenderDueToRenderInteraction = false;
             const bool isSequentialRender = true;

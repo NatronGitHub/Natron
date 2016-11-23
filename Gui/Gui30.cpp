@@ -364,8 +364,10 @@ Gui::onDoDialog(int type,
             info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
             QGridLayout *layout = qobject_cast<QGridLayout *>( info.layout() );
             if (layout) {
-                QTextEdit *edit = new QTextEdit();
+                QTextEdit *edit = new QTextEdit;
+                edit->setFocusPolicy(Qt::NoFocus);
                 edit->setReadOnly(true);
+                edit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
                 edit->setAcceptRichText(true);
                 edit->setHtml(msg);
                 layout->setRowStretch(1, 0);

@@ -626,7 +626,8 @@ SettingsPrivate::initializeKnobsThreading()
     _threadingPage->addKnob(_numberOfParallelRenders);
 #endif
 
-    _useThreadPool = AppManager::createKnob<KnobBool>( thisShared, tr("Effects use thread-pool") );
+    _useThreadPool = AppManager::createKnob<KnobBool>( thisShared, tr("Effects use the thread-pool") );
+
     _useThreadPool->setName("useThreadPool");
     _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
                                        "their own threads. "
@@ -798,8 +799,9 @@ void
 SettingsPrivate::initializeKnobsGPU()
 {
     KnobHolderPtr thisShared = _publicInterface->shared_from_this();
-    _gpuPage = AppManager::createKnob<KnobPage>( thisShared, tr("GPU rendering") );
+    _gpuPage = AppManager::createKnob<KnobPage>( thisShared, tr("GPU Rendering") );
     _openglRendererString = AppManager::createKnob<KnobString>( thisShared, tr("Active OpenGL renderer") );
+
     _openglRendererString->setName("activeOpenGLRenderer");
     _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer.") );
     _openglRendererString->setAsLabel();
@@ -973,9 +975,10 @@ void
 SettingsPrivate::initializeKnobsColorManagement()
 {
     KnobHolderPtr thisShared = _publicInterface->shared_from_this();
-    _ocioTab = AppManager::createKnob<KnobPage>( thisShared, tr("Color-Management") );
-    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenColorIO config") );
+    _ocioTab = AppManager::createKnob<KnobPage>( thisShared, tr("Color Management") );
+    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenColorIO configuration") );
     knobsRequiringRestart.insert(_ocioConfigKnob);
+
     _ocioConfigKnob->setName("ocioConfig");
 
     std::vector<std::string> configs;
@@ -1008,7 +1011,8 @@ SettingsPrivate::initializeKnobsColorManagement()
 
     _ocioTab->addKnob(_ocioConfigKnob);
 
-    _customOcioConfigFile = AppManager::createKnob<KnobFile>( thisShared, tr("Custom OpenColorIO config file") );
+    _customOcioConfigFile = AppManager::createKnob<KnobFile>( thisShared, tr("Custom OpenColorIO configuration file") );
+
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     knobsRequiringRestart.insert(_customOcioConfigFile);
 

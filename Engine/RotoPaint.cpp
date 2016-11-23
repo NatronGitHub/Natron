@@ -2583,6 +2583,7 @@ RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::Serial
     _imp->publicInterface->refreshRotoPaintTree();
 }
 
+
 void
 RotoPaintKnobItemsTable::onModelReset()
 {
@@ -3424,7 +3425,7 @@ RotoPaintPrivate::refreshSourceKnobs()
 
 
     // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0));
+    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0), false);
     for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         {
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();

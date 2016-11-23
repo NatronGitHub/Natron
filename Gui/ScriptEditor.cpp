@@ -241,7 +241,7 @@ ScriptEditor::ScriptEditor(const std::string& scriptName, Gui* gui)
 
     _imp->outputEdit = new OutputScriptTextEdit(this);
     QObject::connect( _imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)) );
-    _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
+    _imp->outputEdit->setFocusPolicy(Qt::NoFocus);
     _imp->outputEdit->setReadOnly(true);
 
     _imp->inputEdit = new InputScriptTextEdit(gui, KnobGuiPtr(), DimSpec::all(), ViewSetSpec::all(), this);

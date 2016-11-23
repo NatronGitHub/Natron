@@ -217,6 +217,7 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->resultEdit = new OutputScriptTextEdit(this);
     _imp->resultEdit->setFixedHeight( TO_DPIY(80) );
+    _imp->resultEdit->setFocusPolicy(Qt::NoFocus);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
 

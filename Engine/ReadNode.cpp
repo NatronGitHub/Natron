@@ -82,6 +82,8 @@ NATRON_NAMESPACE_ENTER;
 #define kParamInputSpaceLabel "File Colorspace"
 #define kParamFrameRate "frameRate"
 #define kParamCustomFps "customFps"
+#define kParamInputSpaceSet "ocioInputSpaceSet"
+#define kParamExistingInstance "ParamExistingInstance"
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
@@ -118,7 +120,10 @@ ReadNode::createPlugin()
  */
 struct GenericKnob
 {
+    // The script-name of the knob.
     const char* scriptName;
+
+    // Whether the value should be saved when changing filename.
     bool mustKeepValue;
 };
 
@@ -139,18 +144,19 @@ static GenericKnob genericReaderKnobNames[] =
     {kParamBefore, true},
     {kParamAfter, true},
     {kParamTimeDomainUserEdited, false},
-    {kParamFilePremult, false},
-    {kParamOutputPremult, false},
-    {kParamOutputComponents, false},
+    {kParamFilePremult, true}, // keep: don't change useful params behind the user's back
+    {kParamOutputPremult, true}, // keep: don't change useful params behind the user's back
+    {kParamOutputComponents, true}, // keep: don't change useful params behind the user's back
     {kParamInputSpaceLabel, false},
-    {kParamFrameRate, false},
-    {kParamCustomFps, false},
-
+    {kParamFrameRate, true}, // keep: don't change useful params behind the user's back
+    {kParamCustomFps, true}, // if custom fps was checked, don't uncheck it
+    {kParamInputSpaceSet, true},
+    {kParamExistingInstance, true}, // don't automatically set parameters when changing the filename, see GenericReaderPlugin::inputFileChanged()
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, false},
-    {kOCIOParamOutputSpace, false},
+    {kOCIOParamInputSpace, true}, // input colorspace must be kept
+    {kOCIOParamOutputSpace, true}, // output colorspace must be kept
     {kOCIOParamInputSpaceChoice, false},
     {kOCIOParamOutputSpaceChoice, false},
     {kOCIOHelpButton, false},
@@ -600,6 +606,18 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
     }
 
+    // If the plug-in is the same, do not create a new decoder.
+    if (embeddedPlugin && embeddedPlugin->getPluginID() == readerPluginID) {
+        boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+        assert(fileKnob);
+        if (fileKnob) {
+            // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0), true);
+
+        }
+
+        return;
+    }
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyReadNode();
