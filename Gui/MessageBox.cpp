@@ -110,17 +110,11 @@ MessageBox::init(const QString & title,
         //QFont f(appFont,appFontSize);
         //_imp->label->setFont(f);
     } else {
-        _imp->infoEdit = new QTextEdit(message);
+        _imp->infoEdit = new QTextEdit;
         _imp->infoEdit->setFocusPolicy(Qt::NoFocus);
         _imp->infoEdit->setReadOnly(true);
-        _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-#if defined(Q_WS_MAC)
-        _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
-#elif !defined(Q_WS_QWS)
-        _imp->infoEdit->setContentsMargins(2, 0, 0, 0);
-        _imp->infoEdit->setIndent(9);
-#endif
+        _imp->infoEdit->append(message);
         //QFont f(appFont,appFontSize);
         //_imp->infoEdit->setFont(f);
     }
@@ -187,7 +181,7 @@ MessageBox::init(const QString & title,
     if (_imp->label) {
         grid->addWidget(_imp->label, 0, 1, 1, 1);
     } else if (_imp->infoEdit) {
-        grid->addWidget(_imp->label, 0, 1, 1, 1);
+        grid->addWidget(_imp->infoEdit, 0, 1, 1, 1);
     }
     // -- leave space for information label --
     grid->setRowStretch(1, 100);
