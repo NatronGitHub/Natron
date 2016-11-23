@@ -95,6 +95,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamFrameRate "frameRate"
 #define kParamCustomFps "customFps"
 #define kParamInputSpaceSet "ocioInputSpaceSet"
+#define kParamExistingInstance "ParamExistingInstance"
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
@@ -137,19 +138,19 @@ static GenericKnob genericReaderKnobNames[] =
     {kParamBefore, true},
     {kParamAfter, true},
     {kParamTimeDomainUserEdited, false},
-    {kParamFilePremult, false},
-    {kParamOutputPremult, false},
-    {kParamOutputComponents, false},
+    {kParamFilePremult, true}, // keep: don't change useful params behind the user's back
+    {kParamOutputPremult, true}, // keep: don't change useful params behind the user's back
+    {kParamOutputComponents, true}, // keep: don't change useful params behind the user's back
     {kParamInputSpaceLabel, false},
-    {kParamFrameRate, false},
-    {kParamCustomFps, false},
+    {kParamFrameRate, true}, // keep: don't change useful params behind the user's back
+    {kParamCustomFps, true}, // if custom fps was checked, don't uncheck it
     {kParamInputSpaceSet, true},
-
+    {kParamExistingInstance, true}, // don't automatically set parameters when changing the filename, see GenericReaderPlugin::inputFileChanged()
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, false},
-    {kOCIOParamOutputSpace, false},
+    {kOCIOParamInputSpace, true}, // input colorspace must be kept
+    {kOCIOParamOutputSpace, true}, // output colorspace must be kept
     {kOCIOParamInputSpaceChoice, false},
     {kOCIOParamOutputSpaceChoice, false},
     {kOCIOHelpButton, false},

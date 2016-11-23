@@ -91,6 +91,7 @@ NATRON_NAMESPACE_ENTER;
 #define kNatronOfxParamProcessB      "NatronOfxParamProcessB"
 #define kNatronOfxParamProcessA      "NatronOfxParamProcessA"
 #define kParamOutputSpaceSet "ocioOutputSpaceSet"
+#define kParamExistingInstance "ParamExistingInstance"
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
@@ -123,20 +124,21 @@ static GenericKnob genericWriterKnobNames[] =
     {kParamFrameRange, true},
     {kParamFirstFrame, true},
     {kParamLastFrame, true},
-    {kParamInputPremult, true},
+    {kParamInputPremult, true}, // keep: don't change useful params behind the user's back
     {kParamClipInfo, false},
     {kParamOutputSpaceLabel, false},
-    {kParamClipToProject, true},
+    {kParamClipToProject, true}, // keep: don't change useful params behind the user's back
     {kNatronOfxParamProcessR, true},
     {kNatronOfxParamProcessG, true},
     {kNatronOfxParamProcessB, true},
     {kNatronOfxParamProcessA, true},
-    {kParamOutputSpaceSet, true},
+    {kParamOutputSpaceSet, true}, // keep: don't change useful params behind the user's back
+    {kParamExistingInstance, true}, // don't automatically set parameters when changing the filename, see GenericWriterPlugin::outputFileChanged()
 
 
     {kOCIOParamConfigFile, true},
-    {kOCIOParamInputSpace, false},
-    {kOCIOParamOutputSpace, false},
+    {kOCIOParamInputSpace, true}, // keep: don't change useful params behind the user's back
+    {kOCIOParamOutputSpace, true}, // keep: don't change useful params behind the user's back
     {kOCIOParamInputSpaceChoice, false},
     {kOCIOParamOutputSpaceChoice, false},
     {kOCIOHelpButton, false},
