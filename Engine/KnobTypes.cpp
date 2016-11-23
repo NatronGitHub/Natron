@@ -855,8 +855,8 @@ KnobChoice::appendChoice(const std::string& entry,
 {
     {
         QMutexLocker l(&_entriesMutex);
-        _entries.push_back(help);
-        _entriesHelp.push_back(entry);
+        _entries.push_back(entry);
+        _entriesHelp.push_back(help);
     }
 
     // Refresh active entry state
