@@ -1076,12 +1076,12 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputAChoice")
     if param is not None:
-        param.setValue("A.r")
+        param.setValue("A.b")
         del param
 
     param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(r->a)</font>")
+        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(g or b->a)</font>")
         del param
 
     del lastNode
@@ -1103,6 +1103,11 @@ def createInstance(app,group):
         del param
 
     param = lastNode.getParam("premult")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    param = lastNode.getParam("premultChanged")
     if param is not None:
         param.setValue(True)
         del param
@@ -1131,6 +1136,11 @@ def createInstance(app,group):
         del param
 
     param = lastNode.getParam("premult")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    param = lastNode.getParam("premultChanged")
     if param is not None:
         param.setValue(True)
         del param
@@ -1227,6 +1237,9 @@ def createInstance(app,group):
     param = groupBlurBox2.getParam("size")
     param.setExpression("(thisGroup.size.get()/5)*2", False, 0)
     param.setExpression("(thisGroup.size.get()/5)*2", False, 1)
+    del param
+    param = groupShuffle1.getParam("outputA")
+    param.setExpression("thisGroup.screenType.get()+1", False, 0)
     del param
     param = groupDilateFast1.getParam("size")
     param.setExpression("(thisGroup.size.get()/5)*thisGroup.multi.get()*2", False, 0)
