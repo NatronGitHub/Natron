@@ -3,7 +3,7 @@
 PortSystem      1.0
 
 name            jasper
-version         1.900.21
+version         1.900.27
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -18,8 +18,8 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 f082cb4febf1670cb234d03fab6f04a38544855b \
-                sha256 e9c8a241f80d1cc190c308f5efc6669a98776ed27458643553abee823fadd7b3
+checksums       rmd160 aaf88fb87f068b989b3353a69f13a1e7a2cd1f2d \
+                sha256 0bd530875965fa0971a2481861752ff0bc0e6ec08a0871d08842e4edf56bd599
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
@@ -42,4 +42,4 @@ variant jiv description {build a basic viewer as well} {
 }
 
 livecheck.type   regex
-livecheck.regex  "JasPer (.*) \\\(current version\\\)."
+livecheck.regex  {JasPer ([.\d]+)}

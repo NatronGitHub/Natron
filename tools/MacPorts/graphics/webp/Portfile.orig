@@ -5,6 +5,7 @@ PortSystem              1.0
 
 name                    webp
 version                 0.5.1
+revision                2
 categories              graphics science devel
 platforms               darwin
 maintainers             ryandesign openmaintainer
@@ -34,9 +35,16 @@ checksums               rmd160  2d14736f3de77475f04d3aa46121aa571a1245f5 \
 depends_lib             port:zlib \
                         port:libpng \
                         port:jpeg \
+                        port:giflib \
                         port:tiff
 
 distname                libwebp-${version}
+
+configure.args-append       \
+    --enable-libwebpmux     \
+    --enable-libwebpdemux   \
+    --enable-libwebpdecoder \
+    --enable-libwebpextras
 
 post-destroot {
     set docdir ${destroot}${prefix}/share/doc/${name}
@@ -48,6 +56,7 @@ post-destroot {
         NEWS \
         PATENTS \
         README \
+        README.mux \
         ${docdir}
 }
 
