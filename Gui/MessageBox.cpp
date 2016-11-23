@@ -119,7 +119,6 @@ MessageBox::init(const QString & title,
         _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
 #elif !defined(Q_WS_QWS)
         _imp->infoEdit->setContentsMargins(2, 0, 0, 0);
-        _imp->infoEdit->setIndent(9);
 #endif
         //QFont f(appFont,appFontSize);
         //_imp->infoEdit->setFont(f);
