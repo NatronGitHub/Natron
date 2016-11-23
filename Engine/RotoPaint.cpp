@@ -1466,7 +1466,7 @@ StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder(false /*onlyActiveItems*/);
     ImageBitDepthEnum bgDepth = getBitDepth(0);
     std::list<ImageComponents> neededComps;
 

@@ -99,7 +99,7 @@ public:
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafe;
     }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
