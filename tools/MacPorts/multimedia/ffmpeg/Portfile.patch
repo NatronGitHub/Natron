@@ -1,6 +1,6 @@
---- Portfile.orig	2016-11-02 17:14:23.000000000 +0100
-+++ Portfile	2016-11-03 11:10:53.000000000 +0100
-@@ -107,6 +107,11 @@
+--- Portfile.orig	2016-11-23 15:10:11.000000000 +0100
++++ Portfile	2016-11-23 15:11:59.000000000 +0100
+@@ -105,6 +105,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
  
@@ -12,22 +12,23 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -138,11 +143,13 @@
+@@ -133,6 +138,7 @@
+                     --disable-libxcb \
+                     --disable-libxcb-shm \
+                     --disable-libxcb-xfixes \
++                    --disable-xlib \
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
-+                    --disable-xlib \
-                     --disable-audiotoolbox \
-                     --disable-videotoolbox \
+@@ -141,6 +147,7 @@
+                     --disable-sdl2 \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
--                    --cc=${configure.cc}
-+                    --cc=${configure.cc} \
-+                    --cxx=${configure.cxx}
++                    --cxx=${configure.cxx} \
+                     --cc=${configure.cc}
  
  
- platform darwin {
-@@ -206,6 +213,17 @@
+@@ -207,6 +214,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -45,7 +46,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -230,6 +248,15 @@
+@@ -231,6 +249,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -61,7 +62,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -255,11 +282,52 @@
+@@ -256,11 +283,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -114,7 +115,7 @@
  }
  
  if {[variant_isset x11]} {
-@@ -328,6 +396,12 @@
+@@ -329,6 +397,12 @@
                              port:samba3
  
      license                 GPL-3+

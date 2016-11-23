@@ -1,13 +1,11 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 
 name                tiff
-version             4.0.6
-revision            1
+version             4.0.7
 categories          graphics
 platforms           darwin
 maintainers         ryandesign openmaintainer
@@ -28,14 +26,12 @@ long_description    \
     There is also considerable support for some of the more     \
     esoteric portions of the 6.0 TIFF spec.
 
-homepage            http://www.remotesensing.org/libtiff
+homepage            http://simplesystems.org/libtiff/
 master_sites        http://download.osgeo.org/libtiff/ \
-                    ftp://ftp.remotesensing.org/pub/libtiff/ \
-                    http://dl.maptools.org/dl/libtiff/ \
                     freebsd
 
-checksums           rmd160  3d5d6951a36baf32ab0e0958d3b4a9413b7f2e07 \
-                    sha256  4d57a50907b510e3049a4bba0d7888930fdfc16ce49f1bf693e5b6247370d68c
+checksums           rmd160  582e19c31e7f29d9ed36995dcad7ad68802cbadb \
+                    sha256  9f43a2cfb9589e5cecaa66e16bf87f814c945f22df7ba600d63aac4632c4f019
 
 depends_lib         path:lib/libjpeg.dylib:jpeg \
                     port:xz \
@@ -52,10 +48,7 @@ autoreconf.args     -fvi
 #     prevent configure script from assuming that if we don't want X11, then we don't want OpenGL either
 # prevent configure script from finding X11 OpenGL (e.g. mesa & freeglut)
 patchfiles          patch-configure.ac.diff \
-                    patch-acinclude.m4.diff \
-                    f94a29a822f5528d2334592760fbb7938f15eb55.patch \
-                    aaab5c3c9d2a2c6984f23ccbc79702610439bc65.patch \
-                    b18012dae552f85dcc5c57d3bf4e997a15b1cc1c.patch
+                    patch-acinclude.m4.diff
 
 
 configure.args      --disable-jbig \

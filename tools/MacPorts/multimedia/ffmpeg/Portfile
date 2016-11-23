@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -87,7 +86,6 @@ depends_lib         port:lame \
                     port:freetype \
                     port:fribidi \
                     path:lib/libspeex.dylib:speex \
-                    port:libsdl2 \
                     port:soxr \
                     port:bzip2 \
                     port:xz \
@@ -140,16 +138,17 @@ configure.args      --enable-swscale \
                     --disable-libxcb \
                     --disable-libxcb-shm \
                     --disable-libxcb-xfixes \
+                    --disable-xlib \
                     --disable-indev=jack \
                     --disable-outdev=xv \
                     --disable-vda \
-                    --disable-xlib \
                     --disable-audiotoolbox \
                     --disable-videotoolbox \
+                    --disable-sdl2 \
                     --mandir=${prefix}/share/man \
                     --enable-shared --enable-pthreads \
-                    --cc=${configure.cc} \
-                    --cxx=${configure.cxx}
+                    --cxx=${configure.cxx} \
+                    --cc=${configure.cc}
 
 
 platform darwin {
@@ -179,9 +178,11 @@ platform darwin {
     }
 
     # AudiotoolBox support requires CoreMedia Framework available on 10.7+
+    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
     if {${os.major} > 10} {
-        configure.args-delete --disable-audiotoolbox
-        configure.args-append --enable-audiotoolbox
+        configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
+        configure.args-replace --disable-sdl2 --enable-sdl2
+        depends_lib-append     port:libsdl2
     }
 
     # VideotoolBox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".

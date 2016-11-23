@@ -9,6 +9,9 @@ for p in `find . -name Portfile`; do
       else
 	  echo "$p is obsolete:"
 	  ls -l $p $ports/$p
+	  if [ -f ${p}.patch ]; then
+	      echo "\$ cp $ports/$p ${p}.orig; cp $ports/$p ${p}; (cd "`dirname $p`" && patch < Portfile.patch)"
+	  fi
       fi
   fi
   d=`dirname $p`
@@ -18,12 +21,14 @@ for p in `find . -name Portfile`; do
 	if [ ! -f $lq ]; then
             echo "$lq is missing:"
 	    ls -l $q
+	    echo "\$ mkdir "`dirname $lq`"; cp $q $lq"
 	elif [ $q -nt $lq ]; then
             if cmp $lq $q > /dev/null; then
 		touch $lq
 	    else
 		echo "$lq is obsolete:"
 		ls -l $lq $q
+		echo "\$ cp $q $lq"
 	    fi
 	fi
     done
