@@ -649,8 +649,11 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
         assert(fileKnob);
         if (fileKnob) {
-            fileKnob->setValue(filename);
+            // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+
         }
+
         return;
     }
     //Destroy any previous reader

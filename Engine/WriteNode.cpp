@@ -748,7 +748,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             boost::shared_ptr<KnobOutputFile> fileKnob = outputFileKnob.lock();
             assert(fileKnob);
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
+                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
             }
             return;
         }
