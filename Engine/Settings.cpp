@@ -321,7 +321,7 @@ Settings::initializeKnobsThreading()
     _threadingPage->addKnob(_numberOfParallelRenders);
 #endif
 
-    _useThreadPool = AppManager::createKnob<KnobBool>( this, tr("Effects use thread-pool") );
+    _useThreadPool = AppManager::createKnob<KnobBool>( this, tr("Effects use the thread-pool") );
     _useThreadPool->setName("useThreadPool");
     _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
                                        "their own threads. "
@@ -464,7 +464,7 @@ Settings::getActiveOpenGLRendererID() const
 void
 Settings::initializeKnobsGPU()
 {
-    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU rendering") );
+    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU Rendering") );
     _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL renderer") );
     _openglRendererString->setName("activeOpenGLRenderer");
     _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer.") );
@@ -632,8 +632,8 @@ Settings::initializeKnobsUserInterface()
 void
 Settings::initializeKnobsColorManagement()
 {
-    _ocioTab = AppManager::createKnob<KnobPage>( this, tr("Color-Management") );
-    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( this, tr("OpenColorIO config") );
+    _ocioTab = AppManager::createKnob<KnobPage>( this, tr("Color Management") );
+    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( this, tr("OpenColorIO configuration") );
     _ocioConfigKnob->setName("ocioConfig");
 
     std::vector<std::string> configs;
@@ -666,7 +666,7 @@ Settings::initializeKnobsColorManagement()
 
     _ocioTab->addKnob(_ocioConfigKnob);
 
-    _customOcioConfigFile = AppManager::createKnob<KnobFile>( this, tr("Custom OpenColorIO config file") );
+    _customOcioConfigFile = AppManager::createKnob<KnobFile>( this, tr("Custom OpenColorIO configuration file") );
     _customOcioConfigFile->setName("ocioCustomConfigFile");
 
     if (_ocioConfigKnob->getNumEntries() == 1) {

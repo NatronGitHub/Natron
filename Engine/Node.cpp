@@ -3519,7 +3519,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
             std::vector<std::string> entries;
             std::vector<std::string> helps;
             entries.push_back("Enabled");
-            helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+            helps.push_back( tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString() );
             entries.push_back("Disabled");
             helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
             entries.push_back("Disabled if background");

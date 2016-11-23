@@ -105,7 +105,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Fix a bug where entering a Group node could crash Natron
 - Fix a bug where copy pasting a Group could loose expressions/links used nodes within the Group
 - Fix a bug when reading auto-crop EXR image sequences 
-- Fix a bug where a project could use all the RAM available plus hit the swap when reading untiled multi-layered EXR files
+- Fix a bug where a project could use all the RAM available plus hit the swap when reading scan-line based multi-layered EXR files
 
 ### Plugins
 
