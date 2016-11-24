@@ -1822,7 +1822,9 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
         throw std::runtime_error(message);
     }
 
-    SERIALIZATION_NAMESPACE::read(ifile,serialization);
+    if (!SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile,serialization)) {
+        throw std::runtime_error(tr("Failed to open %1: this file does not appear to be a presets file").arg(QString::fromUtf8(presetFile.c_str())).toStdString());
+    }
 }
 
 
@@ -1994,7 +1996,7 @@ Node::exportNodeToPyPlug(const std::string& filePath)
     SERIALIZATION_NAMESPACE::NodeClipBoard cb;
     cb.nodes.push_back(serialization);
     
-    SERIALIZATION_NAMESPACE::write(ofile, cb);
+    SERIALIZATION_NAMESPACE::write(ofile, cb, NATRON_PRESETS_FILE_HEADER);
 }
 
 void
@@ -2044,7 +2046,7 @@ Node::exportNodeToPresets(const std::string& filePath,
     SERIALIZATION_NAMESPACE::NodeClipBoard cb;
     cb.nodes.push_back(serialization);
 
-    SERIALIZATION_NAMESPACE::write(ofile, cb);
+    SERIALIZATION_NAMESPACE::write(ofile, cb, NATRON_PRESETS_FILE_HEADER);
 }
 
 

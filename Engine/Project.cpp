@@ -315,7 +315,7 @@ Project::loadProjectInternal(const QString & pathIn,
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
         _imp->lastProjectLoaded.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
-        appPTR->loadProjectFromFileFunction(ifile, getApp(), _imp->lastProjectLoaded.get());
+        appPTR->loadProjectFromFileFunction(ifile, filePathOut.toStdString(), getApp(), _imp->lastProjectLoaded.get());
 
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
@@ -551,7 +551,7 @@ Project::saveProjectInternal(const QString & path,
             SERIALIZATION_NAMESPACE::ProjectSerialization projectSerializationObj;
             toSerialization(&projectSerializationObj);
             appPTR->aboutToSaveProject(&projectSerializationObj);
-            SERIALIZATION_NAMESPACE::write(ofile, projectSerializationObj);
+            SERIALIZATION_NAMESPACE::write(ofile, projectSerializationObj, NATRON_PROJECT_FILE_HEADER);
         } catch (...) {
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.

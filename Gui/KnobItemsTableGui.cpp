@@ -776,7 +776,7 @@ KnobItemsTableView::setupAndExecDragObject(QDrag* drag,
     }
 
     std::ostringstream ss;
-    SERIALIZATION_NAMESPACE::write(ss, obj);
+    SERIALIZATION_NAMESPACE::write(ss, obj, std::string());
 
     QByteArray dataArray(ss.str().c_str());
 
@@ -1057,7 +1057,7 @@ KnobItemsTableView::dropEvent(QDropEvent* e)
     std::stringstream ss(serializationStr.toStdString());
     SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
     try {
-        SERIALIZATION_NAMESPACE::read(ss, &obj);
+        SERIALIZATION_NAMESPACE::read(std::string(), ss, &obj);
     } catch (...) {
         e->ignore();
         return;
@@ -1386,7 +1386,7 @@ KnobItemsTableGui::onCopyItemsActionTriggered()
     
     std::ostringstream ss;
     try {
-        SERIALIZATION_NAMESPACE::write(ss, obj);
+        SERIALIZATION_NAMESPACE::write(ss, obj, std::string());
     } catch (...) {
         return;
     }
@@ -1427,7 +1427,7 @@ KnobItemsTableGui::onPasteItemsActionTriggered()
     std::istringstream ss(str);
     SERIALIZATION_NAMESPACE::KnobItemsTableSerialization obj;
     try {
-        SERIALIZATION_NAMESPACE::read(ss, &obj);
+        SERIALIZATION_NAMESPACE::read(std::string(), ss, &obj);
     } catch (...) {
         Dialogs::errorDialog(tr("Paste").toStdString(), tr("You cannot copy this kind of data here").toStdString());
         return;

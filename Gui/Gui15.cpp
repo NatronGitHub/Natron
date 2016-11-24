@@ -65,7 +65,10 @@ Gui::importLayoutInternal(const std::string& filename)
     
     try {
         WorkspaceSerialization s;
-        SERIALIZATION_NAMESPACE::read(ifile, &s);
+        if (!SERIALIZATION_NAMESPACE::read(NATRON_LAYOUT_FILE_HEADER, ifile, &s)) {
+            Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open %1: this file does not appear to be a layout file").arg(QString::fromUtf8(filename.c_str())).toStdString());
+            return;
+        }
         restoreLayout(true, false, s);
 
     }  catch (const std::exception & e) {

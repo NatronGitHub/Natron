@@ -698,7 +698,7 @@ protected:
     /*
      * @brief Derived by NatronProjectConverter to load using boost serialization instead
      */
-    virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
 
     /**
      * @brief Check if the project is an older project made prior Natron 2.2.

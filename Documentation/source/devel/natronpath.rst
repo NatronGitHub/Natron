@@ -36,9 +36,18 @@ the following search paths in order:
 				/usr/share/Natron/Plugins
 	
 	* All the paths indicated by the **NATRON_PLUGIN_PATH** environment variable. This 
-	environment variable should contain the separator *;* between each path, such as::
-	
-		/home/<username>/NatronPluginsA;/home/<username>/NatronPluginsB
+	environment variable should contain a separator between each path.
+    On Windows the separator is the character *;*, on Linux/macOS the separator is the
+    character *:* , such as::
+
+        # Windows:
+        C:\MyData\NatronPlugins;C:\Users\<username>\Documents\NatronPlugins
+
+        # On Linux:
+        /home/<username>/NatronPluginsA:/home/<username>/NatronPluginsB
+
+        # On macOS:
+        /Users/<username>/NatronPluginsA:/Users/<username>/NatronPluginsB
 	
 	* The user extra search paths in the Plug-ins tab of the Preferences of Natron.
 	

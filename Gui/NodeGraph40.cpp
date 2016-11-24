@@ -126,7 +126,7 @@ NodeGraph::copySelectedNodes()
     std::ostringstream ss;
 
     try {
-        SERIALIZATION_NAMESPACE::write(ss, cb);
+        SERIALIZATION_NAMESPACE::write(ss, cb, std::string());
     } catch (...) {
         qDebug() << "Failed to copy selection to system clipboard";
     }
@@ -170,7 +170,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
     // This will also check if this is a single node
     try {
         SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
-        SERIALIZATION_NAMESPACE::read(ss, &cb);
+        SERIALIZATION_NAMESPACE::read(std::string(), ss, &cb);
 
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it!=cb.nodes.end(); ++it) {
             // This is a pyplug, convert it to a group
@@ -186,7 +186,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
         try {
             ss.seekg(0);
             SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
-            SERIALIZATION_NAMESPACE::read(ss, &isProject);
+            SERIALIZATION_NAMESPACE::read(std::string(), ss, &isProject);
             _imp->pasteNodesInternal(isProject._nodes, pos, true);
         } catch (...) {
             

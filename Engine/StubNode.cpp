@@ -133,7 +133,7 @@ StubNode::refreshInputsFromSerialization()
     {
         QMutexLocker k(&_imp->serialObjMutex);
         _imp->serialObj.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
-        SERIALIZATION_NAMESPACE::read(ss, _imp->serialObj.get());
+        SERIALIZATION_NAMESPACE::read(std::string(), ss, _imp->serialObj.get());
     }
     
     // Re-initialize inputs

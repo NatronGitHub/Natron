@@ -38,29 +38,45 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/SerializationFwd.h"
 
 SERIALIZATION_NAMESPACE_ENTER
-
 /**
  * @brief Write any serialization object to a YAML encoded file.
+ * @param header The given header string will be written on the first line of the file unless it is empty.
  **/
 template <typename T>
-void write(std::ostream& stream, const T& obj)
+void write(std::ostream& stream, const T& obj, const std::string& header)
 {
+    if (!header.empty()) {
+        stream << header.c_str() << "\n";
+    }
     YAML::Emitter em;
     obj.encode(em);
     stream << em.c_str();
 }
 
+
 /**
  * @brief Read any serialization object from a YAML encoded file. Upon failure an exception is thrown.
+ * @param header The first line of the file is matched against the given header string.
+ * If it does not match, this function return false, otherwise it returns true.
+ * If header is empty, it does not check against the header.
  **/
 template <typename T>
-void read(std::istream& stream, T* obj)
+bool read(const std::string& header, std::istream& stream, T* obj)
 {
     if (!obj) {
         throw std::invalid_argument("Invalid serialization object");
     }
+
+    if (!header.empty()) {
+        std::string firstLine;
+        std::getline(stream, firstLine);
+        if (firstLine != header) {
+            return false;
+        }
+    }
     YAML::Node node = YAML::Load(stream);
     obj->decode(node);
+    return true;
 }
 
 SERIALIZATION_NAMESPACE_EXIT

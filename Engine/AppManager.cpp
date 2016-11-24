@@ -398,9 +398,12 @@ AppManager::releaseNatronGIL()
 }
 
 void
-AppManager::loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
+AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
 {
-    SERIALIZATION_NAMESPACE::read(ifile, obj);
+    if (!SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj)) {
+        throw std::runtime_error(tr("Failed to open %1: This file does not appear to be a %2 project file").arg(QString::fromUtf8(filename.c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString());
+    }
+
 }
 
 bool
@@ -1766,7 +1769,11 @@ AppManager::getAllNonOFXPluginsPaths() const
     }
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
+#ifdef __NATRON_WIN32__
     QStringList splitDirs = envvar.split( QChar::fromLatin1(';') );
+#else
+    QStringList splitDirs = envvar.split( QChar::fromLatin1(':') );
+#endif
     std::list<std::string> userSearchPaths;
     _imp->_settings->getPythonGroupsSearchPaths(&userSearchPaths);
 
@@ -1951,7 +1958,9 @@ AppManager::loadNodesPresets()
         }
         SERIALIZATION_NAMESPACE::NodeSerialization obj;
         try {
-            SERIALIZATION_NAMESPACE::read(ifile, &obj);
+            if (!SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj)) {
+                continue;
+            }
         } catch (...) {
             continue;
         }
@@ -2445,7 +2454,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
 
         std::stringstream ss;
         try {
-            SERIALIZATION_NAMESPACE::write(ss, *serialization);
+            SERIALIZATION_NAMESPACE::write(ss, *serialization, std::string());
         } catch (...) {
             return retNode;
         }

@@ -37,6 +37,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/CLArgs.h"
@@ -247,7 +248,7 @@ private:
         return false;
     }
 
-    virtual void loadProjectFromFileFunction(std::istream& ifile, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj) OVERRIDE FINAL
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const std::string& /*filename*/, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj) OVERRIDE FINAL
     {
         try {
             boost::archive::xml_iarchive iArchive(ifile);
@@ -337,7 +338,8 @@ printUsage(const std::string& programName)
                               /* Text must hold in 80 columns ************************************************/
     QString msg = QString::fromUtf8("%1 usage:\n"
                               "This program can convert Natron projects (.ntp files) or workspace (.nl files)\n"
-                              "made with Natron version 2.1.3 and older to the new project format used in 2.2\n\n"
+                              "or PyPlugs (.py files) made with Natron version 2.1.x and older to the new\n"
+                              "project format used in 2.2.\n\n"
                               "Program options:\n\n"
                               "-i <filename>: Converts a .ntp (Project) or .nl (Workspace) file to\n"
                               "               a newer version. Upon failure an error message will be printed.\n\n"
@@ -443,7 +445,7 @@ static void tryReadAndConvertOlderWorkspace(std::istream& stream, SERIALIZATION_
                 
 
 /**
- * @brief Attempts to read a workspace from an old project (pre Natron 2.2) encoded with boost serialization in XML format.
+ * @brief Attempts to read a project from an old project (pre Natron 2.2) encoded with boost serialization in XML format.
  * If the file could be read, the structure is then converted to the newer format post Natron 2.2.
  * Upon failure an exception is thrown.
  **/
@@ -466,6 +468,84 @@ static void tryReadAndConvertOlderProject(const QString& filename, const QString
 
 } // tryReadAndConvertOlderProject
 
+/**
+ * @brief Attemps to read a workspace from an old project.
+ * Upon failure an exception is thrown.
+**/
+static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QString& outFileName)
+{
+    initializeAppOnce();
+    AppInstancePtr instance = g_app->getTopLevelInstance();
+    assert(instance);
+    if (!instance) {
+        return;
+    }
+
+    QFileInfo info(filename);
+    QString baseName = info.fileName();
+    if (!baseName.endsWith(QLatin1String(".py"))) {
+        throw std::invalid_argument(QString::fromUtf8("%1: Invalid PyPlug file").arg(filename).toStdString());
+    }
+
+    baseName.remove(QLatin1String(".py"));
+
+    std::string pythonModule = baseName.toStdString();
+    // The NATRON_PATH_ENV_VAR should have been set, ensuring that the PyPlug to convert is loaded.
+    // We now just try to instantiate the node from the PyPlug.
+    std::string pluginID, pluginLabel, pluginIcon, pluginGrouping, pluginDescription, pythonScriptDirPath;
+    bool isToolset;
+    unsigned int version;
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModule, &pluginID, &pluginLabel, &pluginIcon, &pluginGrouping, &pluginDescription, &pythonScriptDirPath, &isToolset, &version);
+
+    CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID, NodeCollectionPtr() ));
+    args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty(kCreateNodeArgsPropVolatile, true);
+    args->setProperty(kCreateNodeArgsPropSilent, true);
+    NodePtr node = instance->createNode(args);
+    if (!node) {
+        throw std::invalid_argument(QString::fromUtf8("%1: Failure to instanciate PyPlug").arg(baseName).toStdString());
+    }
+
+    node->exportNodeToPyPlug(outFileName.toStdString());
+    
+} // tryReadAndConvertOlderPyPlugFile
+
+/**
+ * @brief Attemps to read a workspace from an old project.
+ * Upon failure an exception is thrown.
+ **/
+static void tryReadAndConvertOlderLayoutFile(const QString& filename, const QString& outFileName)
+{
+    boost::shared_ptr<SERIALIZATION_NAMESPACE::WorkspaceSerialization> workspace;
+    // Read old file
+    {
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, filename.toStdString());
+        if (!ifile) {
+            QString message = QString::fromUtf8("Could not open %1").arg(filename);
+            throw std::invalid_argument(message.toStdString());
+        }
+
+        workspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
+        tryReadAndConvertOlderWorkspace(ifile, workspace.get());
+
+    }
+
+    // Write to converted file
+    {
+        FStreamsSupport::ofstream ofile;
+        FStreamsSupport::open(&ofile, outFileName.toStdString());
+        if (!ofile) {
+            QString message = QString::fromUtf8("Could not open %1").arg(outFileName);
+            throw std::invalid_argument(message.toStdString());
+        }
+
+        SERIALIZATION_NAMESPACE::write(ofile, *workspace, NATRON_PROJECT_FILE_HEADER);
+
+    }
+
+} // tryReadAndConvertOlderLayoutFile
+
 struct ProcessData
 {
     std::list<std::string> bakFiles;
@@ -483,9 +563,10 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
 
     bool isProjectFile = filename.endsWith(QLatin1String(".ntp")) || filename.endsWith(QLatin1String(".ntp.autosave"));
     bool isWorkspaceFile = filename.endsWith(QLatin1String(".nl"));
+    bool isPyPlugFile = filename.endsWith(QLatin1String(".py"));
 
-    if (!isProjectFile && !isWorkspaceFile) {
-        QString message = QString::fromUtf8("%1 does not appear to be a .ntp or .nl file.").arg(filename);
+    if (!isPyPlugFile && !isProjectFile && !isWorkspaceFile) {
+        QString message = QString::fromUtf8("%1 does not appear to be a project file or PyPlug script or layout file.").arg(filename);
         throw std::invalid_argument(message.toStdString());
     }
 
@@ -524,33 +605,9 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
     if (isProjectFile) {
         tryReadAndConvertOlderProject(filename, outFileName);
     } else if (isWorkspaceFile) {
-        boost::shared_ptr<SERIALIZATION_NAMESPACE::WorkspaceSerialization> workspace;
-        // Read old file
-        {
-            FStreamsSupport::ifstream ifile;
-            FStreamsSupport::open(&ifile, filename.toStdString());
-            if (!ifile) {
-                QString message = QString::fromUtf8("Could not open %1").arg(filename);
-                throw std::invalid_argument(message.toStdString());
-            }
-
-            workspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
-            tryReadAndConvertOlderWorkspace(ifile, workspace.get());
-
-        }
-
-        // Write to converted file
-        {
-            FStreamsSupport::ofstream ofile;
-            FStreamsSupport::open(&ofile, outFileName.toStdString());
-            if (!ofile) {
-                QString message = QString::fromUtf8("Could not open %1").arg(outFileName);
-                throw std::invalid_argument(message.toStdString());
-            }
-
-            SERIALIZATION_NAMESPACE::write(ofile, *workspace);
-
-        }
+        tryReadAndConvertOlderLayoutFile(filename, outFileName);
+    } else if (isPyPlugFile) {
+        tryReadAndConvertOlderPyPlugFile(filename, outFileName);
     }
 
     if (!replaceOriginal || !outputFilePathArgs.isEmpty()) {
@@ -599,7 +656,7 @@ static bool convertDirectory(const QString& dirPath, bool replaceOriginal, bool 
             }
         }
 
-        if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl"))) {
+        if (it->endsWith(QLatin1String(".ntp")) || it->endsWith(QLatin1String(".nl")) || it->endsWith(QLatin1String(".py"))) {
             try {
                 convertFile(absoluteOriginalFilePath, QString(),replaceOriginal, data);
             } catch (const std::exception& e) {
@@ -649,6 +706,15 @@ static void cleanupCreatedFiles(const ProcessData& data)
     }
 } // cleanupCreatedFiles
 
+/**
+ * @brief Force Natron to load any PyPlug in this directory (and sub-directories) so 
+ * that if we convert a PyPlug they get loaded by Natron.
+ **/
+static void setNatronPathEnvVar(const QString& filePath)
+{
+    qputenv(NATRON_PATH_ENV_VAR, filePath.toStdString().c_str());
+}
+
 #ifdef Q_OS_WIN
 // g++ knows nothing about wmain
 // https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
@@ -682,19 +748,22 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    bool isDir;
-    {
-        QDir d(inputPath);
-        isDir = d.exists();
+
+    QFileInfo info(inputPath);
+    if (!info.exists()) {
+        std::cerr << QString::fromUtf8("%1: No such file or directory.").arg(inputPath).toStdString() << std::endl;
+        return 1;
     }
 
     ProcessData convertData;
 
     try {
 
-        if (isDir) {
+        if (info.isDir()) {
+            setNatronPathEnvVar(inputPath);
             convertDirectory(inputPath, replaceOriginal, recurse, 0, &convertData);
         } else {
+            setNatronPathEnvVar(info.path());
             convertFile(inputPath, outputPath, replaceOriginal, &convertData);
         }
     } catch (const std::exception& e) {

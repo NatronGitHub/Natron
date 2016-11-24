@@ -245,7 +245,7 @@ Gui::exportLayout()
         try {
             SERIALIZATION_NAMESPACE::WorkspaceSerialization s;
             getApp()->saveApplicationWorkspace(&s);
-            SERIALIZATION_NAMESPACE::write(ofile, s);
+            SERIALIZATION_NAMESPACE::write(ofile, s, NATRON_LAYOUT_FILE_HEADER);
         } catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Failed to save workspace").toStdString(), false );
