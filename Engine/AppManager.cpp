@@ -1969,6 +1969,28 @@ AppManager::loadPythonGroups()
             moduleName = moduleName.remove(0, lastSlash + 1);
         }
 
+
+        if (appPTR->isBackground()) {
+            // Open the file and check for a line that imports NatronGui, if so do not attempt to load the script.
+            QFile file(plugin);
+            if (!file.open(QIODevice::ReadOnly)) {
+                continue;
+            }
+            QTextStream ts(&file);
+            bool gotNatronGuiImport = false;
+            while (!ts.atEnd()) {
+                QString line = ts.readLine();
+                if (line.startsWith(QString::fromUtf8("import %1").arg(QLatin1String(NATRON_GUI_PYTHON_MODULE_NAME))) ||
+                    line.startsWith(QString::fromUtf8("from %1 import").arg(QLatin1String(NATRON_GUI_PYTHON_MODULE_NAME)))) {
+                    gotNatronGuiImport = true;
+                    break;
+                }
+            }
+            if (gotNatronGuiImport) {
+                continue;
+            }
+        }
+
         std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
         unsigned int version;
         bool isToolset;
