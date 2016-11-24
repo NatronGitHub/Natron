@@ -75,7 +75,7 @@ transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
 
 
 void
-ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
+ViewerTab::getNodesEntitledForOverlays(double time, ViewIdx view, NodesList & nodes) const
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -101,7 +101,7 @@ ViewerTab::getNodesEntitledForOverlays(NodesList & nodes) const
         NodeGuiPtr node = panel->getNodeGui();
         NodePtr internalNode = node->getNode();
         if (node && internalNode) {
-            if ( internalNode->shouldDrawOverlay() ) {
+            if ( internalNode->shouldDrawOverlay(time, view) ) {
                 ViewerNodePtr isViewer = internalNode->isEffectViewerNode();
                 if (!isViewer) {
                     // Do not add viewers, add them afterwards
@@ -159,7 +159,7 @@ ViewerTab::drawOverlays(double time,
 
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
 
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
@@ -348,8 +348,11 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
 
+    double time = app->getTimeLine()->currentFrame();
+    ViewIdx view = getInternalNode()->getCurrentView();
+
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
 
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
@@ -397,10 +400,12 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         return false;
     }
 
-    NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
-
+    double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
+
+    NodesList nodes;
+    getNodesEntitledForOverlays(time, view, nodes);
+
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -410,7 +415,6 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
         QPointF transformViewportPos;
         QPointF transformPos;
-        double time = app->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
         double transformedTime;
@@ -610,9 +614,11 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
 
+    double time = app->getTimeLine()->currentFrame();
+    ViewIdx view = getInternalNode()->getCurrentView();
 
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
 
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
@@ -690,11 +696,13 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     _imp->lastOverlayNode.reset();
 
-    NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
-
     double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
+
+
+    NodesList nodes;
+    getNodesEntitledForOverlays(time, view, nodes);
+
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
@@ -987,8 +995,12 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     Qt::KeyboardModifiers qMods = e->modifiers();
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
+
+    double time = app->getTimeLine()->currentFrame();
+    ViewIdx view = getInternalNode()->getCurrentView();
+
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
@@ -1057,7 +1069,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     double time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1262,7 +1274,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1332,7 +1344,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
-    getNodesEntitledForOverlays(nodes);
+    getNodesEntitledForOverlays(time, view, nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();

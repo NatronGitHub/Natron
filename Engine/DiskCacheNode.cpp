@@ -262,6 +262,25 @@ DiskCacheNode::render(const RenderActionArgs& args)
 }
 
 bool
+DiskCacheNode::isIdentity(double time,
+                          const RenderScale & /*scale*/,
+                          const RectI & /*renderWindow*/,
+                          ViewIdx view,
+                          double* inputTime,
+                          ViewIdx* inputView,
+                          int* inputNb)
+{
+    if (!appPTR->isBackground()) {
+        return false;
+    }
+    *inputNb = 0;
+    *inputTime = time;
+    *inputView = view;
+    return true;
+
+}
+
+bool
 DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
                                               bool* /*defaultG*/,
                                               bool* /*defaultB*/,

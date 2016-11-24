@@ -281,7 +281,7 @@ NodeGraph::doAutoConnectHeuristic(const NodeGuiPtr &node, const NodeGuiPtr &sele
                     if ( (it->first != createdNodeInternal) ) {
 
 
-                        ignore_result( it->first->replaceInput(createdNodeInternal, it->second) );
+                        ignore_result( it->first->swapInput(createdNodeInternal, it->second) );
 
                     }
                 }

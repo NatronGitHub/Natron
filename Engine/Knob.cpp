@@ -784,8 +784,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         app = holder->getApp();
     }
 
-    // Call the virtual portion to maintain any internal value of the derived implementations in sync with the values
-    onInternalValueChanged(dimension, time, view);
+
 
     // If the change is not due to a timeline time change and the knob has a holder then queue the value change
     bool ret = false;

@@ -747,7 +747,13 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
 
     initLifeTimeKnobs(page);
 
-
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kLayeredCompMixParamLabel));
+        param->setName(kLayeredCompMixParam);
+        param->setHintToolTip( tr(kLayeredCompMixParamHint) );
+        param->setRange(0., 1.);
+        param->setDefaultValue(1.);
+    }
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
         param->setHintToolTip( tr(kRotoAddGroupParamHint) );
@@ -2167,14 +2173,15 @@ RotoPaint::initializeKnobs()
 
 
 
-    // The mix knob is per-item
-    {
-        KnobDoublePtr mixKnob = getNode()->getOrCreateHostMixKnob(generalPage);
-        _imp->knobsTable->addPerItemKnobMaster(mixKnob);
-    }
-
 
     if (_imp->nodeType != eRotoPaintTypeComp) {
+
+        // The mix knob is per-item
+        {
+            KnobDoublePtr mixKnob = getNode()->getOrCreateHostMixKnob(generalPage);
+            _imp->knobsTable->addPerItemKnobMaster(mixKnob);
+        }
+
         KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(thisShared, tr("Output"), 1, false);
         sep->setName("outputSeparator");
         generalPage->addKnob(sep);
@@ -2225,7 +2232,7 @@ RotoPaint::initializeKnobs()
     if (_imp->nodeType != eRotoPaintTypeComp) {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
-        _imp->knobsTable->setColumnText(2, "Solo");
+        _imp->knobsTable->setColumnIcon(2, "soloOff.png");
         _imp->knobsTable->setColumnIcon(3, "locked.png");
         _imp->knobsTable->setColumnIcon(4, "roto_merge.png");
         _imp->knobsTable->setColumnIcon(5, "colorwheel_overlay.png");
@@ -2233,14 +2240,14 @@ RotoPaint::initializeKnobs()
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
-        _imp->knobsTable->setColumnText(2, "Solo");
+        _imp->knobsTable->setColumnIcon(2, "soloOff.png");
         _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
-        _imp->knobsTable->setColumnText(4, tr(kHostMixingKnobLabel).toStdString());
-        _imp->knobsTable->setColumnText(5, tr(kRotoDrawableItemLifeTimeParamLabel).toStdString());
-        _imp->knobsTable->setColumnText(6, tr(kRotoBrushTimeOffsetParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(4, "mix.png");
+        _imp->knobsTable->setColumnIcon(5, "lifetime.png");
+        _imp->knobsTable->setColumnIcon(6, "timeOffset.png");
         _imp->knobsTable->setColumnIcon(7, "uninverted.png");
-        _imp->knobsTable->setColumnText(8, tr(kRotoDrawableItemMergeAInputParamLabel).toStdString());
-        _imp->knobsTable->setColumnText(9, tr(kRotoDrawableItemMergeMaskParamLabel).toStdString());
+        _imp->knobsTable->setColumnIcon(8, "source.png");
+        _imp->knobsTable->setColumnIcon(9, "maskOff.png");
     }
 
     _imp->refreshSourceKnobs();
@@ -2872,7 +2879,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 
 
         // If the comp item has a mask on the merge node, forget concatenating
-        if (type == eRotoStrokeTypeComp && (*it)->getMergeNode()->getInput(2)) {
+        if (type == eRotoStrokeTypeComp && (*it)->getMergeMaskChoiceKnob()->getValue() > 0) {
             return false;
         }
 
@@ -2917,7 +2924,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
             assert( inputs.size() >= 3 && (*it)->getEffectInstance()->isInputMask(2) );
             if ( !inputs[1].lock() ) {
                 *availableInputIndex = 1;
-                setOperationKnob(*it, blendingOperator);
+                if (blendingOperator != -1) {
+                    setOperationKnob(*it, blendingOperator);
+                }
                 return *it;
             }
 
@@ -2925,7 +2934,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
             for (std::size_t i = 3; i < inputs.size(); ++i) {
                 if ( !inputs[i].lock() ) {
                     *availableInputIndex = (int)i;
-                    setOperationKnob(*it, blendingOperator);
+                    if (blendingOperator != -1) {
+                        setOperationKnob(*it, blendingOperator);
+                    }
                     return *it;
                 }
             }
@@ -2970,7 +2981,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         }
     }
     *availableInputIndex = 1;
-    setOperationKnob(mergeNode, blendingOperator);
+    if (blendingOperator != -1) {
+        setOperationKnob(mergeNode, blendingOperator);
+    }
 
     {
         // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
@@ -2999,25 +3012,24 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
     return mergeNode;
 } // getOrCreateGlobalMergeNode
 
-static void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
+void
+RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
 {
     NodePtr treeOutputNodeInput = noOpNode ? noOpNode : mergeNode;
-    if (treeOutputNode->getInput(0) != treeOutputNodeInput) {
-        treeOutputNode->disconnectInput(0);
-        treeOutputNode->connectInput(treeOutputNodeInput, 0);
+    treeOutputNode->swapInput(treeOutputNodeInput, 0);
+
+    if (noOpNode && premultNode) {
+        noOpNode->swapInput(premultNode, 0);
+    }
+    if (premultNode) {
+        premultNode->swapInput(mergeNode, 0);
     }
 
-    if (noOpNode && premultNode && noOpNode->getInput(0) != premultNode) {
-        noOpNode->disconnectInput(0);
-        noOpNode->connectInput(premultNode, 0);
-    }
-    if (premultNode && premultNode->getInput(0) != mergeNode) {
-        premultNode->disconnectInput(0);
-        premultNode->connectInput(mergeNode, 0);
-    }
     // Connect the mask of the merge to the Mask input
-    mergeNode->disconnectInput(2);
-    mergeNode->connectInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
+    if (nodeType == RotoPaint::eRotoPaintTypeRoto ||
+        nodeType == RotoPaint::eRotoPaintTypeRotoPaint) {
+        mergeNode->swapInput(rotoPaintEffect->getInternalInputNode(ROTOPAINT_MASK_INPUT_INDEX), 2);
+    }
 
 }
 
@@ -3032,7 +3044,7 @@ RotoPaint::refreshRotoPaintTree()
     std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
 
     // Check if the tree can be concatenated into a single merge node
-    int blendingOperator;
+    int blendingOperator = -1;
     bool canConcatenate = _imp->isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
     int globalMergeIndex = -1;
@@ -3102,18 +3114,14 @@ RotoPaint::refreshRotoPaintTree()
     }
 
     if (canConcatenate) {
-        connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.front());
+        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.front());
     } else {
         if (!items.empty()) {
-            // Connect noop to the first item merge node
-            connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.front()->getMergeNode());
+            // Connect noop to the last item at the bottom of the tree
+            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.back()->getMergeNode());
 
         } else {
-            NodePtr treeInputNode0 = rotoPaintEffect->getInternalInputNode(0);
-            if (treeOutputNode->getInput(0) != treeInputNode0) {
-                treeOutputNode->disconnectInput(0);
-                treeOutputNode->connectInput(treeInputNode0, 0);
-            }
+            treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);
         }
     }
 
@@ -3387,31 +3395,58 @@ RotoPaint::getMotionBlurTypeKnob() const
 }
 
 void
-RotoPaintPrivate::refreshSourceKnobs()
+RotoPaint::refreshSourceKnobs(const RotoDrawableItemPtr& item)
 {
-    KnobChoicePtr inputAKnob = mergeInputAChoiceKnob.lock();
-
     std::vector<std::string> inputAChoices, maskChoices;
-    maskChoices.push_back("None");
-    if (nodeType != RotoPaint::eRotoPaintTypeComp) {
-        inputAChoices.push_back("Foreground");
+    getMergeChoices(&inputAChoices, &maskChoices);
+    {
+        KnobChoicePtr itemSourceKnob = item->getMergeInputAChoiceKnob();
+        if (itemSourceKnob) {
+            itemSourceKnob->populateChoices(inputAChoices);
+        }
+    }
+    {
+        KnobChoicePtr maskSourceKnob = item->getMergeMaskChoiceKnob();
+        if (maskSourceKnob) {
+            maskSourceKnob->populateChoices(maskChoices);
+        }
+    }
+}
+
+void
+RotoPaint::getMergeChoices(std::vector<std::string>* inputAChoices, std::vector<std::string>* maskChoices) const
+{
+    maskChoices->push_back("None");
+    if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
+        inputAChoices->push_back("Foreground");
     } else {
-        inputAChoices.push_back("None");
+        inputAChoices->push_back("None");
     }
     for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
-        EffectInstancePtr input = publicInterface->getInput(i);
+        EffectInstancePtr input = getInput(i);
         if (!input) {
             continue;
         }
-        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString)), publicInterface, SLOT(onSourceNodeLabelChanged(QString)), Qt::UniqueConnection);
+        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onSourceNodeLabelChanged(QString)), Qt::UniqueConnection);
         const std::string& inputLabel = input->getNode()->getLabel();
         bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {
-            inputAChoices.push_back(inputLabel);
+            inputAChoices->push_back(inputLabel);
         } else {
-            maskChoices.push_back(inputLabel);
+            maskChoices->push_back(inputLabel);
         }
     }
+}
+
+void
+RotoPaintPrivate::refreshSourceKnobs()
+{
+
+    std::vector<std::string> inputAChoices, maskChoices;
+    publicInterface->getMergeChoices(&inputAChoices, &maskChoices);
+
+
+    KnobChoicePtr inputAKnob = mergeInputAChoiceKnob.lock();
     if (inputAKnob) {
         inputAKnob->populateChoices(inputAChoices);
     }

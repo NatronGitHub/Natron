@@ -190,6 +190,7 @@
         <file>Resources/Images/layer.png</file>
         <file>Resources/Images/layout.png</file>
         <file>Resources/Images/layout_anchor.png</file>
+        <file>Resources/Images/lifetime.png</file>
         <file>Resources/Images/linkCursor.png</file>
         <file>Resources/Images/linkMultCursor.png</file>
         <file>Resources/Images/loadAndExecScript.png</file>
@@ -197,8 +198,10 @@
         <file>Resources/Images/loadScript.png</file>
         <file>Resources/Images/locked.png</file>
         <file>Resources/Images/loopmode.png</file>
+        <file>Resources/Images/maskOff.png</file>
         <file>Resources/Images/maximize.png</file>
         <file>Resources/Images/minimize.png</file>
+        <file>Resources/Images/mix.png</file>
         <file>Resources/Images/natronIcon256_linux.png</file>
         <file>Resources/Images/natronProjectIcon_linux.png</file>
         <file>Resources/Images/nextIncr.png</file>
@@ -265,6 +268,9 @@
         <file>Resources/Images/selectPoints.png</file>
         <file>Resources/Images/settings.png</file>
         <file>Resources/Images/smoothPoints.png</file>
+        <file>Resources/Images/soloOff.png</file>
+        <file>Resources/Images/soloOn.png</file>
+        <file>Resources/Images/source.png</file>
         <file>Resources/Images/splashscreen.png</file>
         <file>Resources/Images/splitHorizontally.png</file>
         <file>Resources/Images/splitVertically.png</file>
@@ -279,6 +285,7 @@
         <file>Resources/Images/turbo_on.png</file>
         <file>Resources/Images/timelineIn.png</file>
         <file>Resources/Images/timelineOut.png</file>
+        <file>Resources/Images/timeOffset.png</file>
         <file>Resources/Images/undo.png</file>
         <file>Resources/Images/undo_grayscale.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>

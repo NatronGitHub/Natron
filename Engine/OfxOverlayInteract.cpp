@@ -206,9 +206,18 @@ OfxStatus
 OfxOverlayInteract::redraw()
 {
     OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    if (!effect) {
+        return kOfxStatErrBadHandle;
+    }
 
-    assert(effect);
-    if ( effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay() ) {
+    EffectInstancePtr nEffect = effect->getOfxEffectInstance();
+    if (!nEffect) {
+        return kOfxStatErrBadHandle;
+    }
+    NodePtr node = nEffect->getNode();
+    assert(node);
+
+    if ( effect && node->shouldDrawOverlay(nEffect->getCurrentTime(), nEffect->getCurrentView()) ) {
         AppInstancePtr app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
         if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {

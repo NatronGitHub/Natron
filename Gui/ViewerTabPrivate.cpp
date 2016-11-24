@@ -91,7 +91,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     // If transform is not implemented, it should return eStatusReplyDefault:
     // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
     // "the value kOfxStatReplyDefault is returned if the plug-in does not trap the action"
-    if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
+    if ( !currentNode->getNode()->isNodeDisabledForFrame(time, view) /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
@@ -201,7 +201,7 @@ ViewerTabPrivate::getTimeTransform(double time,
         return true;
     }
 
-    if ( !currentNode->getNode()->isNodeDisabled() ) {
+    if ( !currentNode->getNode()->isNodeDisabledForFrame(time, view) ) {
         *newTime = transformTimeForNode(currentNode, time);
     } else {
         *newTime = time;

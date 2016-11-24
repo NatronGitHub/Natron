@@ -5323,72 +5323,17 @@ Node::canConnectInput(const NodePtr& input,
 } // Node::canConnectInput
 
 bool
-Node::connectInput(const NodePtr & input,
-                   int inputNumber)
+Node::connectInput(const NodePtr & input, int inputNumber)
 {
-    assert(_imp->inputsInitialized);
-    assert(input);
 
-    ///Check for cycles: they are forbidden in the graph
-    if ( !checkIfConnectingInputIsOk( input ) ) {
+    assert(_imp->inputsInitialized);
+
+    if (!input) {
         return false;
     }
 
-    ///For effects that do not support multi-resolution, make sure the input effect is correct
-    ///otherwise the rendering might crash
-    if ( !_imp->effect->supportsMultiResolution() && !getApp()->getProject()->isLoadingProject() ) {
-        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
-        if (ret != eCanConnectInput_ok) {
-            return false;
-        }
-    }
 
-    _imp->effect->abortAnyEvaluation();
-
-    {
-        ///Check for invalid index
-        QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) ||
-             ( inputNumber >= (int)_imp->inputs.size() ) ||
-             _imp->inputs[inputNumber].lock()) {
-            return false;
-        }
-
-        _imp->inputs[inputNumber] = input;
-
-        input->connectOutput(shared_from_this() );
-    }
-
-    getApp()->recheckInvalidExpressions();
-
-    ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-
-    ///Notify the GUI
-    Q_EMIT inputChanged(inputNumber);
-    bool mustCallEnd = false;
-
-    ///Call the instance changed action with a reason clip changed
-    beginInputEdition();
-    mustCallEnd = true;
-    onInputChanged(inputNumber);
-
-
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        _imp->effect->invalidateHashCache();
-    }
-
-    std::string inputChangedCB = getInputChangedCallback();
-    if ( !inputChangedCB.empty() ) {
-        _imp->runInputChangedCallback(inputNumber, inputChangedCB);
-    }
-
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
-
-    return true;
+    return replaceInputInternal(input, inputNumber);
 } // Node::connectInput
 
 
@@ -5396,16 +5341,16 @@ bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber)
 {
     assert(_imp->inputsInitialized);
-    assert(input);
+
     ///Check for cycles: they are forbidden in the graph
-    if ( !checkIfConnectingInputIsOk( input ) ) {
+    if ( input && !checkIfConnectingInputIsOk( input ) ) {
         return false;
     }
 
 
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash
-    if ( !_imp->effect->supportsMultiResolution() ) {
+    if ( input && !_imp->effect->supportsMultiResolution() ) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
         if (ret != eCanConnectInput_ok) {
             return false;
@@ -5421,58 +5366,81 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
     }
 
 
+    bool destroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        destroyed = _imp->isBeingDestroyed;
+    }
+
     {
         QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
 
         NodePtr curIn = _imp->inputs[inputNumber].lock();
+
+
+        if (curIn == input) {
+            // Nothing changed
+            return true;
+        }
+
         if (curIn) {
-            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)), Qt::UniqueConnection );
             curIn->disconnectOutput(this);
         }
-        _imp->inputs[inputNumber] = input;
-
-        input->connectOutput(shared_from_this() );
+        if (input) {
+            _imp->inputs[inputNumber] = input;
+            input->connectOutput(shared_from_this() );
+        } else {
+            _imp->inputs[inputNumber].reset();
+        }
     }
+
+    if (!destroyed) {
+        _imp->effect->abortAnyEvaluation();
+    }
+
+
+    if (destroyed) {
+        // Don't do more if the node is destroyed because we would run code that is not needed on the node.
+        return true;
+    }
+
+    // Make the application recheck expressions, they may now be valid again.
+    getApp()->recheckInvalidExpressions();
 
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-
-    ///Notify the GUI
-    Q_EMIT inputChanged(inputNumber);
-    bool mustCallEnd = false;
-    beginInputEdition();
-    mustCallEnd = true;
-    ///Call the instance changed action with a reason clip changed
-    onInputChanged(inputNumber);
-
-
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        // Notify cache
-        _imp->effect->invalidateHashCache();
+    if (input) {
+        QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)),Qt::UniqueConnection );
     }
 
+    // Notify the GUI
+    Q_EMIT inputChanged(inputNumber);
 
+    beginInputEdition();
+
+    // Call the instance changed action with a reason clip changed
+    onInputChanged(inputNumber);
+
+    // Notify cache
+    _imp->effect->invalidateHashCache();
+
+    // Run Python callback
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
 
-    if (mustCallEnd) {
-        endInputEdition(true);
-    }
-    
+    endInputEdition(true);
+
     return true;
 }
 
 bool
-Node::replaceInput(const NodePtr& input,
+Node::swapInput(const NodePtr& input,
                    int inputNumber)
 {
 
-
-    _imp->effect->abortAnyEvaluation();
     return replaceInputInternal(input, inputNumber);
 } // Node::replaceInput
 
@@ -5595,73 +5563,17 @@ Node::connectOutput(const NodePtr& output)
     Q_EMIT outputsChanged();
 }
 
-int
+bool
 Node::disconnectInput(int inputNumber)
 {
     assert(_imp->inputsInitialized);
-
-    NodePtr inputShared;
-    bool destroyed;
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        destroyed = _imp->isBeingDestroyed;
-    }
-    if (!destroyed) {
-        _imp->effect->abortAnyEvaluation();
-    }
-
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) ||
-             ( inputNumber > (int)_imp->inputs.size() ) ||
-             (!_imp->inputs[inputNumber].lock() )) {
-            return -1;
-        }
-        inputShared = _imp->inputs[inputNumber].lock();
-    }
-
-
-    QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
-    inputShared->disconnectOutput(this);
-
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        _imp->inputs[inputNumber].reset();
-
-    }
-
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        if (_imp->isBeingDestroyed) {
-            return -1;
-        }
-    }
-
-    Q_EMIT inputChanged(inputNumber);
-
-    beginInputEdition();
-    onInputChanged(inputNumber);
-
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        // Notify cache
-        _imp->effect->invalidateHashCache();
-    }
-
-
-    std::string inputChangedCB = getInputChangedCallback();
-    if ( !inputChangedCB.empty() ) {
-        _imp->runInputChangedCallback(inputNumber, inputChangedCB);
-    }
-    endInputEdition(true);
-
-    return inputNumber;
+    return replaceInputInternal(NodePtr(), inputNumber);
 } // Node::disconnectInput
 
-int
-Node::disconnectInputInternal(const NodePtr& input)
+
+bool
+Node::disconnectInput(const NodePtr& input)
 {
-    assert(_imp->inputsInitialized);
     int found = -1;
     NodePtr inputShared;
     {
@@ -5677,44 +5589,10 @@ Node::disconnectInputInternal(const NodePtr& input)
 
     }
     if (found != -1) {
-        {
-            QMutexLocker l(&_imp->inputsMutex);
-            _imp->inputs[found].reset();
-        }
-        input->disconnectOutput(this);
-        Q_EMIT inputChanged(found);
-        beginInputEdition();
-        onInputChanged(found);
-
-        bool creatingNodeTree = getApp()->isCreatingNodeTree();
-        if (!creatingNodeTree) {
-            ///Recompute the hash
-            if ( !getApp()->getProject()->isProjectClosing() ) {
-                _imp->effect->invalidateHashCache();
-            }
-        }
-
-
-
-        std::string inputChangedCB = getInputChangedCallback();
-        if ( !inputChangedCB.empty() ) {
-            _imp->runInputChangedCallback(found, inputChangedCB);
-        }
-
-        endInputEdition(true);
-
-        return found;
+        return replaceInputInternal(NodePtr(), found);
     }
-    
-    return -1;
-}
+    return false;
 
-int
-Node::disconnectInput(const NodePtr& input)
-{
-
-    _imp->effect->abortAnyEvaluation();
-    return disconnectInputInternal(input);
 } // Node::disconnectInput
 
 int
@@ -5956,12 +5834,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( make_pair(*it, inputNb) );
 
-                ///reconnect if inputToConnectTo is not null
-                if (inputToConnectTo) {
-                    output->replaceInputInternal(inputToConnectTo, inputNb);
-                } else {
-                    ignore_result( output->disconnectInputInternal(shared_from_this()) );
-                }
+                output->replaceInputInternal(inputToConnectTo, inputNb);
+
             }
         }
     }
@@ -7841,7 +7715,7 @@ Node::canHandleRenderScaleForOverlays() const
 }
 
 bool
-Node::shouldDrawOverlay() const
+Node::shouldDrawOverlay(double time, ViewIdx view) const
 {
     if ( !hasOverlay() ) {
         return false;
@@ -7855,7 +7729,7 @@ Node::shouldDrawOverlay() const
         return false;
     }
 
-    if ( isNodeDisabled() ) {
+    if ( isNodeDisabledForFrame(time, view) ) {
         return false;
     }
 
@@ -9009,24 +8883,70 @@ Node::getLifeTimeKnob() const
 }
 
 bool
-Node::isNodeDisabled() const
+Node::isNodeDisabledForFrame(double time, ViewIdx view) const
 {
+    // Check disabled knob
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
-    bool thisDisabled = b ? b->getValue() : false;
+    if (b && b->getValueAtTime(time, DimIdx(0), view)) {
+        return true;
+    }
+
     NodeGroupPtr isContainerGrp = toNodeGroup( getGroup() );
 
+    // If within a group, check the group's disabled knob
     if (isContainerGrp) {
-        return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
+        if (isContainerGrp->getNode()->isNodeDisabledForFrame(time, view)) {
+            return true;
+        }
     }
+
+    // If an internal IO node, check the main meta-node disabled knob
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
-        return ioContainer->isNodeDisabled();
+        return ioContainer->isNodeDisabledForFrame(time, view);
     }
+
+    RotoDrawableItemPtr attachedItem = getAttachedRotoItem();
+    if (attachedItem && !attachedItem->isActivated(time, view)) {
+        return true;
+    }
+
+    // Check lifetime
+    int lifeTimeFirst, lifeTimeEnd;
+    bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
+    bool enabled = ( !lifeTimeEnabled || (time >= lifeTimeFirst && time <= lifeTimeEnd) );
+    return !enabled;
+} // isNodeDisabledForFrame
+
+bool
+Node::getDisabledKnobValue() const
+{
+    // Check disabled knob
+    KnobBoolPtr b = _imp->disableNodeKnob.lock();
+    if (b && b->getValue()) {
+        return true;
+    }
+
+    NodeGroupPtr isContainerGrp = toNodeGroup( getGroup() );
+
+    // If within a group, check the group's disabled knob
+    if (isContainerGrp) {
+        if (isContainerGrp->getNode()->getDisabledKnobValue()) {
+            return true;
+        }
+    }
+
+    // If an internal IO node, check the main meta-node disabled knob
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getDisabledKnobValue();
+    }
+
 
     int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
     double curFrame = _imp->effect->getCurrentTime();
-    bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) ) && !thisDisabled;
+    bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) );
 
     return !enabled;
 }

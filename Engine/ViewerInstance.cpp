@@ -877,6 +877,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 if (outArgs->params->depth == eImageBitDepthFloat) {
                     tile.bytesCount *= sizeof(float);
                 }
+                outArgs->params->tiles.push_back(tile);
             }
         }
 
@@ -1133,7 +1134,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     EffectInstancePtr upstreamInput = getInput(textureIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
-        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
+        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled(time, view);
     }
 
     // Before rendering we check that all mandatory inputs in the graph are connected else we fail

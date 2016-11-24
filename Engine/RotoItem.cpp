@@ -180,8 +180,8 @@ RotoItem::initializeKnobs()
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemSoloLabel));
         param->setName(kParamRotoItemSolo);
         param->setHintToolTip(tr(kParamRotoItemSoloHint));
-        //param->setIconLabel("Images/soloOn.png", true);
-        //param->setIconLabel("Images/soloOff.png", false);
+        param->setIconLabel("Images/soloOn.png", true);
+        param->setIconLabel("Images/soloOff.png", false);
         param->setCheckable(true);
         param->setDefaultValue(true);
         _imp->soloKnob = param;

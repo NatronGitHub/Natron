@@ -683,23 +683,21 @@ public:
     }
 
     /** @brief Removes the node connected to the input inputNumber of the
-     * node. Returns the inputNumber if it could remove it, otherwise returns
-       -1.
+     * node. Returns true upon sucess, false otherwise.
      */
-    virtual int disconnectInput(int inputNumber);
+    bool disconnectInput(int inputNumber);
 
     /** @brief Removes the node input of the
-     * node inputs. Returns the inputNumber if it could remove it, otherwise returns
-       -1.*/
-    virtual int disconnectInput(const NodePtr& input);
+     * node inputs. Returns true upon success, false otherwise.
+     */
+    bool disconnectInput(const NodePtr& input);
 
     /**
-     * @brief Same as:
-       disconnectInput(inputNumber);
-       connectInput(input,inputNumber);
-     * Except that it is atomic
+     * @brief Atomically swaps the given inputNumber to the given input node.
+     * If the input is NULL, the input is disconnected. This is the same as calling
+     * atomically disconnectInput() then connectInput().
      **/
-    bool replaceInput(const NodePtr& input, int inputNumber);
+    bool swapInput(const NodePtr& input, int inputNumber);
 
     void setNodeGuiPointer(const NodeGuiIPtr& gui);
 
@@ -716,8 +714,6 @@ public:
 private:
 
     bool replaceInputInternal(const NodePtr& input, int inputNumber);
-
-    int disconnectInputInternal(const NodePtr& input);
 
 
     bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;
@@ -1036,7 +1032,9 @@ public:
 
     bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 
-    bool isNodeDisabled() const;
+    bool getDisabledKnobValue() const;
+
+    bool isNodeDisabledForFrame(double time, ViewIdx view) const;
 
     void setNodeDisabled(bool disabled);
 
@@ -1256,7 +1254,7 @@ public:
     void setCurrentCursor(CursorEnum defaultCursor);
     bool setCurrentCursor(const QString& customCursorFilePath);
 
-    bool shouldDrawOverlay() const;
+    bool shouldDrawOverlay(double time, ViewIdx view) const;
 
 
     void drawHostOverlay(double time,

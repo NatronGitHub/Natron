@@ -639,7 +639,7 @@ struct RotoPaintPrivate
 
     void createBaseLayer();
 
-
+    void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode);
     
 
 };

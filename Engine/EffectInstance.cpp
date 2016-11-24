@@ -449,7 +449,8 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
 
     // Also append the disabled state of the node. This is useful because the knob disabled itself is not enough: if the node is not disabled
     // but inside a disabled group, it is considered disabled but yet has the same hash than when not disabled.
-    hash->append(node->isNodeDisabled());
+    bool disabled = node->isNodeDisabledForFrame(time, view);
+    hash->append(disabled);
 
 }
 
@@ -2040,7 +2041,7 @@ EffectInstance::tryConcatenateTransforms(double time,
 
             // recursion upstream
             bool inputCanTransform = false;
-            bool inputIsDisabled  =  input->getNode()->isNodeDisabled();
+            bool inputIsDisabled  =  input->getNode()->isNodeDisabledForFrame(time, view);
 
             if (!inputIsDisabled) {
                 inputCanTransform = input->getNode()->getCurrentCanTransform();
@@ -2051,7 +2052,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 //input is either disabled, or identity or can concatenate a transform too
                 if (inputIsDisabled) {
                     int prefInput;
-                    EffectInstancePtr nearestNonDisabled = input->getNearestNonDisabled();
+                    EffectInstancePtr nearestNonDisabled = input->getNearestNonDisabled(time, view);
                     prefInput = input->getNode()->getPreferredInput();
                     if (prefInput == -1) {
                         break;
@@ -2083,7 +2084,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 }
 
                 if (input) {
-                    inputIsDisabled = input->getNode()->isNodeDisabled();
+                    inputIsDisabled = input->getNode()->isNodeDisabledForFrame(time, view);
                     if (!inputIsDisabled) {
                         inputCanTransform = input->getNode()->getCurrentCanTransform();
                     }
@@ -4019,36 +4020,31 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 {
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
-    if (useIdentityCache && hash != 0) {
-        double timeF = 0.;
-        bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
-        if (foundInCache) {
-            *inputTime = timeF;
-
-            return *inputNb >= 0 || *inputNb == -2;
-        }
-    }
-
-
-    ///EDIT: We now allow isIdentity to be called recursively.
-    RECURSIVE_ACTION();
-
 
     bool ret = false;
-    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
-    if ( ( rotoItem && !rotoItem->isActivated(time, view) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
+    if ( getNode()->isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
-        *inputTime = time;
-        *inputView = view;
-    } else if ( appPTR->isBackground() && (dynamic_cast<DiskCacheNode*>(this) != NULL) ) {
-        ret = true;
-        *inputNb = 0;
         *inputTime = time;
         *inputView = view;
     } else {
         /// Don't call isIdentity if plugin is sequential only.
         if (getSequentialPreference() != eSequentialPreferenceOnlySequential) {
+
+
+            if (useIdentityCache && hash != 0) {
+                double timeF = 0.;
+                bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
+                if (foundInCache) {
+                    *inputTime = timeF;
+
+                    return *inputNb >= 0 || *inputNb == -2;
+                }
+            }
+            
+
+            ///EDIT: We now allow isIdentity to be called recursively.
+            RECURSIVE_ACTION();
             try {
                 *inputView = view;
                 ret = isIdentity(time, scale, renderWindow, view, inputTime, inputView, inputNb);
@@ -4129,7 +4125,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
         }
 
-        if ( getNode()->isNodeDisabled() ) {
+        if ( getNode()->isNodeDisabledForFrame(time, view) ) {
             NodePtr preferredInput = getNode()->getPreferredInputNode();
             if (!preferredInput) {
                 return eStatusFailed;
@@ -5112,7 +5108,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && toKnobButton(k) && node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && toKnobButton(k) && node->getDisabledKnobValue() ) {
         return false;
     }
 
@@ -5142,7 +5138,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     if ( kh && ( QThread::currentThread() == qApp->thread() ) &&
          originatedFromMainThread && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
-        if ( hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k) ) {
+        if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             incrementRedrawNeededCounter();
@@ -5197,11 +5193,11 @@ EffectInstance::clearLastRenderedImage()
  * from last to first.
  **/
 EffectInstancePtr
-EffectInstance::getNearestNonDisabled() const
+EffectInstance::getNearestNonDisabled(double time, ViewIdx view) const
 {
     NodePtr node = getNode();
 
-    if ( !node->isNodeDisabled() ) {
+    if ( !node->isNodeDisabledForFrame(time, view) ) {
         return node->getEffectInstance();
     } else {
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
@@ -5242,7 +5238,7 @@ EffectInstance::getNearestNonDisabled() const
 
         ///If we found A or B so far, cycle through them
         for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled(time ,view);
             if (inputRet) {
                 return inputRet;
             }
@@ -5265,7 +5261,7 @@ EffectInstance::getNearestNonDisabled() const
 
         ///Cycle through all non optional inputs first
         for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled(time, view);
             if (inputRet) {
                 return inputRet;
             }
@@ -5273,7 +5269,7 @@ EffectInstance::getNearestNonDisabled() const
 
         ///Cycle through optional inputs...
         for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled(time, view);
             if (inputRet) {
                 return inputRet;
             }
@@ -5283,106 +5279,6 @@ EffectInstance::getNearestNonDisabled() const
         return node->getEffectInstance();
     }
 } // EffectInstance::getNearestNonDisabled
-
-EffectInstancePtr
-EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
-{
-    assert( getNode()->isNodeDisabled() );
-
-    ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstancePtr> nonOptionalInputs;
-    std::list<EffectInstancePtr> optionalInputs;
-    int localPreferredInput = -1;
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-    ///Find an input named A
-    std::string inputNameToFind, otherName;
-    if (useInputA) {
-        inputNameToFind = "A";
-        otherName = "B";
-    } else {
-        inputNameToFind = "B";
-        otherName = "A";
-    }
-    int foundOther = -1;
-    int maxinputs = getMaxInputCount();
-    for (int i = 0; i < maxinputs; ++i) {
-        std::string inputLabel = getInputLabel(i);
-        if (inputLabel == inputNameToFind) {
-            EffectInstancePtr inp = getInput(i);
-            if (inp) {
-                nonOptionalInputs.push_front(inp);
-                localPreferredInput = i;
-                break;
-            }
-        } else if (inputLabel == otherName) {
-            foundOther = i;
-        }
-    }
-
-    if ( (foundOther != -1) && nonOptionalInputs.empty() ) {
-        EffectInstancePtr inp = getInput(foundOther);
-        if (inp) {
-            nonOptionalInputs.push_front(inp);
-            localPreferredInput = foundOther;
-        }
-    }
-
-    ///If we found A or B so far, cycle through them
-    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-        if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
-            if (inputRet) {
-                return inputRet;
-            }
-        }
-    }
-
-
-    ///We cycle in reverse by default. It should be a setting of the application.
-    ///In this case it will return input B instead of input A of a merge for example.
-    for (int i = 0; i < maxinputs; ++i) {
-        EffectInstancePtr inp = getInput(i);
-        bool optional = isInputOptional(i);
-        if (inp) {
-            if (optional) {
-                if (localPreferredInput == -1) {
-                    localPreferredInput = i;
-                }
-                optionalInputs.push_back(inp);
-            } else {
-                if (localPreferredInput == -1) {
-                    localPreferredInput = i;
-                }
-                nonOptionalInputs.push_back(inp);
-            }
-        }
-    }
-
-
-    ///Cycle through all non optional inputs first
-    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-        if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
-            if (inputRet) {
-                return inputRet;
-            }
-        }
-    }
-
-    ///Cycle through optional inputs...
-    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-        if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
-            if (inputRet) {
-                return inputRet;
-            }
-        }
-    }
-
-    *inputNb = localPreferredInput;
-
-    return shared_from_this();
-} // EffectInstance::getNearestNonDisabledPrevious
 
 EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)

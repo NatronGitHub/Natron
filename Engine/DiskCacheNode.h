@@ -106,6 +106,14 @@ public:
 
 private:
 
+    virtual bool isIdentity(double time,
+                            const RenderScale & scale,
+                            const RectI & renderWindow,
+                            ViewIdx view,
+                            double* inputTime,
+                            ViewIdx* inputView,
+                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,

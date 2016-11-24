@@ -226,7 +226,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
         return;
     }
 
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+    assert(rotoPaintEffect);
+    rotoPaintEffect->refreshSourceKnobs(thisShared);
+    
     AppInstancePtr app = rotoPaintEffect->getApp();
 
     QString fixedNamePrefix = QString::fromUtf8( rotoPaintEffect->getNode()->getScriptName_mt_safe().c_str() );
@@ -235,7 +239,6 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     QString pluginId;
     RotoStrokeType type = getBrushType();
-    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     assert(thisShared);
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(thisShared);
 
@@ -407,8 +410,25 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
 
         // Link the compositing operator to this knob
-        KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        mergeOperatorKnob->slaveTo(_imp->compOperator.lock());
+        KnobChoicePtr mergeOp = toKnobChoice(_imp->mergeNode->getKnobByName(kMergeOFXParamOperation));
+        assert(mergeOp);
+        KnobChoicePtr compOp = getOperatorKnob();
+
+        mergeOp->slaveTo(compOp);
+
+        MergingFunctionEnum op;
+        if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
+            op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
+        } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeComp) {
+            op = eMergeOver;
+        } else {
+            op = eMergeCopy;
+        }
+
+        compOp->setDefaultValueFromLabel(Merge::getOperatorString(op));
+
+        // Make sure it is not serialized
+        compOp->setCurrentDefaultValueAsInitialValue();
 
         KnobIPtr thisInvertKnob = _imp->invertKnob.lock();
         if (thisInvertKnob) {
@@ -459,27 +479,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         setHashParent(_imp->effectNode->getEffectInstance());
     }
 
-    KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    assert(mergeOperatorKnob);
-    KnobChoicePtr mergeOp = toKnobChoice(mergeOperatorKnob);
-    assert(mergeOp);
 
-    KnobChoicePtr compOp = getOperatorKnob();
-    MergingFunctionEnum op;
-    if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
-        op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
-    } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeComp) {
-        op = eMergeOver;
-    } else {
-        op = eMergeCopy;
-    }
-    if (mergeOp) {
-        mergeOp->setValueFromLabel(Merge::getOperatorString(op));
-    }
-    compOp->setDefaultValueFromLabel(Merge::getOperatorString(op));
-
-    // Make sure it is not serialized
-    compOp->setCurrentDefaultValueAsInitialValue();
 
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {
@@ -730,7 +730,7 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
         if (mergeAInputChoice_i == 0) {
             mergeInputAUpstreamNode = upstreamNode;
         } else {
-            std::string inputAName = mergeAKnob->getEntry(mergeAInputChoice_i);
+            std::string inputAName = mergeAKnob->getActiveEntryText();
             // For reveal & clone, the user can select a RotoPaint node's input.
             // Find an input of the RotoPaint node with the given input label
             int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -753,15 +753,13 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
 
         if (mergeInputAUpstreamNode) {
             mergeInputA = _imp->timeOffsetNode;
-            if (_imp->timeOffsetNode->getInput(0) != mergeInputAUpstreamNode) {
-                _imp->timeOffsetNode->replaceInput(mergeInputAUpstreamNode, 0);
-            }
+            _imp->timeOffsetNode->swapInput(mergeInputAUpstreamNode, 0);
+
         } else {
             // No node upstream, make the merge be a pass-through of input B (upstreamNode)
             mergeInputA = upstreamNode;
-            if ( _imp->timeOffsetNode->getInput(0) ) {
-                _imp->timeOffsetNode->disconnectInput(0);
-            }
+            _imp->timeOffsetNode->disconnectInput(0);
+
         }
     } else if ( _imp->effectNode && ( type != eRotoStrokeTypeEraser) ) {
         // Base case that handles the following types:
@@ -795,9 +793,8 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
             } else {
                 effectInput = _imp->frameHoldNode;
             }
-            if (_imp->effectNode->getInput(0) != effectInput) {
-                _imp->effectNode->replaceInput(effectInput, 0);
-            }
+            _imp->effectNode->swapInput(effectInput, 0);
+
         }
 
         mergeInputA = _imp->effectNode;
@@ -813,7 +810,7 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
             if (reveal_i == 0) {
                 mergeAUpstreamInput = upstreamNode;
             } else {
-                std::string inputAName = mergeAKnob->getEntry(reveal_i);
+                std::string inputAName = mergeAKnob->getActiveEntryText();
                 // For reveal & clone, the user can select a RotoPaint node's input.
                 // Find an input of the RotoPaint node with the given input label
                 int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -833,15 +830,8 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
             }
         }
 
-        if (mergeAUpstreamInput) {
-            if (effectInput->getInput(0) != mergeAUpstreamInput) {
-                effectInput->replaceInput(mergeAUpstreamInput, 0);
-            }
-        } else {
-            if ( effectInput->getInput(0) ) {
-                effectInput->disconnectInput(0);
-            }
-        }
+        effectInput->swapInput(mergeAUpstreamInput, 0);
+
     } else {
         assert(type == eRotoStrokeTypeEraser ||
                type == eRotoStrokeTypeDodge ||
@@ -890,16 +880,8 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
         // For the merge node,
         // A input index is 1
         // B input index is 0
-        if (_imp->mergeNode->getInput(1) != mergeInputA) {
-            _imp->mergeNode->replaceInput(mergeInputA, 1); // A
-        }
-
-        if (_imp->mergeNode->getInput(0) != mergeInputB) {
-            _imp->mergeNode->disconnectInput(0);
-            if (mergeInputB) {
-                _imp->mergeNode->connectInputBase(mergeInputB, 0); // B
-            }
-        }
+        _imp->mergeNode->swapInput(mergeInputA, 1); // A
+        _imp->mergeNode->swapInput(mergeInputB, 0); // B
 
     //}
     /*else {
@@ -911,17 +893,16 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
 
     // Connect to a mask if needed
     if (_imp->maskNode) {
-        if ( _imp->mergeNode->getInput(2) != _imp->maskNode) {
-            //Connect the merge node mask to the mask node
-            _imp->mergeNode->replaceInput(_imp->maskNode, 2);
-        }
+        //Connect the merge node mask to the mask node
+        _imp->mergeNode->swapInput(_imp->maskNode, 2);
+
     } else if (type == eRotoStrokeTypeComp) {
         KnobChoicePtr knob = _imp->mergeMaskInputChoice.lock();
         int maskInput_i = knob->getValue();
         NodePtr maskInputNode;
         if (maskInput_i > 0) {
             std::string maskInputName;
-            maskInputName = knob->getEntry(maskInput_i);
+            maskInputName = knob->getActiveEntryText();
 
             // Find an input of the RotoPaint node with the given input label
             int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -939,16 +920,9 @@ RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
                 }
             }
         }
-        if (maskInputNode) {
-            if ( _imp->mergeNode->getInput(2) != maskInputNode) {
-                //Connect the merge node mask to the mask node
-                _imp->mergeNode->replaceInput(maskInputNode, 2);
-            }
-        } else {
-            if ( _imp->mergeNode->getInput(2) ) {
-                _imp->mergeNode->disconnectInput(2);
-            }
-        }
+        //Connect the merge node mask to the mask node
+        _imp->mergeNode->swapInput(maskInputNode, 2);
+
     }
     
 } // RotoDrawableItem::refreshNodesConnections
@@ -1314,6 +1288,33 @@ RotoDrawableItem::onItemRemovedFromModel()
 {
     // Disconnect this item nodes from the other nodes in the rotopaint tree
     disconnectNodes();
+
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+    RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
+    isRotopaint->refreshRotoPaintTree();
+}
+
+void
+RotoDrawableItem::onItemInsertedInModel()
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+    RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
+    isRotopaint->refreshRotoPaintTree();
+
 }
 
 RectD
@@ -1460,7 +1461,13 @@ RotoDrawableItem::initializeKnobs()
             }
         }
     }
-    _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kHostMixingKnobName);
+
+    if (type == eRotoStrokeTypeComp) {
+        _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kLayeredCompMixParam);
+    } else {
+        _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kHostMixingKnobName);
+    }
+
 
     createNodes();
 

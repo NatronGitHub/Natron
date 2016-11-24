@@ -656,7 +656,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
     }
 
 
-    if (output->disconnectInput( input ) < 0) {
+    if (!output->disconnectInput( input )) {
         return false;
     }
 

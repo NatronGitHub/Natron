@@ -692,13 +692,7 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstancePtr getNearestNonDisabled() const;
-
-    /**
-     * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
-     * @param inputNb[out] The inputNb of the node that is non disabled.
-     **/
-    EffectInstancePtr getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstancePtr getNearestNonDisabled(double time, ViewIdx view) const;
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.

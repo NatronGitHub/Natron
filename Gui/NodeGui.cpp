@@ -2282,7 +2282,7 @@ NodeGui::onAllKnobsSlaved(bool b)
             _slaveMasterLink->setArrowHeadColor( QColor(243, 137, 20) );
             _slaveMasterLink->setWidth(3);
         }
-        if ( !node->isNodeDisabled() ) {
+        if ( !node->getDisabledKnobValue() ) {
             if ( !isSelected() ) {
                 applyBrush(_clonedColor);
             }
@@ -2292,7 +2292,7 @@ NodeGui::onAllKnobsSlaved(bool b)
             _slaveMasterLink.reset();
         }
         _masterNodeGui.reset();
-        if ( !node->isNodeDisabled() ) {
+        if ( !node->getDisabledKnobValue() ) {
             if ( !isSelected() ) {
                 applyBrush(getCurrentColor());
             }
@@ -3615,7 +3615,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     NodePtr ptInput;
     NodePtr node = getNode();
-    bool disabled = node->isNodeDisabled();
+    bool disabled = node->getDisabledKnobValue();
     int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
     int curFrame = node->getApp()->getTimeLine()->currentFrame();

@@ -348,6 +348,10 @@ enum RotoPaintItemLifeTimeTypeEnum
 #define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
 "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
+#define kLayeredCompMixParam "mix"
+#define kLayeredCompMixParamLabel "Mix"
+#define kLayeredCompMixParamHint "Mix between the source image at 0 and the full effect at 1"
+
 #define kRotoAddGroupParam "addGroupButton"
 #define kRotoAddGroupParamLabel "New Group"
 #define kRotoAddGroupParamHint "Adds a new group into which items can be contained"
@@ -480,6 +484,10 @@ public:
     KnobChoicePtr getMergeAInputChoiceKnob() const;
 
     KnobChoicePtr getMotionBlurTypeKnob() const;
+
+    void refreshSourceKnobs(const RotoDrawableItemPtr& item);
+
+    void getMergeChoices(std::vector<std::string>* aInput, std::vector<std::string>* maskInput) const;
 
 public Q_SLOTS:
 

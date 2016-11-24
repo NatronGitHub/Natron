@@ -231,6 +231,8 @@ private:
 
     virtual void onItemRemovedFromModel() OVERRIDE FINAL;
 
+    virtual void onItemInsertedInModel() OVERRIDE FINAL;
+
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 

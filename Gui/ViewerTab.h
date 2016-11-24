@@ -236,7 +236,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(NodesList& nodes) const;
+    void getNodesEntitledForOverlays(double time, ViewIdx view,NodesList& nodes) const;
 
     void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
 

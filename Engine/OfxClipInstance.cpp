@@ -566,50 +566,32 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                EffectInstancePtr associatedNode,
                                                OfxRectD* ret) const
 {
-    RotoDrawableItemPtr attachedStroke;
-    EffectInstancePtr effect = getEffectHolder();
-
-    if (effect) {
-        assert( effect->getNode() );
-        attachedStroke = effect->getNode()->getAttachedRotoItem();
-    }
-
-    bool inputIsMask = _imp->mask;
     RectD rod;
-    if ( attachedStroke && inputIsMask ) {
-        effect->getNode()->getPaintStrokeRoD(time, view, &rod);
-        ret->x1 = rod.x1;
-        ret->x2 = rod.x2;
-        ret->y1 = rod.y1;
-        ret->y2 = rod.y2;
-
-        return;
-    }
-    if (associatedNode) {
-
-        U64 hash;
-        bool gotHash = associatedNode->getRenderHash(time, view, &hash);
-        (void)gotHash;
-        RectD rod;
-        RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
-        StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod);
-        if (st == eStatusFailed) {
-            ret->x1 = 0.;
-            ret->x2 = 0.;
-            ret->y1 = 0.;
-            ret->y2 = 0.;
-        } else {
-            ret->x1 = rod.left();
-            ret->x2 = rod.right();
-            ret->y1 = rod.bottom();
-            ret->y2 = rod.top();
-        }
-    } else {
+    if (!associatedNode) {
         ret->x1 = 0.;
         ret->x2 = 0.;
         ret->y1 = 0.;
         ret->y2 = 0.;
+        return;
     }
+
+    U64 hash;
+    bool gotHash = associatedNode->getRenderHash(time, view, &hash);
+    (void)gotHash;
+    RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
+    StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod);
+    if (st == eStatusFailed) {
+        ret->x1 = 0.;
+        ret->x2 = 0.;
+        ret->y1 = 0.;
+        ret->y2 = 0.;
+    } else {
+        ret->x1 = rod.left();
+        ret->x2 = rod.right();
+        ret->y1 = rod.bottom();
+        ret->y2 = rod.top();
+    }
+
 } // OfxClipInstance::getRegionOfDefinitionInternal
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -623,7 +605,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
-        associatedNode = associatedNode->getNearestNonDisabled();
+        associatedNode = associatedNode->getNearestNonDisabled(time, ViewIdx(view));
     }
     ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
     ///the same RoD as the input if it is identity.
@@ -656,7 +638,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
-        associatedNode = associatedNode->getNearestNonDisabled();
+        associatedNode = associatedNode->getNearestNonDisabled(time, view);
     }
     ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
     ///the same RoD as the input if it is identity.
