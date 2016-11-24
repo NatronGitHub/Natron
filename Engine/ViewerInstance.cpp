@@ -1178,7 +1178,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->isRenderUserInteraction = !isSequentialRender;
         tlsArgs->isSequential = isSequentialRender;
         tlsArgs->abortInfo = inArgs.params->abortInfo;
-        tlsArgs->treeRoot = getNode();
+        tlsArgs->treeRoot = inArgs.activeInputToRender->getNode();
         tlsArgs->textureIndex = inArgs.params->textureIndex;
         tlsArgs->timeline = getTimeline();
         tlsArgs->activeRotoPaintNode = rotoPaintNode;

@@ -116,7 +116,19 @@ struct RenderValuesCachePrivate
     std::map<KnobParametricPtr, PerDimensionParametricCurve> parametricKnobCurves;
 
     // Input nodes at the time of render
-    std::vector<NodePtr> inputs;
+    struct CachedNodeInput
+    {
+        bool inputSet;
+        NodePtr input;
+
+        CachedNodeInput()
+        : inputSet(false)
+        , input()
+        {
+
+        }
+    };
+    std::vector<CachedNodeInput> inputs;
 
     // Node metadatas at the time of render
     boost::shared_ptr<NodeMetadata> metadatas;
@@ -165,13 +177,17 @@ RenderValuesCache::getCachedMetadatas() const
     return _imp->metadatas;
 }
 
-NodePtr
-RenderValuesCache::getCachedInput(int inputNb) const
+bool
+RenderValuesCache::getCachedInput(int inputNb, NodePtr* node) const
 {
     if (inputNb < 0 || inputNb >= (int)_imp->inputs.size()) {
         return NodePtr();
     }
-    return _imp->inputs[inputNb];
+    if (!_imp->inputs[inputNb].inputSet) {
+        return false;
+    }
+    *node = _imp->inputs[inputNb].input;
+    return true;
 }
 
 void
@@ -180,7 +196,8 @@ RenderValuesCache::setCachedInput(int inputNb, const NodePtr& node)
     if (inputNb >= (int)_imp->inputs.size()) {
         _imp->inputs.resize(inputNb + 1);
     }
-    _imp->inputs[inputNb] = node;
+    _imp->inputs[inputNb].input = node;
+    _imp->inputs[inputNb].inputSet = true;
 }
 
 template <>

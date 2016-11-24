@@ -224,7 +224,23 @@ RotoPaint::getRotoPaintNodeType() const
     return _imp->nodeType;
 }
 
+bool
+RotoPaint::isHostMaskingEnabled() const
+{
+    return _imp->nodeType != eRotoPaintTypeComp;
+}
 
+bool
+RotoPaint::isHostMixingEnabled() const
+{
+    return _imp->nodeType != eRotoPaintTypeComp;
+}
+
+bool
+RotoPaint::getCreateChannelSelectorKnob() const
+{
+    return false;
+}
 
 bool
 RotoPaint::isHostChannelSelectorSupported(bool* defaultR,
@@ -753,6 +769,9 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
         param->setHintToolTip( tr(kLayeredCompMixParamHint) );
         param->setRange(0., 1.);
         param->setDefaultValue(1.);
+        _imp->knobsTable->addPerItemKnobMaster(param);
+        page->addKnob(param);
+        _imp->mixKnob = param;
     }
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
@@ -2878,9 +2897,15 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
         }
 
 
-        // If the comp item has a mask on the merge node, forget concatenating
-        if (type == eRotoStrokeTypeComp && (*it)->getMergeMaskChoiceKnob()->getValue() > 0) {
-            return false;
+        // If the comp item has a mask on the merge node or a mix != 1, forget concatenating
+        if (type == eRotoStrokeTypeComp) {
+            if ((*it)->getMergeMaskChoiceKnob()->getValue() > 0) {
+                return false;
+            }
+            if ((*it)->getMixKnob()->getValue() != 1.) {
+                return false;
+            }
+
         }
 
         
@@ -2999,9 +3024,13 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         }
 
         // Link mix
-        KnobIPtr rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
-        KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
-        mergeMix->slaveTo(rotoPaintMix);
+        KnobIPtr rotoPaintMix;
+        if (nodeType != RotoPaint::eRotoPaintTypeComp) {
+            rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
+            KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
+            mergeMix->slaveTo(rotoPaintMix);
+        }
+
 
     }
 
@@ -3082,7 +3111,7 @@ RotoPaint::refreshRotoPaintTree()
 
     // Refresh each item separately
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        (*it)->refreshNodesConnections(canConcatenate);
+        (*it)->refreshNodesConnections();
 
         if (canConcatenate) {
 
@@ -3392,6 +3421,12 @@ KnobChoicePtr
 RotoPaint::getMotionBlurTypeKnob() const
 {
     return _imp->motionBlurTypeKnob.lock();
+}
+
+KnobDoublePtr
+RotoPaint::getMixKnob() const
+{
+    return _imp->mixKnob.lock();
 }
 
 void

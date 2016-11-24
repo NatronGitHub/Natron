@@ -599,6 +599,7 @@ struct RotoPaintPrivate
     KnobDoubleWPtr extraMatrixKnob;
     KnobDoubleWPtr centerKnob;
 
+    KnobDoubleWPtr mixKnob;
     KnobButtonWPtr addGroupButtonKnob, addLayerButtonKnob, removeItemButtonKnob;
     
     RotoPaintPrivate(RotoPaint* publicInterface,

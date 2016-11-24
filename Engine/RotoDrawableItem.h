@@ -125,7 +125,7 @@ public:
      * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
      * to calling this function.
      **/
-    void refreshNodesConnections(bool isTreeConcatenated);
+    void refreshNodesConnections();
 
     /**
      * @brief Deactivates all nodes used by this item
@@ -175,6 +175,7 @@ public:
     KnobChoicePtr getTimeOffsetModeKnob() const;
     KnobChoicePtr getMergeInputAChoiceKnob() const;
     KnobChoicePtr getMergeMaskChoiceKnob() const;
+    KnobDoublePtr getMixKnob() const;
 
     KnobDoublePtr getBrushSizeKnob() const;
     KnobDoublePtr getBrushHardnessKnob() const;

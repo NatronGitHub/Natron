@@ -94,6 +94,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RenderValuesCache.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
@@ -4919,6 +4920,25 @@ Node::getInputInternal(bool useGroupRedirections,
     if (!_imp->inputsInitialized) {
         qDebug() << "Node::getInput(): inputs not initialized";
     }
+
+    // If we are on a render thread check if the value is cached already or cache it
+    RenderValuesCachePtr renderCache;
+    {
+        EffectInstancePtr effect = getEffectInstance();
+        if (!effect) {
+            return NodePtr();
+        }
+        RenderValuesCachePtr renderCache = effect->getRenderValuesCacheTLS();
+        if (renderCache) {
+            NodePtr input;
+            bool wasCached;
+            wasCached = renderCache->getCachedInput(index, &input);
+            if (wasCached) {
+                return input;
+            }
+        }
+    }
+
     QMutexLocker l(&_imp->inputsMutex);
     if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
         return NodePtr();
@@ -4928,7 +4948,9 @@ Node::getInputInternal(bool useGroupRedirections,
     if (ret && useGroupRedirections) {
         ret = applyNodeRedirectionsUpstream(ret);
     }
-
+    if (renderCache) {
+        renderCache->setCachedInput(index, ret);
+    }
     return ret;
 }
 

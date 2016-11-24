@@ -57,7 +57,7 @@ public:
 
     boost::shared_ptr<NodeMetadata> getCachedMetadatas() const;
 
-    NodePtr getCachedInput(int inputNb) const;
+    bool getCachedInput(int inputNb, NodePtr* node) const;
 
     void setCachedInput(int inputNb, const NodePtr& node);
 

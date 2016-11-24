@@ -183,7 +183,6 @@ RotoItem::initializeKnobs()
         param->setIconLabel("Images/soloOn.png", true);
         param->setIconLabel("Images/soloOff.png", false);
         param->setCheckable(true);
-        param->setDefaultValue(true);
         _imp->soloKnob = param;
     }
 

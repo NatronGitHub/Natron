@@ -424,11 +424,11 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
-    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
+    virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual void onKnobsLoaded() OVERRIDE FINAL;
@@ -484,6 +484,8 @@ public:
     KnobChoicePtr getMergeAInputChoiceKnob() const;
 
     KnobChoicePtr getMotionBlurTypeKnob() const;
+
+    KnobDoublePtr getMixKnob() const;
 
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 

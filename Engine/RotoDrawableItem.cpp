@@ -438,7 +438,12 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
 
         // Link mix
-        KnobIPtr rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
+        KnobIPtr rotoPaintMix;
+        if (rotoPaintEffect->getRotoPaintNodeType() == RotoPaint::eRotoPaintTypeComp) {
+            rotoPaintMix = _imp->mixKnob.lock();
+        } else {
+            rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
+        }
         KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
         mergeMix->slaveTo(rotoPaintMix);
     }
@@ -510,7 +515,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
 
     if (connectNodes) {
-        refreshNodesConnections(false);
+        refreshNodesConnections();
     }
 } // RotoDrawableItem::createNodes
 
@@ -598,15 +603,10 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         rotoPaintEffect->onBreakMultiStrokeTriggered();
     }
 
-    if (knob == _imp->compOperator.lock()) {
-        ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
-        if (reason == eValueChangedReasonUserEdited) {
-            rotoPaintEffect->refreshRotoPaintTree();
-        }
-    } else if (knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock()) {
-        refreshNodesConnections(rotoPaintEffect->isRotoPaintTreeConcatenatable());
+    if (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock()) {
+        rotoPaintEffect->refreshRotoPaintTree();
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
-        refreshNodesConnections(rotoPaintEffect->isRotoPaintTreeConcatenatable());
+        refreshNodesConnections();
     } else {
         return RotoItem::onKnobValueChanged(knob, reason, time, view, originatedFromMainThread);
     }
@@ -684,7 +684,7 @@ RotoDrawableItem::clearPaintBuffers()
 }
 
 void
-RotoDrawableItem::refreshNodesConnections(bool /*isTreeConcatenated*/)
+RotoDrawableItem::refreshNodesConnections()
 {
     KnobItemsTablePtr model = getModel();
     if (!model) {
@@ -1120,6 +1120,11 @@ RotoDrawableItem::getMergeMaskChoiceKnob() const
     return _imp->mergeMaskInputChoice.lock();
 }
 
+KnobDoublePtr
+RotoDrawableItem::getMixKnob() const
+{
+    return _imp->mixKnob.lock();
+}
 
 KnobDoublePtr
 RotoDrawableItem::getCenterKnob() const
@@ -1473,7 +1478,7 @@ RotoDrawableItem::initializeKnobs()
 
     if (type == eRotoStrokeTypeComp) {
         addColumn(kRotoCompOperatorParam, DimIdx(0));
-        addColumn(kHostMixingKnobName, DimIdx(0));
+        addColumn(kLayeredCompMixParam, DimIdx(0));
         addColumn(kRotoDrawableItemLifeTimeParam, DimIdx(0));
         addColumn(kRotoBrushTimeOffsetParam, DimIdx(0));
         addColumn(kRotoInvertedParam, DimIdx(0));
