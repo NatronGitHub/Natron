@@ -853,7 +853,6 @@ public:
             }
         }
 
-
         _imp->createNodeStack.recursionStack.push_back(_item);
 
     }

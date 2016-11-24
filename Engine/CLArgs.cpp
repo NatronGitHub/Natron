@@ -57,6 +57,7 @@ public:
     std::list<CLArgs::ReaderArg> readers;
     std::list<std::string> pythonCommands;
     bool isBackground;
+    bool useDefaultSettings;
     QString ipcPipe;
     int error;
     bool isInterpreterMode;
@@ -81,6 +82,7 @@ public:
         , readers()
         , pythonCommands()
         , isBackground(false)
+        , useDefaultSettings(false)
         , ipcPipe()
         , error(0)
         , isInterpreterMode(false)
@@ -272,6 +274,9 @@ CLArgs::printUsage(const std::string& programName)
         "    script: it must be started explicitely.\n"
         "    %1Renderer and %1 do the same thing in this mode, only the\n"
         "    init.py script is loaded.\n"
+        "  [ --no-settings ]\n"
+        "    When passed to the command-line, the %1 settings will not be restored\n"
+        "    from the preferences file on disk  sothat Natron uses the default ones.\n"
         "\n"
         /* Text must hold in 80 columns ************************************************/
         "Options for the execution of %1 projects:\n"
@@ -409,6 +414,12 @@ const std::list<std::pair<int, std::pair<int, int> > >&
 CLArgs::getFrameRanges() const
 {
     return _imp->frameRanges;
+}
+
+bool
+CLArgs::isLoadedUsingDefaultSettings() const
+{
+    return _imp->useDefaultSettings;
 }
 
 bool
@@ -709,6 +720,14 @@ CLArgsPrivate::parse()
             error = 1;
 
             return;
+        }
+    }
+
+    {
+        QStringList::iterator it = hasToken( QString::fromUtf8("no-settings"), QString() );
+        if ( it != args.end() ) {
+            useDefaultSettings = true;
+            args.erase(it);
         }
     }
 

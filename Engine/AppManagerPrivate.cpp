@@ -303,7 +303,7 @@ saveCache(const boost::shared_ptr<Cache<T> >& cache)
     typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
     cache->toSerialization(&toc);
     try {
-        SERIALIZATION_NAMESPACE::write(ofile, toc, NATRON_CACHE_FILE_HEADER);
+        SERIALIZATION_NAMESPACE::write(ofile, toc, std::string());
     } catch (const std::exception & e) {
         qDebug() << "Failed to serialize the cache table of contents:" << e.what();
     }
@@ -332,9 +332,8 @@ restoreCache(AppManagerPrivate* p,
         }
         typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
         try {
-            if (!SERIALIZATION_NAMESPACE::read(NATRON_CACHE_FILE_HEADER, ifile, &toc)) {
-                qDebug() << "Cache file does not seem to be encoded properly";
-            }
+            SERIALIZATION_NAMESPACE::read(std::string(), ifile, &toc);
+
             //Only load caches with same version, otherwise wipe it!
             if ( toc.cacheVersion != (int)cache->cacheVersion() ) {
                 p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
