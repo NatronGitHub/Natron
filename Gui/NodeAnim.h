@@ -91,7 +91,7 @@ public Q_SLOTS:
 
     void onFrameRangeKnobChanged();
 
-    void onNodeLabelChanged(const QString &name);
+    void onNodeLabelChanged(const QString &oldName, const QString& newName);
 
     void onTableItemRemoved(const KnobTableItemPtr& item, TableChangeReasonEnum);
     

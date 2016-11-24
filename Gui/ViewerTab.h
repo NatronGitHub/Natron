@@ -261,7 +261,7 @@ public Q_SLOTS:
 
     void refreshViewerRenderingState();
 
-    void onInternalNodeLabelChanged(const QString& name);
+    void onInternalNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
     
     void onInternalNodeScriptNameChanged(const QString& name);
 

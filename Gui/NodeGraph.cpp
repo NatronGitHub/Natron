@@ -94,7 +94,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
-        QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
+        QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString, QString)), this, SLOT(onGroupNameChanged(QString, QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
     }
 

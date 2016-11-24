@@ -959,11 +959,11 @@ ReadNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 void
-ReadNode::onInputChanged(int inputNo)
+ReadNode::onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->onInputChanged(inputNo);
+        p->getEffectInstance()->onInputChanged(inputNo, oldNode, newNode);
     }
 }
 

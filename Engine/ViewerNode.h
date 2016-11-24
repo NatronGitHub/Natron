@@ -297,7 +297,7 @@ private:
 
     void clearGroupWithoutViewerProcess();
 
-    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
 
     virtual bool hasOverlay() const OVERRIDE FINAL
     {

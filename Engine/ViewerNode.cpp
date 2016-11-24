@@ -864,7 +864,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
 } // refreshInputChoices
 
 void
-ViewerNode::onInputChanged(int /*inputNb*/)
+ViewerNode::onInputChanged(int /*inputNb*/, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
 {
     _imp->refreshInputChoices(true);
     refreshInputFromChoiceMenu(0);

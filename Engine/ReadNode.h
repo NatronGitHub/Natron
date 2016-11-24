@@ -102,7 +102,7 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
 

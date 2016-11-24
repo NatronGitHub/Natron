@@ -1408,7 +1408,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx);
+        output->onInputChanged(idx, thisNode, thisNode);
     }
 } // NodeGroup::notifyNodeDeactivated
 
@@ -1442,7 +1442,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx);
+        output->onInputChanged(idx, thisNode, thisNode);
     }
 }
 

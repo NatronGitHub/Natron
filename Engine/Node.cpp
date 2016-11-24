@@ -2837,19 +2837,21 @@ Node::setLabel(const std::string& label)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-
+    QString curLabel;
+    QString newLabel = QString::fromUtf8(label.c_str());
     {
         QMutexLocker k(&_imp->nameMutex);
         if (label == _imp->label) {
             return;
         }
+        curLabel = QString::fromUtf8(_imp->label.c_str());
         _imp->label = label;
     }
     NodeCollectionPtr collection = getGroup();
     if (collection) {
         collection->notifyNodeLabelChanged( shared_from_this() );
     }
-    Q_EMIT labelChanged( QString::fromUtf8( label.c_str() ) );
+    Q_EMIT labelChanged(curLabel, newLabel );
 }
 
 const std::string&
@@ -2978,13 +2980,16 @@ Node::setNameInternal(const std::string& name,
             }
         }
     }
-
+    QString oldLabel;
+    bool labelSet = false;
     {
         QMutexLocker l(&_imp->nameMutex);
         _imp->scriptName = newName;
+        oldLabel = QString::fromUtf8(_imp->label.c_str());
         ///Set the label at the same time if the label is empty
         if ( _imp->label.empty() ) {
             _imp->label = newName;
+            labelSet = true;
         }
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
@@ -3023,7 +3028,9 @@ Node::setNameInternal(const std::string& name,
 
     QString qnewName = QString::fromUtf8( newName.c_str() );
     Q_EMIT scriptNameChanged(qnewName);
-    Q_EMIT labelChanged(qnewName);
+    if (labelSet) {
+        Q_EMIT labelChanged(oldLabel, qnewName);
+    }
 } // Node::setNameInternal
 
 
@@ -5394,11 +5401,12 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
         destroyed = _imp->isBeingDestroyed;
     }
 
+    NodePtr curIn;
     {
         QMutexLocker l(&_imp->inputsMutex);
         ///Set the input
 
-        NodePtr curIn = _imp->inputs[inputNumber].lock();
+        curIn = _imp->inputs[inputNumber].lock();
 
 
         if (curIn == input) {
@@ -5407,7 +5415,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
         }
 
         if (curIn) {
-            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)), Qt::UniqueConnection );
+            QObject::connect( curIn.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInputLabelChanged(QString,QString)), Qt::UniqueConnection );
             curIn->disconnectOutput(this);
         }
         if (input) {
@@ -5433,7 +5441,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
 
     ///Get notified when the input name has changed
     if (input) {
-        QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)),Qt::UniqueConnection );
+        QObject::connect( input.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInputLabelChanged(QString, QString)),Qt::UniqueConnection );
     }
 
     // Notify the GUI
@@ -5442,7 +5450,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
     beginInputEdition();
 
     // Call the instance changed action with a reason clip changed
-    onInputChanged(inputNumber);
+    onInputChanged(inputNumber, curIn, input);
 
     // Notify cache
     _imp->effect->invalidateHashCache();
@@ -5511,10 +5519,11 @@ Node::switchInput0And1()
 
     _imp->effect->abortAnyEvaluation();
 
+    NodePtr input0, input1;
+
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
-        NodePtr input0, input1;
 
         input0 = _imp->inputs[inputAIndex].lock();
         input1 = _imp->inputs[inputBIndex].lock();
@@ -5527,8 +5536,8 @@ Node::switchInput0And1()
     Q_EMIT inputChanged(inputBIndex);
 
     beginInputEdition();
-    onInputChanged(inputAIndex);
-    onInputChanged(inputBIndex);
+    onInputChanged(inputAIndex, input0, input1);
+    onInputChanged(inputBIndex, input1, input0);
 
     bool creatingNodeTree = getApp()->isCreatingNodeTree();
     if (!creatingNodeTree) {
@@ -5548,7 +5557,7 @@ Node::switchInput0And1()
 } // switchInput0And1
 
 void
-Node::onInputLabelChanged(const QString & name)
+Node::onInputLabelChanged(const QString& /*oldName*/, const QString & newName)
 {
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
@@ -5569,7 +5578,7 @@ Node::onInputLabelChanged(const QString & name)
     }
 
     if (inputNb != -1) {
-        Q_EMIT inputLabelChanged(inputNb, name);
+        Q_EMIT inputLabelChanged(inputNb, newName);
     }
 }
 
@@ -7472,7 +7481,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb)
+Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7485,33 +7494,25 @@ Node::onInputChanged(int inputNb)
     }
 
     refreshMaskEnabledNess(inputNb);
-    //refreshLayersSelectorsVisibility();
-
-    bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() /*&& !getApp()->isCreatingNodeTree() */);
-
-    if (shouldDoInputChanged) {
-        ///When loading a group (or project) just wait until everything is setup to actually compute input
-        ///related data such as clip preferences
-        ///Exception for the Rotopaint node which needs to setup its own graph internally
 
 
-        ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-        _imp->effect->onInputChanged(inputNb);
-        _imp->inputsModified.insert(inputNb);
+    ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
+    _imp->effect->onInputChanged(inputNb, oldNode, newNode);
+    _imp->inputsModified.insert(inputNb);
 
-        // If the effect has render clones, kill them as the plug-in might have changed its internal state
-        _imp->effect->clearRenderInstances();
+    // If the effect has render clones, kill them as the plug-in might have changed its internal state
+    _imp->effect->clearRenderInstances();
 
-        //A knob value might have changed recursively, redraw  any overlay
-        if ( !_imp->effect->isDequeueingValuesSet() &&
-             ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
-            _imp->effect->redrawOverlayInteract();
-        }
+    //A knob value might have changed recursively, redraw  any overlay
+    if ( !_imp->effect->isDequeueingValuesSet() &&
+        ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
+        _imp->effect->redrawOverlayInteract();
     }
 
+
     /*
-       If this is a group, also notify the output nodes of the GroupInput node inside the Group corresponding to
-       the this inputNb
+     If this is a group, also notify the output nodes of the GroupInput node inside the Group corresponding to
+     the this inputNb
      */
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
@@ -7521,7 +7522,8 @@ Node::onInputChanged(int inputNb)
             std::map<NodePtr, int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
             for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-                it->first->onInputChanged(it->second);
+                NodePtr inputNode = it->first->getInput(it->second);
+                it->first->onInputChanged(it->second, inputNode, inputNode);
             }
         }
     }
@@ -7536,7 +7538,8 @@ Node::onInputChanged(int inputNb)
             std::map<NodePtr, int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
             for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
-                it->first->onInputChanged(it->second);
+                NodePtr inputNode = it->first->getInput(it->second);
+                it->first->onInputChanged(it->second, inputNode, inputNode);
             }
         }
     }
@@ -7549,7 +7552,8 @@ Node::onInputChanged(int inputNb)
         std::map<NodePtr, int> inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
         for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-            it->first->onInputChanged(it->second);
+            NodePtr inputNode = it->first->getInput(it->second);
+            it->first->onInputChanged(it->second, inputNode, inputNode);
         }
     }
 
@@ -7558,13 +7562,6 @@ Node::onInputChanged(int inputNb)
     }
 } // Node::onInputChanged
 
-void
-Node::onParentMultiInstanceInputChanged(int input)
-{
-    ++_imp->inputModifiedRecursion;
-    _imp->effect->onInputChanged(input);
-    --_imp->inputModifiedRecursion;
-}
 
 bool
 Node::duringInputChangedAction() const

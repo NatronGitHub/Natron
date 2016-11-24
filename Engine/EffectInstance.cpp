@@ -4067,7 +4067,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 } // EffectInstance::isIdentity_public
 
 void
-EffectInstance::onInputChanged(int /*inputNo*/)
+EffectInstance::onInputChanged(int /*inputNo*/, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
 {
 }
 

@@ -423,7 +423,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -497,7 +497,7 @@ public Q_SLOTS:
 
     void onBreakMultiStrokeTriggered();
 
-    void onSourceNodeLabelChanged(const QString& label);
+    void onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
 
 protected:
 
@@ -516,6 +516,7 @@ protected:
 
 private:
 
+    void refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel);
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
 

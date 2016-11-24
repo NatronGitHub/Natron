@@ -120,6 +120,8 @@ Q_SIGNALS:
 
 public Q_SLOTS:
 
+    void onNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
+
     void onNodeColorChanged(const QColor& color);
 
     /**

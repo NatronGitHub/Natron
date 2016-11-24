@@ -1272,7 +1272,7 @@ public:
     /**
      * @brief Called everytimes an input connection is changed
      **/
-    virtual void onInputChanged(int inputNo);
+    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
 
     /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,

@@ -163,7 +163,7 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
         AnimationModuleTreeView::setItemIcon(iconFilePath, _imp->nameItem);
     }
 
-    connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onNodeLabelChanged(QString)) );
+    connect( internalNode.get(), SIGNAL(labelChanged(QString, QString)), this, SLOT(onNodeLabelChanged(QString, QString)) );
 
     initializeKnobsAnim();
 
@@ -345,9 +345,9 @@ NodeAnim::onTableItemInserted(int index, const KnobTableItemPtr& item, TableChan
 
 
 void
-NodeAnim::onNodeLabelChanged(const QString &name)
+NodeAnim::onNodeLabelChanged(const QString &/*oldName*/, const QString& newName)
 {
-    _imp->nameItem->setText(0, name);
+    _imp->nameItem->setText(0, newName);
 }
 
 AnimationModulePtr

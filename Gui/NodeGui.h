@@ -460,7 +460,7 @@ public Q_SLOTS:
 
     void setName(const QString & _nameItem);
 
-    void onInternalNameChanged(const QString &);
+    void onInternalNameChanged(const QString &oldLabel, const QString& newLabel);
 
     void onPersistentMessageChanged();
 

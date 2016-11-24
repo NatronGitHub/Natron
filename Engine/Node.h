@@ -1028,7 +1028,7 @@ public:
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb);
+    void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode);
 
     bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 
@@ -1490,14 +1490,12 @@ public Q_SLOTS:
 
     void onMasterNodeDeactivated();
 
-    void onInputLabelChanged(const QString & name);
+    void onInputLabelChanged(const QString& oldName, const QString& newName);
 
     void notifySettingsPanelClosed(bool closed )
     {
         Q_EMIT settingsPanelClosed(closed);
     }
-
-    void onParentMultiInstanceInputChanged(int input);
 
 Q_SIGNALS:
 
@@ -1538,7 +1536,7 @@ Q_SIGNALS:
 
     void canRedoChanged(bool);
 
-    void labelChanged(QString);
+    void labelChanged(QString,QString);
     void scriptNameChanged(QString);
     void inputEdgeLabelChanged(int, QString);
 

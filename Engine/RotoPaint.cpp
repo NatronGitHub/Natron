@@ -2537,12 +2537,37 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
     return eStatusOK;
 }
 
-void
-RotoPaint::onInputChanged(int inputNb)
+static void adjustChoiceParamOption(const std::string& oldOption, const std::string& newOption, const KnobChoicePtr& knob)
 {
-    _imp->refreshSourceKnobs();
+    std::vector<std::string> entries = knob->getEntries();
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i] == oldOption) {
+            entries[i] = newOption;
+            knob->populateChoices(entries);
+            if (knob->getActiveEntryText() == oldOption) {
+                knob->setValue(i);
+            }
+            break;
+        }
+    }
+}
+
+void
+RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode)
+{
+
+    if (oldNode && newNode && oldNode != newNode) {
+        // We know what changed, switch choices automatically so things don't get disconnected
+        const std::string& oldNodeLabel = oldNode->getLabel();
+        const std::string& newNodeLabel = newNode->getLabel();
+        refreshInputChoices(oldNodeLabel, newNodeLabel);
+    } else {
+        // We have to refresh menus only
+        _imp->refreshSourceKnobs();
+    }
     refreshRotoPaintTree();
-    NodeGroup::onInputChanged(inputNb);
+    
+    NodeGroup::onInputChanged(inputNb, oldNode, newNode);
 }
 
 
@@ -3462,7 +3487,7 @@ RotoPaint::getMergeChoices(std::vector<std::string>* inputAChoices, std::vector<
         if (!input) {
             continue;
         }
-        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onSourceNodeLabelChanged(QString)), Qt::UniqueConnection);
+        QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onSourceNodeLabelChanged(QString,QString)), Qt::UniqueConnection);
         const std::string& inputLabel = input->getNode()->getLabel();
         bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {
@@ -3472,6 +3497,33 @@ RotoPaint::getMergeChoices(std::vector<std::string>* inputAChoices, std::vector<
         }
     }
 }
+
+void
+RotoPaint::refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel)
+{
+    KnobChoicePtr inputAKnob = _imp->mergeInputAChoiceKnob.lock();
+    if (inputAKnob) {
+        adjustChoiceParamOption(oldInputLabel, newInputLabel, inputAKnob);
+    }
+
+
+    // Refresh all items menus aswell
+    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), ViewIdx(0), false);
+    for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        {
+            KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
+            if (itemSourceKnob) {
+                adjustChoiceParamOption(oldInputLabel, newInputLabel, itemSourceKnob);
+            }
+        }
+        {
+            KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
+            if (maskSourceKnob) {
+                adjustChoiceParamOption(oldInputLabel, newInputLabel, maskSourceKnob);
+            }
+        }
+    }
+} // refreshInputChoices
 
 void
 RotoPaintPrivate::refreshSourceKnobs()
@@ -3506,10 +3558,10 @@ RotoPaintPrivate::refreshSourceKnobs()
 } // refreshSourceKnobs
 
 void
-RotoPaint::onSourceNodeLabelChanged(const QString& /*label*/)
+RotoPaint::onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel)
 {
 
-    _imp->refreshSourceKnobs();
+    refreshInputChoices(oldLabel.toStdString(), newLabel.toStdString());
 }
 
 NATRON_NAMESPACE_EXIT;

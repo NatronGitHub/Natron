@@ -247,7 +247,7 @@ public Q_SLOTS:
 
     void toggleAutoTurbo();
 
-    void onGroupNameChanged(const QString& name);
+    void onGroupNameChanged(const QString& oldLabel, const QString& newLabel);
     void onGroupScriptNameChanged(const QString& name);
 
 

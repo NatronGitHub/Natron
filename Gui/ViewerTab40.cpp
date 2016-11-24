@@ -330,13 +330,13 @@ ViewerTab::setFrameRangeEdited(bool edited)
 }
 
 void
-ViewerTab::onInternalNodeLabelChanged(const QString& name)
+ViewerTab::onInternalNodeLabelChanged(const QString& /*oldLabel*/, const QString& newLabel)
 {
     TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
 
     if (parent) {
-        setLabel( name.toStdString() );
-        parent->setTabLabel(this, name);
+        setLabel( newLabel.toStdString() );
+        parent->setTabLabel(this, newLabel);
     }
 }
 

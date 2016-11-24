@@ -219,7 +219,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     internalNode->setNodeGuiPointer(thisAsShared);
 
-    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNameChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNameChanged(QString,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
     QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
@@ -245,7 +245,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(inputEdgeLabelChanged(int, QString)), this, SLOT(onInputLabelChanged(int,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
-    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), dag->getGui(), SLOT(onNodeNameChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), dag->getGui(), SLOT(onNodeNameChanged(QString,QString)) );
     setCacheMode(DeviceCoordinateCache);
 
 
@@ -355,7 +355,7 @@ NodeGui::restoreStateAfterCreation()
 
 
     ///Refresh the name in the line edit
-    onInternalNameChanged( QString::fromUtf8( internalNode->getLabel().c_str() ) );
+    onInternalNameChanged( QString(), QString::fromUtf8( internalNode->getLabel().c_str() ) );
     onOutputLayerChanged();
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
@@ -3248,7 +3248,7 @@ NodeGui::onParentMultiInstancePositionChanged(int x,
 }
 
 void
-NodeGui::onInternalNameChanged(const QString & s)
+NodeGui::onInternalNameChanged(const QString & /*oldLabel*/, const QString& newLabel)
 {
     if (_settingNameFromGui) {
         return;
@@ -3257,7 +3257,7 @@ NodeGui::onInternalNameChanged(const QString & s)
     refreshNodeText();
 
     if (_settingsPanel) {
-        _settingsPanel->setName(s);
+        _settingsPanel->setName(newLabel);
     }
     scene()->update();
 }
@@ -3282,7 +3282,7 @@ NodeGui::setName(const QString & newName)
     getNode()->setLabel( newName.toStdString() );
     _settingNameFromGui = false;
 
-    onInternalNameChanged(newName);
+    onInternalNameChanged(QString(), newName);
 }
 
 void

@@ -620,7 +620,7 @@ public Q_SLOTS:
 
     void onProjectNameChanged(const QString & filePath, bool modified);
 
-    void onNodeNameChanged(const QString & name);
+    void onNodeNameChanged(const QString& oldLabel, const QString & newLabel);
 
     void onViewerImageChanged(int texIndex, bool hasImageBackend);
 

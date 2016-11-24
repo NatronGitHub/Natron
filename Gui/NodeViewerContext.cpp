@@ -182,7 +182,7 @@ NodeViewerContext::createGui()
         _imp->mainContainerLayout->setSpacing(0);
         if (!isViewerNode) {
             _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
-            QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+            QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onNodeLabelChanged(QString,QString)) );
         }
         _imp->widgetsContainer = new QWidget(_imp->mainContainer);
         _imp->widgetsContainerLayout = new QVBoxLayout(_imp->widgetsContainer);
@@ -273,6 +273,12 @@ NodeViewerContext::onNodeSettingsPanelClosed(bool closed)
         // Set the viewer interface for this plug-in to be the one of this node
         _imp->viewerTab->setPluginViewerInterface(node);
     }
+}
+
+void
+NodeViewerContext::onNodeLabelChanged(const QString& /*oldLabel*/, const QString& newLabel)
+{
+    _imp->nodeLabel->setText(newLabel);
 }
 
 int

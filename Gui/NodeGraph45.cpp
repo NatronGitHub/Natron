@@ -579,7 +579,7 @@ NodeGraph::expandSelectedGroups()
 }
 
 void
-NodeGraph::onGroupNameChanged(const QString& /*name*/)
+NodeGraph::onGroupNameChanged(const QString& /*oldLabel*/, const QString& /*name*/)
 {
     NodeGroupPtr isGrp = toNodeGroup( getGroup() );
 

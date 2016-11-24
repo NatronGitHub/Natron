@@ -1030,7 +1030,7 @@ OfxEffectInstance::isInputMask(int inputNb) const
 
 
 void
-OfxEffectInstance::onInputChanged(int inputNo)
+OfxEffectInstance::onInputChanged(int inputNo, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
 {
     assert(_imp->context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);

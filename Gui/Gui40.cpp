@@ -660,7 +660,7 @@ Gui::ensureProgressPanelVisible()
 }
 
 void
-Gui::onNodeNameChanged(const QString & /*name*/)
+Gui::onNodeNameChanged(const QString& /*oldLabel*/, const QString & /*newLabel*/)
 {
     Node* node = qobject_cast<Node*>( sender() );
 

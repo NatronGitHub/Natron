@@ -81,7 +81,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     setMouseTracking(true);
     NodePtr internalNode = node->getNode();
     QObject::connect( internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)) );
-    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNodeLabelChanged(QString,QString)) );
     QObject::connect( node.get(), SIGNAL(internalViewerCreated()), this, SLOT(onInternalViewerCreated()));
 
     _imp->mainLayout = new QVBoxLayout(this);
