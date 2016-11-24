@@ -769,7 +769,6 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 
         getProject()->forceComputeInputDependentDataOnAllTrees();
     } else {
-        QFile f( file.absoluteFilePath() );
         PyRun_SimpleString( content.toStdString().c_str() );
 
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();

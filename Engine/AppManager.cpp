@@ -804,8 +804,10 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
 
 
-    ///Call restore after initializing knobs
-    _imp->_settings->restoreSettings();
+    if (!cl.isLoadedUsingDefaultSettings()) {
+        ///Call restore after initializing knobs
+        _imp->_settings->restoreSettings();
+    }
 
     ///basically show a splashScreen load fonts etc...
     return initGui(cl);

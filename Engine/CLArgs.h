@@ -108,6 +108,8 @@ public:
 
     const std::list<std::pair<int, std::pair<int, int> > >& getFrameRanges() const;
 
+    bool isLoadedUsingDefaultSettings() const;
+
     bool isBackgroundMode() const;
 
     bool isInterpreterMode() const;
