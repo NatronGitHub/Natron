@@ -188,8 +188,13 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     if (!pagesNotDeclaredByPlugin.empty()) {
         return getOrCreatePage(pagesNotDeclaredByPlugin.front());
     }
-    // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage
-    assert(false);
+    // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage for nodes
+    // Anyway create one.
+
+    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, _imp->holder->tr("Settings") );
+    if (mainPage) {
+        return getOrCreatePage(mainPage);
+    }
 
     return KnobPageGuiPtr();
 }
