@@ -285,17 +285,17 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         return true;
     }
 
-
+    bool ret = true;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
         for (int i = 0; i < _imp->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
+                    ret &= warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, outKeys);
+                ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, outKeys);
             }
         }
     } else {
@@ -304,17 +304,17 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, outKeys);
+                ret &= warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, outKeys);
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, outKeys);
+            ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, outKeys);
         }
     }
 
     evaluateValueChange(dimension, times.front(), view, eValueChangedReasonNatronInternalEdited);
 
-    return true;
+    return ret;
 
 } // warpValuesAtTime
 

@@ -37,6 +37,7 @@
 #include <QTreeWidgetItem>
 
 #include "Engine/Curve.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/ViewIdx.h"
@@ -503,6 +504,13 @@ CurveGui::drawCurve(int curveIndex,
 
     }
 
+
+    QPointF btmLeft = _imp->curveWidget->toZoomCoordinates(0, _imp->curveWidget->height() - 1);
+    QPointF topRight = _imp->curveWidget->toZoomCoordinates(_imp->curveWidget->width() - 1, 0);
+
+    
+
+
     bool isPeriodic = false;
     std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
 
@@ -510,7 +518,21 @@ CurveGui::drawCurve(int curveIndex,
     isPeriodic = getInternalCurve()->isCurvePeriodic();
     parametricRange = getInternalCurve()->getXRange();
 
-    if ( !keyframes.empty() ) {
+    if ( keyframes.empty() ) {
+        // Add a horizontal line for constant knobs, except string knobs.
+        KnobIPtr isKnob = boost::dynamic_pointer_cast<KnobI>(item->getInternalAnimItem());
+
+        if (isKnob) {
+            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(isKnob);
+            if (!isString) {
+                double value = evaluate(false, 0);
+                vertices.push_back(btmLeft.x() + 1);
+                vertices.push_back(value);
+                vertices.push_back(topRight.x() - 1);
+                vertices.push_back(value);
+            }
+        }
+    } else {
         try {
             double x1 = 0;
             double x2;
@@ -545,10 +567,10 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
 
-    QPointF btmLeft = _imp->curveWidget->toZoomCoordinates(0, _imp->curveWidget->height() - 1);
-    QPointF topRight = _imp->curveWidget->toZoomCoordinates(_imp->curveWidget->width() - 1, 0);
-
-
+    // No Expr curve or no vertices for the curve, don't draw anything else
+    if (exprVertices.empty() && vertices.empty()) {
+        return;
+    }
 
     AnimationModuleSelectionModelPtr selectionModel = item->getModel()->getSelectionModel();
     assert(selectionModel);

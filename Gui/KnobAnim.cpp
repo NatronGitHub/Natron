@@ -591,8 +591,28 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
             return knob->getValueAtWithExpression(x, view, dimension);
         }
     }
-    return AnimItemBase::evaluateCurve(false, x, dimension, view);
-    
+    CurvePtr curve = getCurve(dimension, view);
+    assert(curve);
+    if (!curve) {
+        throw std::runtime_error("Curve is null");
+    }
+    if (!curve->isAnimated()) {
+        KnobBoolBasePtr isBoolKnob = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
+        KnobIntBasePtr isIntKnob = boost::dynamic_pointer_cast<KnobIntBase>(knob);
+        KnobDoubleBasePtr isDoubleKnob = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
+        if (isBoolKnob) {
+            return (double)isBoolKnob->getValue();
+        } else if (isIntKnob) {
+            return (double)isIntKnob->getValue();
+        } else if (isDoubleKnob) {
+            return isDoubleKnob->getValue();
+        } else {
+            return 0;
+        }
+    } else {
+        return curve->getValueAt(x, false /*doClamp*/);
+    }
+
 }
 
 bool
