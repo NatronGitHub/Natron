@@ -2300,6 +2300,7 @@ RotoPaint::initializeKnobs()
         _imp->knobsTable->setColumnTooltip(5, kRotoOverlayColorHint);
         _imp->knobsTable->setColumnIcon(6, "colorwheel.png");
         _imp->knobsTable->setColumnTooltip(6, kRotoColorHint);
+        (void)getOrCreateBaseLayer();
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
@@ -2324,7 +2325,6 @@ RotoPaint::initializeKnobs()
 
     _imp->refreshSourceKnobs();
 
-    (void)getOrCreateBaseLayer();
 
 } // RotoPaint::initializeKnobs
 
@@ -2636,24 +2636,21 @@ RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& ne
 
 static void
 getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
-                                  const RotoLayerPtr& layer,
+                                  const KnobTableItemPtr& item,
                                   double time, ViewIdx view,
                                   bool onlyActives)
 {
-    std::vector<KnobTableItemPtr> children = layer->getChildren();
+    RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
+    if (isDrawable) {
+         if ( !onlyActives || isDrawable->isActivated(time, view) ) {
+             curves->push_front(isDrawable);
+         }
+    }
+
+    std::vector<KnobTableItemPtr> children = item->getChildren();
 
     for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-
-        RotoLayerPtr isChildLayer = toRotoLayer(*it);
-        RotoDrawableItemPtr isChildDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
-
-        if (isChildDrawable) {
-            if ( !onlyActives || isChildDrawable->isActivated(time, view) ) {
-                curves->push_front(isChildDrawable);
-            }
-        } else if ( isChildLayer ) {
-            getRotoItemsByRenderOrderInternal(curves, isChildLayer, time, view, onlyActives);
-        }
+        getRotoItemsByRenderOrderInternal(curves, *it, time, view, onlyActives);
     }
 }
 
@@ -2664,14 +2661,12 @@ RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bo
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
 
     // Roto should have only a single top level layer
-    if (topLevelItems.size() < 1) {
+    if (topLevelItems.size() == 0) {
         return ret;
     }
-    RotoLayerPtr layer = toRotoLayer(topLevelItems.front());
-    if (layer) {
-        getRotoItemsByRenderOrderInternal(&ret, layer, time, view, onlyActivated);
+    for (std::vector<KnobTableItemPtr>::const_iterator it = topLevelItems.begin(); it!=topLevelItems.end(); ++it) {
+        getRotoItemsByRenderOrderInternal(&ret, *it, time, view, onlyActivated);
     }
-
     return ret;
 }
 
@@ -2702,7 +2697,9 @@ RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::Serial
 void
 RotoPaintKnobItemsTable::onModelReset()
 {
-    _imp->createBaseLayer();
+    if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
+        _imp->createBaseLayer();
+    }
 }
 
 
@@ -3488,9 +3485,7 @@ CompNodeItemPtr
 RotoPaint::makeCompNodeItem()
 {
     CompNodeItemPtr item(new CompNodeItem(_imp->knobsTable));
-
-    RotoLayerPtr parentLayer = getLayerForNewItem();
-    _imp->knobsTable->insertItem(0, item, parentLayer, eTableChangeReasonInternal);
+    _imp->knobsTable->insertItem(0, item, RotoLayerPtr(), eTableChangeReasonInternal);
 
     _imp->knobsTable->beginEditSelection();
     _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
