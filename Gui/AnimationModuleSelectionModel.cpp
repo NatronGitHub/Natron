@@ -227,13 +227,13 @@ AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKe
     AnimationModuleSelectionProviderPtr model = getModel();
 
     std::vector<KnobAnimPtr> topLevelKnobs;
-    model->getTopLevelKnobs(&topLevelKnobs);
+    model->getTopLevelKnobs(true, &topLevelKnobs);
 
     std::vector<NodeAnimPtr > topLevelNodes;
-    model->getTopLevelNodes(&topLevelNodes);
+    model->getTopLevelNodes(true, &topLevelNodes);
 
     std::vector<TableItemAnimPtr> topLevelTableItems;
-    model->getTopLevelTableItems(&topLevelTableItems);
+    model->getTopLevelTableItems(true, &topLevelTableItems);
 
 
     for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {

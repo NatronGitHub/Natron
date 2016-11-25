@@ -247,6 +247,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), dag->getGui(), SLOT(onNodeNameChanged(QString,QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(keepInAnimationModuleKnobChanged()), this, SLOT(onKeepInAnimationModuleKnobChanged()) );
+
     setCacheMode(DeviceCoordinateCache);
 
 
@@ -3976,6 +3978,19 @@ NodeGui::onInputLabelChanged(int inputNb,const QString& label)
     assert(_inputEdges[inputNb]);
     if (_inputEdges[inputNb]) {
         _inputEdges[inputNb]->setLabel(label);
+    }
+}
+
+void
+NodeGui::onKeepInAnimationModuleKnobChanged()
+{
+    bool keep = getNode()->isKeepInAnimationModuleButtonDown();
+    if (keep) {
+        getDagGui()->getGui()->addNodeGuiToAnimationModuleEditor(shared_from_this());
+    } else {
+        if (!isSettingsPanelVisible()) {
+            getDagGui()->getGui()->removeNodeGuiFromAnimationModuleEditor(shared_from_this());
+        }
     }
 }
 

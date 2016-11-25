@@ -158,7 +158,7 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
     _imp->nameItem->setText( 0, QString::fromUtf8( internalNode->getLabel().c_str() ) );
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_TYPE, nodeType);
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, true);
-
+    _imp->nameItem->setExpanded(true);
     int nCols = getModel()->getTreeColumnsCount();
     if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
         _imp->nameItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
@@ -453,58 +453,54 @@ NodeAnim::containsNodeContext() const
 void
 NodeAnim::refreshVisibility()
 {
-    NodeGuiPtr nodeGui = getNodeGui();
-    AnimatedItemTypeEnum nodeType = getItemType();
+
+    AnimationModulePtr animModule = getModel();
     QTreeWidgetItem *nodeItem = getTreeItem();
     bool showNode = false;
+    int nChildren = nodeItem->childCount();
 
-    if (nodeGui->isSettingsPanelVisible() ) {
-        if (isRangeDrawingEnabled()) {
-            showNode = true;
+    // Refresh children, which will recursively refresh their children
+    for (int i = 0; i < nChildren; ++i) {
+        QTreeWidgetItem* child = nodeItem->child(i);
+
+        AnimatedItemTypeEnum type;
+        KnobAnimPtr isKnob;
+        TableItemAnimPtr isTableItem;
+        NodeAnimPtr isNodeItem;
+        ViewSetSpec view;
+        DimSpec dim;
+        bool found = animModule->findItem(child, &type, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+        if (!found) {
+            continue;
         }
-        if (!showNode) {
-            switch (nodeType) {
-                case eAnimatedItemTypeCommon:
-                    showNode = AnimationModule::isNodeAnimated(nodeGui);
-                    break;
-                case eAnimatedItemTypeGroup:
-                {
-                    // For a group node, if the sub-graph can be edited
-                    // always show the group node.
-                    // If it cannot ever be created (Write, Tracker, Roto...)
-                    // Then only show up the node as a common node.
-                    NodeGroupPtr isGroup = toNodeGroup(nodeGui->getNode()->getEffectInstance());
-                    assert(isGroup);
-                    if (isGroup->isSubGraphUserVisible()) {
-                        showNode = true;
-                    } else {
-                        showNode = AnimationModule::isNodeAnimated(nodeGui);
-                    }
-                    /*// Check if there's at list one animated node in the group
-                    if (AnimationModule::isNodeAnimated(nodeGui)) {
-                        showNode = true;
-                    }
-                    if (!showNode) {
-                        NodeGroupPtr isGroup = toNodeGroup(nodeGui->getNode()->getEffectInstance());
-                        assert(isGroup);
-                        NodesList nodes = isGroup->getNodes();
-                        for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                            if ((*it)->getEffectInstance()->getHasAnimation()) {
-                                showNode = true;
-                                break;
-                            }
-                        }
-                    }*/
-                }   break;
-                default:
-                    break;
-            }
+        if (isTableItem) {
+            isTableItem->refreshVisibilityConditional(false /*refreshParent*/);
+        } else if (isNodeItem) {
+            isNodeItem->refreshVisibility();
+        } else if (isKnob) {
+            isKnob->refreshVisibilityConditional(false /*refreshHolder*/);
+        }
+        if (!child->isHidden()) {
+            showNode = true;
         }
     }
 
-    refreshFrameRange();
+    if (!showNode) {
+        // If so far none of the children should be displayed, still check if the node has a range
+        if (isRangeDrawingEnabled()) {
+            showNode = true;
+        }
+        
+    }
 
-    refreshKnobsVisibility();
+    // If settings panel is not opened and the "Keep in Animation Module" knob is not checked, hide the node.
+    NodeGuiPtr nodeGui = getNodeGui();
+    bool keepInAnimationModule = nodeGui->getNode()->isKeepInAnimationModuleButtonDown();
+    if (!keepInAnimationModule && !nodeGui->isSettingsPanelVisible()) {
+        showNode = false;
+    }
+
+    refreshFrameRange();
 
     nodeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showNode);
 
@@ -514,34 +510,6 @@ NodeAnim::refreshVisibility()
 } // refreshVisibility
 
 
-void
-NodeAnim::refreshKnobsVisibility()
-{
-    const std::vector<KnobAnimPtr>& knobRows = getKnobs();
-
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
-        QTreeWidgetItem *knobItem = (*it)->getRootItem();
-        if (!knobItem) {
-            continue;
-        }
-        int nChildren = knobItem->childCount();
-        if (nChildren > 0) {
-            knobItem->setExpanded(true);
-            for (int i = 0; i < nChildren; ++i) {
-                QTreeWidgetItem* child = knobItem->child(i);
-                if (child) {
-                    child->setExpanded(true);
-                }
-            }
-
-        }
-        (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
-    }
-
-    for (std::vector<TableItemAnimPtr>::const_iterator it = _imp->topLevelTableItems.begin(); it!=_imp->topLevelTableItems.end(); ++it) {
-        (*it)->refreshVisibilityConditional(false /*refreshNode*/);
-    }
-}
 
 RangeD
 NodeAnim::getFrameRange() const

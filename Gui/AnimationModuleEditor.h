@@ -142,6 +142,8 @@ public:
 
     void onInputEventCalled();
 
+    bool isOnlyAnimatedItemsVisibleButtonChecked() const;
+
     virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
 
     virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
@@ -180,6 +182,8 @@ public Q_SLOTS:
     void onExprLineEditFinished();
 
     void onDisplayViewClicked(bool clicked);
+
+    void onShowOnlyAnimatedButtonClicked(bool clicked);
 
     void onSelectionModelSelectionChanged(bool recurse);
 

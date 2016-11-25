@@ -262,6 +262,7 @@ public:
     KnobChoiceWPtr openglRenderingEnabledKnob;
     KnobIntWPtr lifeTimeKnob;
     KnobBoolWPtr enableLifeTimeKnob;
+    KnobButtonWPtr keepInAnimationModuleKnob;
     KnobStringWPtr knobChangedCallback;
     KnobStringWPtr inputChangedCallback;
     KnobStringWPtr nodeCreatedCallback;

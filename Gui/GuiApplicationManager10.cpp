@@ -873,7 +873,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, kShortcutDescActionAnimationModulePasteKeyframesAbsolute, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_V);
 
     registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, kShortcutDescActionAnimationModuleStackView, Qt::NoModifier, Qt::Key_S);
-
+    registerKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowOnlyAnimated, kShortcutDescActionAnimationModuleShowOnlyAnimated, Qt::NoModifier, (Qt::Key)0);
 
     //Script editor
     registerKeybindWithMask(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, kShortcutDescActionScriptEditorPrevScript, Qt::ControlModifier, Qt::Key_BracketLeft, Qt::ShiftModifier | Qt::AltModifier);

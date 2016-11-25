@@ -294,6 +294,8 @@ public:
     bool dopeSheetDoubleClickEvent(QMouseEvent* e);
     bool dopeSheetMousePressEvent(QMouseEvent* e);
 
+    bool dopeSheetAddKeyFrame(const QPoint& p);
+
 public:
 
     // ptr to the widget

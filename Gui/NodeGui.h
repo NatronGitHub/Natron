@@ -520,6 +520,8 @@ public Q_SLOTS:
 
     void onPreviewImageComputed();
 
+    void onKeepInAnimationModuleKnobChanged();
+
 Q_SIGNALS:
 
     void colorChanged(QColor);

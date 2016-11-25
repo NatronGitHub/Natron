@@ -47,6 +47,7 @@
 #include "Gui/CurveGui.h"
 #include "Gui/ComboBox.h"
 #include "Gui/Menu.h"
+#include "Gui/NodeAnim.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -139,6 +140,7 @@ public:
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
     Button* displayViewChoice;
+    Button* showOnlyAnimatedButton;
 
     Label* knobLabel;
     LineEdit* knobExpressionLineEdit;
@@ -182,6 +184,7 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , buttonsContainer(0)
 , buttonsLayout(0)
 , displayViewChoice(0)
+, showOnlyAnimatedButton(0)
 , knobLabel(0)
 , knobExpressionLineEdit(0)
 , expressionResultLabel(0)
@@ -231,9 +234,11 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
 
-    QPixmap pixCurveEditor, pixStacked;
+    QPixmap pixCurveEditor, pixStacked, pixAutoHideOn, pixAutohideOff;
     appPTR->getIcon(NATRON_PIXMAP_CURVE_EDITOR, iconSize, &pixCurveEditor);
     appPTR->getIcon(NATRON_PIXMAP_ANIMATION_MODULE, iconSize, &pixStacked);
+    appPTR->getIcon(NATRON_PIXMAP_UNHIDE_UNMODIFIED, iconSize, &pixAutoHideOn);
+    appPTR->getIcon(NATRON_PIXMAP_HIDE_UNMODIFIED, iconSize, &pixAutohideOff);
 
     QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -253,6 +258,22 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, "<p>" + tr("Switch between Dope Sheet + CurveEditor and Curve Editor only").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->displayViewChoice);
         connect(_imp->displayViewChoice, SIGNAL(clicked(bool)), this, SLOT(onDisplayViewClicked(bool)));
         _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
+    }
+    {
+        _imp->showOnlyAnimatedButton = new Button(_imp->buttonsContainer);
+        QIcon ic;
+        ic.addPixmap(pixAutoHideOn, QIcon::Normal, QIcon::On);
+        ic.addPixmap(pixAutohideOff, QIcon::Normal, QIcon::Off);
+        _imp->showOnlyAnimatedButton->setIcon(ic);
+        _imp->showOnlyAnimatedButton->setCheckable(true);
+        _imp->showOnlyAnimatedButton->setChecked(true);
+        _imp->showOnlyAnimatedButton->setDown(false);
+        _imp->showOnlyAnimatedButton->setFixedSize(medSize);
+        _imp->showOnlyAnimatedButton->setIconSize(medIconSize);
+        _imp->showOnlyAnimatedButton->setFocusPolicy(Qt::NoFocus);
+        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowOnlyAnimated, "<p>" + tr("When checked, only animated items will appear in the animation module").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->showOnlyAnimatedButton);
+        connect(_imp->showOnlyAnimatedButton, SIGNAL(clicked(bool)), this, SLOT(onShowOnlyAnimatedButtonClicked(bool)));
+        _imp->buttonsLayout->addWidget(_imp->showOnlyAnimatedButton);
     }
 
     _imp->buttonsLayout->addSpacing(TO_DPIX(10));
@@ -501,6 +522,12 @@ AnimationModuleEditor::getDisplayMode() const
     return _imp->displayViewChoice->isChecked() ? eAnimationModuleDisplayViewModeStacked : eAnimationModuleDisplayViewModeCurveEditor;
 }
 
+bool
+AnimationModuleEditor::isOnlyAnimatedItemsVisibleButtonChecked() const
+{
+    return _imp->showOnlyAnimatedButton->isChecked();
+}
+
 void
 AnimationModuleEditor::addNode(const NodeGuiPtr& nodeGui)
 {
@@ -707,6 +734,18 @@ AnimationModuleEditor::onExprLineEditFinished()
     } catch(const std::exception& /*e*/) {
         //Dialogs::errorDialog(tr("Animation Module").toStdString(), e.what());
     }
+}
+
+void
+AnimationModuleEditor::onShowOnlyAnimatedButtonClicked(bool clicked)
+{
+    _imp->showOnlyAnimatedButton->setDown(clicked);
+    std::vector<NodeAnimPtr> nodes;
+    _imp->model->getTopLevelNodes(false /*onlyVisible*/, &nodes);
+    for (std::vector<NodeAnimPtr>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        (*it)->refreshVisibility();
+    }
+    _imp->view->update();
 }
 
 void
@@ -1094,7 +1133,9 @@ AnimationModuleEditor::setItemVisibility(QTreeWidgetItem* item, bool visible, bo
 {
     item->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, visible);
     item->setIcon(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, _imp->model->getItemVisibilityIcon(visible));
-
+    if (visible) {
+        item->setExpanded(true);
+    }
     if (recurseOnParent) {
         QTreeWidgetItem* parent = item->parent();
         while (parent) {

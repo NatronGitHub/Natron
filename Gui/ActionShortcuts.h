@@ -352,6 +352,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionAnimationModuleStackView "stackAnimView"
 #define kShortcutDescActionAnimationModuleStackView "Show Curve Editor + Dope Sheet"
 
+#define kShortcutIDActionAnimationModuleShowOnlyAnimated "showOnlyAnimated"
+#define kShortcutDescActionAnimationModuleShowOnlyAnimated "Show Only Animated"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

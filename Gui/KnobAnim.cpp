@@ -36,6 +36,7 @@
 
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleTreeView.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
@@ -348,19 +349,6 @@ KnobAnim::getViewsList() const
     return ret;
 }
 
-static bool refreshDimViewVisibility(DimIdx dim, ViewIdx view, const KnobIPtr& knob, KnobAnim* self)
-{
-
-    CurvePtr curve = knob->getAnimationCurve(view, dim);
-    bool curveIsAnimated = (curve && curve->isAnimated()) || !knob->getExpression(dim, view).empty();
-    QTreeWidgetItem *dimItem = self->getTreeItem(dim, view);
-    if (dimItem) {
-        bool enabled = knob->isEnabled(dim, view);
-        dimItem->setHidden(!curveIsAnimated || !enabled);
-        dimItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
-    }
-    return curveIsAnimated;
-}
 
 void
 KnobAnim::refreshVisibilityConditional(bool refreshHolder)
@@ -372,47 +360,85 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
     }
 
 
-
     KnobIPtr knob = getInternalKnob();
     if (!knob) {
         return;
     }
 
+
+    AnimationModulePtr animModule = toAnimationModule(getModel());
+    bool onlyShowIfAnimated = false;
+    if (animModule) {
+        onlyShowIfAnimated = animModule->getEditor()->isOnlyAnimatedItemsVisibleButtonChecked();
+    }
+
+    // Do not show anim for a master knob because all items in the table already have one.
+    // E.G: The Mix parameter of the LayerComp node does not need to be displayed in the animation module
+    // as all items Mix knobs are already visible in the animation module.
     bool isTableItemMasterKnob = false;
     assert(knob->getHolder());
     EffectInstancePtr holderIsEffect = toEffectInstance(knob->getHolder());
     if (holderIsEffect) {
         KnobItemsTablePtr table = holderIsEffect->getItemsTable();
         if (table) {
-            // Do not show anim for a master knob because all items in the table already have one.
             if (table->isPerItemKnobMaster(knob)) {
                 isTableItemMasterKnob = true;
             }
         }
     }
 
-
-    bool showItem = false;
-    if (!isTableItemMasterKnob && !knob->getIsSecret()) {
-        std::list<ViewIdx> views = knob->getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            bool hasDimVisible = false;
-            for (int i = 0; i < knob->getNDimensions(); ++i) {
-                hasDimVisible |= refreshDimViewVisibility(DimIdx(i), *it, knob, this);
+    bool mustHide = isTableItemMasterKnob || knob->getIsSecret();
+    {
+        for (PerDimViewItemMap::const_iterator it = _imp->dimViewItems.begin(); it!=_imp->dimViewItems.end(); ++it) {
+            CurvePtr curve = it->second.curve->getInternalCurve();
+            if (!curve) {
+                continue;
             }
-            // If there's a view item, refresh its visibility
-            PerViewItemMap::const_iterator foundViewItem = _imp->viewItems.find(*it);
-            if (foundViewItem != _imp->viewItems.end()) {
-                foundViewItem->second->setHidden(!hasDimVisible);
+            bool curveIsAnimated = (curve && curve->isAnimated()) || !knob->getExpression(it->first.dimension, it->first.view).empty();
+            bool enabled = knob->isEnabled(it->first.dimension, it->first.view);
+            it->second.treeItem->setHidden((!curveIsAnimated && onlyShowIfAnimated) || !enabled || mustHide);
+            it->second.treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
+        }
+        // Now refresh view items visibility
+        for (PerViewItemMap::const_iterator it = _imp->viewItems.begin(); it!=_imp->viewItems.end(); ++it) {
+            int nChildren = it->second->childCount();
+            if (nChildren == 0) {
+                // The item has no children, it is thus a curve and was already refreshed in the loop above.
+                continue;
+            }
+            bool visible = false;
+            for (int i = 0; i < nChildren; ++i) {
+                QTreeWidgetItem* child = it->second->child(i);
+                if (!child->isHidden()) {
+                    visible = true;
+                    break;
+                }
+            }
+            it->second->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, visible);
+            it->second->setHidden(!visible);
+
+        }
+        // Now refresh root visibility
+        {
+            // If The item has no children, it is thus a curve and was already refreshed in the loop above.
+            int nChildren = _imp->rootItem->childCount();
+            if (nChildren > 0) {
+
+                bool visible = false;
+                for (int i = 0; i < nChildren; ++i) {
+                    QTreeWidgetItem* child = _imp->rootItem->child(i);
+                    if (!child->isHidden()) {
+                        visible = true;
+                        break;
+                    }
+                }
+                _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, visible);
+                _imp->rootItem->setHidden(!visible);
             }
 
-            showItem |= hasDimVisible;
         }
     }
-    _imp->rootItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
 
-
-    _imp->rootItem->setHidden(!showItem);
 
     AnimationModuleBasePtr model = getModel();
     AnimationModulePtr isAnimModule = toAnimationModule(model);
@@ -421,7 +447,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
     model->getView()->redraw();
 
 
-}
+} // refreshVisibilityConditional
 
 void
 KnobAnim::refreshKnobVisibilityNow()

@@ -79,8 +79,6 @@ public:
     bool canContainOtherNodeContexts() const;
     bool containsNodeContext() const;
 
-    virtual void refreshKnobsVisibility() OVERRIDE FINAL;
-
     virtual void refreshVisibility() OVERRIDE FINAL;
 
     void refreshFrameRange();

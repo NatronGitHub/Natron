@@ -943,7 +943,7 @@ void
 AnimationModuleViewPrivate::computeRangesBelow(const NodeAnimPtr& node)
 {
     std::vector<NodeAnimPtr> allNodes;
-    _model.lock()->getTopLevelNodes(&allNodes);
+    _model.lock()->getTopLevelNodes(true, &allNodes);
 
     double thisNodeY = treeView->visualItemRect( node->getTreeItem() ).y();
     for (std::vector<NodeAnimPtr>::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
@@ -1235,6 +1235,12 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
     QPointF clickZoomCoords = dopeSheetZoomContext.toZoomCoordinates( e->x(), e->y() );
 
     if ( buttonDownIsLeft(e) ) {
+
+        if (modCASIsControl(e)) {
+            // Left Click + CTRL = Double click for a tablet
+            return dopeSheetDoubleClickEvent(e);
+        }
+
         if ( !dopeSheetSelectedKeysBRect.isNull() && isNearbySelectedKeyFramesCrossWidget(dopeSheetZoomContext, dopeSheetSelectedKeysBRect, e->pos() ) ) {
             state = eEventStateDraggingKeys;
             return true;
@@ -1256,7 +1262,7 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
 
         // Look for a range node
         std::vector<NodeAnimPtr> topLevelNodes;
-        animModule->getTopLevelNodes(&topLevelNodes);
+        animModule->getTopLevelNodes(true, &topLevelNodes);
 
         for (std::vector<NodeAnimPtr>::const_iterator it = topLevelNodes.begin(); it != topLevelNodes.end(); ++it) {
             if (!(*it)->isRangeDrawingEnabled()) {
@@ -1391,99 +1397,114 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
             }
         } // if (treeItem) {
         
-    }
+    } // isLeft
     return false;
 }
 
+bool
+AnimationModuleViewPrivate::dopeSheetAddKeyFrame(const QPoint& p)
+{
+    AnimationModuleBasePtr model = _model.lock();
+
+    QTreeWidgetItem *itemUnderPoint = treeView->itemAt(TO_DPIX(5), p.y());
+    if (!itemUnderPoint) {
+        return false;
+    }
+    AnimatedItemTypeEnum foundType;
+    KnobAnimPtr isKnob;
+    TableItemAnimPtr isTableItem;
+    NodeAnimPtr isNodeItem;
+    ViewSetSpec view;
+    DimSpec dim;
+    bool found = model->findItem(itemUnderPoint, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
+    (void)found;
+
+    AnimItemBasePtr isAnim;
+    if (isKnob) {
+        isAnim = isKnob;
+    } else if (isTableItem) {
+        isAnim = isTableItem;
+    }
+    if (!isAnim) {
+        return false;
+    }
+
+    KnobStringBasePtr isStringKnob;
+    if (isKnob) {
+        isStringKnob = toKnobStringBase(isKnob->getInternalKnob());
+    }
+    if (isStringKnob) {
+        // Cannot add keys on a string knob from the dopesheet
+        return true;
+    }
+    KeyFrameWithStringSet underMouse = isNearByKeyframe(isAnim, dim, view, p);
+    if (!underMouse.empty()) {
+        // Already  a key
+        return false;
+    }
+
+    double keyframeTime = std::floor(dopeSheetZoomContext.toZoomCoordinates(p.x(), 0).x() + 0.5);
+    moveCurrentFrameIndicator(keyframeTime);
+
+    AnimItemDimViewKeyFramesMap keysToAdd;
+    if (dim.isAll()) {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = isAnim->getViewsList();
+            int nDims = isAnim->getNDimensions();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                for (int i = 0; i < nDims; ++i) {
+                    AnimItemDimViewIndexID itemKey(isAnim, *it, DimIdx(i));
+                    KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                    KeyFrameWithString k;
+                    double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), *it);
+                    k.key = KeyFrame(keyframeTime, yCurve);
+                    keys.insert(k);
+                }
+            }
+        } else {
+            int nDims = isAnim->getNDimensions();
+            for (int i = 0; i < nDims; ++i) {
+                AnimItemDimViewIndexID itemKey(isAnim, ViewIdx(view), DimIdx(i));
+                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                KeyFrameWithString k;
+                double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), ViewIdx(view));
+                k.key = KeyFrame(keyframeTime, yCurve);
+                keys.insert(k);
+            }
+        }
+    } else {
+        if (view.isAll()) {
+            std::list<ViewIdx> views = isAnim->getViewsList();
+            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+                AnimItemDimViewIndexID itemKey(isAnim, *it, DimIdx(dim));
+                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+                KeyFrameWithString k;
+                double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), *it);
+                k.key = KeyFrame(keyframeTime, yCurve);
+                keys.insert(k);
+
+            }
+        } else {
+            AnimItemDimViewIndexID itemKey(isAnim, ViewIdx(view), DimIdx(dim));
+            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
+            KeyFrameWithString k;
+            double yCurve = isAnim->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
+            k.key = KeyFrame(keyframeTime, yCurve);
+            keys.insert(k);
+        }
+
+    }
+
+    model->pushUndoCommand( new AddKeysCommand(keysToAdd, model, false /*clearAndAdd*/) );
+    return true;
+
+
+} // dopeSheetAddKeyFrame
 
 bool
 AnimationModuleViewPrivate::dopeSheetDoubleClickEvent(QMouseEvent *e)
 {
-
-    if ( modCASIsControl(e) ) {
-
-        AnimationModuleBasePtr model = _model.lock();
-
-        QTreeWidgetItem *itemUnderPoint = treeView->itemAt(TO_DPIX(5), e->pos().y());
-        AnimatedItemTypeEnum foundType;
-        KnobAnimPtr isKnob;
-        TableItemAnimPtr isTableItem;
-        NodeAnimPtr isNodeItem;
-        ViewSetSpec view;
-        DimSpec dim;
-        bool found = model->findItem(itemUnderPoint, &foundType, &isKnob, &isTableItem, &isNodeItem, &view, &dim);
-        (void)found;
-
-        if (isKnob) {
-
-            KnobStringBasePtr isStringKnob = toKnobStringBase(isKnob->getInternalKnob());
-            if (isStringKnob) {
-                // Cannot add keys on a string knob from the dopesheet
-                return true;
-            }
-            KeyFrameWithStringSet underMouse = isNearByKeyframe(isKnob, dim, view, e->pos());
-            if (underMouse.empty()) {
-
-                double keyframeTime = std::floor(dopeSheetZoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
-                moveCurrentFrameIndicator(keyframeTime);
-
-                AnimItemDimViewKeyFramesMap keysToAdd;
-                if (dim.isAll()) {
-                    if (view.isAll()) {
-                        std::list<ViewIdx> views = isKnob->getViewsList();
-                        int nDims = isKnob->getNDimensions();
-                        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                            for (int i = 0; i < nDims; ++i) {
-                                AnimItemDimViewIndexID itemKey(isKnob, *it, DimIdx(i));
-                                KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                                KeyFrameWithString k;
-                                double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), *it);
-                                k.key = KeyFrame(keyframeTime, yCurve);
-                                keys.insert(k);
-                            }
-                        }
-                    } else {
-                        int nDims = isKnob->getNDimensions();
-                        for (int i = 0; i < nDims; ++i) {
-                            AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(i));
-                            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                            KeyFrameWithString k;
-                            double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(i), ViewIdx(view));
-                            k.key = KeyFrame(keyframeTime, yCurve);
-                            keys.insert(k);
-                        }
-                    }
-                } else {
-                    if (view.isAll()) {
-                        std::list<ViewIdx> views = isKnob->getViewsList();
-                        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                            AnimItemDimViewIndexID itemKey(isKnob, *it, DimIdx(dim));
-                            KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                            KeyFrameWithString k;
-                            double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), *it);
-                            k.key = KeyFrame(keyframeTime, yCurve);
-                            keys.insert(k);
-
-                        }
-                    } else {
-                        AnimItemDimViewIndexID itemKey(isKnob, ViewIdx(view), DimIdx(dim));
-                        KeyFrameWithStringSet& keys = keysToAdd[itemKey];
-                        KeyFrameWithString k;
-                        double yCurve = isKnob->evaluateCurve(false /*useExpr*/, keyframeTime, DimIdx(dim), ViewIdx(view));
-                        k.key = KeyFrame(keyframeTime, yCurve);
-                        keys.insert(k);
-                    }
-
-                }
-
-                model->pushUndoCommand( new AddKeysCommand(keysToAdd, model, false /*clearAndAdd*/) );
-                return true;
-                
-                
-            } // !underMouse.empty()
-        } // isKnob
-    } // isCtrl
-    return false;
+    return dopeSheetAddKeyFrame(e->pos());
 } // mouseDoubleClickEvent
 
 NATRON_NAMESPACE_EXIT;

@@ -925,10 +925,12 @@ DockablePanel::setClosedInternal(bool closed)
 
         Gui* gui = getGui();
         if (gui) {
-            if (!closed) {
-                gui->addNodeGuiToAnimationModuleEditor(nodeGui);
-            } else {
-                gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
+            if (internalNode && !internalNode->isKeepInAnimationModuleButtonDown()) {
+                if (!closed) {
+                    gui->addNodeGuiToAnimationModuleEditor(nodeGui);
+                } else {
+                    gui->removeNodeGuiFromAnimationModuleEditor(nodeGui);
+                }
             }
             if (internalNode) {
                 GuiAppInstancePtr app = gui->getApp();

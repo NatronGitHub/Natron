@@ -3300,6 +3300,16 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     _imp->disableNodeKnob = disableNodeKnob;
 
 
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>(_imp->effect, tr(kNatronNodeKnobKeepInAnimationModuleButtonLabel), 1, false);
+        param->setName(kNatronNodeKnobKeepInAnimationModuleButton);
+        param->setHintToolTip(tr(kNatronNodeKnobKeepInAnimationModuleButtonHint));
+        param->setCheckable(true);
+        param->setIconLabel(NATRON_IMAGES_PATH "DS_CE_Icon.png", true);
+        param->setIconLabel(NATRON_IMAGES_PATH "DS_CE_Icon.png", false);
+        settingsPage->addKnob(param);
+        _imp->keepInAnimationModuleKnob = param;
+    }
 
     KnobBoolPtr useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect, tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
@@ -3340,6 +3350,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
                                                "Outside of this frame range, it behaves as if the Disable parameter is checked") );
     settingsPage->addKnob(enableLifetimeNodeKnob);
     _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
+
 
     PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
 
@@ -3735,6 +3746,16 @@ Node::getOrCreateHostMixKnob(const KnobPagePtr& mainPage)
     }
 
     return mixKnob;
+}
+
+bool
+Node::isKeepInAnimationModuleButtonDown() const
+{
+    KnobButtonPtr b = _imp->keepInAnimationModuleKnob.lock();
+    if (!b) {
+        return false;
+    }
+    return b->getValue();
 }
 
 void
@@ -8490,6 +8511,8 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         _imp->pyPlugExportDialog.lock()->setValue(false);
     } else if (what == _imp->pyPlugExportDialogCancelButton.lock()) {
         _imp->pyPlugExportDialog.lock()->setValue(false);
+    } else if (what == _imp->keepInAnimationModuleKnob.lock()) {
+        Q_EMIT keepInAnimationModuleKnobChanged();
     } else {
         ret = false;
     }

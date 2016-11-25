@@ -239,8 +239,6 @@ public:
 
     virtual const std::vector<KnobAnimPtr>& getKnobs() const = 0;
 
-    virtual void refreshKnobsVisibility() = 0;
-
     virtual void refreshVisibility() = 0;
     
 };

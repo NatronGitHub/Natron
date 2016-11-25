@@ -420,11 +420,11 @@ AnimationModule::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type,
 } // findItem
 
 void
-AnimationModule::getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
+AnimationModule::getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr >* nodes) const
 {
     AnimationModuleTreeView* treeView = _imp->editor->getTreeView();
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if (treeView->isItemVisibleRecursive((*it)->getTreeItem())) {
+        if (!onlyVisible || treeView->isItemVisibleRecursive((*it)->getTreeItem())) {
             nodes->push_back(*it);
         }
     }

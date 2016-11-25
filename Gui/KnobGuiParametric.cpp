@@ -149,7 +149,7 @@ public:
     // Overriden from AnimationModuleBase
     virtual void pushUndoCommand(QUndoCommand *cmd) OVERRIDE FINAL;
     virtual TimeLinePtr getTimeline() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const OVERRIDE FINAL;
+    virtual void getTopLevelKnobs(bool onlyVisible, std::vector<KnobAnimPtr>* knobs) const OVERRIDE FINAL;
     virtual void refreshSelectionBboxAndUpdateView() OVERRIDE FINAL;
     virtual AnimationModuleView* getView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -262,7 +262,7 @@ KnobGuiParametricAnimationModel::getTimeline() const
 }
 
 void
-KnobGuiParametricAnimationModel::getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const
+KnobGuiParametricAnimationModel::getTopLevelKnobs(bool /*onlyVisible*/, std::vector<KnobAnimPtr>* knobs) const
 {
     knobs->push_back(_imp->animRoot);
 }

@@ -92,8 +92,6 @@ public:
 
     virtual void refreshVisibility() OVERRIDE FINAL;
 
-    virtual void refreshKnobsVisibility() OVERRIDE FINAL;
-
     RangeD getFrameRange() const;
 
     void destroyItems();

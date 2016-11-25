@@ -43,6 +43,7 @@
 
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleView.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModuleTreeView.h"
 #include "Gui/CurveGui.h"
 #include "Gui/KnobGui.h"
@@ -370,7 +371,7 @@ TableItemAnim::createViewItems()
         animationItem->setData(0, QT_ROLE_CONTEXT_ITEM_POINTER, qVariantFromValue((void*)thisShared.get()));
         animationItem->setText(0, itemLabel);
         animationItem->setData(0, QT_ROLE_CONTEXT_TYPE, eAnimatedItemTypeTableItemAnimation);
-
+        animationItem->setExpanded(true);
         int nCols = getModel()->getTreeColumnsCount();
         if (nCols > ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE) {
             animationItem->setData(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QT_ROLE_CONTEXT_ITEM_VISIBLE, QVariant(true));
@@ -411,32 +412,36 @@ TableItemAnim::initializeKnobsAnim()
     } // for all knobs
 } // initializeKnobsAnim
 
-void
-TableItemAnim::refreshKnobsVisibility()
-{
-    const std::vector<KnobAnimPtr>& knobRows = getKnobs();
-
-    for (std::vector<KnobAnimPtr>::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
-        QTreeWidgetItem *knobItem = (*it)->getRootItem();
-
-        // Expand if it's a multidim root item
-        if (knobItem->childCount() > 0) {
-            knobItem->setExpanded(true);
-        }
-        (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
-    }
-}
 
 void
 TableItemAnim::refreshVisibilityConditional(bool refreshHolder)
 {
     NodeAnimPtr parentNode = _imp->parentNode.lock();
     if (refreshHolder && parentNode) {
+        // Refresh parent which will refresh this item
         parentNode->refreshVisibility();
         return;
     }
-    refreshKnobsVisibility();
+
+
+    AnimationModulePtr animModule = toAnimationModule(getModel());
+    bool onlyShowIfAnimated = false;
+    if (animModule) {
+        onlyShowIfAnimated = animModule->getEditor()->isOnlyAnimatedItemsVisibleButtonChecked();
+    }
+
+    // Refresh knobs
     bool showItem = false;
+    const std::vector<KnobAnimPtr>& knobRows = getKnobs();
+    for (std::vector<KnobAnimPtr>::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
+        (*it)->refreshVisibilityConditional(false /*refreshHolder*/);
+        if (!(*it)->getRootItem()->isHidden()) {
+            showItem = true;
+        }
+    }
+
+
+    // Refresh children
     for (std::vector<TableItemAnimPtr>::const_iterator it = _imp->children.begin(); it!=_imp->children.end(); ++it) {
         (*it)->refreshVisibilityConditional(false);
         if (!(*it)->getRootItem()->isHidden()) {
@@ -444,7 +449,18 @@ TableItemAnim::refreshVisibilityConditional(bool refreshHolder)
         }
     }
     if (!showItem) {
-        showItem = _imp->tableItem.lock()->getHasAnimation();
+        for (PerViewItemMap::const_iterator it = _imp->animationItems.begin(); it!=_imp->animationItems.end(); ++it) {
+            CurvePtr c = it->second.curve->getInternalCurve();
+            if (!c) {
+                continue;
+            }
+            if (c->isAnimated() || !onlyShowIfAnimated) {
+                it->second.item->setHidden(false);
+                showItem = true;
+            } else {
+                it->second.item->setHidden(true);
+            }
+        }
     }
     _imp->nameItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, showItem);
     _imp->nameItem->setHidden(!showItem);

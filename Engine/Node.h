@@ -138,6 +138,9 @@ CLANG_DIAG_ON(deprecated)
 #define kNatronNodeKnobExportDialogCancelButton "exportDialogCancelButton"
 #define kNatronNodeKnobExportDialogCancelButtonLabel "Cancel"
 
+#define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
+#define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
+#define kNatronNodeKnobKeepInAnimationModuleButtonHint "When checked, this node will always be visible in the Animation Module regardless of whether its settings panel is opened or not"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1048,6 +1051,8 @@ public:
 
     std::string getNodeExtraLabel() const;
 
+    bool isKeepInAnimationModuleButtonDown() const;
+
 private:
 
     void restoreSublabel();
@@ -1498,6 +1503,8 @@ public Q_SLOTS:
     }
 
 Q_SIGNALS:
+
+    void keepInAnimationModuleKnobChanged();
 
     void rightClickMenuKnobPopulated();
 

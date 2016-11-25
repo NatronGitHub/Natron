@@ -94,17 +94,17 @@ public:
     /**
      * @brief Return a list of all top-level items in the model
      **/
-    virtual void getTopLevelKnobs(std::vector<KnobAnimPtr>* knobs) const
+    virtual void getTopLevelKnobs(bool /*onlyVisible*/, std::vector<KnobAnimPtr>* knobs) const
     {
         Q_UNUSED(knobs);
     }
 
-    virtual void getTopLevelNodes(std::vector<NodeAnimPtr >* nodes) const
+    virtual void getTopLevelNodes(bool /*onlyVisible*/, std::vector<NodeAnimPtr >* nodes) const
     {
         Q_UNUSED(nodes);
     }
 
-    virtual void getTopLevelTableItems(std::vector<TableItemAnimPtr>* tableItems) const
+    virtual void getTopLevelTableItems(bool /*onlyVisible*/, std::vector<TableItemAnimPtr>* tableItems) const
     {
         Q_UNUSED(tableItems);
     }
