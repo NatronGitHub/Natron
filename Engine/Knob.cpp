@@ -72,7 +72,8 @@ KnobHelper::KnobHelper(const KnobHolderPtr& holder,
     , _imp( new KnobHelperPrivate(this, holder, nDims, label, declaredByPlugin) )
 {
     if (holder) {
-        setHashParent(holder);
+        // When knob value changes, the holder needs to be invalidated aswell
+        addHashListener(holder);
     }
 }
 

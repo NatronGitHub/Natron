@@ -454,6 +454,9 @@ public:
 
     virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool getDefaultInput(bool connected, int* inputIndex) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
     void refreshRotoPaintTree();
 
     bool isRotoPaintTreeConcatenatable() const;
@@ -492,6 +495,10 @@ public:
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 
     void getMergeChoices(std::vector<std::string>* aInput, std::vector<std::string>* maskInput) const;
+
+    void addSoloItem(const RotoDrawableItemPtr& item);
+    void removeSoloItem(const RotoDrawableItemPtr& item);
+    bool isAmongstSoloItems(const RotoDrawableItemPtr& item) const;
 
 public Q_SLOTS:
 

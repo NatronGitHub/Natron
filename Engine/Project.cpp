@@ -1616,10 +1616,12 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
     return ret;
 } // Project::onKnobValueChanged
 
-void
-Project::invalidateHashCache(bool invalidateParent)
+bool
+Project::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    KnobHolder::invalidateHashCache(invalidateParent);
+    if (!KnobHolder::invalidateHashCacheInternal(invalidatedObjects)) {
+        return false;
+    }
 
     // Also invalidate the hash of all nodes
 
@@ -1627,8 +1629,9 @@ Project::invalidateHashCache(bool invalidateParent)
     getNodes_recursive(nodes, true);
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->invalidateHashCache(invalidateParent);
+        (*it)->getEffectInstance()->invalidateHashCacheInternal(invalidatedObjects);
     }
+    return true;
 }
 
 void

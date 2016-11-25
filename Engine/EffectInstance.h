@@ -294,14 +294,10 @@ public:
      **/
     bool getRenderHash(double time, ViewIdx view, U64* hash) const WARN_UNUSED_RETURN;
 
-    void invalidateHashNotRecursive(bool invalidateParent);
-
     /**
      * @brief Recursively invalidates the hash of this node and the nodes downstream.
      **/
-    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE ;
-
-    static void invalidateHashRecursive(const EffectInstancePtr& effect, bool invalidateParent, std::list<EffectInstancePtr>& markedNodes);
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE ;
 
     /**
      * @brief Forwarded to the node's name
@@ -325,6 +321,22 @@ public:
      * MT-Safe
      **/
     EffectInstancePtr getInput(int n) const WARN_UNUSED_RETURN;
+
+
+    /**
+     * @brief Implement to returns what input should be used by default.
+     * @param connected If true, should return in inputIndex an input that is connected, otherwise -1
+     * (e.g: when the node is disabled).
+     * If false, should return an input that is not yet connected, otherwise -1 (e.g: when auto-connecting
+     * a node into an existing pipe).
+     * By default this function does nothing and the implementation of Node::getPreferredInputInternal is used.
+     **/
+    virtual bool getDefaultInput(bool connected, int* inputIndex) const
+    {
+        Q_UNUSED(connected);
+        Q_UNUSED(inputIndex);
+        return false;
+    }
 
     /**
      * @brief Forwarded to the node holding the effect

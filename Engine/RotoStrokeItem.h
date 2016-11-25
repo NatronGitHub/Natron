@@ -124,9 +124,6 @@ public:
 
     void setStrokeFinished();
 
-    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE;
-
-
     virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
 
     /**

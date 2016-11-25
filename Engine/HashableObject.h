@@ -29,6 +29,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <set>
+
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
@@ -51,12 +53,11 @@ public:
     virtual ~HashableObject();
 
     /**
-     * @brief The parent is another hash object for which this hash object contributes to.
+     * @brief Add another hash object for which this hash object contributes to.
      * This is useful to have sub-hash values that may not change a lot be cached.
      * For instance, a Curve in a Knob might not change a lot hence we cache it's hash
      **/
-    HashableObjectPtr getHashParent() const;
-    void setHashParent(const HashableObjectPtr& parent);
+    void addHashListener(const HashableObjectPtr& parent);
 
 
     /**
@@ -84,13 +85,24 @@ public:
     U64 computeHash(double time, ViewIdx view);
     
     /**
-     * @brief Invalidate the hash cache and invalidate recursively the parent as well.
+     * @brief Invalidate the hash cache and invalidate recursively the listeners as well.
      * This should be called after anything that the hash computation relies on has changed.
-     * Derived implementations must call the base class version.
+     * This internally calls invalidateHashCacheInternal.
      **/
-    virtual void invalidateHashCache(bool invalidateParent = true);
+    void invalidateHashCache();
+
+
+
+    /**
+     * Can be overriden to invalidate the hash. 
+     * Derived implementations should call the base-class version.
+     * Returns true if the hash was invalidated, or false
+     * if the item already had its hash invalidated.
+     **/
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects);
 
 protected:
+
 
     /**
      * @brief Must be implemented by deriving classes to add to the hash.

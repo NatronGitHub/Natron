@@ -46,6 +46,7 @@ struct ColumnHeader
 {
     std::string text;
     std::string iconFilePath;
+    std::string tooltip;
 };
 
 class KnobItemsTablesMetaTypesRegistration
@@ -344,6 +345,29 @@ KnobItemsTable::getColumnIcon(int col) const
         return std::string();
     }
     return _imp->headers[col].iconFilePath;
+}
+
+void
+KnobItemsTable::setColumnTooltip(int col, const std::string& tooltip)
+{
+    ColumnHeader* header = 0;
+    if (col < 0 || col >= (int)_imp->headers.size()) {
+        _imp->headers.push_back(ColumnHeader());
+        header = &_imp->headers.back();
+    } else {
+        header = &_imp->headers[col];
+    }
+    header->tooltip = tooltip;
+}
+
+std::string
+KnobItemsTable::getColumnTooltip(int col) const
+{
+    if (col < 0 || col >= (int)_imp->headers.size()) {
+        return std::string();
+    }
+    return _imp->headers[col].tooltip;
+
 }
 
 int

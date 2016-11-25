@@ -320,7 +320,7 @@ public:
 
     void refreshOpenGLRenderingFlagOnNodes();
 
-    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE FINAL;
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE ;
 
 private:
 

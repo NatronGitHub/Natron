@@ -579,6 +579,12 @@ public:
     std::string getColumnIcon(int col) const;
 
     /**
+     * @brief Set the column tooltip.
+     **/
+    void setColumnTooltip(int col, const std::string& tooltip);
+    std::string getColumnTooltip(int col) const;
+
+    /**
      * @brief Returns the number of columns
      **/
     int getColumnsCount() const;

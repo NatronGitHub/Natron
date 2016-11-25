@@ -538,10 +538,11 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
 
 
-    std::vector<QString> headerLabels(nCols), headerIcons(nCols);
+    std::vector<QString> headerLabels(nCols), headerIcons(nCols), headerTooltips(nCols);
     for (int i = 0; i < nCols; ++i) {
         headerIcons[i] = QString::fromUtf8(table->getColumnIcon(i).c_str());
         headerLabels[i] = QString::fromUtf8(table->getColumnText(i).c_str());
+        headerTooltips[i] = QString::fromUtf8(table->getColumnTooltip(i).c_str());
     }
 
     QString iconsPath = QString::fromUtf8(table->getIconsPath().c_str());
@@ -562,7 +563,9 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
         }
     }
     _imp->tableModel->setHorizontalHeaderData(headerDatas);
-
+    for (int i = 0; i < nCols; ++i) {
+        _imp->tableModel->setHeaderData(i, Qt::Horizontal, QVariant(headerTooltips[i]), Qt::ToolTipRole);
+    }
 
     _imp->tableView->setUniformRowHeights(table->getRowsHaveUniformHeight());
     _imp->tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);

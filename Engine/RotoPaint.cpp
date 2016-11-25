@@ -302,6 +302,24 @@ RotoPaint::getInternalInputNode(int index) const
     return _imp->inputNodes[index].lock();
 }
 
+bool
+RotoPaint::getDefaultInput(bool connected, int* inputIndex) const
+{
+    EffectInstancePtr input0 = getInput(0);
+    if (!connected) {
+        if (!input0) {
+            *inputIndex = 0;
+            return true;
+        }
+    } else {
+        if (input0) {
+            *inputIndex = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 RotoPaint::getEnabledChannelKnobs(KnobBoolPtr* r,KnobBoolPtr* g, KnobBoolPtr* b, KnobBoolPtr *a) const
 {
@@ -2271,22 +2289,37 @@ RotoPaint::initializeKnobs()
     if (_imp->nodeType != eRotoPaintTypeComp) {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
+        _imp->knobsTable->setColumnTooltip(1, kParamRotoItemEnabledHint);
         _imp->knobsTable->setColumnIcon(2, "soloOff.png");
+        _imp->knobsTable->setColumnTooltip(2, kParamRotoItemSoloHint);
         _imp->knobsTable->setColumnIcon(3, "locked.png");
+        _imp->knobsTable->setColumnTooltip(3, kParamRotoItemLockedHint);
         _imp->knobsTable->setColumnIcon(4, "roto_merge.png");
+        _imp->knobsTable->setColumnTooltip(4, kRotoCompOperatorHint);
         _imp->knobsTable->setColumnIcon(5, "colorwheel_overlay.png");
+        _imp->knobsTable->setColumnTooltip(5, kRotoOverlayColorHint);
         _imp->knobsTable->setColumnIcon(6, "colorwheel.png");
+        _imp->knobsTable->setColumnTooltip(6, kRotoColorHint);
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
+        _imp->knobsTable->setColumnTooltip(1, kParamRotoItemEnabledHint);
         _imp->knobsTable->setColumnIcon(2, "soloOff.png");
+        _imp->knobsTable->setColumnTooltip(2, kParamRotoItemSoloHint);
         _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
+        _imp->knobsTable->setColumnTooltip(3, kRotoCompOperatorHint);
         _imp->knobsTable->setColumnIcon(4, "mix.png");
+        _imp->knobsTable->setColumnTooltip(4, kLayeredCompMixParamHint);
         _imp->knobsTable->setColumnIcon(5, "lifetime.png");
+        _imp->knobsTable->setColumnTooltip(5, kRotoDrawableItemLifeTimeParamHint);
         _imp->knobsTable->setColumnIcon(6, "timeOffset.png");
-        _imp->knobsTable->setColumnIcon(7, "uninverted.png");
-        _imp->knobsTable->setColumnIcon(8, "source.png");
+        _imp->knobsTable->setColumnTooltip(6, kRotoBrushTimeOffsetParamHint_Comp);
+        _imp->knobsTable->setColumnIcon(7, "source.png");
+        _imp->knobsTable->setColumnTooltip(7, kRotoDrawableItemMergeAInputParamHint_CompNode);
+        _imp->knobsTable->setColumnIcon(8, "uninverted.png");
+        _imp->knobsTable->setColumnTooltip(8, kRotoInvertedHint);
         _imp->knobsTable->setColumnIcon(9, "maskOff.png");
+        _imp->knobsTable->setColumnTooltip(9, kRotoDrawableItemMergeMaskParamHint);
     }
 
     _imp->refreshSourceKnobs();
@@ -2327,7 +2360,17 @@ RotoPaint::onKnobsLoaded()
         _imp->ui->onToolChangedInternal(defaultAction);
 
     }
+
     _imp->refreshSourceKnobs();
+
+    // Refresh solo items
+    std::list<RotoDrawableItemPtr> allItems;
+    _imp->knobsTable->getRotoItemsByRenderOrder(0, ViewIdx(0), false /*onlyActives*/);
+    for (std::list<RotoDrawableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
+        if ((*it)->getSoloKnob()->getValue()) {
+            _imp->soloItems.insert(*it);
+        }
+    }
 }
 
 bool
@@ -2608,7 +2651,7 @@ getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
             if ( !onlyActives || isChildDrawable->isActivated(time, view) ) {
                 curves->push_front(isChildDrawable);
             }
-        } else if ( isChildLayer && isChildLayer->isGloballyActivated() ) {
+        } else if ( isChildLayer ) {
             getRotoItemsByRenderOrderInternal(curves, isChildLayer, time, view, onlyActives);
         }
     }
@@ -2943,6 +2986,24 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
             }
         }
 
+        RotoPaintItemLifeTimeTypeEnum lifeTime = (RotoPaintItemLifeTimeTypeEnum)(*it)->getLifeTimeFrameKnob()->getValue();
+        if (lifeTime != eRotoPaintItemLifeTimeTypeAll && lifeTime != eRotoPaintItemLifeTimeTypeCustom) {
+            // An item with a varying lifetime makes the concatenation impossible: we cannot disconenct and reconnect the A input of the global
+            // Merge through time.
+            return false;
+        }
+        if (lifeTime == eRotoPaintItemLifeTimeTypeCustom) {
+            // If custom and the custom range checkbox is animated or unchecked, do not concatenate
+            KnobBoolPtr customRange = (*it)->getCustomRangeKnob();
+            if (customRange->hasAnimation() || !customRange->getValue()) {
+                return false;
+            }
+        }
+
+        // Now check the global activated/solo switches
+        if (!(*it)->isGloballyActivated()) {
+            return false;
+        }
 
         RotoStrokeType type = (*it)->getBrushType();
 
@@ -3670,6 +3731,35 @@ RotoPaint::onSourceNodeLabelChanged(const QString& oldLabel, const QString& newL
 {
 
     refreshInputChoices(oldLabel.toStdString(), newLabel.toStdString());
+}
+
+void
+RotoPaint::addSoloItem(const RotoDrawableItemPtr& item)
+{
+    QMutexLocker k(&_imp->soloItemsMutex);
+    _imp->soloItems.insert(item);
+}
+
+bool
+RotoPaint::isAmongstSoloItems(const RotoDrawableItemPtr& item) const
+{
+    QMutexLocker k(&_imp->soloItemsMutex);
+    if (_imp->soloItems.empty()) {
+        return true;
+    }
+    std::set<RotoDrawableItemWPtr>::const_iterator found = _imp->soloItems.find(item);
+    return found != _imp->soloItems.end();
+}
+
+void
+RotoPaint::removeSoloItem(const RotoDrawableItemPtr& item)
+{
+    QMutexLocker k(&_imp->soloItemsMutex);
+    std::set<RotoDrawableItemWPtr>::iterator found = _imp->soloItems.find(item);
+    if (found == _imp->soloItems.end()) {
+        return;
+    }
+    _imp->soloItems.erase(found);
 }
 
 NATRON_NAMESPACE_EXIT;

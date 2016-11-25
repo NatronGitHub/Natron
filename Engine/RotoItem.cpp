@@ -59,6 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -128,25 +129,6 @@ RotoItem::~RotoItem()
 }
 
 
-
-void
-RotoItem::setGloballyActivated_recursive(bool a)
-{
-    {
-        _imp->activatedKnob.lock()->setValue(a);
-        RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
-        if (layer) {
-            std::vector<KnobTableItemPtr> children = layer->getChildren();
-            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-                KnobHolderPtr item = *it;
-                RotoItemPtr rotoItem = toRotoItem(item);
-                rotoItem->setGloballyActivated_recursive(a);
-            }
-        }
-    }
-    invalidateCacheHashAndEvaluate(true, false);
-}
-
 void
 RotoItem::initializeKnobs()
 {
@@ -198,95 +180,44 @@ RotoItem::initializeKnobs()
 
 }
 
-void
-RotoItem::setGloballyActivated(bool a,
-                               bool setChildren)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
-    if (setChildren) {
-        setGloballyActivated_recursive(a);
-    } else {
-        _imp->activatedKnob.lock()->setValue(a);
-    }
-    invalidateCacheHashAndEvaluate(true, false);
-}
 
 bool
 RotoItem::isGloballyActivated() const
 {
     KnobButtonPtr knob = _imp->activatedKnob.lock();
-    return knob ? knob->getValue() : true;
+    if (knob) {
+        if (!knob->getValue()) {
+            return false;
+        }
+    }
+    RotoDrawableItemPtr isDrawable = boost::const_pointer_cast<RotoDrawableItem>(boost::dynamic_pointer_cast<const RotoDrawableItem>(shared_from_this()));
+    RotoPaintPtr rotoEffect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+    if (isDrawable && rotoEffect) {
+        if (!rotoEffect->isAmongstSoloItems(isDrawable)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static bool
-isDeactivated_imp(const RotoLayerPtr& item)
+isActivatedRecursive(const RotoItemPtr& item)
 {
     if ( !item->isGloballyActivated() ) {
-        return true;
-    } else {
-        RotoLayerPtr parent = toRotoLayer(item->getParent());
-        if (parent) {
-            return isDeactivated_imp(parent);
-        }
+        return false;
     }
-
-    return false;
-}
-
-bool
-RotoItem::isDeactivatedRecursive() const
-{
-    RotoLayerPtr parent;
-    {
-        if (!_imp->activatedKnob.lock()->getValue()) {
-            return true;
-        }
-        parent = toRotoLayer(getParent());
-    }
-
+    RotoLayerPtr parent = toRotoLayer(item->getParent());
     if (parent) {
-        return isDeactivated_imp(parent);
+        return isActivatedRecursive(parent);
     }
-
-    return false;
-}
-
-void
-RotoItem::setLocked_recursive(bool locked)
-{
-    {
-
-        _imp->lockedKnob.lock()->setValue(locked);
-        RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
-        if (layer) {
-            std::vector<KnobTableItemPtr> children = layer->getChildren();
-            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-                KnobHolderPtr item = *it;
-                RotoItemPtr rotoItem = toRotoItem(item);
-                rotoItem->setLocked_recursive(locked);
-            }
-        }
-    }
-}
-
-void
-RotoItem::setLocked(bool l,
-                    bool lockChildren)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!lockChildren) {
-        _imp->lockedKnob.lock()->setValue(l);
-    } else {
-        setLocked_recursive(l);
-    }
+    return true;
 }
 
 bool
-RotoItem::getLocked() const
+RotoItem::isGloballyActivatedRecursive() const
 {
-    return _imp->lockedKnob.lock()->getValue();
+    RotoItemPtr thisShared = boost::const_pointer_cast<RotoItem>(toRotoItem(shared_from_this()));
+    return isActivatedRecursive(thisShared);
 }
 
 KnobButtonPtr
@@ -301,13 +232,18 @@ RotoItem::getActivatedKnob() const
     return _imp->activatedKnob.lock();
 }
 
+KnobButtonPtr
+RotoItem::getSoloKnob() const
+{
+    return _imp->soloKnob.lock();
+}
 
 
 static
 bool
 isLocked_imp(const RotoLayerPtr& item)
 {
-    if ( item->getLocked() ) {
+    if ( item->getLockedKnob()->getValue() ) {
         return true;
     } else {
         RotoLayerPtr parent = toRotoLayer(item->getParent());
@@ -340,7 +276,7 @@ RotoItem::isLockedRecursive() const
 
 bool
 RotoItem::onKnobValueChanged(const KnobIPtr& knob,
-                             ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum reason,
                              double /*time*/,
                              ViewSetSpec /*view*/,
                              bool /*originatedFromMainThread*/)
@@ -371,6 +307,34 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
             knob->setEnabled(enabled);
         }
         return true;
+    } else if (knob == _imp->activatedKnob.lock()) {
+        if (reason == eValueChangedReasonUserEdited) {
+            std::vector<KnobTableItemPtr> children = getChildren();
+            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+                KnobHolderPtr item = *it;
+                RotoItemPtr rotoItem = toRotoItem(item);
+                rotoItem->getActivatedKnob()->setValue(getActivatedKnob()->getValue());
+            }
+        }
+    } else if (knob == _imp->soloKnob.lock()) {
+        bool isSolo = getSoloKnob()->getValue();
+        RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
+        if (isDrawable) {
+            RotoPaintPtr rotoEffect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+            if (isSolo) {
+                rotoEffect->addSoloItem(isDrawable);
+            } else {
+                rotoEffect->removeSoloItem(isDrawable);
+            }
+        }
+        if (reason == eValueChangedReasonUserEdited) {
+            std::vector<KnobTableItemPtr> children = getChildren();
+            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+                KnobHolderPtr item = *it;
+                RotoItemPtr rotoItem = toRotoItem(item);
+                rotoItem->getSoloKnob()->setValue(isSolo);
+            }
+        }
     }
     return false;
 }

@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "HashableObject.h"
-
+#include <list>
 #include <QMutex>
 
 #include "Engine/Hash64.h"
@@ -35,7 +35,7 @@ NATRON_NAMESPACE_ENTER
 struct HashableObjectPrivate
 {
     // The parent if any
-    HashableObjectWPtr parent;
+    std::list<HashableObjectWPtr> hashListeners;
 
     // The hash cache
     mutable FrameViewHashMap hashCache;
@@ -44,7 +44,7 @@ struct HashableObjectPrivate
     mutable QMutex hashCacheMutex;
 
     HashableObjectPrivate()
-    : parent()
+    : hashListeners()
     , hashCache()
     , hashCacheMutex(QMutex::Recursive) // It might recurse when calling getValue on a knob with an expression because of randomSeed
     {
@@ -64,18 +64,10 @@ HashableObject::~HashableObject()
 }
 
 void
-HashableObject::setHashParent(const HashableObjectPtr& parent)
+HashableObject::addHashListener(const HashableObjectPtr& parent)
 {
-    _imp->parent = parent;
+    _imp->hashListeners.push_back(parent);
 }
-
-HashableObjectPtr
-HashableObject::getHashParent() const
-{
-    return _imp->parent.lock();
-}
-
-
 
 bool
 HashableObject::findCachedHash(double time, ViewIdx view, U64 *hash) const
@@ -133,19 +125,35 @@ HashableObject::computeHash(double time, ViewIdx view)
 
 }
 
-void
-HashableObject::invalidateHashCache(bool invalidateParent)
+bool
+HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
+    assert(invalidatedObjects);
+
+    if (invalidatedObjects->find(this) != invalidatedObjects->end()) {
+        // Already invalidated
+        return false;
+    }
+    invalidatedObjects->insert(this);
+
     {
         QMutexLocker k(&_imp->hashCacheMutex);
         _imp->hashCache.clear();
     }
-    if (invalidateParent) {
-        HashableObjectPtr parent = getHashParent();
-        if (parent) {
-            parent->invalidateHashCache();
+    for (std::list<HashableObjectWPtr>::const_iterator it = _imp->hashListeners.begin(); it != _imp->hashListeners.end(); ++it) {
+        HashableObjectPtr listener = it->lock();
+        if (listener) {
+            listener->invalidateHashCacheInternal(invalidatedObjects);
         }
     }
+    return true;
+}
+
+void
+HashableObject::invalidateHashCache()
+{
+    std::set<HashableObject*> objs;
+    invalidateHashCacheInternal(&objs);
 }
 
 

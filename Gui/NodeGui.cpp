@@ -66,6 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -3615,11 +3616,19 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     NodePtr ptInput;
     NodePtr node = getNode();
-    bool disabled = node->getDisabledKnobValue();
-    int firstFrame, lastFrame;
-    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
-    int curFrame = node->getApp()->getTimeLine()->currentFrame();
-    bool enabled = ( !lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame) ) && !disabled;
+    bool enabled = true;
+
+    if (node->getDisabledKnobValue()) {
+        enabled = false;
+    }
+    if (enabled) {
+        RotoDrawableItemPtr attachItem = node->getAttachedRotoItem();
+        double time = node->getEffectInstance()->getCurrentTime();
+        if (attachItem && !attachItem->isActivated(time, ViewGetSpec(0))) {
+            enabled = false;
+        }
+    }
+
     if (enabled) {
         if ( _disabledBtmLeftTopRight->isVisible() ) {
             _disabledBtmLeftTopRight->setVisible(false);

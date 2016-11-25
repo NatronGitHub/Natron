@@ -96,24 +96,19 @@ public:
     virtual ~RotoItem();
 
     virtual bool isItemContainer() const OVERRIDE { return false; }
-
-
-    ///only callable from the main-thread
-    void setGloballyActivated(bool a, bool setChildren);
-
+    
     ///MT-safe
     bool isGloballyActivated() const;
 
-    bool isDeactivatedRecursive() const;
-
-    void setLocked(bool l, bool lockChildren);
-    bool getLocked() const;
+    bool isGloballyActivatedRecursive() const;
 
     bool isLockedRecursive() const;
 
     KnobButtonPtr getLockedKnob() const;
 
     KnobButtonPtr getActivatedKnob() const;
+
+    KnobButtonPtr getSoloKnob() const;
 
     virtual std::string getBaseItemName() const OVERRIDE = 0;
 
@@ -129,9 +124,6 @@ protected:
                                     bool originatedFromMainThread) OVERRIDE;
 
 private:
-
-    void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };

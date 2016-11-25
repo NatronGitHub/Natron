@@ -454,10 +454,13 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
 
 }
 
-void
-EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
+bool
+EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
 {
-    HashableObject::invalidateHashCache(invalidateParent);
+    // Clear hash on this node
+    if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
+        return false;
+    }
 
     // If any knob has an expression, we must clear its results and clear its hash cache
     // because the result of the expression might depend on the state of the node
@@ -467,36 +470,17 @@ EffectInstance::invalidateHashNotRecursive(bool invalidateParent)
             std::string expr = (*it)->getExpression(DimIdx(i));
             if (!expr.empty()) {
                 (*it)->clearExpressionsResults(DimSpec(i), ViewSetSpec::all());
-                (*it)->invalidateHashCache(false);
+                (*it)->invalidateHashCacheInternal(invalidatedObjects);
             }
         }
     }
-}
-
-void
-EffectInstance::invalidateHashRecursive(const EffectInstancePtr& effect, bool invalidateParent, std::list<EffectInstancePtr>& markedNodes)
-{
-    if (std::find(markedNodes.begin(), markedNodes.end(), effect) != markedNodes.end()) {
-        return;
-    }
-
-    markedNodes.push_back(effect);
-
-    effect->invalidateHashNotRecursive(invalidateParent);
 
     NodesList outputs;
-    effect->getNode()->getOutputsWithGroupRedirection(outputs);
+    getNode()->getOutputsWithGroupRedirection(outputs);
     for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        invalidateHashRecursive((*it)->getEffectInstance(), invalidateParent, markedNodes);
+        (*it)->getEffectInstance()->invalidateHashCacheInternal(invalidatedObjects);
     }
-
-}
-
-void
-EffectInstance::invalidateHashCache(bool invalidateParent)
-{
-    std::list<EffectInstancePtr> markedNodes;
-    invalidateHashRecursive(shared_from_this(), invalidateParent, markedNodes);
+    return true;
 }
 
 bool
@@ -5184,7 +5168,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 void
 EffectInstance::clearLastRenderedImage()
 {
-    invalidateHashNotRecursive(true);
+    invalidateHashCache();
 }
 
 /**

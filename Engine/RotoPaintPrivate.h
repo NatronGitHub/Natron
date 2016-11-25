@@ -563,6 +563,10 @@ struct RotoPaintPrivate
     mutable QMutex globalMergeNodesMutex;
     NodesList globalMergeNodes;
 
+    // The temporary solo items
+    mutable QMutex soloItemsMutex;
+    std::set<RotoDrawableItemWPtr> soloItems;
+
     // Recursive counter to prevent refreshing of the node tree
     int treeRefreshBlocked;
 

@@ -375,8 +375,6 @@ public:
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE ;
 
-    virtual void invalidateHashCache(bool invalidateParent = true) OVERRIDE ;
-
     NodePtr getOutputNode() const;
 
     NodePtr getOutputNodeInput() const;

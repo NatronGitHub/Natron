@@ -2598,6 +2598,12 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames) const
 int
 Node::getPreferredInputInternal(bool connected) const
 {
+    {
+        int prefInput;
+        if (_imp->effect->getDefaultInput(connected, &prefInput)) {
+            return prefInput;
+        }
+    }
     int nInputs = getMaxInputCount();
 
     if (nInputs == 0) {

@@ -1347,16 +1347,6 @@ NodeGroup::isInputMask(int inputNb) const
     return isBool ? isBool->getValue() : false;
 }
 
-void
-NodeGroup::invalidateHashCache(bool invalidateParent)
-{
-    invalidateHashNotRecursive(invalidateParent);
-    NodesList nodes = getNodes();
-    std::list<EffectInstancePtr> markedNodes;
-    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        invalidateHashRecursive((*it)->getEffectInstance(), invalidateParent, markedNodes);
-    }
-}
 
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)

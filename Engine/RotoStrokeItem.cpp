@@ -1186,12 +1186,6 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
 }
 
 void
-RotoStrokeItem::invalidateHashCache(bool invalidateParent)
-{
-    RotoDrawableItem::invalidateHashCache(invalidateParent);
-}
-
-void
 RotoStrokeItem::initializeKnobs()
 {
     RotoDrawableItem::initializeKnobs();

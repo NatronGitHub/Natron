@@ -488,14 +488,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
     }
 
-    // For drawn masks, the hash depend on the draw bezier/stroke, hence we need to add this item as a child of the RotoShapeRenderNode
-    if (_imp->maskNode) {
-        setHashParent(_imp->maskNode->getEffectInstance());
-    } else if (type == eRotoStrokeTypeSolid || type == eRotoStrokeTypeSmear) {
-        setHashParent(_imp->effectNode->getEffectInstance());
-    }
-
-
+    // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
+    // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
+    addHashListener(rotoPaintEffect);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {
@@ -613,8 +608,25 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     if ( (reason == eValueChangedReasonUserEdited) && (knob->getName() != kRotoBrushCenterParam) && (knob->getName() != kRotoDrawableItemCenterParam)) {
         rotoPaintEffect->onBreakMultiStrokeTriggered();
     }
-
-    if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock())) {
+    if (knob == getActivatedKnob() || knob == getSoloKnob()) {
+        // When the item is activated we must refresh the tree
+        bool ret = RotoItem::onKnobValueChanged(knob, reason, time, view, originatedFromMainThread);
+        if (_imp->effectNode) {
+            _imp->effectNode->refreshIdentityState();
+        }
+        _imp->mergeNode->refreshIdentityState();
+        if (_imp->maskNode) {
+            _imp->maskNode->refreshIdentityState();
+        }
+        if (_imp->timeOffsetNode) {
+            _imp->timeOffsetNode->refreshIdentityState();
+        }
+        if (_imp->frameHoldNode) {
+            _imp->frameHoldNode->refreshIdentityState();
+        }
+        rotoPaintEffect->refreshRotoPaintTree();
+        return ret;
+    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock() || knob == _imp->customRange.lock() || knob == _imp->lifeTime.lock())) {
         rotoPaintEffect->refreshRotoPaintTree();
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         refreshNodesConnections();
@@ -996,7 +1008,7 @@ RotoDrawableItem::resetNodesThreadSafety()
 bool
 RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
 {
-    if ( !isGloballyActivated() ) {
+    if ( !isGloballyActivatedRecursive() ) {
         return false;
     }
     try {
@@ -1515,8 +1527,8 @@ RotoDrawableItem::initializeKnobs()
         addColumn(kLayeredCompMixParam, DimIdx(0));
         addColumn(kRotoDrawableItemLifeTimeParam, DimIdx(0));
         addColumn(kRotoBrushTimeOffsetParam, DimIdx(0));
-        addColumn(kRotoInvertedParam, DimIdx(0));
         addColumn(kRotoDrawableItemMergeAInputParam, DimIdx(0));
+        addColumn(kRotoInvertedParam, DimIdx(0));
         addColumn(kRotoDrawableItemMergeMaskParam, DimIdx(0));
 
     } else {
