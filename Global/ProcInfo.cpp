@@ -334,7 +334,8 @@ QString
 ProcInfo::applicationFilePath(const char* argv0Param)
 {
 #if defined(Q_OS_WIN)
-
+    Q_UNUSED(argv0Param);
+    
     //The only viable solution
     return applicationFileName();
 #elif defined(Q_OS_MAC)
