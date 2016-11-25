@@ -119,6 +119,11 @@ public:
         return false;
     }
 
+    virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;

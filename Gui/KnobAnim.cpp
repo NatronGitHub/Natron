@@ -154,19 +154,7 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 
 KnobAnim::~KnobAnim()
 {
-
-    /*AnimationModuleBasePtr model = getModel();
-    bool isTearingDown;
-    if (model) {
-        isTearingDown = model->isAboutToBeDestroyed();
-    } else {
-        isTearingDown = true;
-    }
-
-    if (!isTearingDown) {
-        delete _imp->rootItem;
-    }
-    _imp->rootItem = 0;*/
+    destroyItems();
 }
 
 void
@@ -261,11 +249,20 @@ KnobAnimPrivate::createItemForView(const std::vector<std::string>& projectViewNa
 } // createItemForView
 
 void
-KnobAnim::destroyAndRecreate()
+KnobAnim::destroyItems()
 {
     delete _imp->rootItem;
+    _imp->rootItem = 0;
     _imp->dimViewItems.clear();
     _imp->viewItems.clear();
+}
+
+
+
+void
+KnobAnim::destroyAndRecreate()
+{
+    destroyItems();
 
     initialize();
 

@@ -276,7 +276,7 @@ KnobGuiButton::updateGUI()
 {
     KnobButtonPtr k = _knob.lock();
 
-    if ( k->getIsCheckable() ) {
+    if ( k && k->getIsCheckable() ) {
         bool checked = k->getValue();
         if (_button->isChecked() == checked) {
             return;

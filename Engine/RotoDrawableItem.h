@@ -128,6 +128,11 @@ public:
     void refreshNodesConnections();
 
     /**
+     * @brief Refresh the internal tree of the item so that it's nodes are centered around the point at (x,y)
+     **/
+    void refreshNodesPositions(double x, double y);
+
+    /**
      * @brief Deactivates all nodes used by this item
      **/
     void deactivateNodes();

@@ -213,9 +213,19 @@ RotoPaint::~RotoPaint()
 }
 
 bool
-RotoPaint::isSubGraphUserVisible() const
+RotoPaint::isSubGraphPersistent() const
 {
     return false;
+}
+
+bool
+RotoPaint::isSubGraphUserVisible() const
+{
+#ifdef ROTO_PAINT_NODE_GRAPH_VISIBLE
+    return true;
+#else
+    return false;
+#endif
 }
 
 RotoPaint::RotoPaintTypeEnum
@@ -1174,7 +1184,9 @@ RotoPaint::setupInitialSubGraphState()
             {
                 CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
                 args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
                 args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
                 args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, ss.str());
                 args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
                 if (i == ROTOPAINT_MASK_INPUT_INDEX) {
@@ -1212,7 +1224,9 @@ RotoPaint::setupInitialSubGraphState()
             {
                 CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
                 args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
                 args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
                 args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, inputName);
                 args->addParamDefaultValue<bool>(kNatronGroupInputIsOptionalParamName, true);
                 if (isMask) {
@@ -1229,7 +1243,9 @@ RotoPaint::setupInitialSubGraphState()
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Output");
 
         outputNode = getApp()->createNode(args);
@@ -1241,7 +1257,9 @@ RotoPaint::setupInitialSubGraphState()
         {
             CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_PREMULT, thisShared));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
             // Set premult node to be identity by default
             args->addParamDefaultValue<bool>(kNatronOfxParamProcessR, false);
             args->addParamDefaultValue<bool>(kNatronOfxParamProcessG, false);
@@ -1267,7 +1285,9 @@ RotoPaint::setupInitialSubGraphState()
         {
             CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_NOOP, thisShared));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
             // Set premult node to be identity by default
             args->addParamDefaultValue<bool>("setPremult", true);
             noopNode = getApp()->createNode(args);
@@ -2605,8 +2625,9 @@ RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bo
         return ret;
     }
     RotoLayerPtr layer = toRotoLayer(topLevelItems.front());
-
-    getRotoItemsByRenderOrderInternal(&ret, layer, time, view, onlyActivated);
+    if (layer) {
+        getRotoItemsByRenderOrderInternal(&ret, layer, time, view, onlyActivated);
+    }
 
     return ret;
 }
@@ -2899,24 +2920,33 @@ RotoPaintKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& ite
 bool
 RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,  int* blendingMode) const
 {
+    // Iterate over items, if they all have the same compositing operator, concatenate. Concatenation only works for Solids or Comp items. If a comp item has a mask or mix is animated or different than 1, we cannot concatenate
     bool operatorSet = false;
     int comp_i = -1;
 
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-        int op = (*it)->getOperatorKnob()->getValue();
+        MergingFunctionEnum op = (MergingFunctionEnum)(*it)->getOperatorKnob()->getValue();
 
+        // Can only concatenate with over
+        if (op != eMergeOver) {
+            return false;
+        }
 
         if (!operatorSet) {
             operatorSet = true;
             comp_i = op;
         } else {
             if (op != comp_i) {
-                //2 items have a different compositing operator
+                // 2 items have a different compositing operator
                 return false;
             }
         }
+
+
         RotoStrokeType type = (*it)->getBrushType();
+
+        // Other item types cannot concatenate since they use a custom mask on their Merge node.
         if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeComp) {
             return false;
         }
@@ -2927,7 +2957,8 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
             if ((*it)->getMergeMaskChoiceKnob()->getValue() > 0) {
                 return false;
             }
-            if ((*it)->getMixKnob()->getValue() != 1.) {
+            KnobDoublePtr mixKnob = (*it)->getMixKnob();
+            if (mixKnob->hasAnimation() || mixKnob->getValue() != 1.) {
                 return false;
             }
 
@@ -3007,7 +3038,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 
 
     CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE,  rotoPaintEffect ));
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
     args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
@@ -3090,11 +3123,15 @@ RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPain
 void
 RotoPaint::refreshRotoPaintTree()
 {
+    // Rebuild the internal tree of the RotoPaint node group from items and parameters.
+
     if (_imp->treeRefreshBlocked) {
         return;
     }
     double time = getCurrentTime();
     ViewIdx view = getCurrentView();
+
+    // Get the items by render order. In the GUI they appear from bottom to top.
     std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
 
     // Check if the tree can be concatenated into a single merge node
@@ -3108,21 +3145,25 @@ RotoPaint::refreshRotoPaintTree()
         mergeNodes = _imp->globalMergeNodes;
     }
 
-    // Ensure that all global merge nodes are disconnected
+    // Ensure that all global merge nodes are disconnected so that items don't have output references
+    // to the global merge nodes.
     for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
         int maxInputs = (*it)->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
         }
     }
+
+    // Get the first global merge node.
     globalMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
     assert(rotoPaintEffect);
 
+    // If concatenation enabled, connect the B input of the global Merge to the RotoPaint
+    // background input node.
     if (canConcatenate) {
         NodePtr rotopaintNodeInput = rotoPaintEffect->getInternalInputNode(0);
-        //Connect the rotopaint node input to the B input of the Merge
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
         }
@@ -3135,12 +3176,21 @@ RotoPaint::refreshRotoPaintTree()
     }
 
     // Refresh each item separately
+
+
+    // Also place items in the node-graph
+    Point nodePosition = {0.,0.};
+    Point mergeNodeBeginPos = {0, 300};
     for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
         (*it)->refreshNodesConnections();
+        (*it)->refreshNodesPositions(nodePosition.x, nodePosition.y);
+
+        // Place each item tree on the right
+        nodePosition.x += 200;
 
         if (canConcatenate) {
 
-            // If we concatenate the tree, connect the global merge to the effect
+            // If we concatenate the tree, connect the global merge Ax input to the effect
 
             NodePtr mergeInputA = (*it)->getMergeNode()->getInput(1);
             if (mergeInputA) {
@@ -3148,9 +3198,17 @@ RotoPaint::refreshRotoPaintTree()
                 //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
                 globalMerge->connectInput(mergeInputA, globalMergeIndex);
 
-                // Refresh for next node
+                // If the global merge node has all its A inputs connected, create a new one, otherwise get the next A input.
                 NodePtr nextMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
                 if (nextMerge != globalMerge) {
+
+                    // Place the global merge below at the average of all nodes used
+                    mergeNodeBeginPos.x = (nodePosition.x + mergeNodeBeginPos.x) / 2.;
+                    globalMerge->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+
+                    mergeNodeBeginPos.y -= 200;
+
+                    // If we made a new merge node, connect the B input of the new merge to the previous global merge.
                     assert( !nextMerge->getInput(0) );
                     nextMerge->connectInput(globalMerge, 0);
                     globalMerge = nextMerge;
@@ -3159,22 +3217,72 @@ RotoPaint::refreshRotoPaintTree()
         }
     }
 
-    // Default to noop node as bottom of the tree
+    // Refresh the last global merge position
+    {
+        mergeNodeBeginPos.x = (nodePosition.x + mergeNodeBeginPos.x) / 2.;
+        globalMerge->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+    }
+
+    // At this point all items have their tree OK, now just connect the bottom of the tree
+    // to the first item merge node.
+
+    // Default to noop node as bottom of the tree (if any)
     NodePtr premultNode = rotoPaintEffect->getPremultNode();
+    if (premultNode) {
+        mergeNodeBeginPos.y += 150;
+        premultNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+    }
     NodePtr noOpNode = rotoPaintEffect->getMetadataFixerNode();
+    if (noOpNode) {
+        mergeNodeBeginPos.y += 150;
+        noOpNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+    }
     NodePtr treeOutputNode = rotoPaintEffect->getOutputNode();
     if (!treeOutputNode) {
+        // should not happen
         return;
+    }
+    mergeNodeBeginPos.y += 150;
+    treeOutputNode->setPosition(mergeNodeBeginPos.x - 100, mergeNodeBeginPos.y);
+
+    // Also refresh the position of inputs nodes
+    {
+        std::vector<NodePtr> inputs(_imp->inputNodes.size());
+        double totalInputsWidth = 0;
+        for (std::size_t i = 0; i < _imp->inputNodes.size(); ++i) {
+            NodePtr inputNode = _imp->inputNodes[i].lock();
+            inputs[i] = inputNode;
+            if (!inputNode) {
+                continue;
+            }
+            double w,h;
+            inputNode->getSize(&w, &h);
+            totalInputsWidth += w;
+            if (i < _imp->inputNodes.size() - 1) {
+                totalInputsWidth += 200;
+            }
+        }
+        Point inputPos = {nodePosition.x / 2. - totalInputsWidth / 2., nodePosition.y - 500};
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            NodePtr inputNode = inputs[i];
+            if (!inputNode) {
+                continue;
+            }
+            inputNode->setPosition(inputPos.x, inputPos.y);
+            inputPos.x += 200;
+        }
     }
 
     if (canConcatenate) {
-        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.front());
+        // Connect the bottom of the tree to the last global merge node.
+        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.back());
     } else {
-        if (!items.empty()) {
-            // Connect noop to the last item at the bottom of the tree
-            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.back()->getMergeNode());
 
+        if (!items.empty()) {
+            // Connect the bottom of the tree to the last item merge node.
+            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.back()->getMergeNode());
         } else {
+            // Connect output to Input, the RotoPaint is pass-through
             treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);
         }
     }

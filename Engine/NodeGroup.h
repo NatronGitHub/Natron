@@ -395,11 +395,18 @@ public:
     void setIsActivatingGroup(bool b);
 
     /**
-     * @brief For sub-classes override to choose whether to create a node graph that will be visible by the user or not.
-     * If returning false, the nodegraph will NEVER be created and all nodes in the node-graph are expected to be non-persistent, i.e:
-     * when reloading the node, it should create the internal nodes again.
+     * @brief For sub-classes override to choose whether to create a node graph that will ever be visible by the user or not.
      **/
     virtual bool isSubGraphUserVisible() const
+    {
+        return true;
+    }
+
+    /*
+     * If returning false, all nodes in the node-graph are expected to be non-persistent, i.e:
+     * when reloading the node, it should create the internal nodes again in setupInitialSubGraphState()
+     */
+    virtual bool isSubGraphPersistent() const
     {
         return true;
     }

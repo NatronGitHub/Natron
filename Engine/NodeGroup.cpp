@@ -1052,7 +1052,7 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
     if (isGrp) {
 
-        if (isGrp->isSubGraphUserVisible()) {
+        if (isGrp->isSubGraphPersistent()) {
             KnobIPtr pyPlugPage = isGrp->getNode()->getKnobByName(kPyPlugPageParamName);
             if (pyPlugPage) {
                 pyPlugPage->setSecret(!edited);
@@ -1568,7 +1568,7 @@ NodeGroup::clearLastRenderedImage()
 void
 NodeGroup::setupInitialSubGraphState()
 {
-    if (!isSubGraphEditable() || !isSubGraphUserVisible()) {
+    if (!isSubGraphEditable() || !isSubGraphPersistent()) {
         return;
     }
 
@@ -1618,7 +1618,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
         setSubGraphEditedByUser(false);
 
 
-    } else if (projectSerialization && isSubGraphUserVisible()) {
+    } else if (projectSerialization && isSubGraphPersistent()) {
 
         // Ok if we are here that means we are loading a group that was edited.
         // Clear any initial nodes created and load the sub-graph

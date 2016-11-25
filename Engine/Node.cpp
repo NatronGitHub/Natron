@@ -4107,7 +4107,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     if (!isGrpNode && !isBackdropNode) {
         createInfoPage();
     } else {
-        if (isGrpNode->isSubGraphUserVisible()) {
+        if (isGrpNode->isSubGraphPersistent()) {
             createPyPlugPage();
 
             if (hasGUI) {

@@ -1365,6 +1365,14 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         return true;
     }
     if (warp.isIdentity()) {
+        if (newKeys) {
+            for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
+                KeyFrame k;
+                if (getKeyFrameWithTime(*it, &k)) {
+                    newKeys->push_back(k);
+                }
+            }
+        }
         return true;
     }
 

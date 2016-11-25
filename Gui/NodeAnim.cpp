@@ -122,6 +122,12 @@ NodeAnim::NodeAnim(const AnimationModulePtr &model,
 NodeAnim::~NodeAnim()
 {
     // Kill sub items first before killing the top level item
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        _imp->knobs[i]->destroyItems();
+    }
+    for (std::size_t i = 0; i < _imp->topLevelTableItems.size(); ++i) {
+        _imp->topLevelTableItems[i]->destroyItems();
+    }
     _imp->knobs.clear();
     _imp->topLevelTableItems.clear();
 

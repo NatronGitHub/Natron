@@ -96,6 +96,8 @@ public:
 
     RangeD getFrameRange() const;
 
+    void destroyItems();
+
 public Q_SLOTS:
 
     void onInternalItemLabelChanged(const QString& label, TableChangeReasonEnum);

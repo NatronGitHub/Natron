@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoPaintPrivate.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -277,7 +278,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
         CreateNodeArgsPtr args(CreateNodeArgs::create( pluginId.toStdString(), rotoPaintEffect ));
         args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
         args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
@@ -344,7 +347,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
             fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
             CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect ));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
             _imp->timeOffsetNode = app->createNode(args);
@@ -364,7 +369,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
             fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
             CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect ));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
             _imp->frameHoldNode = app->createNode(args);
             assert(_imp->frameHoldNode);
@@ -385,7 +392,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE, rotoPaintEffect ));
     args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
     args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
     args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
@@ -456,7 +465,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
             fixedNamePrefix.append( QString::fromUtf8("Mask") );
             CreateNodeArgsPtr args(CreateNodeArgs::create( maskPluginID.toStdString(), rotoPaintEffect ));
             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
             args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
             args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
             _imp->maskNode = app->createNode(args);
@@ -603,7 +614,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         rotoPaintEffect->onBreakMultiStrokeTriggered();
     }
 
-    if (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock()) {
+    if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock())) {
         rotoPaintEffect->refreshRotoPaintTree();
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         refreshNodesConnections();
@@ -681,6 +692,29 @@ RotoDrawableItem::clearPaintBuffers()
             (*it)->clearLastRenderedImage();
         }
     }
+}
+
+void
+RotoDrawableItem::refreshNodesPositions(double x, double y)
+{
+    _imp->mergeNode->setPosition(x, y);
+    if (_imp->maskNode) {
+        _imp->maskNode->setPosition(x - 100, y);
+    }
+    double yOffset = 100;
+    if (_imp->effectNode) {
+        _imp->effectNode->setPosition(x, y - yOffset);
+        yOffset -= 100;
+    }
+    if (_imp->timeOffsetNode) {
+        if (_imp->frameHoldNode) {
+            _imp->timeOffsetNode->setPosition(x - 100, y - yOffset);
+            _imp->frameHoldNode->setPosition(x + 100, y - yOffset);
+        } else {
+            _imp->timeOffsetNode->setPosition(x, y - yOffset);
+        }
+    }
+
 }
 
 void

@@ -452,6 +452,8 @@ public:
 
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     void refreshRotoPaintTree();
 
     bool isRotoPaintTreeConcatenatable() const;

@@ -103,6 +103,11 @@ public:
         return false;
     }
 
+    virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
     void renderSequenceStarted();
     void renderSequenceEnd();
 

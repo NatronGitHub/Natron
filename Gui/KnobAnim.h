@@ -85,6 +85,8 @@ public:
 
     void refreshViewLabels(const std::vector<std::string>& projectViewNames);
 
+    void destroyItems();
+
 public Q_SLOTS:
 
     void emit_s_refreshKnobVisibilityLater();

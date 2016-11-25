@@ -45,7 +45,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
+#ifdef DEBUG
+#define ROTO_PAINT_NODE_GRAPH_VISIBLE 
+#endif
 
 #define kControlPointMidSize 3
 #define kBezierSelectionTolerance 8

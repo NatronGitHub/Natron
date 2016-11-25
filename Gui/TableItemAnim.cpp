@@ -104,19 +104,26 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
 
 TableItemAnim::~TableItemAnim()
 {
-    AnimationModuleBasePtr model = getModel();
-    bool isTearingDown;
-    if (model) {
-        isTearingDown = model->isAboutToBeDestroyed();
-    } else {
-        isTearingDown = true;
-    }
+    destroyItems();
+}
 
-    if (!isTearingDown) {
-#pragma message WARN("Fix this")
-        delete _imp->nameItem;
+void
+TableItemAnim::destroyItems()
+{
+
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        _imp->knobs[i]->destroyItems();
     }
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        _imp->children[i]->destroyItems();
+    }
+    _imp->knobs.clear();
+    _imp->children.clear();
+    
+    delete _imp->nameItem;
     _imp->nameItem = 0;
+    
+
 }
 
 

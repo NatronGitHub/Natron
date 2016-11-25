@@ -281,13 +281,10 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 bool
 KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* outKeys)
 {
-    if ( times.empty() ) {
+    if ( times.empty() || !canAnimate() ) {
         return true;
     }
 
-    if ( !canAnimate() ) {
-        return true;
-    }
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
