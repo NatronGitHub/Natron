@@ -1604,7 +1604,7 @@ KnobItemsTable::onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonE
     if (!masterKnob) {
         return;
     }
-    if (reason != eValueChangedReasonTimeChanged) {
+    if (reason != eValueChangedReasonTimeChanged && reason != eValueChangedReasonNatronInternalEdited) {
         QMutexLocker k(&_imp->selectionLock);
 
         // We may be in endSelection() when we  copy the masterKnob from the selection. In that case we don't want to recurse
@@ -1637,7 +1637,7 @@ KnobItemsTable::onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReas
         return;
     }
 
-    if (reason == eValueChangedReasonTimeChanged) {
+    if (reason == eValueChangedReasonTimeChanged || reason == eValueChangedReasonNatronInternalEdited) {
         return;
     }
 

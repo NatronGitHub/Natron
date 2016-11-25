@@ -519,25 +519,6 @@ void
 AnimationModuleViewPrivate::drawDopeSheetAnimItemRow(QTreeWidgetItem* treeItem, const AnimItemBasePtr& item, DimSpec dimension, ViewSetSpec view) const
 {
 
-    QRectF nameItemRect = treeView->visualItemRect(treeItem);
-    QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    double bkR, bkG, bkB, bkA;
-    if ( dimension.isAll() || view.isAll() ) {
-        settings->getAnimationModuleEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
-    } else {
-        settings->getAnimationModuleEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
-    }
-
-    GL_GPU::Color4f(bkR, bkG, bkB, bkA);
-
-    GL_GPU::Begin(GL_POLYGON);
-    GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
-    GL_GPU::Vertex2f( rowRect.left(), rowRect.bottom() );
-    GL_GPU::Vertex2f( rowRect.right(), rowRect.bottom() );
-    GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
-    GL_GPU::End();
-
     AnimationModuleBasePtr model = _model.lock();
     bool drawdimed = !model->isCurveVisible(item, dimension, view);
     drawDopeSheetKeyframes(treeItem, item, dimension, view, drawdimed);
@@ -687,17 +668,17 @@ void
 AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, const AnimItemBasePtr &item, DimSpec dimension, ViewSetSpec view, bool drawdimed) const
 {
 
+
+    double selectionColorRGB[3];
     QColor selectionColor;
-    {
-        double selectionColorRGB[3];
-        appPTR->getCurrentSettings()->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
-        selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
-    }
+    appPTR->getCurrentSettings()->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
+    selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
+
 
     double rowCenterYCanonical = dopeSheetZoomContext.toZoomCoordinates(0, treeView->visualItemRect(treeItem).center().y()).y();
 
 
-    AnimationModuleBasePtr animModel = _model.lock();
+    AnimationModulePtr animModel = toAnimationModule(_model.lock());
     AnimationModuleSelectionModelPtr selectModel = animModel->getSelectionModel();
 
     double singleSelectedTime;
@@ -705,6 +686,31 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
 
     KeyFrameWithStringSet dimViewKeys;
     item->getKeyframes(dimension, view, AnimItemBase::eGetKeyframesTypeMerged, &dimViewKeys);
+
+    QRectF nameItemRect = treeView->visualItemRect(treeItem);
+    QRectF rowRect = nameItemRectToRowRect(nameItemRect);
+
+    {
+        double bkR, bkG, bkB, bkA;
+
+        // If the item has children that means we are either drawing a root or view row.
+        // Also if the item does not have any keyframe, do use the same background.
+        if ( treeItem->childCount() > 0 || dimViewKeys.empty()) {
+            appPTR->getCurrentSettings()->getAnimationModuleEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
+        } else {
+            appPTR->getCurrentSettings()->getAnimationModuleEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
+        }
+
+        GL_GPU::Color4f(bkR, bkG, bkB, bkA);
+
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
+        GL_GPU::Vertex2f( rowRect.left(), rowRect.bottom() );
+        GL_GPU::Vertex2f( rowRect.right(), rowRect.bottom() );
+        GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
+        GL_GPU::End();
+    }
+
 
     for (KeyFrameWithStringSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
 
@@ -745,6 +751,25 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
 
     } // for all keyframes
 
+    // Draw selection highlight
+    bool itemSelected = false;
+    QList<QTreeWidgetItem*> selectedItems = animModel->getEditor()->getTreeView()->selectedItems();
+    for (QList<QTreeWidgetItem*>::const_iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
+        if (*it == treeItem) {
+            itemSelected = true;
+            break;
+        }
+    }
+    if (itemSelected) {
+        GL_GPU::Color4f(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2], 0.15);
+
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( rowRect.left(), rowRect.top() );
+        GL_GPU::Vertex2f( rowRect.left(), rowRect.bottom() );
+        GL_GPU::Vertex2f( rowRect.right(), rowRect.bottom() );
+        GL_GPU::Vertex2f( rowRect.right(), rowRect.top() );
+        GL_GPU::End();
+    }
 
 } // drawDopeSheetKeyframes
 
