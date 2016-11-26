@@ -88,10 +88,10 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
             ret = true;
         }
     } else {
-        try {
+        if (xCurve->isAnimated()) {
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
-        } catch (const std::exception & e) {
+        } else {
             QMutexLocker l(&_imp->staticPositionMutex);
             *x = useGuiCurves ? _imp->guiX : _imp->x;
             *y = useGuiCurves ? _imp->guiY : _imp->y;
@@ -194,10 +194,10 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
             ret = true;
         }
     } else {
-        try {
+        if (xCurve->isAnimated()) {
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
-        } catch (const std::exception & e) {
+        } else {
             QMutexLocker l(&_imp->staticPositionMutex);
             if (!useGuiCurves) {
                 *x = _imp->leftX;
@@ -237,10 +237,10 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
             ret = true;
         }
     } else {
-        try {
+        if (xCurve->isAnimated()) {
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
-        } catch (const std::exception & e) {
+        } else {
             QMutexLocker l(&_imp->staticPositionMutex);
             if (!useGuiCurves) {
                 *x = _imp->rightX;
