@@ -73,7 +73,7 @@ public:
     
     bool getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const;
 
-    virtual void setAllDimensionsVisible(bool visible) OVERRIDE FINAL;
+    virtual void setAllDimensionsVisible(bool visible) OVERRIDE;
 
     void disableSpinBoxesBorder();
 

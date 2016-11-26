@@ -99,7 +99,25 @@ struct KnobGuiValuePrivate
     KnobIWPtr knob;
     boost::weak_ptr<KnobIntBase > intKnob;
     boost::weak_ptr<KnobDoubleBase > doubleKnob;
-    std::vector<std::pair<SpinBox *, ClickableLabel *> > spinBoxes;
+
+
+    struct DimensionWidgets
+    {
+        SpinBox* box;
+        ClickableLabel* label;
+        QWidget* container;
+        QHBoxLayout* layout;
+
+        DimensionWidgets()
+        : box(0)
+        , label(0)
+        , container(0)
+        , layout(0)
+        {
+
+        }
+    };
+    std::vector<DimensionWidgets> spinBoxes;
     QWidget *container;
     ScaleSliderQWidget *slider;
     Button* rectangleFormatButton;
@@ -343,8 +361,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         // When the knob is a table item, ensure only 1 spinbox is displayed, or a custom widget (for KnobColor)
         if ((singleDimensionEnabled && singleDimension != (int)i) || (knobUI->getLayoutType() == KnobGui::eKnobLayoutTypeTableItemWidget && !singleDimensionEnabled)) {
-            _imp->spinBoxes[i].first = 0;
-            _imp->spinBoxes[i].second = 0;
+            _imp->spinBoxes[i].box = 0;
+            _imp->spinBoxes[i].label = 0;
             continue;
         }
 
@@ -402,7 +420,10 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         } else {
             spinBoxesGrid->addWidget(boxContainer, rowIndex, columnIndex);
         }
-        _imp->spinBoxes[i] = std::make_pair(box, subDesc);
+        _imp->spinBoxes[i].box = box;
+        _imp->spinBoxes[i].label = subDesc;
+        _imp->spinBoxes[i].container = boxContainer;
+        _imp->spinBoxes[i].layout = boxContainerLayout;
 
         ++columnIndex;
         if (columnIndex >= nItemsPerRow) {
@@ -545,10 +566,10 @@ KnobGuiValue::getSpinBox(DimIdx dim,
         return false;
     }
     if (spinbox) {
-        *spinbox = _imp->spinBoxes[dim].first;
+        *spinbox = _imp->spinBoxes[dim].box;
     }
     if (label) {
-        *label = _imp->spinBoxes[dim].second;
+        *label = _imp->spinBoxes[dim].label;
     }
     return true;
 }
@@ -557,7 +578,7 @@ bool
 KnobGuiValue::getDimForSpinBox(const SpinBox* spinbox, DimIdx* dimension) const
 {
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first == spinbox) {
+        if (_imp->spinBoxes[i].box == spinbox) {
             *dimension = DimIdx(i);
             return true;
         }
@@ -575,18 +596,18 @@ KnobGuiValue::onRectangleFormatButtonClicked()
     _imp->rectangleFormatIsWidthHeight = !_imp->rectangleFormatIsWidthHeight;
     _imp->rectangleFormatButton->setDown(_imp->rectangleFormatIsWidthHeight);
     if (_imp->rectangleFormatIsWidthHeight) {
-        if (_imp->spinBoxes[2].second) {
-            _imp->spinBoxes[2].second->setText( QString::fromUtf8("w") );
+        if (_imp->spinBoxes[2].label) {
+            _imp->spinBoxes[2].label->setText( QString::fromUtf8("w") );
         }
-        if (_imp->spinBoxes[3].second) {
-            _imp->spinBoxes[3].second->setText( QString::fromUtf8("h") );
+        if (_imp->spinBoxes[3].label) {
+            _imp->spinBoxes[3].label->setText( QString::fromUtf8("h") );
         }
     } else {
-        if (_imp->spinBoxes[2].second) {
-            _imp->spinBoxes[2].second->setText( QString::fromUtf8("r") );
+        if (_imp->spinBoxes[2].label) {
+            _imp->spinBoxes[2].label->setText( QString::fromUtf8("r") );
         }
-        if (_imp->spinBoxes[3].second) {
-            _imp->spinBoxes[3].second->setText( QString::fromUtf8("t") );
+        if (_imp->spinBoxes[3].label) {
+            _imp->spinBoxes[3].label->setText( QString::fromUtf8("t") );
         }
     }
     updateGUI();
@@ -626,12 +647,12 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
         setVisibleSlider(false);
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
-                if (_imp->spinBoxes[i].first) {
-                    _imp->spinBoxes[i].first->show();
+                if (_imp->spinBoxes[i].box) {
+                    _imp->spinBoxes[i].box->show();
                 }
             }
-            if (_imp->spinBoxes[i].second) {
-                _imp->spinBoxes[i].second->show();
+            if (_imp->spinBoxes[i].label) {
+                _imp->spinBoxes[i].label->show();
             }
         }
     } else {
@@ -639,12 +660,12 @@ KnobGuiValue::setAllDimensionsVisible(bool visible)
 
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
             if (i > 0) {
-                if ( _imp->spinBoxes[i].first) {
-                    _imp->spinBoxes[i].first->hide();
+                if ( _imp->spinBoxes[i].box) {
+                    _imp->spinBoxes[i].box->hide();
                 }
             }
-            if (_imp->spinBoxes[i].second) {
-                _imp->spinBoxes[i].second->hide();
+            if (_imp->spinBoxes[i].label) {
+                _imp->spinBoxes[i].label->hide();
             }
         }
 
@@ -655,8 +676,8 @@ void
 KnobGuiValue::disableSpinBoxesBorder()
 {
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if ( _imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setBorderDisabled(true);
+        if ( _imp->spinBoxes[i].box) {
+            _imp->spinBoxes[i].box->setBorderDisabled(true);
         }
     }
 
@@ -755,8 +776,8 @@ KnobGuiValue::onIncrementChanged(const double incr,
                                  DimIdx dimension)
 {
     if (_imp->spinBoxes.size() > (std::size_t)dimension) {
-        if (_imp->spinBoxes[dimension].first) {
-            _imp->spinBoxes[dimension].first->setIncrement( valueAccordingToType(false, dimension, incr) );
+        if (_imp->spinBoxes[dimension].box) {
+            _imp->spinBoxes[dimension].box->setIncrement( valueAccordingToType(false, dimension, incr) );
         }
     }
 }
@@ -766,8 +787,8 @@ KnobGuiValue::onDecimalsChanged(const int deci,
                                 DimIdx dimension)
 {
     if (_imp->spinBoxes.size() > (std::size_t)dimension) {
-        if (_imp->spinBoxes[dimension].first) {
-            _imp->spinBoxes[dimension].first->decimals(deci);
+        if (_imp->spinBoxes[dimension].box) {
+            _imp->spinBoxes[dimension].box->decimals(deci);
         }
     }
 }
@@ -803,7 +824,7 @@ KnobGuiValue::updateGUI()
             }
         }
         values[i] = v;
-        if (_imp->spinBoxes[i].first && v != _imp->spinBoxes[i].first->value()) {
+        if (_imp->spinBoxes[i].box && v != _imp->spinBoxes[i].box->value()) {
             isGuiDifferentFromInternalValues = true;
         }
 
@@ -825,14 +846,14 @@ KnobGuiValue::updateGUI()
     }
     if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) {
         for (int i = 0; i < knobDim; ++i) {
-            if (_imp->spinBoxes[i].first) {
-                _imp->spinBoxes[i].first->setValue(values[0]);
+            if (_imp->spinBoxes[i].box) {
+                _imp->spinBoxes[i].box->setValue(values[0]);
             }
         }
     } else {
         for (int i = 0; i < knobDim; ++i) {
-            if (_imp->spinBoxes[i].first) {
-                _imp->spinBoxes[i].first->setValue(values[i]);
+            if (_imp->spinBoxes[i].box) {
+                _imp->spinBoxes[i].box->setValue(values[i]);
             }
         }
     }
@@ -845,7 +866,7 @@ void
 KnobGuiValue::reflectAnimationLevel(DimIdx dimension,
                                     AnimationLevelEnum level)
 {
-    if (!_imp->spinBoxes[dimension].first) {
+    if (!_imp->spinBoxes[dimension].box) {
         return;
     }
     KnobIPtr knob = _imp->knob.lock();
@@ -855,9 +876,9 @@ KnobGuiValue::reflectAnimationLevel(DimIdx dimension,
         _imp->slider->setReadOnly(!isEnabled0 || level == eAnimationLevelExpression);
     }
     bool isEnabled = knob->isEnabled(dimension);
-    _imp->spinBoxes[dimension].first->setReadOnly_NoFocusRect(!isEnabled || level == eAnimationLevelExpression);
-    if ( level != (AnimationLevelEnum)_imp->spinBoxes[dimension].first->getAnimation() ) {
-        _imp->spinBoxes[dimension].first->setAnimation((int)level);
+    _imp->spinBoxes[dimension].box->setReadOnly_NoFocusRect(!isEnabled || level == eAnimationLevelExpression);
+    if ( level != (AnimationLevelEnum)_imp->spinBoxes[dimension].box->getAnimation() ) {
+        _imp->spinBoxes[dimension].box->setAnimation((int)level);
     }
 
 }
@@ -907,8 +928,8 @@ KnobGuiValue::sliderEditingEnd(double d)
     std::vector<double> newValuesVec;
     if (_imp->dimensionSwitchButton) {
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-            if (_imp->spinBoxes[i].first) {
-                _imp->spinBoxes[i].first->setValue(d);
+            if (_imp->spinBoxes[i].box) {
+                _imp->spinBoxes[i].box->setValue(d);
             }
         }
         d = valueAccordingToType(true, DimIdx(0), d);
@@ -932,8 +953,8 @@ KnobGuiValue::sliderEditingEnd(double d)
             getKnobGui()->pushUndoCommand( new KnobUndoCommand<int>(internalKnob, oldValues, newValues, view) );
         }
     } else {
-        if (_imp->spinBoxes[0].first) {
-            _imp->spinBoxes[0].first->setValue(d);
+        if (_imp->spinBoxes[0].box) {
+            _imp->spinBoxes[0].box->setValue(d);
         }
         d = valueAccordingToType(true, DimIdx(0), d);
         if (doubleKnob) {
@@ -961,15 +982,15 @@ KnobGuiValue::onSpinBoxValueChanged()
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
         oldValue[i] = _imp->getKnobValue(DimIdx(i));
-        newValue[i] = _imp->spinBoxes[i].first ? valueAccordingToType( true, DimIdx(i), _imp->spinBoxes[i].first->value() ) : oldValue[i];
+        newValue[i] = _imp->spinBoxes[i].box ? valueAccordingToType( true, DimIdx(i), _imp->spinBoxes[i].box->value() ) : oldValue[i];
         if ( (_imp->spinBoxes.size() == 4) && !_imp->rectangleFormatIsWidthHeight ) {
             if (i == 2) {
-                newValue[i] = _imp->spinBoxes[0].first ? _imp->spinBoxes[0].first->value() : oldValue[0];
+                newValue[i] = _imp->spinBoxes[0].box ? _imp->spinBoxes[0].box->value() : oldValue[0];
             } else if (i == 3) {
-                newValue[i] = _imp->spinBoxes[1].first ? _imp->spinBoxes[1].first->value() : oldValue[1];
+                newValue[i] = _imp->spinBoxes[1].box ? _imp->spinBoxes[1].box->value() : oldValue[1];
             }
         }
-        if ( (_imp->spinBoxes[i].first == changedBox) && changedBox ) {
+        if ( (_imp->spinBoxes[i].box == changedBox) && changedBox ) {
             spinBoxDim = DimSpec(i);
         }
     }
@@ -977,8 +998,8 @@ KnobGuiValue::onSpinBoxValueChanged()
     if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) {
         // use the value of the first dimension only, and set all spinboxes
         for (std::size_t i = 1; i < _imp->spinBoxes.size(); ++i) {
-            if (_imp->spinBoxes[i].first && _imp->spinBoxes[i].first != changedBox) {
-                _imp->spinBoxes[i].first->setValue(newValue[0]);
+            if (_imp->spinBoxes[i].box && _imp->spinBoxes[i].box != changedBox) {
+                _imp->spinBoxes[i].box->setValue(newValue[0]);
             }
         }
 
@@ -1032,11 +1053,8 @@ void
 KnobGuiValue::setWidgetsVisibleInternal(bool visible)
 {
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setVisible(visible);
-        }
-        if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setVisible(visible);
+        if (_imp->spinBoxes[i].container) {
+            _imp->spinBoxes[i].container->setVisible(visible);
         }
     }
     setVisibleSlider(visible);
@@ -1054,11 +1072,11 @@ KnobGuiValue::setEnabled(const std::vector<bool>& perDimEnabled)
     assert(perDimEnabled.size() == _imp->spinBoxes.size());
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setReadOnly_NoFocusRect(!perDimEnabled[i]);
+        if (_imp->spinBoxes[i].box) {
+            _imp->spinBoxes[i].box->setReadOnly_NoFocusRect(!perDimEnabled[i]);
         }
-        if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setEnabled(perDimEnabled[i]);
+        if (_imp->spinBoxes[i].label) {
+            _imp->spinBoxes[i].label->setEnabled(perDimEnabled[i]);
         }
     }
     if (_imp->slider) {
@@ -1072,8 +1090,8 @@ void
 KnobGuiValue::reflectMultipleSelection(bool dirty)
 {
     for (U32 i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setIsSelectedMultipleTimes(dirty);
+        if (_imp->spinBoxes[i].box) {
+            _imp->spinBoxes[i].box->setIsSelectedMultipleTimes(dirty);
         }
     }
 }
@@ -1083,8 +1101,8 @@ void
 KnobGuiValue::reflectSelectionState(bool selected)
 {
     for (U32 i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setIsSelected(selected);
+        if (_imp->spinBoxes[i].box) {
+            _imp->spinBoxes[i].box->setIsSelected(selected);
         }
     }
 
@@ -1097,8 +1115,8 @@ KnobGuiValue::updateToolTip()
     ViewIdx view = getView();
     if ( knob->hasToolTip() ) {
         for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-            if (_imp->spinBoxes[i].first) {
-                knob->toolTip(_imp->spinBoxes[i].first, view);
+            if (_imp->spinBoxes[i].box) {
+                knob->toolTip(_imp->spinBoxes[i].box, view);
             }
         }
         if (_imp->slider) {
@@ -1113,11 +1131,11 @@ KnobGuiValue::reflectModificationsState()
     bool hasModif = _imp->getKnob()->hasModifications();
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
-        if (_imp->spinBoxes[i].first) {
-            _imp->spinBoxes[i].first->setIsModified(hasModif);
+        if (_imp->spinBoxes[i].box) {
+            _imp->spinBoxes[i].box->setIsModified(hasModif);
         }
-        if (_imp->spinBoxes[i].second) {
-            _imp->spinBoxes[i].second->setIsModified(hasModif);
+        if (_imp->spinBoxes[i].label) {
+            _imp->spinBoxes[i].label->setIsModified(hasModif);
         }
     }
     if (_imp->slider) {
@@ -1132,8 +1150,8 @@ KnobGuiValue::refreshDimensionName(DimIdx dim)
         return;
     }
     KnobIPtr knob = _imp->getKnob();
-    if (_imp->spinBoxes[dim].second) {
-        _imp->spinBoxes[dim].second->setText( QString::fromUtf8( knob->getDimensionName(dim).c_str() ) );
+    if (_imp->spinBoxes[dim].label) {
+        _imp->spinBoxes[dim].label->setText( QString::fromUtf8( knob->getDimensionName(dim).c_str() ) );
     }
 }
 

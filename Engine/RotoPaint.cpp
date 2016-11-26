@@ -802,14 +802,6 @@ RotoPaint::initCompNodeKnobs(const KnobPagePtr& page)
         _imp->mixKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddGroupParamLabel), 1);
-        param->setHintToolTip( tr(kRotoAddGroupParamHint) );
-        param->setName(kRotoAddGroupParam);
-        param->setAddNewLine(false);
-        _imp->addGroupButtonKnob = param;
-        page->addKnob(param);
-    }
-    {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>(effect, tr(kRotoAddLayerParamLabel), 1);
         param->setHintToolTip( tr(kRotoAddLayerParamHint) );
         param->setName(kRotoAddLayerParam);

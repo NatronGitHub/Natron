@@ -289,6 +289,14 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     }
 }
 
+void
+KnobGuiColor::setAllDimensionsVisible(bool visible)
+{
+    if (_useSimplifiedUI) {
+        return;
+    }
+    KnobGuiValue::setAllDimensionsVisible(visible);
+}
 
 void
 KnobGuiColor::updateLabel(double r,

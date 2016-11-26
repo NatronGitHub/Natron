@@ -133,6 +133,7 @@ public Q_SLOTS:
 
     void onDialogCurrentColorChanged(const QColor & color);
 
+    virtual void setAllDimensionsVisible(bool visible) OVERRIDE FINAL;
 
 private:
 
