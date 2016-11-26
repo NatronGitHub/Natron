@@ -380,6 +380,17 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
     QIcon icon;
     if ( !iconPath.empty() ) {
         QString iconPathStr = QString::fromUtf8( iconPath.c_str() );
+
+        if ( !QFile::exists(iconPathStr) ) {
+            QString resourcesPath = QString::fromUtf8(node.lock()->getNode()->getPluginResourcesPath().c_str());
+
+            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+                resourcesPath += QLatin1Char('/');
+            }
+            iconPathStr.prepend(resourcesPath);
+        }
+
+
         if ( QFile::exists(iconPathStr) ) {
             QPixmap pix;
             pix.load(iconPathStr);
