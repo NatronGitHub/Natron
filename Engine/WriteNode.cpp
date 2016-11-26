@@ -754,19 +754,27 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
         args->setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        //Set a pre-value for the inputfile knob only if it did not exist
-        if (!filename.empty() && !serialization) {
-            args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
-        }
+
+
         if (serialization) {
             args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
             args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
         }
 
-        embeddedPlugin = _publicInterface->getApp()->createNode(args);
+        NodePtr writeNode = _publicInterface->getApp()->createNode(args);
+        embeddedPlugin = writeNode;
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
         }
+
+        // Set the filename value
+        if (writeNode) {
+            KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
+            if (fileKnob) {
+                fileKnob->setValue(filename);
+            }
+        }
+
         placeWriteNodeKnobsInPage();
         separatorKnob.lock()->setSecret(false);
 

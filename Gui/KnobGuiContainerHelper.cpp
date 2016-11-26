@@ -194,8 +194,14 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     if (!pagesNotDeclaredByPlugin.empty()) {
         return getOrCreatePage(pagesNotDeclaredByPlugin.front());
     }
-    // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage
-    assert(false);
+    // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage for nodes
+    // Anyway create one.
+
+    KnobHolderPtr holder = _imp->holder.lock();
+    KnobPagePtr mainPage = AppManager::createKnob<KnobPage>( holder, holder->tr("Settings") );
+    if (mainPage) {
+        return getOrCreatePage(mainPage);
+    }
 
     return KnobPageGuiPtr();
 }

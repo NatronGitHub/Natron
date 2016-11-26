@@ -681,23 +681,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
         }
 
-        //Set a pre-value for the inputfile knob only if it did not exist
-        if (!filename.empty() && !serialization) {
-            args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
-
-            std::string canonicalFilename = filename;
-            _publicInterface->getApp()->getProject()->canonicalizePath(canonicalFilename);
-
-            int firstFrame, lastFrame;
-            Node::getOriginalFrameRangeForReader(readerPluginID, canonicalFilename, &firstFrame, &lastFrame);
-            std::vector<int> originalRange(2);
-            originalRange[0] = firstFrame;
-            originalRange[1] = lastFrame;
-            args->addParamDefaultValueN(kReaderParamNameOriginalFrameRange, originalRange);
-        }
-
 
         node = _publicInterface->getApp()->createNode(args);
+
+        // Set the filename value
+        if (node) {
+            boost::shared_ptr<KnobFile> fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            if (fileKnob) {
+                fileKnob->setValue(filename);
+            }
+        }
         {
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
