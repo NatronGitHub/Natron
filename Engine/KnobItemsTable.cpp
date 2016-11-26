@@ -1257,7 +1257,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
     // Recurse
     std::vector<KnobTableItemPtr> children = getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
+        SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr s = getModel()->createSerializationFromItem(children[i]);
         children[i]->toSerialization(s.get());
         serialization->children.push_back(s);
     }
