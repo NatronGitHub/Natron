@@ -465,6 +465,13 @@ public:
     virtual bool hasModifications() const = 0;
     virtual bool hasModifications(DimIdx dimension) const = 0;
     virtual void computeHasModifications() = 0;
+
+    /**
+     * @brief Return true if the default value has changed.
+     **/
+    bool hasDefaultValueChanged() const;
+    virtual bool hasDefaultValueChanged(DimIdx dimension) const = 0;
+
     virtual void refreshAnimationLevel(ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
@@ -1696,8 +1703,6 @@ public:
                                             bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobIPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
-
-    virtual bool hasDefaultValueChanged(DimIdx dimension) const = 0;
 
 private:
 

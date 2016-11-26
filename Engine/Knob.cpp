@@ -2301,6 +2301,17 @@ KnobHelper::getCurrentView() const
     return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
 }
 
+bool
+KnobI::hasDefaultValueChanged() const
+{
+    for (int i = 0; i < getNDimensions(); ++i) {
+        if (hasDefaultValueChanged(DimIdx(i))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 double
 KnobHelper::random(double time,
