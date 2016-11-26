@@ -499,13 +499,13 @@ Node::load(const CreateNodeArgsPtr& args)
         createNodeGuiInternal(args);
     }
 
+    // This node is now considered created
+    _imp->nodeCreated = true;
+    
     // Callback to the effect notifying everything is setup.
     // Generally used by Group derivatives class to initialize internal nodes
     // unless there is a serialization that was loaded before
     _imp->effect->onEffectCreated(*args);
-
-    // This node is now considered created
-    _imp->nodeCreated = true;
 
     // Refresh page order so that serialization does not save it if it did not change
     _imp->refreshDefaultPagesOrder();

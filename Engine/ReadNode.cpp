@@ -608,7 +608,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     // If the plug-in is the same, do not create a new decoder.
     if (embeddedPlugin && embeddedPlugin->getPluginID() == readerPluginID) {
-        boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+        KnobFilePtr fileKnob = inputFileKnob.lock();
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
@@ -686,7 +686,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         // Set the filename value
         if (node) {
-            boost::shared_ptr<KnobFile> fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
                 fileKnob->setValue(filename);
             }
