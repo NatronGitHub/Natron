@@ -1404,7 +1404,14 @@ RotoDrawableItem::initializeKnobs()
     }
 
     // All items have a lifetime
-    _imp->lifeTime = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);
+    {
+        KnobChoicePtr lifeTimeKnob = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);
+        _imp->lifeTime = lifeTimeKnob;
+        if (isBezier) {
+            lifeTimeKnob->setDefaultValue(eRotoPaintItemLifeTimeTypeAll);
+        }
+    }
+
     _imp->lifeTimeFrame = createDuplicateOfTableKnob<KnobInt>(kRotoDrawableItemLifeTimeFrameParam);
     _imp->customRange = createDuplicateOfTableKnob<KnobBool>(kRotoLifeTimeCustomRangeParam);
 

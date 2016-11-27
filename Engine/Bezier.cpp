@@ -233,7 +233,7 @@ Bezier::isAutoKeyingEnabled() const
     if (!model) {
         return false;
     }
-    KnobBoolPtr knob = toKnobBool(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamAutoKeyingEnabled));
+    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamAutoKeyingEnabled));
     if (!knob) {
         return false;
     }
@@ -247,7 +247,7 @@ Bezier::isFeatherLinkEnabled() const
     if (!model) {
         return false;
     }
-    KnobBoolPtr knob = toKnobBool(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamFeatherLinkEnabled));
+    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamFeatherLinkEnabled));
     if (!knob) {
         return false;
     }
@@ -261,7 +261,7 @@ Bezier::isRippleEditEnabled() const
     if (!model) {
         return false;
     }
-    KnobBoolPtr knob = toKnobBool(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamRippleEdit));
+    KnobButtonPtr knob = toKnobButton(model->getNode()->getEffectInstance()->getKnobByName(kRotoUIParamRippleEdit));
     if (!knob) {
         return false;
     }

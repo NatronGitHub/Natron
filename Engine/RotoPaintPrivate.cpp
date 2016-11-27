@@ -1967,7 +1967,7 @@ RotoPaint::drawOverlay(double time,
                     for (int i = 0; i < 3; ++i) {
                         curveColor[i] = overlayColorKnob->getValue(DimIdx(i));
                     }
-
+                    curveColor[3] = 1.;
                 } else {
                     curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
                 }

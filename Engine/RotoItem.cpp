@@ -154,7 +154,7 @@ RotoItem::initializeKnobs()
         param->setIconLabel("Images/locked.png", true);
         param->setIconLabel("Images/unlocked.png", false);
         param->setCheckable(true);
-        param->setDefaultValue(true);
+        param->setDefaultValue(false);
         _imp->lockedKnob = param;
     }
 
@@ -283,28 +283,12 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
 {
 #pragma message WARN("check this")
     if (knob == _imp->lockedKnob.lock()) {
-        KnobItemsTablePtr model = getModel();
-        if (!model) {
-            return false;
-        }
-        int nbBeziersUnLockedBezier = 0;
-
-        {
-            std::list<KnobTableItemPtr> selectedItems = getModel()->getSelectedItems();
-            for (std::list<KnobTableItemPtr >::iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-                BezierPtr isBezier = toBezier(*it);
-                if ( isBezier && !isBezier->isLockedRecursive() ) {
-                    ++nbBeziersUnLockedBezier;
-                }
-            }
-        }
-        bool dirty = nbBeziersUnLockedBezier > 1;
-        bool enabled = nbBeziersUnLockedBezier > 0;
 
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            knob->setKnobSelectedMultipleTimes(dirty);
-            knob->setEnabled(enabled);
+            if (*it != knob) {
+                knob->setEnabled(!_imp->lockedKnob.lock()->getValue());
+            }
         }
         return true;
     } else if (knob == _imp->activatedKnob.lock()) {
