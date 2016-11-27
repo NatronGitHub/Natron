@@ -84,9 +84,13 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 
-ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,
+ColorPickerLabel::ColorPickerLabel(bool simplified,
+                                   KnobGui::KnobLayoutTypeEnum layout,
+                                   KnobGuiColor* knob,
                                    QWidget* parent)
     : Label(parent)
+    , _simplified(simplified)
+    , _layout(layout)
     , _pickingEnabled(false)
     , _currentColor()
     , _knob(knob)
@@ -97,7 +101,11 @@ ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,
 void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
-    if (!_knob) {
+    if (_layout == KnobGui::eKnobLayoutTypeTableItemWidget) {
+        _knob->showColorDialog();
+        return;
+    }
+    if (_simplified) {
         return;
     }
     _pickingEnabled = !_pickingEnabled;
@@ -207,6 +215,8 @@ ColorPickerLabel::setColor(const QColor & color)
 KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
     : KnobGuiValue(knobUI, view)
     , _knob( toKnobColor(knobUI->getKnob()) )
+    , _colorLabel(0)
+    , _colorDialogButton(0)
     , _useSimplifiedUI( _knob.lock()->isSimplified() )
 {
     if (!_useSimplifiedUI) {
@@ -252,8 +262,9 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
 {
     containerLayout->addSpacing( TO_DPIX(10) );
     KnobColorPtr knob = _knob.lock();
-    _colorLabel = new ColorPickerLabel( _useSimplifiedUI ? NULL : this, containerLayout->widget() );
-    if (!_useSimplifiedUI) {
+    KnobGuiPtr knobUI = getKnobGui();
+    _colorLabel = new ColorPickerLabel( _useSimplifiedUI, knobUI->getLayoutType(), this, containerLayout->widget() );
+    if (!_useSimplifiedUI && knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeTableItemWidget) {
         _colorLabel->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                                                    "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                                                    "To deselect the picker left click anywhere."
@@ -273,16 +284,17 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
         containerLayout->addSpacing( TO_DPIX(5) );
     }
 
-    QPixmap buttonPix;
-    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
-    _colorDialogButton = new Button( QIcon(buttonPix), QString(), containerLayout->widget() );
-    _colorDialogButton->setFixedSize(medSize);
-    _colorDialogButton->setIconSize(medIconSize);
-    _colorDialogButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Open the color dialog."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _colorDialogButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
-    containerLayout->addWidget(_colorDialogButton);
-
+    if (knobUI->getLayoutType() != KnobGui::eKnobLayoutTypeTableItemWidget) {
+        QPixmap buttonPix;
+        appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
+        _colorDialogButton = new Button( QIcon(buttonPix), QString(), containerLayout->widget() );
+        _colorDialogButton->setFixedSize(medSize);
+        _colorDialogButton->setIconSize(medIconSize);
+        _colorDialogButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Open the color dialog."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        _colorDialogButton->setFocusPolicy(Qt::NoFocus);
+        QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
+        containerLayout->addWidget(_colorDialogButton);
+    }
     if (_useSimplifiedUI) {
         setWidgetsVisibleInternal(false);
         KnobGuiWidgets::enableRightClickMenu(getKnobGui(), _colorLabel, DimSpec::all(), getView());
@@ -365,7 +377,9 @@ KnobGuiColor::setWidgetsVisible(bool visible)
         KnobGuiValue::setWidgetsVisible(visible);
     }
     _colorLabel->setVisible(visible);
-    _colorDialogButton->setVisible(visible);
+    if (_colorDialogButton) {
+        _colorDialogButton->setVisible(visible);
+    }
 
 }
 
@@ -424,7 +438,9 @@ KnobGuiColor::onDimensionsMadeVisible(bool visible)
 void
 KnobGuiColor::setEnabledExtraGui(bool enabled)
 {
-    _colorDialogButton->setEnabled(enabled);
+    if (_colorDialogButton) {
+        _colorDialogButton->setEnabled(enabled);
+    }
     _colorLabel->setEnabledMode(enabled);
 }
 
@@ -503,8 +519,9 @@ KnobGuiColor::showColorDialog()
         for (int i = 0; i < 3; ++i) {
             SpinBox* sb = 0;
             getSpinBox(DimIdx(i), &sb);
-            assert(sb);
-            sb->setValue(color[i]);
+            if (sb) {
+                sb->setValue(color[i]);
+            }
         }
 
         // Refresh the last value so that the undo command retrieves the value that was prior to opening the dialog

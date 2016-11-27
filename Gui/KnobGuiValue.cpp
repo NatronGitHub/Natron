@@ -508,7 +508,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
-    if (isRectangleParam) {
+    KnobGui::KnobLayoutTypeEnum layoutType = knobUI->getLayoutType();
+    if (isRectangleParam && layoutType != KnobGui::eKnobLayoutTypeTableItemWidget) {
         _imp->rectangleFormatButton = new Button(QIcon(), QString::fromUtf8("wh"), _imp->container);
         _imp->rectangleFormatButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between width/height and right/top notation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->rectangleFormatButton->setFixedSize(medSize);
@@ -521,7 +522,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_imp->rectangleFormatButton);
     }
 
-    if (nDims > 1 && !singleDimensionEnabled) {
+    if (nDims > 1 && !singleDimensionEnabled && layoutType != KnobGui::eKnobLayoutTypeTableItemWidget) {
         _imp->dimensionSwitchButton = new Button(QIcon(), QString::number(nDims), _imp->container);
         _imp->dimensionSwitchButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->dimensionSwitchButton->setFixedSize(medSize);
@@ -824,7 +825,7 @@ KnobGuiValue::updateGUI()
             }
         }
         values[i] = v;
-        if (_imp->spinBoxes[i].box && v != _imp->spinBoxes[i].box->value()) {
+        if (!_imp->spinBoxes[i].box || v != _imp->spinBoxes[i].box->value()) {
             isGuiDifferentFromInternalValues = true;
         }
 

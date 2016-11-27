@@ -2282,16 +2282,14 @@ RotoPaint::initializeKnobs()
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());
         _imp->knobsTable->setColumnIcon(1, "visible.png");
         _imp->knobsTable->setColumnTooltip(1, kParamRotoItemEnabledHint);
-        _imp->knobsTable->setColumnIcon(2, "soloOff.png");
-        _imp->knobsTable->setColumnTooltip(2, kParamRotoItemSoloHint);
-        _imp->knobsTable->setColumnIcon(3, "locked.png");
-        _imp->knobsTable->setColumnTooltip(3, kParamRotoItemLockedHint);
-        _imp->knobsTable->setColumnIcon(4, "roto_merge.png");
-        _imp->knobsTable->setColumnTooltip(4, kRotoCompOperatorHint);
-        _imp->knobsTable->setColumnIcon(5, "colorwheel_overlay.png");
-        _imp->knobsTable->setColumnTooltip(5, kRotoOverlayColorHint);
-        _imp->knobsTable->setColumnIcon(6, "colorwheel.png");
-        _imp->knobsTable->setColumnTooltip(6, kRotoColorHint);
+        _imp->knobsTable->setColumnIcon(2, "locked.png");
+        _imp->knobsTable->setColumnTooltip(2, kParamRotoItemLockedHint);
+        _imp->knobsTable->setColumnIcon(3, "roto_merge.png");
+        _imp->knobsTable->setColumnTooltip(3, kRotoCompOperatorHint);
+        _imp->knobsTable->setColumnIcon(4, "colorwheel_overlay.png");
+        _imp->knobsTable->setColumnTooltip(4, kRotoOverlayColorHint);
+        _imp->knobsTable->setColumnIcon(5, "colorwheel.png");
+        _imp->knobsTable->setColumnTooltip(5, kRotoColorHint);
         (void)getOrCreateBaseLayer();
     } else {
         _imp->knobsTable->setColumnText(0, tr("Label").toStdString());

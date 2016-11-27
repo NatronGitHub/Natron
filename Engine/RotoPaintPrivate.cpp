@@ -1082,10 +1082,14 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
 
     double time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
     strokeBeingPaintedTimelineFrame = time;
-
-    colorKnob->setValueAcrossDimensions(color, DimIdx(0));
+    if (colorKnob) {
+        colorKnob->setValueAcrossDimensions(color, DimIdx(0));
+    }
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp));
-    opacityKnob->setValue(opacity);
+    if (opacityKnob) {
+        opacityKnob->setValue(opacity);
+    }
+    
     sizeKnob->setValue(size);
     hardnessKnob->setValue(hardness);
     pressureOpaKnob->setValue(pressOpa);

@@ -63,7 +63,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(KnobGuiColor* knob,
+    ColorPickerLabel(bool simplified,
+                     KnobGui::KnobLayoutTypeEnum layout,
+                     KnobGuiColor* knob,
                      QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
@@ -99,6 +101,8 @@ private:
 
 private:
 
+    bool _simplified;
+    KnobGui::KnobLayoutTypeEnum _layout;
     bool _pickingEnabled;
     QColor _currentColor;
     KnobGuiColor* _knob;

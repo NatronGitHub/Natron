@@ -229,9 +229,10 @@ KnobItemsTableGuiPrivate::createItemCustomWidgetAtCol(const KnobTableItemPtr& it
     containerLayout->setSpacing(0);
 
     KnobChoicePtr isChoice = toKnobChoice(knob);
+    KnobColorPtr isColor = toKnobColor(knob);
 
     Qt::Alignment align;
-    if (isChoice) {
+    if (isChoice || isColor) {
         // Align combobox on the left and
         align = (Qt::AlignLeft | Qt::AlignVCenter);
     } else {
