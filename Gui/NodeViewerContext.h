@@ -104,11 +104,6 @@ public:
 
     void notifyGuiClosing();
 
-    virtual bool isInViewerUIKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
     void onToolButtonShortcutPressed(const QString& roleID);
 
 Q_SIGNALS:

@@ -243,8 +243,7 @@ KnobGui::isSecretRecursive() const
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
     KnobIPtr knob = getKnob();
-    bool isViewerKnob = _imp->container->isInViewerUIKnob();
-    bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
+    bool showit = _imp->layoutType == eKnobLayoutTypeViewerUI ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
     KnobIPtr parentKnob = knob->getParentKnob();
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
@@ -255,7 +254,7 @@ KnobGui::isSecretRecursive() const
         }
         boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
         // check for secretness and visibility of the group
-        bool parentSecret = isViewerKnob ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
+        bool parentSecret = _imp->layoutType == eKnobLayoutTypeViewerUI ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
         if ( parentSecret || ( isGrp && !isGrp->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
@@ -768,10 +767,13 @@ KnobGui::getKnobsCountOnSameLine() const
 void
 KnobGui::hide()
 {
-    if (_imp->otherKnobsInMainLayout.empty()) {
+    KnobIPtr knob = getKnob();
+    bool newLineActivated = _imp->layoutType == KnobGui::eKnobLayoutTypeViewerUI ? knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine : knob->isNewLineActivated();
+
+    // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widget
+    if (!newLineActivated) {
         _imp->mainContainer->hide();
     } else {
-        // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widgets
         if (_imp->viewsContainer) {
             _imp->viewsContainer->hide();
         }
@@ -789,14 +791,14 @@ KnobGui::hide()
 void
 KnobGui::show()
 {
-    if (_imp->otherKnobsInMainLayout.empty()) {
-        _imp->mainContainer->show();
-    } else {
-        // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widgets
-        if (_imp->viewsContainer) {
-            _imp->viewsContainer->show();
-        }
+    // Since the otherKnobsInMainLayout list might have been empty when calling hide() and now be no longer empty,
+    // if the mainContainer is not visible show it
+    _imp->mainContainer->show();
+
+    if (_imp->viewsContainer) {
+        _imp->viewsContainer->show();
     }
+
     if (_imp->labelContainer) {
         _imp->labelContainer->show();
     }
