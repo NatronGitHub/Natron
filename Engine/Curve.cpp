@@ -1368,6 +1368,8 @@ Curve::moveKeyFrameValueAndTimeInternal(const double time, const double dt, cons
             *newKey = *it;
         }
     }
+    Q_UNUSED(isFirst);
+    Q_UNUSED(isLast);
     return true;
 }
 

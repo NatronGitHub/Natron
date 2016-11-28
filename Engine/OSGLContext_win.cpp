@@ -27,6 +27,8 @@
 #ifdef __NATRON_WIN32__
 #include <sstream>
 
+#include <QtCore/QtGlobal>      // for Q_UNUSED
+
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
 
@@ -107,6 +109,7 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     wc.lpszClassName = NATRON_WNDCLASSNAME;
     bool ok = (bool)RegisterClassExW(&wc);
     assert(ok);
+    Q_UNUSED(ok);
 }
 
 bool

@@ -716,7 +716,7 @@ AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsT
             str += QLatin1String("<br />");
 #ifdef __NATRON_WIN32__
             str += tr("To fix this: Re-start the installer, select \"Package manager\" and then install the \"Software OpenGL\" component.\n");
-            str += tr("If you don't have the installer you can manually copy opengl32.dll located in the \"bin\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
+            str += tr("If you don't have the installer you can manually copy opengl32.dll located in the \"bin\\mesa\" directory of your %1 installation to the \"bin\" directory.").arg(QLatin1String(NATRON_APPLICATION_NAME));
 #endif
             break;
         }
