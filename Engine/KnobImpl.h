@@ -551,7 +551,9 @@ Knob<T>::unSlaveInternal(DimIdx dimension,
         hasChanged |= copyKnob( masterKnobToCopy, view, dimension, linkData.masterView, linkData.masterDimension );
     }
 
-    _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
+    }
 
     
     if (getHolder()) {

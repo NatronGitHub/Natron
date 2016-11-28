@@ -3099,47 +3099,6 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
                                                      evaluateIfEqual, points, 0, bbox);
 } // Bezier::evaluateFeatherPointsAtTime_DeCasteljau
 
-void
-Bezier::getMotionBlurSettings(const double time,
-                              ViewGetSpec view,
-                              double* startTime,
-                              double* endTime,
-                              double* timeStep) const
-{
-    *startTime = time, *timeStep = 1., *endTime = time;
-
-    double motionBlurAmnt = getMotionBlurAmountKnob()->getValueAtTime(time, DimIdx(0), view);
-    if ( isOpenBezier() || (motionBlurAmnt == 0) ) {
-        return;
-    }
-    int nbSamples = std::floor(motionBlurAmnt * 10 + 0.5);
-    double shutterInterval = getShutterKnob()->getValueAtTime(time, DimIdx(0), view);
-    if (shutterInterval == 0) {
-        return;
-    }
-    int shutterType_i = getShutterTypeKnob()->getValueAtTime(time, DimIdx(0), view);
-    if (nbSamples != 0) {
-        *timeStep = shutterInterval / nbSamples;
-    }
-    if (shutterType_i == 0) { // centered
-        *startTime = time - shutterInterval / 2.;
-        *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) { // start
-        *startTime = time;
-        *endTime = time + shutterInterval;
-    } else if (shutterType_i == 2) { // end
-        *startTime = time - shutterInterval;
-        *endTime = time;
-    } else if (shutterType_i == 3) { // custom
-        *startTime = time + getShutterOffsetKnob()->getValueAtTime(time, DimIdx(0), view);
-        *endTime = *startTime + shutterInterval;
-    } else {
-        assert(false);
-    }
-
-
-}
-
 RectD
 Bezier::getBoundingBox(double time, ViewGetSpec view) const
 {
@@ -3149,13 +3108,6 @@ Bezier::getBoundingBox(double time, ViewGetSpec view) const
     KnobItemsTablePtr model = getModel();
     if (model) {
         rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-    }
-
-
-    int mbType_i = rotoPaintNode->getMotionBlurTypeKnob()->getValue();
-    bool applyPerShapeMotionBlur = mbType_i == 0;
-    if (applyPerShapeMotionBlur) {
-        getMotionBlurSettings(time, view, &startTime, &endTime, &mbFrameStep);
     }
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);

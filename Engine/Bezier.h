@@ -371,11 +371,6 @@ public:
      **/
     void cuspPointAtIndex(int index, double time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
 
-    void getMotionBlurSettings(const double time,
-                               ViewGetSpec view,
-                               double* startTime,
-                               double* endTime,
-                               double* timeStep) const;
 
 private:
 

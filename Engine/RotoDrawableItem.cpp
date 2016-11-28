@@ -980,7 +980,11 @@ RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
         return false;
     }
     try {
-        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
+        KnobChoicePtr lifeTimeKnob = _imp->lifeTime.lock();
+        if (!lifeTimeKnob) {
+            return true;
+        }
+        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)lifeTimeKnob->getValue();
         switch (lifetime) {
             case eRotoPaintItemLifeTimeTypeAll:
                 return true;
