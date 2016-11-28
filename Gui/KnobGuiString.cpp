@@ -1215,7 +1215,7 @@ KnobGuiString::setEnabled()
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
         if ( !knob->isCustomKnob() ) {
-            _lineEdit->setReadOnly(!b);
+            _lineEdit->setReadOnly_NoFocusRect(!b);
         }
     }
 }
