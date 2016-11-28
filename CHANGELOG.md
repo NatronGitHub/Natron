@@ -14,6 +14,7 @@
 - Fix bugs in curves drawing.
 - Fix potential crashes when using KDE on Linux
 - Fix a bug where Roto strokes drawn at a different frame of the current frame would disappear
+- (macOS) Fix a bug where the interface would become very slow after a String parameter is disabled or enabled
 
 ### Plugins
 
@@ -22,6 +23,7 @@
 - PIKColor: fix black rims issue #1502, rework & optimize
 - PIKColor: remove hard limits on parameters b85f558
 - Grade & Gamma: fix behaviour when gamma=0
+- Shadertoy: support iChannelResolution
 
 ## Version 2.1.8
 
