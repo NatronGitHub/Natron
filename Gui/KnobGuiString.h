@@ -92,6 +92,8 @@ public:
 
     void setReadOnlyNatron(bool ro);
 
+    void setReadOnly(bool ro);
+
     bool getDirty() const
     {
         return dirty;

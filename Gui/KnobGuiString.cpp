@@ -116,13 +116,22 @@ AnimatingTextEdit::setAnimation(int v)
 void
 AnimatingTextEdit::setReadOnlyNatron(bool ro)
 {
-    setReadOnly(ro);
+    QTextEdit::setReadOnly(ro);
     if (readOnlyNatron != ro) {
         readOnlyNatron = ro;
         style()->unpolish(this);
         style()->polish(this);
         update();
     }
+}
+
+void
+AnimatingTextEdit::setReadOnly(bool ro)
+{
+    // Should never be called since on Mac is set the WA_ShowFocusRect attribute to 1 which
+    // makes the application UI redraw all its widgets for any change.
+    assert(false);
+    QTextEdit::setReadOnly(ro);
 }
 
 void

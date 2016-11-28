@@ -72,13 +72,9 @@ public:
         return altered;
     }
 
-    void setReadOnly_NoFocusRect(bool readOnly)
-    {
-        setReadOnly(readOnly);
+    void setReadOnly_NoFocusRect(bool readOnly);
 
-        //setReadonly set the flag but we don't want it
-        setAttribute(Qt::WA_MacShowFocusRect, 0);
-    }
+    void setReadOnly(bool ro);
 
 Q_SIGNALS:
 
