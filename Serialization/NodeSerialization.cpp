@@ -52,7 +52,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
 
     // Only serialize this for non pyplugs and non presets
     if (_encodeType == eNodeSerializationTypeRegular) {
-        em << YAML::Key << "ScriptName" << YAML::Value << _nodeScriptName;
+        em << YAML::Key << "Name" << YAML::Value << _nodeScriptName;
         if (_nodeLabel != _nodeScriptName) {
             em << YAML::Key << "Label" << YAML::Value << _nodeLabel;
         }
@@ -197,8 +197,8 @@ NodeSerialization::decode(const YAML::Node& node)
         }
     }
 
-    if (node["ScriptName"]) {
-        _nodeScriptName = node["ScriptName"].as<std::string>();
+    if (node["Name"]) {
+        _nodeScriptName = node["Name"].as<std::string>();
     }
     
     if (node["Label"]) {

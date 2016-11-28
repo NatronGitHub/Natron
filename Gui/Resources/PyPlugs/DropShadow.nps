@@ -1,36 +1,36 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.DropShadow
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: DropShadow
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Filter
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: Creates a drop shadow on the source image using its alpha channel.
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    Name: controls
     Label: Controls
     Params:
-      - ScriptName: shadowAngle
+      - Name: shadowAngle
         DefaultFloat: -45
         NDims: 1
         TypeName: Double
         Label: Angle
         Max: 2147483647
         DisplayMax: 360
-      - ScriptName: shadowDist
+      - Name: shadowDist
         DefaultFloat: 20
         NDims: 1
         TypeName: Double
         Label: Distance
         Max: 2147483647
         DisplayMax: 2000
-      - ScriptName: shadowBlur
+      - Name: shadowBlur
         DefaultFloat: [0, 0]
         NDims: 2
         TypeName: Double
@@ -39,7 +39,7 @@ UserPages:
         Max: 1000
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: shadowOpacity
+      - Name: shadowOpacity
         DefaultFloat: [0.5, 0.5, 0.5, 0.5]
         NDims: 4
         TypeName: Color
@@ -48,19 +48,19 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 1
-      - ScriptName: shadowColor
+      - Name: shadowColor
         DefaultFloat: [0, 0, 0]
         NDims: 3
         TypeName: Color
         Label: Color
         Max: 2147483647
         DisplayMax: 1
-      - ScriptName: shadowCFS
+      - Name: shadowCFS
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Color from source
-      - ScriptName: shadowOnly
+      - Name: shadowOnly
         DefaultBool: false
         NDims: 1
         TypeName: Bool
@@ -68,94 +68,94 @@ UserPages:
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.ShufflePlugin
-    ScriptName: Shuffle1
+    Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: Multiply1, B: Solid1}
     Params:
-      - ScriptName: outputChannelsChoice
+      - Name: outputChannelsChoice
         String: RGBA
-      - ScriptName: outputRChoice
+      - Name: outputRChoice
         String: B.r
-      - ScriptName: outputGChoice
+      - Name: outputGChoice
         String: B.g
-      - ScriptName: outputBChoice
+      - Name: outputBChoice
         String: B.b
-      - ScriptName: outputAChoice
+      - Name: outputAChoice
         String: A.a
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: Transform2
+    Name: Transform2
     Inputs: {Source: Shuffle1}
     Params:
-      - ScriptName: translate
+      - Name: translate
         Float: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
-      - ScriptName: center
+      - Name: center
         Float: [480, 270]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
     Pos: [759, 167]
   - PluginID: net.sf.openfx.Premult
-    ScriptName: Premult1
+    Name: Premult1
     Version: [2, 0]
     Inputs: {Source: Blur1}
     Pos: [759, 341]
   - PluginID: net.sf.openfx.MultiplyPlugin
-    ScriptName: Multiply1
+    Name: Multiply1
     Version: [2, 0]
     Inputs: {Source: InputSource}
     Params:
-      - ScriptName: NatronOfxParamProcessR
+      - Name: NatronOfxParamProcessR
         Bool: false
-      - ScriptName: NatronOfxParamProcessG
+      - Name: NatronOfxParamProcessG
         Bool: false
-      - ScriptName: NatronOfxParamProcessB
+      - Name: NatronOfxParamProcessB
         Bool: false
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: value
+      - Name: value
         Float: 0.5
         Props: [MasterIsAlias]
-      - ScriptName: premult
+      - Name: premult
         Bool: true
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [759, -23]
   - PluginID: net.sf.openfx.Solid
-    ScriptName: Solid1
+    Name: Solid1
     Params:
-      - ScriptName: NatronParamFormatChoice
+      - Name: NatronParamFormatChoice
         String: PC_Video 640x480
-      - ScriptName: size
+      - Name: size
         Float: [960, 540]
-      - ScriptName: color
+      - Name: color
         Props: [MasterIsAlias]
     Pos: [584, 87]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: InputSource
+    Name: InputSource
     Pos: [759, -112]
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: Merge1}
     Pos: [1000, 497]
   - PluginID: net.sf.cimg.CImgBlur
-    ScriptName: Blur1
+    Name: Blur1
     Version: [3, 0]
     Inputs: {Source: Transform2}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: size
+      - Name: size
         Props: [MasterIsAlias]
     Pos: [759, 260]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge1
+    Name: Merge1
     Inputs: {A: InputSource, B: Premult1}
     Params:
-      - ScriptName: maskInvert
+      - Name: maskInvert
         Bool: true
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [1000, 329]

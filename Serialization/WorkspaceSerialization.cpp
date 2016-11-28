@@ -51,7 +51,7 @@ void
 PythonPanelSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
-    em << YAML::Key << "ScriptName" << YAML::Value << name;
+    em << YAML::Key << "Name" << YAML::Value << name;
     em << YAML::Key << "Func" << YAML::Value << pythonFunction;
     if (!userData.empty()) {
         em << YAML::Key << "Data" << YAML::Value << userData;
@@ -72,7 +72,7 @@ PythonPanelSerialization::decode(const YAML::Node& node)
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
-    name = node["ScriptName"].as<std::string>();
+    name = node["Name"].as<std::string>();
     pythonFunction = node["Func"].as<std::string>();
     if (node["Data"]) {
         userData = node["Data"].as<std::string>();
@@ -92,7 +92,7 @@ void
 TabWidgetSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::Flow << YAML::BeginMap;
-    em << YAML::Key << "ScriptName" << YAML::Value << scriptName;
+    em << YAML::Key << "Name" << YAML::Value << scriptName;
     if (currentIndex != 0) {
         em << YAML::Key << "Current" << YAML::Value << currentIndex;
     }
@@ -115,7 +115,7 @@ TabWidgetSerialization::decode(const YAML::Node& node)
     if (!node.IsMap()) {
         throw YAML::InvalidNode();
     }
-    scriptName = node["ScriptName"].as<std::string>();
+    scriptName = node["Name"].as<std::string>();
     if (node["Current"]) {
         currentIndex = node["Current"].as<int>();
     } else {

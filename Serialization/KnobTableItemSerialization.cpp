@@ -68,7 +68,7 @@ KnobTableItemSerialization::encode(YAML::Emitter& em) const
     if (_emitMap) {
         em << YAML::BeginMap;
     }
-    em << YAML::Key << "ScriptName" << YAML::Value << scriptName;
+    em << YAML::Key << "Name" << YAML::Value << scriptName;
     if (label != scriptName) {
         em << YAML::Key << "Label" << YAML::Value << label;
     }
@@ -117,7 +117,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
 
-    scriptName = node["ScriptName"].as<std::string>();
+    scriptName = node["Name"].as<std::string>();
     if (node["Label"]) {
         label = node["Label"].as<std::string>();
     } else {

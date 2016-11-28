@@ -89,7 +89,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
         return;
     }
     em << YAML::BeginMap;
-    em << YAML::Key << "ScriptName" << YAML::Value << _scriptName;
+    em << YAML::Key << "Name" << YAML::Value << _scriptName;
 
     // Instead of inserting in the map each boolean
     // we serialize strings, meaning that
@@ -675,7 +675,7 @@ KnobSerialization::decode(const YAML::Node& node)
     // Set the flag to true if the user use this object directly to encode after
     _mustSerialize = true;
 
-    _scriptName = node["ScriptName"].as<std::string>();
+    _scriptName = node["Name"].as<std::string>();
 
     // Check for nodes
     bool dataTypeSet = false;
@@ -932,7 +932,7 @@ GroupKnobSerialization::encode(YAML::Emitter& em) const
     em << YAML::BeginMap;
 
     em << YAML::Key << "TypeName" << YAML::Value << _typeName;
-    em << YAML::Key << "ScriptName" << YAML::Value << _name;
+    em << YAML::Key << "Name" << YAML::Value << _name;
     if (_label != _name) {
         em << YAML::Key << "Label" << YAML::Value << _label;
     }
@@ -971,7 +971,7 @@ void
 GroupKnobSerialization::decode(const YAML::Node& node)
 {
     _typeName = node["TypeName"].as<std::string>();
-    _name = node["ScriptName"].as<std::string>();
+    _name = node["Name"].as<std::string>();
     if (node["Label"]) {
         _label = node["Label"].as<std::string>();
     } else {

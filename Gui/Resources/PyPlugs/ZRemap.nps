@@ -1,27 +1,27 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.ZRemap
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: ZRemap
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Filter
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: Remap Z-Depth pass according to a close limit value and a far limit
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    Name: controls
     Label: Controls
     Params:
-      - ScriptName: zPicking
+      - Name: zPicking
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Z Picking mode
-      - ScriptName: closeLimit
+      - Name: closeLimit
         DefaultFloat: [0, 0, 0, 0]
         NDims: 4
         TypeName: Color
@@ -31,7 +31,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: farLimit
+      - Name: farLimit
         DefaultFloat: [100, 100, 100, 100]
         NDims: 4
         TypeName: Color
@@ -41,7 +41,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: gamma
+      - Name: gamma
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -50,18 +50,18 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0.2
         DisplayMax: 5
-      - ScriptName: invertGradient
+      - Name: invertGradient
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Gradient
-      - ScriptName: Source_channels
+      - Name: Source_channels
         DefaultString: Color.RGBA
         NDims: 1
         TypeName: Choice
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
-      - ScriptName: channels
+      - Name: channels
         DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
@@ -70,54 +70,54 @@ UserPages:
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
-    ScriptName: Grade1
+    Name: Grade1
     Version: [2, 0]
     Inputs: {Source: InputSource}
     Params:
-      - ScriptName: blackPoint
+      - Name: blackPoint
         Props: [MasterIsAlias]
-      - ScriptName: whitePoint
+      - Name: whitePoint
         Float: 100
         Props: [MasterIsAlias]
-      - ScriptName: gamma
+      - Name: gamma
         Props: [MasterIsAlias]
-      - ScriptName: clampBlack
+      - Name: clampBlack
         Bool: true
         DefaultBool: false
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
-      - ScriptName: Source_channels
+      - Name: Source_channels
         Props: [MasterIsAlias]
-      - ScriptName: enableMask_Mask
+      - Name: enableMask_Mask
         Bool: true
     Pos: [726, 92]
   - PluginID: net.sf.openfx.Invert
-    ScriptName: Invert1
+    Name: Invert1
     Version: [2, 0]
     Inputs: {Source: Grade1}
     Params:
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
-      - ScriptName: channels
+      - Name: channels
         String: Backward.Motion
         Props: [MasterIsAlias]
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: Switch1}
     Pos: [882, 496]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: InputSource
+    Name: InputSource
     Pos: [882, -40]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: Switch1
+    Name: Switch1
     Inputs: {0: Invert1, 1: InputSource}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.zPicking.get()}
-      - ScriptName: p1_channels
+      - Name: p1_channels
         String: {Expr: thisGroup.Source_channels.get()}
     Pos: [882, 381]

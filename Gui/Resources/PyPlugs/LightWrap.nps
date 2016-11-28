@@ -1,22 +1,22 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.LightWrap
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: LightWrap
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Draw
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: "LightWrap helps composite objects onto a bright background by simulating reflections from the background light on the foreground, around its edges. Input A is the foreground image and its matte, and input B the the background to use for the wrapping effect.\n\nThe output of LightWrap should then be composited over the background to give the final composite."
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controlsPage
+    Name: controlsPage
     Label: Controls
     Params:
-      - ScriptName: diffuse
+      - Name: diffuse
         DefaultFloat: [15, 15]
         NDims: 2
         TypeName: Double
@@ -26,7 +26,7 @@ UserPages:
         Max: 1000
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: intensity
+      - Name: intensity
         DefaultFloat: 0
         NDims: 1
         TypeName: Double
@@ -36,25 +36,25 @@ UserPages:
         Max: 100
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: onlyWrap
+      - Name: onlyWrap
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Generate Wrap Only
         Hint: When checked, the LightWrap in generated but is not merged with the foreground object (disables the Highlight Merge).
-      - ScriptName: disableLuma
+      - Name: disableLuma
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Disable luminance-Based Wrap
         Hint: When checked, the LightWrap effect is created uniformly around the edged, rather than being controled by the color of the background.
-      - ScriptName: enableGlow
+      - Name: enableGlow
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Enable Glow
         Hint: When checked, the LightWrap is not masked by the foreground object, so that the objects seems to glow.
-      - ScriptName: fgblur
+      - Name: fgblur
         DefaultFloat: [1, 1]
         NDims: 2
         TypeName: Double
@@ -64,7 +64,7 @@ UserPages:
         Max: 1000
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: fgblurBoundary
+      - Name: fgblurBoundary
         DefaultString: Black
         NDims: 1
         TypeName: Choice
@@ -72,7 +72,7 @@ UserPages:
         Hint: Border conditions of the blur applied to the alpha channel of the foreground (i.e. the foreground matte). Use "Black" in most cases, and "Nearest" if the foreground matte should be extended beyond image borders when it touches them.
         Entries: [Black, Nearest]
         Hints: ["Dirichlet boundary condition: pixel values out of the image domain are zero.", "Neumann boundary condition: pixel values out of the image domain are those of the closest pixel location in the image domain."]
-      - ScriptName: bgblur
+      - Name: bgblur
         DefaultFloat: [0, 0]
         NDims: 2
         TypeName: Double
@@ -82,7 +82,7 @@ UserPages:
         Max: 1000
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: saturation
+      - Name: saturation
         DefaultFloat: 1
         NDims: 1
         TypeName: Double
@@ -92,7 +92,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 4
-      - ScriptName: lumaTolerance
+      - Name: lumaTolerance
         DefaultFloat: 0
         NDims: 1
         TypeName: Double
@@ -102,7 +102,7 @@ UserPages:
         Max: 1
         DisplayMin: 0
         DisplayMax: 1
-      - ScriptName: highlightmerge
+      - Name: highlightmerge
         DefaultString: plus
         NDims: 1
         TypeName: Choice
@@ -111,14 +111,14 @@ UserPages:
         Entries: [atop, average, color, color-burn, color-dodge, conjoint-over, copy, difference, disjoint-over, divide, exclusion, freeze, from, geometric, grain-extract, grain-merge, hard-light, hue, hypot, in, luminosity, mask, matte, max, min, minus, multiply, out, over, overlay, pinlight, plus, reflect, saturation, screen, soft-light, stencil, under, xor]
         Hints: [Ab + B(1 - a) (a.k.a. src-atop), (A + B) / 2, "SetLum(A, Lum(B))", darken B towards A, brighten B towards A, "A + B(1-a)/b, A if a > b", A (a.k.a. src), abs(A-B) (a.k.a. absminus), "A+B(1-a)/b, A+B if a+b < 1", "A/B, 0 if A < 0 and B < 0", A+B-2AB, 1-sqrt(1-A)/B, B-A (a.k.a. subtract), 2AB/(A+B), B - A + 0.5, B + A - 0.5, "multiply if A < 0.5, screen if A > 0.5", "SetLum(SetSat(A, Sat(B)), Lum(B))", sqrt(A*A+B*B), Ab (a.k.a. src-in), "SetLum(B, Lum(A))", Ba (a.k.a dst-in), Aa + B(1-a) (unpremultiplied over), "max(A, B) (a.k.a. lighten only)", "min(A, B) (a.k.a. darken only)", A-B, "AB, 0 if A < 0 and B < 0", A(1-b) (a.k.a. src-out), A+B(1-a) (a.k.a. src-over), "multiply if B < 0.5, screen if B > 0.5", "if B >= 0.5 then max(A, 2*B - 1), min(A, B * 2.0 ) else", A+B (a.k.a. add), A*A / (1 - B), "SetLum(SetSat(B, Sat(A)), Lum(B))", "A+B-AB if A or B <= 1, otherwise max(A, B)", "burn-in if A < 0.5, lighten if A > 0.5", B(1-a) (a.k.a. dst-out), A(1-b)+B (a.k.a. dst-over), A(1-b)+B(1-a)]
         Props: [AnimatesChanged]
-      - ScriptName: useConstant
+      - Name: useConstant
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Use Constant Highlight
         Hint: When checked, use a constant color (specified by the Constant parameter) instead of the background for the LightWrap effect.
         Props: [AnimatesChanged]
-      - ScriptName: constantcolor
+      - Name: constantcolor
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -127,14 +127,14 @@ UserPages:
         Max: 2147483647
         DisplayMax: 1
   - TypeName: Page
-    ScriptName: colorCorrectPage
+    Name: colorCorrectPage
     Label: ColorCorrect
     Params:
       - TypeName: Group
-        ScriptName: masterGroup
+        Name: masterGroup
         Label: Master
         Params:
-          - ScriptName: ColorCorrect1MasterSaturation
+          - Name: ColorCorrect1MasterSaturation
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -143,7 +143,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MasterContrast
+          - Name: ColorCorrect1MasterContrast
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -152,7 +152,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MasterGamma
+          - Name: ColorCorrect1MasterGamma
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -161,7 +161,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0.2
             DisplayMax: 5
-          - ScriptName: ColorCorrect1MasterGain
+          - Name: ColorCorrect1MasterGain
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -170,7 +170,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MasterOffset
+          - Name: ColorCorrect1MasterOffset
             DefaultFloat: [0, 0, 0, 0]
             NDims: 4
             TypeName: Color
@@ -182,15 +182,15 @@ UserPages:
         Props:
           - Opened
       - TypeName: Group
-        ScriptName: shadowsGroup
+        Name: shadowsGroup
         Label: Shadows
         Params:
-          - ScriptName: ColorCorrect1ShadowsEnable
+          - Name: ColorCorrect1ShadowsEnable
             DefaultBool: true
             NDims: 1
             TypeName: Bool
             Label: Enable
-          - ScriptName: ColorCorrect1ShadowsSaturation
+          - Name: ColorCorrect1ShadowsSaturation
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -199,7 +199,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1ShadowsContrast
+          - Name: ColorCorrect1ShadowsContrast
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -208,7 +208,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1ShadowsGamma
+          - Name: ColorCorrect1ShadowsGamma
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -217,7 +217,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0.2
             DisplayMax: 5
-          - ScriptName: ColorCorrect1ShadowsGain
+          - Name: ColorCorrect1ShadowsGain
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -226,7 +226,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1ShadowsOffset
+          - Name: ColorCorrect1ShadowsOffset
             DefaultFloat: [0, 0, 0, 0]
             NDims: 4
             TypeName: Color
@@ -238,15 +238,15 @@ UserPages:
         Props:
           - Opened
       - TypeName: Group
-        ScriptName: midtonesGroup
+        Name: midtonesGroup
         Label: Midtones
         Params:
-          - ScriptName: ColorCorrect1MidtonesEnable
+          - Name: ColorCorrect1MidtonesEnable
             DefaultBool: true
             NDims: 1
             TypeName: Bool
             Label: Enable
-          - ScriptName: ColorCorrect1MidtonesSaturation
+          - Name: ColorCorrect1MidtonesSaturation
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -255,7 +255,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MidtonesContrast
+          - Name: ColorCorrect1MidtonesContrast
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -264,7 +264,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MidtonesGamma
+          - Name: ColorCorrect1MidtonesGamma
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -273,7 +273,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0.2
             DisplayMax: 5
-          - ScriptName: ColorCorrect1MidtonesGain
+          - Name: ColorCorrect1MidtonesGain
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -282,7 +282,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1MidtonesOffset
+          - Name: ColorCorrect1MidtonesOffset
             DefaultFloat: [0, 0, 0, 0]
             NDims: 4
             TypeName: Color
@@ -294,15 +294,15 @@ UserPages:
         Props:
           - Opened
       - TypeName: Group
-        ScriptName: highlightsGroup
+        Name: highlightsGroup
         Label: Highlights
         Params:
-          - ScriptName: ColorCorrect1HighlightsEnable
+          - Name: ColorCorrect1HighlightsEnable
             DefaultBool: true
             NDims: 1
             TypeName: Bool
             Label: Enable
-          - ScriptName: ColorCorrect1HighlightsSaturation
+          - Name: ColorCorrect1HighlightsSaturation
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -311,7 +311,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1HighlightsContrast
+          - Name: ColorCorrect1HighlightsContrast
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -320,7 +320,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1HighlightsGamma
+          - Name: ColorCorrect1HighlightsGamma
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -329,7 +329,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0.2
             DisplayMax: 5
-          - ScriptName: ColorCorrect1HighlightsGain
+          - Name: ColorCorrect1HighlightsGain
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -338,7 +338,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: ColorCorrect1HighlightsOffset
+          - Name: ColorCorrect1HighlightsOffset
             DefaultFloat: [0, 0, 0, 0]
             NDims: 4
             TypeName: Color
@@ -352,281 +352,281 @@ UserPages:
 PagesOrder: [controlsPage, colorCorrectPage, nodePage]
 Children:
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: Dot4}
     Pos: [761, 1308]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: Input1
+    Name: Input1
     Label: A
     Pos: [198, -35]
   - PluginID: net.sf.openfx.KeyerPlugin
-    ScriptName: Keyer1
+    Name: Keyer1
     Inputs: {Source: Dot1}
     Params:
-      - ScriptName: softnessLower
+      - Name: softnessLower
         Float: {Expr: thisGroup.lumaTolerance.getValue() - 1}
-      - ScriptName: softnessUpper
+      - Name: softnessUpper
         Float: 0
     Pos: [752, 164]
   - PluginID: net.sf.openfx.Premult
-    ScriptName: Premult1
+    Name: Premult1
     Version: [2, 0]
     Inputs: {Source: Keyer1}
     Pos: [752, 252]
   - PluginID: net.sf.cimg.CImgBlur
-    ScriptName: BGBlur
+    Name: BGBlur
     Version: [3, 0]
     Inputs: {Source: Premult1}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: size
+      - Name: size
         Props: [MasterIsAlias]
-      - ScriptName: expandRoD
+      - Name: expandRoD
         Bool: false
     Pos: [752, 316]
   - PluginID: net.sf.openfx.ConstantPlugin
-    ScriptName: Constant1
+    Name: Constant1
     Params:
-      - ScriptName: NatronParamFormatChoice
+      - Name: NatronParamFormatChoice
         String: PC_Video 640x480
-      - ScriptName: size
+      - Name: size
         Float: [960, 540]
-      - ScriptName: color
+      - Name: color
         Float: 1
         Props: [MasterIsAlias]
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: false
     Pos: [968, 185]
   - PluginID: net.sf.openfx.ShufflePlugin
-    ScriptName: Shufflecopy1
+    Name: Shufflecopy1
     Version: [2, 0]
     Inputs: {A: BGBlur, B: Constant1}
     Params:
-      - ScriptName: outputChannelsChoice
+      - Name: outputChannelsChoice
         String: Color.RGBA
-      - ScriptName: outputRChoice
+      - Name: outputRChoice
         String: B.r
-      - ScriptName: outputGChoice
+      - Name: outputGChoice
         String: B.g
-      - ScriptName: outputBChoice
+      - Name: outputBChoice
         String: B.b
-      - ScriptName: outputAChoice
+      - Name: outputAChoice
         String: A.a
     Pos: [968, 316]
   - PluginID: net.sf.openfx.Premult
-    ScriptName: Premult2
+    Name: Premult2
     Version: [2, 0]
     Inputs: {Source: Shufflecopy1}
     Pos: [970, 380]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: DisableLuma
+    Name: DisableLuma
     Inputs: {0: Premult2, 1: Constant1}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.disableLuma.getValue()}
     Pos: [1172, 380]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: DisableLuma1
+    Name: DisableLuma1
     Inputs: {0: BGBlur, 1: Keyer1}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.disableLuma.getValue()}
     Pos: [579, 319]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot1
+    Name: Dot1
     Inputs: {"": Input2}
     Pos: [797, 21]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: ConstantColor
+    Name: ConstantColor
     Inputs: {0: DisableLuma1, 1: DisableLuma}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.useConstant.getValue()}
     Pos: [758, 448]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot2
+    Name: Dot2
     Inputs: {"": Input1}
     Pos: [243, 443]
   - PluginID: net.sf.cimg.CImgBlur
-    ScriptName: FGBlur
+    Name: FGBlur
     Version: [3, 0]
     Inputs: {Source: Dot2}
     Params:
-      - ScriptName: NatronOfxParamProcessR
+      - Name: NatronOfxParamProcessR
         Bool: false
-      - ScriptName: NatronOfxParamProcessG
+      - Name: NatronOfxParamProcessG
         Bool: false
-      - ScriptName: NatronOfxParamProcessB
+      - Name: NatronOfxParamProcessB
         Bool: false
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: size
+      - Name: size
         Float: 1
         Props: [MasterIsAlias]
-      - ScriptName: boundary
+      - Name: boundary
         Props: [MasterIsAlias]
-      - ScriptName: expandRoD
+      - Name: expandRoD
         Bool: false
     Pos: [434, 433]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: EdgeMerge
+    Name: EdgeMerge
     Inputs: {A: Dot2, B: FGBlur}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: out
-      - ScriptName: AChannelsR
+      - Name: AChannelsR
         Bool: false
-      - ScriptName: AChannelsG
+      - Name: AChannelsG
         Bool: false
-      - ScriptName: AChannelsB
+      - Name: AChannelsB
         Bool: false
-      - ScriptName: OutputChannelsR
+      - Name: OutputChannelsR
         Bool: false
-      - ScriptName: OutputChannelsG
+      - Name: OutputChannelsG
         Bool: false
-      - ScriptName: OutputChannelsB
+      - Name: OutputChannelsB
         Bool: false
     Pos: [434, 545]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: MaskMerge
+    Name: MaskMerge
     Inputs: {A: ConstantColor, B: EdgeMerge}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: in
-      - ScriptName: OutputChannelsA
+      - Name: OutputChannelsA
         Bool: false
     Pos: [758, 545]
   - PluginID: net.sf.cimg.CImgBlur
-    ScriptName: Diffuse
+    Name: Diffuse
     Version: [3, 0]
     Inputs: {Source: MaskMerge}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: size
+      - Name: size
         Float: 15
         Props: [MasterIsAlias]
-      - ScriptName: expandRoD
+      - Name: expandRoD
         Bool: false
     Pos: [758, 633]
   - PluginID: net.sf.openfx.MultiplyPlugin
-    ScriptName: Intensity
+    Name: Intensity
     Version: [2, 0]
     Inputs: {Source: Diffuse}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: value
+      - Name: value
         Float: {Expr: thisGroup.intensity.getValue()}
     Pos: [758, 697]
   - PluginID: net.sf.openfx.SaturationPlugin
-    ScriptName: Saturation1
+    Name: Saturation1
     Version: [2, 0]
     Inputs: {Source: Intensity}
     Params:
-      - ScriptName: saturation
+      - Name: saturation
         Props: [MasterIsAlias]
-      - ScriptName: clampBlack
+      - Name: clampBlack
         Bool: false
     Pos: [758, 761]
   - PluginID: net.sf.openfx.ColorCorrectPlugin
-    ScriptName: ColorCorrect1
+    Name: ColorCorrect1
     Version: [2, 0]
     Inputs: {Source: Saturation1}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: MasterSaturation
+      - Name: MasterSaturation
         Props: [MasterIsAlias]
-      - ScriptName: MasterContrast
+      - Name: MasterContrast
         Props: [MasterIsAlias]
-      - ScriptName: MasterGamma
+      - Name: MasterGamma
         Props: [MasterIsAlias]
-      - ScriptName: MasterGain
+      - Name: MasterGain
         Props: [MasterIsAlias]
-      - ScriptName: MasterOffset
+      - Name: MasterOffset
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsEnable
+      - Name: ShadowsEnable
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsSaturation
+      - Name: ShadowsSaturation
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsContrast
+      - Name: ShadowsContrast
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsGamma
+      - Name: ShadowsGamma
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsGain
+      - Name: ShadowsGain
         Props: [MasterIsAlias]
-      - ScriptName: ShadowsOffset
+      - Name: ShadowsOffset
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesEnable
+      - Name: MidtonesEnable
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesSaturation
+      - Name: MidtonesSaturation
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesContrast
+      - Name: MidtonesContrast
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesGamma
+      - Name: MidtonesGamma
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesGain
+      - Name: MidtonesGain
         Props: [MasterIsAlias]
-      - ScriptName: MidtonesOffset
+      - Name: MidtonesOffset
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsEnable
+      - Name: HighlightsEnable
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsSaturation
+      - Name: HighlightsSaturation
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsContrast
+      - Name: HighlightsContrast
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsGamma
+      - Name: HighlightsGamma
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsGain
+      - Name: HighlightsGain
         Props: [MasterIsAlias]
-      - ScriptName: HighlightsOffset
+      - Name: HighlightsOffset
         Props: [MasterIsAlias]
-      - ScriptName: clampBlack
+      - Name: clampBlack
         Bool: false
     Pos: [758, 825]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: MaskMerge2
+    Name: MaskMerge2
     Inputs: {A: Dot2, B: ColorCorrect1}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: mask
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [761, 909]
   - PluginID: net.sf.openfx.ShufflePlugin
-    ScriptName: Shuffle1
+    Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: MaskMerge2}
     Params:
-      - ScriptName: outputChannelsChoice
+      - Name: outputChannelsChoice
         String: Color.RGBA
-      - ScriptName: outputRChoice
+      - Name: outputRChoice
         String: A.r
-      - ScriptName: outputGChoice
+      - Name: outputGChoice
         String: A.g
-      - ScriptName: outputBChoice
+      - Name: outputBChoice
         String: A.b
-      - ScriptName: outputAChoice
+      - Name: outputAChoice
         String: 0
     Pos: [761, 1026]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: HighlightMerge
+    Name: HighlightMerge
     Inputs: {A: Dot2, B: Shuffle1}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: plus
         Props: [MasterIsAlias]
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [761, 1108]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot4
+    Name: Dot4
     Inputs: {"": HighlightMerge}
     Pos: [806, 1218]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: Input2
+    Name: Input2
     Label: B
     Pos: [753, -43]

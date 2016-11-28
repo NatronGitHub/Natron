@@ -1,34 +1,34 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.ZMask
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: ZMask
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Filter
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: Creates a mask from a depth buffer by specifying the center value and the amplitude of the range around it with the tightness parameter
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    Name: controls
     Label: Controls
     Params:
-      - ScriptName: zPicking
+      - Name: zPicking
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Z picking
-      - ScriptName: centerValue
+      - Name: centerValue
         DefaultFloat: [1, 1, 1]
         NDims: 3
         TypeName: Color
         Label: Center Value
         Max: 2147483647
         DisplayMax: 200
-      - ScriptName: tightness
+      - Name: tightness
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -37,7 +37,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: contrast
+      - Name: contrast
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -46,7 +46,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0
         DisplayMax: 100
-      - ScriptName: offset
+      - Name: offset
         DefaultFloat: [0, 0, 0, 0]
         NDims: 4
         TypeName: Color
@@ -55,7 +55,7 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: -200
         DisplayMax: 200
-      - ScriptName: gamma
+      - Name: gamma
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -64,18 +64,18 @@ UserPages:
         Max: 1.79769e+308
         DisplayMin: 0.2
         DisplayMax: 5
-      - ScriptName: invertGradient
+      - Name: invertGradient
         DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Gradient
-      - ScriptName: Source_channels
+      - Name: Source_channels
         DefaultString: Color.RGBA
         NDims: 1
         TypeName: Choice
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
-      - ScriptName: channels
+      - Name: channels
         DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
@@ -84,76 +84,76 @@ UserPages:
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge1
+    Name: Merge1
     Inputs: {A: Solid1, B: InputSource}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: difference
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(difference)</Natron>
-      - ScriptName: B_channels
+      - Name: B_channels
         Props: [MasterIsAlias]
     Pos: [764, 248]
   - PluginID: net.sf.openfx.Solid
-    ScriptName: Solid1
+    Name: Solid1
     Params:
-      - ScriptName: NatronParamFormatChoice
+      - Name: NatronParamFormatChoice
         String: PC_Video 640x480
-      - ScriptName: color
+      - Name: color
         Float: 1
         Props: [MasterIsAlias]
     Pos: [776, 134]
   - PluginID: net.sf.openfx.Invert
-    ScriptName: Invert1
+    Name: Invert1
     Version: [2, 0]
     Inputs: {Source: Clamp1}
     Params:
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
-      - ScriptName: channels
+      - Name: channels
         String: Backward.Motion
         Props: [MasterIsAlias]
-      - ScriptName: disableNode
+      - Name: disableNode
         Props: [MasterIsAlias]
     Pos: [764, 546]
   - PluginID: net.sf.openfx.Clamp
-    ScriptName: Clamp1
+    Name: Clamp1
     Version: [2, 0]
     Inputs: {Source: ColorCorrect1}
     Params:
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [764, 455]
   - PluginID: net.sf.openfx.ColorCorrectPlugin
-    ScriptName: ColorCorrect1
+    Name: ColorCorrect1
     Version: [2, 0]
     Inputs: {Source: Merge1}
     Params:
-      - ScriptName: MasterContrast
+      - Name: MasterContrast
         Props: [MasterIsAlias]
-      - ScriptName: MasterGamma
+      - Name: MasterGamma
         Props: [MasterIsAlias]
-      - ScriptName: MasterGain
+      - Name: MasterGain
         Props: [MasterIsAlias]
-      - ScriptName: MasterOffset
+      - Name: MasterOffset
         Props: [MasterIsAlias]
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [764, 344]
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: Switch1}
     Pos: [764, 774]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: InputSource
+    Name: InputSource
     Pos: [506, 255]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: Switch1
+    Name: Switch1
     Inputs: {0: Invert1, 1: InputSource}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.zPicking.get()}
-      - ScriptName: p1_channels
+      - Name: p1_channels
         String: {Expr: thisGroup.Source_channels.get()}
     Pos: [764, 638]

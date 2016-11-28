@@ -1,26 +1,26 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.Glow
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: Glow
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Filter
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: "A glow effect based on the bloom filter node. The mask input limits the area where the glowing elements are. It does not cut off the shine produced by the glow. \n\nFor more interesting looks there are some additional features like stretch, rotation and postgrade.\nWritten by PostPollux"
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    Name: controls
     Label: Controls
     Params:
       - TypeName: Group
-        ScriptName: glowMap
+        Name: glowMap
         Label: Glow Map
         Params:
-          - ScriptName: isolateHighlights
+          - Name: isolateHighlights
             DefaultFloat: 0.25
             NDims: 1
             TypeName: Double
@@ -30,14 +30,14 @@ UserPages:
             Max: 1
             DisplayMin: 0
             DisplayMax: 1
-          - ScriptName: isolateHue
+          - Name: isolateHue
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: Isolate Hue
             Hint: If checked, the picked hue will additionally limit the areas of the glow.
             Props: [NoNewLine, AnimatesChanged]
-          - ScriptName: HSVTool1srcColor
+          - Name: HSVTool1srcColor
             DefaultFloat: [0, 0, 0]
             NDims: 3
             TypeName: Color
@@ -47,14 +47,14 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 1
-          - ScriptName: preview
+          - Name: preview
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: GlowMap Preview
             Hint: When checked, the output will be the glowmap. Use this as a preview to adjust the highlight and hue isolation.
             Props: [AnimatesChanged]
-          - ScriptName: separator3
+          - Name: separator3
             NDims: 1
             TypeName: Separator
             Label: ""
@@ -62,10 +62,10 @@ UserPages:
         Props:
           - Opened
       - TypeName: Group
-        ScriptName: glowEffect
+        Name: glowEffect
         Label: Glow Effect
         Params:
-          - ScriptName: size
+          - Name: size
             DefaultFloat: 3
             NDims: 1
             TypeName: Double
@@ -75,7 +75,7 @@ UserPages:
             Max: 2147483647
             DisplayMin: 0
             DisplayMax: 10
-          - ScriptName: BloombloomRatio
+          - Name: BloombloomRatio
             DefaultFloat: 2
             NDims: 1
             TypeName: Double
@@ -84,7 +84,7 @@ UserPages:
             Max: 1.797693134862316e+308
             DisplayMin: 1
             DisplayMax: 4
-          - ScriptName: iterations
+          - Name: iterations
             DefaultInt: 7
             NDims: 1
             TypeName: Int
@@ -94,7 +94,7 @@ UserPages:
             Max: 10
             DisplayMin: 1
             DisplayMax: 10
-          - ScriptName: Bloomfilter
+          - Name: Bloomfilter
             DefaultString: Quasi-Gaussian
             NDims: 1
             TypeName: Choice
@@ -102,7 +102,7 @@ UserPages:
             Hint: "Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.\nQuadratic might also look a bit better, but it is slower, too."
             Entries: [Quasi-Gaussian, Gaussian, Box, Triangle, Quadratic]
             Hints: ["Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
-          - ScriptName: stretch
+          - Name: stretch
             DefaultFloat: 0
             NDims: 1
             TypeName: Double
@@ -112,7 +112,7 @@ UserPages:
             Max: 1
             DisplayMin: 0
             DisplayMax: 1
-          - ScriptName: rotate
+          - Name: rotate
             DefaultFloat: 0
             NDims: 1
             TypeName: Double
@@ -120,19 +120,19 @@ UserPages:
             Hint: This will rotate your streched glow. If "Stretch" is 0 it won't have any effect.
             Max: 2147483647
             DisplayMax: 360
-          - ScriptName: separator1
+          - Name: separator1
             NDims: 1
             TypeName: Separator
             Label: ""
             Props: [NoEval, Volatile]
-          - ScriptName: postgradeLabel
+          - Name: postgradeLabel
             String: ""
             DefaultString: Postgrade
             NDims: 1
             TypeName: String
             Label: ""
             Props: [NoEval, IsLabel]
-          - ScriptName: PostGradeMasterGain
+          - Name: PostGradeMasterGain
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -141,7 +141,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: PostGradeMasterGamma
+          - Name: PostGradeMasterGamma
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -150,7 +150,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0.2
             DisplayMax: 5
-          - ScriptName: PostGradeMasterSaturation
+          - Name: PostGradeMasterSaturation
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -159,7 +159,7 @@ UserPages:
             Max: 1.79769e+308
             DisplayMin: 0
             DisplayMax: 4
-          - ScriptName: separator2
+          - Name: separator2
             NDims: 1
             TypeName: Separator
             Label: ""
@@ -167,38 +167,38 @@ UserPages:
         Props:
           - Opened
       - TypeName: Group
-        ScriptName: options
+        Name: options
         Label: Options
         Params:
-          - ScriptName: screen
+          - Name: screen
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: Screen
             Hint: "If checked, the bloomed image will be screened on top of the input image. This helps to preserve the highlights in your image.\n\nBy default it is added on top of the imput image. (plus)"
             Props: [AnimatesChanged]
-          - ScriptName: addInput
+          - Name: addInput
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: Add Input
             Hint: "Add the input image to the bloomed one.\n"
             Props: [AnimatesChanged]
-          - ScriptName: glowOnly
+          - Name: glowOnly
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: Glow Only
             Hint: "The output will only be the glow effect itself.\n\nYou can add it on top of your source with a plus-merge or a screen-merge, later."
             Props: [AnimatesChanged]
-          - ScriptName: expRoD
+          - Name: expRoD
             DefaultBool: false
             NDims: 1
             TypeName: Bool
             Label: expand RoD
             Hint: "By default the Region of Definition (RoD) will be cropped to the input RoD.\nUse this option, if you want the glow effect to be available even outside your input format, and thus being not cropped.\nAs the blur sizes of the bloom node can get very big, this may lead to a very big RoD! Especially, if you use a lot of iterations."
             Props: [AnimatesChanged]
-          - ScriptName: alpha
+          - Name: alpha
             DefaultBool: false
             NDims: 1
             TypeName: Bool
@@ -210,378 +210,378 @@ UserPages:
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: RoD_2}
     Pos: [1622, 1973]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: Input1
+    Name: Input1
     Pos: [1440, -862]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge1
+    Name: Merge1
     Inputs: {A: Dot5, B: Dot1}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: plus
-      - ScriptName: AChannelsA
+      - Name: AChannelsA
         Bool: {Expr: thisGroup.alpha.get()}
-      - ScriptName: aChannelsChanged
+      - Name: aChannelsChanged
         Bool: true
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(plus)</Natron>
     Pos: [1423, 1316]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: AddInput
+    Name: AddInput
     Inputs: {0: Bloom, 1: Merge6}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.addInput.get()}
     Pos: [1141, 550]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: RoD
+    Name: RoD
     Inputs: {A: AddInput, B: Dot13}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: copy
-      - ScriptName: bbox
+      - Name: bbox
         String: {Expr: 3-thisGroup.expRoD.get()}
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(copy)</Natron>
     Pos: [1141, 794]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot13
+    Name: Dot13
     Inputs: {"": Dot22}
     Pos: [1495, 820]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: Preview
+    Name: Preview
     Inputs: {0: Dot18, 1: RotateOutPrev}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.preview.get()}
     Pos: [1474, 1741]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot17
+    Name: Dot17
     Inputs: {"": Dot19}
     Pos: [1658, -735]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot18
+    Name: Dot18
     Inputs: {"": ClampAlpha}
     Pos: [1248, 1747]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: GlowOnly
+    Name: GlowOnly
     Inputs: {0: screenSwitch, 1: Dot6}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.glowOnly.get()}
     Pos: [1203, 1571]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot7
+    Name: Dot7
     Inputs: {"": Dot15}
     Pos: [1667, 1221]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: RotateIn
+    Name: RotateIn
     Inputs: {Source: Dot19}
     Params:
-      - ScriptName: rotate
+      - Name: rotate
         Float: {Expr: thisGroup.rotate.get()}
-      - ScriptName: center
+      - Name: center
         Float: [980, 540]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
     Pos: [1440, -658]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot19
+    Name: Dot19
     Inputs: {"": Input1}
     Pos: [1485, -735]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: RotateOut
+    Name: RotateOut
     Inputs: {Source: PostGrade}
     Params:
-      - ScriptName: rotate
+      - Name: rotate
         Float: {Expr: -thisGroup.rotate.get()}
-      - ScriptName: center
+      - Name: center
         Float: [{Expr: "thisGroup.RotateIn.center.get()[dimension]"}, {Expr: "thisGroup.RotateIn.center.get()[dimension]"}]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
     Pos: [1141, 1252]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: RotateOutPrev
+    Name: RotateOutPrev
     Inputs: {Source: Dot13}
     Params:
-      - ScriptName: rotate
+      - Name: rotate
         Float: {Expr: -thisGroup.rotate.get()}
-      - ScriptName: center
+      - Name: center
         Float: [{Expr: "thisGroup.RotateIn.center.get()[dimension]"}, {Expr: "thisGroup.RotateIn.center.get()[dimension]"}]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
     Pos: [1474, 1537]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: RoD_2_2
+    Name: RoD_2_2
     Inputs: {A: RotateIn, B: Dot15}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: copy
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(copy)</Natron>
     Pos: [1441, -541]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: RoD_2
+    Name: RoD_2
     Inputs: {A: Preview, B: Dot7}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: copy
-      - ScriptName: bbox
+      - Name: bbox
         String: {Expr: 3-thisGroup.expRoD.get()}
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(copy)</Natron>
     Pos: [1622, 1728]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot22
+    Name: Dot22
     Inputs: {"": Merge3}
     Pos: [1485, 190]
   - PluginID: net.sf.openfx.SaturationPlugin
-    ScriptName: Saturation2
+    Name: Saturation2
     Version: [2, 0]
     Inputs: {Source: Dot20}
     Params:
-      - ScriptName: saturation
+      - Name: saturation
         Float: 0
     Pos: [1132, -293]
   - PluginID: net.sf.openfx.GradePlugin
-    ScriptName: Tolerance
+    Name: Tolerance
     Version: [2, 0]
     Inputs: {Source: Saturation2}
     Params:
-      - ScriptName: blackPoint
+      - Name: blackPoint
         Float: {Expr: thisGroup.isolateHighlights.get()}
-      - ScriptName: clampBlack
+      - Name: clampBlack
         Bool: true
         DefaultBool: false
-      - ScriptName: clampWhite
+      - Name: clampWhite
         Bool: true
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [1132, -229]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge3
+    Name: Merge3
     Inputs: {A: Merge5, B: RoD_2_2}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: multiply
-      - ScriptName: AChannelsA
+      - Name: AChannelsA
         Bool: false
-      - ScriptName: OutputChannelsA
+      - Name: OutputChannelsA
         Bool: false
-      - ScriptName: aChannelsChanged
+      - Name: aChannelsChanged
         Bool: true
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(multiply)</Natron>
     Pos: [1440, -118]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge4
+    Name: Merge4
     Inputs: {A: Shuffle2, B: Tolerance}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: multiply
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(multiply)</Natron>
     Pos: [1132, -125]
   - PluginID: net.sf.openfx.ShufflePlugin
-    ScriptName: Shuffle2
+    Name: Shuffle2
     Version: [2, 0]
     Inputs: {A: mask}
     Params:
-      - ScriptName: outputChannelsChoice
+      - Name: outputChannelsChoice
         String: Color.RGBA
-      - ScriptName: outputRChoice
+      - Name: outputRChoice
         String: A.a
-      - ScriptName: outputGChoice
+      - Name: outputGChoice
         String: A.a
-      - ScriptName: outputBChoice
+      - Name: outputBChoice
         String: A.a
-      - ScriptName: outputAChoice
+      - Name: outputAChoice
         String: 0
     Pos: [957, -113]
   - PluginID: fr.inria.built-in.Input
-    ScriptName: mask
+    Name: mask
     Params:
-      - ScriptName: optional
+      - Name: optional
         Bool: true
-      - ScriptName: isMask
+      - Name: isMask
         Bool: true
     Pos: [587, -106]
   - PluginID: net.sf.openfx.ColorCorrectPlugin
-    ScriptName: PostGrade
+    Name: PostGrade
     Version: [2, 0]
     Inputs: {Source: RoD}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
-      - ScriptName: MasterSaturation
+      - Name: MasterSaturation
         Props: [MasterIsAlias]
-      - ScriptName: MasterGamma
+      - Name: MasterGamma
         Props: [MasterIsAlias]
-      - ScriptName: MasterGain
+      - Name: MasterGain
         Props: [MasterIsAlias]
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [1141, 1073]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot15
+    Name: Dot15
     Inputs: {"": Dot17}
     Pos: [1658, -515]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot20
+    Name: Dot20
     Inputs: {"": Dot3}
     Pos: [1178, -515]
   - PluginID: fr.inria.built-in.BackDrop
-    ScriptName: Isolate_Highlights_and_mask
+    Name: Isolate_Highlights_and_mask
     Pos: [566, -401]
     Size: [1012, 385]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot3
+    Name: Dot3
     Inputs: {"": RoD_2_2}
     Pos: [1340, -515]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge5
+    Name: Merge5
     Inputs: {A: Shuffle1, B: Merge4}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: multiply
-      - ScriptName: mix
+      - Name: mix
         Float: {Expr: thisGroup.isolateHue.get()}
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(multiply)</Natron>
     Pos: [1292, -119]
   - PluginID: net.sf.openfx.ShufflePlugin
-    ScriptName: Shuffle1
+    Name: Shuffle1
     Version: [2, 0]
     Inputs: {A: HSVTool1}
     Params:
-      - ScriptName: outputChannelsChoice
+      - Name: outputChannelsChoice
         String: Color.RGBA
-      - ScriptName: outputRChoice
+      - Name: outputRChoice
         String: A.a
-      - ScriptName: outputGChoice
+      - Name: outputGChoice
         String: A.a
-      - ScriptName: outputBChoice
+      - Name: outputBChoice
         String: A.a
-      - ScriptName: outputAChoice
+      - Name: outputAChoice
         String: A.a
     Pos: [1290, -206]
   - PluginID: net.sf.openfx.HSVToolPlugin
-    ScriptName: HSVTool1
+    Name: HSVTool1
     Inputs: {Source: Dot3}
     Params:
-      - ScriptName: bottomLeft
+      - Name: bottomLeft
         Float: [960, 540]
-      - ScriptName: srcColor
+      - Name: srcColor
         Props: [MasterIsAlias]
-      - ScriptName: hueRange
+      - Name: hueRange
         Float: [0, 0]
-      - ScriptName: hueRangeRolloff
+      - Name: hueRangeRolloff
         Float: 50
-      - ScriptName: saturationRange
+      - Name: saturationRange
         Float: [0, 0]
-      - ScriptName: saturationRangeRolloff
+      - Name: saturationRangeRolloff
         Float: 0.3
-      - ScriptName: brightnessRange
+      - Name: brightnessRange
         Float: [0, 0]
-      - ScriptName: brightnessRangeRolloff
+      - Name: brightnessRangeRolloff
         Float: 0.3
-      - ScriptName: maskInvert
+      - Name: maskInvert
         Bool: true
     Pos: [1294, -302]
   - PluginID: net.sf.cimg.CImgBloom
-    ScriptName: Bloom
+    Name: Bloom
     Version: [3, 0]
     Inputs: {Source: Dot14}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
-      - ScriptName: size
+      - Name: size
         Float: {Expr: thisGroup.size.get()}
-      - ScriptName: bloomRatio
+      - Name: bloomRatio
         Props: [MasterIsAlias]
-      - ScriptName: bloomCount
+      - Name: bloomCount
         Int: {Expr: thisGroup.iterations.get()}
-      - ScriptName: boundary
+      - Name: boundary
         String: Black
-      - ScriptName: filter
+      - Name: filter
         Props: [MasterIsAlias]
-      - ScriptName: expandRoD
+      - Name: expandRoD
         Bool: {Expr: thisGroup.expRoD.get()}
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [975, 363]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge6
+    Name: Merge6
     Inputs: {A: Bloom, B: Dot16}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: plus
-      - ScriptName: BChannelsA
+      - Name: BChannelsA
         Bool: false
-      - ScriptName: bChannelsChanged
+      - Name: bChannelsChanged
         Bool: true
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(plus)</Natron>
     Pos: [1141, 351]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot14
+    Name: Dot14
     Inputs: {"": Dot16}
     Pos: [1008, 190]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot16
+    Name: Dot16
     Inputs: {"": Dot22}
     Pos: [1186, 190]
   - PluginID: net.sf.openfx.MergePlugin
-    ScriptName: Merge2
+    Name: Merge2
     Inputs: {A: Dot4, B: Dot2}
     Params:
-      - ScriptName: operation
+      - Name: operation
         String: screen
-      - ScriptName: AChannelsA
+      - Name: AChannelsA
         Bool: {Expr: thisGroup.alpha.get()}
-      - ScriptName: aChannelsChanged
+      - Name: aChannelsChanged
         Bool: true
-      - ScriptName: userTextArea
+      - Name: userTextArea
         String: <Natron>(screen)</Natron>
     Pos: [1272, 1317]
   - PluginID: net.sf.openfx.switchPlugin
-    ScriptName: screenSwitch
+    Name: screenSwitch
     Inputs: {0: Merge1, 1: Merge2}
     Params:
-      - ScriptName: which
+      - Name: which
         Int: {Expr: thisGroup.screen.get()}
     Pos: [1339, 1465]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot1
+    Name: Dot1
     Inputs: {"": Dot7}
     Pos: [1468, 1220]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot2
+    Name: Dot2
     Inputs: {"": Dot1}
     Pos: [1317, 1220]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot4
+    Name: Dot4
     Inputs: {"": RotateOut}
     Pos: [1286, 1261]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot5
+    Name: Dot5
     Inputs: {"": Dot4}
     Pos: [1398, 1261]
   - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot6
+    Name: Dot6
     Inputs: {"": RotateOut}
     Pos: [1186, 1445]
   - PluginID: net.sf.openfx.Clamp
-    ScriptName: ClampAlpha
+    Name: ClampAlpha
     Version: [2, 0]
     Inputs: {Source: GlowOnly}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
-      - ScriptName: premultChanged
+      - Name: premultChanged
         Bool: true
     Pos: [1203, 1685]

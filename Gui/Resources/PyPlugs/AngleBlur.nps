@@ -1,22 +1,22 @@
 # Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
-  - ScriptName: pyPlugPluginID
+  - Name: pyPlugPluginID
     String: fr.inria.AngleBlur
-  - ScriptName: pyPlugPluginLabel
+  - Name: pyPlugPluginLabel
     String: AngleBlur
-  - ScriptName: pyPlugPluginGrouping
+  - Name: pyPlugPluginGrouping
     String: Filter
-  - ScriptName: pyPlugPluginDescription
+  - Name: pyPlugPluginDescription
     String: The Angle Blur effect gives the illusion of motion in a given direction.
-  - ScriptName: pyPlugPluginVersion
+  - Name: pyPlugPluginVersion
     Int: [1, 0]
 UserPages:
   - TypeName: Page
-    ScriptName: controls
+    Name: controls
     Label: Controls
     Params:
-      - ScriptName: angleBlur_angle
+      - Name: angleBlur_angle
         DefaultFloat: 0
         NDims: 1
         TypeName: Double
@@ -24,7 +24,7 @@ UserPages:
         Hint: Determines the direction into which the image is blurred. This is an angle in degrees.
         Max: 2147483647
         DisplayMax: 360
-      - ScriptName: angleBlur_distance
+      - Name: angleBlur_distance
         DefaultFloat: 0
         NDims: 1
         TypeName: Double
@@ -35,44 +35,44 @@ UserPages:
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: fr.inria.built-in.Input
-    ScriptName: Source
+    Name: Source
     Pos: [1000, 67]
   - PluginID: fr.inria.built-in.Output
-    ScriptName: Output
+    Name: Output
     Label: Output1
     Inputs: {Source: Transform3}
     Pos: [1000, 497]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: Transform1
+    Name: Transform1
     Inputs: {Source: Source}
     Params:
-      - ScriptName: rotate
+      - Name: rotate
         Float: {Expr: thisGroup.angleBlur_angle.get()}
-      - ScriptName: center
+      - Name: center
         Float: [480, 270]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
     Pos: [1000, 173]
   - PluginID: net.sf.openfx.TransformPlugin
-    ScriptName: Transform3
+    Name: Transform3
     Inputs: {Source: Blur2}
     Params:
-      - ScriptName: rotate
+      - Name: rotate
         Float: {Expr: thisGroup.angleBlur_angle.get()}
-      - ScriptName: center
+      - Name: center
         Float: [{Expr: "thisGroup.Transform1.center.get()[dimension]"}, {Expr: "thisGroup.Transform1.center.get()[dimension]"}]
-      - ScriptName: transformCenterChanged
+      - Name: transformCenterChanged
         Bool: true
-      - ScriptName: invert
+      - Name: invert
         Bool: true
     Pos: [1000, 328]
   - PluginID: net.sf.cimg.CImgBlur
-    ScriptName: Blur2
+    Name: Blur2
     Version: [3, 0]
     Inputs: {Source: Transform1}
     Params:
-      - ScriptName: NatronOfxParamProcessA
+      - Name: NatronOfxParamProcessA
         Bool: true
-      - ScriptName: size
+      - Name: size
         Float: {Expr: thisGroup.angleBlur_distance.get()}
     Pos: [1000, 246]
