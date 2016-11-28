@@ -2023,6 +2023,7 @@ AppManager::loadNodesPresets()
                     if (dimVec.size() > 1) {
                         pyPlugVersionMinor = dimVec[1]._value.isInt;
                     }
+                    
                 }
             }
 
@@ -3450,12 +3451,15 @@ AppManager::initPython()
         Q_UNUSED(ok);
     }
 #endif
+
+    // Import NatronEngine
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nfrom math import *\nimport " + modulename, &err, 0);
     if (!ok) {
         throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 
+    // Create NatronEngine.natron wrapper
     ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " + modulename + ".PyCoreApplication()\n", &err, 0);
     assert(ok);
     if (!ok) {
@@ -3463,6 +3467,7 @@ AppManager::initPython()
     }
 
     if ( !isBackground() ) {
+        // Import NatronGui
         modulename = NATRON_GUI_PYTHON_MODULE_NAME;
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nimport " + modulename, &err, 0);
         assert(ok);
@@ -3470,31 +3475,32 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
 
+        // Create NatronGui.natron wrapper
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " +
                                                             modulename + ".PyGuiApplication()\n", &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
+    }
 
-        //redirect stdout/stderr
-        std::string script(
-            "class StreamCatcher:\n"
-            "   def __init__(self):\n"
-            "       self.value = ''\n"
-            "   def write(self,txt):\n"
-            "       self.value += txt\n"
-            "   def clear(self):\n"
-            "       self.value = ''\n"
-            "catchOut = StreamCatcher()\n"
-            "catchErr = StreamCatcher()\n"
-            "sys.stdout = catchOut\n"
-            "sys.stderr = catchErr\n");
-        ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-        assert(ok);
-        if (!ok) {
-            throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
-        }
+    // redirect stdout/stderr
+    std::string script(
+                       "class StreamCatcher:\n"
+                       "   def __init__(self):\n"
+                       "       self.value = ''\n"
+                       "   def write(self,txt):\n"
+                       "       self.value += txt\n"
+                       "   def clear(self):\n"
+                       "       self.value = ''\n"
+                       "catchOut = StreamCatcher()\n"
+                       "catchErr = StreamCatcher()\n"
+                       "sys.stdout = catchOut\n"
+                       "sys.stderr = catchErr\n");
+    ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
+    assert(ok);
+    if (!ok) {
+        throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 } // AppManager::initPython
 
@@ -4074,62 +4080,53 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     if (v) {
         Py_DECREF(v);
     }
-    if ( !appPTR->isBackground() ) {
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-        PyObject *outCatcher = 0;
 
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
+    PyObject *errCatcher = 0;
+    PyObject *outCatcher = 0;
 
-        if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-            outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            if (error) {
-                *error = PyStringToStdString(errorObj);
-            }
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-        PyObject *outObj = 0;
-        if (outCatcher) {
-            outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-            assert(outObj);
-            if (output) {
-                *output = PyStringToStdString(outObj);
-            }
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(outCatcher, "value", unicode);
-            Py_DECREF(outObj);
-            Py_DECREF(outCatcher);
-        }
-
-        if ( error && !error->empty() ) {
-            *error = "While executing script:\n" + script + "Python error:\n" + *error;
-
-            return false;
-        }
-
-        return true;
-    } else {
-        if ( PyErr_Occurred() ) {
-            PyErr_Print();
-
-            return false;
-        } else {
-            return true;
-        }
+    if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
+        errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
     }
+
+    if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
+        outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
+    }
+
+    PyErr_Print(); //make python print any errors
+
+    PyObject *errorObj = 0;
+    if (errCatcher) {
+        errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
+        assert(errorObj);
+        if (error) {
+            *error = PyStringToStdString(errorObj);
+        }
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(errCatcher, "value", unicode);
+        Py_DECREF(errorObj);
+        Py_DECREF(errCatcher);
+    }
+    PyObject *outObj = 0;
+    if (outCatcher) {
+        outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
+        assert(outObj);
+        if (output) {
+            *output = PyStringToStdString(outObj);
+        }
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(outCatcher, "value", unicode);
+        Py_DECREF(outObj);
+        Py_DECREF(outCatcher);
+    }
+
+    if ( error && !error->empty() ) {
+        *error = "While executing script:\n" + script + "Python error:\n" + *error;
+
+        return false;
+    }
+
+    return true;
+
 } // NATRON_PYTHON_NAMESPACE::interpretPythonScript
 
 #if 0 // dead code

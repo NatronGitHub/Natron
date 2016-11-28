@@ -1,28 +1,23 @@
+# Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
   - ScriptName: pyPlugPluginID
-    Value: fr.inria.EdgeBlur
+    String: fr.inria.EdgeBlur
   - ScriptName: pyPlugPluginLabel
-    Value: EdgeBlur
+    String: EdgeBlur
   - ScriptName: pyPlugPluginGrouping
-    Value: Filter
+    String: Filter
   - ScriptName: pyPlugPluginDescription
-    Value: Blur the image where there are edges in the alpha/matte channel.
+    String: Blur the image where there are edges in the alpha/matte channel.
   - ScriptName: pyPlugPluginVersion
-    Value: [1, 0]
-  - ScriptName: exportDialogOkButton
-    Value: {K: exportDialogOkButton}
-    Props: [MasterIsAlias]
-  - ScriptName: exportDialogCancelButton
-    Value: {K: exportDialogCancelButton}
-    Props: [MasterIsAlias]
+    Int: [1, 0]
 UserPages:
   - TypeName: Page
     ScriptName: controlsPage
     Label: Controls
     Params:
       - ScriptName: size
-        Default: 3
+        DefaultFloat: 3
         NDims: 1
         TypeName: Double
         Label: Size
@@ -31,7 +26,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - ScriptName: filter
-        Default: Gaussian
+        DefaultString: Gaussian
         NDims: 1
         TypeName: Choice
         Label: Filter
@@ -39,12 +34,12 @@ UserPages:
         Hints: [Gradient is estimated by centered finite differences., Compute gradient using the Sobel 3x3 filter., Compute gradient using a 3x3 rotation-invariant filter., "Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
         Props: [NoNewLine]
       - ScriptName: cropToFormat
-        Default: true
+        DefaultBool: true
         NDims: 1
         TypeName: Bool
         Label: Crop To Format
       - ScriptName: edgeMult
-        Default: 2
+        DefaultFloat: 2
         NDims: 1
         TypeName: Double
         Label: Edge Mult
@@ -53,8 +48,13 @@ UserPages:
         Max: 2147483647
         DisplayMin: 0.1
         DisplayMax: 10
+      - ScriptName: Merge1maskInvert
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Mask
       - ScriptName: Blur1mix
-        Default: 1
+        DefaultFloat: 1
         NDims: 1
         TypeName: Double
         Label: Mix
@@ -62,7 +62,7 @@ UserPages:
         Max: 1
         DisplayMin: 0
         DisplayMax: 1
-PagesOrder: [controlsPage, nodePage, pyPlugPage]
+PagesOrder: [controlsPage, nodePage]
 Children:
   - PluginID: eu.cimg.EdgeDetect
     ScriptName: EdgeDetect1
@@ -70,22 +70,20 @@ Children:
     Inputs: {Source: Shuffle1}
     Params:
       - ScriptName: NatronOfxParamProcessR
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessG
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessB
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessA
-        Value: true
+        Bool: true
       - ScriptName: filter
-        Value: {N: "@thisGroup", K: filter}
         Props: [MasterIsAlias]
       - ScriptName: multiChannel
-        Value: Separate
+        String: Separate
       - ScriptName: blurSize
-        Value: {N: "@thisGroup", K: size}
+        Float: 3
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [908, 181]
   - PluginID: net.sf.openfx.GammaPlugin
     ScriptName: Gamma1
@@ -93,33 +91,29 @@ Children:
     Inputs: {Source: EdgeDetect1}
     Params:
       - ScriptName: NatronOfxParamProcessR
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessG
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessB
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessA
-        Value: true
+        Bool: true
       - ScriptName: value
-        Value: [{Expr: thisGroup.edgeMult.get()}, {Expr: thisGroup.edgeMult.get()}, {Expr: thisGroup.edgeMult.get()}, {Expr: thisGroup.edgeMult.get()}]
-    PagesOrder: [Controls, nodePage, infoPage]
+        Float: {Expr: thisGroup.edgeMult.get()}
     Pos: [895, 285]
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur1
     Version: [4, 0]
-    Inputs: {Mask: KeyMix1, Source: Dot1}
+    Inputs: {Mask: Merge1, Source: Dot1}
     Params:
       - ScriptName: size
-        Value: [{N: EdgeDetect1, K: blurSize}, {N: EdgeDetect1, K: blurSize}]
+        Float: {N: EdgeDetect1, K: blurSize}
       - ScriptName: cropToFormat
-        Value: {N: "@thisGroup", K: cropToFormat}
         Props: [MasterIsAlias]
       - ScriptName: mix
-        Value: {N: "@thisGroup", K: Blur1mix}
         Props: [MasterIsAlias]
       - ScriptName: enableMask_Mask
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
     Pos: [676, 349]
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: Shuffle1
@@ -127,18 +121,17 @@ Children:
     Inputs: {A: Dot1}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: Color.RGBA
+        String: Color.RGBA
       - ScriptName: outputComponents
-        Value: Alpha
+        String: Alpha
       - ScriptName: outputRChoice
-        Value: A.r
+        String: A.r
       - ScriptName: outputGChoice
-        Value: A.g
+        String: A.g
       - ScriptName: outputBChoice
-        Value: A.b
+        String: A.b
       - ScriptName: outputAChoice
-        Value: A.a
-    PagesOrder: [Controls, nodePage, infoPage]
+        String: A.a
     Pos: [896, 104]
   - PluginID: fr.inria.built-in.Dot
     ScriptName: Dot1
@@ -146,24 +139,28 @@ Children:
     Pos: [721, 114]
   - PluginID: fr.inria.built-in.Input
     ScriptName: Source
-    PagesOrder: [controls, nodePage, infoPage]
     Pos: [676, 50]
   - PluginID: fr.inria.built-in.Output
     ScriptName: Output
+    Label: Output1
     Inputs: {Source: Blur1}
-    PagesOrder: [nodePage, infoPage]
     Pos: [676, 430]
   - PluginID: fr.inria.built-in.Input
     ScriptName: Mask
     Params:
       - ScriptName: optional
-        Value: true
+        Bool: true
       - ScriptName: isMask
-        Value: true
-    PagesOrder: [controls, nodePage, infoPage]
+        Bool: true
     Pos: [1084, 349]
-  - PluginID: net.sf.openfx.KeyMix
-    ScriptName: KeyMix1
+  - PluginID: net.sf.openfx.MergePlugin
+    ScriptName: Merge1
     Inputs: {A: Gamma1, Mask: Mask}
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [907, 349]
+    Params:
+      - ScriptName: operation
+        String: copy
+      - ScriptName: bbox
+        String: A
+      - ScriptName: maskInvert
+        Props: [MasterIsAlias]
+    Pos: [895, 341]

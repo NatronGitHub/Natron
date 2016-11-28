@@ -1,44 +1,37 @@
+# Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
   - ScriptName: pyPlugPluginID
-    Value: fr.inria.DropShadow
+    String: fr.inria.DropShadow
   - ScriptName: pyPlugPluginLabel
-    Value: DropShadow
+    String: DropShadow
   - ScriptName: pyPlugPluginGrouping
-    Value: Filter
+    String: Filter
   - ScriptName: pyPlugPluginDescription
-    Value: Creates a drop shadow on the source image using its alpha channel.
+    String: Creates a drop shadow on the source image using its alpha channel.
   - ScriptName: pyPlugPluginVersion
-    Value: [1, 0]
-  - ScriptName: pyPlugPluginIcon
-    Value: DropShadow.png
-  - ScriptName: exportDialogOkButton
-    Value: {K: exportDialogOkButton}
-    Props: [MasterIsAlias]
-  - ScriptName: exportDialogCancelButton
-    Value: {K: exportDialogCancelButton}
-    Props: [MasterIsAlias]
+    Int: [1, 0]
 UserPages:
   - TypeName: Page
     ScriptName: controls
     Label: Controls
     Params:
       - ScriptName: shadowAngle
-        Default: -45
+        DefaultFloat: -45
         NDims: 1
         TypeName: Double
         Label: Angle
         Max: 2147483647
         DisplayMax: 360
       - ScriptName: shadowDist
-        Default: 20
+        DefaultFloat: 20
         NDims: 1
         TypeName: Double
         Label: Distance
         Max: 2147483647
         DisplayMax: 2000
       - ScriptName: shadowBlur
-        Default: [0, 0]
+        DefaultFloat: [0, 0]
         NDims: 2
         TypeName: Double
         Label: Bluriness
@@ -47,7 +40,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - ScriptName: shadowOpacity
-        Default: [0.5, 0.5, 0.5, 0.5]
+        DefaultFloat: [0.5, 0.5, 0.5, 0.5]
         NDims: 4
         TypeName: Color
         Label: Opacity
@@ -56,23 +49,23 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 1
       - ScriptName: shadowColor
-        Default: [0, 0, 0]
+        DefaultFloat: [0, 0, 0]
         NDims: 3
         TypeName: Color
         Label: Color
         Max: 2147483647
         DisplayMax: 1
       - ScriptName: shadowCFS
-        Default: false
+        DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Color from source
       - ScriptName: shadowOnly
-        Default: false
+        DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Shadow only
-PagesOrder: [controls, nodePage, pyPlugPage]
+PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: Shuffle1
@@ -80,41 +73,33 @@ Children:
     Inputs: {A: Multiply1, B: Solid1}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: RGBA
-      - ScriptName: outputR
-        Value: B.r
+        String: RGBA
       - ScriptName: outputRChoice
-        Value: B.r
-      - ScriptName: outputG
-        Value: B.g
+        String: B.r
       - ScriptName: outputGChoice
-        Value: B.g
-      - ScriptName: outputB
-        Value: B.b
+        String: B.g
       - ScriptName: outputBChoice
-        Value: B.b
+        String: B.b
       - ScriptName: outputAChoice
-        Value: A.a
+        String: A.a
       - ScriptName: disableNode
-        Value: {N: "@thisGroup", K: shadowCFS}
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     ScriptName: Transform2
     Inputs: {Source: Shuffle1}
     Params:
       - ScriptName: translate
-        Value: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
+        Float: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
       - ScriptName: center
-        Value: [480, 270]
-    PagesOrder: [Controls, nodePage, infoPage]
+        Float: [480, 270]
+      - ScriptName: transformCenterChanged
+        Bool: true
     Pos: [759, 167]
   - PluginID: net.sf.openfx.Premult
     ScriptName: Premult1
     Version: [2, 0]
     Inputs: {Source: Blur1}
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [759, 341]
   - PluginID: net.sf.openfx.MultiplyPlugin
     ScriptName: Multiply1
@@ -122,43 +107,38 @@ Children:
     Inputs: {Source: InputSource}
     Params:
       - ScriptName: NatronOfxParamProcessR
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessG
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessB
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessA
-        Value: true
+        Bool: true
       - ScriptName: value
-        Value: [{N: "@thisGroup", K: shadowOpacity, D: r}, {N: "@thisGroup", K: shadowOpacity, D: g}, {N: "@thisGroup", K: shadowOpacity, D: b}, {N: "@thisGroup", K: shadowOpacity, D: a}]
+        Float: 0.5
         Props: [MasterIsAlias]
       - ScriptName: premult
-        Value: true
+        Bool: true
       - ScriptName: premultChanged
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
     Pos: [759, -23]
   - PluginID: net.sf.openfx.Solid
     ScriptName: Solid1
     Params:
-      - ScriptName: NatronParamFormatSize
-        Value: [1920, 1080]
+      - ScriptName: NatronParamFormatChoice
+        String: PC_Video 640x480
       - ScriptName: size
-        Value: [960, 540]
+        Float: [960, 540]
       - ScriptName: color
-        Value: [{N: "@thisGroup", K: shadowColor, D: r}, {N: "@thisGroup", K: shadowColor, D: g}, {N: "@thisGroup", K: shadowColor, D: b}]
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [584, 87]
   - PluginID: fr.inria.built-in.Input
     ScriptName: InputSource
-    PagesOrder: [controls, nodePage, infoPage]
     Pos: [759, -112]
   - PluginID: fr.inria.built-in.Output
     ScriptName: Output
     Label: Output1
     Inputs: {Source: Merge1}
-    PagesOrder: [nodePage, infoPage]
     Pos: [1000, 497]
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur1
@@ -166,20 +146,16 @@ Children:
     Inputs: {Source: Transform2}
     Params:
       - ScriptName: NatronOfxParamProcessA
-        Value: true
+        Bool: true
       - ScriptName: size
-        Value: [{N: "@thisGroup", K: shadowBlur, D: x}, {N: "@thisGroup", K: shadowBlur, D: y}]
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [759, 260]
   - PluginID: net.sf.openfx.MergePlugin
     ScriptName: Merge1
     Inputs: {A: InputSource, B: Premult1}
     Params:
       - ScriptName: maskInvert
-        Value: true
+        Bool: true
       - ScriptName: disableNode
-        Value: {N: "@thisGroup", K: shadowOnly}
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [1000, 329]

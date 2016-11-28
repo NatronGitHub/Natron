@@ -3153,6 +3153,11 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                 //KnobChoicePtr isChoice = toKnobChoice(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
                 KnobSerializationPtr childSer( new KnobSerialization );
+
+                // At this point we might be exporting an already existing PyPlug and knobs that were created
+                // by the PyPlugs could be user knobs but were marked declared by plug-in. In order to force the
+                // _isUserKnob flag on the serialization object, we set this bit to true.
+                childSer->_forceUserKnob = true;
                 child->toSerialization(childSer.get());
                 assert(childSer->_isUserKnob);
                 groupSerialization->_children.push_back(childSer);
@@ -3167,7 +3172,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         serialization->_dimension = getNDimensions();
         serialization->_scriptName = getName();
 
-        serialization->_isUserKnob = isUserKnob() && !isDeclaredByPlugin();
+        serialization->_isUserKnob = serialization->_forceUserKnob || (isUserKnob() && !isDeclaredByPlugin());
 
         bool isFullRecoverySave = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 

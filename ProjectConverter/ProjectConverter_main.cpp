@@ -495,8 +495,12 @@ static void tryReadAndConvertOlderPyPlugFile(const QString& filename, const QStr
     std::string pluginID, pluginLabel, pluginIcon, pluginGrouping, pluginDescription, pythonScriptDirPath;
     bool isToolset;
     unsigned int version;
-    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModule, &pluginID, &pluginLabel, &pluginIcon, &pluginGrouping, &pluginDescription, &pythonScriptDirPath, &isToolset, &version);
-
+    if (!NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModule, &pluginID, &pluginLabel, &pluginIcon, &pluginGrouping, &pluginDescription, &pythonScriptDirPath, &isToolset, &version)) {
+        return;
+    }
+    if (isToolset) {
+        return;
+    }
     CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID, NodeCollectionPtr() ));
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropVolatile, true);
@@ -616,23 +620,59 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
     } else if (isPyPlugFile) {
         tryReadAndConvertOlderPyPlugFile(filename, outFileName);
     }
-
+    if (!QFile::exists(outFileName)) {
+        return;
+    }
     if (!replaceOriginal || !outputFilePathArgs.isEmpty()) {
         data->convertedFiles.push_back(outFileName.toStdString());
     } else {
-        // Copy the original file to a backup
-        QString backupFileName = filename;
-        backupFileName += QLatin1String(".bak");
-        if (QFile::exists(backupFileName)) {
-            QFile::remove(backupFileName);
+
+        bool extensionChanged = false;
+        QString finalFileName;
+        {
+            // Even if we replace the original file, make sure it has the
+            // correct extension: old PyPlugs are .py files and in Natron >= 2.2
+            // they are .nps
+
+            int foundDot = filename.lastIndexOf(QLatin1Char('.'));
+            assert(foundDot != -1);
+            if (foundDot != -1) {
+                finalFileName = filename.mid(0, foundDot);
+                QString ext;
+                if (isPyPlugFile) {
+                    ext = QLatin1String("." NATRON_PRESETS_FILE_EXT);
+                } else {
+                    ext = filename.mid(foundDot);
+                }
+                finalFileName += ext;
+                extensionChanged = filename.mid(foundDot) != ext;
+            }
         }
-        QFile::copy(filename, backupFileName);
 
-        data->bakFiles.push_back(backupFileName.toStdString());
+        if (QFile::exists(finalFileName)) {
+            QFile::remove(finalFileName);
+        }
 
-        // Copy the output file onto the original file
-        QFile::remove(filename);
-        QFile::copy(outFileName, filename);
+        // Copy the original file to a backup (if the extension did not change)
+        if (!extensionChanged) {
+            QString backupFileName = filename;
+            backupFileName += QLatin1String(".bak");
+            if (QFile::exists(backupFileName)) {
+                QFile::remove(backupFileName);
+            }
+            QFile::copy(filename, backupFileName);
+
+            data->bakFiles.push_back(backupFileName.toStdString());
+
+            // Remove the original file
+            QFile::remove(filename);
+        }
+
+
+
+        // Copy the temporary file onto the original file
+        QFile::copy(outFileName, finalFileName);
+
         QFile::remove(outFileName);
     }
 

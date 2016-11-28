@@ -387,7 +387,13 @@ public:
 
     boost::scoped_ptr<TypeExtraData> _extraData; // holds type specific data other than values
 
-    bool _isUserKnob; // is this knob created by the user or was this created by a plug-in ?
+    // Is this knob created by the user or was this created by a plug-in ?
+    // If true we serialize a lot of stuff related to the UI so we can restore the entire knob state.
+    bool _isUserKnob;
+
+    // The flag is useful to force a knob to be serialized as a user knob: i.e: all its description is
+    // entirely saved. This is used in Natron when serializing a PyPlug
+    bool _forceUserKnob;
     std::string _label; // only serialized for user knobs
     std::string _iconFilePath[2]; // only serialized for user knobs
     bool _triggerNewLine; // only serialized for user knobs
@@ -418,6 +424,7 @@ public:
     , _dataType(eSerializationValueVariantTypeNone)
     , _extraData()
     , _isUserKnob(false)
+    , _forceUserKnob(false)
     , _label()
     , _triggerNewLine(true)
     , _evaluatesOnChange(true)

@@ -1,35 +1,28 @@
+# Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
   - ScriptName: pyPlugPluginID
-    Value: fr.inria.ZRemap
+    String: fr.inria.ZRemap
   - ScriptName: pyPlugPluginLabel
-    Value: ZRemap
+    String: ZRemap
   - ScriptName: pyPlugPluginGrouping
-    Value: Filter
+    String: Filter
   - ScriptName: pyPlugPluginDescription
-    Value: Remap Z-Depth pass according to a close limit value and a far limit
+    String: Remap Z-Depth pass according to a close limit value and a far limit
   - ScriptName: pyPlugPluginVersion
-    Value: [1, 0]
-  - ScriptName: pyPlugPluginIcon
-    Value: ZRemap.png
-  - ScriptName: exportDialogOkButton
-    Value: {K: exportDialogOkButton}
-    Props: [MasterIsAlias]
-  - ScriptName: exportDialogCancelButton
-    Value: {K: exportDialogCancelButton}
-    Props: [MasterIsAlias]
+    Int: [1, 0]
 UserPages:
   - TypeName: Page
     ScriptName: controls
     Label: Controls
     Params:
       - ScriptName: zPicking
-        Default: false
+        DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Z Picking mode
       - ScriptName: closeLimit
-        Default: [0, 0, 0, 0]
+        DefaultFloat: [0, 0, 0, 0]
         NDims: 4
         TypeName: Color
         Label: Close Limit
@@ -39,7 +32,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - ScriptName: farLimit
-        Default: [100, 100, 100, 100]
+        DefaultFloat: [100, 100, 100, 100]
         NDims: 4
         TypeName: Color
         Label: Far Limit
@@ -49,7 +42,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - ScriptName: gamma
-        Default: [1, 1, 1, 1]
+        DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
         Label: Gamma
@@ -58,23 +51,23 @@ UserPages:
         DisplayMin: 0.2
         DisplayMax: 5
       - ScriptName: invertGradient
-        Default: false
+        DefaultBool: false
         NDims: 1
         TypeName: Bool
         Label: Invert Gradient
       - ScriptName: Source_channels
-        Default: Color.RGBA
+        DefaultString: Color.RGBA
         NDims: 1
         TypeName: Choice
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
       - ScriptName: channels
-        Default: Color.RGBA
+        DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
         Label: Output Layer
         Entries: [Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
-PagesOrder: [controls, nodePage, pyPlugPage]
+PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
     ScriptName: Grade1
@@ -82,25 +75,21 @@ Children:
     Inputs: {Source: InputSource}
     Params:
       - ScriptName: blackPoint
-        Value: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
         Props: [MasterIsAlias]
       - ScriptName: whitePoint
-        Value: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
+        Float: 100
         Props: [MasterIsAlias]
       - ScriptName: gamma
-        Value: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
         Props: [MasterIsAlias]
       - ScriptName: clampBlack
-        Value: true
-        Default: false
+        Bool: true
+        DefaultBool: false
       - ScriptName: premultChanged
-        Value: true
+        Bool: true
       - ScriptName: Source_channels
-        Value: {N: "@thisGroup", K: Source_channels}
         Props: [MasterIsAlias]
       - ScriptName: enableMask_Mask
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
     Pos: [726, 92]
   - PluginID: net.sf.openfx.Invert
     ScriptName: Invert1
@@ -108,32 +97,27 @@ Children:
     Inputs: {Source: Grade1}
     Params:
       - ScriptName: premultChanged
-        Value: true
+        Bool: true
       - ScriptName: channels
-        Value: {N: "@thisGroup", K: channels}
+        String: Backward.Motion
         Props: [MasterIsAlias]
       - ScriptName: disableNode
-        Value: {N: "@thisGroup", K: invertGradient}
         Props: [MasterIsAlias]
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     ScriptName: Output
     Label: Output1
     Inputs: {Source: Switch1}
-    PagesOrder: [nodePage, infoPage]
     Pos: [882, 496]
   - PluginID: fr.inria.built-in.Input
     ScriptName: InputSource
-    PagesOrder: [controls, nodePage, infoPage]
     Pos: [882, -40]
   - PluginID: net.sf.openfx.switchPlugin
     ScriptName: Switch1
     Inputs: {0: Invert1, 1: InputSource}
     Params:
       - ScriptName: which
-        Value: {Expr: thisGroup.zPicking.get()}
+        Int: {Expr: thisGroup.zPicking.get()}
       - ScriptName: p1_channels
-        Value: {Expr: thisGroup.Source_channels.get()}
-    PagesOrder: [Controls, nodePage, infoPage]
+        String: {Expr: thisGroup.Source_channels.get()}
     Pos: [882, 381]

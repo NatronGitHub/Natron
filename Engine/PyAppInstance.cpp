@@ -170,7 +170,6 @@ App::createEffectFromNodeWrapper(const NodePtr& node)
     std::stringstream ss;
     ss << kPythonTmpCheckerVariable << " = ";
     ss << node->getApp()->getAppIDString() << "." << node->getFullyQualifiedName();
-    ss << "\ndel " << kPythonTmpCheckerVariable;
     std::string script = ss.str();
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
     // Clear errors if our call to interpretPythonScript failed, we don't want the
@@ -186,6 +185,8 @@ App::createEffectFromNodeWrapper(const NodePtr& node)
         if (pyEffect && Shiboken::Object::isValid(pyEffect)) {
             cppEffect = (Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)pyEffect);
         }
+        NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
+
         if (cppEffect) {
             return cppEffect;
         }

@@ -1,62 +1,53 @@
+# Natron presets file
 PluginID: fr.inria.built-in.Group
 Params:
   - ScriptName: pyPlugPluginID
-    Value: fr.inria.PIKColor
+    String: fr.inria.PIKColor
   - ScriptName: pyPlugPluginLabel
-    Value: PIKColor
+    String: PIKColor
   - ScriptName: pyPlugPluginGrouping
-    Value: Keyer
+    String: Keyer
   - ScriptName: pyPlugPluginDescription
-    Value: "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'C' input of a PIK node. Attach the input of this node and the 'PFg' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'Patch Black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe optional 'InM' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated is not really going to work."
+    String: "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'C' input of a PIK node. Attach the input of this node and the 'PFg' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'Patch Black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe optional 'InM' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated is not really going to work."
   - ScriptName: pyPlugPluginVersion
-    Value: [1, 0]
-  - ScriptName: pyPlugPluginIcon
-    Value: PIKColor.png
-  - ScriptName: exportDialogOkButton
-    Value: {K: exportDialogOkButton}
-    Props: [MasterIsAlias]
-  - ScriptName: exportDialogCancelButton
-    Value: {K: exportDialogCancelButton}
-    Props: [MasterIsAlias]
+    Int: [1, 0]
 UserPages:
   - TypeName: Page
     ScriptName: controls
     Label: Controls
     Params:
       - ScriptName: screenType
-        Default: Blue
+        DefaultString: Blue
         NDims: 1
         TypeName: Choice
         Label: Screen Type
         Entries: [Green, Blue]
       - ScriptName: size
-        Default: 10
+        DefaultFloat: 10
         NDims: 1
         TypeName: Double
         Label: Size
         Hint: Size of color expansion.
         Min: 0
-        Max: 100
+        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 100
       - ScriptName: off
-        Default: [0, 0, 0]
+        DefaultFloat: [0, 0, 0]
         NDims: 3
         TypeName: Color
         Label: Darks
         Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
-        Min: -1
-        Max: 1
-        DisplayMin: -1
+        Max: 1.797693134862316e+308
         DisplayMax: 1
       - ScriptName: mult
-        Default: [1, 1, 1]
+        DefaultFloat: [1, 1, 1]
         NDims: 3
         TypeName: Color
         Label: Lights
         Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
         Min: 0
-        Max: 2
+        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 2
       - ScriptName: sep1
@@ -65,13 +56,13 @@ UserPages:
         Label: ""
         Props: [NoEval, Volatile]
       - ScriptName: erode
-        Default: 0
+        DefaultFloat: 0
         NDims: 1
         TypeName: Double
         Label: Erode
         Hint: increase this value if you still see traces of the foreground edge color in the output
         Min: 0
-        Max: 5
+        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 5
       - ScriptName: sep2
@@ -80,18 +71,18 @@ UserPages:
         Label: ""
         Props: [NoEval, Volatile]
       - ScriptName: multi
-        Default: 0
+        DefaultFloat: 0
         NDims: 1
         TypeName: Double
         Label: Patch Black
         Hint: "Increase this to optionally remove the black from the output.\nThis should only be used once the the above darks/lights have been set."
         Min: 0
-        Max: 5
+        Max: 1.797693134862316e+308
         DisplayMin: 0
         DisplayMax: 5
         Props: [NoNewLine]
       - ScriptName: filt
-        Default: true
+        DefaultBool: true
         NDims: 1
         TypeName: Bool
         Label: Filter
@@ -102,16 +93,14 @@ UserPages:
         Label: ""
         Props: [NoEval, Volatile]
       - ScriptName: level
-        Default: 1
+        DefaultFloat: 1
         NDims: 1
         TypeName: Double
         Label: Level
         Hint: multiply the rgb output. Helps remove noise from main key
-        Min: 0
-        Max: inf
-        DisplayMin: 0
+        Max: 1.797693134862316e+308
         DisplayMax: 1
-PagesOrder: [controls, nodePage, pyPlugPage]
+PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
     ScriptName: Grade11
@@ -119,12 +108,16 @@ Children:
     Inputs: {Source: Dot2}
     Params:
       - ScriptName: multiply
-        Value: [{Expr: thisGroup.mult.get().r}, {Expr: thisGroup.mult.get().g}, {Expr: thisGroup.mult.get().b}, 0]
+        Float: {Expr: thisGroup.mult.get().r}
       - ScriptName: offset
-        Value: [{Expr: thisGroup.off.get().r}, {Expr: thisGroup.off.get().g}, {Expr: thisGroup.off.get().b}, 0]
+        Float: {Expr: thisGroup.off.get().r}
+      - ScriptName: clampBlack
+        Bool: true
+        DefaultBool: false
       - ScriptName: mix
-        Value: 0.326
-    PagesOrder: [Controls, nodePage, infoPage]
+        Float: 0.326
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">*mult+off</font>
     Pos: [14, -192]
   - PluginID: net.sf.openfx.Clamp
     ScriptName: Clamp2
@@ -132,10 +125,11 @@ Children:
     Inputs: {Source: Grade11}
     Params:
       - ScriptName: maximumEnable
-        Value: false
+        Bool: false
       - ScriptName: premultChanged
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">>0 (rgb)</font>
     Pos: [14, -118]
   - PluginID: net.sf.openfx.Invert
     ScriptName: Invert1
@@ -143,14 +137,15 @@ Children:
     Inputs: {Source: PIK2}
     Params:
       - ScriptName: NatronOfxParamProcessR
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessG
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessB
-        Value: false
+        Bool: false
       - ScriptName: premultChanged
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a)</font>
     Pos: [126, -33]
   - PluginID: eu.cimg.ErodeBlur
     ScriptName: Erode1
@@ -158,10 +153,11 @@ Children:
     Inputs: {Source: Invert1}
     Params:
       - ScriptName: size
-        Value: {Expr: thisGroup.erode.get()}
+        Float: {Expr: thisGroup.erode.get()}
       - ScriptName: premultChanged
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">erode (a)</font>
     Pos: [138, 33]
   - PluginID: fr.inria.built-in.Dot
     ScriptName: Dot1
@@ -177,16 +173,17 @@ Children:
     Inputs: {A: Erode1, B: Dot3}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: Color.RGBA
+        String: Color.RGBA
       - ScriptName: outputRChoice
-        Value: B.r
+        String: B.r
       - ScriptName: outputGChoice
-        Value: B.g
+        String: B.g
       - ScriptName: outputBChoice
-        Value: B.b
+        String: B.b
       - ScriptName: outputAChoice
-        Value: A.a
-    PagesOrder: [Controls, nodePage, infoPage]
+        String: A.a
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
     Pos: [272, 35]
   - PluginID: fr.inria.built-in.Dot
     ScriptName: Dot3
@@ -196,45 +193,45 @@ Children:
     ScriptName: Premult3
     Version: [2, 0]
     Inputs: {Source: ShuffleCopy3}
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [272, 99]
   - PluginID: net.sf.openfx.Unpremult
     ScriptName: Unpremult4
     Version: [2, 0]
     Inputs: {Source: Blur4}
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [272, 227]
   - PluginID: net.sf.openfx.Clamp
     ScriptName: Clamp1
     Version: [2, 0]
-    Inputs: {Source: Unpremult4}
+    Inputs: {Source: Shuffle1}
     Params:
-      - ScriptName: NatronOfxParamProcessA
-        Value: false
       - ScriptName: maximum
-        Value: [0, 0, 0, 0]
+        Float: 0
       - ScriptName: minClampToEnable
-        Value: true
+        Bool: true
       - ScriptName: maxClampToEnable
-        Value: true
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [411, 226]
+        Bool: true
+      - ScriptName: premultChanged
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a != 0 -> a)</font>
+    Pos: [700, 225]
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: ChannelCopy1
     Version: [2, 0]
     Inputs: {A: Clamp1, B: Dot4}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: Color.RGBA
+        String: Color.RGBA
       - ScriptName: outputRChoice
-        Value: B.r
+        String: B.r
       - ScriptName: outputGChoice
-        Value: B.g
+        String: B.g
       - ScriptName: outputBChoice
-        Value: B.b
+        String: B.b
       - ScriptName: outputAChoice
-        Value: A.r
-    PagesOrder: [Controls, nodePage, infoPage]
+        String: A.a
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
     Pos: [411, 292]
   - PluginID: fr.inria.built-in.Dot
     ScriptName: Dot4
@@ -243,139 +240,111 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: ShuffleCopy2
     Version: [2, 0]
-    Inputs: {A: Dot5, B: Unpremult1}
+    Inputs: {A: Switch1, B: Unpremult1}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: Color.RGBA
+        String: Color.RGBA
       - ScriptName: outputRChoice
-        Value: B.r
+        String: B.r
       - ScriptName: outputGChoice
-        Value: B.g
+        String: B.g
       - ScriptName: outputBChoice
-        Value: B.b
+        String: B.b
       - ScriptName: outputAChoice
-        Value: A.r
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [544, 423]
-  - PluginID: fr.inria.built-in.Dot
-    ScriptName: Dot5
-    Inputs: {"": Clamp1}
-    Pos: [589, 236]
+        String: A.a
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
+    Pos: [413, 602]
   - PluginID: net.sf.openfx.Unpremult
     ScriptName: Unpremult1
     Version: [2, 0]
     Inputs: {Source: Blur2}
-    PagesOrder: [Controls, nodePage, infoPage]
     Pos: [413, 423]
   - PluginID: net.sf.openfx.Invert
     ScriptName: Invert2
     Version: [2, 0]
-    Inputs: {Source: ShuffleCopy2}
+    Inputs: {Source: Clamp1}
     Params:
       - ScriptName: NatronOfxParamProcessR
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessG
-        Value: false
+        Bool: false
       - ScriptName: NatronOfxParamProcessB
-        Value: false
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [544, 487]
-  - PluginID: eu.cimg.ErodeBlur
-    ScriptName: FilterErode1
-    Version: [4, 0]
-    Inputs: {Source: Invert2}
-    Params:
-      - ScriptName: size
-        Value: {Expr: (-thisGroup.size.get()/5)*thisGroup.multi.get()*2*2}
-      - ScriptName: blur
-        Value: 1
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [423, 485]
-  - PluginID: eu.cimg.ErodeBlur
-    ScriptName: FilterErode2
-    Version: [4, 0]
-    Inputs: {Source: Invert2}
-    Params:
-      - ScriptName: size
-        Value: {Expr: (-thisGroup.size.get()/5)*2}
-      - ScriptName: blur
-        Value: 1
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [556, 570]
+        Bool: false
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a)</font>
+    Pos: [700, 328]
   - PluginID: net.sf.openfx.switchPlugin
     ScriptName: Switch1
-    Inputs: {0: FilterErode1, 1: FilterErode2}
+    Inputs: {0: BlurBox1, 1: BlurBox2}
     Params:
       - ScriptName: which
-        Value: {Expr: 1-thisGroup.filt.get()}
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [411, 568]
+        Int: {Expr: 1-thisGroup.filt.get()}
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(filt)</font>
+    Pos: [690, 602]
   - PluginID: net.sf.openfx.Premult
     ScriptName: Premult1
     Version: [2, 0]
-    Inputs: {Source: Switch1}
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [411, 632]
+    Inputs: {Source: ShuffleCopy2}
+    Pos: [411, 727]
   - PluginID: net.sf.openfx.MergePlugin
     ScriptName: Merge1
-    Inputs: {A: Premult1, B: Dot4}
+    Inputs: {A: Premult1, B: Dot7}
     Params:
       - ScriptName: userTextArea
-        Value: <Natron>(over)</Natron>
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [272, 622]
+        String: <Natron>(over)</Natron>
+    Pos: [272, 717]
   - PluginID: net.sf.openfx.ShufflePlugin
     ScriptName: ChannelCopy2
     Version: [2, 0]
-    Inputs: {A: Dot6, B: Merge1}
+    Inputs: {A: Dot6, B: Unpremult2}
     Params:
       - ScriptName: outputChannelsChoice
-        Value: Color.RGBA
+        String: Color.RGBA
       - ScriptName: outputRChoice
-        Value: B.r
+        String: B.r
       - ScriptName: outputGChoice
-        Value: B.g
+        String: B.g
       - ScriptName: outputBChoice
-        Value: B.b
+        String: B.b
       - ScriptName: outputAChoice
-        Value: A.a
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [272, 727]
+        String: A.a
+    Pos: [272, 886]
   - PluginID: fr.inria.built-in.Dot
     ScriptName: Dot6
     Inputs: {"": Erode1}
-    Pos: [182, 735]
+    Pos: [171, 894]
   - PluginID: net.sf.openfx.GradePlugin
     ScriptName: Grade1
     Version: [2, 0]
     Inputs: {Source: ChannelCopy2}
     Params:
       - ScriptName: multiply
-        Value: [{Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}, {Expr: thisGroup.level.get()}]
-    PagesOrder: [Controls, nodePage, infoPage]
-    Pos: [272, 791]
+        Float: {Expr: thisGroup.level.get()}
+      - ScriptName: clampBlack
+        Bool: true
+        DefaultBool: false
+    Pos: [272, 946]
   - PluginID: fr.inria.built-in.Input
     ScriptName: Source
-    PagesOrder: [controls, nodePage, infoPage]
     Pos: [145, -282]
   - PluginID: fr.inria.built-in.Output
     ScriptName: Output
     Inputs: {Source: Grade1}
-    PagesOrder: [nodePage, infoPage]
-    Pos: [272, 859]
+    Pos: [272, 1014]
   - PluginID: net.sf.openfx.PIK
     ScriptName: PIK2
     Inputs: {C: Clamp2, Fg: Clamp2, InM: InM, PFg: Clamp2}
     Params:
       - ScriptName: screenType
-        Value: {Expr: thisGroup.screenType.getValue()}
+        String: {Expr: thisGroup.screenType.getValue()}
       - ScriptName: redWeight
-        Value: 1
+        Float: 1
       - ScriptName: blueGreenWeight
-        Value: 1
+        Float: 1
       - ScriptName: luma
-        Value: 1
-    PagesOrder: [Controls, nodePage, infoPage]
+        Float: 1
     Pos: [26, -35]
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur2
@@ -384,12 +353,13 @@ Children:
     Inputs: {Source: ChannelCopy1}
     Params:
       - ScriptName: size
-        Value: [{Expr: thisGroup.size.get()*3*thisGroup.multi.get()}, {Expr: thisGroup.size.get()*3*thisGroup.multi.get()}]
+        Float: {Expr: thisGroup.size.get()*3*thisGroup.multi.get()}
       - ScriptName: filter
-        Value: Quadratic
+        String: Quadratic
       - ScriptName: expandRoD
-        Value: false
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: false
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size*3*multi</font>
     Pos: [411, 351]
   - PluginID: net.sf.cimg.CImgBlur
     ScriptName: Blur4
@@ -397,19 +367,120 @@ Children:
     Inputs: {Source: Premult3}
     Params:
       - ScriptName: size
-        Value: [{Expr: thisGroup.size.get()}, {Expr: thisGroup.size.get()}]
+        Float: {Expr: thisGroup.size.get()}
       - ScriptName: filter
-        Value: Quadratic
+        String: Quadratic
       - ScriptName: expandRoD
-        Value: false
-    PagesOrder: [Controls, nodePage, infoPage]
+        Bool: false
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size</font>
     Pos: [272, 159]
   - PluginID: fr.inria.built-in.Input
     ScriptName: InM
     Params:
       - ScriptName: optional
-        Value: true
+        Bool: true
       - ScriptName: isMask
-        Value: true
-    PagesOrder: [controls, nodePage, infoPage]
+        Bool: true
     Pos: [-171, -35]
+  - PluginID: fr.inria.built-in.Dot
+    ScriptName: Dot7
+    Inputs: {"": ChannelCopy1}
+    Pos: [317, 370]
+  - PluginID: net.sf.cimg.CImgBlur
+    ScriptName: BlurBox1
+    Version: [4, 0]
+    Inputs: {Source: DilateFast1}
+    Params:
+      - ScriptName: NatronOfxParamProcessR
+        Bool: false
+      - ScriptName: NatronOfxParamProcessG
+        Bool: false
+      - ScriptName: NatronOfxParamProcessB
+        Bool: false
+      - ScriptName: size
+        Float: {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*4}
+      - ScriptName: expandRoD
+        Bool: false
+      - ScriptName: cropToFormat
+        Bool: false
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*multi*4</font>
+    Pos: [579, 509]
+  - PluginID: net.sf.cimg.CImgBlur
+    ScriptName: BlurBox2
+    Version: [4, 0]
+    Inputs: {Source: DilateFast2}
+    Params:
+      - ScriptName: NatronOfxParamProcessR
+        Bool: false
+      - ScriptName: NatronOfxParamProcessG
+        Bool: false
+      - ScriptName: NatronOfxParamProcessB
+        Bool: false
+      - ScriptName: size
+        Float: {Expr: (thisGroup.size.get()/5)*2}
+      - ScriptName: filter
+        String: Box
+      - ScriptName: expandRoD
+        Bool: false
+      - ScriptName: cropToFormat
+        Bool: false
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*2</font>
+    Pos: [803, 511]
+  - PluginID: net.sf.openfx.Unpremult
+    ScriptName: Unpremult2
+    Version: [2, 0]
+    Inputs: {Source: Merge1}
+    Pos: [272, 803]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    ScriptName: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Unpremult4}
+    Params:
+      - ScriptName: outputChannelsChoice
+        String: Color.RGBA
+      - ScriptName: outputComponents
+        String: Alpha
+      - ScriptName: outputRChoice
+        String: A.r
+      - ScriptName: outputGChoice
+        String: A.g
+      - ScriptName: outputBChoice
+        String: A.b
+      - ScriptName: outputA
+        String: {Expr: thisGroup.screenType.get()+1}
+      - ScriptName: outputAChoice
+        String: A.b
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(g or b->a)</font>
+    Pos: [418, 225]
+  - PluginID: net.sf.cimg.CImgDilate
+    ScriptName: DilateFast1
+    Version: [2, 1]
+    Inputs: {Source: Invert2}
+    Params:
+      - ScriptName: size
+        Int: {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*2}
+      - ScriptName: premult
+        Bool: true
+      - ScriptName: premultChanged
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*multi*2</font>
+    Pos: [579, 428]
+  - PluginID: net.sf.cimg.CImgDilate
+    ScriptName: DilateFast2
+    Version: [2, 1]
+    Inputs: {Source: Invert2}
+    Params:
+      - ScriptName: size
+        Int: {Expr: thisGroup.size.get()/5}
+      - ScriptName: premult
+        Bool: true
+      - ScriptName: premultChanged
+        Bool: true
+      - ScriptName: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size/5</font>
+    Pos: [803, 431]

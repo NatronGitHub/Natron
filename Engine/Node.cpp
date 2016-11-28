@@ -1427,7 +1427,8 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
-    bool subGraphEdited = isSubGraphEditedByUser();
+    // Always store the sub-graph when encoding as a PyPlug
+    const bool subGraphEdited = serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug || isSubGraphEditedByUser();
 
     KnobPagePtr pyPlugPage = _imp->pyPlugPage.lock();
 
@@ -1443,10 +1444,14 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             if (isPage->getChildren().empty()) {
                 continue;
             }
-            if (!isPage->getIsSecret() && (pageOrderChanged || subGraphEdited)) {
+
+            // Save pages order if it has changed or if we are encoding a PyPlug
+            if (!isPage->getIsSecret() && (pageOrderChanged || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
                 serialization->_pagesIndexes.push_back( knobs[i]->getName() );
             }
-            if ( knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin() ) {
+
+            // Save user pages if they were added by the user with respect to the initial plug-in state, or if we are encoding as a PyPlug
+            if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
                 userPages.push_back(knobs[i]);
             }
             continue;
@@ -1477,7 +1482,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (knobs[i]->isUserKnob() && !knobs[i]->isDeclaredByPlugin()) {
+        if (knobs[i]->isUserKnob()) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
         }
@@ -1487,14 +1492,14 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-
         if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged()) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }
 
-        // If the knob is in the PyPlug page, only serialize if the PyPlug page is visible
-        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage) {
+        // If the knob is in the PyPlug page, only serialize if the PyPlug page is visible or if we are exporting as a
+        // Pyplug
+        if (pyPlugPage && pyPlugPage->getIsSecret() && knobs[i]->getTopLevelPage() == pyPlugPage && serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
             continue;
         }
 
@@ -1520,8 +1525,12 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     serialization->_nodeScriptName = getScriptName_mt_safe();
 
-    serialization->_pluginID = getPluginID();
-
+    // When serializing as pyplug, always set in the plugin-id the original plug-in ID.
+    if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
+        serialization->_pluginID = getOriginalPlugin()->getPluginID();
+    } else {
+        serialization->_pluginID = getPluginID();
+    }
 
     {
         QMutexLocker k(&_imp->nodePresetMutex);

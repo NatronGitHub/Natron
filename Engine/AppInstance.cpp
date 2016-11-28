@@ -934,8 +934,12 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         originalPluginID = PLUGINID_NATRON_GROUP;
     }
     {
-        
-        
+
+        // If the pyplug-id and original plug-id are the same, this is a bug in the PyPlug.
+        // We must avoid infinite recursion so bail out now.
+        if (pyPlugID == originalPluginID) {
+            return node;
+        }
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         NodePtr containerNode;
         if (!istoolsetScript) {
