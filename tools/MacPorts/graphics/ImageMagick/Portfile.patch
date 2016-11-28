@@ -1,6 +1,6 @@
---- Portfile.orig	2016-10-19 14:46:44.000000000 +0200
-+++ Portfile	2016-10-19 14:54:36.000000000 +0200
-@@ -66,6 +66,8 @@
+--- Portfile.orig	2016-11-28 16:26:52.000000000 +0100
++++ Portfile	2016-11-28 16:27:38.000000000 +0100
+@@ -65,6 +65,8 @@
                              port:expat \
                              port:libxml2
  
@@ -9,7 +9,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -92,11 +94,13 @@
+@@ -91,11 +93,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -23,7 +23,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -114,6 +118,79 @@
+@@ -113,6 +117,79 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
@@ -61,8 +61,8 @@
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
 +    pre-extract {
-+        if {${version} != "6.9.6-2"} {
-+            ui_msg "Natron variant requires ImageMagick version 6.9.6-2 (this is ${version}), please modify the Portfile."
++        if {${version} != "6.9.6-6"} {
++            ui_msg "Natron variant requires ImageMagick version 6.9.6-6 (this is ${version}), please modify the Portfile."
 +            return -code error "incompatible ImageMagick version"
 +        }
 +    }
@@ -103,7 +103,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -121,6 +198,14 @@
+@@ -120,6 +197,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -118,7 +118,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -155,6 +240,11 @@
+@@ -154,6 +239,11 @@
  
  default_variants            +x11
  

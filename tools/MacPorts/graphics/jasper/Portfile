@@ -3,7 +3,7 @@
 PortSystem      1.0
 
 name            jasper
-version         1.900.27
+version         1.900.29
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -18,8 +18,8 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 aaf88fb87f068b989b3353a69f13a1e7a2cd1f2d \
-                sha256 0bd530875965fa0971a2481861752ff0bc0e6ec08a0871d08842e4edf56bd599
+checksums       rmd160 4ae47353f3dc086b3a11eff86ec7fb57d598c6fb \
+                sha256 2ae7e9d3ba189ddcd4231e7255348d3144757d5c2ff8dd853f37e0df783925c0
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
