@@ -106,7 +106,7 @@ Children:
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
     Version: [2, 0]
-    Inputs: {Source: Clamp1}
+    Inputs: Clamp1
     Params:
       - Name: premultChanged
         Bool: true
@@ -119,7 +119,7 @@ Children:
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1
     Version: [2, 0]
-    Inputs: {Source: ColorCorrect1}
+    Inputs: ColorCorrect1
     Params:
       - Name: premultChanged
         Bool: true
@@ -127,7 +127,7 @@ Children:
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: ColorCorrect1
     Version: [2, 0]
-    Inputs: {Source: Merge1}
+    Inputs: Merge1
     Params:
       - Name: MasterContrast
         Props: [MasterIsAlias]
@@ -143,7 +143,7 @@ Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
     Label: Output1
-    Inputs: {Source: Switch1}
+    Inputs: Switch1
     Pos: [764, 774]
   - PluginID: fr.inria.built-in.Input
     Name: InputSource

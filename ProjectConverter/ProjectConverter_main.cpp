@@ -649,9 +649,6 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
             }
         }
 
-        if (QFile::exists(finalFileName)) {
-            QFile::remove(finalFileName);
-        }
 
         // Copy the original file to a backup (if the extension did not change)
         if (!extensionChanged) {
@@ -669,6 +666,9 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
         }
 
 
+        if (QFile::exists(finalFileName)) {
+            QFile::remove(finalFileName);
+        }
 
         // Copy the temporary file onto the original file
         QFile::copy(outFileName, finalFileName);

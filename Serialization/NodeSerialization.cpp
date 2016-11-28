@@ -24,6 +24,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 SERIALIZATION_NAMESPACE_ENTER
 
+static double roundDecimals(double value, int decimals)
+{
+    int exp = std::pow(10, decimals);
+    return std::floor(value * exp + 0.5) / exp;
+}
+
 void
 NodeSerialization::encode(YAML::Emitter& em) const
 {
@@ -76,13 +82,17 @@ NodeSerialization::encode(YAML::Emitter& em) const
             }
         }
         if (hasInput) {
-            em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
-            for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-                if (!it->second.empty()) {
-                    em << YAML::Key << it->first << YAML::Value << it->second;
+            if (_inputs.size() == 1) {
+                em << YAML::Key << "Inputs" << YAML::Value << _inputs.begin()->second;
+            } else {
+                em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
+                for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+                    if (!it->second.empty()) {
+                        em << YAML::Key << it->first << YAML::Value << it->second;
+                    }
                 }
+                em << YAML::EndMap;
             }
-            em << YAML::EndMap;
         }
     }
 
@@ -144,10 +154,10 @@ NodeSerialization::encode(YAML::Emitter& em) const
     // Only serialize UI stuff for non pyplug/non presets
     if (_encodeType == eNodeSerializationTypeRegular) {
         if (_nodePositionCoords[0] != INT_MIN && _nodePositionCoords[1] != INT_MIN) {
-            em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodePositionCoords[0] << _nodePositionCoords[1] << YAML::EndSeq;
+            em << YAML::Key << "Pos" << YAML::Value << YAML::Flow << YAML::BeginSeq << roundDecimals(_nodePositionCoords[0], 1) << roundDecimals(_nodePositionCoords[1], 1) << YAML::EndSeq;
         }
         if (_nodeSize[0] != -1 && _nodeSize[1] != -1) {
-            em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeSize[0] << _nodeSize[1] << YAML::EndSeq;
+            em << YAML::Key << "Size" << YAML::Value << YAML::Flow << YAML::BeginSeq << roundDecimals(_nodeSize[0], 1) << roundDecimals(_nodeSize[1], 1) << YAML::EndSeq;
         }
         if (_nodeColor[0] != -1 && _nodeColor[1] != -1 && _nodeColor[2] != -1) {
             em << YAML::Key << "Color" << YAML::Value << YAML::Flow << YAML::BeginSeq << _nodeColor[0] << _nodeColor[1] << _nodeColor[2] << YAML::EndSeq;
@@ -218,8 +228,13 @@ NodeSerialization::decode(const YAML::Node& node)
 
     if (node["Inputs"]) {
         YAML::Node inputsNode = node["Inputs"];
-        for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
-            _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
+        if (inputsNode.IsMap()) {
+            for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
+                _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
+            }
+        } else {
+            // When single input, just use the index as key
+            _inputs.insert(std::make_pair("0", inputsNode.as<std::string>()));
         }
     }
     

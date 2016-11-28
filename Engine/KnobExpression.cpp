@@ -224,7 +224,7 @@ parseTokenFrom(int fromDim,
         // Before Natron 2.2 the View parameter of the get(view) function did not exist, hence loading
         // an old expression may use the old get() function without view. If we do not find any view
         // parameter, assume the view is "Main" by default.
-        if (params.empty() && viewParamPos >= 0) {
+        if (params.size() == 1 && viewParamPos >= 0) {
             if (viewParamPos < dimensionParamPos) {
                 params.insert(params.begin(), "Main");
             } else {

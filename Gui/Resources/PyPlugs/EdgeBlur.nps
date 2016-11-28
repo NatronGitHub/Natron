@@ -67,7 +67,7 @@ Children:
   - PluginID: eu.cimg.EdgeDetect
     Name: EdgeDetect1
     Version: [4, 0]
-    Inputs: {Source: Shuffle1}
+    Inputs: Shuffle1
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -88,7 +88,7 @@ Children:
   - PluginID: net.sf.openfx.GammaPlugin
     Name: Gamma1
     Version: [2, 0]
-    Inputs: {Source: EdgeDetect1}
+    Inputs: EdgeDetect1
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -118,7 +118,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: {A: Dot1}
+    Inputs: Dot1
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -135,7 +135,7 @@ Children:
     Pos: [896, 104]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot1
-    Inputs: {"": Source}
+    Inputs: Source
     Pos: [721, 114]
   - PluginID: fr.inria.built-in.Input
     Name: Source
@@ -143,7 +143,7 @@ Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
     Label: Output1
-    Inputs: {Source: Blur1}
+    Inputs: Blur1
     Pos: [676, 430]
   - PluginID: fr.inria.built-in.Input
     Name: Mask

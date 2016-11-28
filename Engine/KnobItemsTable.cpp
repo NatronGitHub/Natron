@@ -1870,7 +1870,7 @@ KnobItemsTable::declareItemAsPythonField(const KnobTableItemPtr& item)
     std::stringstream ss;
 
     ss << nodeFullName << "." << _imp->pythonPrefix << "." << itemName << " = ";
-    ss << nodeFullName << "." << _imp->pythonPrefix << ".getTrackByName(\"" << itemName + "\")\n";
+    ss << nodeFullName << "." << _imp->pythonPrefix << ".getItemByFullyQualifiedScriptName(\"" << itemName + "\")\n";
 
 
     // Declare its knobs

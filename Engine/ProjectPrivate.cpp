@@ -172,6 +172,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
     // Connect the nodes together
     for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
 
+
         // Loop over the inputs map
         // This is a map <input label, input node name>
         const std::map<std::string, std::string>& inputs = it->second->_inputs;
@@ -179,7 +180,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             if ( it2->second.empty() ) {
                 continue;
             }
-            int index = it->first->getInputNumberFromLabel(it2->first);
+            int index = it2->first.empty() ? -1 : it->first->getInputNumberFromLabel(it2->first);
             if (index == -1) {
                 // Prior to Natron 1.1, input names were not serialized, try to convert to index
                 bool ok;
@@ -192,7 +193,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                                                     tr("Could not find input named %1")
                                                     .arg( QString::fromUtf8( it2->first.c_str() ) ) );
                 }
-                continue;
             }
             if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
                 appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),

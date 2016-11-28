@@ -5128,6 +5128,9 @@ Node::setInputVisible(int inputNb, bool visible)
 int
 Node::getInputNumberFromLabel(const std::string& inputLabel) const
 {
+    if (inputLabel.empty()) {
+        return -1;
+    }
     assert(_imp->inputsInitialized);
     QMutexLocker l(&_imp->inputsLabelsMutex);
     for (U32 i = 0; i < _imp->inputLabels.size(); ++i) {

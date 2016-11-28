@@ -212,7 +212,7 @@ Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
     Label: Output1
-    Inputs: {Source: RoD_2}
+    Inputs: RoD_2
     Pos: [1622, 1973]
   - PluginID: fr.inria.built-in.Input
     Name: Input1
@@ -250,7 +250,7 @@ Children:
     Pos: [1141, 794]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot13
-    Inputs: {"": Dot22}
+    Inputs: Dot22
     Pos: [1495, 820]
   - PluginID: net.sf.openfx.switchPlugin
     Name: Preview
@@ -261,11 +261,11 @@ Children:
     Pos: [1474, 1741]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot17
-    Inputs: {"": Dot19}
+    Inputs: Dot19
     Pos: [1658, -735]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot18
-    Inputs: {"": ClampAlpha}
+    Inputs: ClampAlpha
     Pos: [1248, 1747]
   - PluginID: net.sf.openfx.switchPlugin
     Name: GlowOnly
@@ -276,11 +276,11 @@ Children:
     Pos: [1203, 1571]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot7
-    Inputs: {"": Dot15}
+    Inputs: Dot15
     Pos: [1667, 1221]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: RotateIn
-    Inputs: {Source: Dot19}
+    Inputs: Dot19
     Params:
       - Name: rotate
         Float: {Expr: thisGroup.rotate.get()}
@@ -291,11 +291,11 @@ Children:
     Pos: [1440, -658]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot19
-    Inputs: {"": Input1}
+    Inputs: Input1
     Pos: [1485, -735]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: RotateOut
-    Inputs: {Source: PostGrade}
+    Inputs: PostGrade
     Params:
       - Name: rotate
         Float: {Expr: -thisGroup.rotate.get()}
@@ -306,7 +306,7 @@ Children:
     Pos: [1141, 1252]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: RotateOutPrev
-    Inputs: {Source: Dot13}
+    Inputs: Dot13
     Params:
       - Name: rotate
         Float: {Expr: -thisGroup.rotate.get()}
@@ -337,12 +337,12 @@ Children:
     Pos: [1622, 1728]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot22
-    Inputs: {"": Merge3}
+    Inputs: Merge3
     Pos: [1485, 190]
   - PluginID: net.sf.openfx.SaturationPlugin
     Name: Saturation2
     Version: [2, 0]
-    Inputs: {Source: Dot20}
+    Inputs: Dot20
     Params:
       - Name: saturation
         Float: 0
@@ -350,7 +350,7 @@ Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Tolerance
     Version: [2, 0]
-    Inputs: {Source: Saturation2}
+    Inputs: Saturation2
     Params:
       - Name: blackPoint
         Float: {Expr: thisGroup.isolateHighlights.get()}
@@ -389,7 +389,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle2
     Version: [2, 0]
-    Inputs: {A: mask}
+    Inputs: mask
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -413,7 +413,7 @@ Children:
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: PostGrade
     Version: [2, 0]
-    Inputs: {Source: RoD}
+    Inputs: RoD
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
@@ -428,11 +428,11 @@ Children:
     Pos: [1141, 1073]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot15
-    Inputs: {"": Dot17}
+    Inputs: Dot17
     Pos: [1658, -515]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot20
-    Inputs: {"": Dot3}
+    Inputs: Dot3
     Pos: [1178, -515]
   - PluginID: fr.inria.built-in.BackDrop
     Name: Isolate_Highlights_and_mask
@@ -440,7 +440,7 @@ Children:
     Size: [1012, 385]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot3
-    Inputs: {"": RoD_2_2}
+    Inputs: RoD_2_2
     Pos: [1340, -515]
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge5
@@ -456,7 +456,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: {A: HSVTool1}
+    Inputs: HSVTool1
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -471,7 +471,7 @@ Children:
     Pos: [1290, -206]
   - PluginID: net.sf.openfx.HSVToolPlugin
     Name: HSVTool1
-    Inputs: {Source: Dot3}
+    Inputs: Dot3
     Params:
       - Name: bottomLeft
         Float: [960, 540]
@@ -495,7 +495,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBloom
     Name: Bloom
     Version: [3, 0]
-    Inputs: {Source: Dot14}
+    Inputs: Dot14
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
@@ -529,11 +529,11 @@ Children:
     Pos: [1141, 351]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot14
-    Inputs: {"": Dot16}
+    Inputs: Dot16
     Pos: [1008, 190]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot16
-    Inputs: {"": Dot22}
+    Inputs: Dot22
     Pos: [1186, 190]
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge2
@@ -557,28 +557,28 @@ Children:
     Pos: [1339, 1465]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot1
-    Inputs: {"": Dot7}
+    Inputs: Dot7
     Pos: [1468, 1220]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot2
-    Inputs: {"": Dot1}
+    Inputs: Dot1
     Pos: [1317, 1220]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot4
-    Inputs: {"": RotateOut}
+    Inputs: RotateOut
     Pos: [1286, 1261]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot5
-    Inputs: {"": Dot4}
+    Inputs: Dot4
     Pos: [1398, 1261]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot6
-    Inputs: {"": RotateOut}
+    Inputs: RotateOut
     Pos: [1186, 1445]
   - PluginID: net.sf.openfx.Clamp
     Name: ClampAlpha
     Version: [2, 0]
-    Inputs: {Source: GlowOnly}
+    Inputs: GlowOnly
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}

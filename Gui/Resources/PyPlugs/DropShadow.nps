@@ -87,7 +87,7 @@ Children:
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform2
-    Inputs: {Source: Shuffle1}
+    Inputs: Shuffle1
     Params:
       - Name: translate
         Float: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
@@ -99,12 +99,12 @@ Children:
   - PluginID: net.sf.openfx.Premult
     Name: Premult1
     Version: [2, 0]
-    Inputs: {Source: Blur1}
+    Inputs: Blur1
     Pos: [759, 341]
   - PluginID: net.sf.openfx.MultiplyPlugin
     Name: Multiply1
     Version: [2, 0]
-    Inputs: {Source: InputSource}
+    Inputs: InputSource
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -138,12 +138,12 @@ Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
     Label: Output1
-    Inputs: {Source: Merge1}
+    Inputs: Merge1
     Pos: [1000, 497]
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur1
     Version: [3, 0]
-    Inputs: {Source: Transform2}
+    Inputs: Transform2
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true

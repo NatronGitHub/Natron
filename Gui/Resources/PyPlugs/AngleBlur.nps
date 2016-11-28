@@ -40,11 +40,11 @@ Children:
   - PluginID: fr.inria.built-in.Output
     Name: Output
     Label: Output1
-    Inputs: {Source: Transform3}
+    Inputs: Transform3
     Pos: [1000, 497]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform1
-    Inputs: {Source: Source}
+    Inputs: Source
     Params:
       - Name: rotate
         Float: {Expr: thisGroup.angleBlur_angle.get()}
@@ -55,7 +55,7 @@ Children:
     Pos: [1000, 173]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform3
-    Inputs: {Source: Blur2}
+    Inputs: Blur2
     Params:
       - Name: rotate
         Float: {Expr: thisGroup.angleBlur_angle.get()}
@@ -69,7 +69,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur2
     Version: [3, 0]
-    Inputs: {Source: Transform1}
+    Inputs: Transform1
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true

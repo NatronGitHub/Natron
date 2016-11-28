@@ -532,6 +532,23 @@ SERIALIZATION_NAMESPACE::Compat::StrokePoint::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Press", pressure);
 }
 
+
+template<class Archive>
+void SERIALIZATION_NAMESPACE::Compat::RotoItemSerialization::serialize(Archive & ar,
+                                                                       const unsigned int version)
+{
+
+    ar & ::boost::serialization::make_nvp("Name", name);
+    if (version >= ROTO_ITEM_INTRODUCES_LABEL) {
+        ar & ::boost::serialization::make_nvp("Label", label);
+    }
+    bool act;
+    ar & ::boost::serialization::make_nvp("Activated", act);
+    ar & ::boost::serialization::make_nvp("ParentLayer", parentLayerName);
+    ar & ::boost::serialization::make_nvp("Locked", locked);
+}
+
+
 template<class Archive>
 void
 SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization::serialize(Archive & ar,
@@ -594,7 +611,7 @@ SERIALIZATION_NAMESPACE::Compat::RotoLayerSerialization::serialize(Archive & ar,
                                                                                             static_cast<Compat::RotoLayerSerialization *>(NULL),
                                                                                             static_cast<Compat::RotoItemSerialization *>(NULL)
                                                                                             );
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Compat::RotoItemSerialization);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
     int numChildren;
     ar & ::boost::serialization::make_nvp("NumChildren", numChildren);
     for (int i = 0; i < numChildren; ++i) {
@@ -667,24 +684,6 @@ SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive 
         }
     }
 }
-
-
-
-template<class Archive>
-void SERIALIZATION_NAMESPACE::Compat::RotoItemSerialization::serialize(Archive & ar,
-          const unsigned int version)
-{
-
-    ar & ::boost::serialization::make_nvp("Name", name);
-    if (version >= ROTO_ITEM_INTRODUCES_LABEL) {
-        ar & ::boost::serialization::make_nvp("Label", label);
-    }
-    bool act;
-    ar & ::boost::serialization::make_nvp("Activated", act);
-    ar & ::boost::serialization::make_nvp("ParentLayer", parentLayerName);
-    ar & ::boost::serialization::make_nvp("Locked", locked);
-}
-
 
 
 template<class Archive>
@@ -1387,6 +1386,15 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         }
     } else {
         ar & ::boost::serialization::make_nvp("Inputs_map", _inputs);
+
+        // The Dot plug-in was serialized with an empty input. If empty replace it with "0"
+        std::map<std::string, std::string>::iterator foundEmptyInput = _inputs.find("");
+        if (foundEmptyInput != _inputs.end()) {
+            std::string v = foundEmptyInput->second;
+            _inputs.erase(foundEmptyInput);
+            _inputs.insert(std::make_pair("0", v));
+
+        }
     }
 
     U64 knobsAge;
