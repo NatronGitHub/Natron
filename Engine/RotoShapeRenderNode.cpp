@@ -405,11 +405,15 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 double shapeColor[3];
                 {
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
-                    for (int i = 0; i < 3; ++i) {
-                        shapeColor[i] = colorKnob->getValueAtTime(args.time, DimIdx(i), args.view);
+                    if (!colorKnob) {
+                        shapeColor[0] = shapeColor[1] = shapeColor[2] = 1.;
+                    } else {
+                        for (int i = 0; i < 3; ++i) {
+                            shapeColor[i] = colorKnob->getValueAtTime(args.time, DimIdx(i), args.view);
+                        }
                     }
                 }
-
+                
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
 
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {

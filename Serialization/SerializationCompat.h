@@ -872,7 +872,7 @@ SERIALIZATION_NAMESPACE::ValueSerialization::serialize(Archive & ar, const unsig
             }
         } else if (isFile) {
             loadValue = false;
-            ar & ::boost::serialization::make_nvp("Value", _serialization->_defaultValues[_dimension].value.isString);
+            ar & ::boost::serialization::make_nvp("Value", _value.isString);
 
             ///Convert the old keyframes stored in the file parameter by analysing one keyframe
             ///and deducing the pattern from it and setting it as a value instead
@@ -1029,7 +1029,7 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
     KnobSerialization::PerDimensionValueSerializationVec& values = _values["Main"];
 
     values.resize(_dimension);
-    for (std::size_t i = 0; i < _values.size(); ++i) {
+    for (std::size_t i = 0; i < values.size(); ++i) {
         values[i]._typeName = _typeName;
         values[i]._dimension = i;
         values[i]._serialization = this;
