@@ -171,7 +171,35 @@ parseTokenFrom(int fromDim,
     extractParameters(pos, endingParenthesis, str, &params);
 
 
-    if (returnsTuple) {
+    bool gotViewParam = viewParamPos != -1 && (viewParamPos >= (int)params.size() && !params.empty());
+    bool gotDimensionParam = dimensionParamPos != -1 && (dimensionParamPos >= (int)params.size() && !params.empty());
+
+
+    if (!returnsTuple) {
+        // Before Natron 2.2 the View parameter of the get(view) function did not exist, hence loading
+        // an old expression may use the old get() function without view. If we do not find any view
+        // parameter, assume the view is "Main" by default.
+        if (!gotViewParam && viewParamPos != -1) {
+            std::vector<std::string>::iterator it = params.begin();
+            if (viewParamPos >= (int)params.size()) {
+                it = params.end();
+            } else {
+                std::advance(it, viewParamPos);
+            }
+            params.insert(it, "Main");
+        }
+        if (!gotDimensionParam && dimensionParamPos != -1) {
+            std::vector<std::string>::iterator it = params.begin();
+            if (dimensionParamPos >= (int)params.size()) {
+                it = params.end();
+            } else {
+                std::advance(it, dimensionParamPos);
+            }
+            params.insert(it, "0");
+        }
+    } else {
+        assert(dimensionParamPos == -1 && !gotDimensionParam);
+
         // If the function returns a tuple like get()[dimension],
         // also find the parameter in-between the tuple brackets
         //try to find the tuple
@@ -186,18 +214,24 @@ parseTokenFrom(int fromDim,
                 throw std::invalid_argument("Invalid expr");
             }
             params.push_back( str.substr(it + 1, endingBracket - it - 1) );
+        } else {
+            // No parameters in the tuple: assume this is all dimensions.
+            params.push_back("-1");
         }
-    }
-
-
-    // The get() function does not always have arguments, if not assume it wants to return all dimensions as a tuple for a multi-dimensional knob
-    // or the single value for single-dimensional knobs
-    if ( params.empty() ) {
-        params.push_back("-1");
-    }
-
-    if (dimensionParamPos == -1) {
         dimensionParamPos = 1;
+        gotDimensionParam = true;
+
+        // Before Natron 2.2 the View parameter of the get(view) function did not exist, hence loading
+        // an old expression may use the old get() function without view. If we do not find any view
+        // parameter, assume the view is "Main" by default.
+        if (params.empty() && viewParamPos >= 0) {
+            if (viewParamPos < dimensionParamPos) {
+                params.insert(params.begin(), "Main");
+            } else {
+                params.push_back("Main");
+            }
+        }
+
     }
 
     if ( (dimensionParamPos < 0) || ( (int)params.size() <= dimensionParamPos ) ) {

@@ -2904,7 +2904,20 @@ ChoiceParam::set(const QString& label, const QString& view)
         ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), thisViewSpec);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
-        PyErr_SetString(PyExc_ValueError, e.what());
+        KnobHolderPtr holder = knob->getHolder();
+        AppInstancePtr app;
+        if (holder) {
+            app = holder->getApp();
+        }
+        bool creatingNode = false;
+        if (app) {
+            creatingNode = app->isCreatingNode();
+        }
+        // Do not report exceptions when creating a node: we are likely trying to load a PyPlug from a Python
+        // script and the choices may be outdated in the parameter.
+        if (!creatingNode) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+        }
 
     }
 }
@@ -2954,7 +2967,24 @@ ChoiceParam::setDefaultValue(const QString& value)
         PythonSetNullError();
         return;
     }
-    knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
+    try {
+        knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
+    } catch (const std::exception& e) {
+        KnobHolderPtr holder = knob->getHolder();
+        AppInstancePtr app;
+        if (holder) {
+            app = holder->getApp();
+        }
+        bool creatingNode = false;
+        if (app) {
+            creatingNode = app->isCreatingNode();
+        }
+        // Do not report exceptions when creating a node: we are likely trying to load a PyPlug from a Python
+        // script and the choices may be outdated in the parameter.
+        if (!creatingNode) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+        }
+    }
 }
 
 int

@@ -589,9 +589,16 @@ static void convertFile(const QString& filename, const QString& outputFilePathAr
             int foundDot = filename.lastIndexOf(QLatin1Char('.'));
             assert(foundDot != -1);
             if (foundDot != -1) {
-                outFileName = filename.mid(0, foundDot);
+                QString baseName = filename.mid(0, foundDot);
+                outFileName += baseName;
                 outFileName += QLatin1String("-converted.");
-                outFileName += filename.mid(foundDot + 1);
+                QString ext;
+                if (isPyPlugFile) {
+                    ext = QLatin1String(NATRON_PRESETS_FILE_EXT);
+                } else {
+                    ext = filename.mid(foundDot + 1);
+                }
+                outFileName += ext;
             }
 
             // Remove any existing file with the same name
