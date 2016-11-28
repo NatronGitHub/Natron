@@ -1056,7 +1056,6 @@ RotoPaint::initMotionBlurPageKnobs()
             param->populateChoices(entries);
         }
         mbPage->addKnob(param);
-        _imp->knobsTable->addPerItemKnobMaster(param);
         _imp->motionBlurTypeKnob =  param;
     }
 
@@ -1064,9 +1063,9 @@ RotoPaint::initMotionBlurPageKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoMotionBlurParamLabel), 1);
         param->setName(kRotoPerShapeMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
-        param->setDefaultValue(0);
-        param->setRange(0, 4);
-        param->setDisplayRange(0, 4);
+        param->setDefaultValue(1);
+        param->setRange(1, INT_MAX);
+        param->setDisplayRange(1, 10);
         mbPage->addKnob(param);
         _imp->knobsTable->addPerItemKnobMaster(param);
         _imp->motionBlurKnob = param;
@@ -1121,9 +1120,9 @@ RotoPaint::initMotionBlurPageKnobs()
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoMotionBlurParamLabel), 1);
         param->setName(kRotoGlobalMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
-        param->setDefaultValue(0);
-        param->setRange(0, 4);
-        param->setDisplayRange(0, 4);
+        param->setDefaultValue(1);
+        param->setRange(1, INT_MAX);
+        param->setDisplayRange(1, 10);
         param->setSecret(true);
         mbPage->addKnob(param);
         _imp->globalMotionBlurKnob = param;
@@ -2522,6 +2521,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         _imp->globalShutterKnob.lock()->setSecret(isPerShapeMB);
         _imp->globalShutterTypeKnob.lock()->setSecret(isPerShapeMB);
         _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
+        refreshRotoPaintTree();
+
     } else if ( k == _imp->removeItemButtonKnob.lock()) {
         std::list<KnobTableItemPtr> selection = _imp->knobsTable->getSelectedItems();
         if (selection.empty()) {
@@ -3042,6 +3043,40 @@ static void setOperationKnob(const NodePtr& node, int blendingOperator)
 }
 
 NodePtr
+RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
+{
+    if (globalTimeBlurNode) {
+        return globalTimeBlurNode;
+    }
+    NodePtr node = publicInterface->getNode();
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+
+    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_TIMEBLUR, rotoPaintEffect ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "GlobalMotionBlur");
+    globalTimeBlurNode = node->getApp()->createNode(args);
+    assert(globalTimeBlurNode);
+    if (!globalTimeBlurNode) {
+        throw std::runtime_error(publicInterface->tr("Rotopaint requires the plug-in %1 in order to work").arg(QLatin1String(PLUGINID_OFX_TIMEBLUR)).toStdString());
+    }
+
+    KnobIPtr divisionsKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamDivisions);
+    KnobIPtr shutterKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamShutter);
+    KnobIPtr shutterTypeKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamShutterOffset);
+    KnobIPtr shutterCustomOffsetKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamCustomOffset);
+    assert(divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
+    divisionsKnob->slaveTo(globalMotionBlurKnob.lock());
+    shutterKnob->slaveTo(globalShutterKnob.lock());
+    shutterTypeKnob->slaveTo(globalShutterTypeKnob.lock());
+    shutterCustomOffsetKnob->slaveTo(globalCustomOffsetKnob.lock());
+    return globalTimeBlurNode;
+}
+
+NodePtr
 RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex)
 {
     {
@@ -3148,16 +3183,31 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 } // getOrCreateGlobalMergeNode
 
 void
-RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
+RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& globalTimeBlurNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
 {
+    // If there's a noOp node (Roto/RotoPaint but not LayeredComp) connect the Output node of the tree to the NoOp node
+    // otherwise connect it directly to the Merge node (LayeredComp)
     NodePtr treeOutputNodeInput = noOpNode ? noOpNode : mergeNode;
     treeOutputNode->swapInput(treeOutputNodeInput, 0);
 
+    // If there's a NoOp node, connect it to the premult node
     if (noOpNode && premultNode) {
         noOpNode->swapInput(premultNode, 0);
     }
+
+    // If there's a Premult node, connect it to the global TimeBlur node (if global motion-blur is enabled)
+    // otherwise conneet it directly to the merge Node
     if (premultNode) {
-        premultNode->swapInput(mergeNode, 0);
+        if (globalTimeBlurNode) {
+            premultNode->swapInput(globalTimeBlurNode, 0);
+        } else {
+            premultNode->swapInput(mergeNode, 0);
+        }
+    }
+
+    // If global motion-blur is enabled, connect the global time blur to the merge node
+    if (globalTimeBlurNode) {
+        globalTimeBlurNode->swapInput(mergeNode, 0);
     }
 
     // Connect the mask of the merge to the Mask input
@@ -3290,6 +3340,16 @@ RotoPaint::refreshRotoPaintTree()
         // should not happen
         return;
     }
+
+
+    bool globalMotionBlurEnabled = _imp->motionBlurTypeKnob.lock()->getValue() == 1;
+    NodePtr timeBlurNode = _imp->getOrCreateGlobalTimeBlurNode();
+    if (!globalMotionBlurEnabled) {
+        timeBlurNode->disconnectInput(0);
+    }
+    mergeNodeBeginPos.y += 150;
+    timeBlurNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+
     mergeNodeBeginPos.y += 150;
     treeOutputNode->setPosition(mergeNodeBeginPos.x - 100, mergeNodeBeginPos.y);
 
@@ -3321,14 +3381,15 @@ RotoPaint::refreshRotoPaintTree()
         }
     }
 
+
     if (canConcatenate) {
         // Connect the bottom of the tree to the last global merge node.
-        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, _imp->globalMergeNodes.back());
+        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, globalMotionBlurEnabled ? timeBlurNode : NodePtr(), treeOutputNode, _imp->globalMergeNodes.back());
     } else {
 
         if (!items.empty()) {
             // Connect the bottom of the tree to the last item merge node.
-            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, treeOutputNode, items.back()->getMergeNode());
+            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, globalMotionBlurEnabled ? timeBlurNode : NodePtr(), treeOutputNode, items.back()->getMergeNode());
         } else {
             // Connect output to Input, the RotoPaint is pass-through
             treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);

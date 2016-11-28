@@ -185,7 +185,14 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
     NodePtr node = getNode();
     RectD maskRod;
     try {
-        node->getPaintStrokeRoD(time, view, &maskRod);
+        bool duringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
+        if (duringPaintStroke) {
+            *rod = getApp()->getPaintStrokeWholeBbox();
+        } else {
+            RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+            *rod = item->getBoundingBox(time, view);
+        }
+
     } catch (...) {
     }
     if ( rod->isNull() ) {
@@ -221,8 +228,14 @@ RotoShapeRenderNode::isIdentity(double time,
         return true;
     }
 
-    node->getPaintStrokeRoD(time, view, &maskRod);
-    
+    bool duringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
+    if (duringPaintStroke) {
+        maskRod = getApp()->getPaintStrokeWholeBbox();
+    } else {
+        RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+        maskRod = item->getBoundingBox(time, view);
+    }
+
     RectI maskPixelRod;
     maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
     if ( !maskPixelRod.intersects(roi) ) {
@@ -375,8 +388,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
 
-            // Get per-shape motion blur parameters
-
             double startTime = args.time, mbFrameStep = 1., endTime = args.time;
 
             if (isBezier) {
@@ -384,12 +395,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 KnobItemsTablePtr model = isBezier->getModel();
                 if (model) {
                     rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-                }
-
-                int mbType_i = rotoPaintNode->getMotionBlurTypeKnob()->getValue();
-                bool applyPerShapeMotionBlur = mbType_i == 0;
-                if (applyPerShapeMotionBlur) {
-                    isBezier->getMotionBlurSettings(args.time, args.view, &startTime, &endTime, &mbFrameStep);
                 }
             }
 
@@ -518,7 +523,6 @@ void
 RotoShapeRenderNode::purgeCaches()
 {
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
-    assert(rotoItem);
     if (!rotoItem) {
         return;
     }

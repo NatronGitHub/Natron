@@ -206,7 +206,7 @@ Bezier::Bezier(const Bezier& other)
 : RotoDrawableItem(other.getModel())
 , _imp( new BezierPrivate(other.getBaseItemName(), other.isOpenBezier()) )
 {
-
+#pragma message WARN("Copy unhandled")
 }
 
 bool

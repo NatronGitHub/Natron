@@ -74,6 +74,8 @@ public:
     RotoStrokeItem(RotoStrokeType type,
                    const KnobItemsTablePtr& model);
 
+    RotoStrokeItem(const RotoStrokeItem& other);
+
     virtual ~RotoStrokeItem();
 
 
@@ -181,6 +183,8 @@ public:
 
     
 private:
+
+    void copyStrokeInternal(const RotoStrokeItemPtr& other);
 
     virtual void initializeKnobs() OVERRIDE;
 

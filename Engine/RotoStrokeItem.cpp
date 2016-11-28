@@ -166,6 +166,13 @@ RotoStrokeItem::~RotoStrokeItem()
     deactivateNodes();
 }
 
+RotoStrokeItem::RotoStrokeItem(const RotoStrokeItem& other)
+: RotoDrawableItem(other.getModel())
+, _imp( new RotoStrokeItemPrivate(other.getBrushType()) )
+{
+#pragma message WARN("Copy unhandled")
+}
+
 RotoStrokeType
 RotoStrokeItem::getBrushType() const
 {
@@ -852,14 +859,8 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
 } // RotoStrokeItem::getMostRecentStrokeChangesSinceAge
 
 void
-RotoStrokeItem::copyItem(const KnobTableItemPtr& other)
+RotoStrokeItem::copyStrokeInternal(const RotoStrokeItemPtr& otherStroke)
 {
-    const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other.get());
-
-    assert(otherStroke);
-    if (!otherStroke) {
-        throw std::logic_error("RotoStrokeItem::clone");
-    }
     {
         QMutexLocker k(&_imp->lock);
         _imp->strokes.clear();
@@ -877,9 +878,22 @@ RotoStrokeItem::copyItem(const KnobTableItemPtr& other)
         _imp->type = otherStroke->_imp->type;
         _imp->finished = true;
     }
-    RotoDrawableItem::copyItem(other);
+    RotoDrawableItem::copyItem(otherStroke);
     invalidateHashCache();
     resetNodesThreadSafety();
+}
+
+
+void
+RotoStrokeItem::copyItem(const KnobTableItemPtr& other)
+{
+    const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other.get());
+
+    assert(otherStroke);
+    if (!otherStroke) {
+        throw std::logic_error("RotoStrokeItem::clone");
+    }
+    copyStrokeInternal(toRotoStrokeItem(other));
 }
 
 void

@@ -562,6 +562,7 @@ struct RotoPaintPrivate
     // Merge node (or more if there are more than 64 items) used when all items share the same compositing operator to make the rotopaint tree shallow
     mutable QMutex globalMergeNodesMutex;
     NodesList globalMergeNodes;
+    NodePtr globalTimeBlurNode;
 
     // The temporary solo items
     mutable QMutex soloItemsMutex;
@@ -613,6 +614,8 @@ struct RotoPaintPrivate
 
     NodePtr getOrCreateGlobalMergeNode(int blendingOperator, int *availableInputIndex);
 
+    NodePtr getOrCreateGlobalTimeBlurNode();
+
     bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
                                                int* blendingMode) const;
 
@@ -646,7 +649,12 @@ struct RotoPaintPrivate
 
     void createBaseLayer();
 
-    void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode);
+    void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect,
+                                           const NodePtr& noOpNode,
+                                           const NodePtr& premultNode,
+                                           const NodePtr& globalTimeBlurNode,
+                                           const NodePtr& treeOutputNode,
+                                           const NodePtr& mergeNode);
     
 
 };

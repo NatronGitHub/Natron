@@ -1273,15 +1273,6 @@ GuiAppInstance::updateLastPaintStrokeData(bool isFirstTick,
     }
 }
 
-void
-GuiAppInstance::getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes,
-                                         int* strokeIndex) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    strokes->push_back(_imp->rotoData.lastStrokePoints);
-    *strokeIndex = _imp->rotoData.multiStrokeIndex;
-}
 
 int
 GuiAppInstance::getStrokeLastIndex() const

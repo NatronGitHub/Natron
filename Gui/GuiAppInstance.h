@@ -246,7 +246,6 @@ public:
                                            const std::list<std::pair<Point, double> >& points,
                                            const RectD& lastPointsBbox,
                                            int strokeIndex) OVERRIDE FINAL;
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
     virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox,
                                      std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
                                      bool *isFirstTick,

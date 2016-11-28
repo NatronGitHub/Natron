@@ -706,15 +706,6 @@ Node::isMultiThreadingSupportEnabledForPlugin() const
     return plugin ? plugin->isMultiThreadingEnabled() : true;
 }
 
-void
-Node::prepareForNextPaintStrokeRender()
-{
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->strokeBitmapCleared = false;
-    }
-    _imp->effect->clearActionsCache();
-}
 
 void
 Node::setLastPaintStrokeDataNoRotopaint()
@@ -750,30 +741,16 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
     }
 }
 
-RectD
-Node::getPaintStrokeRoD_duringPainting() const
-{
-    return getApp()->getPaintStrokeWholeBbox();
-}
-
 void
-Node::getPaintStrokeRoD(double time,
-                        ViewIdx view,
-                        RectD* bbox) const
+Node::prepareForNextPaintStrokeRender()
 {
-    bool duringPaintStroke = _imp->effect->isDuringPaintStrokeCreationThreadLocal();
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-
-    if (duringPaintStroke) {
-        *bbox = getPaintStrokeRoD_duringPainting();
-    } else {
-        RotoDrawableItemPtr item = _imp->paintStroke.lock();
-        if (!item) {
-            throw std::logic_error("");
-        }
-        *bbox = item->getBoundingBox(time, view);
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        _imp->strokeBitmapCleared = false;
     }
+    _imp->effect->clearActionsCache();
 }
+
 
 bool
 Node::isLastPaintStrokeBitmapCleared() const
@@ -790,46 +767,6 @@ Node::clearLastPaintStrokeRoD()
 
     _imp->strokeBitmapCleared = true;
 }
-
-void
-Node::getLastPaintStrokePoints(double time,
-                               ViewIdx view,
-                               unsigned int mipmapLevel,
-                               std::list<std::list<std::pair<Point, double> > >* strokes,
-                               int* strokeIndex) const
-{
-    bool duringPaintStroke;
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        duringPaintStroke = _imp->duringPaintStrokeCreation;
-    }
-
-    if (duringPaintStroke) {
-        getApp()->getLastPaintStrokePoints(strokes, strokeIndex);
-        //adapt to mipmaplevel if needed
-        if (mipmapLevel == 0) {
-            return;
-        }
-        int pot = 1 << mipmapLevel;
-        for (std::list<std::list<std::pair<Point, double> > >::iterator it = strokes->begin(); it != strokes->end(); ++it) {
-            for (std::list<std::pair<Point, double> >::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-                std::pair<Point, double> &p = *it2;
-                p.first.x /= pot;
-                p.first.y /= pot;
-            }
-        }
-    } else {
-        RotoDrawableItemPtr item = _imp->paintStroke.lock();
-        RotoStrokeItemPtr stroke = toRotoStrokeItem(item);
-        assert(stroke);
-        if (!stroke) {
-            throw std::logic_error("");
-        }
-        stroke->evaluateStroke(mipmapLevel, time, view, strokes);
-        *strokeIndex = 0;
-    }
-}
-
 
 void
 Node::refreshAcceptedBitDepths()
@@ -10050,7 +9987,20 @@ Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 RotoDrawableItemPtr
 Node::getAttachedRotoItem() const
 {
-    return _imp->paintStroke.lock();
+    EffectInstancePtr effect = getEffectInstance();
+    if (!effect) {
+        return RotoDrawableItemPtr();
+    }
+    RotoDrawableItemPtr thisItem = _imp->paintStroke.lock();
+    if (!thisItem) {
+        return thisItem;
+    }
+    // On a render thread, use the local thread copy
+    RenderValuesCachePtr cache = effect->getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getOrCreateCachedDrawable(thisItem);
+    }
+    return thisItem;
 }
 
 void

@@ -40,6 +40,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/RenderValuesCache.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
@@ -451,7 +452,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         // Get the frame/views needed for this frame/view.
         // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
         U64 hash;
-        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, &hash);
+        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, &hash);
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
     assert(fvRequest);
@@ -600,26 +601,6 @@ EffectInstance::computeRequestPass(double time,
         return stat;
     }
 
-    //For all frame/view pair and for each node, compute the final roi as being the bounding box of all successive requests
-    /*for (FrameRequestMap::iterator it = request.begin(); it != request.end(); ++it) {
-        for (NodeFrameViewRequestData::iterator it2 = it->second->frames.begin(); it2 != it->second->frames.end(); ++it2) {
-            const std::list<std::pair<RectD, FrameViewPerRequestData> >& rois = it2->second.requests;
-            bool finalRoISet = false;
-            for (std::list<std::pair<RectD, FrameViewPerRequestData> >::const_iterator it3 = rois.begin(); it3 != rois.end(); ++it3) {
-                if (finalRoISet) {
-                    if ( !it3->first.isNull() ) {
-                        it2->second.finalData.finalRoi.merge(it3->first);
-                    }
-                } else {
-                    finalRoISet = true;
-                    if ( !it3->first.isNull() ) {
-                        it2->second.finalData.finalRoi = it3->first;
-                    }
-                }
-            }
-        }
-    }*/
-
     return eStatusOK;
 }
 
@@ -657,26 +638,112 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time,
 
 struct FindDependenciesNode
 {
+    // Did we already recurse on this node (i.e: did we call upstream on input nodes)
     bool recursed;
+
+    // How many times did we visit this node
     int visitCounter;
+
+    // A map of the hash for each frame/view pair
     FrameViewHashMap frameViewHash;
 
+
     FindDependenciesNode()
-        : recursed(false), visitCounter(0), frameViewHash() {}
+    : recursed(false)
+    , visitCounter(0)
+    , frameViewHash()
+    {}
 };
 
 
 typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 
 
+
+static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                               bool doNansHandling,
+                               const NodePtr& node,
+                               bool initTLS,
+                               int visitsCounter,
+                               bool addFrameViewHash,
+                               double time,
+                               ViewIdx view,
+                               U64 hash,
+                               const OSGLContextPtr& gpuContext,
+                               const OSGLContextPtr& cpuContext)
+{
+    EffectInstancePtr effect = node->getEffectInstance();
+    assert(effect);
+
+    if (!initTLS) {
+        // Find a TLS object that was created in a call to this function before
+        ParallelRenderArgsPtr curTLS = effect->getParallelRenderArgsTLS();
+        if (!curTLS) {
+            // Not found, create it
+            initTLS = true;
+        } else {
+            // Found: add the hash for this frame/view pair and also increase the visitsCount
+            if (addFrameViewHash) {
+                FrameViewPair fv = {time, view};
+                curTLS->frameViewHash[fv] = hash;
+            }
+            curTLS->visitsCount = visitsCounter;
+
+        }
+    }
+
+    // Create the TLS object for this frame render
+    if (initTLS) {
+        bool duringPaintStrokeCreation = !inArgs->isDoingRotoNeatRender && inArgs->activeRotoPaintNode && ((inArgs->activeRotoDrawableItem && node->getAttachedRotoItem() == inArgs->activeRotoDrawableItem) || node->isDuringPaintStrokeCreation()) ;
+        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
+        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
+
+        EffectInstance::SetParallelRenderTLSArgsPtr tlsArgs(new EffectInstance::SetParallelRenderTLSArgs);
+        tlsArgs->time = inArgs->time;
+        tlsArgs->view = inArgs->view;
+        tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
+        tlsArgs->isSequential = inArgs->isSequential;
+        tlsArgs->abortInfo = inArgs->abortInfo;
+        tlsArgs->treeRoot = inArgs->treeRoot;
+        tlsArgs->nodeRequest = NodeFrameRequestPtr();
+        tlsArgs->glContext = gpuContext;
+        tlsArgs->cpuGlContext = cpuContext;
+        tlsArgs->textureIndex = inArgs->textureIndex;
+        tlsArgs->timeline = inArgs->timeline;
+        tlsArgs->isAnalysis = inArgs->isAnalysis;
+        tlsArgs->isDuringPaintStrokeCreation = duringPaintStrokeCreation;
+        tlsArgs->currentThreadSafety = safety;
+        tlsArgs->currentOpenGLSupport = glSupport;
+        tlsArgs->doNanHandling = doNansHandling;
+        tlsArgs->draftMode = inArgs->draftMode;
+        tlsArgs->stats = inArgs->stats;
+        tlsArgs->visitsCount = visitsCounter;
+        if (addFrameViewHash) {
+            FrameViewPair fv = {time, view};
+            tlsArgs->frameViewHash[fv] = hash;
+        }
+        effect->initParallelRenderArgsTLS(tlsArgs);
+    }
+}
+
+
 /**
- * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
+ * @brief Builds the internal render tree (including this node) and all its dependencies through expressions as well (which
  * also may be recursive).
  * The hash is also computed for each frame/view pair of each node.
  * This function throw exceptions upon error.
  **/
 static void
-getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, int viewerIndex, double time, ViewIdx view, FindDependenciesMap& finalNodes, U64* nodeHash)
+getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                                  const bool doNansHandling,
+                                  const OSGLContextPtr& glContext,
+                                  const OSGLContextPtr& cpuContext,
+                                  const NodePtr& node,
+                                  const NodePtr& treeRoot,
+                                  double time,
+                                  ViewIdx view,
+                                  FindDependenciesMap& finalNodes,
+                                  U64* nodeHash)
 {
     // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
     // want to recurse upstream for them too
@@ -716,34 +783,55 @@ getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, 
     }
 
     if (!nodeData) {
-        //Add this node to the set
+        // Add this node to the set
         nodeData = &finalNodes[node];
         nodeData->recursed = true;
         nodeData->visitCounter = 1;
     }
 
 
-    //If we already got this node from expressions dependencies it, don't do it again
+
+    // Set the TLS right away so that getValue calls made when computing the hash are cached.
+    // Each visits of this node will increase the visitCounter on the TLS as well as add the frame/view hash
+    // to a map.
+    if (nodeData->visitCounter == 1) {
+        node->getEffectInstance()->createTLS();
+    }
+
+    // Compute frames-needed, which will also give us the hash for this node.
+    // This action will most likely make getValue calls on knobs, so we need to create the TLS object
+    // on the effect with at least the render values cache even if we don't have yet other informations.
+    U64 hashValue;
+    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, nodeData->visitCounter == 1 /*createTLS*/, &hashValue);
+
+
+    // Now update the TLS with the hash value and initialize data if needed
+    setNodeTLSInternal(inArgs, doNansHandling, node, nodeData->visitCounter == 1 /*initTLS*/, nodeData->visitCounter, true /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
+
+
+    // If we already got this node from expressions dependencies, don't do it again
     if (!foundInMap || !alreadyRecursedUpstream) {
 
         std::set<NodePtr> expressionsDeps;
         effect->getAllExpressionDependenciesRecursive(expressionsDeps);
 
-        //Also add all expression dependencies but mark them as we did not recursed on them yet
+        // Also add all expression dependencies but mark them as we did not recursed on them yet
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
             FindDependenciesNode n;
             n.recursed = false;
             n.visitCounter = 0;
-            finalNodes.insert(std::make_pair(node, n));
+            std::pair<FindDependenciesMap::iterator,bool> insertOK = finalNodes.insert(std::make_pair(node, n));
+
+            // Set the TLS on the expression dependency
+            if (insertOK.second) {
+                (*it)->getEffectInstance()->createTLS();
+                setNodeTLSInternal(inArgs, doNansHandling, *it, true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
+            }
         }
     }
 
 
-
-    U64 hashValue;
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, &hashValue);
-
-
+    // Recurse on frames needed
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
         // No need to use transform redirections to compute the hash
@@ -761,7 +849,7 @@ getDependenciesRecursive_internal(const NodePtr& node, const NodePtr& treeRoot, 
                 // For all frames in the range
                 for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                     U64 inputHash;
-                    getDependenciesRecursive_internal(inputEffect->getNode(), treeRoot, viewerIndex, f, viewIt->first, finalNodes, &inputHash);
+                    getDependenciesRecursive_internal(inArgs, doNansHandling, glContext, cpuContext, inputEffect->getNode(), treeRoot, f, viewIt->first, finalNodes, &inputHash);
                 }
             }
 
@@ -845,49 +933,6 @@ setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
 } // void setupRotoPaintDrawingData
 
 
-static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
-                               bool doNansHandling,
-                               const NodePtr& node,
-                               int visitsCounter,
-                               const FrameViewHashMap& frameViewHashes,
-                               const OSGLContextPtr& gpuContext,
-                               const OSGLContextPtr& cpuContext)
-{
-    EffectInstancePtr effect = node->getEffectInstance();
-    assert(effect);
-
-
-    {
-        bool duringPaintStrokeCreation = !inArgs->isDoingRotoNeatRender && inArgs->activeRotoPaintNode && ((inArgs->activeRotoDrawableItem && node->getAttachedRotoItem() == inArgs->activeRotoDrawableItem) || node->isDuringPaintStrokeCreation()) ;
-        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
-        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
-
-        EffectInstance::SetParallelRenderTLSArgsPtr tlsArgs(new EffectInstance::SetParallelRenderTLSArgs);
-        tlsArgs->time = inArgs->time;
-        tlsArgs->view = inArgs->view;
-        tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
-        tlsArgs->isSequential = inArgs->isSequential;
-        tlsArgs->abortInfo = inArgs->abortInfo;
-        tlsArgs->frameViewHash = frameViewHashes;
-        tlsArgs->treeRoot = inArgs->treeRoot;
-        tlsArgs->visitsCount = visitsCounter;
-        tlsArgs->nodeRequest = NodeFrameRequestPtr();
-        tlsArgs->glContext = gpuContext;
-        tlsArgs->cpuGlContext = cpuContext;
-        tlsArgs->textureIndex = inArgs->textureIndex;
-        tlsArgs->timeline = inArgs->timeline;
-        tlsArgs->isAnalysis = inArgs->isAnalysis;
-        tlsArgs->isDuringPaintStrokeCreation = duringPaintStrokeCreation;
-        tlsArgs->currentThreadSafety = safety;
-        tlsArgs->currentOpenGLSupport = glSupport;
-        tlsArgs->doNanHandling = doNansHandling;
-        tlsArgs->draftMode = inArgs->draftMode;
-        tlsArgs->stats = inArgs->stats;
-        effect->setParallelRenderArgsTLS(tlsArgs);
-
-    }
-}
-
 void
 ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
 {
@@ -949,17 +994,15 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
     fetchOpenGLContext(inArgs);
     OSGLContextPtr glContext = _openGLContext.lock(), cpuContext = _cpuOpenGLContext.lock();
 
+    bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
+
+
     // Get dependencies node tree where to apply TLS
     FindDependenciesMap dependenciesMap;
-    getDependenciesRecursive_internal(inArgs->treeRoot, inArgs->treeRoot, inArgs->textureIndex, inArgs->time, inArgs->view, dependenciesMap, 0);
+    getDependenciesRecursive_internal(inArgs, doNanHandling, glContext, cpuContext, inArgs->treeRoot, inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
 
-    bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
-
-        const NodePtr& node = it->first;
-        nodes.push_back(node);
-
-        setNodeTLSInternal(inArgs, doNanHandling, node, it->second.visitCounter, it->second.frameViewHash, glContext, cpuContext);
+        nodes.push_back(it->first);
     }
 }
 

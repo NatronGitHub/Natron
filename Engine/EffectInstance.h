@@ -61,6 +61,7 @@
 #define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
 #define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
 #define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
+#define PLUGINID_OFX_TIMEBLUR     "net.sf.openfx.TimeBlur"
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_COLORLOOKUP  "net.sf.openfx.ColorLookupPlugin"
@@ -621,6 +622,7 @@ public:
         PluginOpenGLRenderSupport currentOpenGLSupport;
         bool doNanHandling;
         bool draftMode;
+        RenderValuesCachePtr cache;
         RenderStatsPtr stats;
     };
 
@@ -629,13 +631,20 @@ public:
      * @brief Sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
-    void setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
+    void initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
+
+    ParallelRenderArgsPtr createTLS();
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
     void setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
+
+private:
+    void initRenderValuesCache(const RenderValuesCachePtr& cache);
+
+public:
 
     void setViewerIndexThreadLocal(int viewerIndex);
 
@@ -1074,7 +1083,15 @@ public:
                                      ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, U64* hash) WARN_UNUSED_RETURN;
+    /**
+     * @brief Computes the frame/view pairs needed by this effect in input for the render action.
+     * @param time The time at which the input should be sampled
+     * @param view the view at which the input should be sampled
+     * @para initTLS, if set to true, this will create the TLS on the object for a render thread
+     * @param hash If set this will return the hash of the node for the given time view. In a 
+     * render thread, this hash should be cached away 
+     **/
+    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, bool initTLS, U64* hash) WARN_UNUSED_RETURN;
 
     void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 

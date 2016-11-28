@@ -435,6 +435,9 @@ ItemsTable::createPyItemWrapper(const KnobTableItemPtr& item)
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
             pyItem = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            if (pyItem == Py_None) {
+                pyItem = 0;
+            }
         }
         ItemBase* cppItem = 0;
         if (pyItem && Shiboken::Object::isValid(pyItem)) {

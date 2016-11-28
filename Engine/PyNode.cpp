@@ -525,6 +525,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         }
         ss << "." << knob->getName();
         std::string script = ss.str();
+  
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
         // Clear errors if our call to interpretPythonScript failed, we don't want the
         // calling function to fail aswell.
@@ -534,6 +535,9 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
             PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
             if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
                 pyParam = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+                if (pyParam == Py_None) {
+                    pyParam = 0;
+                }
             }
             Param* cppParam = 0;
             if (pyParam && Shiboken::Object::isValid(pyParam)) {
@@ -1346,6 +1350,9 @@ Effect::createItemsTableWrapper(const KnobItemsTablePtr& table)
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
             pyTable = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            if (pyTable == Py_None) {
+                pyTable = 0;
+            }
         }
         ItemsTable* cppTable = 0;
         if (pyTable && Shiboken::Object::isValid(pyTable)) {

@@ -324,12 +324,14 @@ enum RotoPaintItemLifeTimeTypeEnum
 #define kRotoPerShapeMotionBlurParam "motionBlur"
 #define kRotoGlobalMotionBlurParam "globalMotionBlur"
 #define kRotoMotionBlurParamLabel "Motion Blur"
-#define kRotoMotionBlurParamHint "The number of Motion-Blur samples used for blurring. Increase for better quality but slower rendering."
+#define kRotoMotionBlurParamHint "The number of time samples used for blurring along the shutter time. Increase for better quality but slower rendering.\n" \
+"Set this parameter to 1 or the Shutter parameter to 0 to disable motion-blur."
 
 #define kRotoPerShapeShutterParam "motionBlurShutter"
 #define kRotoGlobalShutterParam "globalMotionBlurShutter"
 #define kRotoShutterParamLabel "Shutter"
-#define kRotoShutterParamHint "The number of frames during which the shutter should be opened when motion blurring."
+#define kRotoShutterParamHint "The number of frames during which the shutter should be opened when motion blurring.\n" \
+"Set this parameter to 0 or the Motion Blur parameter to 1 to disable motion-blur."
 
 #define kRotoPerShapeShutterOffsetTypeParam "motionBlurShutterOffset"
 #define kRotoGlobalShutterOffsetTypeParam "gobalMotionBlurShutterOffset"

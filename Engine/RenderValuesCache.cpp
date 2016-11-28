@@ -29,6 +29,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
+#include "Engine/RotoStrokeItem.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -131,12 +132,10 @@ struct RenderValuesCachePrivate
     std::vector<CachedNodeInput> inputs;
 
     // Node metadatas at the time of render
-    boost::shared_ptr<NodeMetadata> metadatas;
+    NodeMetadata metadatas;
 
     // All roto shapes. They are plain copies of originals.
-    // RotoPaint strokes don't need to be copied as they only change while drawing
-    // and drawing is handled separatly (see getMostRecentStrokeChangesSinceAge).
-    std::map<BezierPtr, BezierPtr> bezierShapes;
+    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr> rotoItems;
 
 
     RenderValuesCachePrivate()
@@ -151,7 +150,7 @@ struct RenderValuesCachePrivate
 
 
     CurvePtr setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve);
-    BezierPtr setCachedBezier(const BezierPtr& bezier);
+    RotoDrawableItemPtr setCachedBezier(const RotoDrawableItemPtr& bezier);
 };
 
 RenderValuesCache::RenderValuesCache()
@@ -168,10 +167,10 @@ RenderValuesCache::~RenderValuesCache()
 void
 RenderValuesCache::setCachedNodeMetadatas(const NodeMetadata& data)
 {
-    _imp->metadatas.reset(new NodeMetadata(data));
+    _imp->metadatas = data;
 }
 
-boost::shared_ptr<NodeMetadata>
+const NodeMetadata&
 RenderValuesCache::getCachedMetadatas() const
 {
     return _imp->metadatas;
@@ -286,21 +285,31 @@ RenderValuesCachePrivate::setCachedParametricKnobCurve(const KnobParametricPtr& 
     return copy;
 }
 
-BezierPtr
-RenderValuesCache::getOrCreateCachedBezier(const BezierPtr& bezier) const
+RotoDrawableItemPtr
+RenderValuesCache::getOrCreateCachedDrawable(const RotoDrawableItemPtr& bezier) const
 {
-    std::map<BezierPtr, BezierPtr>::const_iterator foundBezier = _imp->bezierShapes.find(bezier);
-    if (foundBezier == _imp->bezierShapes.end()) {
+    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr>::const_iterator foundBezier = _imp->rotoItems.find(bezier);
+    if (foundBezier == _imp->rotoItems.end()) {
         return _imp->setCachedBezier(bezier);
     }
     return foundBezier->second;
 }
 
-BezierPtr
-RenderValuesCachePrivate::setCachedBezier(const BezierPtr& bezier)
+RotoDrawableItemPtr
+RenderValuesCachePrivate::setCachedBezier(const RotoDrawableItemPtr& bezier)
 {
-    BezierPtr copy(new Bezier(*bezier));
-    bezierShapes[bezier] = copy;
+    BezierPtr isBezier = toBezier(bezier);
+    RotoDrawableItemPtr copy;
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(bezier);
+    if (isBezier) {
+        copy.reset(new Bezier(*isBezier));
+    } else if (isStroke) {
+        copy.reset(new RotoStrokeItem(*isStroke));
+    } else {
+        assert(false);
+        return RotoDrawableItemPtr();
+    }
+    rotoItems[bezier] = copy;
     return copy;
 }
 

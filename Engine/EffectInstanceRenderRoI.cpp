@@ -395,6 +395,8 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
 
     /*
      * If the effect has multiple inputs (such as masks) try to call isIdentity if the RoDs do not intersect the RoI
+     * currently we only do this when drawing with the RotoPaint node as this ask to render a lot of tiles which may 
+     * add a lot of overhead in a conventional compositing tree.
      */
     *tryIdentityOptim = false;
     if (frameArgs->tilesSupported && !rectsLeftToRender.empty() && isDuringPaintStroke) {
@@ -408,7 +410,8 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
             bool isMask = _publicInterface->isInputMask(i);
             RectD inputRod;
             if (attachedStroke && isMask) {
-                _publicInterface->getNode()->getPaintStrokeRoD(time, view, &inputRod);
+                inputRod = _publicInterface->getApp()->getPaintStrokeWholeBbox();
+                //_publicInterface->getNode()->getPaintStrokeRoD(time, view, &inputRod);
                 hasMask = true;
             } else {
                 EffectInstancePtr input = _publicInterface->getInput(i);
@@ -1309,7 +1312,7 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
         **framesNeeded = requestPassData->globalData.frameViewsNeeded;
     } else {
         U64 hash;
-        **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, &hash);
+        **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, false, &hash);
     }
 
 

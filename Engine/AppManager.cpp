@@ -4095,11 +4095,13 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyErr_Print(); //make python print any errors
 
     PyObject *errorObj = 0;
+    std::string tmpError;
     if (errCatcher) {
         errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
         assert(errorObj);
+        tmpError = PyStringToStdString(errorObj);
         if (error) {
-            *error = PyStringToStdString(errorObj);
+            *error = tmpError;
         }
         PyObject* unicode = PyUnicode_FromString("");
         PyObject_SetAttrString(errCatcher, "value", unicode);
@@ -4119,8 +4121,10 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         Py_DECREF(outCatcher);
     }
 
-    if ( error && !error->empty() ) {
-        *error = "While executing script:\n" + script + "Python error:\n" + *error;
+    if ( !tmpError.empty() ) {
+        if (error) {
+            *error = "While executing script:\n" + script + "Python error:\n" + *error;
+        }
 
         return false;
     }

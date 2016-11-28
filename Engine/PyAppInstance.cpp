@@ -180,11 +180,15 @@ App::createEffectFromNodeWrapper(const NodePtr& node)
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
             pyEffect = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            if (pyEffect == Py_None) {
+                pyEffect = 0;
+            }
         }
         Effect* cppEffect = 0;
         if (pyEffect && Shiboken::Object::isValid(pyEffect)) {
             cppEffect = (Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)pyEffect);
         }
+
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
 
         if (cppEffect) {
@@ -215,6 +219,9 @@ App::createAppFromAppInstance(const AppInstancePtr& app)
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable )) {
             pyApp = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            if (pyApp == Py_None) {
+                pyApp = 0;
+            }
         }
         App* cppApp = 0;
         if (pyApp && Shiboken::Object::isValid(pyApp)) {

@@ -197,6 +197,24 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
+EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
+{
+
+    {
+        // Cache the meta-datas now
+        QMutexLocker k(&_imp->metadatasMutex);
+        cache->setCachedNodeMetadatas(_imp->metadatas);
+    }
+    {
+        // Also cache all inputs
+        NodePtr node = getNode();
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            cache->setCachedInput(i, node->getInput(i));
+        }
+    }
+}
+
+void
 EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
@@ -213,12 +231,29 @@ EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeReques
     argsList.back()->request = nodeRequest;
 }
 
-void
-EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs)
+ParallelRenderArgsPtr
+EffectInstance::createTLS()
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
-    ParallelRenderArgsPtr args(new ParallelRenderArgs);
+    ParallelRenderArgsPtr args;
+    args.reset(new ParallelRenderArgs);
+    argsList.push_back(args);
+
+    // Init the values cache before any getValue or getInput call is made by the effect
+    // so we are sure it stays consistant throughout the render.
+    args->valuesCache.reset(new RenderValuesCache);
+    initRenderValuesCache(args->valuesCache);
+    return args;
+}
+
+void
+EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs)
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
+    assert(!argsList.empty());
+    ParallelRenderArgsPtr& args = argsList.back();
 
     args->time = inArgs->time;
     args->timeline = inArgs->timeline;
@@ -242,22 +277,6 @@ EffectInstance::setParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inAr
     args->stats = inArgs->stats;
     args->openGLContext = inArgs->glContext;
     args->cpuOpenGLContext = inArgs->cpuGlContext;
-    args->valuesCache.reset(new RenderValuesCache);
-    {
-        // Cache the meta-datas now
-        QMutexLocker k(&_imp->metadatasMutex);
-        args->valuesCache->setCachedNodeMetadatas(_imp->metadatas);
-    }
-    {
-        // Also cache all inputs
-        NodePtr node = getNode();
-        for (int i = 0; i < getMaxInputCount(); ++i) {
-            args->valuesCache->setCachedInput(i, node->getInput(i));
-        }
-    }
-    // Rest of values are cached on demand.
-    
-    argsList.push_back(args);
 }
 
 
@@ -4188,7 +4207,7 @@ EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identit
 }
 
 FramesNeededMap
-EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
+EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, U64* retHash)
 {
 
     // For the viewer add frames needed depending on the input being rendered (this is a special case
@@ -4227,6 +4246,10 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
     }
 
 
+    if (initTLS) {
+        createTLS();
+    }
+
     // Follow the frames needed to compute the hash
     {
         NON_RECURSIVE_ACTION();
@@ -4261,7 +4284,7 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, U64* retHash)
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         U64 inputHash;
-                        FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(f, viewIt->first, &inputHash);
+                        FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(f, viewIt->first, initTLS, &inputHash);
                         (void)inputFramesNeeded;
 
                         // Append the input hash
@@ -5474,6 +5497,8 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
     metadata.setIsFrameVarying( getHasAnimation() );
+
+#pragma message WARN("TODO: Set continuous flag properly on plug-ins and round frame if needed in renderRoI")
     metadata.setIsContinuous(false);
 
     // now find the best depth that the plugin supports
@@ -5589,56 +5614,89 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 RectI
 EffectInstance::getOutputFormat() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
-    return _imp->metadatas.getOutputFormat();
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getOutputFormat();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
+        return _imp->metadatas.getOutputFormat();
+    }
 }
 
 ImageComponents
 EffectInstance::getComponents(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
-
-    return _imp->metadatas.getImageComponents(inputNb);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getImageComponents(inputNb);
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
+        return _imp->metadatas.getImageComponents(inputNb);
+    }
 }
 
 ImageBitDepthEnum
 EffectInstance::getBitDepth(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
-
-    return _imp->metadatas.getBitDepth(inputNb);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getBitDepth(inputNb);
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
+        return _imp->metadatas.getBitDepth(inputNb);
+    }
 }
 
 double
 EffectInstance::getFrameRate() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getOutputFrameRate();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getOutputFrameRate();
+        return _imp->metadatas.getOutputFrameRate();
+    }
 }
 
 double
 EffectInstance::getAspectRatio(int inputNb) const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getPixelAspectRatio(inputNb);
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getPixelAspectRatio(inputNb);
+        return _imp->metadatas.getPixelAspectRatio(inputNb);
+    }
 }
 
 ImagePremultiplicationEnum
 EffectInstance::getPremult() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getOutputPremult();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getOutputPremult();
+        return _imp->metadatas.getOutputPremult();
+    }
 }
 
 bool
 EffectInstance::isFrameVarying() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getIsFrameVarying();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getIsFrameVarying();
+        return _imp->metadatas.getIsFrameVarying();
+    }
 }
 
 bool
@@ -5652,9 +5710,14 @@ EffectInstance::isFrameVaryingOrAnimated() const
 bool
 EffectInstance::canRenderContinuously() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getIsContinuous();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getIsContinuous();
+        return _imp->metadatas.getIsContinuous();
+    }
 }
 
 /**
@@ -5663,9 +5726,14 @@ EffectInstance::canRenderContinuously() const
 ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder() const
 {
-    QMutexLocker k(&_imp->metadatasMutex);
+    RenderValuesCachePtr cache = getRenderValuesCacheTLS();
+    if (cache) {
+        return cache->getCachedMetadatas().getOutputFielding();
+    } else {
+        QMutexLocker k(&_imp->metadatasMutex);
 
-    return _imp->metadatas.getOutputFielding();
+        return _imp->metadatas.getOutputFielding();
+    }
 }
 
 bool

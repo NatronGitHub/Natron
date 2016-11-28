@@ -423,9 +423,6 @@ public:
                                            const RectD& /*lastPointsBbox*/,
                                            int /*strokeIndex*/) {}
 
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* /*strokes*/,
-                                          int* /*strokeIndex*/) const {}
-
     virtual int getStrokeLastIndex() const { return -1; }
 
     virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* /*stroke*/,

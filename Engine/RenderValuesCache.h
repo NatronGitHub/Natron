@@ -55,7 +55,7 @@ public:
 
     void setCachedNodeMetadatas(const NodeMetadata& data);
 
-    boost::shared_ptr<NodeMetadata> getCachedMetadatas() const;
+    const NodeMetadata& getCachedMetadatas() const;
 
     bool getCachedInput(int inputNb, NodePtr* node) const;
 
@@ -69,7 +69,7 @@ public:
 
     CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const;
 
-    BezierPtr getOrCreateCachedBezier(const BezierPtr& bezier) const;
+    RotoDrawableItemPtr getOrCreateCachedDrawable(const RotoDrawableItemPtr& bezier) const;
 
 
 private:

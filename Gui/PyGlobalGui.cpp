@@ -77,6 +77,9 @@ PyGuiApplication::getGuiInstance(int idx) const
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
             pyApp = PyObject_GetAttrString(mainModule, kPythonTmpCheckerVariable);
+            if (pyApp == Py_None) {
+                pyApp = 0;
+            }
         }
         GuiApp* cppApp = 0;
         if (pyApp && Shiboken::Object::isValid(pyApp)) {

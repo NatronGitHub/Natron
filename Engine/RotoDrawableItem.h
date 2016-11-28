@@ -73,6 +73,11 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kTransformParamResetCenter "resetCenter"
 #define kTransformParamBlackOutside "black_outside"
 
+#define kTimeBlurParamDivisions "division"
+#define kTimeBlurParamShutter "shutter"
+#define kTimeBlurParamShutterOffset "shutterOffset"
+#define kTimeBlurParamCustomOffset "shutterCustomOffset"
+
 
 NATRON_NAMESPACE_ENTER;
 

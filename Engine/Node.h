@@ -603,16 +603,8 @@ public:
     void setLastPaintStrokeDataNoRotopaint();
     void invalidateLastPaintStrokeDataNoRotopaint();
 
-    void getPaintStrokeRoD(double time, ViewIdx view, RectD* bbox) const;
-    RectD getPaintStrokeRoD_duringPainting() const;
-
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(double time,
-                                  ViewIdx view,
-                                  unsigned int mipmapLevel,
-                                  std::list<std::list<std::pair<Point, double> > >* strokes,
-                                  int* strokeIndex) const;
 
 
     void setWhileCreatingPaintStroke(bool creating);
