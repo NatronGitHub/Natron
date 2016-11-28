@@ -4400,12 +4400,17 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        if (!(*it)->isDeclaredByPlugin()) {
+        if ( !(*it)->isDeclaredByPlugin() && !( isPyPlug() && (*it)->isUserKnob() ) ) {
             continue;
         }
+
         QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+
+        if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
+            continue;
+        }
 
         QString defValuesStr, knobType;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;

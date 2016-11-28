@@ -9,6 +9,7 @@ Contents:
     _prefs.rst
     _groupFilter.rst
     _groupDraw.rst
+    _groupKeyer.rst
     _groupOther.rst
     _groupViews.rst
     _groupImage.rst
@@ -17,6 +18,5 @@ Contents:
     _groupMerge.rst
     _groupExtra.rst
     _groupTime.rst
-    _groupKeyer.rst
     _groupChannel.rst
 

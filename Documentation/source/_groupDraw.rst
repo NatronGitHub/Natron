@@ -9,7 +9,6 @@ Contents:
     plugins/fr.inria.LightWrap.rst
     plugins/fr.inria.built-in.Roto.rst
     plugins/fr.inria.built-in.RotoPaint.rst
-    plugins/fr.inria.openfx.TextFX.rst
     plugins/net.fxarena.openfx.Text.rst
     plugins/net.sf.cimg.CImgNoise.rst
     plugins/net.sf.cimg.CImgPlasma.rst
