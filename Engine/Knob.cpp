@@ -249,9 +249,6 @@ KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
 void
 KnobI::autoAdjustFoldExpandDimensions(ViewIdx view)
 {
-    if (!isAutoFoldDimensionsEnabled()) {
-        return;
-    }
     bool currentVisibility = getAllDimensionsVisible(view);
     bool allEqual = areDimensionsEqual(view);
     if (allEqual) {
@@ -3577,9 +3574,13 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             splitView(view_i);
         }
 
-        for (std::size_t d = 0; d < it->second.size(); ++d) {
+        for (int i = 0; i < _imp->dimension; ++i) {
 
-            DimIdx dimensionIndex(it->second[d]._dimension);
+            // Not all dimensions are necessarily saved since they may be folded.
+            // In that case replicate the last dimenion
+            int d = i >= (int)it->second.size() ? it->second.size() - 1 : i;
+
+            DimIdx dimensionIndex(i);
 
             // Clone animation
             if (!it->second[d]._animationCurve.keys.empty()) {
@@ -3599,8 +3600,8 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             }
 
         }
-
         autoAdjustFoldExpandDimensions(view_i);
+
     }
 
 
