@@ -29,7 +29,6 @@ SOURCES += \
 	internal/ceres/block_sparse_matrix.cc \
 	internal/ceres/block_structure.cc \
 	internal/ceres/callbacks.cc \
-	internal/ceres/canonical_views_clustering.cc \
 	internal/ceres/c_api.cc \
 	internal/ceres/cgnr_solver.cc \
 	internal/ceres/compressed_col_sparse_matrix_utils.cc \
@@ -41,7 +40,6 @@ SOURCES += \
 	internal/ceres/corrector.cc \
 	internal/ceres/covariance.cc \
 	internal/ceres/covariance_impl.cc \
-	internal/ceres/cxsparse.cc \
 	internal/ceres/dense_normal_cholesky_solver.cc \
 	internal/ceres/dense_qr_solver.cc \
 	internal/ceres/dense_sparse_matrix.cc \
@@ -57,7 +55,6 @@ SOURCES += \
 	internal/ceres/gradient_problem.cc \
 	internal/ceres/gradient_problem_solver.cc \
 	internal/ceres/implicit_schur_complement.cc \
-	internal/ceres/incomplete_lq_factorization.cc \
 	internal/ceres/iterative_schur_complement_solver.cc \
 	internal/ceres/lapack.cc \
 	internal/ceres/levenberg_marquardt_strategy.cc \
@@ -88,21 +85,17 @@ SOURCES += \
 	internal/ceres/schur_eliminator.cc \
 	internal/ceres/schur_jacobi_preconditioner.cc \
 	internal/ceres/scratch_evaluate_preparer.cc \
-	internal/ceres/single_linkage_clustering.cc \
 	internal/ceres/solver.cc \
 	internal/ceres/solver_utils.cc \
 	internal/ceres/sparse_matrix.cc \
 	internal/ceres/sparse_normal_cholesky_solver.cc \
 	internal/ceres/split.cc \
 	internal/ceres/stringprintf.cc \
-	internal/ceres/suitesparse.cc \
 	internal/ceres/triplet_sparse_matrix.cc \
 	internal/ceres/trust_region_minimizer.cc \
 	internal/ceres/trust_region_preprocessor.cc \
 	internal/ceres/trust_region_strategy.cc \
 	internal/ceres/types.cc \
-	internal/ceres/visibility_based_preconditioner.cc \
-	internal/ceres/visibility.cc \
 	internal/ceres/wall_time.cc \
 
 #Add these source files if doing bundle adjustements, these are template specializations for common cases (6-parameter cameras and 3-parameter points)
@@ -195,7 +188,6 @@ HEADERS += \
 	internal/ceres/block_sparse_matrix.h \
 	internal/ceres/block_structure.h \
 	internal/ceres/callbacks.h \
-	internal/ceres/canonical_views_clustering.h \
 	internal/ceres/casts.h \
 	internal/ceres/cgnr_linear_operator.h \
 	internal/ceres/cgnr_solver.h \
@@ -225,7 +217,6 @@ HEADERS += \
 	internal/ceres/graph_algorithms.h \
 	internal/ceres/graph.h \
 	internal/ceres/implicit_schur_complement.h \
-	internal/ceres/incomplete_lq_factorization.h \
 	internal/ceres/integral_types.h \
 	internal/ceres/iterative_schur_complement_solver.h \
 	internal/ceres/lapack.h \
@@ -260,7 +251,6 @@ HEADERS += \
 	internal/ceres/schur_eliminator_impl.h \
 	internal/ceres/schur_jacobi_preconditioner.h \
 	internal/ceres/scratch_evaluate_preparer.h \
-	internal/ceres/single_linkage_clustering.h \
 	internal/ceres/small_blas.h \
 	internal/ceres/solver_utils.h \
 	internal/ceres/sparse_matrix.h \
@@ -274,5 +264,4 @@ HEADERS += \
 	internal/ceres/trust_region_preprocessor.h \
 	internal/ceres/trust_region_strategy.h \
 	internal/ceres/visibility_based_preconditioner.h \
-	internal/ceres/visibility.h \
 	internal/ceres/wall_time.h \  
