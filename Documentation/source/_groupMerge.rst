@@ -7,8 +7,10 @@ Contents:
     :maxdepth: 1
 
     plugins/fr.inria.openfx.SeExpr.rst
+    plugins/fr.inria.openfx.SeExprSimple.rst
     plugins/net.sf.openfx.CopyRectanglePlugin.rst
     plugins/net.sf.openfx.DissolvePlugin.rst
+    plugins/net.sf.openfx.KeyMix.rst
     plugins/net.sf.openfx.MergeDifference.rst
     plugins/net.sf.openfx.MergeIn.rst
     plugins/net.sf.openfx.MergeMatte.rst

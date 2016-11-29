@@ -148,6 +148,7 @@ AnimatingTextEdit::refreshStylesheet()
         bgCol.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
         bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
         ;
+
     }
 
 
@@ -823,7 +824,7 @@ KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
         if ( !knob->isCustomKnob() ) {
-            _lineEdit->setReadOnly(!perDimEnabled[0]);
+            _lineEdit->setReadOnly_NoFocusRect(!perDimEnabled[0]);
         }
     }
 }

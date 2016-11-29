@@ -13,6 +13,9 @@ Contents:
     plugins/net.sf.openfx.FrameRange.rst
     plugins/net.sf.openfx.NoTimeBlurPlugin.rst
     plugins/net.sf.openfx.Retime.rst
+    plugins/net.sf.openfx.SlitScan.rst
     plugins/net.sf.openfx.TimeBlur.rst
+    plugins/net.sf.openfx.TimeBufferRead.rst
+    plugins/net.sf.openfx.TimeBufferWrite.rst
     plugins/net.sf.openfx.timeOffset.rst
 

@@ -27,14 +27,19 @@ Contents:
     plugins/net.sf.openfx.HSLToRGB.rst
     plugins/net.sf.openfx.HSVToRGB.rst
     plugins/net.sf.openfx.HSVToolPlugin.rst
+    plugins/net.sf.openfx.HueCorrect.rst
     plugins/net.sf.openfx.Invert.rst
-    plugins/net.sf.openfx.LabToRGBPlugin.rst
+    plugins/net.sf.openfx.LabToRGB709.rst
+    plugins/net.sf.openfx.LabToXYZ.rst
+    plugins/net.sf.openfx.Log2Lin.rst
     plugins/net.sf.openfx.MultiplyPlugin.rst
+    plugins/net.sf.openfx.PLogLin.rst
+    plugins/net.sf.openfx.Quantize.rst
+    plugins/net.sf.openfx.RGB709ToLab.rst
+    plugins/net.sf.openfx.RGB709ToXYZ.rst
     plugins/net.sf.openfx.RGBToHSI.rst
     plugins/net.sf.openfx.RGBToHSL.rst
     plugins/net.sf.openfx.RGBToHSV.rst
-    plugins/net.sf.openfx.RGBToLabPlugin.rst
-    plugins/net.sf.openfx.RGBToXYZPlugin.rst
     plugins/net.sf.openfx.RGBToYCbCr601.rst
     plugins/net.sf.openfx.RGBToYCbCr709.rst
     plugins/net.sf.openfx.RGBToYPbPr601.rst
@@ -43,11 +48,12 @@ Contents:
     plugins/net.sf.openfx.RGBToYUV709.rst
     plugins/net.sf.openfx.SaturationPlugin.rst
     plugins/net.sf.openfx.VectorToColorPlugin.rst
-    plugins/net.sf.openfx.XYZToRGBPlugin.rst
-    plugins/net.sf.openfx.YCbCr601ToRGB.rst
-    plugins/net.sf.openfx.YCbCr709ToRGB.rst
-    plugins/net.sf.openfx.YPbPr601ToRGB.rst
-    plugins/net.sf.openfx.YPbPr709ToRGB.rst
-    plugins/net.sf.openfx.YUV601ToRGB.rst
-    plugins/net.sf.openfx.YUV709ToRGB.rst
+    plugins/net.sf.openfx.XYZToLab.rst
+    plugins/net.sf.openfx.XYZToRGB709.rst
+    plugins/net.sf.openfx.YCbCrToRGB601.rst
+    plugins/net.sf.openfx.YCbCrToRGB709.rst
+    plugins/net.sf.openfx.YPbPrToRGB601.rst
+    plugins/net.sf.openfx.YPbPrToRGB709.rst
+    plugins/net.sf.openfx.YUVToRGB601.rst
+    plugins/net.sf.openfx.YUVToRGB709.rst
 

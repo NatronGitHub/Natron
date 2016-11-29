@@ -12,5 +12,6 @@ Contents:
     plugins/net.sf.openfx.joinViewsPlugin.rst
     plugins/net.sf.openfx.mixViewsPlugin.rst
     plugins/net.sf.openfx.oneViewPlugin.rst
+    plugins/net.sf.openfx.reConvergePlugin.rst
     plugins/net.sf.openfx.sideBySidePlugin.rst
 

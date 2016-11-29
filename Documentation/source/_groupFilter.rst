@@ -6,8 +6,12 @@ Contents:
 .. toctree::
     :maxdepth: 1
 
+    plugins/eu.cimg.EdgeDetect.rst
+    plugins/eu.cimg.EdgeExtend.rst
+    plugins/eu.cimg.ErodeBlur.rst
     plugins/fr.inria.AngleBlur.rst
     plugins/fr.inria.DropShadow.rst
+    plugins/fr.inria.EdgeBlur.rst
     plugins/fr.inria.Fill.rst
     plugins/fr.inria.Glow.rst
     plugins/fr.inria.ZMask.rst
@@ -26,9 +30,12 @@ Contents:
     plugins/net.sf.cimg.CImgLaplacian.rst
     plugins/net.sf.cimg.CImgMedian.rst
     plugins/net.sf.cimg.CImgRollingGuidance.rst
+    plugins/net.sf.cimg.CImgSharpen.rst
     plugins/net.sf.cimg.CImgSharpenInvDiff.rst
     plugins/net.sf.cimg.CImgSharpenShock.rst
     plugins/net.sf.cimg.CImgSmooth.rst
+    plugins/net.sf.cimg.CImgSoften.rst
+    plugins/net.sf.openfx.DenoiseSharpen.rst
     plugins/net.sf.openfx.DirBlur.rst
     plugins/net.sf.openfx.GodRays.rst
     plugins/net.sf.openfx.Shadertoy.rst

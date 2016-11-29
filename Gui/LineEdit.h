@@ -57,6 +57,8 @@ public:
     void setReadOnly_NoFocusRect(bool readOnly);
     void setBorderDisabled(bool disabled);
 
+    void setReadOnly(bool ro);
+
     bool getBorderDisabled() const;
 
     bool getIsBold() const;
@@ -64,6 +66,7 @@ public:
     void setIsBold(bool b);
 
     void setCustomTextColor(const QColor& color);
+
 
 Q_SIGNALS:
 

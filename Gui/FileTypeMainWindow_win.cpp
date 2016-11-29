@@ -36,6 +36,7 @@
 // ————————————————————————————————-
 
 // See https://gitlab.com/qtdevnet-wiki-mvc/qtdevnet-registereditorfiletype/tree/master
+// and https://wiki.qt.io/Assigning_a_file_type_to_an_Application_on_Windows
 
 #include "FileTypeMainWindow_win.h"
 
@@ -238,11 +239,13 @@ DocumentWindow::ddeInitiate(MSG* message,
          (LOWORD(message->lParam) == m_appAtom) &&
          (HIWORD(message->lParam) == m_systemTopicAtom) ) {
         // make duplicates of the incoming atoms (really adding a reference)
+#     ifndef QT_NO_DEBUG
         wchar_t atomName[_MAX_PATH];
         Q_ASSERT(::GlobalGetAtomNameW(m_appAtom, atomName, _MAX_PATH - 1) != 0);
         Q_ASSERT(::GlobalAddAtomW(atomName) == m_appAtom);
         Q_ASSERT(::GlobalGetAtomNameW(m_systemTopicAtom, atomName, _MAX_PATH - 1) != 0);
         Q_ASSERT(::GlobalAddAtomW(atomName) == m_systemTopicAtom);
+#     endif
 
         // send the WM_DDE_ACK (caller will delete duplicate atoms)
         ::SendMessage( (HWND)message->wParam, WM_DDE_ACK, (WPARAM)winId(), MAKELPARAM(m_appAtom, m_systemTopicAtom) );
@@ -262,6 +265,7 @@ DocumentWindow::ddeExecute(MSG* message,
 
     //IA64: Assume DDE LPARAMs are still 32-bit
     Q_ASSERT( ::UnpackDDElParam(WM_DDE_EXECUTE, message->lParam, &unused, (UINT_PTR*)&hData) );
+    Q_UNUSED(unused);
 
     QString command = QString::fromWCharArray( (LPCWSTR) ::GlobalLock(hData) );
     ::GlobalUnlock(hData);
@@ -292,6 +296,7 @@ bool
 DocumentWindow::ddeTerminate(MSG* message,
                              long* result)
 {
+    Q_UNUSED(result);
     // The client or server application should respond by posting a WM_DDE_TERMINATE message.
     ::PostMessageW( (HWND)message->wParam, WM_DDE_TERMINATE, (WPARAM)winId(), message->lParam );
 

@@ -368,6 +368,7 @@ MemoryFilePrivate::closeMapping(bool drop_pages)
     }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
+    Q_UNUSED(drop_pages);
     if (::UnmapViewOfFile(data) == 0) {
         throw std::runtime_error("Failed to unmap the mapped file");
     }
