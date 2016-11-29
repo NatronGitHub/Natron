@@ -1,7 +1,8 @@
 Extracted from Blender git repository under the intern/ folder.
 Git URL=https://git.blender.org/blender.git
-Git HEAD version=2c3985d9e684b855cc765863bd4af02fb72e3fe3
+Git HEAD version=cc1a64be36f3dc862ad83ee3f4730a2b4c5649fd (2016-11-29)
 
 Local modifications:
 * patches/libmv-frame_accessor_no_image_copy.patch
 * patches/libmv-predict-Natron.patch
+* patches/libmv-sincos-mingw32.patch
