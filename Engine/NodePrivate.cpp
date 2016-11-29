@@ -120,7 +120,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , currentCanTransform(false)
 , draftModeUsed(false)
 , mustComputeInputRelatedData(true)
-, duringPaintStrokeCreation(false)
 , lastStrokeMovementMutex()
 , strokeBitmapCleared(false)
 , paintBuffer()

@@ -77,13 +77,17 @@ public:
 
     virtual ~KnobTableItem();
 
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
+    KnobTableItem(const KnobTableItem& other);
+
     KnobItemsTablePtr getModel() const;
 
     /**
      * @brief Copy all the items data except its script-name, label and parent.
      * Can be reimplemented to copy more data from subclasses.
      **/
-    virtual void copyItem(const KnobTableItemPtr& other);
+    virtual void copyItem(const KnobTableItem& other);
 
     /**
      * @brief Returns the script-name of the item as it appears to Python
@@ -442,6 +446,10 @@ protected:
      **/
     void refreshAfterTimeChange(bool isPlayback, double time);
 
+    // Ensures the item has a unique script-name, a label and that its
+    // knobs are initialized
+    void ensureItemInitialized();
+
 Q_SIGNALS:
 
     void availableViewsChanged();
@@ -451,9 +459,7 @@ Q_SIGNALS:
 
 private:
 
-    // Ensures the item has a unique script-name, a label and that its
-    // knobs are initialized
-    void ensureItemInitialized();
+
 
     friend class KnobItemsTable;
     boost::scoped_ptr<KnobTableItemPrivate> _imp;

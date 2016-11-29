@@ -320,6 +320,30 @@ Curve::clone(const Curve & other)
     onCurveChanged();
 }
 
+void
+Curve::cloneIndexRange(const Curve& other, int firstKeyIdx, int nKeys)
+{
+    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    QMutexLocker l(&_imp->_lock);
+    _imp->keyFrames.clear();
+    if (firstKeyIdx >= (int)otherKeys.size()) {
+        return;
+    }
+    KeyFrameSet::iterator start = otherKeys.begin();
+    std::advance(start, firstKeyIdx);
+
+    KeyFrameSet::iterator end;
+    if (nKeys == -1 || (firstKeyIdx + nKeys >= (int)otherKeys.size())) {
+        end = otherKeys.end();
+    } else {
+        end = start;
+        std::advance(end, nKeys);
+    }
+    std::transform( start, end, std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    onCurveChanged();
+
+}
+
 bool
 Curve::cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* range)
 {

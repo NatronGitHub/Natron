@@ -50,6 +50,14 @@ struct HashableObjectPrivate
     {
 
     }
+
+    HashableObjectPrivate(const HashableObjectPrivate& other)
+    : hashListeners(other.hashListeners)
+    , hashCache()
+    , hashCacheMutex(QMutex::Recursive)
+    {
+
+    }
 };
 
 HashableObject::HashableObject()
@@ -59,6 +67,12 @@ HashableObject::HashableObject()
 }
 
 HashableObject::~HashableObject()
+{
+
+}
+
+HashableObject::HashableObject(const HashableObject& other)
+: _imp(new HashableObjectPrivate(*other._imp))
 {
 
 }

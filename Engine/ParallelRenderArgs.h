@@ -189,9 +189,6 @@ public:
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis : 1;
 
-    ///If true, the attached paint stroke is being drawn currently
-    bool isDuringPaintStrokeCreation : 1;
-
     ///When true, all NaNs will be converted to 1
     bool doNansHandling : 1;
 
@@ -200,6 +197,12 @@ public:
 
     ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported : 1;
+
+    // When painting with a stroke, each drawing step needs to clear the bitmap of
+    // the cached image of exactly the bounding box of the portion that needs to be
+    // rendered. Since renderRoI may be called multiple times for the render of a single
+    // frame, we set this boolean to ensure it is not cleared twice.
+    bool activeStrokeLastMovementBboxBitmapCleared ;
 
     ParallelRenderArgs();
 
@@ -290,22 +293,41 @@ public:
 
     struct CtorArgs
     {
+        // The time at which to render
         double time;
+
+        // The view at which to render
         ViewIdx view;
+
+        // Was this triggered by user interaction ?
         bool isRenderUserInteraction;
+
+        // Is this a sequential (render on disk/playback) render ?
         bool isSequential;
+
+        // The abort data
         AbortableRenderInfoPtr abortInfo;
+
+        // The node at the bottom of the tree (from which to render)
         NodePtr treeRoot;
+
+        // If from the viewer, optionnally indicates if this is input A (=0) or B(=1)
         int textureIndex;
+
+        // Pointer to the timeline used
         TimeLinePtr timeline;
 
-        // When painting with a roto node, these are set
-        NodePtr activeRotoPaintNode;
+        // When painting with a roto item, this points to the item used to render
         RotoDrawableItemPtr activeRotoDrawableItem;
-        bool isDoingRotoNeatRender;
 
+        // True if the render is triggered from an analysis
         bool isAnalysis;
+
+        // True if the render should be draft (i.e: low res) because user is anyway
+        // scrubbing timeline or a slider
         bool draftMode;
+
+        // Pointer to stats object if any.
         RenderStatsPtr stats;
     };
 
@@ -320,8 +342,15 @@ public:
      **/
     ParallelRenderArgsSetter(const CtorArgsPtr& inArgs);
 
+    /**
+     * @brief Ctor used to apply TLS on a helper thread used to back-up the main render thread. This will only copy
+     * the TLS applied on the main-thread onto this thread.
+     **/
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args);
 
+    /**
+     * @brief Should be called before launching any call to renderRoI to optimize the render
+     **/
     StatusEnum computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI);
 
     virtual ~ParallelRenderArgsSetter();

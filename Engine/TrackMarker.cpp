@@ -264,21 +264,6 @@ TrackMarker::initializeKnobs()
 
 } // TrackMarker::initializeKnobs
 
-void
-TrackMarker::copyItem(const KnobTableItemPtr& other)
-{
-    TrackMarkerPtr thisShared = shared_from_this();
-
-    TrackMarkerPtr otherMarker = toTrackMarker(other);
-    if (!otherMarker) {
-        return;
-    }
-
-    KnobTableItem::copyItem(other);
-}
-
-
-
 KnobDoublePtr
 TrackMarker::getSearchWindowBottomLeftKnob() const
 {
@@ -736,9 +721,7 @@ TrackMarker::getMarkerImage(double time,
     tlsArgs->treeRoot = getModel()->getNode();
     tlsArgs->textureIndex = 0;
     tlsArgs->timeline = node->getApp()->getTimeLine();
-    tlsArgs->activeRotoPaintNode = NodePtr();
     tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->isDoingRotoNeatRender = false;
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = true;
     tlsArgs->stats = RenderStatsPtr();

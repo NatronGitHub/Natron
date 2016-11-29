@@ -216,6 +216,27 @@ struct KnobTableItemPrivate
         animationCurves[ViewIdx(0)] = c;
     }
 
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
+    KnobTableItemPrivate(const KnobTableItemPrivate& other)
+    : parent()
+    , children()
+    , columns(other.columns)
+    , model(other.model)
+    , scriptName(other.scriptName)
+    , label(other.label)
+    , iconFilePath(other.iconFilePath)
+    , lock()
+    , animationCurves()
+    {
+        for (PerViewAnimationCurveMap::const_iterator it = other.animationCurves.begin(); it!=other.animationCurves.end(); ++it) {
+            CurvePtr c(new Curve);
+            c->setYComponentMovable(false);
+            c->clone(*it->second);
+            animationCurves[it->first] = c;
+        }
+    }
+
 };
 
 KnobItemsTable::KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type)
@@ -569,7 +590,17 @@ KnobItemsTable::generateUniqueName(const KnobTableItemPtr& item, const std::stri
 
 KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
 : NamedKnobHolder(model->getOriginalHolder()->getApp())
+, AnimatingObjectI()
 , _imp(new KnobTableItemPrivate(model))
+{
+
+}
+
+
+KnobTableItem::KnobTableItem(const KnobTableItem& other)
+: NamedKnobHolder(other)
+, AnimatingObjectI(other)
+, _imp(new KnobTableItemPrivate(*other._imp))
 {
 
 }
@@ -579,6 +610,7 @@ KnobTableItem::~KnobTableItem()
    
 }
 
+
 KnobItemsTablePtr
 KnobTableItem::getModel() const
 {
@@ -586,10 +618,10 @@ KnobTableItem::getModel() const
 }
 
 void
-KnobTableItem::copyItem(const KnobTableItemPtr& other)
+KnobTableItem::copyItem(const KnobTableItem& other)
 {
-    const std::vector<KnobIPtr>& otherKnobs = other->getKnobs();
-    const std::vector<KnobIPtr>& thisKnobs = getKnobs();
+    std::vector<KnobIPtr> otherKnobs = other.getKnobs_mt_safe();
+    std::vector<KnobIPtr> thisKnobs = getKnobs_mt_safe();
     if (thisKnobs.size() != otherKnobs.size()) {
         return;
     }
@@ -601,7 +633,7 @@ KnobTableItem::copyItem(const KnobTableItemPtr& other)
     {
         QMutexLocker k(&_imp->lock);
         _imp->animationCurves.clear();
-        for (PerViewAnimationCurveMap::const_iterator it = other->_imp->animationCurves.begin(); it != other->_imp->animationCurves.end(); ++it) {
+        for (PerViewAnimationCurveMap::const_iterator it = other._imp->animationCurves.begin(); it != other._imp->animationCurves.end(); ++it) {
             CurvePtr& c = _imp->animationCurves[it->first];
             c.reset(new Curve());
             c->setYComponentMovable(false);
@@ -634,6 +666,10 @@ void
 KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view)
 {
 
+    // If the item is not part of the model, do nothing
+    if (getIndexInParent() == -1) {
+        return;
+    }
     KnobItemsTablePtr model = getModel();
     if (model) {
         NodePtr node = model->getNode();
@@ -666,6 +702,10 @@ KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueC
 void
 KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
 {
+    // If the item is not part of the model, do nothing
+    if (getIndexInParent() == -1) {
+        return;
+    }
     KnobItemsTablePtr model = getModel();
     if (!model) {
         return;
@@ -909,17 +949,19 @@ KnobTableItem::ensureItemInitialized()
     if (!model) {
         return;
     }
-    std::string curName = getScriptName_mt_safe();
-    if (curName.empty()) {
-        KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
-        // No script-name: generate one
-        curName = model->generateUniqueName(thisShared, getBaseItemName());
+    if (getIndexInParent() != -1) {
+        std::string curName = getScriptName_mt_safe();
+        if (curName.empty()) {
+            KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
+            // No script-name: generate one
+            curName = model->generateUniqueName(thisShared, getBaseItemName());
+        }
+        setScriptName(curName);
+        if (getLabel().empty()) {
+            setLabel(curName, eTableChangeReasonInternal);
+        }
     }
-    setScriptName(curName);
-    if (getLabel().empty()) {
-        setLabel(curName, eTableChangeReasonInternal);
-    }
-
+    
     initializeKnobsPublic();
 
 
@@ -1443,7 +1485,10 @@ KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr >& items, TableC
         }
 
         for (std::list<KnobTableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
-            _imp->addToSelectionList(*it);
+            // Only add items to the selection that are in the model
+            if ((*it)->getIndexInParent() != -1) {
+                _imp->addToSelectionList(*it);
+            }
         }
 
         if (hasCalledBegin) {
@@ -1460,6 +1505,10 @@ KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr >& items, TableC
 void
 KnobItemsTable::addToSelection(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
+    // Only add items to the selection that are in the model
+    if (item->getIndexInParent() == -1) {
+        return;
+    }
     std::list<KnobTableItemPtr > items;
     items.push_back(item);
     addToSelection(items, reason);
@@ -1749,7 +1798,10 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                 masterKnob->copyKnob(itemKnob);
 
                 // Connect the item knob's value changed signal so that we can refresh the master knob when it changes
-                QObject::connect(itemKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), Qt::UniqueConnection);
+                KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
+                if (handler) {
+                    QObject::connect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), Qt::UniqueConnection);
+                }
             }
 
             for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
@@ -1759,7 +1811,10 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                 }
 
                 // Disconnect previous connection established above.
-                QObject::disconnect(itemKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)));
+                KnobSignalSlotHandler* handler = itemKnob->getSignalSlotHandler().get();
+                if (handler) {
+                    QObject::disconnect(handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)));
+                }
             }
 
             --_imp->masterKnobUpdatesBlocked;

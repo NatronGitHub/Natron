@@ -69,7 +69,9 @@ public:
 
     CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const;
 
-    RotoDrawableItemPtr getOrCreateCachedDrawable(const RotoDrawableItemPtr& bezier) const;
+    RotoDrawableItemPtr createCachedDrawable(const RotoDrawableItemPtr& bezier, double time, ViewIdx view) const;
+
+    RotoDrawableItemPtr getCachedDrawable(const RotoDrawableItemPtr& bezier) const;
 
 
 private:

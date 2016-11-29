@@ -53,6 +53,7 @@
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Project.h"
@@ -62,6 +63,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -2288,9 +2290,7 @@ private:
                 tlsArgs->treeRoot = activeInputNode;
                 tlsArgs->textureIndex = 0;
                 tlsArgs->timeline = output->getApp()->getTimeLine();
-                tlsArgs->activeRotoPaintNode = NodePtr();
                 tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-                tlsArgs->isDoingRotoNeatRender = false;
                 tlsArgs->isAnalysis = false;
                 tlsArgs->draftMode = false;
                 tlsArgs->stats = RenderStatsPtr();
@@ -2459,7 +2459,6 @@ DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
         tlsArgs->timeline = effect->getApp()->getTimeLine();
         tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = false;
         tlsArgs->stats = it->stats;
@@ -2857,7 +2856,7 @@ private:
 
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true /*isSequential*/, view, i /*inputIndex (A or B)*/, true /*canAbort*/, NodePtr() /*activeRoto*/, RotoStrokeItemPtr() /*activeStroke*/, false /*isRotoNeatRender*/, stats, args[i].get());
+            status[i] = viewer->getRenderViewerArgsAndCheckCache_public(time, true /*isSequential*/, view, i /*inputIndex (A or B)*/, true /*canAbort*/, RotoStrokeItemPtr() /*activeStroke*/, stats, args[i].get());
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
                 //Just clear the viewer, nothing to do
@@ -2902,7 +2901,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/,  NodePtr(),  RotoStrokeItemPtr(), false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/, RotoStrokeItemPtr(), false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3421,8 +3420,7 @@ public:
     ViewerInstancePtr viewer;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
-    NodePtr isRotoPaintRequest;
-    boost::weak_ptr<RotoStrokeItem> strokeItem;
+    RotoStrokeItemPtr strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
 
@@ -3434,7 +3432,6 @@ public:
         , viewer()
         , request()
         , scheduler(0)
-        , isRotoPaintRequest()
         , strokeItem()
         , args()
         , isRotoNeatRender(false)
@@ -3446,7 +3443,6 @@ public:
                             const RenderStatsPtr& stats,
                             const ViewerInstancePtr& viewer,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
-                            const NodePtr& isRotoPaintRequest,
                             const RotoStrokeItemPtr& strokeItem,
                             bool isRotoNeatRender)
         : GenericThreadStartArgs()
@@ -3456,13 +3452,12 @@ public:
         , viewer(viewer)
         , request()
         , scheduler(scheduler)
-        , isRotoPaintRequest(isRotoPaintRequest)
         , strokeItem(strokeItem)
         , args()
         , isRotoNeatRender(isRotoNeatRender)
     {
-        if (isRotoPaintRequest && isRotoNeatRender) {
-            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+        if (strokeItem && isRotoNeatRender) {
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(strokeItem->getModel()->getNode()->getEffectInstance().get());
             if (isRotoNode) {
                 isRotoNode->setIsDoingNeatRender(true);
             }
@@ -3471,8 +3466,8 @@ public:
 
     ~CurrentFrameFunctorArgs()
     {
-        if (isRotoPaintRequest && isRotoNeatRender) {
-            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(isRotoPaintRequest->getEffectInstance().get());
+        if (strokeItem && isRotoNeatRender) {
+            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(strokeItem->getModel()->getNode()->getEffectInstance().get());
             if (isRotoNode) {
                 isRotoNode->setIsDoingNeatRender(false);
             }
@@ -3589,7 +3584,7 @@ public:
         BufferableObjectList ret;
         try {
             stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false,
-                                               _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
+                                               _args->strokeItem, _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
         }
@@ -3892,24 +3887,20 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     bool isTracking = _imp->viewer->isDoingPartialUpdates();
 
     // Are we painting ?
-    NodePtr rotoPaintNode;
-    RotoStrokeItemPtr curStroke;
-    bool isDrawing;
-    _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
+    RotoStrokeItemPtr curStroke = _imp->viewer->getApp()->getActiveRotoDrawingStroke();
 
-    // While drawing, use a single render thread and always the same.
+    // While drawing, use a single render thread and always the same thread.
     bool rotoUse1Thread = false;
     bool isRotoNeatRender = false;
-    if (rotoPaintNode) {
-        RotoPaint* isRotoPaint = dynamic_cast<RotoPaint*>(rotoPaintNode->getEffectInstance().get());
+    if (curStroke) {
+        RotoPaint* isRotoPaint = dynamic_cast<RotoPaint*>(curStroke->getModel()->getNode()->getEffectInstance().get());
         if (isRotoPaint) {
             isRotoNeatRender = isRotoPaint->mustDoNeatRender();
         }
     }
-    if (isDrawing || (rotoPaintNode && isRotoNeatRender)) {
+    if (curStroke) {
         rotoUse1Thread = true;
     } else {
-        rotoPaintNode.reset();
         curStroke.reset();
     }
 
@@ -3922,7 +3913,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     // For each input get the render args
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerArgs);
-        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false /*sequential*/, view, i /*input (A or B)*/, canAbort, rotoPaintNode, curStroke, isRotoNeatRender, stats, args[i].get() );
+        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false /*sequential*/, view, i /*input (A or B)*/, canAbort, curStroke, stats, args[i].get() );
 
         clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
 
@@ -4002,7 +3993,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         stats,
                                                                                         _imp->viewer,
                                                                                         _imp.get(),
-                                                                                        rotoPaintNode,
                                                                                         curStroke,
                                                                                         isRotoNeatRender) );
     functorArgs->args[0] = args[0];

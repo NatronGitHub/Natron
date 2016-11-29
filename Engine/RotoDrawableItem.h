@@ -101,6 +101,9 @@ public:
 
     RotoDrawableItem(const KnobItemsTablePtr& model);
 
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
+    RotoDrawableItem(const RotoDrawableItem& other);
 
     virtual ~RotoDrawableItem();
 
@@ -108,6 +111,8 @@ public:
      * @brief Returns the default overlay color
      **/
     static void getDefaultOverlayColor(double *r, double *g, double *b);
+
+    const NodesList& getItemNodes() const;
 
     /**
      * @brief Create internal nodes used by the item. Does nothing if nodes are already created
@@ -151,12 +156,6 @@ public:
      * @brief Deactivate all nodes used by this item
      **/
     void disconnectNodes();
-
-    /**
-     * @brief Clear the image pointers used by internal nodes of the item used to store previous computations
-     * while rotopainting. This will force a render of the full image
-     **/
-    void clearPaintBuffers();
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.

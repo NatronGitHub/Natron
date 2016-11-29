@@ -46,7 +46,7 @@
 NATRON_NAMESPACE_ENTER;
 
 #ifdef DEBUG
-#define ROTO_PAINT_NODE_GRAPH_VISIBLE
+//#define ROTO_PAINT_NODE_GRAPH_VISIBLE
 #endif
 
 #define kControlPointMidSize 3
@@ -657,6 +657,22 @@ struct RotoPaintPrivate
 
 };
 
+class BlockTreeRefreshRAII
+{
+    RotoPaintPrivate* _imp;
+public:
+
+    BlockTreeRefreshRAII(RotoPaintPrivate* imp)
+    : _imp(imp)
+    {
+        ++_imp->treeRefreshBlocked;
+    }
+
+    ~BlockTreeRefreshRAII()
+    {
+        --_imp->treeRefreshBlocked;
+    }
+};
 
 class RotoPaintInteract
     : public boost::enable_shared_from_this<RotoPaintInteract>

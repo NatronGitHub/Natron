@@ -174,6 +174,8 @@ public:
 
     AnimatingObjectI();
 
+    AnimatingObjectI(const AnimatingObjectI& other);
+
     virtual ~AnimatingObjectI();
 
     /**

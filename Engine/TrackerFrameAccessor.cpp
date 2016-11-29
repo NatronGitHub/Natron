@@ -354,9 +354,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     tlsArgs->treeRoot = node;
     tlsArgs->textureIndex = 0;
     tlsArgs->timeline = node->getApp()->getTimeLine();
-    tlsArgs->activeRotoPaintNode = NodePtr();
     tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->isDoingRotoNeatRender = false;
     tlsArgs->isAnalysis = true;
     tlsArgs->draftMode = false;
     tlsArgs->stats = RenderStatsPtr();

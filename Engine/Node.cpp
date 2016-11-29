@@ -537,22 +537,6 @@ Node::getCurrentNodePresets() const
 
 
 void
-Node::setWhileCreatingPaintStroke(bool creating)
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-
-    _imp->duringPaintStrokeCreation = creating;
-}
-
-bool
-Node::isDuringPaintStrokeCreation() const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-
-    return _imp->duringPaintStrokeCreation;
-}
-
-void
 Node::setRenderThreadSafety(RenderSafetyEnum safety)
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
@@ -577,6 +561,14 @@ Node::revertToPluginThreadSafety()
     QMutexLocker k(&_imp->pluginsPropMutex);
 
     _imp->currentThreadSafety = _imp->pluginSafety;
+}
+
+
+RenderSafetyEnum
+Node::getPluginRenderThreadSafety() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->pluginSafety;
 }
 
 void
@@ -707,17 +699,6 @@ Node::isMultiThreadingSupportEnabledForPlugin() const
 }
 
 
-void
-Node::setLastPaintStrokeDataNoRotopaint()
-{
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->strokeBitmapCleared = false;
-        _imp->duringPaintStrokeCreation = true;
-    }
-    _imp->effect->setDuringPaintStrokeCreationThreadLocal(true);
-}
-
 ImagePtr
 Node::getPaintBuffer() const
 {
@@ -732,41 +713,16 @@ Node::setPaintBuffer(const ImagePtr& image)
     _imp->paintBuffer = image;
 }
 
-void
-Node::invalidateLastPaintStrokeDataNoRotopaint()
-{
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->duringPaintStrokeCreation = false;
-    }
-}
-
-void
-Node::prepareForNextPaintStrokeRender()
-{
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->strokeBitmapCleared = false;
-    }
-    _imp->effect->clearActionsCache();
-}
-
-
 bool
-Node::isLastPaintStrokeBitmapCleared() const
+Node::isDuringPaintStrokeCreation() const
 {
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-
-    return _imp->strokeBitmapCleared;
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_imp->paintStroke.lock());
+    if (!attachedStroke) {
+        return false;
+    }
+    return !attachedStroke->isPaintBuffersEnabled();
 }
 
-void
-Node::clearLastPaintStrokeRoD()
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-
-    _imp->strokeBitmapCleared = true;
-}
 
 void
 Node::refreshAcceptedBitDepths()
@@ -6305,9 +6261,7 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->treeRoot = thisNode;
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
-        tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = true;
         tlsArgs->stats = RenderStatsPtr();
@@ -9993,6 +9947,12 @@ Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 }
 
 RotoDrawableItemPtr
+Node::getOriginalAttachedItem() const
+{
+    return _imp->paintStroke.lock();
+}
+
+RotoDrawableItemPtr
 Node::getAttachedRotoItem() const
 {
     EffectInstancePtr effect = getEffectInstance();
@@ -10006,7 +9966,7 @@ Node::getAttachedRotoItem() const
     // On a render thread, use the local thread copy
     RenderValuesCachePtr cache = effect->getRenderValuesCacheTLS();
     if (cache) {
-        return cache->getOrCreateCachedDrawable(thisItem);
+        return cache->getCachedDrawable(thisItem);
     }
     return thisItem;
 }

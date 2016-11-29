@@ -144,11 +144,48 @@ public:
     KnobDoubleWPtr mixKnob;
 
     RotoDrawableItemPrivate()
-    : effectNode()
-    , maskNode()
-    , mergeNode()
-    , timeOffsetNode()
-    , frameHoldNode()
+    {
+
+    }
+
+    RotoDrawableItemPrivate(const RotoDrawableItemPrivate& other)
+    : effectNode(other.effectNode)
+    , maskNode(other.maskNode)
+    , mergeNode(other.mergeNode)
+    , timeOffsetNode(other.timeOffsetNode)
+    , frameHoldNode(other.frameHoldNode)
+    , timeBlurNode(other.timeBlurNode)
+    , nodes(other.nodes)
+    , overlayColor(other.overlayColor)
+    , opacity(other.opacity)
+    , lifeTime(other.lifeTime)
+    , customRange(other.customRange)
+    , lifeTimeFrame(other.lifeTimeFrame)
+    , invertKnob(other.invertKnob)
+    , color(other.color)
+    , compOperator(other.compOperator)
+    , brushSize(other.brushSize)
+    , brushSpacing(other.brushSpacing)
+    , brushHardness(other.brushHardness)
+    , visiblePortion(other.visiblePortion)
+    , translate(other.translate)
+    , rotate(other.rotate)
+    , scale(other.scale)
+    , scaleUniform(other.scaleUniform)
+    , skewX(other.skewX)
+    , skewY(other.skewY)
+    , skewOrder(other.skewOrder)
+    , center(other.center)
+    , extraMatrix(other.extraMatrix)
+    , motionBlurAmount(other.motionBlurAmount)
+    , motionBlurShutter(other.motionBlurShutter)
+    , motionBlurShutterType(other.motionBlurShutterType)
+    , motionBlurCustomShutter(other.motionBlurCustomShutter)
+    , mergeAInputChoice(other.mergeAInputChoice)
+    , mergeMaskInputChoice(other.mergeMaskInputChoice)
+    , timeOffset(other.timeOffset)
+    , timeOffsetMode(other.timeOffsetMode)
+    , mixKnob(other.mixKnob)
     {
 
     }
@@ -161,10 +198,24 @@ RotoDrawableItem::RotoDrawableItem(const KnobItemsTablePtr& model)
 {
 }
 
+
+RotoDrawableItem::RotoDrawableItem(const RotoDrawableItem& other)
+: RotoItem(other)
+, _imp(new RotoDrawableItemPrivate(*other._imp))
+{
+
+}
+
 RotoDrawableItem::~RotoDrawableItem()
 {
 }
 
+
+const NodesList&
+RotoDrawableItem::getItemNodes() const
+{
+    return _imp->nodes;
+}
 
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
@@ -181,11 +232,7 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     }
     RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
     node->setRenderThreadSafety(eRenderSafetyInstanceSafe);
-    if (isRotopaint) {
-        isRotopaint->setWhileCreatingPaintStrokeOnMergeNodes(true);
-    }
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->setWhileCreatingPaintStroke(true);
         (*it)->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
 
@@ -645,28 +692,6 @@ RotoDrawableItem::getFrameHoldNode() const
     return _imp->frameHoldNode;
 }
 
-void
-RotoDrawableItem::clearPaintBuffers()
-{
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->setPaintBuffer(ImagePtr());
-    }
-
-    KnobItemsTablePtr model = getModel();
-    NodePtr node;
-    if (model) {
-        node = model->getNode();
-    }
-    if (node) {
-        std::list<ViewerInstancePtr> viewers;
-        node->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
-             it != viewers.end();
-             ++it) {
-            (*it)->clearLastRenderedImage();
-        }
-    }
-}
 
 void
 RotoDrawableItem::refreshNodesPositions(double x, double y)

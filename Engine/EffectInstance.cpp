@@ -74,6 +74,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/RenderValuesCache.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
@@ -197,7 +198,7 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
-EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
+EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache, double time, ViewIdx view)
 {
 
     {
@@ -211,7 +212,15 @@ EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
         for (int i = 0; i < getMaxInputCount(); ++i) {
             cache->setCachedInput(i, node->getInput(i));
         }
+
+        // Create a copy of the roto item
+        RotoDrawableItemPtr attachedRotoItem = node->getOriginalAttachedItem();
+        if (attachedRotoItem) {
+            cache->createCachedDrawable(attachedRotoItem, time, view);
+        }
+
     }
+
 }
 
 void
@@ -232,7 +241,7 @@ EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeReques
 }
 
 ParallelRenderArgsPtr
-EffectInstance::createTLS()
+EffectInstance::createTLS(double time, ViewIdx view)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
@@ -243,7 +252,7 @@ EffectInstance::createTLS()
     // Init the values cache before any getValue or getInput call is made by the effect
     // so we are sure it stays consistant throughout the render.
     args->valuesCache.reset(new RenderValuesCache);
-    initRenderValuesCache(args->valuesCache);
+    initRenderValuesCache(args->valuesCache, time, view);
     return args;
 }
 
@@ -268,7 +277,6 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->visitsCount = inArgs->visitsCount;
     args->textureIndex = inArgs->textureIndex;
     args->isAnalysis = inArgs->isAnalysis;
-    args->isDuringPaintStrokeCreation = inArgs->isDuringPaintStrokeCreation;
     args->currentThreadSafety = inArgs->currentThreadSafety;
     args->currentOpenglSupport = inArgs->currentOpenGLSupport;
     args->doNansHandling = inArgs->isAnalysis ? false : inArgs->doNanHandling;
@@ -279,14 +287,6 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->cpuOpenGLContext = inArgs->cpuGlContext;
 }
 
-
-void
-EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    tls->frameArgs.back()->isDuringPaintStrokeCreation = duringPaintStroke;
-}
 
 void
 EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args)
@@ -869,9 +869,7 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->treeRoot = getNode();
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
-        tlsArgs->activeRotoPaintNode = NodePtr();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isDoingRotoNeatRender = false;
         tlsArgs->isAnalysis = true;
         tlsArgs->draftMode = false;
         tlsArgs->stats = RenderStatsPtr();
@@ -957,7 +955,6 @@ EffectInstance::getImage(int inputNb,
 
     if ( !tls->frameArgs.empty() ) {
         const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
-        //duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
         isAnalysisPass = frameRenderArgs->isAnalysis;
         gpuGlContext = frameRenderArgs->openGLContext.lock();
         cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
@@ -1864,24 +1861,25 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
     }
 
     if (!isCached && isDuringPaintStroke) {
-
-        ImagePtr strokeImage = getNode()->getPaintBuffer();
-        if (strokeImage && strokeImage->getStorageMode() == storage) {
-            if (strokeImage->getMipMapLevel() != mipMapLevel) {
-                // conver the image to RAM if needed and convert scale and convert back to GPU if needed
-                if (strokeImage->getStorageMode() == eStorageModeGLTex) {
-                    assert(glContextAttacher);
-                    glContextAttacher->attach();
-                    strokeImage = convertOpenGLTextureToCachedRAMImage(strokeImage, false);
+        if (getNode()->isDuringPaintStrokeCreation()) {
+            ImagePtr strokeImage = getNode()->getPaintBuffer();
+            if (strokeImage && strokeImage->getStorageMode() == storage) {
+                if (strokeImage->getMipMapLevel() != mipMapLevel) {
+                    // conver the image to RAM if needed and convert scale and convert back to GPU if needed
+                    if (strokeImage->getStorageMode() == eStorageModeGLTex) {
+                        assert(glContextAttacher);
+                        glContextAttacher->attach();
+                        strokeImage = convertOpenGLTextureToCachedRAMImage(strokeImage, false);
+                    }
+                    strokeImage = ensureImageScale(mipMapLevel, strokeImage, key, boundsParam, rodParam, glContextAttacher);
+                    if (storage == eStorageModeGLTex) {
+                        strokeImage = convertRAMImageToOpenGLTexture(strokeImage, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr());
+                    }
                 }
-                strokeImage = ensureImageScale(mipMapLevel, strokeImage, key, boundsParam, rodParam, glContextAttacher);
-                if (storage == eStorageModeGLTex) {
-                    strokeImage = convertRAMImageToOpenGLTexture(strokeImage, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr());
-                }
+                getNode()->setPaintBuffer(strokeImage);
+                *image = strokeImage;
+                return;
             }
-            getNode()->setPaintBuffer(strokeImage);
-            *image = strokeImage;
-            return;
         }
     }
 
@@ -2340,24 +2338,25 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
     return ret;
 }
 
-static void tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
-                                  const EffectInstance::RectToRender & rectToRender,
-                                  const EffectInstance::PlaneToRender & firstPlaneToRender,
-                                  bool renderFullScaleThenDownscale,
-                                  unsigned int renderMappedMipMapLevel,
-                                  unsigned int mipMapLevel,
-                                  double par,
-                                  const RectD& rod,
-                                  RectI &renderMappedRectToRender,
-                                  RectI &downscaledRectToRender,
-                                  bool *isBeingRenderedElseWhere,
-                                  bool *bitmapMarkedForRendering)
+void
+EffectInstance::Implementation::tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
+                                                    const EffectInstance::RectToRender & rectToRender,
+                                                    const EffectInstance::PlaneToRender & firstPlaneToRender,
+                                                    bool renderFullScaleThenDownscale,
+                                                    unsigned int renderMappedMipMapLevel,
+                                                    unsigned int mipMapLevel,
+                                                    double par,
+                                                    const RectD& rod,
+                                                    RectI &renderMappedRectToRender,
+                                                    RectI &downscaledRectToRender,
+                                                    bool *isBeingRenderedElseWhere,
+                                                    bool *bitmapMarkedForRendering)
 {
-
+    
     renderMappedRectToRender = rectToRender.rect;
     downscaledRectToRender = renderMappedRectToRender;
-
-
+    
+    
     {
         RectD canonicalRectToRender;
         renderMappedRectToRender.toCanonical(renderMappedMipMapLevel, par, rod, &canonicalRectToRender);
@@ -2449,7 +2448,7 @@ static void tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
         RectI dstBounds;
         dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
         RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-        if (!frameArgs->tilesSupported && !frameArgs->isDuringPaintStrokeCreation) {
+        if (!frameArgs->tilesSupported && !_publicInterface->getNode()->isDuringPaintStrokeCreation()) {
             assert(dstRealBounds.x1 == dstBounds.x1);
             assert(dstRealBounds.x2 == dstBounds.x2);
             assert(dstRealBounds.y1 == dstBounds.y1);
@@ -4269,7 +4268,7 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
 
 
     if (initTLS) {
-        createTLS();
+        createTLS(time, view);
     }
 
     // Follow the frames needed to compute the hash
@@ -5064,12 +5063,6 @@ EffectInstance::updateThreadLocalRenderTime(double time)
 bool
 EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( tls && !tls->frameArgs.empty() ) {
-        return tls->frameArgs.back()->isDuringPaintStrokeCreation;
-    }
-
     return getNode()->isDuringPaintStrokeCreation();
 }
 

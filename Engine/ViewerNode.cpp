@@ -2698,7 +2698,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             }
         }
     } else if (k == _imp->centerViewerButtonKnob.lock()) {
-        if (!getApp()->isDuringPainting()) {
+        if (!getApp()->getActiveRotoDrawingStroke()) {
             _imp->uiContext->fitImageToFormat();
         }
     } else if (k == _imp->enableInfoBarButtonKnob.lock()) {
@@ -2766,7 +2766,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->rightClickHideAllTop.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         _imp->rightClickHideAllBottom.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
-            if (!getApp()->isDuringPainting()) {
+            if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
             }
         }
@@ -2776,7 +2776,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         _imp->rightClickShowHideTabHeader.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
-            if (!getApp()->isDuringPainting()) {
+            if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
             }
         }
@@ -2786,7 +2786,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
-            if (!getApp()->isDuringPainting()) {
+            if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
             }
         }

@@ -1115,7 +1115,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     if (!prepareForLater) {
         RotoLayerPtr layer = p->publicInterface->getLayerForNewItem();
         p->knobsTable->addItem(strokeBeingPaint, layer, eTableChangeReasonInternal);
-        strokeBeingPaint->getApp()->setUserIsPainting(p->publicInterface->getNode(), strokeBeingPaint, true);
+        strokeBeingPaint->getApp()->setUserIsPainting(strokeBeingPaint);
         strokeBeingPaint->appendPoint(true, point);
     }
 } // RotoGui::RotoGuiPrivate::makeStroke
@@ -2809,7 +2809,7 @@ RotoPaint::onOverlayPenDown(double time,
                         layer = getLayerForNewItem();
                         _imp->knobsTable->insertItem(0, _imp->ui->strokeBeingPaint, layer, eTableChangeReasonInternal);
                     }
-                    getApp()->setUserIsPainting(getNode(), _imp->ui->strokeBeingPaint, true);
+                    getApp()->setUserIsPainting(_imp->ui->strokeBeingPaint);
 
                     KnobIntPtr lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
                     lifeTimeFrameKnob->setValue(time);

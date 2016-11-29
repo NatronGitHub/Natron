@@ -126,9 +126,7 @@ public:
                                                                 ViewIdx view,
                                                                 int textureIndex,
                                                                 bool canAbort,
-                                                                const NodePtr& rotoPaintNode,
                                                                 const RotoStrokeItemPtr& activeStrokeItem,
-                                                                const bool isDoingRotoNeatRender,
                                                                 const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
 
@@ -140,8 +138,7 @@ private:
                                                          bool isSequential,
                                                          ViewIdx view,
                                                          int textureIndex,
-                                                         const NodePtr& rotoPaintNode,
-                                                         const bool isDoingRotoNeatRender,
+                                                         const RotoStrokeItemPtr& activeStrokeItem,
                                                          const AbortableRenderInfoPtr& abortInfo,
                                                          const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
@@ -200,7 +197,6 @@ public:
     ViewerRenderRetCode renderViewer(ViewIdx view,
                                      bool singleThreaded,
                                      bool isSequentialRender,
-                                     const NodePtr& rotoPaintNode,
                                      const RotoStrokeItemPtr& activeStrokeItem,
                                      bool isDoingRotoNeatRender,
                                      boost::shared_ptr<ViewerArgs> args[2],
@@ -322,7 +318,6 @@ private:
     ViewerRenderRetCode renderViewer_internal(ViewIdx view,
                                               bool singleThreaded,
                                               bool isSequentialRender,
-                                              const NodePtr& rotoPaintNode,
                                               const RotoStrokeItemPtr& activeStrokeItem,
                                               bool isDoingRotoNeatRender,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,

@@ -50,6 +50,8 @@ public:
 
     HashableObject();
 
+    HashableObject(const HashableObject& other);
+
     virtual ~HashableObject();
 
     /**

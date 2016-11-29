@@ -463,8 +463,6 @@ public:
 
     bool isRotoPaintTreeConcatenatable() const;
     
-    void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
-
     RotoLayerPtr getOrCreateBaseLayer();
 
     /**

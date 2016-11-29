@@ -73,45 +73,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct RotoPaintData
-{
-    NodeWPtr rotoPaintNode;
-    RotoStrokeItemPtr stroke;
-    bool isPainting;
-    bool turboAlreadyActiveBeforePainting;
-
-    ///The last mouse event tick bounding box, to render the least possible
-    RectD lastStrokeMovementBbox;
-
-    ///The index of the points/stroke we have drawn
-    int lastStrokeIndex, multiStrokeIndex;
-
-    bool isStrokeFirstTick;
-
-    ///The last points of the mouse event
-    std::list<std::pair<Point, double> > lastStrokePoints;
-
-    ///Used for the rendering algorithm to know where we stopped along the path
-    double distToNextIn, distToNextOut;
-    Point lastCenter;
-
-    RotoPaintData()
-        : rotoPaintNode()
-        , stroke()
-        , isPainting(false)
-        , turboAlreadyActiveBeforePainting(false)
-        , lastStrokeMovementBbox()
-        , lastStrokeIndex(-1)
-        , multiStrokeIndex(0)
-        , isStrokeFirstTick(true)
-        , lastStrokePoints()
-        , distToNextIn(0)
-        , distToNextOut(0)
-        , lastCenter()
-    {
-    }
-};
-
 struct KnobDnDData
 {
     KnobIWPtr source;
@@ -142,7 +103,9 @@ struct GuiAppInstancePrivate
     std::string declareAppAndParamsString;
     int overlayRedrawRequests;
     mutable QMutex rotoDataMutex;
-    RotoPaintData rotoData;
+
+    // When drawing a stroke, this is a pointer to the stroke being painted.
+    RotoStrokeItemPtr strokeBeingPainted;
     KnobDnDData knobDnd;
 
     // The viewer that's mastering others when all viewports are in sync
@@ -160,11 +123,10 @@ struct GuiAppInstancePrivate
         , declareAppAndParamsString()
         , overlayRedrawRequests(0)
         , rotoDataMutex()
-        , rotoData()
+        , strokeBeingPainted()
         , knobDnd()
         , masterSyncViewer()
     {
-        rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
     void findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n);
@@ -1204,139 +1166,28 @@ GuiAppInstance::getOfxHostOSHandle() const
 }
 
 void
-GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
-                                  const RotoStrokeItemPtr& stroke,
-                                  bool isPainting)
+GuiAppInstance::setUserIsPainting(const RotoStrokeItemPtr& stroke)
 {
     {
         QMutexLocker k(&_imp->rotoDataMutex);
-        bool newStroke = stroke != _imp->rotoData.stroke;
-        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode.lock()) || newStroke ) ) {
-            if (_imp->rotoData.stroke) {
-                _imp->rotoData.stroke->clearPaintBuffers();
-            }
-        }
-
-        _imp->rotoData.isPainting = isPainting;
-        if (isPainting) {
-            _imp->rotoData.rotoPaintNode = rotopaintNode;
-            _imp->rotoData.stroke = stroke;
-        }
-
-        //Reset the index if the stroke is different
-        if (newStroke) {
-            _imp->rotoData.lastStrokeIndex = -1;
-            _imp->rotoData.multiStrokeIndex = 0;
-        }
-
-        if (rotopaintNode) {
-            _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        _imp->strokeBeingPainted = stroke;
+    }
+    if (_imp->_gui) {
+        if (stroke) {
+            _imp->_gui->onFreezeUIButtonClicked(true);
+        } else {
+            _imp->_gui->onFreezeUIButtonClicked(false);
         }
     }
 }
 
-void
-GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
-                                           RotoStrokeItemPtr* stroke,
-                                           bool *isPainting) const
+RotoStrokeItemPtr
+GuiAppInstance::getActiveRotoDrawingStroke() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
-    assert(node && stroke && isPainting);
-    *node = _imp->rotoData.rotoPaintNode.lock();
-    *stroke = _imp->rotoData.stroke;
-    *isPainting = _imp->rotoData.isPainting;
+    return _imp->strokeBeingPainted;
 }
 
-bool
-GuiAppInstance::isDuringPainting() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-    return _imp->rotoData.isPainting;
-}
-
-void
-GuiAppInstance::updateLastPaintStrokeData(bool isFirstTick,
-                                          int newAge,
-                                          const std::list<std::pair<Point, double> >& points,
-                                          const RectD& lastPointsBbox,
-                                          int strokeIndex)
-{
-    {
-        QMutexLocker k(&_imp->rotoDataMutex);
-
-        _imp->rotoData.isStrokeFirstTick = isFirstTick;
-        _imp->rotoData.lastStrokePoints = points;
-        _imp->rotoData.lastStrokeMovementBbox = lastPointsBbox;
-        _imp->rotoData.lastStrokeIndex = newAge;
-        _imp->rotoData.distToNextIn = _imp->rotoData.distToNextOut;
-        _imp->rotoData.multiStrokeIndex = strokeIndex;
-    }
-}
-
-
-int
-GuiAppInstance::getStrokeLastIndex() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    return _imp->rotoData.lastStrokeIndex;
-}
-
-void
-GuiAppInstance::getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke,
-                                             int* strokeIndex) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    *stroke = _imp->rotoData.stroke;
-    *strokeIndex = _imp->rotoData.multiStrokeIndex;
-}
-
-void
-GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
-                                    std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                    bool *isFirstTick,
-                                    int *strokeMultiIndex,
-                                    double *distNextIn,
-                                    Point* lastCenter) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    *isFirstTick = _imp->rotoData.isStrokeFirstTick;
-    *strokeMultiIndex = _imp->rotoData.multiStrokeIndex;
-    *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
-    *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
-    *distNextIn = _imp->rotoData.distToNextIn;
-    *lastCenter = _imp->rotoData.lastCenter;
-}
-
-void
-GuiAppInstance::updateStrokeData(const Point& lastCenter, double distNextOut)
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-    _imp->rotoData.distToNextOut = distNextOut;
-    _imp->rotoData.lastCenter = lastCenter;
-}
-
-RectD
-GuiAppInstance::getLastPaintStrokeBbox() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    return _imp->rotoData.lastStrokeMovementBbox;
-}
-
-RectD
-GuiAppInstance::getPaintStrokeWholeBbox() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    if (!_imp->rotoData.stroke) {
-        return RectD();
-    }
-
-    return _imp->rotoData.stroke->getWholeStrokeRoDWhilePainting();
-}
 
 void
 GuiAppInstance::goToPreviousKeyframe()

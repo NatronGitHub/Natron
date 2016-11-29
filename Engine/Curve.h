@@ -201,6 +201,15 @@ public:
     bool cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* range);
 
     /**
+     * @brief Same as clone except that only keyframes within the range [firstKeyIdx, firstKeyIdx + nKeys[
+     * are copied.
+     * @param firstKeyIdx the index of the first keyframe to copy, must be included in the keyframes count.
+     * @param nKeys If -1, or out of range, this will copy all keyframes up to the last keyframe, otherwise
+     * all keyframes within firstKeyIdx and firstKeyIdx + nKeys are copied.
+     **/
+    void cloneIndexRange(const Curve& other, int firstKeyIdx, int nKeys = -1);
+
+    /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset
      * and only the keyframes lying in the given range will be copied.
      **/

@@ -623,7 +623,6 @@ public:
         int textureIndex;
         TimeLinePtr timeline;
         bool isAnalysis;
-        bool isDuringPaintStrokeCreation;
         RenderSafetyEnum currentThreadSafety;
         PluginOpenGLRenderSupport currentOpenGLSupport;
         bool doNanHandling;
@@ -639,16 +638,14 @@ public:
      **/
     void initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
 
-    ParallelRenderArgsPtr createTLS();
-
-    void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
+    ParallelRenderArgsPtr createTLS(double time, ViewIdx view);
 
     void setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
 private:
-    void initRenderValuesCache(const RenderValuesCachePtr& cache);
+    void initRenderValuesCache(const RenderValuesCachePtr& cache, double time, ViewIdx view);
 
 public:
 

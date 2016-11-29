@@ -2501,6 +2501,8 @@ protected: // parent of NamedKnobHolder, Project, Settings
      **/
     KnobHolder(const AppInstancePtr& appInstance);
 
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
     KnobHolder(const KnobHolder& other);
 
 public:

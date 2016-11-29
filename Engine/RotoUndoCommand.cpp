@@ -445,7 +445,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
 
     // Copy the state of the curve
     desc.oldCurve.reset( new Bezier(curve->getModel(), curve->getBaseItemName(), curve->isOpenBezier()) );
-    desc.oldCurve->copyItem(curve);
+    desc.oldCurve->copyItem(*curve);
     _curves.push_back(desc);
 
     setText( tr("Remove control point(s)").toStdString() );
@@ -500,7 +500,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
 
             // Make a copy of the current state of this bezier
             curveDesc.oldCurve.reset( new Bezier(curve->getModel(), curve->getBaseItemName(), curve->isOpenBezier()) );
-            curveDesc.oldCurve->copyItem(curve);
+            curveDesc.oldCurve->copyItem(*curve);
 
             _curves.push_back(curveDesc);
         } else {
@@ -536,7 +536,7 @@ RemovePointUndoCommand::undo()
 
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         // Clone the original curve
-        it->curve->copyItem( it->oldCurve );
+        it->curve->copyItem( *it->oldCurve );
 
         // If the curve was removed entirely, add it back
         if (it->curveRemoved) {
@@ -560,7 +560,7 @@ RemovePointUndoCommand::redo()
 
     // Clone the original curve first
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        it->oldCurve->copyItem(it->curve);
+        it->oldCurve->copyItem(*it->curve);
     }
 
     std::list<BezierPtr > toRemove;
@@ -1361,7 +1361,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(const RotoPaintInteractPtr& roto,
     } else {
         // If the curve already exists, copy its current state
         _oldCurve.reset( new Bezier(_newCurve->getModel(), _newCurve->getBaseItemName(), _newCurve->isOpenBezier()));
-        _oldCurve->copyItem( _newCurve );
+        _oldCurve->copyItem( *_newCurve );
     }
     setText( tr("Draw Bezier").toStdString() );
 }
@@ -1382,7 +1382,7 @@ MakeBezierUndoCommand::undo()
     assert(_createdPoint);
     roto->setCurrentTool( roto->drawBezierAction.lock() );
     assert(_lastPointAdded != -1);
-    _oldCurve->copyItem(_newCurve);
+    _oldCurve->copyItem(*_newCurve);
     if (_newCurve->getControlPointsCount(ViewIdx(0)) == 1) {
         _curveNonExistant = true;
         roto->removeCurve(_newCurve);
@@ -1416,11 +1416,11 @@ MakeBezierUndoCommand::redo()
                 _newCurve = roto->p->publicInterface->makeBezier(_x, _y, _isOpenBezier ? tr(kRotoOpenBezierBaseName).toStdString() : tr(kRotoBezierBaseName).toStdString(), _time, _isOpenBezier);
                 assert(_newCurve);
                 _oldCurve.reset( new Bezier(_newCurve->getModel(), _newCurve->getBaseItemName(), _newCurve->isOpenBezier()));
-                _oldCurve->copyItem(_newCurve);
+                _oldCurve->copyItem(*_newCurve);
                 _lastPointAdded = 0;
                 _curveNonExistant = false;
             } else {
-                _oldCurve->copyItem(_newCurve);
+                _oldCurve->copyItem(*_newCurve);
                 _newCurve->addControlPoint(_x, _y, _time, ViewSetSpec::all());
                 int lastIndex = _newCurve->getControlPointsCount(ViewIdx(0)) - 1;
                 assert(lastIndex > 0);
@@ -1428,7 +1428,7 @@ MakeBezierUndoCommand::redo()
             }
         } else {
             assert(_newCurve);
-            _oldCurve->copyItem(_newCurve);
+            _oldCurve->copyItem(*_newCurve);
             int lastIndex = _newCurve->getControlPointsCount(ViewIdx(0)) - 1;
             assert(lastIndex >= 0);
             _lastPointAdded = lastIndex;
@@ -1442,7 +1442,7 @@ MakeBezierUndoCommand::redo()
             _indexInLayer = _newCurve->getIndexInParent();
         }
     } else {
-        _newCurve->copyItem(_oldCurve);
+        _newCurve->copyItem(*_oldCurve);
         if (_curveNonExistant) {
             roto->p->knobsTable->insertItem(_indexInLayer, _newCurve, _parentLayer, eTableChangeReasonViewer);
         }
@@ -1621,7 +1621,7 @@ MakeEllipseUndoCommand::mergeWith(const UndoCommandPtr &other)
         return false;
     }
     if (_curve != sCmd->_curve) {
-        _curve->copyItem(sCmd->_curve );
+        _curve->copyItem(*sCmd->_curve );
     }
     _fromx = sCmd->_fromx;
     _fromy = sCmd->_fromy;
@@ -1753,7 +1753,7 @@ MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
         return false;
     }
     if (_curve != sCmd->_curve) {
-        _curve->copyItem(sCmd->_curve);
+        _curve->copyItem(*sCmd->_curve);
     }
     _fromx = sCmd->_fromx;
     _fromy = sCmd->_fromy;

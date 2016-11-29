@@ -150,7 +150,7 @@ struct RenderValuesCachePrivate
 
 
     CurvePtr setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve);
-    RotoDrawableItemPtr setCachedBezier(const RotoDrawableItemPtr& bezier);
+    RotoDrawableItemPtr setCachedRotoItem(const RotoDrawableItemPtr& bezier, double time, ViewIdx view);
 };
 
 RenderValuesCache::RenderValuesCache()
@@ -286,17 +286,30 @@ RenderValuesCachePrivate::setCachedParametricKnobCurve(const KnobParametricPtr& 
 }
 
 RotoDrawableItemPtr
-RenderValuesCache::getOrCreateCachedDrawable(const RotoDrawableItemPtr& bezier) const
+RenderValuesCache::getCachedDrawable(const RotoDrawableItemPtr& bezier) const
 {
     std::map<RotoDrawableItemPtr, RotoDrawableItemPtr>::const_iterator foundBezier = _imp->rotoItems.find(bezier);
+    // createCachedDrawable() should have been called first
+    assert(foundBezier != _imp->rotoItems.end());
     if (foundBezier == _imp->rotoItems.end()) {
-        return _imp->setCachedBezier(bezier);
+        return RotoStrokeItemPtr();
     }
     return foundBezier->second;
 }
 
 RotoDrawableItemPtr
-RenderValuesCachePrivate::setCachedBezier(const RotoDrawableItemPtr& bezier)
+RenderValuesCache::createCachedDrawable(const RotoDrawableItemPtr& bezier, double time, ViewIdx view) const
+{
+    assert(_imp->rotoItems.find(bezier) == _imp->rotoItems.end());
+    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr>::const_iterator foundBezier = _imp->rotoItems.find(bezier);
+    if (foundBezier == _imp->rotoItems.end()) {
+        return _imp->setCachedRotoItem(bezier, time, view);
+    }
+    return foundBezier->second;
+}
+
+RotoDrawableItemPtr
+RenderValuesCachePrivate::setCachedRotoItem(const RotoDrawableItemPtr& bezier, double time, ViewIdx view)
 {
     BezierPtr isBezier = toBezier(bezier);
     RotoDrawableItemPtr copy;
@@ -304,7 +317,7 @@ RenderValuesCachePrivate::setCachedBezier(const RotoDrawableItemPtr& bezier)
     if (isBezier) {
         copy.reset(new Bezier(*isBezier));
     } else if (isStroke) {
-        copy.reset(new RotoStrokeItem(*isStroke));
+        copy = RotoStrokeItem::createRenderCopy(*isStroke, time, view);
     } else {
         assert(false);
         return RotoDrawableItemPtr();

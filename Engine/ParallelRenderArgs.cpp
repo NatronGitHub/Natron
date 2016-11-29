@@ -694,7 +694,6 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
 
     // Create the TLS object for this frame render
     if (initTLS) {
-        bool duringPaintStrokeCreation = !inArgs->isDoingRotoNeatRender && inArgs->activeRotoPaintNode && ((inArgs->activeRotoDrawableItem && node->getAttachedRotoItem() == inArgs->activeRotoDrawableItem) || node->isDuringPaintStrokeCreation()) ;
         RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
         PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
 
@@ -711,7 +710,6 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->textureIndex = inArgs->textureIndex;
         tlsArgs->timeline = inArgs->timeline;
         tlsArgs->isAnalysis = inArgs->isAnalysis;
-        tlsArgs->isDuringPaintStrokeCreation = duringPaintStrokeCreation;
         tlsArgs->currentThreadSafety = safety;
         tlsArgs->currentOpenGLSupport = glSupport;
         tlsArgs->doNanHandling = doNansHandling;
@@ -795,7 +793,7 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
     // Each visits of this node will increase the visitCounter on the TLS as well as add the frame/view hash
     // to a map.
     if (nodeData->visitCounter == 1) {
-        node->getEffectInstance()->createTLS();
+        node->getEffectInstance()->createTLS(inArgs->time, inArgs->view);
     }
 
     // Compute frames-needed, which will also give us the hash for this node.
@@ -824,7 +822,7 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
 
             // Set the TLS on the expression dependency
             if (insertOK.second) {
-                (*it)->getEffectInstance()->createTLS();
+                (*it)->getEffectInstance()->createTLS(time, view);
                 setNodeTLSInternal(inArgs, doNansHandling, *it, true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
             }
         }
@@ -871,84 +869,13 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
 } // getDependenciesRecursive_internal
 
 
-/**
- * @brief While drawing, extract once all changes made by the user recently and keep this set of changes
- * throughout the render to keep things mt-safe.
- **/
-static bool
-setupRotoPaintDrawingData(const NodePtr& rotoPaintNode,
-                          const RotoStrokeItemPtr& activeStroke,
-                          const NodePtr& /*treeRoot*/,
-                          double time,
-                          ViewIdx view)
-{
-
-    RotoPaintPtr rotoPaintEffect = toRotoPaint(rotoPaintNode->getEffectInstance());
-    NodesList rotoPaintTreeNodes = rotoPaintEffect->getNodes();
-
-    /*
-     Take from the stroke all the points that were input by the user so far on the main thread and set them globally to the
-     application. These data are the ones that are going to be used by any Roto related tool. We ensure that they all access
-     the same data so we only access the real Roto datas now.
-     */
-    std::list<std::pair<Point, double> > lastStrokePoints;
-
-    //The stroke RoD so far
-    RectD wholeStrokeRod;
-
-    //The bbox of the lastStrokePoints
-    RectD lastStrokeBbox;
-
-    //The index in the stroke of the last point we have rendered and up to the new point we have rendered
-    int lastAge, newAge;
-
-    //get on the app object the last point index we have rendered on this stroke
-    lastAge = rotoPaintNode->getApp()->getStrokeLastIndex();
-
-    //Get the active paint stroke so far and its multi-stroke index
-    RotoStrokeItemPtr currentlyPaintedStroke;
-    int currentlyPaintedStrokeMultiIndex;
-    rotoPaintNode->getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
-
-
-    //If this crashes here that means the user could start a new stroke while this one is not done rendering.
-    assert(currentlyPaintedStroke == activeStroke);
-
-    //the multi-stroke index in case of a stroke containing multiple strokes from the user
-    int strokeIndex;
-    bool isStrokeFirstTick;
-    if ( activeStroke->getMostRecentStrokeChangesSinceAge(time, view, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod, &isStrokeFirstTick, &newAge, &strokeIndex) ) {
-        rotoPaintNode->getApp()->updateLastPaintStrokeData(isStrokeFirstTick, newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
-
-        for (NodesList::iterator it = rotoPaintTreeNodes.begin(); it != rotoPaintTreeNodes.end(); ++it) {
-            (*it)->prepareForNextPaintStrokeRender();
-        }
-        //updateLastStrokeDataRecursively(treeRoot, rotoPaintNode, lastStrokeBbox, false);
-        return true;
-
-    } else {
-        return false;
-    }
-    
-} // void setupRotoPaintDrawingData
-
-
 void
 ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
 {
-    bool isPainting = false;
-    if (inArgs->treeRoot) {
-        isPainting = inArgs->treeRoot->getApp()->isDuringPainting();
-    }
 
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext, cpuContext;
-    if (inArgs->activeRotoDrawableItem && (isPainting || inArgs->isDoingRotoNeatRender)) {
-
-        if (isPainting) {
-            assert(inArgs->activeRotoDrawableItem && inArgs->activeRotoPaintNode);
-            setupRotoPaintDrawingData(inArgs->activeRotoPaintNode, boost::dynamic_pointer_cast<RotoStrokeItem>(inArgs->activeRotoDrawableItem), inArgs->treeRoot, inArgs->time, inArgs->view);
-        }
+    if (inArgs->activeRotoDrawableItem) {
 
         // When painting, always use the same context since we paint over the same texture
         assert(inArgs->activeRotoDrawableItem);
@@ -1035,23 +962,18 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::
 , _time(0)
 , _view(0)
 {
-    bool isPainting = false;
-    if (args && !args->empty()) {
-        isPainting = args->begin()->first->getApp()->isDuringPainting();
-    }
-
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
 
     try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(isPainting /*retrieveLastContext*/);
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(true /*retrieveLastContext*/);
         _openGLContext = glContext;
     } catch (...) {
     }
 
     OSGLContextPtr cpuContext;
     try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(isPainting /*retrieveLastContext*/);
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(true /*retrieveLastContext*/);
         _cpuOpenGLContext = cpuContext;
     } catch (const std::exception& e) {
     }
@@ -1079,10 +1001,6 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
             it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
-
-    /*if (rotoNode) {
-        updateLastStrokeDataRecursively(viewerNode, rotoNode, RectD(), true);
-    }*/
 
     OSGLContextPtr glContext = _openGLContext.lock();
     if (glContext) {
@@ -1113,10 +1031,10 @@ ParallelRenderArgs::ParallelRenderArgs()
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , isAnalysis(false)
-    , isDuringPaintStrokeCreation(false)
     , doNansHandling(true)
     , draftMode(false)
     , tilesSupported(false)
+    , activeStrokeLastMovementBboxBitmapCleared(false)
 {
 }
 

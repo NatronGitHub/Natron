@@ -136,11 +136,6 @@ struct BezierPrivate
     //alpha value is half the original value when at half distance from the feather distance
     KnobChoiceWPtr fallOffRampType;
 
-    KnobDoubleWPtr motionBlurKnob;
-    KnobDoubleWPtr shutterKnob;
-    KnobChoiceWPtr shutterTypeKnob;
-    KnobDoubleWPtr customOffsetKnob;
-
 
     BezierPrivate(const std::string& baseName, bool isOpenBezier)
     : itemMutex()
@@ -150,6 +145,34 @@ struct BezierPrivate
     , baseName(baseName)
     {
         viewShapes.insert(std::make_pair(ViewIdx(0), BezierShape()));
+    }
+
+    BezierPrivate(const BezierPrivate& other)
+    : itemMutex()
+    , viewShapes()
+    , autoRecomputeOrientation(other.autoRecomputeOrientation)
+    , isOpenBezier(other.isOpenBezier)
+    , baseName(other.baseName)
+    , feather(other.feather)
+    , featherFallOff(other.featherFallOff)
+    , fallOffRampType(other.fallOffRampType)
+    {
+        QMutexLocker k(&other.itemMutex);
+        for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
+            BezierShape& thisShape = viewShapes[it->first];
+            thisShape.isClockwiseOriented = it->second.isClockwiseOriented;
+            thisShape.isClockwiseOrientedStatic = it->second.isClockwiseOrientedStatic;
+            thisShape.finished = it->second.finished;
+            for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP(**it2));
+                thisShape.points.push_back(copy);
+            }
+            for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
+                BezierCPPtr copy(new BezierCP(**it2));
+                thisShape.featherPoints.push_back(copy);
+            }
+
+        }
     }
     
     const BezierShape* getViewShape(ViewIdx view) const
@@ -203,10 +226,10 @@ Bezier::Bezier(const KnobItemsTablePtr& model,
 }
 
 Bezier::Bezier(const Bezier& other)
-: RotoDrawableItem(other.getModel())
-, _imp( new BezierPrivate(other.getBaseItemName(), other.isOpenBezier()) )
+: RotoDrawableItem(other)
+, _imp( new BezierPrivate(*other._imp) )
 {
-#pragma message WARN("Copy unhandled")
+
 }
 
 bool
@@ -1242,12 +1265,12 @@ Bezier::clearAllPoints()
 }
 
 void
-Bezier::copyItem(const KnobTableItemPtr& other)
+Bezier::copyItem(const KnobTableItem& other)
 {
     BezierPtr this_shared = toBezier( shared_from_this() );
     assert(this_shared);
 
-    BezierPtr otherBezier = toBezier(other);
+    const Bezier* otherBezier = dynamic_cast<const Bezier*>(&other);
     if (!otherBezier) {
         return;
     }
@@ -4002,17 +4025,6 @@ void
 Bezier::initializeKnobs()
 {
     RotoDrawableItem::initializeKnobs();
-
-    _imp->feather = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherParam);
-    _imp->featherFallOff = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherFallOffParam);
-    _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
-    _imp->motionBlurKnob = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeMotionBlurParam);
-    _imp->shutterKnob = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterParam);
-    _imp->shutterTypeKnob = createDuplicateOfTableKnob<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
-    _imp->customOffsetKnob = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterCustomOffsetParam);
-
-
-
 } // initializeKnobs
 
 KnobDoublePtr
@@ -4033,31 +4045,6 @@ Bezier::getFallOffRampTypeKnob() const
     return _imp->fallOffRampType.lock();
 }
 
-
-
-KnobDoublePtr
-Bezier::getMotionBlurAmountKnob() const
-{
-    return _imp->motionBlurKnob.lock();
-}
-
-KnobDoublePtr
-Bezier::getShutterOffsetKnob() const
-{
-    return _imp->customOffsetKnob.lock();
-}
-
-KnobDoublePtr
-Bezier::getShutterKnob() const
-{
-    return _imp->shutterKnob.lock();
-}
-
-KnobChoicePtr
-Bezier::getShutterTypeKnob() const
-{
-    return _imp->shutterTypeKnob.lock();
-}
 
 NATRON_NAMESPACE_EXIT;
 

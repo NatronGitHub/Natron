@@ -498,7 +498,6 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
-                             const NodePtr& rotoPaintNode,
                              const RotoStrokeItemPtr& activeStrokeItem,
                              bool isDoingRotoNeatRender,
                              boost::shared_ptr<ViewerArgs> args[2],
@@ -541,7 +540,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, rotoPaintNode, activeStrokeItem, isDoingRotoNeatRender, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, activeStrokeItem, isDoingRotoNeatRender, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -652,16 +651,14 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         ViewIdx view,
                                                         int textureIndex,
                                                         bool canAbort,
-                                                        const NodePtr& rotoPaintNode,
-                                                        const RotoStrokeItemPtr& /*activeStrokeItem*/,
-                                                        const bool isDoingRotoNeatRender,
+                                                        const RotoStrokeItemPtr& activeStrokeItem,
                                                         const RenderStatsPtr& stats,
                                                         ViewerArgs* outArgs)
 {
     AbortableRenderInfoPtr abortInfo = _imp->createNewRenderRequest(textureIndex, canAbort);
 
 
-    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, rotoPaintNode, isDoingRotoNeatRender, abortInfo, stats, outArgs);
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, activeStrokeItem, abortInfo, stats, outArgs);
 
     if ( (stat == eViewerRenderRetCodeFail) || (stat == eViewerRenderRetCodeBlack) ) {
         _imp->checkAndUpdateDisplayAge( textureIndex, abortInfo->getRenderAge() );
@@ -1111,8 +1108,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  ViewIdx view,
                                                  int textureIndex,
-                                                 const NodePtr& rotoPaintNode,
-                                                 const bool isDoingRotoNeatRender,
+                                                 const RotoStrokeItemPtr& activeStrokeItem,
                                                  const AbortableRenderInfoPtr& abortInfo,
                                                  const RenderStatsPtr& stats,
                                                  ViewerArgs* outArgs)
@@ -1147,7 +1143,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
     // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
     // zillions of textures in the cache, each a few pixels different.
-    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !isDoingRotoNeatRender && !outArgs->isDoingPartialUpdates && !outArgs->forceRender;
+    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !activeStrokeItem.get() && !outArgs->isDoingPartialUpdates && !outArgs->forceRender;
 
 
     // Try to look-up the cache but do so only if we have a RoD valid in the cache because
@@ -1160,7 +1156,6 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
-                                      const NodePtr& rotoPaintNode,
                                       const RotoStrokeItemPtr& activeStrokeItem,
                                       bool isDoingRotoNeatRender,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
@@ -1181,9 +1176,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->treeRoot = inArgs.activeInputToRender->getNode();
         tlsArgs->textureIndex = inArgs.params->textureIndex;
         tlsArgs->timeline = getTimeline();
-        tlsArgs->activeRotoPaintNode = rotoPaintNode;
         tlsArgs->activeRotoDrawableItem = activeStrokeItem;
-        tlsArgs->isDoingRotoNeatRender = isDoingRotoNeatRender;
         tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = inArgs.draftModeEnabled;
         tlsArgs->stats = stats;
@@ -1493,7 +1486,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 unCachedTiles.push_back(tile);
             }
             // If we are actively painting, re-use the last texture instead of re-drawing everything
-            else if (rotoPaintNode || isDoingRotoNeatRender) {
+            else if (activeStrokeItem) {
                 /*
                    Check if we have a last valid texture and re-use the old texture only if the new texture is at least as big
                    as the old texture.
@@ -1512,9 +1505,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
                     unCachedTiles.push_back(tile);
                 } else {
-                    //Overwrite the RoI to only the last portion rendered
-                    RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
+                    // Overwrite the RoI to only the last portion rendered
+                    RectD lastPaintBbox = activeStrokeItem->getLastStrokeMovementBbox();
 
                     lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
 
@@ -2758,9 +2751,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         }
 
 
-        bool isDrawing = instance->getApp()->isDuringPainting();
-
-        if (uiContext && !isDrawing) {
+        if (uiContext && !instance->getApp()->isGuiFrozen()) {
             uiContext->updateColorPicker(params->textureIndex);
         }
 

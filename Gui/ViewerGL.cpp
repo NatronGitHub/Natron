@@ -201,7 +201,7 @@ ViewerGL::resizeGL(int w,
     }
 
     bool isLoadingProject = _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
-    bool canResize = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&  !_imp->viewerTab->getGui()->getApp()->isDuringPainting();
+    bool canResize = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&  !_imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke();
 
     if (!zoomSinceLastFit && canResize) {
         fitImageToFormat();
@@ -2064,7 +2064,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->getApp()->isDuringPainting()) {
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke()) {
         return QGLWidget::wheelEvent(e);
     }
 
@@ -2212,7 +2212,7 @@ ViewerGL::zoomViewport(double newZoomFactor)
 void
 ViewerGL::fitImageToFormat()
 {
-    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->getApp()->isDuringPainting()) {
+    if (!_imp->viewerTab || !_imp->viewerTab->getGui() || _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke()) {
         return;
     }
 
@@ -2867,7 +2867,7 @@ void
 ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const QPoint & widgetPos)
 {
-    bool isDrawing = _imp->viewerTab->getGui()->getApp()->isDuringPainting();
+    bool isDrawing = _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke();
 
 
     if (!isDrawing) {

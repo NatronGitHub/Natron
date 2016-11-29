@@ -36,6 +36,13 @@ struct AnimatingObjectIPrivate
         views.push_back(ViewIdx(0));
     }
 
+    AnimatingObjectIPrivate(const AnimatingObjectIPrivate& other)
+    : viewsMutex()
+    , views(other.views)
+    {
+
+    }
+
     ViewIdx findMatchingView(ViewIdx inView) const
     {
         // Private - should not lock
@@ -53,6 +60,12 @@ struct AnimatingObjectIPrivate
 
 AnimatingObjectI::AnimatingObjectI()
 : _imp(new AnimatingObjectIPrivate())
+{
+
+}
+
+AnimatingObjectI::AnimatingObjectI(const AnimatingObjectI& other)
+: _imp(new AnimatingObjectIPrivate(*other._imp))
 {
 
 }

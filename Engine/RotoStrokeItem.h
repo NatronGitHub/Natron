@@ -34,6 +34,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -74,9 +75,18 @@ public:
     RotoStrokeItem(RotoStrokeType type,
                    const KnobItemsTablePtr& model);
 
+private:
+
+
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
     RotoStrokeItem(const RotoStrokeItem& other);
 
+public:
+
     virtual ~RotoStrokeItem();
+
+    static RotoStrokeItemPtr createRenderCopy(const RotoStrokeItem& other, double time, ViewIdx view);
 
 
     virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
@@ -105,28 +115,39 @@ public:
                           CurvePtr* yCurve,
                           CurvePtr* pCurve);
 
+    /**
+     * @brief When drawing, each step need to store some data in order
+     * to the next step to pick-up from the same state.
+     **/
+    void updateStrokeData(const Point& lastCenter, double distNextOut);
+
+    void getStrokeState(Point* lastCenterIn, double* distNextIn) const;
+
+    /**
+     * @brief Should only be called on the render clone: this is used to determine
+     * if we are rendering the first drawing tick for a stroke.
+     **/
+    int getRenderCloneCurrentStrokeIndex() const;
+    int getRenderCloneCurrentStrokeStartPointIndex() const;
+
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
 
     void setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext);
     void getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const;
 
-    bool getMostRecentStrokeChangesSinceAge(double time,
-                                            ViewGetSpec view,
-                                            int lastAge,
-                                            int lastMultiStrokeIndex,
-                                            std::list<std::pair<Point, double> >* points,
-                                            RectD* pointsBbox,
-                                            RectD* wholeStrokeBbox,
-                                            bool *isStrokeFirstTick,
-                                            int* newAge,
-                                            int* strokeIndex);
 
-    RectD getWholeStrokeRoDWhilePainting() const;
+    RectD getLastStrokeMovementBbox() const;
 
     void setStrokeFinished();
 
-    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
+    void setUsePaintBuffers(bool use);
+
+    bool isPaintBuffersEnabled() const;
+
+    bool isStrokeFinished() const;
+
+    virtual void copyItem(const KnobTableItem& other) OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -184,13 +205,7 @@ public:
     
 private:
 
-    void copyStrokeInternal(const RotoStrokeItemPtr& other);
-
     virtual void initializeKnobs() OVERRIDE;
-
-    RectD computeBoundingBox(double time, ViewGetSpec view) const;
-
-    RectD computeBoundingBoxInternal(double time, ViewGetSpec view) const;
 
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };

@@ -75,6 +75,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoShapeRenderNode.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
@@ -234,7 +236,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                                                        const RectI& upscaledImageBounds,
                                                        const RectI& downscaledImageBounds,
                                                        bool renderFullScaleThenDownscale,
-                                                       bool isDuringPaintStroke,
+                                                       bool isCurrentlyDrawingPaintStroke,
                                                        unsigned int mipMapLevel,
                                                        double par,
                                                        bool cacheIsAlmostFull,
@@ -251,12 +253,17 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
     *fillGrownBoundsWithZeroes = false;
     *redoCacheLookup = false;
     //While painting, clear only the needed portion of the bitmap
-    if ( isDuringPaintStroke && argsInputImageList.empty() ) {
+    if ( isCurrentlyDrawingPaintStroke && argsInputImageList.empty() ) {
         RectD lastStrokeRoD;
         NodePtr node = _publicInterface->getNode();
-        if ( !node->isLastPaintStrokeBitmapCleared() ) {
-            lastStrokeRoD = _publicInterface->getApp()->getLastPaintStrokeBbox();
-            node->clearLastPaintStrokeRoD();
+        if ( !frameArgs->activeStrokeLastMovementBboxBitmapCleared ) {
+            frameArgs->activeStrokeLastMovementBboxBitmapCleared = true;
+
+            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(node->getAttachedRotoItem());
+            if (attachedStroke) {
+                lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
+            }
+
             // qDebug() << getScriptName_mt_safe().c_str() << "last stroke RoD: " << lastStrokeRoD.x1 << lastStrokeRoD.y1 << lastStrokeRoD.x2 << lastStrokeRoD.y2;
             lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, lastStrokePixelRoD);
         }
@@ -269,7 +276,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
         }
     } else {
-        if ( isDuringPaintStroke && !lastStrokePixelRoD->isNull() ) {
+        if ( isCurrentlyDrawingPaintStroke && !lastStrokePixelRoD->isNull() ) {
 
             // We may end-up in a situation where we cached an image in RAM but the paint buffer (which is the GPU texture) does not have the appropriate mipmaplevel
             // To deal with it, we convert the plane cached to the appropriate format
@@ -353,7 +360,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
         } // usesBitmap
 
         // During painting, we cannot recompute twice the same rectangles to render
-        if ( isDuringPaintStroke && !lastStrokePixelRoD->isNull() && !rectsLeftToRender.empty()) {
+        if ( isCurrentlyDrawingPaintStroke && !lastStrokePixelRoD->isNull() && !rectsLeftToRender.empty()) {
             rectsLeftToRender.clear();
             RectI intersection;
             if ( downscaledImageBounds.intersect(*lastStrokePixelRoD, &intersection) ) {
@@ -386,7 +393,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
 
 
         // If the effect doesn't support tiles and it has something left to render, just render the bounds again except if during a painting operation.
-        if (!frameArgs->tilesSupported && !isDuringPaintStroke && !rectsLeftToRender.empty() && isPlaneCached) {
+        if (!frameArgs->tilesSupported && !isCurrentlyDrawingPaintStroke && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
@@ -399,25 +406,28 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
      * add a lot of overhead in a conventional compositing tree.
      */
     *tryIdentityOptim = false;
-    if (frameArgs->tilesSupported && !rectsLeftToRender.empty() && isDuringPaintStroke) {
+    if (frameArgs->tilesSupported && !rectsLeftToRender.empty() && isCurrentlyDrawingPaintStroke) {
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
         int maxInput = _publicInterface->getMaxInputCount();
         bool hasMask = false;
-        RotoDrawableItemPtr attachedStroke = _publicInterface->getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
-            bool isMask = _publicInterface->isInputMask(i);
+
+            hasMask |= _publicInterface->isInputMask(i);
             RectD inputRod;
-            if (attachedStroke && isMask) {
-                inputRod = _publicInterface->getApp()->getPaintStrokeWholeBbox();
-                //_publicInterface->getNode()->getPaintStrokeRoD(time, view, &inputRod);
-                hasMask = true;
+
+            EffectInstancePtr input = _publicInterface->getInput(i);
+            if (!input) {
+                continue;
+            }
+
+            RotoShapeRenderNode* isRotoShapeRenderNode = dynamic_cast<RotoShapeRenderNode*>(input.get());
+            if (isRotoShapeRenderNode && isCurrentlyDrawingPaintStroke) {
+                RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
+                assert(attachedStroke);
+                inputRod = attachedStroke->getLastStrokeMovementBbox();
             } else {
-                EffectInstancePtr input = _publicInterface->getInput(i);
-                if (!input) {
-                    continue;
-                }
                 U64 inputHash;
                 bool gotHash = input->getRenderHash(time, view, &inputHash);
                 (void)gotHash;
@@ -425,10 +435,8 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
                 }
-                if (isMask) {
-                    hasMask = true;
-                }
             }
+
             if (!inputsIntersectionSet) {
                 inputsIntersection = inputRod;
                 inputsIntersectionSet = true;
@@ -1097,6 +1105,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
                                                               const OSGLContextPtr& glRenderContext,
                                                               const OSGLContextAttacherPtr& glContextLocker,
                                                               const ImagePlanesToRenderPtr &planesToRender,
+                                                              bool isDuringPaintStrokeDrawing,
                                                               const std::list<ImageComponents>& requestedComponents,
                                                               const std::vector<ImageComponents>& outputComponents,
                                                               const RectD& rod,
@@ -1192,7 +1201,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 
                 for (int n = 0; n < nLookups; ++n) {
                     _publicInterface->getImageFromCacheAndConvertIfNeeded(*createInCache,
-                                                                          frameArgs->isDuringPaintStrokeCreation,
+                                                                          isDuringPaintStrokeDrawing,
                                                                           storage,
                                                                           args.returnStorage,
                                                                           n == 0 ? *nonDraftKey : **key,
@@ -1388,6 +1397,7 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
                                                            const FrameViewRequest* requestPassData,
                                                            const ImagePlanesToRenderPtr &planesToRender,
                                                            const OSGLContextAttacherPtr& glContextLocker,
+                                                           bool isDuringPaintStrokeDrawing,
                                                            RenderSafetyEnum safety,
                                                            bool useTransforms,
                                                            StorageModeEnum storage,
@@ -1431,7 +1441,7 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
             continue;
         }
         _publicInterface->getImageFromCacheAndConvertIfNeeded(createInCache,
-                                                              frameArgs->isDuringPaintStrokeCreation,
+                                                              isDuringPaintStrokeDrawing,
                                                               storage,
                                                               args.returnStorage,
                                                               *key,
@@ -1552,10 +1562,10 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
 
 void
 EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArgs & args,
-                                                              const ParallelRenderArgsPtr& frameArgs,
                                                               const ImagePlanesToRenderPtr &planesToRender,
                                                               const OSGLContextAttacherPtr& glContextLocker,
                                                               const OSGLContextPtr& glRenderContext,
+                                                              bool isDuringPaintStrokeDrawing,
                                                               ImageFieldingOrderEnum fieldingOrder,
                                                               ImageBitDepthEnum outputDepth,
                                                               bool fillGrownBoundsWithZeroes,
@@ -1578,17 +1588,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
 
 
     RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
-    RotoPaintPtr rotoPaint;
-    if (rotoItem) {
-        KnobItemsTablePtr model = rotoItem->getModel();
-        if (model) {
-            NodePtr modelNode = model->getNode();
-            if (modelNode) {
-                rotoPaint = toRotoPaint(modelNode->getEffectInstance());
-            }
-        }
-    }
-
+    
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
          it != planesToRender->planes.end(); ++it) {
         const ImageComponents *components = 0;
@@ -1639,7 +1639,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             // to prepare the potential next paint brush stroke made by the user
             if (rotoItem) {
 
-                if (frameArgs->isDuringPaintStrokeCreation || (rotoPaint && rotoPaint->isDoingNeatRender())) {
+                if (isDuringPaintStrokeDrawing) {
                     _publicInterface->getNode()->setPaintBuffer(it->second.downscaleImage);
                 }
             }
@@ -1692,7 +1692,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                     it->second.downscaleImage = it->second.fullscaleImage;
                     if (rotoItem) {
 
-                        if (frameArgs->isDuringPaintStrokeCreation || (rotoPaint && rotoPaint->isDoingNeatRender())) {
+                        if (isDuringPaintStrokeDrawing) {
                             _publicInterface->getNode()->setPaintBuffer(it->second.fullscaleImage);
                         }
                     }
@@ -1745,6 +1745,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                                                               ImageBitDepthEnum outputDepth,
                                                               const ImageComponents &outputClipPrefComps,
                                                               bool hasSomethingToRender,
+                                                              bool isDuringPaintStrokeDrawing,
                                                               StorageModeEnum storage,
                                                               const U64 frameViewHash,
                                                               const RectD& rod,
@@ -1796,7 +1797,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
              * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
              * concurrent GL renders.
              **/
-            bool useRenderClone = (safety == eRenderSafetyInstanceSafe && !frameArgs->isDuringPaintStrokeCreation) || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !_publicInterface->supportsConcurrentOpenGLRenders());
+            bool useRenderClone = (safety == eRenderSafetyInstanceSafe && !isDuringPaintStrokeDrawing) || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !_publicInterface->supportsConcurrentOpenGLRenders());
             if (useRenderClone) {
                 renderInstance = _publicInterface->getOrCreateRenderInstance();
             } else {
@@ -1922,6 +1923,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
                                                      const ImagePlanesToRenderPtr &planesToRender,
                                                      const OSGLContextPtr& glGpuContext,
                                                      bool hasSomethingToRender,
+                                                     bool isDuringPaintStrokeDrawing,
                                                      const RectD& rod,
                                                      const RectI& roi,
                                                      const RectI& downscaledImageBounds,
@@ -2061,14 +2063,14 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
                     (*glContextLocker)->attach();
                 }
                 // Don't cache the converted RAM image if we are drawing
-                it->second.downscaleImage = _publicInterface->convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage, !frameArgs->isDuringPaintStrokeCreation);
+                it->second.downscaleImage = _publicInterface->convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage, !isDuringPaintStrokeDrawing);
             }
 
             outputPlanes->insert( std::make_pair(*comp, it->second.downscaleImage) );
         }
 
 #ifdef DEBUG
-        if (!frameArgs->isDuringPaintStrokeCreation) {
+        if (!isDuringPaintStrokeDrawing) {
             RectI renderedImageBounds;
             rod.toPixelEnclosing(args.mipMapLevel, par, &renderedImageBounds);
             RectI expectedContainedRoI;
@@ -2141,6 +2143,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     std::bitset<4> processChannels;
     U64 frameViewHash;
     const std::vector<ImageComponents>* outputComponents;
+    bool isDuringPaintStrokeDrawing = getNode()->isDuringPaintStrokeCreation();
     if (!_imp->setupRenderRoIParams(args, &tls, &frameViewHash, &abortInfo, &frameArgs, &glGpuContext, &glCpuContext, &par, &fieldingOrder, &thisEffectOutputPremult, &supportsRS, &renderFullScaleThenDownscale, &renderMappedMipMapLevel, &renderMappedScale, &requestPassData, &rod, &roi, &neededComps, &processChannels, &outputComponents)) {
         return eRenderRoIRetCodeOk;
     }
@@ -2224,7 +2227,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::scoped_ptr<ImageKey> key;
 
     {
-        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, requestPassData, storage, glRenderContext, glContextLocker, planesToRender, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
+        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, requestPassData, storage, glRenderContext, glContextLocker, planesToRender, isDuringPaintStrokeDrawing, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
             return eRenderRoIRetCodeFailed;
         }
     }
@@ -2250,7 +2253,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool fillGrownBoundsWithZeroes, tryIdentityOptim, redoCacheLookup;
     RectI inputsRoDIntersectionPixel;
     RectI lastStrokePixelRoD;
-    _imp->determineRectsToRender(isPlaneCached, frameArgs, args.time, args.view, safety, args.scale, renderMappedScale, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, frameArgs->isDuringPaintStrokeCreation, args.mipMapLevel, par, cacheAlmostFull, args.inputImagesList, storage, glContextLocker, planesToRender, &redoCacheLookup, &fillGrownBoundsWithZeroes, &tryIdentityOptim, &lastStrokePixelRoD, &inputsRoDIntersectionPixel);
+    _imp->determineRectsToRender(isPlaneCached, frameArgs, args.time, args.view, safety, args.scale, renderMappedScale, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, isDuringPaintStrokeDrawing, args.mipMapLevel, par, cacheAlmostFull, args.inputImagesList, storage, glContextLocker, planesToRender, &redoCacheLookup, &fillGrownBoundsWithZeroes, &tryIdentityOptim, &lastStrokePixelRoD, &inputsRoDIntersectionPixel);
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
 
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
@@ -2269,7 +2272,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
     if (redoCacheLookup) {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, requestPassData, planesToRender, glContextLocker, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, requestPassData, planesToRender, glContextLocker, isDuringPaintStrokeDrawing, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2280,20 +2283,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
 
     if (hasSomethingToRender) {
-        _imp->renderRoIAllocateOutputPlanes(args, frameArgs, planesToRender, glContextLocker, glRenderContext, fieldingOrder, outputDepth, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
+        _imp->renderRoIAllocateOutputPlanes(args, planesToRender, glContextLocker, glRenderContext, isDuringPaintStrokeDrawing, fieldingOrder, outputDepth, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Launch actual internal render ///////////////////////////////////////////////////////////
     bool renderAborted;
-    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, safety, outputDepth, outputClipPrefComps, hasSomethingToRender, storage, frameViewHash, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
+    RenderRoIStatusEnum renderRetCode = _imp->renderRoILaunchInternalRender(args, frameArgs, planesToRender, neededComps, glRenderContext, safety, outputDepth, outputClipPrefComps, hasSomethingToRender, isDuringPaintStrokeDrawing, storage, frameViewHash, rod, roi, renderMappedMipMapLevel, processChannels, par, renderFullScaleThenDownscale, &renderAborted);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
     if ( renderAborted && (renderRetCode != eRenderRoIStatusImageAlreadyRendered) ) {
         ///Return a NULL image
 
-        if (frameArgs->isDuringPaintStrokeCreation) {
+        if (isDuringPaintStrokeDrawing) {
             //We know the image will never be used ever again
             getNode()->removeAllImagesFromCache();
         }
@@ -2319,7 +2322,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Termination /////////////////////////////////////////////////////////////////////////////
-    _imp->renderRoITermination(args, frameArgs, abortInfo, planesToRender, glGpuContext, hasSomethingToRender, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
+    _imp->renderRoITermination(args, frameArgs, abortInfo, planesToRender, glGpuContext, hasSomethingToRender, isDuringPaintStrokeDrawing, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

@@ -3750,30 +3750,35 @@ struct KnobHolder::KnobHolderPrivate
 };
 
 KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
-    : QObject()
-    , _imp( new KnobHolderPrivate(appInstance) )
+: QObject()
+, _imp( new KnobHolderPrivate(appInstance) )
 {
-    QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
-    QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
-                      SLOT(onDoEvaluateOnMainThread(bool,bool)) );
-    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)), this,
-                      SLOT(onDoValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)) );
+    bool isMT = QThread::currentThread() == qApp->thread();
+    if (isMT) {
+        QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
+        QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
+                         SLOT(onDoEvaluateOnMainThread(bool,bool)) );
+        QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)), this,
+                         SLOT(onDoValueChangeOnMainThread(KnobIPtr,ValueChangedReasonEnum,double,ViewSetSpec,bool)) );
 
-    QObject::connect( this, SIGNAL(doBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
-    QObject::connect( this, SIGNAL(doEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
-
+        QObject::connect( this, SIGNAL(doBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoBeginKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
+        QObject::connect( this, SIGNAL(doEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)), this, SLOT(onDoEndKnobsValuesChangedActionOnMainThread(ValueChangedReasonEnum)) );
+    }
 }
 
 KnobHolder::KnobHolder(const KnobHolder& other)
     : QObject()
     , boost::enable_shared_from_this<KnobHolder>()
-    , _imp (new KnobHolderPrivate(*other._imp))
+, _imp (new KnobHolderPrivate(*other._imp))
 {
-    QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
-    QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
-                     SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
-    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ), this,
-                     SLOT( onDoValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ) );
+    bool isMT = QThread::currentThread() == qApp->thread();
+    if (isMT) {
+        QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
+        QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
+                         SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
+        QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ), this,
+                         SLOT( onDoValueChangeOnMainThread(KnobIPtr, ValueChangedReasonEnum, double, ViewSetSpec, bool) ) );
+    }
 }
 
 KnobHolder::~KnobHolder()
@@ -3783,7 +3788,7 @@ KnobHolder::~KnobHolder()
         assert(helper);
         if (helper) {
             // Make sure nobody is referencing this
-            helper->_imp->holder.reset();
+            //helper->_imp->holder.reset();
             helper->deleteKnob();
 
         }
@@ -3903,7 +3908,6 @@ KnobHolder::isInitializingKnobs() const
 void
 KnobHolder::addKnob(const KnobIPtr& k)
 {
-    assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker kk(&_imp->knobsMutex);
     for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if (*it == k) {
@@ -4522,6 +4526,9 @@ void
 KnobHolder::invalidateCacheHashAndEvaluate(bool isSignificant,
                                 bool refreshMetadatas)
 {
+    if (isEvaluationBlocked()) {
+        return;
+    }
     onSignificantEvaluateAboutToBeCalled(KnobIPtr(), eValueChangedReasonNatronInternalEdited, DimSpec::all(), getCurrentTime(), ViewSetSpec::all());
     evaluate(isSignificant, refreshMetadatas);
 }

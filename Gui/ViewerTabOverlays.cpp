@@ -138,7 +138,7 @@ ViewerTab::drawOverlays(double time,
         return;
     }
 
-    bool isDrawing = app->isDuringPainting();
+    bool isDrawing = app->getActiveRotoDrawingStroke();
 
     if ( !_imp->viewer ||
          app->isClosing() ||

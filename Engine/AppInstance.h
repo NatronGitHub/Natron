@@ -390,15 +390,9 @@ public:
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}
 
-    virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
-                                   const RotoStrokeItemPtr& /*stroke*/,
-                                   bool /*isPainting*/) {}
+    virtual void setUserIsPainting(const RotoStrokeItemPtr& /*stroke*/) {}
 
-    virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
-                                            RotoStrokeItemPtr* /*stroke*/,
-                                            bool* /*isPainting*/) const { }
-
-    virtual bool isDuringPainting() const { return false; }
+    virtual RotoStrokeItemPtr getActiveRotoDrawingStroke() const { return RotoStrokeItemPtr(); }
 
     virtual bool isRenderStatsActionChecked() const { return false; }
 
@@ -416,30 +410,6 @@ public:
     ///Opens a new window
     virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
-
-    virtual void updateLastPaintStrokeData(bool /*isFirstTick*/,
-                                           int /*newAge*/,
-                                           const std::list<std::pair<Point, double> >& /*points*/,
-                                           const RectD& /*lastPointsBbox*/,
-                                           int /*strokeIndex*/) {}
-
-    virtual int getStrokeLastIndex() const { return -1; }
-
-    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* /*stroke*/,
-                                              int* /*strokeIndex*/) const {}
-
-    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
-                                     std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
-                                     bool */*isFirstTick*/,
-                                     int */*strokeMultiIndex*/,
-                                     double */*distNextIn*/,
-                                     Point* /*lastCenter*/) const {}
-
-    virtual void updateStrokeData(const Point& /*lastCenter*/, double /*distNextOut*/) {}
-
-    virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
-
-    virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
 
     virtual void createGroupGui(const NodePtr & /*group*/, const CreateNodeArgs& /*args*/) {}
 

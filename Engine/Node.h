@@ -571,6 +571,7 @@ public:
 
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    RenderSafetyEnum getPluginRenderThreadSafety() const;
     void revertToPluginThreadSafety();
 
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
@@ -594,21 +595,11 @@ public:
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
 
-    void prepareForNextPaintStrokeRender();
-
     ImagePtr getPaintBuffer() const;
     void setPaintBuffer(const ImagePtr& image);
 
-    //Used by nodes below the rotopaint tree to optimize the RoI
-    void setLastPaintStrokeDataNoRotopaint();
-    void invalidateLastPaintStrokeDataNoRotopaint();
-
-    bool isLastPaintStrokeBitmapCleared() const;
-    void clearLastPaintStrokeRoD();
-
-
-    void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;
+
     ////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
 
@@ -757,8 +748,17 @@ public:
      * Do not use that anywhere else.
      **/
     void attachRotoItem(const RotoDrawableItemPtr& stroke);
+
+    /**
+     * @brief Returns the attached roto item. If called from a render thread, this will
+     * return a pointer to the shallow render copy.
+     **/
     RotoDrawableItemPtr getAttachedRotoItem() const;
 
+    /**
+     * @brief Return the item set with attachRotoItem
+     **/
+    RotoDrawableItemPtr getOriginalAttachedItem() const;
 
 protected:
 

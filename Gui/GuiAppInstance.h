@@ -239,31 +239,9 @@ public:
 
     virtual void* getOfxHostOSHandle() const OVERRIDE FINAL;
 
+    virtual void setUserIsPainting(const RotoStrokeItemPtr& stroke) OVERRIDE FINAL;
+    virtual RotoStrokeItemPtr getActiveRotoDrawingStroke() const OVERRIDE FINAL;
 
-    ///Rotopaint related
-    virtual void updateLastPaintStrokeData(bool isFirstTick,
-                                           int newAge,
-                                           const std::list<std::pair<Point, double> >& points,
-                                           const RectD& lastPointsBbox,
-                                           int strokeIndex) OVERRIDE FINAL;
-    virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox,
-                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                     bool *isFirstTick,
-                                     int *strokeMultiIndex,
-                                     double *distNextIn,
-                                     Point* /*lastCenter*/) const OVERRIDE FINAL;
-    virtual int getStrokeLastIndex() const OVERRIDE FINAL;
-    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void updateStrokeData(const Point& lastCenter, double distNextOut) OVERRIDE FINAL;
-    virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
-    virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
-    virtual void setUserIsPainting(const NodePtr& rotopaintNode,
-                                   const RotoStrokeItemPtr& stroke,
-                                   bool isPainting) OVERRIDE FINAL;
-    virtual void getActiveRotoDrawingStroke(NodePtr* node,
-                                            RotoStrokeItemPtr* stroke,
-                                            bool* isPainting) const OVERRIDE FINAL;
-    virtual bool isDuringPainting() const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
 
     virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;

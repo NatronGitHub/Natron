@@ -387,6 +387,7 @@ public:
                                        const OSGLContextPtr& glRenderContext,
                                        const OSGLContextAttacherPtr& glContextLocker,
                                        const ImagePlanesToRenderPtr &planesToRender,
+                                       bool isDuringPaintStrokeDrawing,
                                        const std::list<ImageComponents>& requestedComponents,
                                        const std::vector<ImageComponents>& outputComponents,
                                        const RectD& rod,
@@ -427,6 +428,7 @@ public:
                                                                 const FrameViewRequest* requestPassData,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
                                                                 const OSGLContextAttacherPtr& glContextLocker,
+                                                                bool isDuringPaintStrokeDrawing,
                                                                 RenderSafetyEnum safety,
                                                                 bool useTransforms,
                                                                 StorageModeEnum storage,
@@ -448,10 +450,10 @@ public:
                                                                 ImagePtr *isPlaneCached);
 
     void renderRoIAllocateOutputPlanes(const RenderRoIArgs & args,
-                                       const ParallelRenderArgsPtr& frameArgs,
                                        const ImagePlanesToRenderPtr &planesToRender,
                                        const OSGLContextAttacherPtr& glContextLocker,
                                        const OSGLContextPtr& glRenderContext,
+                                       bool isDuringPaintStrokeDrawing,
                                        ImageFieldingOrderEnum fieldingOrder,
                                        ImageBitDepthEnum outputDepth,
                                        bool fillGrownBoundsWithZeroes,
@@ -476,6 +478,7 @@ public:
                                                                       ImageBitDepthEnum outputDepth,
                                                                       const ImageComponents &outputClipPrefComps,
                                                                       bool hasSomethingToRender,
+                                                                      bool isDuringPaintStrokeDrawing,
                                                                       StorageModeEnum storage,
                                                                       const U64 frameViewHash,
                                                                       const RectD& rod,
@@ -492,6 +495,7 @@ public:
                               const ImagePlanesToRenderPtr &planesToRender,
                               const OSGLContextPtr& glGpuContext,
                               bool hasSomethingToRender,
+                              bool isDuringPaintStrokeDrawing,
                               const RectD& rod,
                               const RectI& roi,
                               const RectI& downscaledImageBounds,
@@ -527,7 +531,21 @@ public:
         ImagePlanesToRenderPtr planes;
         OSGLContextPtr glContext;
     };
-    
+
+    void tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
+                               const EffectInstance::RectToRender & rectToRender,
+                               const EffectInstance::PlaneToRender & firstPlaneToRender,
+                               bool renderFullScaleThenDownscale,
+                               unsigned int renderMappedMipMapLevel,
+                               unsigned int mipMapLevel,
+                               double par,
+                               const RectD& rod,
+                               RectI &renderMappedRectToRender,
+                               RectI &downscaledRectToRender,
+                               bool *isBeingRenderedElseWhere,
+                               bool *bitmapMarkedForRendering);
+
+
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
                                                   QThread* callingThread);

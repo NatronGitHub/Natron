@@ -85,13 +85,16 @@ public:
            const std::string& baseName,
            bool isOpenBezier);
 
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    // since the knobs are anyway cached during render in RenderValuesCache
     Bezier(const Bezier& other);
+
 
     virtual ~Bezier();
 
     virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
 
-    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
+    virtual void copyItem(const KnobTableItem& other) OVERRIDE FINAL;
 
     virtual bool getCanAnimateUserKeyframes() const OVERRIDE FINAL { return true; }
     
@@ -614,10 +617,6 @@ public:
     KnobDoublePtr getFeatherKnob() const;
     KnobDoublePtr getFeatherFallOffKnob() const;
     KnobChoicePtr getFallOffRampTypeKnob() const;
-    KnobDoublePtr getMotionBlurAmountKnob() const;
-    KnobDoublePtr getShutterOffsetKnob() const;
-    KnobDoublePtr getShutterKnob() const;
-    KnobChoicePtr getShutterTypeKnob() const;
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

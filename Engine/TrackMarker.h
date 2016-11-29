@@ -133,8 +133,6 @@ public:
         return true;
     }
 
-    virtual void copyItem(const KnobTableItemPtr& other) OVERRIDE FINAL;
-
 
     KnobDoublePtr getSearchWindowBottomLeftKnob() const;
     KnobDoublePtr getSearchWindowTopRightKnob() const;

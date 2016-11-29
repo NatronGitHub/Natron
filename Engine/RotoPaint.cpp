@@ -2196,6 +2196,8 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
 void
 RotoPaint::initializeKnobs()
 {
+    BlockTreeRefreshRAII preventTreeRefresh(_imp.get());
+
     RotoPaintPtr thisShared = toRotoPaint(shared_from_this());
 
     _imp->knobsTable.reset(new RotoPaintKnobItemsTable(_imp.get(), KnobItemsTable::eKnobItemsTableTypeTree));
@@ -2678,9 +2680,8 @@ RotoPaintKnobItemsTable::getSelectedDrawableItems() const
 void
 RotoPaintKnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
 {
-    ++_imp->treeRefreshBlocked;
+    BlockTreeRefreshRAII preventTreeRefresh(_imp);
     KnobItemsTable::fromSerialization(obj);
-    --_imp->treeRefreshBlocked;
     _imp->publicInterface->refreshRotoPaintTree();
 }
 
@@ -2885,7 +2886,12 @@ RotoPaint::setIsDoingNeatRender(bool doing)
         }
     }
     if (setUserPaintingOff) {
-        getApp()->setUserIsPainting(getNode(), _imp->ui->strokeBeingPaint, false);
+        RotoStrokeItemPtr activeStroke = getApp()->getActiveRotoDrawingStroke();
+        assert(activeStroke);
+        if (activeStroke) {
+            activeStroke->setUsePaintBuffers(false);
+        }
+        getApp()->setUserIsPainting(RotoStrokeItemPtr());
     }
 }
 
@@ -3131,11 +3137,6 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
     if (!mergeNode) {
         return mergeNode;
     }
-    if ( node->isDuringPaintStrokeCreation() ) {
-        mergeNode->setWhileCreatingPaintStroke(true);
-    }
-
-
 
     {
         // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
@@ -3270,7 +3271,7 @@ RotoPaint::refreshRotoPaintTree()
     if (canConcatenate) {
         NodePtr rotopaintNodeInput = rotoPaintEffect->getInternalInputNode(0);
         if (rotopaintNodeInput) {
-            globalMerge->connectInput(rotopaintNodeInput, 0);
+            globalMerge->swapInput(rotopaintNodeInput, 0);
         }
     }
 
@@ -3412,16 +3413,6 @@ RotoPaint::refreshRotoPaintTree()
     
 } // RotoPaint::refreshRotoPaintTree
 
-
-void
-RotoPaint::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
-{
-    getNode()->setWhileCreatingPaintStroke(b);
-    QMutexLocker k(&_imp->globalMergeNodesMutex);
-    for (NodesList::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
-        (*it)->setWhileCreatingPaintStroke(b);
-    }
-}
 
 
 ///Must be done here because at the time of the constructor, the shared_ptr doesn't exist yet but

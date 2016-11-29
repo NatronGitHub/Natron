@@ -319,7 +319,6 @@ public:
     SequentialPreferenceEnum currentSupportSequentialRender;
     bool currentCanTransform;
     bool draftModeUsed, mustComputeInputRelatedData;
-    bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
     bool strokeBitmapCleared;
 
