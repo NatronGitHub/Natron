@@ -1102,6 +1102,11 @@ def createInstance(app,group):
         param.setValue(0, 1)
         del param
 
+    param = lastNode.getParam("expandRoD")
+    if param is not None:
+        param.setValue(False)
+        del param
+
     param = lastNode.getParam("premult")
     if param is not None:
         param.setValue(True)
@@ -1133,6 +1138,11 @@ def createInstance(app,group):
     if param is not None:
         param.setValue(2, 0)
         param.setValue(2, 1)
+        del param
+
+    param = lastNode.getParam("expandRoD")
+    if param is not None:
+        param.setValue(False)
         del param
 
     param = lastNode.getParam("premult")
