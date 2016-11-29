@@ -5338,12 +5338,12 @@ Node::connectInput(const NodePtr & input, int inputNumber)
     }
 
 
-    return replaceInputInternal(input, inputNumber);
+    return replaceInputInternal(input, inputNumber, true);
 } // Node::connectInput
 
 
 bool
-Node::replaceInputInternal(const NodePtr& input, int inputNumber)
+Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExisting)
 {
     assert(_imp->inputsInitialized);
 
@@ -5384,6 +5384,9 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber)
 
         curIn = _imp->inputs[inputNumber].lock();
 
+        if (failIfExisting && curIn) {
+            return false;
+        }
 
         if (curIn == input) {
             // Nothing changed
@@ -5447,7 +5450,7 @@ Node::swapInput(const NodePtr& input,
                    int inputNumber)
 {
 
-    return replaceInputInternal(input, inputNumber);
+    return replaceInputInternal(input, inputNumber, false);
 } // Node::replaceInput
 
 void
@@ -5574,7 +5577,7 @@ bool
 Node::disconnectInput(int inputNumber)
 {
     assert(_imp->inputsInitialized);
-    return replaceInputInternal(NodePtr(), inputNumber);
+    return replaceInputInternal(NodePtr(), inputNumber, false);
 } // Node::disconnectInput
 
 
@@ -5596,7 +5599,7 @@ Node::disconnectInput(const NodePtr& input)
 
     }
     if (found != -1) {
-        return replaceInputInternal(NodePtr(), found);
+        return replaceInputInternal(NodePtr(), found, false);
     }
     return false;
 
@@ -5841,7 +5844,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( make_pair(*it, inputNb) );
 
-                output->replaceInputInternal(inputToConnectTo, inputNb);
+                output->replaceInputInternal(inputToConnectTo, inputNb, false);
 
             }
         }

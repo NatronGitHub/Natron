@@ -474,7 +474,7 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
 }
 
 bool
-EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
+EffectInstance::invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects)
 {
     // Clear hash on this node
     if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
@@ -494,12 +494,34 @@ EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
         }
     }
 
-    NodesList outputs;
-    getNode()->getOutputsWithGroupRedirection(outputs);
-    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->getEffectInstance()->invalidateHashCacheInternal(invalidatedObjects);
+    // For a group, also invalidate the hash of all its nodes
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+    if (isGroup) {
+        NodesList groupNodes = isGroup->getNodes();
+        for (NodesList::const_iterator it = groupNodes.begin(); it!=groupNodes.end(); ++it) {
+            EffectInstancePtr subNodeEffect = (*it)->getEffectInstance();
+            if (!subNodeEffect) {
+                continue;
+            }
+            // Do not recurse on outputs, since we iterate on all nodes in the group
+            subNodeEffect->invalidateHashCacheImplementation(false /*recurse*/, invalidatedObjects);
+        }
+    }
+
+    if (recurse) {
+        NodesList outputs;
+        getNode()->getOutputsWithGroupRedirection(outputs);
+        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            (*it)->getEffectInstance()->invalidateHashCacheImplementation(recurse, invalidatedObjects);
+        }
     }
     return true;
+}
+
+bool
+EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
+{
+    return invalidateHashCacheImplementation(true /*recurse*/, invalidatedObjects);
 }
 
 bool

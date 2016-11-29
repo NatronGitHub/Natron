@@ -708,7 +708,7 @@ public:
 
 private:
 
-    bool replaceInputInternal(const NodePtr& input, int inputNumber);
+    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExisting);
 
 
     bool isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) const;

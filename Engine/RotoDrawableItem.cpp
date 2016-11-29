@@ -678,12 +678,12 @@ RotoDrawableItem::refreshNodesPositions(double x, double y)
     double yOffset = 100;
     if (_imp->timeBlurNode) {
         _imp->timeBlurNode->setPosition(x, y - yOffset);
-        yOffset -= 100;
+        yOffset += 100;
     }
 
     if (_imp->effectNode) {
         _imp->effectNode->setPosition(x, y - yOffset);
-        yOffset -= 100;
+        yOffset += 100;
     }
     if (_imp->timeOffsetNode) {
         if (_imp->frameHoldNode) {

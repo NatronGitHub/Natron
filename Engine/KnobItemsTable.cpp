@@ -2221,7 +2221,7 @@ KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx 
     {
         QMutexLocker k(&_imp->lock);
         std::vector<KeyFrame> newKeys;
-        if ( !curve->transformKeyframesValueAndTime(times, warp, keyframes, &keysAdded, &keysAdded) ) {
+        if ( !curve->transformKeyframesValueAndTime(times, warp, keyframes, &keysAdded, &keysRemoved) ) {
             return false;
         }
 

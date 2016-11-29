@@ -619,10 +619,7 @@ struct RotoPaintPrivate
     bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
                                                int* blendingMode) const;
 
-    void getGlobalMotionBlurSettings(const double time,
-                                     double* startTime,
-                                     double* endTime,
-                                     double* timeStep) const;
+
 
 
     void resetTransformCenter();
@@ -649,7 +646,8 @@ struct RotoPaintPrivate
 
     void createBaseLayer();
 
-    void connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect,
+    void connectRotoPaintBottomTreeToItems(bool canConcatenate,
+                                           const RotoPaintPtr& rotoPaintEffect,
                                            const NodePtr& noOpNode,
                                            const NodePtr& premultNode,
                                            const NodePtr& globalTimeBlurNode,

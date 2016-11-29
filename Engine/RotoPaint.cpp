@@ -3183,7 +3183,13 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
 } // getOrCreateGlobalMergeNode
 
 void
-RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPaintEffect, const NodePtr& noOpNode, const NodePtr& premultNode, const NodePtr& globalTimeBlurNode, const NodePtr& treeOutputNode, const NodePtr& mergeNode)
+RotoPaintPrivate::connectRotoPaintBottomTreeToItems(bool /*canConcatenate*/,
+                                                    const RotoPaintPtr& rotoPaintEffect,
+                                                    const NodePtr& noOpNode,
+                                                    const NodePtr& premultNode,
+                                                    const NodePtr& globalTimeBlurNode,
+                                                    const NodePtr& treeOutputNode,
+                                                    const NodePtr& mergeNode)
 {
     // If there's a noOp node (Roto/RotoPaint but not LayeredComp) connect the Output node of the tree to the NoOp node
     // otherwise connect it directly to the Merge node (LayeredComp)
@@ -3200,14 +3206,10 @@ RotoPaintPrivate::connectRotoPaintBottomTreeToItems(const RotoPaintPtr& rotoPain
     if (premultNode) {
         if (globalTimeBlurNode) {
             premultNode->swapInput(globalTimeBlurNode, 0);
+            globalTimeBlurNode->swapInput(mergeNode, 0);
         } else {
             premultNode->swapInput(mergeNode, 0);
         }
-    }
-
-    // If global motion-blur is enabled, connect the global time blur to the merge node
-    if (globalTimeBlurNode) {
-        globalTimeBlurNode->swapInput(mergeNode, 0);
     }
 
     // Connect the mask of the merge to the Mask input
@@ -3237,23 +3239,28 @@ RotoPaint::refreshRotoPaintTree()
     bool canConcatenate = _imp->isRotoPaintTreeConcatenatableInternal(items, &blendingOperator);
     NodePtr globalMerge;
     int globalMergeIndex = -1;
-    NodesList mergeNodes;
-    {
-        QMutexLocker k(&_imp->globalMergeNodesMutex);
-        mergeNodes = _imp->globalMergeNodes;
-    }
 
-    // Ensure that all global merge nodes are disconnected so that items don't have output references
-    // to the global merge nodes.
-    for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
-        int maxInputs = (*it)->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            (*it)->disconnectInput(i);
-        }
-    }
 
     // Get the first global merge node.
     globalMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
+
+
+    {
+        NodesList mergeNodes;
+        {
+            QMutexLocker k(&_imp->globalMergeNodesMutex);
+            mergeNodes = _imp->globalMergeNodes;
+        }
+
+        // Ensure that all global merge nodes are disconnected so that items don't have output references
+        // to the global merge nodes.
+        for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
+            int maxInputs = (*it)->getMaxInputCount();
+            for (int i = 0; i < maxInputs; ++i) {
+                (*it)->disconnectInput(i);
+            }
+        }
+    }
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(getNode()->getEffectInstance());
     assert(rotoPaintEffect);
@@ -3265,17 +3272,9 @@ RotoPaint::refreshRotoPaintTree()
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
         }
-    } else {
-        // Diconnect all inputs of the globalMerge
-        int maxInputs = globalMerge->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            globalMerge->disconnectInput(i);
-        }
     }
 
     // Refresh each item separately
-
-
     // Also place items in the node-graph
     Point nodePosition = {0.,0.};
     Point mergeNodeBeginPos = {0, 300};
@@ -3294,7 +3293,7 @@ RotoPaint::refreshRotoPaintTree()
             if (mergeInputA) {
                 //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<
                 //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
-                globalMerge->connectInput(mergeInputA, globalMergeIndex);
+                globalMerge->swapInput(mergeInputA, globalMergeIndex);
 
                 // If the global merge node has all its A inputs connected, create a new one, otherwise get the next A input.
                 NodePtr nextMerge = _imp->getOrCreateGlobalMergeNode(blendingOperator, &globalMergeIndex);
@@ -3325,6 +3324,14 @@ RotoPaint::refreshRotoPaintTree()
     // to the first item merge node.
 
     // Default to noop node as bottom of the tree (if any)
+    bool globalMotionBlurEnabled = _imp->motionBlurTypeKnob.lock()->getValue() == 1;
+    NodePtr timeBlurNode = _imp->getOrCreateGlobalTimeBlurNode();
+    if (!globalMotionBlurEnabled) {
+        timeBlurNode->disconnectInput(0);
+    }
+    mergeNodeBeginPos.y += 150;
+    timeBlurNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
+
     NodePtr premultNode = rotoPaintEffect->getPremultNode();
     if (premultNode) {
         mergeNodeBeginPos.y += 150;
@@ -3340,15 +3347,6 @@ RotoPaint::refreshRotoPaintTree()
         // should not happen
         return;
     }
-
-
-    bool globalMotionBlurEnabled = _imp->motionBlurTypeKnob.lock()->getValue() == 1;
-    NodePtr timeBlurNode = _imp->getOrCreateGlobalTimeBlurNode();
-    if (!globalMotionBlurEnabled) {
-        timeBlurNode->disconnectInput(0);
-    }
-    mergeNodeBeginPos.y += 150;
-    timeBlurNode->setPosition(mergeNodeBeginPos.x, mergeNodeBeginPos.y);
 
     mergeNodeBeginPos.y += 150;
     treeOutputNode->setPosition(mergeNodeBeginPos.x - 100, mergeNodeBeginPos.y);
@@ -3384,12 +3382,12 @@ RotoPaint::refreshRotoPaintTree()
 
     if (canConcatenate) {
         // Connect the bottom of the tree to the last global merge node.
-        _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, globalMotionBlurEnabled ? timeBlurNode : NodePtr(), treeOutputNode, _imp->globalMergeNodes.back());
+        _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, noOpNode, premultNode,  timeBlurNode, treeOutputNode, _imp->globalMergeNodes.back());
     } else {
 
         if (!items.empty()) {
             // Connect the bottom of the tree to the last item merge node.
-            _imp->connectRotoPaintBottomTreeToItems(rotoPaintEffect, noOpNode, premultNode, globalMotionBlurEnabled ? timeBlurNode : NodePtr(), treeOutputNode, items.back()->getMergeNode());
+            _imp->connectRotoPaintBottomTreeToItems(canConcatenate, rotoPaintEffect, noOpNode, premultNode, timeBlurNode, treeOutputNode, items.back()->getMergeNode());
         } else {
             // Connect output to Input, the RotoPaint is pass-through
             treeOutputNode->swapInput(rotoPaintEffect->getInternalInputNode(0), 0);
@@ -3413,45 +3411,6 @@ RotoPaint::refreshRotoPaintTree()
     
     
 } // RotoPaint::refreshRotoPaintTree
-
-
-void
-RotoPaintPrivate::getGlobalMotionBlurSettings(const double time,
-                                              double* startTime,
-                                              double* endTime,
-                                              double* timeStep) const
-{
-    *startTime = time, *timeStep = 1., *endTime = time;
-
-    double motionBlurAmnt = globalMotionBlurKnob.lock()->getValueAtTime(time);
-    if (motionBlurAmnt == 0) {
-        return;
-    }
-    int nbSamples = std::floor(motionBlurAmnt * 10 + 0.5);
-    double shutterInterval = globalMotionBlurKnob.lock()->getValueAtTime(time);
-    if (shutterInterval == 0) {
-        return;
-    }
-    int shutterType_i = globalMotionBlurKnob.lock()->getValueAtTime(time);
-    if (nbSamples != 0) {
-        *timeStep = shutterInterval / nbSamples;
-    }
-    if (shutterType_i == 0) { // centered
-        *startTime = time - shutterInterval / 2.;
-        *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) { // start
-        *startTime = time;
-        *endTime = time + shutterInterval;
-    } else if (shutterType_i == 2) { // end
-        *startTime = time - shutterInterval;
-        *endTime = time;
-    } else if (shutterType_i == 3) { // custom
-        *startTime = time + globalCustomOffsetKnob.lock()->getValueAtTime(time);
-        *endTime = *startTime + shutterInterval;
-    } else {
-        assert(false);
-    }
-}
 
 
 void

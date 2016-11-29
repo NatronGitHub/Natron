@@ -300,6 +300,12 @@ public:
      **/
     virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE ;
 
+private:
+
+    bool invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects);
+
+public:
+
     /**
      * @brief Forwarded to the node's name
      **/
