@@ -22,9 +22,9 @@ index 22c6d23..e69de29 100644
 --#if defined(CERES_TR1_SHARED_PTR)
 --using std::tr1::shared_ptr;
 --#else
--+#if CERES_USE_STD_SHARED_PTR
+-+#if CERES_STD_SHARED_PTR
 - using std::shared_ptr;
--+#elif defined(CERES_USE_BOOST_SHARED_PTR)
+-+#elif defined(CERES_BOOST_SHARED_PTR)
 -+using boost::shared_ptr;
 -+#elif defined(CERES_TR1_SHARED_PTR)
 -+using std::tr1::shared_ptr;
@@ -46,7 +46,7 @@ index 22c6d23..e69de29 100644
 -+
 - #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
 --    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
--+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_USE_BOOST_UNORDERED_MAP)  // NOLINT
+-+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_BOOST_UNORDERED_MAP)  // NOLINT
 - #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
 -- CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
 -+ CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE, CERES_BOOST_ORDERED_MAP must be defined!  // NOLINT
@@ -133,9 +133,9 @@ index f4dcaee..8c77c11 100644
 -#if defined(CERES_TR1_SHARED_PTR)
 -using std::tr1::shared_ptr;
 -#else
-+#if CERES_USE_STD_SHARED_PTR
++#if CERES_STD_SHARED_PTR
  using std::shared_ptr;
-+#elif defined(CERES_USE_BOOST_SHARED_PTR)
++#elif defined(CERES_BOOST_SHARED_PTR)
 +using boost::shared_ptr;
 +#elif defined(CERES_TR1_SHARED_PTR)
 +using std::tr1::shared_ptr;
@@ -159,7 +159,7 @@ index e699a66..5fbf960 100644
 +
  #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
 -    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
-+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_USE_BOOST_UNORDERED_MAP)  // NOLINT
++    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_BOOST_UNORDERED_MAP)  // NOLINT
  #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
 - CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
 + CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE, CERES_BOOST_ORDERED_MAP must be defined!  // NOLINT

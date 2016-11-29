@@ -51,9 +51,9 @@
 
 namespace ceres {
 
-#if CERES_USE_STD_SHARED_PTR
+#if CERES_STD_SHARED_PTR
 using std::shared_ptr;
-#elif defined(CERES_USE_BOOST_SHARED_PTR)
+#elif defined(CERES_BOOST_SHARED_PTR)
 using boost::shared_ptr;
 #elif defined(CERES_TR1_SHARED_PTR)
 using std::tr1::shared_ptr;
