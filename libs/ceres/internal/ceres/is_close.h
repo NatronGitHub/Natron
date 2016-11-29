@@ -1,6 +1,6 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2013 Google Inc. All rights reserved.
-// http://code.google.com/p/ceres-solver/
+// Copyright 2016 Google Inc. All rights reserved.
+// http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -26,49 +26,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: sameeragarwal@google.com (Sameer Agarwal)
+// Authors: keir@google.com (Keir Mierle), dgossow@google.com (David Gossow)
+//
+// Utility routine for comparing two values.
 
-#ifndef CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_
-#define CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_
-
-// This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
-
-#ifndef CERES_NO_SUITESPARSE
-
-#include "ceres/collections_port.h"
-#include "ceres/graph.h"
+#ifndef CERES_INTERNAL_IS_CLOSE_H_
+#define CERES_INTERNAL_IS_CLOSE_H_
 
 namespace ceres {
 namespace internal {
-
-struct SingleLinkageClusteringOptions {
-  SingleLinkageClusteringOptions()
-      : min_similarity(0.99) {
-  }
-
-  // Graph edges with edge weight less than min_similarity are ignored
-  // during the clustering process.
-  double min_similarity;
-};
-
-// Compute a partitioning of the vertices of the graph using the
-// single linkage clustering algorithm. Edges with weight less than
-// SingleLinkageClusteringOptions::min_similarity will be ignored.
-//
-// membership upon return will contain a mapping from the vertices of
-// the graph to an integer indicating the identity of the cluster that
-// it belongs to.
-//
-// The return value of this function is the number of clusters
-// identified by the algorithm.
-int ComputeSingleLinkageClustering(
-    const SingleLinkageClusteringOptions& options,
-    const WeightedGraph<int>& graph,
-    HashMap<int, int>* membership);
-
+// Returns true if x and y have a relative (unsigned) difference less than
+// relative_precision and false otherwise. Stores the relative and absolute
+// difference in relative/absolute_error if non-NULL. If one of the two values
+// is exactly zero, the absolute difference will be compared, and relative_error
+// will be set to the absolute difference.
+bool IsClose(double x,
+             double y,
+             double relative_precision,
+             double *relative_error,
+             double *absolute_error);
 }  // namespace internal
 }  // namespace ceres
 
-#endif  // CERES_NO_SUITESPARSE
-#endif  // CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_
+#endif  // CERES_INTERNAL_IS_CLOSE_H_

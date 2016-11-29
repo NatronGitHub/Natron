@@ -61,17 +61,10 @@
 #  define CERES_HASH_NAMESPACE_END } }
 #endif
 
-#if defined(CERES_BOOST_UNORDERED_MAP)
-#  include <boost/unordered_map.hpp>
-#  include <boost/unordered_set.hpp>
-#  define CERES_HASH_NAMESPACE_START namespace boost {
-#  define CERES_HASH_NAMESPACE_END }
-#endif
-
 #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
-    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_BOOST_UNORDERED_MAP)  // NOLINT
+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
 #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
- CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE, CERES_BOOST_ORDERED_MAP must be defined!  // NOLINT
+ CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
 #endif
 
 #include <utility>
@@ -114,13 +107,6 @@ template<typename K>
 struct HashSet : std::unordered_set<K> {};
 #endif
 
-#if defined(CERES_BOOST_UNORDERED_MAP)
-template<typename K, typename V>
-struct HashMap : boost::unordered_map<K, V> {};
-template<typename K>
-struct HashSet : boost::unordered_set<K> {};
-#endif
-    
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 #define GG_LONGLONG(x) x##I64
 #define GG_ULONGLONG(x) x##UI64
@@ -186,8 +172,8 @@ CERES_HASH_NAMESPACE_START
 
 // Hasher for STL pairs. Requires hashers for both members to be defined.
 template<typename T>
-struct hash<std::pair<T, T> > {
-  size_t operator()(const std::pair<T, T>& p) const {
+struct hash<pair<T, T> > {
+  size_t operator()(const pair<T, T>& p) const {
     size_t h1 = hash<T>()(p.first);
     size_t h2 = hash<T>()(p.second);
     // The decision below is at compile time
@@ -196,8 +182,8 @@ struct hash<std::pair<T, T> > {
             ceres::internal::Hash64NumWithSeed(h1, h2);
   }
   // Less than operator for MSVC.
-  bool operator()(const std::pair<T, T>& a,
-                  const std::pair<T, T>& b) const {
+  bool operator()(const pair<T, T>& a,
+                  const pair<T, T>& b) const {
     return a < b;
   }
   static const size_t bucket_size = 4;  // These are required by MSVC
