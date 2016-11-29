@@ -41,22 +41,12 @@
 #include <memory>
 #endif
 
-#if CERES_STD_SHARED_PTR
-# include <memory>
-#elif defined(CERES_BOOST_SHARED_PTR)
-# include <boost/shared_ptr.hpp>
-#elif defined(CERES_TR1_SHARED_PTR)
-# include <tr1/memory>
-#endif
-
 namespace ceres {
 
-#if CERES_USE_STD_SHARED_PTR
-using std::shared_ptr;
-#elif defined(CERES_USE_BOOST_SHARED_PTR)
-using boost::shared_ptr;
-#elif defined(CERES_TR1_SHARED_PTR)
+#if defined(CERES_TR1_SHARED_PTR)
 using std::tr1::shared_ptr;
+#else
+using std::shared_ptr;
 #endif
 
 // We allocate some Eigen objects on the stack and other places they
