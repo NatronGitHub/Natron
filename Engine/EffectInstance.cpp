@@ -4183,21 +4183,39 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
         }
     }
 
-    // Follow the frames needed to compute the hash
     {
-        NON_RECURSIVE_ACTION();
-        try {
-            framesNeeded = getFramesNeeded(time, view);
-        } catch (std::exception &e) {
-            if ( !hasPersistentMessage() ) { // plugin may already have set a message
-                setPersistentMessage( eMessageTypeError, e.what() );
+
+        if (getNode()->isNodeDisabledForFrame(time, view)) {
+            // If the node is disabled, get the preferred input at this time
+            RangeD defaultRange;
+            defaultRange.min = defaultRange.max = time;
+            std::vector<RangeD> ranges;
+            ranges.push_back(defaultRange);
+            FrameRangesMap defViewRange;
+            defViewRange[view] = ranges;
+            int prefInput = getNode()->getPreferredInput();
+            if (prefInput != -1) {
+                framesNeeded[prefInput] = defViewRange;
             }
-            return framesNeeded;
+
+        } else {
+            NON_RECURSIVE_ACTION();
+
+            try {
+                framesNeeded = getFramesNeeded(time, view);
+            } catch (std::exception &e) {
+                if ( !hasPersistentMessage() ) { // plugin may already have set a message
+                    setPersistentMessage( eMessageTypeError, e.what() );
+                }
+                return framesNeeded;
+            }
         }
     }
-
+    
 
     if (!isHashCached) {
+        // Follow the frames needed to compute the hash
+
 
         // We need to append the hash of the inputs to the hash. To do so, recurse on inputs and call getFramesNeeded on them
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {

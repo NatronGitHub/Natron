@@ -601,26 +601,21 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
     RectI pixelRod;
     rod.toPixelEnclosing(args.mipMapLevel, par, &pixelRod);
-    ViewInvarianceLevel viewInvariance = _publicInterface->isViewInvariant();
 
-    if ( (args.view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
-        *isIdentity = true;
-        inputNbIdentity = -2;
-        inputTimeIdentity = args.time;
-    } else {
-        try {
-            if (requestPassData) {
-                inputTimeIdentity = requestPassData->inputIdentityTime;
-                inputNbIdentity = requestPassData->identityInputNb;
-                *isIdentity = requestPassData->isIdentity;
-                inputIdentityView = requestPassData->identityView;
-            } else {
-                *isIdentity = _publicInterface->isIdentity_public(true, frameViewHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputIdentityView, &inputNbIdentity);
-            }
-        } catch (...) {
-            return eRenderRoIRetCodeFailed;
+
+    try {
+        if (requestPassData) {
+            inputTimeIdentity = requestPassData->inputIdentityTime;
+            inputNbIdentity = requestPassData->identityInputNb;
+            *isIdentity = requestPassData->isIdentity;
+            inputIdentityView = requestPassData->identityView;
+        } else {
+            *isIdentity = _publicInterface->isIdentity_public(true, frameViewHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputIdentityView, &inputNbIdentity);
         }
+    } catch (...) {
+        return eRenderRoIRetCodeFailed;
     }
+
 
     if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
         // supportsRenderScaleMaybe may have changed, update it
@@ -636,19 +631,14 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         } else if (inputNbIdentity == -2) {
             
             // there was at least one crash if you set the first frame to a negative value
-            assert(inputTimeIdentity != args.time || viewInvariance == eViewInvarianceAllViewsInvariant);
+            assert(inputTimeIdentity != args.time);
 
             // be safe in release mode otherwise we hit an infinite recursion
-            if ( (inputTimeIdentity != args.time) || (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
+            if ( inputTimeIdentity != args.time) {
                 ///This special value of -2 indicates that the plugin is identity of itself at another time
                 boost::scoped_ptr<RenderRoIArgs> argCpy ( new RenderRoIArgs(args) );
                 argCpy->time = inputTimeIdentity;
-
-                if (viewInvariance == eViewInvarianceAllViewsInvariant) {
-                    argCpy->view = ViewIdx(0);
-                } else {
-                    argCpy->view = inputIdentityView;
-                }
+                argCpy->view = inputIdentityView;
 
                 argCpy->preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
 
@@ -752,10 +742,11 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
 
     // At this point, if only the pass through planes are view variant and the rendered view is different than 0,
     // just call renderRoI again for the components left to render on the view 0.
-    if ( (args.view != 0) && (viewInvariance == eViewInvarianceOnlyPassThroughPlanesVariant) ) {
+    if ( (args.view != 0) && (_publicInterface->isViewInvariant() == eViewInvarianceOnlyPassThroughPlanesVariant) ) {
         boost::scoped_ptr<RenderRoIArgs> argCpy( new RenderRoIArgs(args) );
         argCpy->view = ViewIdx(0);
         argCpy->preComputedRoD.clear();
+        argCpy->components = requestedComponents;
         *isIdentity = true;
         return _publicInterface->renderRoI(*argCpy, outputPlanes);
     }
@@ -2105,6 +2096,29 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // If so, forward the call to the main instance
     if (_imp->mainInstance) {
         return _imp->mainInstance->renderRoI(args, outputPlanes);
+    }
+
+    // Check if the effect is continuous
+    if (!canRenderContinuously()) {
+
+        int roundedTime = std::floor(args.time + 0.5);
+        if (args.time != roundedTime) {
+            // An effect that is not continous can only render at integer times (e.g: a reader)
+            boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
+            argsCpy->time = roundedTime;
+            return renderRoI(*argsCpy, outputPlanes);
+        }
+    }
+
+    // Check if the effect is view variant
+    {
+        // An effect that is view invariant will always return the same image, so make it the main view.
+        ViewInvarianceLevel viewInvariance = isViewInvariant();
+        if (viewInvariance == eViewInvarianceAllViewsInvariant && args.view != ViewIdx(0)) {
+            boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
+            argsCpy->view = ViewIdx(0);
+            return renderRoI(*argsCpy, outputPlanes);
+        }
     }
 
     // Setup args for the render

@@ -169,6 +169,7 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 #endif
     metadata.setImageComponents(-1, comps);
     metadata.setImageComponents(0, comps);
+    metadata.setIsContinuous(true);
     return eStatusOK;
 }
 

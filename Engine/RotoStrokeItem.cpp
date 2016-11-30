@@ -281,7 +281,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         bool hasDataToCopy = true;
         {
             int nKeys = originalStroke->xCurve->getKeyFramesCount();
-            if (nKeys == 0 || (other.lastPointIndexInSubStroke != -1 && other.lastPointIndexInSubStroke < nKeys)) {
+            if (nKeys == 0 || (usePaintBuffers && other.lastPointIndexInSubStroke != -1 && other.lastPointIndexInSubStroke < nKeys)) {
                 hasDataToCopy = false;
             }
         }
