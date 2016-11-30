@@ -1,4 +1,4 @@
-# Natron presets file
+# Natron Presets File
 PluginID: fr.inria.built-in.Group
 Params:
   - Name: pyPlugPluginID

@@ -126,7 +126,7 @@ NodeGraph::copySelectedNodes()
     std::ostringstream ss;
 
     try {
-        SERIALIZATION_NAMESPACE::write(ss, cb, std::string());
+        SERIALIZATION_NAMESPACE::write(ss, cb, NATRON_CLIPBOARD_HEADER);
     } catch (...) {
         qDebug() << "Failed to copy selection to system clipboard";
     }
@@ -172,12 +172,12 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
         SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
         SERIALIZATION_NAMESPACE::read(std::string(), ss, &cb);
 
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it!=cb.nodes.end(); ++it) {
+        /*for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it!=cb.nodes.end(); ++it) {
             // This is a pyplug, convert it to a group
             if ((*it)->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
                 (*it)->_pluginID = PLUGINID_NATRON_GROUP;
             }
-        }
+        }*/
 
         _imp->pasteNodesInternal(cb.nodes, pos, true);
     } catch (...) {

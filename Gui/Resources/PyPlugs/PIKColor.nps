@@ -1,4 +1,4 @@
-# Natron presets file
+# Natron Presets File
 PluginID: fr.inria.built-in.Group
 Params:
   - Name: pyPlugPluginID
@@ -463,6 +463,8 @@ Children:
     Params:
       - Name: size
         Int: {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*2}
+      - Name: expandRoD
+        Bool: false
       - Name: premult
         Bool: true
       - Name: premultChanged
@@ -477,6 +479,8 @@ Children:
     Params:
       - Name: size
         Int: {Expr: thisGroup.size.get()/5}
+      - Name: expandRoD
+        Bool: false
       - Name: premult
         Bool: true
       - Name: premultChanged

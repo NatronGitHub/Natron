@@ -35,11 +35,9 @@ NodeSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
 
-    // The plug-in ID might be empty if we are serializing a PyPlug if a default Group node.
-    // If this is a PyPlug of a viewer node it will be the viewer plug-in ID.
-    if (!_pluginID.empty()) {
-        em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
-    }
+    assert(!_pluginID.empty());
+    em << YAML::Key << "PluginID" << YAML::Value << _pluginID;
+
     //  Presets specific
     if (_encodeType == eNodeSerializationTypePresets) {
         em << YAML::Key << "PresetName" << YAML::Value << _presetsIdentifierLabel;
@@ -183,13 +181,8 @@ NodeSerialization::decode(const YAML::Node& node)
         throw YAML::InvalidNode();
     }
 
-    if (node["PluginID"]) {
-        _pluginID = node["PluginID"].as<std::string>();
-        _encodeType = eNodeSerializationTypeRegular;
-    } else {
-        // PyPlugs are uniquely identified by the fact that they don't serialize the script name of the plug-in directly
-        _encodeType = eNodeSerializationTypePyPlug;
-    }
+
+    _pluginID = node["PluginID"].as<std::string>();
 
     if (node["PresetName"]) {
         _encodeType = eNodeSerializationTypePresets;

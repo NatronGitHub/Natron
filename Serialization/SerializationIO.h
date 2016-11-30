@@ -22,7 +22,7 @@
 #include <istream>
 #include <ostream>
 #include <stdexcept>
-
+#include <locale>
 #include "Global/Macros.h"
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -66,12 +66,31 @@ bool read(const std::string& header, std::istream& stream, T* obj)
     if (!obj) {
         throw std::invalid_argument("Invalid serialization object");
     }
-
-    std::string firstLine;
-    std::getline(stream, firstLine);
-    if (!header.empty()) {
-        if (firstLine != header) {
-            return false;
+    {
+        std::string firstLine;
+        std::getline(stream, firstLine);
+        if (!header.empty()) {
+            if (firstLine != header) {
+                return false;
+            }
+        } else {
+            // Check if the first-line contains a #, because it may contain a header which we should skip
+            bool skipFirstLine = true;
+            for (std::size_t i = 0; i < firstLine.size(); ++i) {
+                if (std::isspace(firstLine[i])) {
+                    continue;
+                }
+                if (firstLine[i] != '#') {
+                    skipFirstLine = false;
+                    break;
+                } else {
+                    break;
+                }
+            }
+            // Since we called getline, we must reset the stream
+            if (!skipFirstLine) {
+                stream.seekg(0);
+            }
         }
     }
     YAML::Node node = YAML::Load(stream);

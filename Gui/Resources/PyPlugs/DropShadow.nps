@@ -1,4 +1,4 @@
-# Natron presets file
+# Natron Presets File
 PluginID: fr.inria.built-in.Group
 Params:
   - Name: pyPlugPluginID
@@ -90,7 +90,7 @@ Children:
     Inputs: Shuffle1
     Params:
       - Name: translate
-        Float: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
+        Float: {Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}
       - Name: center
         Float: [480, 270]
       - Name: transformCenterChanged

@@ -95,17 +95,18 @@ namespace NATRON_PYTHON_NAMESPACE { }
 // - NatronInfo.plist (for OSX)
 // - tools/linux/include/qs/natron.qs
 #define NATRON_PROJECT_FILE_EXT "ntp"
-#define NATRON_PROJECT_FILE_HEADER "# Natron project file"
+#define NATRON_PROJECT_FILE_HEADER "# Natron Project File"
 #define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
 #define NATRON_CACHE_FILE_EXT "ntc"
-#define NATRON_CACHE_FILE_HEADER "# Natron cache file"
+#define NATRON_CACHE_FILE_HEADER "# Natron Cache File"
 #define NATRON_LAYOUT_FILE_EXT "nl"
-#define NATRON_LAYOUT_FILE_HEADER "# Natron layout file"
+#define NATRON_LAYOUT_FILE_HEADER "# Natron Layout File"
 #define NATRON_LAYOUT_FILE_MIME_TYPE "application/vnd.natron.layout"
 #define NATRON_PRESETS_FILE_EXT "nps"
-#define NATRON_PRESETS_FILE_HEADER "# Natron presets file"
+#define NATRON_PRESETS_FILE_HEADER "# Natron Presets File"
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
+#define NATRON_CLIPBOARD_HEADER "# Natron Clipboard Content"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 
