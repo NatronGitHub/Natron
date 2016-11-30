@@ -67,9 +67,9 @@ bool read(const std::string& header, std::istream& stream, T* obj)
         throw std::invalid_argument("Invalid serialization object");
     }
 
+    std::string firstLine;
+    std::getline(stream, firstLine);
     if (!header.empty()) {
-        std::string firstLine;
-        std::getline(stream, firstLine);
         if (firstLine != header) {
             return false;
         }
