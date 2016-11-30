@@ -460,7 +460,9 @@ EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
     // If the node is frame varying, append the time to its hash.
     // Do so as well if it is view varying
     if (isFrameVaryingOrAnimated()) {
-        hash->append(time);
+        // Make sure the time is rounded to the image equality epsilon to account for double precision if we want to reproduce the
+        // same hash
+        hash->append(roundImageTimeToEpsilon(time));
     }
 
     if (isViewInvariant() == eViewInvarianceAllViewsVariant) {

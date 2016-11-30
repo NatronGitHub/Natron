@@ -30,6 +30,7 @@
 #include <set>
 #include <map>
 #include <list>
+#include <cmath>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -45,6 +46,17 @@
 // This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
 // do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
+
+
+// If 2 image times differ by lesser than this epsilon they are assumed the same.
+#define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-5
+#define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 5
+
+inline double roundImageTimeToEpsilon(double time)
+{
+    int exp = std::pow(10, NATRON_IMAGE_TIME_EQUALITY_DECIMALS);
+    return std::floor(time * exp + 0.5) / exp;
+}
 
 NATRON_NAMESPACE_ENTER;
 
@@ -77,24 +89,7 @@ struct FrameViewPair
 struct FrameView_compare_less
 {
     bool operator() (const FrameViewPair & lhs,
-                     const FrameViewPair & rhs) const
-    {
-        if (lhs.time < rhs.time) {
-            return true;
-        } else if (lhs.time > rhs.time) {
-            return false;
-        } else {
-            if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
-                return false;
-            }
-            if (lhs.view < rhs.view) {
-                return true;
-            } else {
-                // lhs.view > rhs.view
-                return false;
-            }
-        }
-    }
+                     const FrameViewPair & rhs) const;
 };
 
 typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;

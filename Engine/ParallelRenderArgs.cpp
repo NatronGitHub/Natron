@@ -46,7 +46,30 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+
 NATRON_NAMESPACE_ENTER;
+
+bool
+FrameView_compare_less::operator() (const FrameViewPair & lhs,
+                                    const FrameViewPair & rhs) const
+{
+    if (std::abs(lhs.time - rhs.time) < NATRON_IMAGE_TIME_EQUALITY_EPS) {
+        if (lhs.view == -1 || rhs.view == -1 || lhs.view == rhs.view) {
+            return false;
+        }
+        if (lhs.view < rhs.view) {
+            return true;
+        } else {
+            // lhs.view > rhs.view
+            return false;
+        }
+    } else if (lhs.time < rhs.time) {
+        return true;
+    } else {
+        assert(lhs.time > rhs.time);
+        return false;
+    }
+}
 
 EffectInstancePtr
 EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap)
@@ -595,7 +618,9 @@ NodeFrameRequest::getFrameViewRequest(double time,
                                       ViewIdx view) const
 {
     for (NodeFrameViewRequestData::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        if (it->first.time == time) {
+
+        // Compare floating times with an epsilon
+        if (std::abs(it->first.time - time) < NATRON_IMAGE_TIME_EQUALITY_EPS) {
             if ( (it->first.view == -1) || (it->first.view == view) ) {
                 return &it->second;
             }
