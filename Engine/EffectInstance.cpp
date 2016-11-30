@@ -5385,6 +5385,9 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     bool inputParSet = false;
     ImagePremultiplicationEnum premult = eImagePremultiplicationOpaque;
     bool premultSet = false;
+
+    bool hasOneInputContinuous = false;
+
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstancePtr& input = inputs[i];
         if (input) {
@@ -5396,6 +5399,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             if (!inputParSet) {
                 inputPar = input->getAspectRatio(-1);
                 inputParSet = true;
+            }
+
+            if (!hasOneInputContinuous) {
+                hasOneInputContinuous |= input->canRenderContinuously();
             }
         }
 
@@ -5441,8 +5448,8 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setOutputFielding(eImageFieldingOrderNone);
     metadata.setIsFrameVarying( getHasAnimation() );
 
-#pragma message WARN("TODO: Set continuous flag properly on plug-ins and round frame if needed in renderRoI")
-    metadata.setIsContinuous(false);
+    // An effect is continuous if at least one of its inputs is continuous
+    metadata.setIsContinuous(hasOneInputContinuous);
 
     // now find the best depth that the plugin supports
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
