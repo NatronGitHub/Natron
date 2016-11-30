@@ -220,15 +220,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
                     int nbFramesPreFetched = 0;
 
-
-                    // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
-                    bool isIntegerFrame = (viewIt->second[range].min == (int)viewIt->second[range].min) &&
-                    ( viewIt->second[range].max == (int)viewIt->second[range].max);
-
-                    if (!isIntegerFrame) {
-                        continue;
-                    }
-
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         if (!isRenderFunctor) {
@@ -251,6 +242,15 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                             ///limit calculations that will be done later on anyway.
                         } else {
 
+                            // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
+                            bool isIntegerFrame = (viewIt->second[range].min == (int)viewIt->second[range].min) &&
+                            ( viewIt->second[range].max == (int)viewIt->second[range].max);
+
+                            if (!isIntegerFrame) {
+                                continue;
+                            }
+
+                            
                             // Sanity check
                             if (nbFramesPreFetched >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
                                 break;

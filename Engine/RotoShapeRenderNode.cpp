@@ -186,7 +186,7 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
     RectD maskRod;
     try {
         RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
-        *rod = item->getBoundingBox(time, view);
+        maskRod = item->getBoundingBox(time, view);
     } catch (...) {
     }
     if ( rod->isNull() ) {

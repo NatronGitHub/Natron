@@ -749,6 +749,9 @@ EffectInstance::getImage(int inputNb,
 {
     if (time != time) {
         // time is NaN
+#ifdef DEBUG
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because time is NaN";
+#endif
         return ImagePtr();
     }
 
@@ -802,12 +805,18 @@ EffectInstance::getImage(int inputNb,
 
     // Invalid mask
     if ( isMask && ( (channelForMask == -1) || (maskComps.getNumComponents() == 0) ) ) {
+#ifdef DEBUG
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the mask is not connected";
+#endif
         return ImagePtr();
     }
 
 
     if (!inputEffect) {
         // Disconnected input
+#ifdef DEBUG
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the input is not connected";
+#endif
         return ImagePtr();
     }
 
@@ -853,6 +862,9 @@ EffectInstance::getImage(int inputNb,
             tlsSetter.reset( new ParallelRenderArgsSetter(tlsArgs) );
         } catch (...) {
             // The tree cannot render
+#ifdef DEBUG
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because TLS failed to be set. This is most likely a bug, please investigate!";
+#endif
             return ImagePtr();
         }
 
@@ -876,6 +888,9 @@ EffectInstance::getImage(int inputNb,
         }
 
         if (tlsSetter->computeRequestPass(mipMapLevel, canonicalRoi) != eStatusOK) {
+#ifdef DEBUG
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because it failed to compute the request pass on the input stream tree. This is most likely because the input region of definition is empty";
+#endif
             return ImagePtr();
         }
 
@@ -888,6 +903,9 @@ EffectInstance::getImage(int inputNb,
     // The request pass should have been set and should have set the TLS.
     assert(tls && (tls->currentRenderArgs.validArgs || !tls->frameArgs.empty()));
     if (!tls || (!tls->currentRenderArgs.validArgs && tls->frameArgs.empty())) {
+#ifdef DEBUG
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because there's no thread local storage set. This is a bug, please investigate!";
+#endif
         return ImagePtr();
     }
 
@@ -898,12 +916,18 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
         assert(inputFrameArgs);
         if (!inputFrameArgs || !inputFrameArgs->request) {
+#ifdef DEBUG
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because there is no request pass set on the input. This is a bug, please investigate!";
+#endif
             return ImagePtr();
         }
 
         const FrameViewRequest* inputFrameViewRequest = inputFrameArgs->request->getFrameViewRequest(time, view);
         if (!inputFrameViewRequest) {
             // This node did not request anything on the input in getFramesNeeded action, fail.
+#ifdef DEBUG
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the image at time" << time << "and view" << view << "was not requested properly in the getFramesNeeded action. This is a bug in the plug-in!";
+#endif
             return ImagePtr();
         }
 
@@ -913,6 +937,9 @@ EffectInstance::getImage(int inputNb,
 
     if (roiCanonical.isNull()) {
         // No RoI
+#ifdef DEBUG
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the region of interest is empty";
+#endif
         return ImagePtr();
     }
 
@@ -992,6 +1019,9 @@ EffectInstance::getImage(int inputNb,
                                                                         inputImagesThreadLocal), &inputImages);
 
         if ( inputImages.empty() || (retCode != eRenderRoIRetCodeOk) ) {
+#ifdef DEBUG
+            //qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the call to renderRoI was aborted or failed";
+#endif
             return ImagePtr();
         }
 
@@ -1003,7 +1033,7 @@ EffectInstance::getImage(int inputNb,
     if ( !pixelRoI.intersects( inputImg->getBounds() ) ) {
         // The RoI requested does not intersect with the bounds of the input image computed, return a NULL image.
 #ifdef DEBUG
-        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to " << inputEffect->getScriptName_mt_safe().c_str() << " does not intersect with the bounds of the input image";
+        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the RoI requested does not intersect the bounds of the input image fetched. This is a bug, please investigate!";
 #endif
         return ImagePtr();
     }

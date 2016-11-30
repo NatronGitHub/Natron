@@ -1784,12 +1784,13 @@ Bezier::isCurveFinished(ViewGetSpec view) const
 void
 Bezier::removeControlPointByIndexInternal(int index, ViewIdx view)
 {
-    BezierShape* shape = _imp->getViewShape(view);
-    if (!shape) {
-        return;
-    }
+
     {
         QMutexLocker l(&_imp->itemMutex);
+        BezierShape* shape = _imp->getViewShape(view);
+        if (!shape) {
+            return;
+        }
         BezierCPs::iterator it;
         try {
             it = _imp->atIndex(index, *shape);
@@ -3132,7 +3133,6 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
 RectD
 Bezier::getBoundingBox(double time, ViewGetSpec view) const
 {
-    double startTime = time, mbFrameStep = 1., endTime = time;
 
     RotoPaintPtr rotoPaintNode;
     KnobItemsTablePtr model = getModel();
@@ -3143,50 +3143,49 @@ Bezier::getBoundingBox(double time, ViewGetSpec view) const
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     RectD bbox;
     bool bboxSet = false;
-    for (double t = startTime; t <= endTime; t += mbFrameStep) {
-        RectD pointsBbox;
+    RectD pointsBbox;
 
-        Transform::Matrix3x3 transform;
-        getTransformAtTime(t, view, &transform);
+    Transform::Matrix3x3 transform;
+    getTransformAtTime(time, view, &transform);
 
-        QMutexLocker l(&_imp->itemMutex);
-        const BezierShape* shape = _imp->getViewShape(view_i);
-        if (!shape) {
-            continue;
-        }
-
-
-        bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, t, 0, transform, &pointsBbox);
-
-
-        if (useFeatherPoints() && !_imp->isOpenBezier) {
-            RectD featherPointsBbox;
-            bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, t,  0, transform, &featherPointsBbox);
-            pointsBbox.merge(featherPointsBbox);
-            if (shape->featherPoints.size() > 1) {
-                // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
-                // enclosing the real bbox and close enough
-                double featherDistance = _imp->feather.lock()->getValueAtTime(t, DimIdx(0), view);
-                pointsBbox.x1 -= featherDistance;
-                pointsBbox.x2 += featherDistance;
-                pointsBbox.y1 -= featherDistance;
-                pointsBbox.y2 += featherDistance;
-            }
-        } else if (_imp->isOpenBezier) {
-            double brushSize = _imp->feather.lock()->getValueAtTime(t, DimIdx(0), view);
-            double halfBrushSize = brushSize / 2. + 1;
-            pointsBbox.x1 -= halfBrushSize;
-            pointsBbox.x2 += halfBrushSize;
-            pointsBbox.y1 -= halfBrushSize;
-            pointsBbox.y2 += halfBrushSize;
-        }
-        if (!bboxSet) {
-            bboxSet = true;
-            bbox = pointsBbox;
-        } else {
-            bbox.merge(pointsBbox);
-        }
+    QMutexLocker l(&_imp->itemMutex);
+    const BezierShape* shape = _imp->getViewShape(view_i);
+    if (!shape) {
+        return bbox;
     }
+
+
+    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, 0 /*mipMapLevel*/, transform, &pointsBbox);
+
+
+    if (useFeatherPoints() && !_imp->isOpenBezier) {
+        RectD featherPointsBbox;
+        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  0 /*mipMapLevel*/, transform, &featherPointsBbox);
+        pointsBbox.merge(featherPointsBbox);
+        if (shape->featherPoints.size() > 1) {
+            // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+            // enclosing the real bbox and close enough
+            double featherDistance = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
+            pointsBbox.x1 -= featherDistance;
+            pointsBbox.x2 += featherDistance;
+            pointsBbox.y1 -= featherDistance;
+            pointsBbox.y2 += featherDistance;
+        }
+    } else if (_imp->isOpenBezier) {
+        double brushSize = _imp->feather.lock()->getValueAtTime(time, DimIdx(0), view);
+        double halfBrushSize = brushSize / 2. + 1;
+        pointsBbox.x1 -= halfBrushSize;
+        pointsBbox.x2 += halfBrushSize;
+        pointsBbox.y1 -= halfBrushSize;
+        pointsBbox.y2 += halfBrushSize;
+    }
+    if (!bboxSet) {
+        bboxSet = true;
+        bbox = pointsBbox;
+    } else {
+        bbox.merge(pointsBbox);
+    }
+
 
     return bbox;
 } // Bezier::getBoundingBox
@@ -4032,6 +4031,11 @@ void
 Bezier::initializeKnobs()
 {
     RotoDrawableItem::initializeKnobs();
+
+    _imp->feather = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherParam);
+    _imp->featherFallOff = createDuplicateOfTableKnob<KnobDouble>(kRotoFeatherFallOffParam);
+    _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
+
 } // initializeKnobs
 
 KnobDoublePtr
