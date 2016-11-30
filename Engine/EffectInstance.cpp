@@ -198,32 +198,6 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
-EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache, double time, ViewIdx view)
-{
-
-    {
-        // Cache the meta-datas now
-        QMutexLocker k(&_imp->metadatasMutex);
-        cache->setCachedNodeMetadatas(_imp->metadatas);
-    }
-    {
-        // Also cache all inputs
-        NodePtr node = getNode();
-        for (int i = 0; i < getMaxInputCount(); ++i) {
-            cache->setCachedInput(i, node->getInput(i));
-        }
-
-        // Create a copy of the roto item
-        RotoDrawableItemPtr attachedRotoItem = node->getOriginalAttachedItem();
-        if (attachedRotoItem) {
-            cache->createCachedDrawable(attachedRotoItem, time, view);
-        }
-
-    }
-
-}
-
-void
 EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
@@ -240,8 +214,28 @@ EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeReques
     argsList.back()->request = nodeRequest;
 }
 
+void
+EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
+{
+
+    {
+        // Cache the meta-datas now
+        QMutexLocker k(&_imp->metadatasMutex);
+        cache->setCachedNodeMetadatas(_imp->metadatas);
+    }
+    {
+        // Also cache all inputs
+        NodePtr node = getNode();
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            cache->setCachedInput(i, node->getInput(i));
+        }
+
+    }
+    
+}
+
 ParallelRenderArgsPtr
-EffectInstance::createTLS(double time, ViewIdx view)
+EffectInstance::createFrameRenderTLS(const AbortableRenderInfoPtr& renderID)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
@@ -249,16 +243,30 @@ EffectInstance::createTLS(double time, ViewIdx view)
     args.reset(new ParallelRenderArgs);
     argsList.push_back(args);
 
+    assert(renderID);
+    args->abortInfo = renderID;
+
     // Init the values cache before any getValue or getInput call is made by the effect
     // so we are sure it stays consistant throughout the render.
     args->valuesCache.reset(new RenderValuesCache);
-    initRenderValuesCache(args->valuesCache, time, view);
+    initRenderValuesCache(args->valuesCache);
+
+
+    // Create a copy of the roto item if needed
+    RotoDrawableItemPtr attachedRotoItem = getNode()->getOriginalAttachedItem();
+    if (attachedRotoItem && attachedRotoItem->isRenderCloneNeeded()) {
+        attachedRotoItem->getOrCreateCachedDrawable(renderID);
+    }
+
     return args;
 }
 
 void
 EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs)
 {
+
+    // createTLS should have been called before.
+
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
     assert(!argsList.empty());
@@ -271,8 +279,6 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->isSequentialRender = inArgs->isSequential;
     args->request = inArgs->nodeRequest;
     args->frameViewHash = inArgs->frameViewHash;
-    assert(inArgs->abortInfo);
-    args->abortInfo = inArgs->abortInfo;
     args->treeRoot = inArgs->treeRoot;
     args->visitsCount = inArgs->visitsCount;
     args->textureIndex = inArgs->textureIndex;
@@ -285,6 +291,10 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->stats = inArgs->stats;
     args->openGLContext = inArgs->glContext;
     args->cpuOpenGLContext = inArgs->cpuGlContext;
+
+    assert(args->valuesCache);
+
+
 }
 
 
@@ -308,6 +318,13 @@ EffectInstance::invalidateParallelRenderArgsTLS()
 
     assert( !tls->frameArgs.empty() );
     if (!tls->frameArgs.empty()) {
+        ParallelRenderArgsPtr& args = tls->frameArgs.back();
+
+        // Remove the render clone for the item if needed
+        RotoDrawableItemPtr attachedRotoItem = getNode()->getOriginalAttachedItem();
+        if (attachedRotoItem) {
+            attachedRotoItem->removeCachedDrawable(args->abortInfo.lock());
+        }
         tls->frameArgs.pop_back();
     }
 }
@@ -1000,8 +1017,11 @@ EffectInstance::getImage(int inputNb,
         } else {
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
             if (inputEffect && !isAnalysisPass) {
-                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
-                inputEffect->getScriptName_mt_safe().c_str();
+                qDebug()
+                << QThread::currentThread()
+                << getScriptName_mt_safe().c_str()
+                << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on"
+                << inputEffect->getScriptName_mt_safe().c_str();
             }
 
 
@@ -2248,7 +2268,7 @@ EffectInstance::transformInputRois(const EffectInstancePtr& self,
 }
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
+EffectInstance::renderInputImagesForRoI(const FrameViewRequest* /*request*/,
                                         bool useTransforms,
                                         StorageModeEnum renderStorageMode,
                                         double time,
@@ -2265,9 +2285,8 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         EffectInstance::InputImagesMap *inputImages,
                                         RoIMap* inputsRoi)
 {
-    if (!request) {
-        getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
-    }
+    getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
+
 #ifdef DEBUG
     if ( !inputsRoi->empty() && framesNeeded.empty() && !isReader() && !isRotoPaintNode() ) {
         qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
@@ -4228,9 +4247,14 @@ EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identit
 }
 
 FramesNeededMap
-EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, U64* retHash)
+EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, const AbortableRenderInfoPtr& abortInfo, U64* retHash)
 {
 
+    if (initTLS) {
+        createFrameRenderTLS(abortInfo);
+    }
+
+    
     // For the viewer add frames needed depending on the input being rendered (this is a special case
     // For the viewer we cannot compute a hash and cache it because it varies from the branch we choose to render
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
@@ -4264,11 +4288,6 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
             *retHash = hashValue;
             return framesNeeded;
         }
-    }
-
-
-    if (initTLS) {
-        createTLS(time, view);
     }
 
     // Follow the frames needed to compute the hash
@@ -4305,7 +4324,7 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         U64 inputHash;
-                        FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(f, viewIt->first, initTLS, &inputHash);
+                        FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(f, viewIt->first, initTLS, abortInfo, &inputHash);
                         (void)inputFramesNeeded;
 
                         // Append the input hash
@@ -5387,6 +5406,10 @@ EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
         return stat;
     }
 
+    if (getNode()->getDisabledKnobValue()) {
+        // If the node is disabled, don't call getClipPreferences on the plug-in.
+        return stat;
+    }
     return getPreferredMetaDatas(metadata);
 }
 

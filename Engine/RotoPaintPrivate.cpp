@@ -3188,12 +3188,12 @@ RotoPaint::onOverlayPenMotion(double time,
                 }
 
                 RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
-                if ( _imp->ui->strokeBeingPaint->appendPoint(false, p) ) {
-                    _imp->ui->lastMousePos = pos;
-                    _imp->ui->strokeBeingPaint->invalidateCacheHashAndEvaluate(true, false);
+                _imp->ui->strokeBeingPaint->appendPoint(false, p);
+                _imp->ui->lastMousePos = pos;
+                _imp->ui->strokeBeingPaint->invalidateCacheHashAndEvaluate(true, false);
 
-                    return true;
-                }
+                return true;
+
             }
             break;
         }
@@ -3303,7 +3303,6 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         }
 
         // Do a neat render for the stroke (better interpolation).
-        _imp->ui->strokeBeingPaint->setStrokeFinished();
         evaluateNeatStrokeRender();
         ret = true;
     }

@@ -86,24 +86,31 @@ public:
 
     virtual ~RotoStrokeItem();
 
-    static RotoStrokeItemPtr createRenderCopy(const RotoStrokeItem& other, double time, ViewIdx view);
-
-
+    /**
+     * @brief Returns the brush type of the stroke
+     **/
     virtual RotoStrokeType getBrushType() const OVERRIDE FINAL;
 
+    /**
+     * @brief If empty there's no stroke
+     **/
     bool isEmpty() const;
 
     /**
-     * @brief Appends to the paint stroke the raw points list.
-     * @returns True if the number of points is > 1
+     * @brief Add a point to the stroke.
+     * @param newStroke If true, a new sub-stroke is created before inserting the point
+     * otherwise the point p is appended to the current stroke.
      **/
-    bool appendPoint(bool newStroke, const RotoPoint& p);
+    void appendPoint(bool newStroke, const RotoPoint& p);
 
     /**
      * @brief Clears all strokes and set them to the given points
      **/
     void setStrokes(const std::list<std::list<RotoPoint> >& strokes);
 
+    /**
+     * @brief Add one sub-stroke at once by giving the 3 internal curves
+     **/
     void addStroke(const CurvePtr& xCurve,
                    const CurvePtr& yCurve,
                    const CurvePtr& pCurve);
@@ -121,31 +128,55 @@ public:
      **/
     void updateStrokeData(const Point& lastCenter, double distNextOut);
 
+    /**
+     * @brief Get the state of the stroke rendering algorithm at the previous draw step.
+     **/
     void getStrokeState(Point* lastCenterIn, double* distNextIn) const;
 
     /**
      * @brief Should only be called on the render clone: this is used to determine
-     * if we are rendering the first drawing tick for a stroke.
+     * if we are rendering the first sub-stroke or not.
      **/
     int getRenderCloneCurrentStrokeIndex() const;
+
+    /**
+     * @briefS hould only be called on the render clone: this is used to determine
+     * if we are rendering the first drawing tick for a sub-stroke.
+     **/
     int getRenderCloneCurrentStrokeStartPointIndex() const;
 
+    /**
+     * @brief Internal to the cairo implementation of the stroke rendering. Do not call.
+     **/
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
 
+    /**
+     * @brief When rendering a stroke that is being drawn, we re-use previous buffers and textures.
+     * We must ensure that we keep the same OpenGL context!
+     **/
     void setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext);
     void getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* cpuContext) const;
 
-
+    /**
+     * @brief Can only be called on a render clone: returns the bounding box of the points that are to be rendered
+     * and not the bounding box of the whole stroke.
+     **/
     RectD getLastStrokeMovementBbox() const;
 
-    void setStrokeFinished();
-
+    /**
+     * @brief Call this when drawing is finished. Basically this resets the thread-safety of the nodes used by this item
+     * to their normal safety and it set the stroke in a non-drawing state. 
+     * To re-enable drawing, just call appendPoint()
+     **/
     void setUsePaintBuffers(bool use);
 
+    /**
+     * @brief Returns true if we currently are drawing. In this case the paint-buffers should be the same and only the portion
+     * of the un-rendereed points should be rendered.
+     **/
     bool isPaintBuffersEnabled() const;
 
-    bool isStrokeFinished() const;
 
     virtual void copyItem(const KnobTableItem& other) OVERRIDE FINAL;
 
@@ -204,6 +235,13 @@ public:
 
     
 private:
+
+    virtual RotoDrawableItemPtr createRenderCopy() const OVERRIDE FINAL;
+
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
+    {
+        return true;
+    }
 
     virtual void initializeKnobs() OVERRIDE;
 

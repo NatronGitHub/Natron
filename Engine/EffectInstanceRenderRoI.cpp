@@ -1321,7 +1321,7 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
         **framesNeeded = requestPassData->globalData.frameViewsNeeded;
     } else {
         U64 hash;
-        **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, false, &hash);
+        **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, false, AbortableRenderInfoPtr(), &hash);
     }
 
 

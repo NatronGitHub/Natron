@@ -239,11 +239,6 @@ struct FrameViewRequestFinalData
     RectD finalRoi;
 };
 
-struct FrameViewPerRequestData
-{
-    RoIMap inputsRoi;
-};
-
 struct FrameViewRequest
 {
     ///All different requests led by different branchs in the tree

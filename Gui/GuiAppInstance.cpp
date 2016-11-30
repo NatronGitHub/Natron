@@ -1172,13 +1172,6 @@ GuiAppInstance::setUserIsPainting(const RotoStrokeItemPtr& stroke)
         QMutexLocker k(&_imp->rotoDataMutex);
         _imp->strokeBeingPainted = stroke;
     }
-    if (_imp->_gui) {
-        if (stroke) {
-            _imp->_gui->onFreezeUIButtonClicked(true);
-        } else {
-            _imp->_gui->onFreezeUIButtonClicked(false);
-        }
-    }
 }
 
 RotoStrokeItemPtr

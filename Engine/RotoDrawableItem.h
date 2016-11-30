@@ -120,6 +120,7 @@ public:
      **/
     void createNodes(bool connectNodes = true);
 
+protected:
     /**
      * @brief Set the render thread safety to instance safe. This is called when user start drawing.
      **/
@@ -130,7 +131,8 @@ public:
      * nodes to their default thread safety for rendering.
      **/
     void resetNodesThreadSafety();
-
+    
+public:
     /**
      * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
      * to calling this function.
@@ -215,6 +217,46 @@ public:
     virtual void initializeKnobs() OVERRIDE;
 
     virtual RotoStrokeType getBrushType() const = 0;
+
+
+protected:
+    
+    /**
+     * @brief Create a shallow render copy of the other item. The copy will only contain stroke points
+     * that were not yet rendered (when drawing).
+     * By default this does not copy the item so there's no render clones. Only implement this if you have
+     * extra datas (such as control points or curves) that needs to be cloned through the render. If the item
+     * only use knobs you don't have to create a render copy as all knobs already are cached away.
+     * If implementing it, also re-implement isRenderCloneNeeded() to return true.
+     **/
+    virtual RotoDrawableItemPtr createRenderCopy() const
+    {
+        return RotoDrawableItemPtr();
+    }
+
+
+public:
+
+    virtual bool isRenderCloneNeeded() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief Can only be called on a non render clone. This will create a render clone for the given renderID.
+     **/
+    RotoDrawableItemPtr getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID);
+
+    /**
+     * @brief Retrieves the render clone for the given renderID
+     **/
+    RotoDrawableItemPtr getCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+
+    /**
+     * @brief Remove a cached drawable previously registered with getOrCreateCachedDrawable
+     **/
+    void removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+
 
 Q_SIGNALS:
 

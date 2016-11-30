@@ -85,9 +85,20 @@ public:
            const std::string& baseName,
            bool isOpenBezier);
 
+private:
+
     // The copy constructor makes a shallow copy and only copy knob pointers
     // since the knobs are anyway cached during render in RenderValuesCache
     Bezier(const Bezier& other);
+
+    virtual RotoDrawableItemPtr createRenderCopy() const OVERRIDE FINAL;
+
+    virtual bool isRenderCloneNeeded() const
+    {
+        return true;
+    }
+
+public:
 
 
     virtual ~Bezier();

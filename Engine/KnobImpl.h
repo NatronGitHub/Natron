@@ -1184,8 +1184,9 @@ Knob<T>::copyKnob(const KnobIPtr& other,
     hasChanged |= cloneExtraData(other, view, otherView, dimension, otherDimension, offset, range);
 
 
-
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    if (hasChanged) {
+        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    }
     endChanges();
 
     return hasChanged;
@@ -1280,7 +1281,7 @@ Knob<T>::computeHasModifications()
         } // for all views
 
     } // for all dimensions
-    if (oneChanged) {
+    if (oneChanged && _signalSlotHandler) {
         _signalSlotHandler->s_hasModificationsChanged();
     }
 }

@@ -194,7 +194,6 @@ KnobHelper::deleteKnob()
             }
         }
     }
-    _signalSlotHandler.reset();
 } // KnobHelper::deleteKnob
 
 void
@@ -3639,6 +3638,10 @@ struct KnobHolder::KnobHolderPrivate
 {
     AppInstanceWPtr app;
     QMutex knobsMutex;
+    // When rendering, the render thread makes a (shallow) copy of this item:
+    // knobs are not copied
+    bool isShallowRenderCopy;
+
     std::vector< KnobIPtr > knobs;
     bool knobsInitialized;
     bool isInitializingKnobs;
@@ -3698,6 +3701,7 @@ struct KnobHolder::KnobHolderPrivate
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
         , knobsMutex()
+        , isShallowRenderCopy(false)
         , knobs()
         , knobsInitialized(false)
         , isInitializingKnobs(false)
@@ -3726,6 +3730,7 @@ struct KnobHolder::KnobHolderPrivate
     KnobHolderPrivate(const KnobHolderPrivate& other)
     : app(other.app)
     , knobsMutex()
+    , isShallowRenderCopy(true)
     , knobs(other.knobs)
     , knobsInitialized(other.knobsInitialized)
     , isInitializingKnobs(other.isInitializingKnobs)
@@ -3783,17 +3788,26 @@ KnobHolder::KnobHolder(const KnobHolder& other)
 
 KnobHolder::~KnobHolder()
 {
-    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        KnobHelperPtr helper = boost::dynamic_pointer_cast<KnobHelper>(_imp->knobs[i]);
-        assert(helper);
-        if (helper) {
-            // Make sure nobody is referencing this
-            //helper->_imp->holder.reset();
-            helper->deleteKnob();
-
+    if (!_imp->isShallowRenderCopy) {
+        for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+            KnobHelperPtr helper = boost::dynamic_pointer_cast<KnobHelper>(_imp->knobs[i]);
+            assert(helper);
+            if (helper) {
+                // Make sure nobody is referencing this
+                helper->_imp->holder.reset();
+                helper->deleteKnob();
+                
+            }
         }
     }
 }
+
+bool
+KnobHolder::isRenderClone() const
+{
+    return _imp->isShallowRenderCopy;
+}
+
 
 void
 KnobHolder::setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore)

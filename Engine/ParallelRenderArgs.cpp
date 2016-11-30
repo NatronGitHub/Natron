@@ -452,7 +452,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         // Get the frame/views needed for this frame/view.
         // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
         U64 hash;
-        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, &hash);
+        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &hash);
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
     assert(fvRequest);
@@ -510,33 +510,20 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             return stat;
         }
 
-        //Identity but no input, if it's optional ignore, otherwise fail
-        /*if (callerNode && callerNode != node) {
-
-            int inputIndex = callerNode->getInputIndex(node.get());
-            if (callerNode->getEffectInstance()->isInputOptional(inputIndex)
-         || callerNode->getEffectInstance()->isInputMask(inputIndex)) {
-
-
-                return eStatusOK;
-            }
-           }
-           return eStatusFailed;*/
-
-        // EDIT: always accept if identity has no input, it will produce a black image in the worst case scenario.
+        // Aalways accept if identity has no input, it will produce a black image in the worst case scenario.
         return eStatusOK;
     }
 
     // Compute the regions of interest in input for this RoI
-    FrameViewPerRequestData fvPerRequestData;
-    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &fvPerRequestData.inputsRoi);
+    RoIMap inputsRoi;
+    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &inputsRoi);
 
 
     // Transform Rois and get the reroutes map
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
             fvRequest->globalData.reroutesMap.reset( new ReRoutesMap() );
-            transformInputRois( effect, fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &fvPerRequestData.inputsRoi, fvRequest->globalData.reroutesMap );
+            transformInputRois( effect, fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &inputsRoi, fvRequest->globalData.reroutesMap );
         }
     }
 
@@ -557,7 +544,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
                                                               node,
                                                               fvRequest->globalData.frameViewsNeeded,
-                                                              fvPerRequestData.inputsRoi,
+                                                              inputsRoi,
                                                               fvRequest->globalData.transforms,
                                                               useTransforms,
                                                               eStorageModeRAM /*returnStorage*/,
@@ -702,7 +689,6 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->view = inArgs->view;
         tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
         tlsArgs->isSequential = inArgs->isSequential;
-        tlsArgs->abortInfo = inArgs->abortInfo;
         tlsArgs->treeRoot = inArgs->treeRoot;
         tlsArgs->nodeRequest = NodeFrameRequestPtr();
         tlsArgs->glContext = gpuContext;
@@ -789,18 +775,11 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
 
 
 
-    // Set the TLS right away so that getValue calls made when computing the hash are cached.
-    // Each visits of this node will increase the visitCounter on the TLS as well as add the frame/view hash
-    // to a map.
-    if (nodeData->visitCounter == 1) {
-        node->getEffectInstance()->createTLS(inArgs->time, inArgs->view);
-    }
-
     // Compute frames-needed, which will also give us the hash for this node.
     // This action will most likely make getValue calls on knobs, so we need to create the TLS object
     // on the effect with at least the render values cache even if we don't have yet other informations.
     U64 hashValue;
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, nodeData->visitCounter == 1 /*createTLS*/, &hashValue);
+    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, nodeData->visitCounter == 1 /*createTLS*/, inArgs->abortInfo, &hashValue);
 
 
     // Now update the TLS with the hash value and initialize data if needed
@@ -822,7 +801,7 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
 
             // Set the TLS on the expression dependency
             if (insertOK.second) {
-                (*it)->getEffectInstance()->createTLS(time, view);
+                (*it)->getEffectInstance()->createFrameRenderTLS(inArgs->abortInfo);
                 setNodeTLSInternal(inArgs, doNansHandling, *it, true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
             }
         }

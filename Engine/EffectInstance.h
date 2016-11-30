@@ -613,7 +613,6 @@ public:
         ViewIdx view;
         bool isRenderUserInteraction;
         bool isSequential;
-        AbortableRenderInfoPtr abortInfo;
         FrameViewHashMap frameViewHash;
         NodePtr treeRoot;
         int visitsCount;
@@ -638,14 +637,14 @@ public:
      **/
     void initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
 
-    ParallelRenderArgsPtr createTLS(double time, ViewIdx view);
+    ParallelRenderArgsPtr createFrameRenderTLS(const AbortableRenderInfoPtr& renderID);
 
     void setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
 private:
-    void initRenderValuesCache(const RenderValuesCachePtr& cache, double time, ViewIdx view);
+    void initRenderValuesCache(const RenderValuesCachePtr& cache);
 
 public:
 
@@ -1094,7 +1093,7 @@ public:
      * @param hash If set this will return the hash of the node for the given time view. In a 
      * render thread, this hash should be cached away 
      **/
-    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, bool initTLS, U64* hash) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, bool initTLS, const AbortableRenderInfoPtr& abortInfo, U64* hash) WARN_UNUSED_RETURN;
 
     void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 

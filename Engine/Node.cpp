@@ -9964,9 +9964,9 @@ Node::getAttachedRotoItem() const
         return thisItem;
     }
     // On a render thread, use the local thread copy
-    RenderValuesCachePtr cache = effect->getRenderValuesCacheTLS();
-    if (cache) {
-        return cache->getCachedDrawable(thisItem);
+    ParallelRenderArgsPtr tls = effect->getParallelRenderArgsTLS();
+    if (tls && thisItem->isRenderCloneNeeded()) {
+        return thisItem->getCachedDrawable(tls->abortInfo.lock());
     }
     return thisItem;
 }

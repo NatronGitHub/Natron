@@ -1507,7 +1507,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 } else {
 
                     // Overwrite the RoI to only the last portion rendered
-                    RectD lastPaintBbox = activeStrokeItem->getLastStrokeMovementBbox();
+                    // Read the stroke portion bbox on the render clone not on the "main" object which may have changed!
+                    RotoStrokeItemPtr strokeRenderClone = toRotoStrokeItem(activeStrokeItem->getCachedDrawable(inArgs.params->abortInfo));
+                    assert(strokeRenderClone);
+                    RectD lastPaintBbox = strokeRenderClone->getLastStrokeMovementBbox();
 
                     lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
 

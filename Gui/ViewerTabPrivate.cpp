@@ -166,7 +166,7 @@ transformTimeForNode(const EffectInstancePtr& currentNode,
                      double inTime)
 {
     U64 nodeHash;
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(inTime, ViewIdx(0), false, &nodeHash);
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(inTime, ViewIdx(0), false, AbortableRenderInfoPtr(), &nodeHash);
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
 
     if ( foundInput0 == framesNeeded.end() ) {

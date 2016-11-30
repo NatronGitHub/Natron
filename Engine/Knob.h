@@ -2509,6 +2509,8 @@ public:
 
     virtual ~KnobHolder();
 
+    bool isRenderClone() const;
+
     void setPanelPointer(DockablePanelI* gui);
 
     void discardPanelPointer();

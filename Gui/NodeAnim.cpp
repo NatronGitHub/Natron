@@ -640,8 +640,8 @@ NodeAnimPrivate::computeRetimeRange()
         input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
 
         U64 hash;
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), false, &hash);
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), false, &hash);
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), false, AbortableRenderInfoPtr(), &hash);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), false, AbortableRenderInfoPtr(), &hash);
         assert( !framesFirst.empty() && !framesLast.empty() );
         if ( framesFirst.empty() || framesLast.empty() ) {
             return;

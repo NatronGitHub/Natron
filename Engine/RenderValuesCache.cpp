@@ -134,9 +134,6 @@ struct RenderValuesCachePrivate
     // Node metadatas at the time of render
     NodeMetadata metadatas;
 
-    // All roto shapes. They are plain copies of originals.
-    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr> rotoItems;
-
 
     RenderValuesCachePrivate()
     : boolKnobValues()
@@ -150,7 +147,6 @@ struct RenderValuesCachePrivate
 
 
     CurvePtr setCachedParametricKnobCurve(const KnobParametricPtr& knob, DimIdx dimension, const CurvePtr& curve);
-    RotoDrawableItemPtr setCachedRotoItem(const RotoDrawableItemPtr& bezier, double time, ViewIdx view);
 };
 
 RenderValuesCache::RenderValuesCache()
@@ -285,45 +281,5 @@ RenderValuesCachePrivate::setCachedParametricKnobCurve(const KnobParametricPtr& 
     return copy;
 }
 
-RotoDrawableItemPtr
-RenderValuesCache::getCachedDrawable(const RotoDrawableItemPtr& bezier) const
-{
-    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr>::const_iterator foundBezier = _imp->rotoItems.find(bezier);
-    // createCachedDrawable() should have been called first
-    assert(foundBezier != _imp->rotoItems.end());
-    if (foundBezier == _imp->rotoItems.end()) {
-        return RotoStrokeItemPtr();
-    }
-    return foundBezier->second;
-}
-
-RotoDrawableItemPtr
-RenderValuesCache::createCachedDrawable(const RotoDrawableItemPtr& bezier, double time, ViewIdx view) const
-{
-    assert(_imp->rotoItems.find(bezier) == _imp->rotoItems.end());
-    std::map<RotoDrawableItemPtr, RotoDrawableItemPtr>::const_iterator foundBezier = _imp->rotoItems.find(bezier);
-    if (foundBezier == _imp->rotoItems.end()) {
-        return _imp->setCachedRotoItem(bezier, time, view);
-    }
-    return foundBezier->second;
-}
-
-RotoDrawableItemPtr
-RenderValuesCachePrivate::setCachedRotoItem(const RotoDrawableItemPtr& bezier, double time, ViewIdx view)
-{
-    BezierPtr isBezier = toBezier(bezier);
-    RotoDrawableItemPtr copy;
-    RotoStrokeItemPtr isStroke = toRotoStrokeItem(bezier);
-    if (isBezier) {
-        copy.reset(new Bezier(*isBezier));
-    } else if (isStroke) {
-        copy = RotoStrokeItem::createRenderCopy(*isStroke, time, view);
-    } else {
-        assert(false);
-        return RotoDrawableItemPtr();
-    }
-    rotoItems[bezier] = copy;
-    return copy;
-}
 
 NATRON_NAMESPACE_EXIT;

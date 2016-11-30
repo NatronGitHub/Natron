@@ -243,6 +243,13 @@ Bezier::~Bezier()
 {
 }
 
+RotoDrawableItemPtr
+Bezier::createRenderCopy() const
+{
+    BezierPtr ret(new Bezier(*this));
+    return ret;
+}
+
 RotoStrokeType
 Bezier::getBrushType() const
 {

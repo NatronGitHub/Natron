@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
+#include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoPaint.h"
@@ -96,18 +97,11 @@ struct RotoStrokeItemPrivate
 {
     RotoStrokeItem* _publicInterface;
 
-    // When rendering, the render thread makes a (shallow) copy of this item:
-    // knobs are not copied
-    bool isShallowRenderCopy;
 
     mutable QMutex lock;
 
     // brush type
     RotoStrokeType type;
-
-    // True when we are not drawing, false if we are actively drawing.
-    // There should only ever be a single stroke rendering at once in the whole application!
-    bool finished;
 
     // When true, the render will be optimized to render only new points that were added to the curve
     // and will re-use the same image.
@@ -180,10 +174,8 @@ struct RotoStrokeItemPrivate
 
     RotoStrokeItemPrivate(RotoStrokeItem* publicInterface, RotoStrokeType type)
     : _publicInterface(publicInterface)
-    , isShallowRenderCopy(false)
     , lock()
     , type(type)
-    , finished(false)
     , usePaintBuffers(false)
     , strokes()
     , curveT0(0)
@@ -205,10 +197,8 @@ struct RotoStrokeItemPrivate
 
     RotoStrokeItemPrivate(RotoStrokeItem* publicInterface, const RotoStrokeItemPrivate& other)
     : _publicInterface(publicInterface)
-    , isShallowRenderCopy(true)
     , lock()
     , type(other.type)
-    , finished(other.finished)
     , usePaintBuffers(other.usePaintBuffers)
     , strokes()
     , curveT0(other.curveT0)
@@ -246,17 +236,18 @@ struct RotoStrokeItemPrivate
     /**
      * @brief Copy from the other stroke the points that still need to be rendered in the stroke so far.
      **/
-    bool copyStrokeForRendering(const RotoStrokeItemPrivate& other, double time, ViewIdx view);
+    bool copyStrokeForRendering(const RotoStrokeItemPrivate& other);
 
     RectD computeBoundingBox(double time, ViewGetSpec view) const;
 
 };
 
 bool
-RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other, double time, ViewIdx view)
+RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other)
 {
     QMutexLocker k1(&lock);
-    QMutexLocker k(&other.lock);
+
+    assert(!other.lock.tryLock());
 
     // Update dist to next for next drawing step
     other.distToNextIn = other.distToNextOut;
@@ -318,6 +309,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
             if ((other.lastPointIndexInSubStroke != -1 && newIndex > other.lastPointIndexInSubStroke) || (other.lastPointIndexInSubStroke == -1 && newIndex > 0)) {
                 hasDoneSomething = true;
             }
+            strokes.push_back(strokeCopy);
         }
 
         ++strokeIndex;
@@ -336,12 +328,19 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // that was computed at the previous draw step.
     // If we never drawn so far, this is the first
     // tick hence we recompute it from the strokes.
-    if (!usePaintBuffers || (other.lastPointIndexInSubStroke == -1 && other.lastStrokeIndex == 0)) {
+    if (usePaintBuffers) {
+
+        // The bounding box computation requires a time and view parameters:
+        // we are OK to assume that the time view are the current ones in the UI
+        // since we are drawing anyway nothing else is happening.
+        double time = _publicInterface->getCurrentTime();
+        ViewIdx view = _publicInterface->getCurrentView();
         lastStrokeStepBbox = computeBoundingBox(time, view);
-        renderCachedBbox = lastStrokeStepBbox;
-    } else {
-        lastStrokeStepBbox = computeBoundingBox(time, view);
-        renderCachedBbox.merge(lastStrokeStepBbox);
+        if (other.lastPointIndexInSubStroke == -1 && other.lastStrokeIndex == 0) {
+            renderCachedBbox = lastStrokeStepBbox;
+        } else {
+            renderCachedBbox.merge(lastStrokeStepBbox);
+        }
     }
     return hasDoneSomething;
 } // copyStrokeForRendering
@@ -349,8 +348,8 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
 int
 RotoStrokeItem::getRenderCloneCurrentStrokeIndex() const
 {
+    assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-    assert(_imp->isShallowRenderCopy);
     if (_imp->usePaintBuffers) {
         return _imp->lastStrokeIndex;
     }
@@ -360,8 +359,8 @@ RotoStrokeItem::getRenderCloneCurrentStrokeIndex() const
 int
 RotoStrokeItem::getRenderCloneCurrentStrokeStartPointIndex() const
 {
+    assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-    assert(_imp->isShallowRenderCopy);
     if (_imp->usePaintBuffers) {
         return _imp->lastPointIndexInSubStroke == -1 ? 0 : _imp->lastPointIndexInSubStroke + 1;
     }
@@ -389,18 +388,23 @@ RotoStrokeItem::~RotoStrokeItem()
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
     RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
 #endif
-    if (!_imp->isShallowRenderCopy) {
+    if (!isRenderClone()) {
         deactivateNodes();
     }
 }
 
-RotoStrokeItemPtr
-RotoStrokeItem::createRenderCopy(const RotoStrokeItem& other, double time, ViewIdx view)
+RotoDrawableItemPtr
+RotoStrokeItem::createRenderCopy() const
 {
-    RotoStrokeItemPtr ret(new RotoStrokeItem(other));
-    ret->_imp->copyStrokeForRendering(*other._imp, time, view);
-    return ret;
+    {
+        QMutexLocker k(&_imp->lock);
+        RotoStrokeItemPtr ret(new RotoStrokeItem(*this));
+        ret->_imp->copyStrokeForRendering(*_imp);
+        return ret;
+    }
+
 }
+
 
 void
 RotoStrokeItem::updateStrokeData(const Point& lastCenter, double distNextOut)
@@ -415,7 +419,7 @@ void
 RotoStrokeItem::getStrokeState(Point* lastCenterIn, double* distNextIn) const
 {
     QMutexLocker k(&_imp->lock);
-    if (_imp->usePaintBuffers) {
+    if (!_imp->usePaintBuffers) {
         *distNextIn = 0;
         lastCenterIn->x = lastCenterIn->y = INT_MIN;
     } else {
@@ -680,35 +684,6 @@ RotoStrokeItem::isEmpty() const
     return _imp->strokes.empty();
 }
 
-void
-RotoStrokeItem::setStrokeFinished()
-{
-    {
-        QMutexLocker k(&_imp->lock);
-        _imp->finished = true;
-
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
-#endif
-    }
-
-    resetTransformCenter();
-
-
-    KnobItemsTablePtr model = getModel();
-    RotoPaintPtr isRotopaint;
-    if (model) {
-        NodePtr node = model->getNode();
-        if (node) {
-            isRotopaint = toRotoPaint(node->getEffectInstance());
-        }
-    }
-
-    //Might have to do this somewhere else if several viewers are active on the rotopaint node
-    resetNodesThreadSafety();
-
-    invalidateCacheHashAndEvaluate(true, false);
-}
 
 void
 RotoStrokeItem::setUsePaintBuffers(bool use)
@@ -716,8 +691,19 @@ RotoStrokeItem::setUsePaintBuffers(bool use)
     {
         QMutexLocker k(&_imp->lock);
         _imp->usePaintBuffers = use;
+
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
+
     }
+
     if (!use) {
+
+        resetTransformCenter();
+
+        resetNodesThreadSafety();
+
         const NodesList& nodes = getItemNodes();
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->setPaintBuffer(ImagePtr());
@@ -725,7 +711,7 @@ RotoStrokeItem::setUsePaintBuffers(bool use)
     }
 }
 
-bool
+void
 RotoStrokeItem::appendPoint(bool newStroke,
                             const RotoPoint& p)
 {
@@ -736,12 +722,8 @@ RotoStrokeItem::appendPoint(bool newStroke,
     assert(thisShared);
     {
         QMutexLocker k(&_imp->lock);
-        if (_imp->finished) {
-            _imp->finished = false;
+        if (!_imp->usePaintBuffers) {
             _imp->usePaintBuffers = true;
-        }
-
-        if (newStroke) {
             setNodesThreadSafetyForRotopainting();
         }
 
@@ -831,7 +813,6 @@ RotoStrokeItem::appendPoint(bool newStroke,
     } // QMutexLocker k(&itemMutex);
 
 
-    return true;
 } // RotoStrokeItem::appendPoint
 
 void
@@ -891,7 +872,7 @@ RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
         _imp->strokes.push_back(s);
 
     }
-    setStrokeFinished();
+    setUsePaintBuffers(false);
 } // setStrokes
 
 void
@@ -970,8 +951,8 @@ RotoStrokeItem::getDrawingGLContext(OSGLContextPtr* gpuContext, OSGLContextPtr* 
 RectD
 RotoStrokeItem::getLastStrokeMovementBbox() const
 {
+    assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-    assert(_imp->isShallowRenderCopy);
     return _imp->lastStrokeStepBbox;
 }
 
@@ -980,13 +961,6 @@ RotoStrokeItem::isPaintBuffersEnabled() const
 {
     QMutexLocker k(&_imp->lock);
     return _imp->usePaintBuffers;
-}
-
-bool
-RotoStrokeItem::isStrokeFinished() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->finished;
 }
 
 void
@@ -1013,11 +987,11 @@ RotoStrokeItem::copyItem(const KnobTableItem& other)
             _imp->strokes.push_back(s);
         }
         _imp->type = otherStroke->_imp->type;
-        _imp->finished = true;
+        _imp->usePaintBuffers = false;
     }
     RotoDrawableItem::copyItem(other);
-    invalidateHashCache();
     resetNodesThreadSafety();
+    invalidateHashCache();
 }
 
 void
@@ -1091,10 +1065,9 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
             stroke.pressureCurve->fromSerialization(*it->pressure);
             _imp->strokes.push_back(stroke);
         }
+        _imp->usePaintBuffers = false;
     }
 
-
-    setStrokeFinished();
 }
 
 RectD
@@ -1223,7 +1196,7 @@ RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
         return RectD();
     }
     QMutexLocker k(&_imp->lock);
-    if (_imp->isShallowRenderCopy && _imp->usePaintBuffers) {
+    if (isRenderClone() && _imp->usePaintBuffers) {
         return _imp->renderCachedBbox;
     }
     return _imp->computeBoundingBox(time, view);

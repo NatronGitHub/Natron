@@ -83,6 +83,14 @@ struct RotoDrawableItemPrivate
     Q_DECLARE_TR_FUNCTIONS(RotoDrawableItem)
 
 public:
+
+
+    typedef std::map<AbortableRenderInfoWPtr, RotoDrawableItemPtr> RenderClonesMap;
+
+    // For each render, a map of the clones
+    mutable QMutex renderClonesMutex;
+    RenderClonesMap renderClones;
+
     /*
      * The effect node corresponds to the following given the selected tool:
      * Stroke= RotoOFX
@@ -149,7 +157,9 @@ public:
     }
 
     RotoDrawableItemPrivate(const RotoDrawableItemPrivate& other)
-    : effectNode(other.effectNode)
+    : renderClonesMutex()
+    , renderClones()
+    , effectNode(other.effectNode)
     , maskNode(other.maskNode)
     , mergeNode(other.mergeNode)
     , timeOffsetNode(other.timeOffsetNode)
@@ -216,6 +226,7 @@ RotoDrawableItem::getItemNodes() const
 {
     return _imp->nodes;
 }
+
 
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
@@ -1010,15 +1021,19 @@ RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
             return true;
         }
         RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)lifeTimeKnob->getValue();
+
+        // The time in parameter may be a float if e.g a TimeBlur node is in the graph. As a result of this
+        // the lifetime frame would not exactly match the given time. Instead round the time to the closest integer.
+        int roundedTime = std::floor(time + 0.5);
         switch (lifetime) {
             case eRotoPaintItemLifeTimeTypeAll:
                 return true;
             case eRotoPaintItemLifeTimeTypeSingle:
-                return time == _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+                return roundedTime == _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
             case eRotoPaintItemLifeTimeTypeFromStart:
-                return time <= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+                return roundedTime <= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
             case eRotoPaintItemLifeTimeTypeToEnd:
-                return time >= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+                return roundedTime >= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
             case eRotoPaintItemLifeTimeTypeCustom:
                 return _imp->customRange.lock()->getValueAtTime(time, DimIdx(0), view);
 
@@ -1363,6 +1378,51 @@ RotoDrawableItem::onItemInsertedInModel()
     RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
     isRotopaint->refreshRotoPaintTree();
 
+}
+
+RotoDrawableItemPtr
+RotoDrawableItem::getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID)
+{
+    assert(isRenderCloneNeeded());
+    assert(!isRenderClone());
+
+    QMutexLocker k(&_imp->renderClonesMutex);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    if (found != _imp->renderClones.end()) {
+        return found->second;
+    }
+
+    RotoDrawableItemPtr ret = createRenderCopy();
+    assert(ret);
+    _imp->renderClones[renderID] = ret;
+    return ret;
+
+}
+
+
+RotoDrawableItemPtr
+RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+{
+    assert(isRenderCloneNeeded());
+    assert(!isRenderClone());
+
+    QMutexLocker k(&_imp->renderClonesMutex);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    if (found != _imp->renderClones.end()) {
+        return found->second;
+    }
+    return RotoDrawableItemPtr();
+}
+
+void
+RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+{
+    assert(isRenderCloneNeeded());
+    QMutexLocker k(&_imp->renderClonesMutex);
+    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(renderID);
+    if (found != _imp->renderClones.end()) {
+        _imp->renderClones.erase(renderID);
+    }
 }
 
 RectD

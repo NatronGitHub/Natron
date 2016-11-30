@@ -349,7 +349,9 @@ KnobHelper::cloneCurve(ViewIdx view,
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    if (hasChanged) {
+        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    }
 
 
     if (hasChanged) {
