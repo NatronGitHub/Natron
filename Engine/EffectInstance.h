@@ -688,7 +688,7 @@ public:
     static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
                                                                const NodePtr & node,
                                                                const FramesNeededMap & framesNeeded,
-                                                               const RoIMap & inputRois,
+                                                               const RoIMap* inputRois, // roi functor specific
                                                                const InputMatrixMapPtr & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
                                                                StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
@@ -838,14 +838,8 @@ public:
         return false;
     }
 
-    bool getThreadLocalRegionsOfInterests(RoIMap & roiMap) const;
 
     OSGLContextPtr getThreadLocalOpenGLContext() const;
-
-    void getThreadLocalInputImages(InputImagesMap* images) const;
-
-    void addThreadLocalInputImageTempPointer(int inputNb, const ImagePtr & img);
-
 
     virtual bool isMultiPlanar() const
     {
@@ -1356,7 +1350,6 @@ public:
     {
         EffectInstancePtr identityInput;
         RectI rect;
-        RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
         double identityTime;
         bool isIdentity;
@@ -1785,14 +1778,13 @@ public:
     struct RenderArgs
     {
         RectD rod; //!< the effect's RoD in CANONICAL coordinates
-        RoIMap regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
         RectI renderWindowPixel; //< the current renderWindow in PIXEL coordinates
         double time; //< the time to render
         ViewIdx view; //< the view to render
         bool validArgs; //< are the args valid ?
-        bool isIdentity;
-        double identityTime;
-        EffectInstancePtr identityInput;
+
+        // Input images that were pre-fetched in renderRoI so that they can
+        // be accessed from getImage()
         EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> outputPlanes;
 
@@ -2100,22 +2092,17 @@ private:
 
 
     /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
-                                             bool useTransforms,
+    RenderRoIRetCode renderInputImagesForRoI( bool useTransforms,
                                              StorageModeEnum renderStorageMode,
                                              double time,
                                              ViewIdx view,
-                                             const RectD & rod,
-                                             const RectD & canonicalRenderWindow,
                                              const InputMatrixMapPtr & transformMatrix,
                                              unsigned int mipMapLevel,
-                                             const RenderScale & renderMappedScale,
                                              bool useScaleOneInputImages,
                                              bool byPassCache,
                                              const FramesNeededMap & framesNeeded,
                                              const EffectInstance::ComponentsNeededMap & compsNeeded,
-                                             EffectInstance::InputImagesMap *inputImages,
-                                             RoIMap* inputsRoI);
+                                             EffectInstance::InputImagesMap *inputImages);
 
     static ImagePtr convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                                  const ImagePtr& inputImage,

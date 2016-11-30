@@ -9191,7 +9191,7 @@ addIdentityNodesRecursively(NodeConstPtr caller,
         if (inputFrameArgs && inputFrameArgs->request) {
             request = inputFrameArgs->request->getFrameViewRequest(time, view);
             if (request) {
-                isIdentity = request->globalData.identityInputNb != -1;
+                isIdentity = request->identityInputNb != -1;
             }
         }
 

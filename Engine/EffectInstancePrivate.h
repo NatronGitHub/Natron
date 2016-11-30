@@ -277,12 +277,8 @@ public:
                          const RectI & renderWindow,
                          double time,
                          ViewIdx view,
-                         bool isIdentity,
-                         double identityTime,
-                         const EffectInstancePtr& identityInput,
                          const ComponentsNeededMapPtr& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
-                         const RoIMap & roiMap,
                          int firstFrame,
                          int lastFrame);
 
@@ -291,10 +287,6 @@ public:
 
         ~ScopedRenderArgs();
     };
-
-    void addInputImageTempPointer(int inputNb, const ImagePtr & img);
-
-    void clearInputImagePointers();
 
     void
     determineRectsToRender(ImagePtr& isPlaneCached,
@@ -416,8 +408,6 @@ public:
                                                                 const RectD& rod,
                                                                 double par,
                                                                 bool renderFullScaleThenDownscale,
-                                                                unsigned int renderMappedMipMapLevel,
-                                                                const RenderScale& renderMappedScale,
                                                                 bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                 boost::shared_ptr<FramesNeededMap>* framesNeeded);
 
@@ -425,7 +415,6 @@ public:
                                                                 const EffectDataTLSPtr& tls,
                                                                 const ParallelRenderArgsPtr& frameArgs,
                                                                 const ComponentsNeededMapPtr& neededComps,
-                                                                const FrameViewRequest* requestPassData,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
                                                                 const OSGLContextAttacherPtr& glContextLocker,
                                                                 bool isDuringPaintStrokeDrawing,
@@ -593,6 +582,7 @@ public:
 
 
     RenderingFunctorRetEnum renderHandlerIdentity(const EffectDataTLSPtr& tls,
+                                                  const RectToRender & rectToRender,
                                                   const OSGLContextPtr& glContext,
                                                   const bool renderFullScaleThenDownscale,
                                                   const RectI & renderMappedRectToRender,
@@ -624,6 +614,7 @@ public:
                          const ImagePlanesToRender & planes,
                          const RectI & renderMappedRectToRender,
                          const std::bitset<4>& processChannels,
+                         const EffectInstance::InputImagesMap& inputImages,
                          EffectInstance::RenderActionArgs &actionArgs,
                          boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
                          TimeLapsePtr *timeRecorder);

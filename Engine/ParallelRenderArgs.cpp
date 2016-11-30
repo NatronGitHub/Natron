@@ -97,7 +97,7 @@ EffectInstance::RenderRoIRetCode
 EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const NodePtr& node,
                                    const FramesNeededMap& framesNeeded,
-                                   const RoIMap& inputRois,
+                                   const RoIMap* inputRois, // roi functor specific
                                    const InputMatrixMapPtr& reroutesMap,
                                    bool useTransforms, // roi functor specific
                                    StorageModeEnum renderStorageMode, // if the render of this node is in OpenGL
@@ -126,8 +126,8 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         if (inputEffect) {
 
             // If this input is frame varying, the node is also frame varying
-            if (frameViewRequestData && !frameViewRequestData->globalData.isFrameVaryingRecursive && inputEffect->isFrameVaryingOrAnimated()) {
-                frameViewRequestData->globalData.isFrameVaryingRecursive = true;
+            if (frameViewRequestData && !frameViewRequestData->isFrameVaryingRecursive && inputEffect->isFrameVaryingOrAnimated()) {
+                frameViewRequestData->isFrameVaryingRecursive = true;
             }
 
             framesToRender[inputEffect] = std::make_pair(inputNb, it->second);
@@ -160,20 +160,20 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             }
         }
 
-        ///What region are we interested in for this input effect ? (This is in Canonical coords)
+        // When we are not in the render functor, the RoI on the input is given by getRegionsOfInterest action.
+        // When we are rendering, we ask in input the merge of all getRegionsOfInterest calls that were made on each
+        // branch leading to that node.
         RectD roi;
-        bool roiIsInRequestPass = false;
         ParallelRenderArgsPtr frameArgs;
         if (isRenderFunctor) {
             frameArgs = inputEffect->getParallelRenderArgsTLS();
-            if (frameArgs && frameArgs->request) {
-                roiIsInRequestPass = true;
-            }
         }
 
-        if (!roiIsInRequestPass) {
-            RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
-            if ( foundInputRoI == inputRois.end() ) {
+        if (!isRenderFunctor) {
+            assert(inputRois);
+
+            RoIMap::const_iterator foundInputRoI = inputRois->find(inputEffect);
+            if ( foundInputRoI == inputRois->end() ) {
                 continue;
             }
             if ( foundInputRoI->second.isInfinite() ) {
@@ -276,7 +276,9 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 continue;
                             }
 
-                            if (roiIsInRequestPass) {
+                            assert(frameArgs && frameArgs->request);
+                            if (frameArgs && frameArgs->request) {
+                                // Use the final roi (merged from all branches leading to that node) for that frame/view pair
                                 frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
                             }
 
@@ -388,11 +390,12 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     double par = effect->getAspectRatio(-1);
     ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
 
+    // Did we already request something on this node from another branch ?
     if ( foundFrameView != nodeRequest->frames.end() ) {
         fvRequest = &foundFrameView->second;
     } else {
-        ///Set up global data specific for this frame view, this is the first time it has been requested so far
 
+        // Set up global data specific for this frame view, this is the first time it has been requested so far
 
         fvRequest = &nodeRequest->frames[frameView];
 
@@ -402,82 +405,83 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         (void)gotHash;
 
         ///Check identity
-        fvRequest->globalData.identityInputNb = -1;
-        fvRequest->globalData.inputIdentityTime = 0.;
-        fvRequest->globalData.identityView = view;
+        fvRequest->identityInputNb = -1;
+        fvRequest->inputIdentityTime = 0.;
+        fvRequest->identityView = view;
 
 
         RectI identityRegionPixel;
         canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
 
         if ( (view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
-            fvRequest->globalData.isIdentity = true;
-            fvRequest->globalData.identityInputNb = -2;
-            fvRequest->globalData.inputIdentityTime = time;
+            fvRequest->isIdentity = true;
+            fvRequest->identityInputNb = -2;
+            fvRequest->inputIdentityTime = time;
         } else {
             try {
-                // Pass a null hash because we cannot know the hash as of yet since we did not recurse on inputs already, meaning the action will not be cached.
-                fvRequest->globalData.isIdentity = effect->isIdentity_public(true, frameViewHash, time, nodeRequest->mappedScale, identityRegionPixel, view, &fvRequest->globalData.inputIdentityTime, &fvRequest->globalData.identityView, &fvRequest->globalData.identityInputNb);
+                fvRequest->isIdentity = effect->isIdentity_public(true, frameViewHash, time, nodeRequest->mappedScale, identityRegionPixel, view, &fvRequest->inputIdentityTime, &fvRequest->identityView, &fvRequest->identityInputNb);
             } catch (...) {
                 return eStatusFailed;
             }
         }
 
-        if (fvRequest->globalData.identityInputNb == -2) {
+        if (fvRequest->identityInputNb == -2) {
             // If identity on itself, add to the hash cache
-            effect->addHashToCache(fvRequest->globalData.inputIdentityTime, fvRequest->globalData.identityView, frameViewHash);
+            effect->addHashToCache(fvRequest->inputIdentityTime, fvRequest->identityView, frameViewHash);
         }
 
         /*
            Do NOT call getRegionOfDefinition on the identity time, if the plug-in returns an identity time different from
            this time, we expect that it handles getRegionOfDefinition itself correctly.
          */
-        double rodTime = time; //fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
-        ViewIdx rodView = view; //fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
+        double rodTime = time;
+        ViewIdx rodView = view;
 
         // Get the RoD
-        StatusEnum stat = effect->getRegionOfDefinition_public(frameViewHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod);
+        StatusEnum stat = effect->getRegionOfDefinition_public(frameViewHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->rod);
         // If failed it should have failed earlier
-        if ( (stat == eStatusFailed) && !fvRequest->globalData.rod.isNull() ) {
+        if ( (stat == eStatusFailed) && !fvRequest->rod.isNull() ) {
             return stat;
         }
 
 
         // Concatenate transforms if needed
         if (useTransforms) {
-            fvRequest->globalData.transforms.reset(new InputMatrixMap);
-            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
+            fvRequest->transforms.reset(new InputMatrixMap);
+            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->transforms.get() );
         }
 
         // Get the frame/views needed for this frame/view.
         // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
         U64 hash;
-        fvRequest->globalData.frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &hash);
+        fvRequest->frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &hash);
+
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
     assert(fvRequest);
 
 
-    bool finalRoIEmpty = fvRequest->finalData.finalRoi.isNull();
-    if (!finalRoIEmpty && fvRequest->finalData.finalRoi.contains(canonicalRenderWindow)) {
+    bool finalRoIEmpty = fvRequest->finalRoi.isNull();
+    if (!finalRoIEmpty && fvRequest->finalRoi.contains(canonicalRenderWindow)) {
         // Do not recurse if the roi did not add anything new to render
         return eStatusOK;
     }
+    // Upon first request, set the finalRoI, otherwise merge it.
     if (finalRoIEmpty) {
-        fvRequest->finalData.finalRoi = canonicalRenderWindow;
+        fvRequest->finalRoi = canonicalRenderWindow;
     } else {
-        fvRequest->finalData.finalRoi.merge(canonicalRenderWindow);
+        fvRequest->finalRoi.merge(canonicalRenderWindow);
     }
 
-    if (fvRequest->globalData.identityInputNb == -2) {
-        assert(fvRequest->globalData.inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
+    if (fvRequest->identityInputNb == -2) {
+        assert(fvRequest->inputIdentityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
         // be safe in release mode otherwise we hit an infinite recursion
-        if ( (fvRequest->globalData.inputIdentityTime != time) || (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
+        if ( (fvRequest->inputIdentityTime != time) || (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
             //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             ViewIdx inputView = (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                   fvRequest->globalData.inputIdentityTime,
+                                                   fvRequest->inputIdentityTime,
                                                    inputView,
                                                    originalMipMapLevel,
                                                    node,
@@ -491,15 +495,15 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         //Should fail on the assert above
         return eStatusFailed;
-    } else if (fvRequest->globalData.identityInputNb != -1) {
-        EffectInstancePtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+    } else if (fvRequest->identityInputNb != -1) {
+        EffectInstancePtr inputEffectIdentity = effect->getInput(fvRequest->identityInputNb);
         if (inputEffectIdentity) {
             //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             NodePtr inputIdentityNode = inputEffectIdentity->getNode();
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                   fvRequest->globalData.inputIdentityTime,
-                                                   fvRequest->globalData.identityView,
+                                                   fvRequest->inputIdentityTime,
+                                                   fvRequest->identityView,
                                                    originalMipMapLevel,
                                                    inputIdentityNode,
                                                    node,
@@ -514,25 +518,20 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         return eStatusOK;
     }
 
-    // Compute the regions of interest in input for this RoI
+    // Compute the regions of interest in input for this RoI.
+    // The RoI returned is only valid for this canonicalRenderWindow, we don't cache it. Rather we cache on the input the bounding box
+    // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
     RoIMap inputsRoi;
-    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &inputsRoi);
+    effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->rod, canonicalRenderWindow, view, &inputsRoi);
 
 
     // Transform Rois and get the reroutes map
     if (useTransforms) {
-        if (fvRequest->globalData.transforms) {
-            fvRequest->globalData.reroutesMap.reset( new ReRoutesMap() );
-            transformInputRois( effect, fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &inputsRoi, fvRequest->globalData.reroutesMap );
+        if (fvRequest->transforms) {
+            fvRequest->reroutesMap.reset( new ReRoutesMap() );
+            transformInputRois( effect, fvRequest->transforms, par, nodeRequest->mappedScale, &inputsRoi, fvRequest->reroutesMap );
         }
     }
-
-    /*qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
-       qDebug() << "Input RoIs:";
-       for (RoIMap::iterator it = fvPerRequestData.inputsRoi.begin(); it!=fvPerRequestData.inputsRoi.end(); ++it) {
-        qDebug() << it->first->getNode()->getFullyQualifiedName().c_str()<<"x1="<<it->second.x1<<"y1="<<it->second.y1<<"x2="<<it->second.x2<<"y2"<<it->second.y2;
-       }*/
-
 
 
     // Append the request
@@ -543,9 +542,9 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
     EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
                                                               node,
-                                                              fvRequest->globalData.frameViewsNeeded,
-                                                              inputsRoi,
-                                                              fvRequest->globalData.transforms,
+                                                              fvRequest->frameViewsNeeded,
+                                                              &inputsRoi,
+                                                              fvRequest->transforms,
                                                               useTransforms,
                                                               eStorageModeRAM /*returnStorage*/,
                                                               originalMipMapLevel,
@@ -616,7 +615,7 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time,
     if (!fv) {
         return false;
     }
-    *roi = fv->finalData.finalRoi;
+    *roi = fv->finalRoi;
 
     return true;
 }

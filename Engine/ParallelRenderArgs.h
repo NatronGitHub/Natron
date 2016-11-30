@@ -212,19 +212,26 @@ public:
 };
 
 
-struct FrameViewRequestGlobalData
+struct FrameViewRequest
 {
-    ///The transforms associated to each input branch, set on first request
+    // All different requests led by different branches in the tree
+    //std::list<std::pair<RectD, FrameViewPerRequestData> > requests;
+
+    // Final roi. Each request led from different branches has it's roi merged into the finalRoI
+    RectD finalRoi;
+
+    // Global datas for this frame/view set upon first request
+    // The transforms associated to each input branch, set on first request
     InputMatrixMapPtr transforms;
     ReRoutesMapPtr reroutesMap;
 
-    ///The required frame/views in input, set on first request
+    // The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
 
-    ///Set when the first request is made, set on first request
+    // Set when the first request is made
     RectD rod;
 
-    //Identity data, set on first request
+    // Identity data, set on first request
     bool isIdentity;
     int identityInputNb;
     ViewIdx identityView;
@@ -232,23 +239,7 @@ struct FrameViewRequestGlobalData
 
     // If this node or one of its inputs is frame varying, this is set to true
     bool isFrameVaryingRecursive;
-};
 
-struct FrameViewRequestFinalData
-{
-    RectD finalRoi;
-};
-
-struct FrameViewRequest
-{
-    ///All different requests led by different branchs in the tree
-    //std::list<std::pair<RectD, FrameViewPerRequestData> > requests;
-
-    ///Final datas that are computed once the whole tree has been cycled through
-    FrameViewRequestFinalData finalData;
-
-    ///Global datas for this frame/view set upon first request
-    FrameViewRequestGlobalData globalData;
 };
 
 typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;

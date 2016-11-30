@@ -1425,7 +1425,12 @@ OfxClipInstance::natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding)
 struct OfxImageCommonPrivate
 {
     OFX::Host::ImageEffect::ImageBase* ofxImageBase;
+
+    // A strong reference to the internal natron image.
+    // It is vital to keep it here: as long as it lives,
+    // it guarantees that the cache will not remove the image.
     ImagePtr natronImage;
+
     boost::shared_ptr<GenericAccess> access;
     boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
     std::string components;

@@ -284,14 +284,10 @@ ActionsCache::setTimeDomainResult(U64 hash,
 
 EffectInstance::RenderArgs::RenderArgs()
     : rod()
-    , regionOfInterestResults()
     , renderWindowPixel()
     , time(0)
     , view(0)
     , validArgs(false)
-    , isIdentity(false)
-    , identityTime(0)
-    , identityInput()
     , inputImages()
     , outputPlanes()
     , outputPlaneBeingRendered()
@@ -303,14 +299,10 @@ EffectInstance::RenderArgs::RenderArgs()
 
 EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
     : rod(o.rod)
-    , regionOfInterestResults(o.regionOfInterestResults)
     , renderWindowPixel(o.renderWindowPixel)
     , time(o.time)
     , view(o.view)
     , validArgs(o.validArgs)
-    , isIdentity(o.isIdentity)
-    , identityTime(o.identityTime)
-    , identityInput(o.identityInput)
     , inputImages(o.inputImages)
     , outputPlanes(o.outputPlanes)
     , outputPlaneBeingRendered(o.outputPlaneBeingRendered)
@@ -489,12 +481,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const RectI & renderWindow,
                                                                    double time,
                                                                    ViewIdx view,
-                                                                   bool isIdentity,
-                                                                   double identityTime,
-                                                                   const EffectInstancePtr& identityInput,
                                                                    const ComponentsNeededMapPtr& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
-                                                                   const RoIMap & roiMap,
                                                                    int firstFrame,
                                                                    int lastFrame)
     : tlsData(tlsData)
@@ -503,12 +491,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.renderWindowPixel = renderWindow;
     tlsData->currentRenderArgs.time = time;
     tlsData->currentRenderArgs.view = view;
-    tlsData->currentRenderArgs.isIdentity = isIdentity;
-    tlsData->currentRenderArgs.identityTime = identityTime;
-    tlsData->currentRenderArgs.identityInput = identityInput;
     tlsData->currentRenderArgs.compsNeeded = compsNeeded;
     tlsData->currentRenderArgs.inputImages.insert( inputImages.begin(), inputImages.end() );
-    tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
 
@@ -530,28 +514,8 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
     tlsData->currentRenderArgs.validArgs = false;
 }
 
-void
-EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
-                                                         const ImagePtr & img)
-{
-    EffectDataTLSPtr tls = tlsData->getTLSData();
 
-    if (!tls) {
-        return;
-    }
-    tls->currentRenderArgs.inputImages[inputNb].push_back(img);
-}
 
-void
-EffectInstance::Implementation::clearInputImagePointers()
-{
-    EffectDataTLSPtr tls = tlsData->getTLSData();
-
-    if (!tls) {
-        return;
-    }
-    tls->currentRenderArgs.inputImages.clear();
-}
 
 NATRON_NAMESPACE_EXIT;
 

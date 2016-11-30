@@ -90,15 +90,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER;
 
 
-class KnobFile;
-
-void
-EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
-                                                    const ImagePtr & img)
-{
-    _imp->addInputImageTempPointer(inputNb, img);
-}
-
 EffectInstance::EffectInstance(const NodePtr& node)
     : NamedKnobHolder( node ? node->getApp() : AppInstancePtr() )
     , _node(node)
@@ -729,29 +720,6 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 }
 
 
-void
-EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return;
-    }
-    *images = tls->currentRenderArgs.inputImages;
-}
-
-bool
-EffectInstance::getThreadLocalRegionsOfInterests(RoIMap & roiMap) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return false;
-    }
-    roiMap = tls->currentRenderArgs.regionOfInterestResults;
-
-    return true;
-}
 
 OSGLContextPtr
 EffectInstance::getThreadLocalOpenGLContext() const
@@ -786,19 +754,15 @@ EffectInstance::getImage(int inputNb,
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
 
-
     ///The input we want the image from
     EffectInstancePtr inputEffect;
-
-    // Check for transform redirections
-    InputMatrixMapPtr transformRedirections;
 
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
     // Use transform redirections from TLS to find input effect if possible
     // For a similar code see resolveInputEffectForFrameNeeded
     if (tls && tls->currentRenderArgs.validArgs) {
-        transformRedirections = tls->currentRenderArgs.transformRedirections;
+        InputMatrixMapPtr transformRedirections = tls->currentRenderArgs.transformRedirections;
         if (transformRedirections) {
             InputMatrixMap::const_iterator foundRedirection = transformRedirections->find(inputNb);
             if ( ( foundRedirection != transformRedirections->end() ) && foundRedirection->second.newInputEffect ) {
@@ -847,14 +811,9 @@ EffectInstance::getImage(int inputNb,
         return ImagePtr();
     }
 
-    // If optionalBounds have been set, use this for the RoI instead of the data int the TLS
-    RectD optionalBounds;
-    if (optionalBoundsParam) {
-        optionalBounds = *optionalBoundsParam;
-    }
-
-
-    AbortableRenderInfoPtr renderInfo;
+    // If TLS is not set, we create it below in the condition. We keep this pointer out of scope
+    // so it stays valid for the duration of the renderRoI call.
+    AbortableRenderInfoPtr currentRenderID;
 
 
     /*
@@ -868,12 +827,12 @@ EffectInstance::getImage(int inputNb,
         // tries to call getImage it can render with good parameters.
 
         // Keep it out of scope otherwise it will get destroyed as nobody holds a shared ref to it except here
-        renderInfo = AbortableRenderInfo::create(false, 0);
+        currentRenderID = AbortableRenderInfo::create(false, 0);
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, renderInfo, inputEffect );
+            isAbortable->setAbortInfo( isRenderUserInteraction, currentRenderID, inputEffect );
         }
 
 
@@ -882,7 +841,7 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->view = view;
         tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
         tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = renderInfo;
+        tlsArgs->abortInfo = currentRenderID;
         tlsArgs->treeRoot = getNode();
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
@@ -925,142 +884,62 @@ EffectInstance::getImage(int inputNb,
 
     }
 
-    /*
-     * These are the data fields stored in the TLS from the on-going render action or instance changed action
-     */
-    RoIMap inputsRoI;
-    bool isIdentity = false;
-    EffectInstancePtr identityInput;
-    //bool duringPaintStroke;
-    // Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
-    // re-computing of the same image many many times
-    bool byPassCache = false;
-    RectD roi;
-    bool roiWasInRequestPass = false;
-    bool isAnalysisPass = false;
-    RectD thisRod;
-    double thisEffectRenderTime = time;
 
-    U64 frameViewHash = 0;
-    ///Try to find in the input images thread local storage if we already pre-computed the image
-    EffectInstance::InputImagesMap inputImagesThreadLocal;
-    OSGLContextPtr gpuGlContext, cpuGlContext;
-
-
+    // The request pass should have been set and should have set the TLS.
     assert(tls && (tls->currentRenderArgs.validArgs || !tls->frameArgs.empty()));
+    if (!tls || (!tls->currentRenderArgs.validArgs && tls->frameArgs.empty())) {
+        return ImagePtr();
+    }
 
-
-    if (inputEffect) {
-        //When analysing we do not compute a request pass so we do not enter this condition
+    // Get the RoI from what was computed in the request pass on the input.
+    RectD roiCanonical;
+    {
+        // TLS should have been set on the input
         ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
-        if (inputFrameArgs) {
-            bool gotHash = inputFrameArgs->getFrameViewHash(time, view, &frameViewHash);
-            if (!gotHash) {
-                assert(false);
-                return ImagePtr();
-            }
-        }
-        const FrameViewRequest* request = 0;
-        if (inputFrameArgs && inputFrameArgs->request) {
-            request = inputFrameArgs->request->getFrameViewRequest(time, view);
-        }
-        if (request) {
-            roiWasInRequestPass = true;
-            roi = request->finalData.finalRoi;
-        }
-    }
-
-    if ( !tls->frameArgs.empty() ) {
-        const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
-        isAnalysisPass = frameRenderArgs->isAnalysis;
-        gpuGlContext = frameRenderArgs->openGLContext.lock();
-        cpuGlContext = frameRenderArgs->cpuOpenGLContext.lock();
-        renderInfo = frameRenderArgs->abortInfo.lock();
-    } else {
-        //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
-        //duringPaintStroke = false;
-    }
-    if (tls->currentRenderArgs.validArgs) {
-        //This will only be valid for render pass, not analysis
-        const RenderArgs& renderArgs = tls->currentRenderArgs;
-        if (!roiWasInRequestPass) {
-            inputsRoI = renderArgs.regionOfInterestResults;
-        }
-        thisEffectRenderTime = renderArgs.time;
-        isIdentity = renderArgs.isIdentity;
-        identityInput = renderArgs.identityInput;
-        inputImagesThreadLocal = renderArgs.inputImages;
-        thisRod = renderArgs.rod;
-    }
-
-
-    if ( ((!gpuGlContext && !cpuGlContext) || !renderInfo) && returnStorage == eStorageModeGLTex ) {
-        qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
-
-        return ImagePtr();
-    }
-
-
-
-    RectD inputRoD;
-    bool inputRoDSet = false;
-    if (optionalBoundsParam) {
-        //Set the RoI from the parameters given to clipGetImage
-        roi = optionalBounds;
-    } else if (!roiWasInRequestPass) {
-        //We did not have a request pass, use if possible the result of getRegionsOfInterest found in the TLS
-        //If not, fallback on input RoD
-        RoIMap::iterator found = inputsRoI.find(inputEffect);
-        if ( found != inputsRoI.end() ) {
-            ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
-            roi = found->second;
-        } else {
-            ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
-            if (inputEffect && !isAnalysisPass) {
-                qDebug()
-                << QThread::currentThread()
-                << getScriptName_mt_safe().c_str()
-                << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on"
-                << inputEffect->getScriptName_mt_safe().c_str();
-            }
-
-
-            //We are either in analysis or in an unknown thread
-            //do not set identity flags, request for RoI the full RoD of the input
-            if (inputEffect) {
-                StatusEnum stat = inputEffect->getRegionOfDefinition_public(frameViewHash, time, scale, view, &inputRoD);
-
-                if (stat != eStatusFailed) {
-                    inputRoDSet = true;
-                }
-            }
-
-            roi = inputRoD;
-
-        }
-    }
-
-    if ( roi.isNull() ) {
-        return ImagePtr();
-    }
-
-
-    if (isIdentity) {
-        assert(identityInput.get() != this);
-        ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
-        ///return a null image (only when non analysis)
-        if ( (identityInput != inputEffect) && !isAnalysisPass ) {
+        assert(inputFrameArgs);
+        if (!inputFrameArgs || !inputFrameArgs->request) {
             return ImagePtr();
         }
+
+        const FrameViewRequest* inputFrameViewRequest = inputFrameArgs->request->getFrameViewRequest(time, view);
+        if (!inputFrameViewRequest) {
+            // This node did not request anything on the input in getFramesNeeded action, fail.
+            return ImagePtr();
+        }
+
+        // The roi is the optimized roi: the bounding rect of all RoI from different branches leading to that node.
+        roiCanonical = inputFrameViewRequest->finalRoi;
+    }
+
+    if (roiCanonical.isNull()) {
+        // No RoI
+        return ImagePtr();
+    }
+
+    // This is the time of this effect current action
+    double thisEffectRenderTime = time;
+
+    // If within a render action, the input images have been pre-fetched and set on the currentRenderArgs TLS
+    EffectInstance::InputImagesMap inputImagesThreadLocal;
+
+    if (tls->currentRenderArgs.validArgs) {
+        // When rendering, retrieve the time and input images that were set within the renderRoI call
+        const RenderArgs& renderArgs = tls->currentRenderArgs;
+        thisEffectRenderTime = renderArgs.time;
+        inputImagesThreadLocal = renderArgs.inputImages;
     }
 
 
-    ///Does this node supports images at a scale different than 1
+    // Determine at which mipmap level we should fetch the input image
+    unsigned int renderMappedMipMapLevel = mipMapLevel;
+
+    // Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
+    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
+
+    // Does this node supports images at a scale different than 1
     bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0 && returnStorage == eStorageModeRAM);
 
-    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
-    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
-    unsigned int renderMappedMipMapLevel = mipMapLevel;
+
     if (renderFullScaleThenDownscale) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
         if (renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
@@ -1068,94 +947,96 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
-    ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
-    ///Convert to pixel coordinates
+
+    // Retrieve an image with the format given by this node preferences
     const double par = getAspectRatio(inputNb);
     ImageBitDepthEnum depth = getBitDepth(inputNb);
     ImageComponents components;
     ImageComponents clipPrefComps = getComponents(inputNb);
 
+    // If there's a layer argument, use it, otherwise use the components meta-data.
     if (layer) {
         components = *layer;
     } else {
         components = clipPrefComps;
     }
 
-
+    // Convert the roi to pixel coordinates
     RectI pixelRoI;
-    roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
+    roiCanonical.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
 
     ImagePtr inputImg;
 
+    {
+        // If input is a mask, request the maskComps otherwise use components
+        std::list<ImageComponents> requestedComps;
+        requestedComps.push_back(isMask ? maskComps : components);
 
-    std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(isMask ? maskComps : components);
-    std::map<ImageComponents, ImagePtr> inputImages;
-    RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
-                                                                    scale,
-                                                                    renderMappedMipMapLevel,
-                                                                    view,
-                                                                    byPassCache,
-                                                                    pixelRoI,
-                                                                    RectD(),
-                                                                    requestedComps,
-                                                                    depth,
-                                                                    true,
-                                                                    shared_from_this(),
-                                                                    returnStorage,
-                                                                    thisEffectRenderTime,
-                                                                    inputImagesThreadLocal), &inputImages);
 
-    if ( inputImages.empty() || (retCode != eRenderRoIRetCodeOk) ) {
-        return ImagePtr();
+        std::map<ImageComponents, ImagePtr> inputImages;
+        // Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
+        // re-computing of the same image many many times
+        RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
+                                                                        scale,
+                                                                        renderMappedMipMapLevel,
+                                                                        view,
+                                                                        false /*byPassCache*/,
+                                                                        pixelRoI,
+                                                                        RectD(),
+                                                                        requestedComps,
+                                                                        depth,
+                                                                        true,
+                                                                        shared_from_this(),
+                                                                        returnStorage,
+                                                                        thisEffectRenderTime,
+                                                                        inputImagesThreadLocal), &inputImages);
+
+        if ( inputImages.empty() || (retCode != eRenderRoIRetCodeOk) ) {
+            return ImagePtr();
+        }
+
+        // We asked for a single plane, we should get a single image!
+        assert(inputImages.size() == 1);
+        inputImg = inputImages.begin()->second;
     }
-    assert(inputImages.size() == 1);
-
-    inputImg = inputImages.begin()->second;
 
     if ( !pixelRoI.intersects( inputImg->getBounds() ) ) {
-        //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
+        // The RoI requested does not intersect with the bounds of the input image computed, return a NULL image.
 #ifdef DEBUG
-        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to" << inputEffect->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
+        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to " << inputEffect->getScriptName_mt_safe().c_str() << " does not intersect with the bounds of the input image";
 #endif
-
         return ImagePtr();
     }
-
-    /*
-     * From now on this is the generic part. We first call renderRoI and then convert to the appropriate scale/components if needed.
-     * Note that since the image has been pre-rendered before by the recursive nature of the algorithm, the call to renderRoI will be
-     * instantaneous thanks to the image cache.
-     */
-
 
     if (roiPixel) {
         *roiPixel = pixelRoI;
     }
+
+
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
 
-    ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
-    ///Note that we do NOT cache it because it is really low def!
-    ///For OpenGL textures, we do not do it because GL_TEXTURE_2D uses normalized texture coordinates anyway, so any OpenGL plug-in should support render scale.
-    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && returnStorage == eStorageModeRAM) {
-        assert(inputImgMipMapLevel != 0);
-        ///Resize the image according to the requested scale
-        ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
-        RectI bounds;
-        inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
-        ImagePtr rescaledImg( new Image( inputImg->getComponents(), inputImg->getRoD(),
-                                         bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() ) );
+    // If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
+    // Note that we do NOT cache it because it is really low def!
+    // For OpenGL textures, we do not do it because GL_TEXTURE_2D uses normalized texture coordinates anyway, so any OpenGL plug-in should support render scale.
+
+    if (!dontUpscale && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && returnStorage == eStorageModeRAM) {
+
+        // Resize the image according to the requested scale
+        RectI boundsLevel0;
+        inputImg->getRoD().toPixelEnclosing(0, par, &boundsLevel0);
+        ImagePtr rescaledImg( new Image(inputImg->getComponents(),
+                                        inputImg->getRoD(),
+                                        boundsLevel0, // bounds
+                                        0 /*mipMapLevel*/,
+                                        par,
+                                        inputImg->getBitDepth(),
+                                        inputImg->getPremultiplication(),
+                                        inputImg->getFieldingOrder() ) );
+
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
+
         if (roiPixel) {
-            RectD canonicalPixelRoI;
-
-            if (!inputRoDSet) {
-                StatusEnum st = inputEffect->getRegionOfDefinition(time, scale, view, &inputRoD);
-                Q_UNUSED(st);
-            }
-
-            pixelRoI.toCanonical(inputImgMipMapLevel, par, inputRoD, &canonicalPixelRoI);
-            canonicalPixelRoI.toPixelEnclosing(0, par, roiPixel);
+            roiCanonical.toPixelEnclosing(0, par, roiPixel);
             pixelRoI = *roiPixel;
         }
 
@@ -1163,18 +1044,19 @@ EffectInstance::getImage(int inputNb,
     }
 
 
-    //Remap if needed
-    ImagePremultiplicationEnum outputPremult;
-    if ( components.isColorPlane() ) {
-        outputPremult = inputEffect->getPremult();
-    } else {
-        outputPremult = eImagePremultiplicationOpaque;
-    }
-
-
+    // Remap if needed
     if (mapToClipPrefs) {
-        const bool useAlpha0ForRGBToRGBAConversion = false;
-        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, useAlpha0ForRGBToRGBAConversion, outputPremult, channelForMask);
+
+        // The image premult is of the effect output premult except for non color planes
+        ImagePremultiplicationEnum outputPremult;
+        if ( components.isColorPlane() ) {
+            outputPremult = inputEffect->getPremult();
+        } else {
+            outputPremult = eImagePremultiplicationOpaque;
+        }
+
+
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, false /*useAlpha0ForRGBToRGBAConversion*/, outputPremult, channelForMask);
     }
 
 #ifdef DEBUG
@@ -1192,12 +1074,7 @@ EffectInstance::getImage(int inputNb,
     }
 
 #endif
-
-    if ( inputImagesThreadLocal.empty() ) {
-        ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
-        tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
-    }
-
+    
     return inputImg;
 } // getImage
 
@@ -2268,37 +2145,25 @@ EffectInstance::transformInputRois(const EffectInstancePtr& self,
 }
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(const FrameViewRequest* /*request*/,
-                                        bool useTransforms,
+EffectInstance::renderInputImagesForRoI(bool useTransforms,
                                         StorageModeEnum renderStorageMode,
                                         double time,
                                         ViewIdx view,
-                                        const RectD & rod,
-                                        const RectD & canonicalRenderWindow,
                                         const InputMatrixMapPtr& inputTransforms,
                                         unsigned int mipMapLevel,
-                                        const RenderScale & renderMappedScale,
                                         bool useScaleOneInputImages,
                                         bool byPassCache,
                                         const FramesNeededMap & framesNeeded,
                                         const EffectInstance::ComponentsNeededMap & neededComps,
-                                        EffectInstance::InputImagesMap *inputImages,
-                                        RoIMap* inputsRoi)
+                                        EffectInstance::InputImagesMap *inputImages)
 {
-    getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view, inputsRoi);
 
-#ifdef DEBUG
-    if ( !inputsRoi->empty() && framesNeeded.empty() && !isReader() && !isRotoPaintNode() ) {
-        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
-                 << "an empty list with getFramesNeededAction";
-    }
-#endif
 
 
     return treeRecurseFunctor(true,
                               getNode(),
                               framesNeeded,
-                              *inputsRoi,
+                              0,
                               inputTransforms,
                               useTransforms,
                               renderStorageMode,
@@ -2534,12 +2399,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                 renderMappedRectToRender,
                                                 time,
                                                 view,
-                                                rectToRender.isIdentity,
-                                                rectToRender.identityTime,
-                                                rectToRender.identityInput,
                                                 compsNeeded,
                                                 rectToRender.imgs,
-                                                rectToRender.inputRois,
                                                 firstFrame,
                                                 lastFrame);
 
@@ -2547,11 +2408,11 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     TimeLapsePtr timeRecorder;
     RenderActionArgs actionArgs;
     boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
-    setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, actionArgs, &glContextAttacher, &timeRecorder);
+    setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, rectToRender.imgs, actionArgs, &glContextAttacher, &timeRecorder);
 
     // If this tile is identity, copy input image instead
-    if (tls->currentRenderArgs.isIdentity) {
-        return renderHandlerIdentity(tls, glContext, renderFullScaleThenDownscale, renderMappedRectToRender, downscaledRectToRender, outputClipPrefDepth, actionArgs.time, actionArgs.view, mipMapLevel, timeRecorder, *planes);
+    if (rectToRender.isIdentity) {
+        return renderHandlerIdentity(tls, rectToRender, glContext, renderFullScaleThenDownscale, renderMappedRectToRender, downscaledRectToRender, outputClipPrefDepth, actionArgs.time, actionArgs.view, mipMapLevel, timeRecorder, *planes);
     }
 
     // Call render
@@ -2579,6 +2440,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::EffectDataTLSPtr& tls,
+                                                      const RectToRender & rectToRender,
                                                       const OSGLContextPtr& glContext,
                                                       const bool renderFullScaleThenDownscale,
                                                       const RectI & renderMappedRectToRender,
@@ -2594,8 +2456,8 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
     const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
         //If color plane, request the preferred comp of the identity input
-        if ( tls->currentRenderArgs.identityInput && it->second.renderMappedImage->getComponents().isColorPlane() ) {
-            ImageComponents prefInputComps = tls->currentRenderArgs.identityInput->getComponents(-1);
+        if ( rectToRender.identityInput && it->second.renderMappedImage->getComponents().isColorPlane() ) {
+            ImageComponents prefInputComps = rectToRender.identityInput->getComponents(-1);
             comps.push_back(prefInputComps);
         } else {
             comps.push_back( it->second.renderMappedImage->getComponents() );
@@ -2603,7 +2465,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
     }
     assert( !comps.empty() );
     std::map<ImageComponents, ImagePtr> identityPlanes;
-    boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
+    boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(rectToRender.identityTime,
                                                                                                    Image::getScaleFromMipMapLevel(mipMapLevel),
                                                                                                    mipMapLevel,
                                                                                                    view,
@@ -2616,7 +2478,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                                                                    _publicInterface->shared_from_this(),
                                                                                                    planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
                                                                                                    time) );
-    if (!tls->currentRenderArgs.identityInput) {
+    if (!rectToRender.identityInput) {
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
             it->second.renderMappedImage->fillZero(renderMappedRectToRender, glContext);
             it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
@@ -2629,7 +2491,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
         return eRenderingFunctorRetOK;
     } else {
         EffectInstance::RenderRoIRetCode renderOk;
-        renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
+        renderOk = rectToRender.identityInput->renderRoI(*renderArgs, &identityPlanes);
         if (renderOk == eRenderRoIRetCodeAborted) {
             return eRenderingFunctorRetAborted;
         } else if (renderOk == eRenderRoIRetCodeFailed) {
@@ -2640,7 +2502,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                 it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
 
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
-                    frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  rectToRender.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                 }
             }
 
@@ -2717,7 +2579,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                 }
 
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
-                    frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  rectToRender.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                 }
             }
 
@@ -3150,7 +3012,8 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
                                                 const ImagePlanesToRender & planes,
                                                 const RectI & renderMappedRectToRender,
                                                 const std::bitset<4>& processChannels,
-                                                EffectInstance::RenderActionArgs &actionArgs,
+                                                const InputImagesMap& inputImages,
+                                                RenderActionArgs &actionArgs,
                                                 boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
                                                 TimeLapsePtr *timeRecorder)
 {
@@ -3188,7 +3051,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
     actionArgs.view = view;
     actionArgs.isSequentialRender = isSequentialRender;
     actionArgs.isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
-    actionArgs.inputImages = tls->currentRenderArgs.inputImages;
+    actionArgs.inputImages = inputImages;
     actionArgs.glContext = glContext;
 
     // Setup the context when rendering using OpenGL
@@ -5209,12 +5072,6 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///Refresh the dynamic properties that can be changed during the instanceChanged action
     node->refreshDynamicProperties();
-
-    ///Clear input images pointers that were stored in getImage() for the main-thread.
-    ///This is safe to do so because if this is called while in render() it won't clear the input images
-    ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
-    ///and whose render() function is never called.
-    _imp->clearInputImagePointers();
 
     // If there are any render clones, kill them as the plug-in might have changed internally
     clearRenderInstances();

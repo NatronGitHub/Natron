@@ -610,10 +610,10 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     } else {
         try {
             if (requestPassData) {
-                inputTimeIdentity = requestPassData->globalData.inputIdentityTime;
-                inputNbIdentity = requestPassData->globalData.identityInputNb;
-                *isIdentity = requestPassData->globalData.isIdentity;
-                inputIdentityView = requestPassData->globalData.identityView;
+                inputTimeIdentity = requestPassData->inputIdentityTime;
+                inputNbIdentity = requestPassData->identityInputNb;
+                *isIdentity = requestPassData->isIdentity;
+                inputIdentityView = requestPassData->identityView;
             } else {
                 *isIdentity = _publicInterface->isIdentity_public(true, frameViewHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputIdentityView, &inputNbIdentity);
             }
@@ -846,7 +846,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
         } else {
             ///Check if the pre-pass already has the RoD
             if (*requestPassData) {
-                *rod = (*requestPassData)->globalData.rod;
+                *rod = (*requestPassData)->rod;
             } else {
                 assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
 
@@ -1122,7 +1122,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 {
     bool isFrameVaryingOrAnimated;
     if (requestPassData) {
-        isFrameVaryingOrAnimated = requestPassData->globalData.isFrameVaryingRecursive;
+        isFrameVaryingOrAnimated = requestPassData->isFrameVaryingRecursive;
     } else {
         isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
     }
@@ -1311,14 +1311,12 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
                                                            const RectD& rod,
                                                            double par,
                                                            bool renderFullScaleThenDownscale,
-                                                           unsigned int /*renderMappedMipMapLevel*/,
-                                                           const RenderScale& renderMappedScale,
                                                            bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                            boost::shared_ptr<FramesNeededMap>* framesNeeded)
 {
     framesNeeded->reset(new FramesNeededMap);
     if (requestPassData) {
-        **framesNeeded = requestPassData->globalData.frameViewsNeeded;
+        **framesNeeded = requestPassData->frameViewsNeeded;
     } else {
         U64 hash;
         **framesNeeded = _publicInterface->getFramesNeeded_public(args.time, args.view, false, AbortableRenderInfoPtr(), &hash);
@@ -1346,22 +1344,17 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
                 it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
             }
 
-            inputCode = _publicInterface->renderInputImagesForRoI(requestPassData,
-                                                                  useTransforms,
+            inputCode = _publicInterface->renderInputImagesForRoI(useTransforms,
                                                                   storage,
                                                                   args.time,
                                                                   args.view,
-                                                                  rod,
-                                                                  canonicalRoI,
                                                                   tls->currentRenderArgs.transformRedirections,
                                                                   args.mipMapLevel,
-                                                                  renderMappedScale,
                                                                   renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                   args.byPassCache,
                                                                   **framesNeeded,
                                                                   *neededComps,
-                                                                  &it->imgs,
-                                                                  &it->inputRois);
+                                                                  &it->imgs);
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
@@ -1394,7 +1387,6 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
                                                            const EffectDataTLSPtr& tls,
                                                            const ParallelRenderArgsPtr& frameArgs,
                                                            const ComponentsNeededMapPtr& neededComps,
-                                                           const FrameViewRequest* requestPassData,
                                                            const ImagePlanesToRenderPtr &planesToRender,
                                                            const OSGLContextAttacherPtr& glContextLocker,
                                                            bool isDuringPaintStrokeDrawing,
@@ -1535,22 +1527,17 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
                 it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
             }
 
-            RenderRoIRetCode inputRetCode = _publicInterface->renderInputImagesForRoI(requestPassData,
-                                                                                      useTransforms,
+            RenderRoIRetCode inputRetCode = _publicInterface->renderInputImagesForRoI(useTransforms,
                                                                                       storage,
                                                                                       args.time,
                                                                                       args.view,
-                                                                                      rod,
-                                                                                      canonicalRoI,
                                                                                       tls->currentRenderArgs.transformRedirections,
                                                                                       args.mipMapLevel,
-                                                                                      renderMappedScale,
                                                                                       renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                                       args.byPassCache,
                                                                                       *framesNeeded,
                                                                                       *neededComps,
-                                                                                      &it->imgs,
-                                                                                      &it->inputRois);
+                                                                                      &it->imgs);
             //Render was aborted
             if (inputRetCode != eRenderRoIRetCodeOk) {
                 return inputRetCode;
@@ -2178,8 +2165,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     if (requestPassData) {
         tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
-        if (requestPassData->globalData.transforms) {
-            *tls->currentRenderArgs.transformRedirections = *requestPassData->globalData.transforms;
+        if (requestPassData->transforms) {
+            *tls->currentRenderArgs.transformRedirections = *requestPassData->transforms;
         }
         useTransforms = !tls->currentRenderArgs.transformRedirections->empty();
     } else {
@@ -2263,7 +2250,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
     boost::shared_ptr<FramesNeededMap> framesNeeded;
     {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2272,7 +2259,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
     if (redoCacheLookup) {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, requestPassData, planesToRender, glContextLocker, isDuringPaintStrokeDrawing, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, planesToRender, glContextLocker, isDuringPaintStrokeDrawing, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
