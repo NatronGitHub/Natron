@@ -1299,14 +1299,6 @@ public:
      **/
     virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
 
-    /**
-     * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,
-     * then all the knobs will retrieve the current time as being the one in the last render args thread-storage.
-     * This function is here to update the last render args thread storage.
-     **/
-    void updateThreadLocalRenderTime(double time);
-
-    bool isDuringPaintStrokeCreationThreadLocal() const;
 
     struct PlaneToRender
     {

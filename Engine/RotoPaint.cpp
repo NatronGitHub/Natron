@@ -2889,7 +2889,7 @@ RotoPaint::setIsDoingNeatRender(bool doing)
         RotoStrokeItemPtr activeStroke = getApp()->getActiveRotoDrawingStroke();
         assert(activeStroke);
         if (activeStroke) {
-            activeStroke->setUsePaintBuffers(false);
+            activeStroke->endSubStroke();
         }
         getApp()->setUserIsPainting(RotoStrokeItemPtr());
     }

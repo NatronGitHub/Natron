@@ -1026,7 +1026,6 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    effect->updateThreadLocalRenderTime(t);
 
     ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
     bool redrawNeeded = effect->checkIfOverlayRedrawNeeded();

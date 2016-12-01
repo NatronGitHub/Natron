@@ -288,7 +288,6 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
                      it2 != planesToRender->planes.end(); ++it2) {
                     it2->second.fullscaleImage = convertRAMImageToOpenGLTexture(it2->second.fullscaleImage, glContextLocker->getContext());
-                    _publicInterface->getNode()->setPaintBuffer(it2->second.fullscaleImage);
                     it2->second.downscaleImage = it2->second.downscaleImage;
                 }
             }
@@ -1565,8 +1564,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
     }
 
 
-    RotoDrawableItemPtr rotoItem = _publicInterface->getNode()->getAttachedRotoItem();
-    
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
          it != planesToRender->planes.end(); ++it) {
         const ImageComponents *components = 0;
@@ -1609,18 +1606,10 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                &it->second.downscaleImage);
             
             // For plug-ins that paint over themselves, the first time clear the image out
-            if (_publicInterface->isPaintingOverItselfEnabled()) {
+            if (isDuringPaintStrokeDrawing) {
                 it->second.downscaleImage->fillBoundsZero(glRenderContext);
             }
 
-            // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
-            // to prepare the potential next paint brush stroke made by the user
-            if (rotoItem) {
-
-                if (isDuringPaintStrokeDrawing) {
-                    _publicInterface->getNode()->setPaintBuffer(it->second.downscaleImage);
-                }
-            }
         } else {
             /*
              * There might be a situation  where the RoD of the cached image
@@ -1668,12 +1657,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                     // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
                     // to prepare the potential next paint brush stroke made by the user
                     it->second.downscaleImage = it->second.fullscaleImage;
-                    if (rotoItem) {
-
-                        if (isDuringPaintStrokeDrawing) {
-                            _publicInterface->getNode()->setPaintBuffer(it->second.fullscaleImage);
-                        }
-                    }
                 }
             }
 

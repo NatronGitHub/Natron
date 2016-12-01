@@ -97,11 +97,23 @@ public:
     bool isEmpty() const;
 
     /**
-     * @brief Add a point to the stroke.
-     * @param newStroke If true, a new sub-stroke is created before inserting the point
-     * otherwise the point p is appended to the current stroke.
+     * @brief Set the stroke in drawing mode. Internally all nodes get a instance safe thread-safety.
+     * Each call to appendPoint will trigger a render. For each render we mark the number of points we
+     * rendered so that we don't re-render them again.
+     * When finished drawing a stroke, call endSubStroke.
      **/
-    void appendPoint(bool newStroke, const RotoPoint& p);
+    void beginSubStroke();
+
+    /**
+     * @brief Add a point to the current stroke. This can only be called between a begin/endSubStroke bracket.
+     **/
+    void appendPoint(const RotoPoint& p);
+
+    /**
+     * @brief Notifies that the sub-stroke drawing is finished. This call must match another call to beginSubStroke.
+     * After that, the stroke is no longer in drawing mode, meaning the subsequent render will always render the full stroke.
+     **/
+    void endSubStroke();
 
     /**
      * @brief Clears all strokes and set them to the given points
@@ -163,13 +175,6 @@ public:
      * and not the bounding box of the whole stroke.
      **/
     RectD getLastStrokeMovementBbox() const;
-
-    /**
-     * @brief Call this when drawing is finished. Basically this resets the thread-safety of the nodes used by this item
-     * to their normal safety and it set the stroke in a non-drawing state. 
-     * To re-enable drawing, just call appendPoint()
-     **/
-    void setUsePaintBuffers(bool use);
 
     /**
      * @brief Returns true if we currently are drawing. In this case the paint-buffers should be the same and only the portion

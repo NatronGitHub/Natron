@@ -1874,7 +1874,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         RectI dstRod;
         dstRodCanonical.toPixelEnclosing(args.mappedScale, firstPlane.second->getPixelAspectRatio(), &dstRod);
 
-        if ( !supportsTiles() && !isDuringPaintStrokeCreationThreadLocal() ) {
+        if ( !supportsTiles() && !getNode()->isDuringPaintStrokeCreation() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
             //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
             assert(dstRod.x1 == dstBounds.x1);

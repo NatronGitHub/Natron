@@ -1850,29 +1850,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
-    if (!isCached && isDuringPaintStroke) {
-        if (getNode()->isDuringPaintStrokeCreation()) {
-            ImagePtr strokeImage = getNode()->getPaintBuffer();
-            if (strokeImage && strokeImage->getStorageMode() == storage) {
-                if (strokeImage->getMipMapLevel() != mipMapLevel) {
-                    // conver the image to RAM if needed and convert scale and convert back to GPU if needed
-                    if (strokeImage->getStorageMode() == eStorageModeGLTex) {
-                        assert(glContextAttacher);
-                        glContextAttacher->attach();
-                        strokeImage = convertOpenGLTextureToCachedRAMImage(strokeImage, false);
-                    }
-                    strokeImage = ensureImageScale(mipMapLevel, strokeImage, key, boundsParam, rodParam, glContextAttacher);
-                    if (storage == eStorageModeGLTex) {
-                        strokeImage = convertRAMImageToOpenGLTexture(strokeImage, glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr());
-                    }
-                }
-                getNode()->setPaintBuffer(strokeImage);
-                *image = strokeImage;
-                return;
-            }
-        }
-    }
-
     if (!isCached) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
@@ -1909,7 +1886,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 }
 
                 if (imgMMlevel > mipMapLevel) {
-                    if (!isPaintingOverItselfEnabled()) {
+                    if (!isDuringPaintStroke) {
                         // mipmap level is higher, use it only if plug-in is painting over itself and absolutely requires the data
                         continue;
                     }
@@ -4124,15 +4101,28 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
         }
 
-        if ( getNode()->isNodeDisabledForFrame(time, view) ) {
-            NodePtr preferredInput = getNode()->getPreferredInputNode();
-            if (!preferredInput) {
+        // If the effect is identity, do not call the getRegionOfDefinition action, instead just return the input identity at the
+        // identity time and view.
+        double inputIdentityTime;
+        ViewIdx inputIdentityView;
+        int inputIdentityNb;
+        bool isIdentity;
+        {
+            // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
+            RectI format = getOutputFormat();
+            RenderScale scale(1.);
+            isIdentity = isIdentity_public(true, hash, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
+        }
+
+        if (isIdentity) {
+            EffectInstancePtr identityInputNode = getInput(inputIdentityNb);
+            if (!identityInputNode) {
                 return eStatusFailed;
             }
             U64 inputHash;
-            bool gotHash = preferredInput->getEffectInstance()->getRenderHash(time, view, &inputHash);
+            bool gotHash = identityInputNode->getRenderHash(inputIdentityTime, inputIdentityView, &inputHash);
             (void)gotHash;
-            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(inputHash, time, scale, view, rod);
+            return identityInputNode->getRegionOfDefinition_public(inputHash, inputIdentityTime, scale, inputIdentityView, rod);
         }
 
         StatusEnum ret;
@@ -4246,19 +4236,30 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
         }
     }
 
+    // If the effect is identity, do not call the getFramesNeeded action, instead just add the input identity at the
+    // identity time and view.
+    double inputIdentityTime;
+    ViewIdx inputIdentityView;
+    int inputIdentityNb;
+    bool isIdentity;
+    {
+        // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
+        RectI format = getOutputFormat();
+        RenderScale scale(1.);
+        isIdentity = isIdentity_public(true, hashValue, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
+    }
     {
 
-        if (getNode()->isNodeDisabledForFrame(time, view)) {
-            // If the node is disabled, get the preferred input at this time
+        if (isIdentity) {
+            // If the node is disabled, get the preferred input at the identity time
             RangeD defaultRange;
-            defaultRange.min = defaultRange.max = time;
+            defaultRange.min = defaultRange.max = inputIdentityTime;
             std::vector<RangeD> ranges;
             ranges.push_back(defaultRange);
             FrameRangesMap defViewRange;
-            defViewRange[view] = ranges;
-            int prefInput = getNode()->getPreferredInput();
-            if (prefInput != -1) {
-                framesNeeded[prefInput] = defViewRange;
+            defViewRange[inputIdentityView] = ranges;
+            if (inputIdentityNb != -1) {
+                framesNeeded[inputIdentityNb] = defViewRange;
             }
 
         } else {
@@ -4323,8 +4324,11 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
         addHashToCache(cacheTime, view, hashValue);
     }
 
-    // Cache the result of the actino
+    // Cache the result of the action
     _imp->actionsCache->setFramesNeededResult(hashValue, time, view, 0, framesNeeded);
+
+    // We may not have a cache when calling isIdentity, thus cache it now.
+    _imp->actionsCache->setIdentityResult(hashValue, time, view, inputIdentityNb, inputIdentityView, inputIdentityTime);
 
     *retHash = hashValue;
     return framesNeeded;
@@ -5047,23 +5051,6 @@ EffectInstance::getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededCom
     return false;
 }
 
-void
-EffectInstance::updateThreadLocalRenderTime(double time)
-{
-    if ( QThread::currentThread() != qApp->thread() ) {
-        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-        if (tls && tls->currentRenderArgs.validArgs) {
-            tls->currentRenderArgs.time = time;
-        }
-    }
-}
-
-bool
-EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
-{
-    return getNode()->isDuringPaintStrokeCreation();
-}
-
 
 RenderScale
 EffectInstance::getOverlayInteractRenderScale() const
@@ -5301,14 +5288,12 @@ EffectInstance::getNearestNonIdentity(double time)
     bool gotHash = getRenderHash(time, ViewIdx(0), &hash);
     (void)gotHash;
     RenderScale scale(1.);
-    Format frmt;
 
-    getApp()->getProject()->getProjectDefaultFormat(&frmt);
-
+    RectI format = getOutputFormat();
     double inputTimeIdentity;
     int inputNbIdentity;
     ViewIdx inputView;
-    if ( !isIdentity_public(true, hash, time, scale, frmt, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, hash, time, scale, format, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {
@@ -5367,7 +5352,7 @@ EffectInstance::checkCanSetValueAndWarn() const
 bool
 EffectInstance::isPaintingOverItselfEnabled() const
 {
-    return isDuringPaintStrokeCreationThreadLocal();
+    return getNode()->isDuringPaintStrokeCreation();
 }
 
 StatusEnum

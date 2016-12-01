@@ -258,9 +258,11 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
 
     bool hasDoneSomething = false;
 
-    // If the curve is in a "finished" state, render all sub-strokes, otherwise pick-up from where
+    // If the curve is in a drawing state, pick-up from where
     // the drawing was at.
-    int strokeIndex = !usePaintBuffers ? 0 : other.lastStrokeIndex;
+    // Otherwise render all sub-strokes
+    int strokeIndex = usePaintBuffers ? other.lastStrokeIndex : 0;
+
     while (strokeIndex < (int)other.strokes.size()) {
 
         const RotoStrokeItemPrivate::StrokeCurves* originalStroke = 0;
@@ -686,71 +688,94 @@ RotoStrokeItem::isEmpty() const
 
 
 void
-RotoStrokeItem::setUsePaintBuffers(bool use)
+RotoStrokeItem::beginSubStroke()
 {
-    {
-        QMutexLocker k(&_imp->lock);
-        _imp->usePaintBuffers = use;
+    // Make-up a new sub-stroke
+    QMutexLocker k(&_imp->lock);
+    RotoStrokeItemPrivate::StrokeCurves s;
+    s.xCurve.reset(new Curve);
+    s.yCurve.reset(new Curve);
+    s.pressureCurve.reset(new Curve);
 
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
-#endif
+    _imp->strokes.push_back(s);
 
+    // set thread-safety so that we ensure only 1 thread is rendering
+    if (!_imp->usePaintBuffers) {
+        _imp->usePaintBuffers = true;
+        setNodesThreadSafetyForRotopainting();
     }
 
-    if (!use) {
-
-        resetTransformCenter();
-
-        resetNodesThreadSafety();
-
-        const NodesList& nodes = getItemNodes();
-        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->setPaintBuffer(ImagePtr());
+    // For cairo, setup the dot pattern cache
+    if ( _imp->strokeDotPatterns.empty() ) {
+        _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
+        for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+            _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
         }
     }
 }
 
 void
-RotoStrokeItem::appendPoint(bool newStroke,
-                            const RotoPoint& p)
+RotoStrokeItem::endSubStroke()
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker k(&_imp->lock);
+        if (_imp->strokes.empty()) {
+            // This function must match a call to beginSubStroke
+            assert(false);
+            return;
+        }
+        {
+            RotoStrokeItemPrivate::StrokeCurves* stroke = &_imp->strokes.back();
 
+            assert( stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() &&
+                   stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
+
+            int nk = stroke->xCurve->getKeyFramesCount();
+            if (nk == 0) {
+                // If the stroke did not have any point, remove it
+                _imp->strokes.pop_back();
+                return;
+            }
+        }
+
+        // We are no longer in drawing state
+        _imp->usePaintBuffers = false;
+
+        // Purge cairo cache
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+        RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
+#endif
+    }
+    // The stroke is finished, reset the transform center
+    resetTransformCenter();
+    
+    // Reset nodes thread-safety
+    resetNodesThreadSafety();
+
+
+} // endSubStroke
+
+void
+RotoStrokeItem::appendPoint(const RotoPoint& p)
+{
 
     RotoStrokeItemPtr thisShared = toRotoStrokeItem( shared_from_this() );
     assert(thisShared);
     {
         QMutexLocker k(&_imp->lock);
-        if (!_imp->usePaintBuffers) {
-            _imp->usePaintBuffers = true;
-            setNodesThreadSafetyForRotopainting();
-        }
 
-        if ( _imp->strokeDotPatterns.empty() ) {
-            _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
-            for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-                _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
-            }
+        if (_imp->strokes.empty()) {
+            // beginSubStroke was not called.
+            assert(false);
+            return;
         }
-
-        RotoStrokeItemPrivate::StrokeCurves* stroke = 0;
-        if (newStroke) {
-            RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
-            _imp->strokes.push_back(s);
-        }
-        stroke = &_imp->strokes.back();
-        assert(stroke);
-        if (!stroke) {
-            throw std::logic_error("");
-        }
+        RotoStrokeItemPrivate::StrokeCurves* stroke = &_imp->strokes.back();
 
         assert( stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() &&
                 stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
+
         int nk = stroke->xCurve->getKeyFramesCount();
+
         double t;
         if (nk == 0) {
             qDebug() << "start stroke!";
@@ -872,7 +897,6 @@ RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
         _imp->strokes.push_back(s);
 
     }
-    setUsePaintBuffers(false);
 } // setStrokes
 
 void
@@ -1280,17 +1304,24 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
     {
         // Append the item knobs
         QMutexLocker k(&_imp->lock);
-        for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
-            Hash64::appendCurve(it->xCurve, hash);
-            Hash64::appendCurve(it->yCurve, hash);
 
-            // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
-            if (it->pressureCurve->getKeyFramesCount() == 1) {
-                Hash64::appendCurve(it->pressureCurve, hash);}
-            
+        // When in drawing state, do not add the strokes to the hash so that the stroke keep the same hash and the image buffer stays in the cache.
+        // This is more powerful than e.g storing the image pointer directly on the node associated with this item because even nodes downstream
+        // in the graph will keep the same hash and thus the same buffers.
+
+        if (!_imp->usePaintBuffers) {
+            for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
+                Hash64::appendCurve(it->xCurve, hash);
+                Hash64::appendCurve(it->yCurve, hash);
+
+                // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
+                if (it->pressureCurve->getKeyFramesCount() == 1) {
+                    Hash64::appendCurve(it->pressureCurve, hash);
+                }
+            }
         }
     }
-    
+
 
     RotoDrawableItem::appendToHash(time, view, hash);
 }

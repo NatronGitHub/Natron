@@ -699,28 +699,23 @@ Node::isMultiThreadingSupportEnabledForPlugin() const
 }
 
 
-ImagePtr
-Node::getPaintBuffer() const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->paintBuffer;
-}
-
-void
-Node::setPaintBuffer(const ImagePtr& image)
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    _imp->paintBuffer = image;
-}
-
 bool
 Node::isDuringPaintStrokeCreation() const
 {
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_imp->paintStroke.lock());
+    // We should render only
+    RotoStrokeItemPtr attachedStroke = getApp()->getActiveRotoDrawingStroke();
     if (!attachedStroke) {
         return false;
     }
-    return !attachedStroke->isPaintBuffersEnabled();
+    ParallelRenderArgsPtr frameArgs = _imp->effect->getParallelRenderArgsTLS();
+    if (!frameArgs) {
+        return false;
+    }
+    attachedStroke = toRotoStrokeItem(attachedStroke->getCachedDrawable(frameArgs->abortInfo.lock()));
+    if (!attachedStroke) {
+        return false;
+    }
+    return attachedStroke->isPaintBuffersEnabled();
 }
 
 
@@ -8210,8 +8205,8 @@ Node::onRefreshIdentityStateRequestReceived()
     U64 hash = 0;
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
-    Format frmt;
-    project->getProjectDefaultFormat(&frmt);
+
+    RectI format = _imp->effect->getOutputFormat();
 
     //The one view node might report it is identity, but we do not want it to display it
 
@@ -8223,7 +8218,7 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
             int identityInputNb = -1;
             ViewIdx identityView;
-            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
+            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, format, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
             if ( (i > 0) && ( (isViewIdentity != isIdentity) || (identityInputNb != inputNb) || (identityView.value() != i) ) ) {
                 isIdentity = false;
                 inputNb = -1;
