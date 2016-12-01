@@ -880,14 +880,8 @@ EffectInstance::getImage(int inputNb,
             canonicalRoi = *optionalBoundsParam;
         } else {
             // Go for RoD
-            U64 inputHash;
-            bool gotHash = inputEffect->getRenderHash(time, view, &inputHash);
-            assert(gotHash);
-            if (!gotHash) {
-                return ImagePtr();
-            }
             RectD rod;
-            StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &rod);
+            StatusEnum stat = inputEffect->getRegionOfDefinition_public(0, time, scale, view, &rod);
             if ( (stat == eStatusFailed) || rod.isNull() ) {
                 return ImagePtr();
             }
@@ -953,13 +947,9 @@ EffectInstance::getImage(int inputNb,
 #endif
 
             // We are in the render action, the frame/view hash was computed in the ParallelRenderArgs ctor.
-            U64 thisNodeHash;
-            bool gothash = getRenderHash(tls->currentRenderArgs.time, tls->currentRenderArgs.view, &thisNodeHash);
-            assert(gothash);
-
             // Get this node rod
             RectD outputRod;
-            StatusEnum stat = getRegionOfDefinition_public(thisNodeHash, tls->currentRenderArgs.time, scale, tls->currentRenderArgs.view, &outputRod);
+            StatusEnum stat = getRegionOfDefinition_public(0, tls->currentRenderArgs.time, scale, tls->currentRenderArgs.view, &outputRod);
             if (stat == eStatusFailed) {
                 return ImagePtr();
             }
@@ -977,19 +967,10 @@ EffectInstance::getImage(int inputNb,
             }
 
 
-            // If getFramesNeeded failed to properly inform us of this time/view pair passed to fetchImage,
-            // there may be no hash on the input, but renderRoI needs it. Compute it if needed.
-            U64 inputHash;
-            bool gotHash = inputEffect->getRenderHash(time, view, &inputHash);
-            if (!gotHash) {
-                FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &inputHash);
-                (void)inputFramesNeeded;
-            }
-            
             if (!gotInputRoI) {
                 // Fallback on RoD. There may be no hash after all because the frame was not registered in ParallelRenderArgs.
 
-                StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputHash, time, scale, view, &roiCanonical);
+                StatusEnum stat = inputEffect->getRegionOfDefinition_public(0, time, scale, view, &roiCanonical);
                 if (stat == eStatusFailed) {
                     return ImagePtr();
                 }
@@ -1209,10 +1190,7 @@ EffectInstance::getRegionOfDefinition(double time,
         EffectInstancePtr input = getInput(i);
         if (input) {
             RectD inputRod;
-            U64 inputHash;
-            bool gotHash = input->getRenderHash(time, view, &inputHash);
-            (void)gotHash;
-            StatusEnum st = input->getRegionOfDefinition_public(inputHash, time, renderMappedScale, view, &inputRod);
+            StatusEnum st = input->getRegionOfDefinition_public(0, time, renderMappedScale, view, &inputRod);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == eStatusFailed) {
                 return st;
@@ -1268,10 +1246,7 @@ EffectInstance::ifInfiniteApplyHeuristic(double time,
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
                     inputScale.x = inputScale.y = 1.;
                 }
-                U64 inputHash;
-                bool gotHash = input->getRenderHash(time, view, &inputHash);
-                (void)gotHash;
-                StatusEnum st = input->getRegionOfDefinition_public(inputHash, time, inputScale, view, &inputRod);
+                StatusEnum st = input->getRegionOfDefinition_public(0, time, inputScale, view, &inputRod);
                 if (st != eStatusFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
@@ -1355,10 +1330,7 @@ EffectInstance::getRegionsOfInterest(double time,
                 RectD rod;
                 RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
                 input->getParallelRenderArgsTLS();
-                U64 inputHash;
-                bool gotHash = input->getRenderHash(time, view, &inputHash);
-                (void)gotHash;
-                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, inpScale, view, &rod);
+                StatusEnum stat = input->getRegionOfDefinition_public(0, time, inpScale, view, &rod);
                 if (stat == eStatusFailed) {
                     return;
                 }
@@ -1999,112 +1971,128 @@ void
 EffectInstance::tryConcatenateTransforms(double time,
                                          ViewIdx view,
                                          const RenderScale & scale,
+                                         U64 hash,
                                          InputMatrixMap* inputTransforms)
 {
     bool canTransform = getNode()->getCurrentCanTransform();
 
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
     std::list<int> inputHoldingTransforms;
-    bool canApplyTransform = getInputsHoldingTransform(&inputHoldingTransforms);
-
-    assert(inputHoldingTransforms.empty() || canApplyTransform);
+    getInputsHoldingTransform(&inputHoldingTransforms);
 
     Transform::Matrix3x3 thisNodeTransform;
-    EffectInstancePtr inputToTransform;
     bool getTransformSucceeded = false;
 
     if (canTransform) {
-        /*
-         * If getting the transform does not succeed, then this effect is treated as any other ones.
-         */
-        StatusEnum stat = getTransform_public(time, scale, view, &inputToTransform, &thisNodeTransform);
+        EffectInstancePtr inputToTransform;
+        // If getting the transform does not succeed, then this effect is treated as any other ones.
+        StatusEnum stat = getTransform_public(time, scale, view, hash, &inputToTransform, &thisNodeTransform);
         if (stat == eStatusOK) {
             getTransformSucceeded = true;
         }
     }
 
 
-    if ( (canTransform && getTransformSucceeded) || ( !canTransform && canApplyTransform && !inputHoldingTransforms.empty() ) ) {
-        for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
-            EffectInstancePtr input = getInput(*it);
+    // Nothing to recurse onto
+    if ( (canTransform && !getTransformSucceeded) || (!canTransform && inputHoldingTransforms.empty() ) ) {
+        return;
+    }
+
+    // For each input to transform, recurse
+    for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
+
+        EffectInstancePtr input = getInput(*it);
+        if (!input) {
+            continue;
+        }
+
+        std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
+        InputMatrix im;
+        im.newInputEffect = input;
+        im.newInputNbToFetchFrom = *it;
+
+
+        // recursion upstream
+        bool inputCanTransform = false;
+
+
+        // If the effect is identity, do not call the getRegionOfDefinition action, instead just return the input identity at the
+        // identity time and view.
+        double inputIdentityTime;
+        ViewIdx inputIdentityView;
+        int inputIdentityNb;
+        bool isIdentity;
+        EffectInstancePtr identityInput;
+        {
+            // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
+            RectI format = input->getOutputFormat();
+            RenderScale scale(1.);
+            isIdentity = input->isIdentity_public(true, 0, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
+            identityInput = input->getInput(inputIdentityNb);
+        }
+
+
+        if (!isIdentity) {
+            inputCanTransform = input->getNode()->getCurrentCanTransform();
+        } else {
+            inputCanTransform = true;
+        }
+
+
+        while (inputCanTransform) {
+
+            if (isIdentity) {
+                // Identity concatenates an identity matrix
+                im.newInputNbToFetchFrom = inputIdentityNb;
+                im.newInputEffect = input;
+                input = identityInput;
+            } else if (inputCanTransform) {
+                Transform::Matrix3x3 m;
+
+                EffectInstancePtr inputToTransform;
+                StatusEnum stat = input->getTransform_public(time, scale, view, 0, &inputToTransform, &m);
+                if (stat == eStatusOK) {
+                    matricesByOrder.push_back(m);
+                    if (inputToTransform) {
+                        im.newInputNbToFetchFrom = input->getInputNumber(inputToTransform);
+                    }
+                    im.newInputEffect = input;
+                }
+            } else {
+                assert(false);
+            }
+
             if (!input) {
-                continue;
-            }
-            std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
-            InputMatrix im;
-            im.newInputEffect = input;
-            im.newInputNbToFetchFrom = *it;
-
-
-            // recursion upstream
-            bool inputCanTransform = false;
-            bool inputIsDisabled  =  input->getNode()->isNodeDisabledForFrame(time, view);
-
-            if (!inputIsDisabled) {
-                inputCanTransform = input->getNode()->getCurrentCanTransform();
-            }
-
-
-            while ( input && (inputCanTransform || inputIsDisabled) ) {
-                //input is either disabled, or identity or can concatenate a transform too
-                if (inputIsDisabled) {
-                    int prefInput;
-                    EffectInstancePtr nearestNonDisabled = input->getNearestNonDisabled(time, view);
-                    prefInput = input->getNode()->getPreferredInput();
-                    if (prefInput == -1) {
-                        break;
-                    }
-
-                    if (nearestNonDisabled) {
-                        im.newInputNbToFetchFrom = prefInput;
-                        im.newInputEffect = input;
-                        input = nearestNonDisabled;
-                    } else {
-                        input.reset();
-                    }
-                } else if (inputCanTransform) {
-                    Transform::Matrix3x3 m;
-                    inputToTransform.reset();
-                    StatusEnum stat = input->getTransform_public(time, scale, view, &inputToTransform, &m);
-                    if (stat == eStatusOK) {
-                        matricesByOrder.push_back(m);
-                        if (inputToTransform) {
-                            im.newInputNbToFetchFrom = input->getInputNumber(inputToTransform);
-                            im.newInputEffect = input;
-                            input = inputToTransform;
-                        }
-                    } else {
-                        break;
-                    }
+                inputCanTransform = false;
+            } else {
+                RectI format = input->getOutputFormat();
+                RenderScale scale(1.);
+                isIdentity = input->isIdentity_public(true, 0, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
+                if (!isIdentity) {
+                    inputCanTransform = input->getNode()->getCurrentCanTransform();
                 } else {
-                    assert(false);
-                }
-
-                if (input) {
-                    inputIsDisabled = input->getNode()->isNodeDisabledForFrame(time, view);
-                    if (!inputIsDisabled) {
-                        inputCanTransform = input->getNode()->getCurrentCanTransform();
-                    }
+                    inputCanTransform = true;
+                    identityInput = input->getInput(inputIdentityNb);
                 }
             }
+        }
 
-            if ( input && !matricesByOrder.empty() ) {
-                assert(im.newInputEffect);
+        if ( input && !matricesByOrder.empty() ) {
+            assert(im.newInputEffect);
 
-                ///Now actually concatenate matrices together
-                im.cat.reset(new Transform::Matrix3x3);
-                std::list<Transform::Matrix3x3>::iterator it2 = matricesByOrder.begin();
-                *im.cat = *it2;
+            ///Now actually concatenate matrices together
+            im.cat.reset(new Transform::Matrix3x3);
+            std::list<Transform::Matrix3x3>::iterator it2 = matricesByOrder.begin();
+            *im.cat = *it2;
+            ++it2;
+            while ( it2 != matricesByOrder.end() ) {
+                *im.cat = Transform::matMul(*im.cat, *it2);
                 ++it2;
-                while ( it2 != matricesByOrder.end() ) {
-                    *im.cat = Transform::matMul(*im.cat, *it2);
-                    ++it2;
-                }
-
-                inputTransforms->insert( std::make_pair(*it, im) );
             }
-        } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it)
-    } // if ((canTransform && getTransformSucceeded) || (canApplyTransform && !inputHoldingTransforms.empty()))
+
+            inputTransforms->insert( std::make_pair(*it, im) );
+        }
+    } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it)
 } // EffectInstance::tryConcatenateTransforms
 
 bool
@@ -3976,18 +3964,97 @@ EffectInstance::render_public(const RenderActionArgs & args)
     }
 }
 
+void
+EffectInstance::computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, U64* hash)
+{
+    FramesNeededMap framesNeeded = getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), hash);
+    (void)framesNeeded;
+}
+
 StatusEnum
-EffectInstance::getTransform_public(double time,
+EffectInstance::getTransform_public(double inArgsTime,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
+                                    U64 hash,
                                     EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
-    RECURSIVE_ACTION();
-    //assert( getNode()->getCurrentCanTransform() ); // called in every case for overlays
+    assert(transform);
+    if (!transform) {
+        return eStatusFailed;
+    }
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
+    }
 
-    return getTransform(time, renderScale, view, inputToTransform, transform);
-}
+    if (!hash) {
+        bool gotHash = getRenderHash(time, view, &hash);
+        if (!gotHash) {
+            computeFrameViewHashUsingFramesNeeded(time,view, &hash);
+        }
+    }
+
+    unsigned int mipMapLevel = Image::getLevelFromScale(renderScale.x);
+
+    int inputToTransformNb;
+    {
+        bool foundInCache = _imp->actionsCache->getTransformResult(hash, time, view, mipMapLevel, transform, &inputToTransformNb);
+        if (foundInCache) {
+            *inputToTransform = getInput(inputToTransformNb);
+            if (!*inputToTransform) {
+                return eStatusFailed;
+            }
+
+            return eStatusOK;
+        }
+    }
+
+    // If the effect is identity, do not call the getTransform action, instead just return an identity
+    // identity time and view.
+
+    bool isIdentity;
+    {
+        double inputIdentityTime;
+        ViewIdx inputIdentityView;
+        // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
+        RectI format = getOutputFormat();
+        RenderScale scale(1.);
+        isIdentity = isIdentity_public(true, hash, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputToTransformNb);
+    }
+
+    if (isIdentity) {
+        *inputToTransform = getInput(inputToTransformNb);
+        if (!*inputToTransform) {
+            return eStatusFailed;
+        }
+
+        transform->setIdentity();
+        return eStatusOK;
+    }
+
+    StatusEnum stat;
+    {
+        RECURSIVE_ACTION();
+
+        stat = getTransform(time, renderScale, view, &inputToTransformNb, transform);
+    }
+
+    if (stat != eStatusOK) {
+        return stat;
+    }
+    _imp->actionsCache->setTransformResult(hash, time, view, mipMapLevel, *transform, inputToTransformNb);
+
+
+    *inputToTransform = getInput(inputToTransformNb);
+    if (!*inputToTransform) {
+        return eStatusFailed;
+    }
+    return stat;
+} // getTransform_public
 
 bool
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
@@ -4010,6 +4077,13 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
+    if (!hash) {
+        bool gotHash = getRenderHash(time, view, &hash);
+        if (!gotHash) {
+            computeFrameViewHashUsingFramesNeeded(time,view, &hash);
+        }
+    }
+
 
     bool ret = false;
     if ( getNode()->isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() ) {
@@ -4022,7 +4096,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         if (getSequentialPreference() != eSequentialPreferenceOnlySequential) {
 
 
-            if (useIdentityCache && hash != 0) {
+            if (useIdentityCache) {
                 double timeF = 0.;
                 bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
                 if (foundInCache) {
@@ -4049,7 +4123,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         *inputView = view;
     }
 
-    if (useIdentityCache && hash != 0) {
+    if (useIdentityCache) {
         _imp->actionsCache->setIdentityResult(hash, time, view, *inputNb, *inputView, *inputTime);
     }
 
@@ -4101,11 +4175,17 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         }
     }
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool foundInCache = false;
-    if (hash != 0) {
-        foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+    if (!hash) {
+        bool gotHash = getRenderHash(time, view, &hash);
+        if (!gotHash) {
+            computeFrameViewHashUsingFramesNeeded(time,view, &hash);
+        }
     }
+
+
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+
     if (foundInCache) {
         if ( rod->isNull() ) {
             return eStatusFailed;
@@ -4141,10 +4221,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if (!identityInputNode) {
                 return eStatusFailed;
             }
-            U64 inputHash;
-            bool gotHash = identityInputNode->getRenderHash(inputIdentityTime, inputIdentityView, &inputHash);
-            (void)gotHash;
-            return identityInputNode->getRegionOfDefinition_public(inputHash, inputIdentityTime, scale, inputIdentityView, rod);
+
+            return identityInputNode->getRegionOfDefinition_public(0, inputIdentityTime, scale, inputIdentityView, rod);
         }
 
         StatusEnum ret;
@@ -4165,7 +4243,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 return ret;
             }
 
-            if ( rod->isNull() && hash != 0) {
+            if ( rod->isNull() ) {
                 // RoD is empty, which means output is black and transparent
                 _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
@@ -4178,9 +4256,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-        if (hash != 0) {
-            _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
-        }
+        _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
+
 
         return ret;
     }
@@ -4244,7 +4321,12 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool ini
     // For the viewer we cannot compute a hash and cache it because it varies from the branch we choose to render
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
     if (isViewer) {
-        int viewerIndex = getViewerIndexThreadLocal();
+        int viewerIndex;
+        if (!getParallelRenderArgsTLS()) {
+            viewerIndex = 0;
+        } else {
+            viewerIndex = getViewerIndexThreadLocal();
+        }
         assert(viewerIndex == 0 || viewerIndex == 1);
         *retHash = 0;
         FramesNeededMap ret;
@@ -4275,50 +4357,24 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool ini
         }
     }
 
-    // If the effect is identity, do not call the getFramesNeeded action, instead just add the input identity at the
-    // identity time and view.
-    double inputIdentityTime;
-    ViewIdx inputIdentityView;
-    int inputIdentityNb;
-    bool isIdentity;
+
     {
-        // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
-        RenderScale scale(1.);
-        isIdentity = isIdentity_public(true, hashValue, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
-    }
-    {
+        NON_RECURSIVE_ACTION();
 
-        if (isIdentity) {
-            // If the node is disabled, get the preferred input at the identity time
-            RangeD defaultRange;
-            defaultRange.min = defaultRange.max = inputIdentityTime;
-            std::vector<RangeD> ranges;
-            ranges.push_back(defaultRange);
-            FrameRangesMap defViewRange;
-            defViewRange[inputIdentityView] = ranges;
-            if (inputIdentityNb != -1) {
-                framesNeeded[inputIdentityNb] = defViewRange;
+        try {
+            framesNeeded = getFramesNeeded(time, view);
+        } catch (std::exception &e) {
+            if ( !hasPersistentMessage() ) { // plugin may already have set a message
+                setPersistentMessage( eMessageTypeError, e.what() );
             }
-
-        } else {
-            NON_RECURSIVE_ACTION();
-
-            try {
-                framesNeeded = getFramesNeeded(time, view);
-            } catch (std::exception &e) {
-                if ( !hasPersistentMessage() ) { // plugin may already have set a message
-                    setPersistentMessage( eMessageTypeError, e.what() );
-                }
-                return framesNeeded;
-            }
+            return framesNeeded;
         }
+
     }
-    
+
 
     if (!isHashCached) {
         // Follow the frames needed to compute the hash
-
 
         // We need to append the hash of the inputs to the hash. To do so, recurse on inputs and call getFramesNeeded on them
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
@@ -4359,11 +4415,39 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool ini
         addHashToCache(time, view, hashValue);
     }
 
+    // If the effect is identity, do not follow the result of the getFramesNeeded action, instead just add the input identity at the
+    // identity time and view.
+    double inputIdentityTime;
+    ViewIdx inputIdentityView;
+    int inputIdentityNb;
+    bool isIdentity;
+    {
+        // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
+        RectI format = getOutputFormat();
+        RenderScale scale(1.);
+        isIdentity = isIdentity_public(true, hashValue, time, scale, format, view, &inputIdentityTime, &inputIdentityView, &inputIdentityNb);
+    }
+    if (isIdentity) {
+        framesNeeded.clear();
+        // If the node is disabled, get the preferred input at the identity time
+        RangeD defaultRange;
+        defaultRange.min = defaultRange.max = inputIdentityTime;
+        std::vector<RangeD> ranges;
+        ranges.push_back(defaultRange);
+        FrameRangesMap defViewRange;
+        defViewRange[inputIdentityView] = ranges;
+        if (inputIdentityNb != -1) {
+            framesNeeded[inputIdentityNb] = defViewRange;
+        }
+
+    }
+    // We may not have a cache when calling isIdentity, thus cache it now.
+    _imp->actionsCache->setIdentityResult(hashValue, time, view, inputIdentityNb, inputIdentityView, inputIdentityTime);
+
     // Cache the result of the action
     _imp->actionsCache->setFramesNeededResult(hashValue, time, view, 0, framesNeeded);
 
-    // We may not have a cache when calling isIdentity, thus cache it now.
-    _imp->actionsCache->setIdentityResult(hashValue, time, view, inputIdentityNb, inputIdentityView, inputIdentityTime);
+
 
     *retHash = hashValue;
     return framesNeeded;
@@ -4374,8 +4458,18 @@ EffectInstance::getFrameRange_public(U64 hash,
                                      double *first,
                                      double *last)
 {
+    
     double fFirst = 0., fLast = 0.;
     bool foundInCache = false;
+
+    if (!hash) {
+        double time = getCurrentTime();
+        ViewIdx view = getCurrentView();
+        bool gotHash = getRenderHash(time, view, &hash);
+        if (!gotHash) {
+            computeFrameViewHashUsingFramesNeeded(time, view, &hash);
+        }
+    }
 
     if (hash != 0) {
         foundInCache = _imp->actionsCache->getTimeDomainResult(hash, &fFirst, &fLast);
@@ -5319,16 +5413,14 @@ EffectInstance::getNearestNonDisabled(double time, ViewIdx view) const
 EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)
 {
-    U64 hash;
-    bool gotHash = getRenderHash(time, ViewIdx(0), &hash);
-    (void)gotHash;
+
     RenderScale scale(1.);
 
     RectI format = getOutputFormat();
     double inputTimeIdentity;
     int inputNbIdentity;
     ViewIdx inputView;
-    if ( !isIdentity_public(true, hash, time, scale, format, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, 0, time, scale, format, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {

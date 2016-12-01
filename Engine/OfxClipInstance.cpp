@@ -416,13 +416,7 @@ OfxClipInstance::getFrameRange(double &startFrame,
     EffectInstancePtr n = getAssociatedNode();
 
     if (n) {
-        double time;
-        ViewIdx view;
-        n->getCurrentTimeView(&time, &view);
-        U64 hash;
-        bool gotHash = n->getRenderHash(time, view, &hash);
-        (void)gotHash;
-        n->getFrameRange_public(hash, &startFrame, &endFrame);
+        n->getFrameRange_public(0, &startFrame, &endFrame);
     } else {
         n = getEffectHolder();
         double first, last;
@@ -575,11 +569,8 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         return;
     }
 
-    U64 hash;
-    bool gotHash = associatedNode->getRenderHash(time, view, &hash);
-    (void)gotHash;
     RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
-    StatusEnum st = associatedNode->getRegionOfDefinition_public(hash, time, scale, view, &rod);
+    StatusEnum st = associatedNode->getRegionOfDefinition_public(0, time, scale, view, &rod);
     if (st == eStatusFailed) {
         ret->x1 = 0.;
         ret->x2 = 0.;

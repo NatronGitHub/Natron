@@ -267,7 +267,7 @@ public:
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    EffectInstancePtr* inputToTransform,
+                                    int* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;

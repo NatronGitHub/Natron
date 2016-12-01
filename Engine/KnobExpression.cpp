@@ -1018,7 +1018,7 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
     return true;
 }
 
-void
+bool
 KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
 {
     PythonGILLocker pgl;
@@ -1094,6 +1094,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     if (hadExpression) {
         expressionChanged(dimension, view);
     }
+    return hadExpression;
 } // clearExpressionInternal
 
 void
@@ -1102,16 +1103,17 @@ KnobHelper::clearExpression(DimSpec dimension,
                             bool clearResults)
 {
 
+    bool didSomething = false;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
         for (int i = 0; i < _imp->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    clearExpressionInternal(DimIdx(i), *it);
+                    didSomething |= clearExpressionInternal(DimIdx(i), *it);
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                clearExpressionInternal(DimIdx(i), view_i);
+                didSomething |= clearExpressionInternal(DimIdx(i), view_i);
             }
         }
     } else {
@@ -1120,11 +1122,11 @@ KnobHelper::clearExpression(DimSpec dimension,
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                clearExpressionInternal(DimIdx(dimension), *it);
+                didSomething |= clearExpressionInternal(DimIdx(dimension), *it);
             }
         } else {
             ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            clearExpressionInternal(DimIdx(dimension), view_i);
+            didSomething |= clearExpressionInternal(DimIdx(dimension), view_i);
         }
     }
 
@@ -1132,7 +1134,9 @@ KnobHelper::clearExpression(DimSpec dimension,
         clearExpressionsResults(dimension, view);
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    if (didSomething) {
+        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    }
 
 } // KnobHelper::clearExpression
 

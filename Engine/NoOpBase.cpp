@@ -84,13 +84,10 @@ StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        ViewIdx /*view*/,
-                       EffectInstancePtr* inputToTransform,
+                       int* inputToTransform,
                        Transform::Matrix3x3* transform)
 {
-    *inputToTransform = getInput(0);
-    if (!*inputToTransform) {
-        return eStatusFailed;
-    }
+    *inputToTransform = 0;
     transform->a = 1.; transform->b = 0.; transform->c = 0.;
     transform->d = 0.; transform->e = 1.; transform->f = 0.;
     transform->g = 0.; transform->h = 0.; transform->i = 1.;

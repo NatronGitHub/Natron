@@ -82,6 +82,9 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if ( currentNode == target->getEffectInstance() ) {
         return true;
     }
+    if (!currentNode) {
+        return false;
+    }
     RenderScale s(1.);
     EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
@@ -91,21 +94,24 @@ ViewerTabPrivate::getOverlayTransform(double time,
     // If transform is not implemented, it should return eStatusReplyDefault:
     // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
     // "the value kOfxStatReplyDefault is returned if the plug-in does not trap the action"
-    if ( !currentNode->getNode()->isNodeDisabledForFrame(time, view) /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
-        stat = currentNode->getTransform_public(time, s, view, &input, &mat);
-    }
+
+    // Internally this will return an identity matrix if the node is identity
+
+    stat = currentNode->getTransform_public(time, s, view, 0, &input, &mat);
+
+
     if (stat == eStatusFailed) {
         return false;
     } else if (stat == eStatusReplyDefault) {
-        //No transfo matrix found, pass to the input...
+        // No transfo matrix found, pass to the input...
 
-        ///Test all inputs recursively, going from last to first, preferring non optional inputs.
+        // Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstancePtr> nonOptionalInputs;
         std::list<EffectInstancePtr> optionalInputs;
         int maxInp = currentNode->getMaxInputCount();
 
-        ///We cycle in reverse by default. It should be a setting of the application.
-        ///In this case it will return input B instead of input A of a merge for example.
+        // We cycle in reverse by default. It should be a setting of the application.
+        // In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
             EffectInstancePtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
@@ -122,7 +128,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
             return false;
         }
 
-        ///Cycle through all non optional inputs first
+        // Cycle through all non optional inputs first
         for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
@@ -163,17 +169,18 @@ ViewerTabPrivate::getOverlayTransform(double time,
 
 static double
 transformTimeForNode(const EffectInstancePtr& currentNode,
-                     double inTime)
+                     double inTime,
+                     ViewIdx view)
 {
     U64 nodeHash;
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(inTime, ViewIdx(0), false, AbortableRenderInfoPtr(), &nodeHash);
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(inTime, view, false, AbortableRenderInfoPtr(), &nodeHash);
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
 
     if ( foundInput0 == framesNeeded.end() ) {
         return inTime;
     }
 
-    FrameRangesMap::iterator foundView0 = foundInput0->second.find( ViewIdx(0) );
+    FrameRangesMap::iterator foundView0 = foundInput0->second.find(view);
     if ( foundView0 == foundInput0->second.end() ) {
         return inTime;
     }
@@ -202,7 +209,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
 
     if ( !currentNode->getNode()->isNodeDisabledForFrame(time, view) ) {
-        *newTime = transformTimeForNode(currentNode, time);
+        *newTime = transformTimeForNode(currentNode, time, view);
     } else {
         *newTime = time;
     }

@@ -105,6 +105,9 @@ optimizeRectsToRender(const EffectInstancePtr& self,
                       std::list<EffectInstance::RectToRender>* finalRectsToRender)
 {
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        if (it->isNull()) {
+            continue;
+        }
         std::vector<RectI> splits = it->splitIntoSmallerRects(0);
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
@@ -154,7 +157,9 @@ optimizeRectsToRender(const EffectInstancePtr& self,
                 r.identityTime = identityInputTime;
                 r.identityView = inputIdentityView;
                 r.rect = splits[i];
-                finalRectsToRender->push_back(r);
+                if (!r.rect.isNull()) {
+                    finalRectsToRender->push_back(r);
+                }
             } else {
                 nonIdentityRectSet = true;
                 nonIdentityRect.rect.x1 = std::min(splits[i].x1, nonIdentityRect.rect.x1);
@@ -164,7 +169,9 @@ optimizeRectsToRender(const EffectInstancePtr& self,
             }
         }
         if (nonIdentityRectSet) {
-            finalRectsToRender->push_back(nonIdentityRect);
+            if (!nonIdentityRect.rect.isNull()) {
+                finalRectsToRender->push_back(nonIdentityRect);
+            }
         }
     }
 } // optimizeRectsToRender
@@ -427,10 +434,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 assert(attachedStroke);
                 inputRod = attachedStroke->getLastStrokeMovementBbox();
             } else {
-                U64 inputHash;
-                bool gotHash = input->getRenderHash(time, view, &inputHash);
-                (void)gotHash;
-                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, time, argsScale, view, &inputRod);
+                StatusEnum stat = input->getRegionOfDefinition_public(0, time, argsScale, view, &inputRod);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
                 }
@@ -469,12 +473,14 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
         if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
             QThreadPool* tp = QThreadPool::globalInstance();
             int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
-
+            const RectI& mainRect = rectsLeftToRender.front();
             std::vector<RectI> splits;
-            if (nThreads > 1) {
-                splits = rectsLeftToRender.front().splitIntoSmallerRects(nThreads);
-            } else {
-                splits.push_back(rectsLeftToRender.front());
+            if (!mainRect.isNull()) {
+                if (nThreads > 1) {
+                    splits = rectsLeftToRender.front().splitIntoSmallerRects(nThreads);
+                } else {
+                    splits.push_back(rectsLeftToRender.front());
+                }
             }
             for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
                 RectToRender r;
@@ -484,10 +490,12 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
             }
         } else {
             for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
-                RectToRender r;
-                r.rect = *it;
-                r.isIdentity = false;
-                planesToRender->rectsToRender.push_back(r);
+                if (!it->isNull()) {
+                    RectToRender r;
+                    r.rect = *it;
+                    r.isIdentity = false;
+                    planesToRender->rectsToRender.push_back(r);
+                }
             }
         }
     }
@@ -2158,7 +2166,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
         if (useTransforms) {
             tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
-            tryConcatenateTransforms( args.time, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get() );
+            tryConcatenateTransforms( args.time, args.view, args.scale, frameViewHash, tls->currentRenderArgs.transformRedirections.get() );
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

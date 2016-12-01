@@ -1583,10 +1583,7 @@ TrackerNodePrivate::getInputRoD(double time, ViewIdx view) const
     if (!inputEffect) {
         useProjFormat = true;
     } else {
-        U64 nodeHash;
-        bool gotHash = inputEffect->getRenderHash(time, view, &nodeHash);
-        (void)gotHash;
-        StatusEnum stat = inputEffect->getRegionOfDefinition_public(nodeHash, time, RenderScale(1.), view, &ret);
+        StatusEnum stat = inputEffect->getRegionOfDefinition_public(0, time, RenderScale(1.), view, &ret);
         if (stat == eStatusFailed) {
             useProjFormat = true;
         } else {

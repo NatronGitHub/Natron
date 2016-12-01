@@ -64,6 +64,12 @@ struct IdentityResults
     ViewIdx inputView;
 };
 
+struct TransformResults
+{
+    Transform::Matrix3x3 mat;
+    int inputToTransformNb;
+};
+
 struct CompareActionsCacheKeys
 {
     bool operator() (const ActionKey & lhs,
@@ -92,6 +98,7 @@ struct CompareActionsCacheKeys
 typedef std::map<ActionKey, IdentityResults, CompareActionsCacheKeys> IdentityCacheMap;
 typedef std::map<ActionKey, RectD, CompareActionsCacheKeys> RoDCacheMap;
 typedef std::map<ActionKey, FramesNeededMap, CompareActionsCacheKeys> FramesNeededCacheMap;
+typedef std::map<ActionKey, TransformResults, CompareActionsCacheKeys> TransformCacheMap;
 
 /**
  * @brief This class stores all results of the following actions:
@@ -119,6 +126,10 @@ public:
 
     void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
 
+    bool getTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, Transform::Matrix3x3* transform, int *inputNbToTransform);
+
+    void setTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const Transform::Matrix3x3& transform, int inputNbToTransform);
+
     bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
 
     void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
@@ -137,6 +148,7 @@ private:
         IdentityCacheMap _identityCache;
         RoDCacheMap _rodCache;
         FramesNeededCacheMap _framesNeededCache;
+        TransformCacheMap _transformCache;
 
         ActionsCacheInstance();
     };

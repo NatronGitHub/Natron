@@ -477,18 +477,19 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         }
 
 
-        // Concatenate transforms if needed
-        if (useTransforms) {
-            fvRequest->transforms.reset(new InputMatrixMap);
-            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->transforms.get() );
-        }
-
         // Get the frame/views needed for this frame/view.
         // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
 
         fvRequest->frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &fvRequest->frameViewHash);
 
         fvRequest->hashValid = true;
+        
+        // Concatenate transforms if needed
+        if (useTransforms) {
+            fvRequest->transforms.reset(new InputMatrixMap);
+            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->frameViewHash, fvRequest->transforms.get() );
+        }
+
 
         fvRequest->requestValid = true;
 

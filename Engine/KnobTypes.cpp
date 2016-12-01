@@ -2402,7 +2402,6 @@ void
 KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
 {
     assert( _curves.size() == _defaultCurves.size() );
-    removeAnimation(view, dimension);
     if (dimension.isAll()) {
         for (std::size_t i = 0; i < _curves.size(); ++i) {
             _curves[i]->clone(*_defaultCurves[i]);

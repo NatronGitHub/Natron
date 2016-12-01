@@ -660,6 +660,21 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
             }
         }
     }
+
+    bool hasChanged = false;
+    std::list<ViewIdx> views = getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+            T curValue = getValue(DimIdx(i), *it);
+            if (curValue != defValues[i]) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+    if (!hasChanged) {
+        return;
+    }
     if (dimension.isAll()) {
         setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
     } else {
@@ -667,7 +682,6 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     }
 
     if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
             autoAdjustFoldExpandDimensions(*it);
         }
@@ -723,6 +737,20 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
         }
     }
 
+    bool hasChanged = false;
+    std::list<ViewIdx> views = getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+            double curValue = getValue(DimIdx(i), *it);
+            if (curValue != defValues[i]) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+    if (!hasChanged) {
+        return;
+    }
 
     if (dimension.isAll()) {
         setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);

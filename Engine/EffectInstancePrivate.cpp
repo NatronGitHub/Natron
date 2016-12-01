@@ -203,6 +203,50 @@ ActionsCache::setRoDResult(U64 hash,
 }
 
 bool
+ActionsCache::getTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, Transform::Matrix3x3* transform, int* inputNbToTransform)
+{
+    QMutexLocker l(&_cacheMutex);
+
+    for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it != _instances.end(); ++it) {
+        if (it->_hash == hash) {
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+
+            TransformCacheMap::const_iterator found = it->_transformCache.find(key);
+            if ( found != it->_transformCache.end() ) {
+                *transform = found->second.mat;
+                *inputNbToTransform = found->second.inputToTransformNb;
+
+                return true;
+            }
+
+            return false;
+        }
+    }
+    
+    return false;
+}
+
+void
+ActionsCache::setTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const Transform::Matrix3x3& transform, int inputNbToTransform)
+{
+    QMutexLocker l(&_cacheMutex);
+    ActionsCacheInstance & cache = getOrCreateActionCache(hash);
+    ActionKey key;
+
+    key.time = time;
+    key.view = view;
+    key.mipMapLevel = mipMapLevel;
+
+    TransformResults& r = cache._transformCache[key];
+    r.mat = transform;
+    r.inputToTransformNb = inputNbToTransform;
+
+}
+
+bool
 ActionsCache::getFramesNeededResult(U64 hash,
                                     double time,
                                     ViewIdx view,

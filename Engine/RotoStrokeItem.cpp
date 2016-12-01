@@ -261,9 +261,10 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // If the curve is in a drawing state, pick-up from where
     // the drawing was at.
     // Otherwise render all sub-strokes
-    int strokeIndex = usePaintBuffers ? other.lastStrokeIndex : 0;
+    int pickupPointIndex = (!usePaintBuffers || other.lastPointIndexInSubStroke == -1) ? 0 : other.lastPointIndexInSubStroke + 1;
+    int pickupStrokeIndex = usePaintBuffers ? other.lastStrokeIndex : 0;
 
-    while (strokeIndex < (int)other.strokes.size()) {
+    for (int strokeIndex = pickupStrokeIndex; strokeIndex < (int)other.strokes.size(); ++strokeIndex) {
 
         const RotoStrokeItemPrivate::StrokeCurves* originalStroke = 0;
         originalStroke = &other.strokes[strokeIndex];
@@ -307,14 +308,13 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
             }
             // Update the last point index
             int newIndex = originalStroke->xCurve->getKeyFramesCount() - 1;
-            other.lastPointIndexInSubStroke = newIndex;
             if ((other.lastPointIndexInSubStroke != -1 && newIndex > other.lastPointIndexInSubStroke) || (other.lastPointIndexInSubStroke == -1 && newIndex > 0)) {
                 hasDoneSomething = true;
             }
+            other.lastPointIndexInSubStroke = newIndex;
             strokes.push_back(strokeCopy);
         }
 
-        ++strokeIndex;
 
         // When drawing, if there is a stroke after this one to be rendered, increment the index
         if (usePaintBuffers && other.lastStrokeIndex < (int)other.strokes.size() - 1) {
@@ -338,7 +338,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         double time = _publicInterface->getCurrentTime();
         ViewIdx view = _publicInterface->getCurrentView();
         lastStrokeStepBbox = computeBoundingBox(time, view);
-        if (other.lastPointIndexInSubStroke == -1 && other.lastStrokeIndex == 0) {
+        if (pickupPointIndex == 0 && pickupStrokeIndex == 0) {
             renderCachedBbox = lastStrokeStepBbox;
         } else {
             renderCachedBbox.merge(lastStrokeStepBbox);
@@ -1308,8 +1308,22 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
         // When in drawing state, do not add the strokes to the hash so that the stroke keep the same hash and the image buffer stays in the cache.
         // This is more powerful than e.g storing the image pointer directly on the node associated with this item because even nodes downstream
         // in the graph will keep the same hash and thus the same buffers.
+        // We still need to identify this stroke drawing with a timestamp so that the cache does not pick-up another stroke that was drawn. For that
+        // just use the first point!
+        if (_imp->usePaintBuffers) {
+            if (!_imp->strokes.empty()) {
+                RotoStrokeItemPrivate::StrokeCurves& firstStroke = _imp->strokes.front();
 
-        if (!_imp->usePaintBuffers) {
+                KeyFrame k;
+                if (firstStroke.xCurve->getKeyFrameWithIndex(0, &k)) {
+                    hash->append(k.getTime());
+                    hash->append(k.getValue());
+                    hash->append(k.getLeftDerivative());
+                    hash->append(k.getRightDerivative());
+                }
+
+            }
+        } else {
             for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
                 Hash64::appendCurve(it->xCurve, hash);
                 Hash64::appendCurve(it->yCurve, hash);

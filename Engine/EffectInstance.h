@@ -291,6 +291,12 @@ public:
      **/
     bool getRenderHash(double time, ViewIdx view, U64* hash) const WARN_UNUSED_RETURN;
 
+private:
+
+    void computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, U64* hash);
+
+public:
+
     /**
      * @brief Recursively invalidates the hash of this node and the nodes downstream.
      **/
@@ -897,7 +903,7 @@ protected:
     virtual StatusEnum getTransform(double /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
-                                    EffectInstancePtr* /*inputToTransform*/,
+                                    int* /*inputToTransform*/,
                                     Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -910,6 +916,7 @@ public:
     StatusEnum getTransform_public(double time,
                                    const RenderScale & renderScale,
                                    ViewIdx view,
+                                   U64 hash,
                                    EffectInstancePtr* inputToTransform,
                                    Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
@@ -1742,6 +1749,7 @@ public:
     void tryConcatenateTransforms(double time,
                                   ViewIdx view,
                                   const RenderScale & scale,
+                                  U64 hash,
                                   InputMatrixMap* inputTransforms);
 
 

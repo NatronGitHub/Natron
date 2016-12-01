@@ -433,10 +433,8 @@ TrackMarker::resetCenter()
         SequenceTime time = input->getApp()->getTimeLine()->currentFrame();
         RenderScale scale;
         scale.x = scale.y = 1;
-        U64 inputHash;
-        bool gotHash = input->getEffectInstance()->getRenderHash(time, ViewIdx(0), &inputHash);
-        (void)gotHash;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash, time, scale, ViewIdx(0), &rod);
+
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
         Point center;
         center.x = 0;
         center.y = 0;

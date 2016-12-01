@@ -194,13 +194,18 @@ public:
     KnobDoublePtr getBrushVisiblePortionKnob() const;
 
 
+    void getMotionBlurSettings(const double time,
+                               ViewGetSpec view,
+                               double* startTime,
+                               double* endTime,
+                               double* timeStep) const;
 
     void setKeyframeOnAllTransformParameters(double time);
 
     virtual RectD getBoundingBox(double time, ViewGetSpec view) const = 0;
 
     void getTransformAtTime(double time, ViewGetSpec view, Transform::Matrix3x3* matrix) const;
-    
+
     void setExtraMatrix(bool setKeyframe, double time, ViewSetSpec view, const Transform::Matrix3x3& mat);
 
     /**

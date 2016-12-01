@@ -1596,15 +1596,8 @@ OfxEffectInstance::getFrameRange(double *first,
                 //if (!isInputOptional(i)) {
                 EffectInstancePtr inputEffect = getInput(i);
                 if (inputEffect) {
-
-                    double time;
-                    ViewIdx view;
-                    inputEffect->getCurrentTimeView(&time, &view);
-                    U64 hash;
-                    bool gotHash = inputEffect->getRenderHash(time, view, &hash);
-                    (void)gotHash;
                     double f, l;
-                    inputEffect->getFrameRange_public(hash, &f, &l);
+                    inputEffect->getFrameRange_public(0, &f, &l);
                     if (!firstValidInput) {
                         if ( (f < *first) && (f != INT_MIN) ) {
                             *first = f;
@@ -2778,7 +2771,7 @@ StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 ViewIdx view,
-                                EffectInstancePtr* inputToTransform,
+                                int* inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
@@ -2820,11 +2813,8 @@ OfxEffectInstance::getTransform(double time,
     if (!natronClip) {
         return eStatusFailed;
     }
-    *inputToTransform = natronClip->getAssociatedNode();
-    if (!*inputToTransform) {
-        return eStatusFailed;
-    }
-
+    *inputToTransform = natronClip->getInputNb();
+   
     return eStatusOK;
 }
 

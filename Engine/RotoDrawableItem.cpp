@@ -73,7 +73,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
-
+// When defined items are blurred using a TimeBlur node instead of doing it natively in their render action
+//#define ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
 
 NATRON_NAMESPACE_ENTER;
 
@@ -107,7 +108,9 @@ public:
     NodePtr effectNode, maskNode;
     NodePtr mergeNode;
     NodePtr timeOffsetNode, frameHoldNode;
+#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     NodePtr timeBlurNode;
+#endif
     std::list<NodePtr> nodes;
     KnobColorWPtr overlayColor; //< the color the shape overlay should be drawn with, defaults to smooth red
     KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
@@ -164,7 +167,9 @@ public:
     , mergeNode(other.mergeNode)
     , timeOffsetNode(other.timeOffsetNode)
     , frameHoldNode(other.frameHoldNode)
+#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     , timeBlurNode(other.timeBlurNode)
+#endif
     , nodes(other.nodes)
     , overlayColor(other.overlayColor)
     , opacity(other.opacity)
@@ -542,6 +547,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
     }
 
+#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     if (type == eRotoStrokeTypeSolid) {
         // For solid (Bezier/paint stroke) add a TimeBlur node right away after the RotoShapeRender node
         // so the user can add per-shape motion blur.
@@ -572,6 +578,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         shutterCustomOffsetKnob->slaveTo(_imp->motionBlurCustomShutter.lock());
 
     }
+#endif // ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
 
     // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
     // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
@@ -656,10 +663,14 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
             (*it)->refreshIdentityState();
         }
-        rotoPaintEffect->refreshRotoPaintTree();
+        if (getIndexInParent() != -1) {
+            rotoPaintEffect->refreshRotoPaintTree();
+        }
         return ret;
     } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock() || knob == _imp->customRange.lock() || knob == _imp->lifeTime.lock())) {
-        rotoPaintEffect->refreshRotoPaintTree();
+        if (getIndexInParent() != -1) {
+            rotoPaintEffect->refreshRotoPaintTree();
+        }
     } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
         refreshNodesConnections();
     } else {
@@ -712,10 +723,12 @@ RotoDrawableItem::refreshNodesPositions(double x, double y)
         _imp->maskNode->setPosition(x - 100, y);
     }
     double yOffset = 100;
+#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     if (_imp->timeBlurNode) {
         _imp->timeBlurNode->setPosition(x, y - yOffset);
         yOffset += 100;
     }
+#endif
 
     if (_imp->effectNode) {
         _imp->effectNode->setPosition(x, y - yOffset);
@@ -846,15 +859,18 @@ RotoDrawableItem::refreshNodesConnections()
 
         }
 
-        bool perShapeMotionBlurEnabled = rotoPaintNode->getMotionBlurTypeKnob()->getValue() == 0;
 
+#ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
+        bool perShapeMotionBlurEnabled = rotoPaintNode->getMotionBlurTypeKnob()->getValue() == 0;
         if (_imp->timeBlurNode) {
             _imp->timeBlurNode->swapInput(perShapeMotionBlurEnabled ? _imp->effectNode : NodePtr(), 0);
         }
 
         if (perShapeMotionBlurEnabled && _imp->timeBlurNode) {
             mergeInputA = _imp->timeBlurNode;
-        } else {
+        } else
+#endif
+        {
             mergeInputA = _imp->effectNode;
         }
         mergeInputB = upstreamNode;
@@ -1423,6 +1439,73 @@ RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) c
     if (found != _imp->renderClones.end()) {
         _imp->renderClones.erase(renderID);
     }
+}
+
+void
+RotoDrawableItem::getMotionBlurSettings(const double time,
+                                        ViewGetSpec view,
+                                        double* startTime,
+                                        double* endTime,
+                                        double* timeStep) const
+{
+    *startTime = time, *timeStep = 1., *endTime = time;
+
+#ifndef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return ;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+
+    RotoPaintPtr rotoPaintNode = toRotoPaint(node->getEffectInstance());
+    if (!rotoPaintNode) {
+        return;
+    }
+
+    bool perShapeMotionBlurEnabled = rotoPaintNode->getMotionBlurTypeKnob()->getValue() == 0;
+    if (!perShapeMotionBlurEnabled) {
+        return;
+    }
+
+    KnobDoublePtr motionBlurAmountKnob = _imp->motionBlurAmount.lock();
+    if (!motionBlurAmountKnob) {
+        return;
+    }
+    double nDivisions = motionBlurAmountKnob->getValueAtTime(time, DimIdx(0), view);
+    if ( nDivisions <= 1) {
+        return;
+    }
+    KnobDoublePtr shutterKnob = _imp->motionBlurShutter.lock();
+    assert(shutterKnob);
+    double shutterInterval = shutterKnob->getValueAtTime(time, DimIdx(0), view);
+    if (shutterInterval == 0) {
+        return;
+    }
+    int shutterType_i = _imp->motionBlurShutterType.lock()->getValueAtTime(time, DimIdx(0), view);
+    if (nDivisions != 0) {
+        *timeStep = shutterInterval / nDivisions;
+    }
+    if (shutterType_i == 0) { // centered
+        *startTime = time - shutterInterval / 2.;
+        *endTime = time + shutterInterval / 2.;
+    } else if (shutterType_i == 1) { // start
+        *startTime = time;
+        *endTime = time + shutterInterval;
+    } else if (shutterType_i == 2) { // end
+        *startTime = time - shutterInterval;
+        *endTime = time;
+    } else if (shutterType_i == 3) { // custom
+
+        *startTime = time + _imp->motionBlurCustomShutter.lock()->getValueAtTime(time, DimIdx(0), view);
+        *endTime = *startTime + shutterInterval;
+    } else {
+        assert(false);
+    }
+#endif // #ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
+    
 }
 
 RectD

@@ -1566,7 +1566,7 @@ private:
                                              const std::string& oldName,
                                              const std::string& newName);
 
-    void clearExpressionInternal(DimIdx dimension, ViewIdx view);
+    bool clearExpressionInternal(DimIdx dimension, ViewIdx view);
 public:
 
     virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) OVERRIDE FINAL;

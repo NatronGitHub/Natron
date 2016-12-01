@@ -173,6 +173,30 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
     return eStatusOK;
 }
 
+static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx view, RectD* rod)
+{
+    // Account for motion-blur
+    double startTime, endTime, timeStep;
+    item->getMotionBlurSettings(time, view, &startTime, &endTime, &timeStep);
+
+    for (double t = startTime; t <= endTime; t += timeStep) {
+        RectD maskRod;
+        try {
+
+            maskRod = item->getBoundingBox(t, view);
+        } catch (...) {
+        }
+
+        if ( rod->isNull() ) {
+            *rod = maskRod;
+        } else {
+            rod->merge(maskRod);
+        }
+    }
+
+}
+
+
 StatusEnum
 RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
@@ -183,18 +207,10 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
 
-    NodePtr node = getNode();
-    RectD maskRod;
-    try {
-        RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
-        maskRod = item->getBoundingBox(time, view);
-    } catch (...) {
-    }
-    if ( rod->isNull() ) {
-        *rod = maskRod;
-    } else {
-        rod->merge(maskRod);
-    }
+    RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+    assert(item);
+    getRoDFromItem(item, time, view, rod);
+
     return eStatusOK;
 
 }
@@ -209,7 +225,6 @@ RotoShapeRenderNode::isIdentity(double time,
                 int* inputNb)
 {
     *inputView = view;
-    RectD maskRod;
     NodePtr node = getNode();
 
 
@@ -223,8 +238,8 @@ RotoShapeRenderNode::isIdentity(double time,
         return true;
     }
 
-    RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
-    maskRod = item->getBoundingBox(time, view);
+    RectD maskRod;
+    getRoDFromItem(rotoItem, time, view, &maskRod);
 
     RectI maskPixelRod;
     maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
@@ -349,7 +364,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
 
+            // Account for motion-blur
             double startTime = args.time, mbFrameStep = 1., endTime = args.time;
+            rotoItem->getMotionBlurSettings(args.time, args.view, &startTime, &endTime, &mbFrameStep);
 
             if (isBezier) {
                 RotoPaintPtr rotoPaintNode;

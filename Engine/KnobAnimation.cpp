@@ -657,13 +657,17 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     }
 
 
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    if (keys.empty()) {
+        return;
+    }
+    
     // Ensure the underlying values are the values of the current curve at the current time
     copyValuesFromCurve(dimension, view);
 
     // Notify the user of the keyframes that were removed
     std::list<double> timesRemoved;
 
-    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
     for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
         timesRemoved.push_back(it->getTime());
     }

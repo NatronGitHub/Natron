@@ -205,13 +205,7 @@ DiskCacheNode::getFrameRange(double *first,
     case 0: {
         EffectInstancePtr input = getInput(0);
         if (input) {
-            double time;
-            ViewIdx view;
-            input->getCurrentTimeView(&time, &view);
-            U64 hash;
-            bool gotHash = input->getRenderHash(time, view, &hash);
-            (void)gotHash;
-            input->getFrameRange_public(hash, first, last);
+            input->getFrameRange_public(0, first, last);
         }
         break;
     }

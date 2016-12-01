@@ -5170,10 +5170,7 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    U64 inputHash;
-    bool gotHash = input->getEffectInstance()->getRenderHash(input->getEffectInstance()->getCurrentTime(), ViewIdx(0), &inputHash);
-    (void)gotHash;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(inputHash,
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
@@ -6267,14 +6264,10 @@ Node::makePreviewImage(SequenceTime time,
             return false;
         }
 
-        U64 nodeHash;
-        bool gotHash = effect->getRenderHash(time, ViewIdx(0), &nodeHash);
-        assert(gotHash);
-        (void)gotHash;
 
         RenderScale scale(1.);
         RectD rod;
-        StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod);
+        StatusEnum stat = effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
         if ( (stat == eStatusFailed) || rod.isNull() ) {
             return false;
         }
@@ -8910,9 +8903,6 @@ Node::setNodeDisabled(bool disabled)
 
     if (b) {
         b->setValue(disabled);
-
-        // Clear the actions cache because if this function is called from another thread, the hash will not be incremented
-        _imp->effect->clearActionsCache();
     }
 }
 
@@ -9342,18 +9332,13 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
 
-    bool loadingProject = getApp()->getProject()->isLoadingProject();
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     /// EDIT: we allow calling getClipPreferences even if some non optional clip is not connected so that layer menus get properly created
     const bool canCallRefreshMetaData = true; // = !hasMandatoryInputDisconnected();
 
     if (canCallRefreshMetaData) {
-        if (loadingProject) {
-            //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
-            //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
-            _imp->effect->clearActionsCache();
-        }
+
 
         double time = (double)getApp()->getTimeLine()->currentFrame();
         RenderScale scaleOne(1.);
@@ -10917,20 +10902,13 @@ Node::renderFrame(const double time,
         return eRenderRoIRetCodeFailed;
     }
 
-
-    // We just applied the TLS, retrieve this node hash
-    U64 effectHash;
-    bool gotHash = _imp->effect->getRenderHash(time, ViewIdx(0), &effectHash);
-    assert(gotHash);
-    (void)gotHash;
-
     RenderScale scale;
     scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
 
     double par = _imp->effect->getAspectRatio(-1);
     RectD rod;
     {
-        StatusEnum stat = _imp->effect->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &rod);
+        StatusEnum stat = _imp->effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
         }
