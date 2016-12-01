@@ -98,7 +98,7 @@ typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
 
 inline bool findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table, U64* hash)
 {
-    FrameViewPair fv = {time, view};
+    FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
     FrameViewHashMap::const_iterator it = table.find(fv);
     if (it != table.end()) {
         *hash = it->second;
@@ -157,9 +157,6 @@ public:
     ///Various stats local to the render of a frame
     RenderStatsPtr stats;
 
-    // Hash of this node for a frame/view pair
-    FrameViewHashMap frameViewHash;
-
     ///The OpenGL context to use for the render of this frame
     boost::weak_ptr<OSGLContext> openGLContext;
 
@@ -209,7 +206,6 @@ public:
 
     bool isCurrentFrameRenderNotAbortable() const;
 
-    bool getFrameViewHash(double time, ViewIdx view, U64* hash) const;
 };
 
 
@@ -229,6 +225,8 @@ struct FrameViewRequest
     // The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
 
+    U64 frameViewHash;
+
     // Set when the first request is made
     RectD rod;
 
@@ -238,8 +236,28 @@ struct FrameViewRequest
     ViewIdx identityView;
     double inputIdentityTime;
 
-    // If this node or one of its inputs is frame varying, this is set to true
-    bool isFrameVaryingRecursive;
+    // True if all fields have been set
+    bool requestValid;
+
+    // True if the frameViewHahs at least is valid
+    bool hashValid;
+
+    FrameViewRequest()
+    : finalRoi()
+    , transforms()
+    , reroutesMap()
+    , frameViewsNeeded()
+    , frameViewHash(0)
+    , rod()
+    , isIdentity(false)
+    , identityInputNb(-1)
+    , identityView()
+    , inputIdentityTime(0)
+    , requestValid(false)
+    , hashValid(false)
+    {
+
+    }
 
 };
 
@@ -253,10 +271,29 @@ public:
     // Set on first request
     RenderScale mappedScale;
 
+    // False until there's one request made that is valid
+    bool firstRequestMade;
+
+    NodeFrameRequest()
+    : frames()
+    , mappedScale()
+    , firstRequestMade(false)
+    {
+
+    }
+
+    void setFrameViewHash(double time, ViewIdx view, U64 hash);
+    
     /**
      * @brief Convenience function, same as getFrameViewRequest(time,view)->finalRoi
      **/
     bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
+
+    /**
+     * @brief Convenience function, same as getFrameViewRequest(time,view)->frameViewHash
+     **/
+    bool getFrameViewHash(double time, ViewIdx view, U64* hash) const;
+
 
     /**
      * @brief Returns a previously requested frame/view request from optimizeRoI. This contains most actions
@@ -266,7 +303,6 @@ public:
     const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 };
 
-typedef std::map<NodePtr, NodeFrameRequestPtr > FrameRequestMap;
 
 
 /**

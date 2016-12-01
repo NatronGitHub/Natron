@@ -1082,7 +1082,6 @@ bool
 EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstance::RenderRoIArgs & args,
                                                               const ParallelRenderArgsPtr& frameArgs,
                                                               const U64 frameViewHash,
-                                                              const FrameViewRequest* requestPassData,
                                                               StorageModeEnum storage,
                                                               const OSGLContextPtr& glRenderContext,
                                                               const OSGLContextAttacherPtr& glContextLocker,
@@ -1102,12 +1101,8 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
                                                               boost::scoped_ptr<ImageKey>* key,
                                                               std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
-    bool isFrameVaryingOrAnimated;
-    if (requestPassData) {
-        isFrameVaryingOrAnimated = requestPassData->isFrameVaryingRecursive;
-    } else {
-        isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
-    }
+    bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
+
     //_publicInterface->isFrameVaryingOrAnimated_Recursive();
 
     assert(createInCache);
@@ -2204,7 +2199,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::scoped_ptr<ImageKey> key;
 
     {
-        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, requestPassData, storage, glRenderContext, glContextLocker, planesToRender, isDuringPaintStrokeDrawing, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
+        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, storage, glRenderContext, glContextLocker, planesToRender, isDuringPaintStrokeDrawing, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
             return eRenderRoIRetCodeFailed;
         }
     }

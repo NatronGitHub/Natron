@@ -108,7 +108,7 @@ HashableObject::addHashToCache(double time, ViewIdx view, U64 hashValue)
         return;
     }
     QMutexLocker k(&_imp->hashCacheMutex);
-    FrameViewPair fv = {time, view};
+    FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
     _imp->hashCache[fv] = hashValue;
 }
 
@@ -131,7 +131,7 @@ HashableObject::computeHash(double time, ViewIdx view)
         hashValue = hash.value();
 
         // Cache it
-        FrameViewPair fv = {time, view};
+        FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
         _imp->hashCache[fv] = hashValue;
         return hashValue;
 

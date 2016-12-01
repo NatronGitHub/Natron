@@ -188,22 +188,6 @@ EffectInstance::isDuringActionThatCanSetValue() const
 
 #endif //DEBUG
 
-void
-EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest)
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        assert(false);
-
-        return;
-    }
-    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
-    if ( argsList.empty() ) {
-        return;
-    }
-    argsList.back()->request = nodeRequest;
-}
 
 void
 EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
@@ -249,10 +233,13 @@ EffectInstance::createFrameRenderTLS(const AbortableRenderInfoPtr& renderID)
         attachedRotoItem->getOrCreateCachedDrawable(renderID);
     }
 
+    // Also initial the frame/view request map
+    args->request.reset(new NodeFrameRequest);
+
     return args;
 }
 
-void
+ParallelRenderArgsPtr
 EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs)
 {
 
@@ -268,8 +255,6 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->view = inArgs->view;
     args->isRenderResponseToUserInteraction = inArgs->isRenderUserInteraction;
     args->isSequentialRender = inArgs->isSequential;
-    args->request = inArgs->nodeRequest;
-    args->frameViewHash = inArgs->frameViewHash;
     args->treeRoot = inArgs->treeRoot;
     args->visitsCount = inArgs->visitsCount;
     args->textureIndex = inArgs->textureIndex;
@@ -285,6 +270,7 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->parent = inArgs->parent;
 
     assert(args->valuesCache);
+    return args;
 
 
 }
@@ -550,11 +536,13 @@ EffectInstance::getRenderHash(double inArgsTime, ViewIdx view, U64* retHash) con
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (tls && !tls->frameArgs.empty()) {
         const ParallelRenderArgsPtr &args = tls->frameArgs.back();
-        assert(args);
-        bool gotIt = args->getFrameViewHash(time, view, &hash);
-        if (gotIt) {
-            *retHash = hash;
-            return true;
+        assert(args && args->request);
+        if (args && args->request) {
+            bool gotIt = args->request->getFrameViewHash(time, view, &hash);
+            if (gotIt) {
+                *retHash = hash;
+                return true;
+            }
         }
     }
 
@@ -933,14 +921,12 @@ EffectInstance::getImage(int inputNb,
             return ImagePtr();
         }
 
-        const FrameViewRequest* inputFrameViewRequest = 0;
+        bool gotRoIFromRequestPass = false;
         if (inputFrameArgs->request) {
-            inputFrameViewRequest = inputFrameArgs->request->getFrameViewRequest(time, view);
-        }
-        if (inputFrameViewRequest) {
             // The roi is the optimized roi: the bounding rect of all RoI from different branches leading to that node.
-            roiCanonical = inputFrameViewRequest->finalRoi;
-        } else {
+            gotRoIFromRequestPass = inputFrameArgs->request->getFrameViewCanonicalRoI(time, view, &roiCanonical);
+        }
+        if (!gotRoIFromRequestPass) {
 
             // If we were in analysis, the ParallelRenderArgsSetter created applied should have  been set correctly
             assert(tls && tls->currentRenderArgs.validArgs);
@@ -1011,17 +997,11 @@ EffectInstance::getImage(int inputNb,
 
 
             // There is no request pass as-well, but renderRoI needs it, comptue it
-            {
-                FrameRequestMap requestData;
-                stat = EffectInstance::optimizeRoI(time, view, mipMapLevel, roiCanonical, inputEffect->getNode(), requestData);
-                if (stat != eStatusOK) {
-
-                }
-
-                for (FrameRequestMap::const_iterator it = requestData.begin(); it != requestData.end(); ++it) {
-                    it->first->getEffectInstance()->setNodeRequestThreadLocal(it->second);
-                }
+            stat = EffectInstance::optimizeRoI(time, view, mipMapLevel, roiCanonical, inputEffect->getNode());
+            if (stat != eStatusOK) {
+                return ImagePtr();
             }
+
 
         } // inputFrameViewRequest
     }
@@ -2268,8 +2248,6 @@ EffectInstance::renderInputImagesForRoI(bool useTransforms,
                               time,
                               view,
                               NodePtr(),
-                              0,
-                              0,
                               inputImages,
                               &neededComps,
                               useScaleOneInputImages,
@@ -5497,6 +5475,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     bool premultSet = false;
 
     bool hasOneInputContinuous = false;
+    bool hasOneInputFrameVarying = false;
 
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstancePtr& input = inputs[i];
@@ -5513,6 +5492,9 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
             if (!hasOneInputContinuous) {
                 hasOneInputContinuous |= input->canRenderContinuously();
+            }
+            if (!hasOneInputFrameVarying) {
+                hasOneInputFrameVarying |= input->isFrameVarying();
             }
         }
 
@@ -5558,7 +5540,9 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setOutputFielding(eImageFieldingOrderNone);
 
     bool hasAnimation = getHasAnimation();
-    metadata.setIsFrameVarying( hasAnimation );
+
+    // An effect is frame varying if one of its inputs is varying or it has animation
+    metadata.setIsFrameVarying(hasOneInputFrameVarying || hasAnimation);
 
     // An effect is continuous if at least one of its inputs is continuous or if one of its knobs
     // is animated

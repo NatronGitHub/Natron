@@ -605,10 +605,8 @@ public:
         ViewIdx view;
         bool isRenderUserInteraction;
         bool isSequential;
-        FrameViewHashMap frameViewHash;
         NodePtr treeRoot;
         int visitsCount;
-        NodeFrameRequestPtr nodeRequest;
         OSGLContextPtr glContext;
         OSGLContextPtr cpuGlContext;
         int textureIndex;
@@ -627,11 +625,9 @@ public:
      * @brief Sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
-    void initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
+    ParallelRenderArgsPtr initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
 
     ParallelRenderArgsPtr createFrameRenderTLS(const AbortableRenderInfoPtr& renderID);
-
-    void setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
@@ -658,8 +654,7 @@ public:
                                            const NodePtr & node,
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
-                                           const RectD & canonicalRenderWindow,
-                                           FrameRequestMap & requests);
+                                           const RectD & canonicalRenderWindow);
 
     /**
      * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
@@ -670,8 +665,7 @@ public:
                                          ViewIdx view,
                                          unsigned int mipMapLevel,
                                          const RectD & renderWindow,
-                                         const NodePtr & treeRoot,
-                                         FrameRequestMap & request);
+                                         const NodePtr & treeRoot);
 
     static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap);
 
@@ -688,8 +682,6 @@ public:
                                                                double time,
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
-                                                               FrameRequestMap* requests,          // roi functor specific
-                                                               FrameViewRequest* frameViewRequestData,        // roi functor specific
                                                                EffectInstance::InputImagesMap* inputImages,         // render functor specific
                                                                const EffectInstance::ComponentsNeededMap* neededComps,         // render functor specific
                                                                bool useScaleOneInputs,         // render functor specific

@@ -128,8 +128,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    double time,
                                    ViewIdx /*view*/,
                                    const NodePtr& treeRoot,
-                                   FrameRequestMap* requests,  // roi functor specific
-                                   FrameViewRequest* frameViewRequestData, // roi functor specific
                                    EffectInstance::InputImagesMap* inputImages, // render functor specific
                                    const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
                                    bool useScaleOneInputs, // render functor specific
@@ -147,11 +145,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         int inputNb = it->first;
         EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect.get(), reroutesMap);
         if (inputEffect) {
-
-            // If this input is frame varying, the node is also frame varying
-            if (frameViewRequestData && !frameViewRequestData->isFrameVaryingRecursive && inputEffect->isFrameVaryingOrAnimated()) {
-                frameViewRequestData->isFrameVaryingRecursive = true;
-            }
 
             framesToRender[inputEffect] = std::make_pair(inputNb, it->second);
         }
@@ -254,8 +247,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                    inputNode,
                                                                                    node,
                                                                                    treeRoot,
-                                                                                   roi,
-                                                                                   *requests);
+                                                                                   roi);
 
                             if (stat == eStatusFailed) {
                                 return eRenderRoIRetCodeFailed;
@@ -361,19 +353,28 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
 StatusEnum
 EffectInstance::getInputsRoIsFunctor(bool useTransforms,
-                                     double time,
+                                     double inArgsTime,
                                      ViewIdx view,
                                      unsigned originalMipMapLevel,
                                      const NodePtr& node,
                                      const NodePtr& /*callerNode*/,
                                      const NodePtr& treeRoot,
-                                     const RectD& canonicalRenderWindow,
-                                     FrameRequestMap& requests)
+                                     const RectD& canonicalRenderWindow)
 {
-    NodeFrameRequestPtr nodeRequest;
+
     EffectInstancePtr effect = node->getEffectInstance();
 
     assert(effect);
+
+    // Round time to nearest integer if the effect is not continuous
+
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !effect->canRenderContinuously()) {
+            time = roundedTime;
+        }
+    }
 
     if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
         /*
@@ -383,28 +384,31 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         return eStatusFailed;
     }
 
-    // Round time to nearest integer if the effect is not continuous
-    if (!effect->canRenderContinuously()) {
-        time = std::floor(time + 0.5);
+
+    ParallelRenderArgsPtr frameArgs = effect->getParallelRenderArgsTLS();
+    if (!frameArgs) {
+        // TLS not set on the node! The ParallelRenderArgsSetter should have been created before calling this.
+        qDebug() << node->getScriptName_mt_safe().c_str() << "getInputsRoIsFunctor called but this node did not have TLS created. This is a bug! Please investigate";
+        assert(false);
+        return eStatusFailed;
     }
+
+    NodeFrameRequestPtr nodeRequest = frameArgs->request;
+    assert(nodeRequest);
 
     assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo ||
            effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();
     unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
-    FrameRequestMap::iterator foundNode = requests.find(node);
-    if ( foundNode != requests.end() ) {
-        nodeRequest = foundNode->second;
-    } else {
-        ///Setup global data for the node for the whole frame render
 
-        NodeFrameRequestPtr tmp(new NodeFrameRequest);
-        tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
 
-        std::pair<FrameRequestMap::iterator, bool> ret = requests.insert( std::make_pair(node, tmp) );
-        assert(ret.second);
-        nodeRequest = ret.first->second;
+    if ( !nodeRequest->firstRequestMade ) {
+        nodeRequest->firstRequestMade = true;
+        
+        // Setup global data for the node for the whole frame render if the frames map is empty
+        nodeRequest->mappedScale.x = nodeRequest->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
     }
+
     assert(nodeRequest);
 
     // Okay now we concentrate on this particular frame/view pair
@@ -415,19 +419,17 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     frameView.time = roundImageTimeToEpsilon(time);
     frameView.view = view;
 
-    FrameViewRequest* fvRequest = 0;
-    NodeFrameViewRequestData::iterator foundFrameView = nodeRequest->frames.find(frameView);
+    FrameViewRequest* fvRequest = &nodeRequest->frames[frameView];
+
     double par = effect->getAspectRatio(-1);
     ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
 
     // Did we already request something on this node from another branch ?
-    if ( foundFrameView != nodeRequest->frames.end() ) {
-        fvRequest = &foundFrameView->second;
-    } else {
+    if ( !fvRequest->requestValid ) {
+
 
         // Set up global data specific for this frame view, this is the first time it has been requested so far
 
-        fvRequest = &nodeRequest->frames[frameView];
 
         // Get the hash from the thread local storage
         U64 frameViewHash;
@@ -483,8 +485,12 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         // Get the frame/views needed for this frame/view.
         // This is cached because we computed the hash in the ParallelRenderArgs constructor before.
-        U64 hash;
-        fvRequest->frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &hash);
+
+        fvRequest->frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &fvRequest->frameViewHash);
+
+        fvRequest->hashValid = true;
+
+        fvRequest->requestValid = true;
 
     } // if (foundFrameView != nodeRequest->frames.end()) {
 
@@ -517,8 +523,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                    node,
                                                    node,
                                                    treeRoot,
-                                                   canonicalRenderWindow,
-                                                   requests);
+                                                   canonicalRenderWindow);
 
             return stat;
         }
@@ -538,8 +543,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                    inputIdentityNode,
                                                    node,
                                                    treeRoot,
-                                                   canonicalRenderWindow,
-                                                   requests);
+                                                   canonicalRenderWindow);
 
             return stat;
         }
@@ -581,8 +585,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                               time,
                                               view,
                                               treeRoot,
-                                              &requests,
-                                              fvRequest,
                                               0,
                                               0,
                                               false,
@@ -599,8 +601,7 @@ EffectInstance::optimizeRoI(double time,
                             ViewIdx view,
                             unsigned int mipMapLevel,
                             const RectD& renderWindow,
-                            const NodePtr& treeRoot,
-                            FrameRequestMap& request)
+                            const NodePtr& treeRoot)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
     StatusEnum stat = getInputsRoIsFunctor(doTransforms,
@@ -610,8 +611,7 @@ EffectInstance::optimizeRoI(double time,
                                            treeRoot,
                                            treeRoot,
                                            treeRoot,
-                                           renderWindow,
-                                           request);
+                                           renderWindow);
 
     if (stat == eStatusFailed) {
         return stat;
@@ -620,21 +620,38 @@ EffectInstance::optimizeRoI(double time,
     return eStatusOK;
 }
 
-const FrameViewRequest*
-NodeFrameRequest::getFrameViewRequest(double time,
-                                      ViewIdx view) const
+static const FrameViewRequest*
+getFrameViewRequestInternal(double time, ViewIdx view, bool failIfNotValid, const NodeFrameViewRequestData& frames)
 {
     for (NodeFrameViewRequestData::const_iterator it = frames.begin(); it != frames.end(); ++it) {
 
         // Compare floating times with an epsilon
         if (std::abs(it->first.time - time) < NATRON_IMAGE_TIME_EQUALITY_EPS) {
             if ( (it->first.view == -1) || (it->first.view == view) ) {
-                return &it->second;
+                if (it->second.requestValid || !failIfNotValid) {
+                    return &it->second;
+                }
             }
         }
     }
 
     return 0;
+}
+
+const FrameViewRequest*
+NodeFrameRequest::getFrameViewRequest(double time,
+                                      ViewIdx view) const
+{
+    return getFrameViewRequestInternal(time, view, true, frames);
+}
+
+void
+NodeFrameRequest::setFrameViewHash(double time, ViewIdx view, U64 hash)
+{
+    FrameViewPair id = {roundImageTimeToEpsilon(time), view};
+    FrameViewRequest& fv = frames[id];
+    fv.hashValid = true;
+    fv.frameViewHash = hash;
 }
 
 bool
@@ -652,7 +669,20 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time,
     return true;
 }
 
+bool
+NodeFrameRequest::getFrameViewHash(double time, ViewIdx view, U64* hash) const
+{
+    const FrameViewRequest* fv = getFrameViewRequestInternal(time, view, false, frames);
 
+    if (!fv) {
+        return false;
+    }
+    if (!fv->hashValid) {
+        return false;
+    }
+    *hash = fv->frameViewHash;
+    return true;
+}
 
 struct FindDependenciesNode
 {
@@ -756,10 +786,10 @@ ParallelRenderArgsSetterPrivate::setNodeTLSInternal(const ParallelRenderArgsSett
             // Not found, create it
             initTLS = true;
         } else {
+            assert(curTLS->request);
             // Found: add the hash for this frame/view pair and also increase the visitsCount
             if (addFrameViewHash) {
-                FrameViewPair fv = {time, view};
-                curTLS->frameViewHash[fv] = hash;
+                curTLS->request->setFrameViewHash(time, view, hash);
             }
             curTLS->visitsCount = visitsCounter;
 
@@ -777,7 +807,6 @@ ParallelRenderArgsSetterPrivate::setNodeTLSInternal(const ParallelRenderArgsSett
         tlsArgs->isRenderUserInteraction = inArgs->isRenderUserInteraction;
         tlsArgs->isSequential = inArgs->isSequential;
         tlsArgs->treeRoot = inArgs->treeRoot;
-        tlsArgs->nodeRequest = NodeFrameRequestPtr();
         tlsArgs->glContext = gpuContext;
         tlsArgs->cpuGlContext = cpuContext;
         tlsArgs->textureIndex = inArgs->textureIndex;
@@ -790,11 +819,12 @@ ParallelRenderArgsSetterPrivate::setNodeTLSInternal(const ParallelRenderArgsSett
         tlsArgs->stats = inArgs->stats;
         tlsArgs->visitsCount = visitsCounter;
         tlsArgs->parent = _publicInterface->shared_from_this();
+
+        ParallelRenderArgsPtr curTLS = effect->initParallelRenderArgsTLS(tlsArgs);
+        assert(curTLS);
         if (addFrameViewHash) {
-            FrameViewPair fv = {time, view};
-            tlsArgs->frameViewHash[fv] = hash;
+            curTLS->request->setFrameViewHash(time, view, hash);
         }
-        effect->initParallelRenderArgsTLS(tlsArgs);
     }
 }
 
@@ -812,11 +842,14 @@ ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const Paralle
                                                                    const OSGLContextPtr& cpuContext,
                                                                    const NodePtr& node,
                                                                    const NodePtr& treeRoot,
-                                                                   double time,
+                                                                   double inArgsTime,
                                                                    ViewIdx view,
                                                                    FindDependenciesMap& finalNodes,
                                                                    U64* nodeHash)
 {
+
+
+
     // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
     // want to recurse upstream for them too
     bool foundInMap = false;
@@ -830,6 +863,14 @@ ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const Paralle
     EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
+    }
+
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !effect->canRenderContinuously()) {
+            time = roundedTime;
+        }
     }
 
     FindDependenciesNode *nodeData = 0;
@@ -1018,14 +1059,9 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter()
 StatusEnum
 ParallelRenderArgsSetter::optimizeRoI(unsigned int mipMapLevel, const RectD& canonicalRoI)
 {
-    FrameRequestMap requestData;
-    StatusEnum stat = EffectInstance::optimizeRoI(_imp->time, _imp->view, mipMapLevel, canonicalRoI, _imp->treeRoot, requestData);
+    StatusEnum stat = EffectInstance::optimizeRoI(_imp->time, _imp->view, mipMapLevel, canonicalRoI, _imp->treeRoot);
     if (stat != eStatusOK) {
         return stat;
-    }
-
-    for (FrameRequestMap::const_iterator it = requestData.begin(); it != requestData.end(); ++it) {
-        it->first->getEffectInstance()->setNodeRequestThreadLocal(it->second);
     }
     return stat;
 }
@@ -1086,10 +1122,5 @@ ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }
 
-bool
-ParallelRenderArgs::getFrameViewHash(double time, ViewIdx view, U64* hash) const
-{
-    return findFrameViewHash(time, view, frameViewHash, hash);
-}
 
 NATRON_NAMESPACE_EXIT;

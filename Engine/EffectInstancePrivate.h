@@ -374,7 +374,6 @@ public:
     bool renderRoILookupCacheFirstTime(const RenderRoIArgs & args,
                                        const ParallelRenderArgsPtr& frameArgs,
                                        const U64 frameViewHash,
-                                       const FrameViewRequest* requestPassData,
                                        StorageModeEnum storage,
                                        const OSGLContextPtr& glRenderContext,
                                        const OSGLContextAttacherPtr& glContextLocker,
