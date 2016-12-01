@@ -20,16 +20,16 @@ SOURCES += \
 	internal/ceres/array_utils.cc \
 	internal/ceres/blas.cc \
 	internal/ceres/block_evaluate_preparer.cc \
-	internal/ceres/block_jacobian_writer.cc \
 	internal/ceres/block_jacobi_preconditioner.cc \
+	internal/ceres/block_jacobian_writer.cc \
 	internal/ceres/block_random_access_dense_matrix.cc \
 	internal/ceres/block_random_access_diagonal_matrix.cc \
 	internal/ceres/block_random_access_matrix.cc \
 	internal/ceres/block_random_access_sparse_matrix.cc \
 	internal/ceres/block_sparse_matrix.cc \
 	internal/ceres/block_structure.cc \
-	internal/ceres/callbacks.cc \
 	internal/ceres/c_api.cc \
+	internal/ceres/callbacks.cc \
 	internal/ceres/cgnr_solver.cc \
 	internal/ceres/compressed_col_sparse_matrix_utils.cc \
 	internal/ceres/compressed_row_jacobian_writer.cc \
@@ -51,20 +51,22 @@ SOURCES += \
 	internal/ceres/file.cc \
 	internal/ceres/generated/partitioned_matrix_view_d_d_d.cc \
 	internal/ceres/generated/schur_eliminator_d_d_d.cc \
+	internal/ceres/gradient_checker.cc \
 	internal/ceres/gradient_checking_cost_function.cc \
 	internal/ceres/gradient_problem.cc \
 	internal/ceres/gradient_problem_solver.cc \
 	internal/ceres/implicit_schur_complement.cc \
+	internal/ceres/is_close.cc \
 	internal/ceres/iterative_schur_complement_solver.cc \
 	internal/ceres/lapack.cc \
 	internal/ceres/levenberg_marquardt_strategy.cc \
-	internal/ceres/linear_least_squares_problems.cc \
-	internal/ceres/linear_operator.cc \
-	internal/ceres/linear_solver.cc \
 	internal/ceres/line_search.cc \
 	internal/ceres/line_search_direction.cc \
 	internal/ceres/line_search_minimizer.cc \
 	internal/ceres/line_search_preprocessor.cc \
+	internal/ceres/linear_least_squares_problems.cc \
+	internal/ceres/linear_operator.cc \
+	internal/ceres/linear_solver.cc \
 	internal/ceres/local_parameterization.cc \
 	internal/ceres/loss_function.cc \
 	internal/ceres/low_rank_inverse_hessian.cc \
@@ -94,6 +96,7 @@ SOURCES += \
 	internal/ceres/triplet_sparse_matrix.cc \
 	internal/ceres/trust_region_minimizer.cc \
 	internal/ceres/trust_region_preprocessor.cc \
+	internal/ceres/trust_region_step_evaluator.cc \
 	internal/ceres/trust_region_strategy.cc \
 	internal/ceres/types.cc \
 	internal/ceres/wall_time.cc \
