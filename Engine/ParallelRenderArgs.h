@@ -253,8 +253,16 @@ public:
     // Set on first request
     RenderScale mappedScale;
 
+    /**
+     * @brief Convenience function, same as getFrameViewRequest(time,view)->finalRoi
+     **/
     bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
 
+    /**
+     * @brief Returns a previously requested frame/view request from optimizeRoI. This contains most actions
+     * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
+     * The time passed in parameter should always be rounded for effects that are not continuous.
+     **/
     const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 };
 

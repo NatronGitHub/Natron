@@ -817,6 +817,8 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
     *requestPassData = 0;
     if ((*frameArgs)->request) {
+        // If effect is not continuous, the time should have been rounded before reaching here.
+        assert(_publicInterface->canRenderContinuously() || args.time == std::floor(args.time + 0.5));
         *requestPassData = (*frameArgs)->request->getFrameViewRequest(args.time, args.view);
     }
 
@@ -2072,15 +2074,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     // Check if the effect is continuous
-    if (!canRenderContinuously()) {
-
+    {
         int roundedTime = std::floor(args.time + 0.5);
-        if (args.time != roundedTime) {
+        if (roundedTime != args.time && !canRenderContinuously()) {
+
             // An effect that is not continous can only render at integer times (e.g: a reader)
             boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
             argsCpy->time = roundedTime;
             return renderRoI(*argsCpy, outputPlanes);
         }
+
     }
 
     // Check if the effect is view variant

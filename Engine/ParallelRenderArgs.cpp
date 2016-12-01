@@ -382,6 +382,12 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
          */
         return eStatusFailed;
     }
+
+    // Round time to nearest integer if the effect is not continuous
+    if (!effect->canRenderContinuously()) {
+        time = std::floor(time + 0.5);
+    }
+
     assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo ||
            effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();

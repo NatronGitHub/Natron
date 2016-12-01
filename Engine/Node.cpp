@@ -9186,7 +9186,8 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
     std::list<NodeConstPtr> outputs;
     {
         std::list<NodeConstPtr> markedNodes;
-        addIdentityNodesRecursively(shared_from_this(), shared_from_this(), time, view, &outputs, &markedNodes);
+        NodeConstPtr thisShared = shared_from_this();
+        addIdentityNodesRecursively(thisShared, thisShared, time, view, &outputs, &markedNodes);
     }
     std::size_t sz = outputs.size();
 

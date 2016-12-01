@@ -536,11 +536,14 @@ EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
 }
 
 bool
-EffectInstance::getRenderHash(double time, ViewIdx view, U64* retHash) const
+EffectInstance::getRenderHash(double inArgsTime, ViewIdx view, U64* retHash) const
 {
-    double cacheTime = time;
-    if (!canRenderContinuously()) {
-        cacheTime = std::floor(cacheTime + 0.5);
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
     }
 
     U64 hash;
@@ -548,7 +551,7 @@ EffectInstance::getRenderHash(double time, ViewIdx view, U64* retHash) const
     if (tls && !tls->frameArgs.empty()) {
         const ParallelRenderArgsPtr &args = tls->frameArgs.back();
         assert(args);
-        bool gotIt = args->getFrameViewHash(cacheTime, view, &hash);
+        bool gotIt = args->getFrameViewHash(time, view, &hash);
         if (gotIt) {
             *retHash = hash;
             return true;
@@ -556,7 +559,7 @@ EffectInstance::getRenderHash(double time, ViewIdx view, U64* retHash) const
     }
 
     // Did not find a valid hash, check if it is cached...
-    bool gotIt = findCachedHash(cacheTime, view, &hash);
+    bool gotIt = findCachedHash(time, view, &hash);
     if (gotIt) {
         *retHash = hash;
         return true;
@@ -743,7 +746,7 @@ EffectInstance::getThreadLocalOpenGLContext() const
 
 ImagePtr
 EffectInstance::getImage(int inputNb,
-                         const double time,
+                         const double inArgsTime,
                          const RenderScale & scale,
                          const ViewIdx view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
@@ -755,7 +758,7 @@ EffectInstance::getImage(int inputNb,
                          RectI* roiPixel,
                          boost::shared_ptr<Transform::Matrix3x3>* transform)
 {
-    if (time != time) {
+    if (inArgsTime != inArgsTime) {
         // time is NaN
 #ifdef DEBUG
         qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because time is NaN";
@@ -826,6 +829,14 @@ EffectInstance::getImage(int inputNb,
         qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the input is not connected";
 #endif
         return ImagePtr();
+    }
+
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
     }
 
     // If TLS is not set, we create it below in the condition. We keep this pointer out of scope
@@ -922,7 +933,10 @@ EffectInstance::getImage(int inputNb,
             return ImagePtr();
         }
 
-        const FrameViewRequest* inputFrameViewRequest = inputFrameArgs->request ? inputFrameArgs->request->getFrameViewRequest(time, view) : 0;
+        const FrameViewRequest* inputFrameViewRequest = 0;
+        if (inputFrameArgs->request) {
+            inputFrameViewRequest = inputFrameArgs->request->getFrameViewRequest(time, view);
+        }
         if (inputFrameViewRequest) {
             // The roi is the optimized roi: the bounding rect of all RoI from different branches leading to that node.
             roiCanonical = inputFrameViewRequest->finalRoi;
@@ -4000,7 +4014,7 @@ EffectInstance::getTransform_public(double time,
 bool
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                                   U64 hash,
-                                  double time,
+                                  double inArgsTime,
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
@@ -4008,6 +4022,14 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   ViewIdx* inputView,
                                   int* inputNb)
 {
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
+    }
+
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
 
@@ -4084,13 +4106,21 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
 
 StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
-                                             double time,
+                                             double inArgsTime,
                                              const RenderScale & scale,
                                              ViewIdx view,
                                              RectD* rod)
 {
     if ( !isEffectCreated() ) {
         return eStatusFailed;
+    }
+
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
     }
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
@@ -4179,13 +4209,22 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 } // EffectInstance::getRegionOfDefinition_public
 
 void
-EffectInstance::getRegionsOfInterest_public(double time,
+EffectInstance::getRegionsOfInterest_public(double inArgsTime,
                                             const RenderScale & scale,
                                             const RectD & outputRoD, //!< effect RoD in canonical coordinates
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                             ViewIdx view,
                                             RoIMap* ret)
 {
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
+    }
+
+
     NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
@@ -4207,8 +4246,16 @@ EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identit
 }
 
 FramesNeededMap
-EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, const AbortableRenderInfoPtr& abortInfo, U64* retHash)
+EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool initTLS, const AbortableRenderInfoPtr& abortInfo, U64* retHash)
 {
+
+    double time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !canRenderContinuously()) {
+            time = roundedTime;
+        }
+    }
 
     if (initTLS) {
         createFrameRenderTLS(abortInfo);
@@ -4331,11 +4378,7 @@ EffectInstance::getFramesNeeded_public(double time, ViewIdx view, bool initTLS, 
         hashObj->computeHash();
         hashValue = hashObj->value();
 
-        double cacheTime = time;
-        if (!canRenderContinuously()) {
-            cacheTime = std::floor(cacheTime + 0.5);
-        }
-        addHashToCache(cacheTime, view, hashValue);
+        addHashToCache(time, view, hashValue);
     }
 
     // Cache the result of the action
@@ -5513,10 +5556,13 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // set some stuff up
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
-    metadata.setIsFrameVarying( getHasAnimation() );
 
-    // An effect is continuous if at least one of its inputs is continuous
-    metadata.setIsContinuous(hasOneInputContinuous);
+    bool hasAnimation = getHasAnimation();
+    metadata.setIsFrameVarying( hasAnimation );
+
+    // An effect is continuous if at least one of its inputs is continuous or if one of its knobs
+    // is animated
+    metadata.setIsContinuous(hasOneInputContinuous || hasAnimation);
 
     // now find the best depth that the plugin supports
     deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
