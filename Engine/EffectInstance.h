@@ -153,7 +153,6 @@ public:
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         ViewIdx view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
-        RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         std::list<ImageComponents> components; //< the requested image components (per plane)
 
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
@@ -179,7 +178,6 @@ public:
             , mipMapLevel(0)
             , view(0)
             , roi()
-            , preComputedRoD()
             , components()
             , inputImagesList()
             , caller()
@@ -198,7 +196,6 @@ public:
                        ViewIdx view_,
                        bool byPassCache_,
                        const RectI & roi_,
-                       const RectD & preComputedRoD_,
                        const std::list<ImageComponents> & components_,
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
@@ -211,7 +208,6 @@ public:
             , mipMapLevel(mipMapLevel_)
             , view(view_)
             , roi(roi_)
-            , preComputedRoD(preComputedRoD_)
             , components(components_)
             , inputImagesList(inputImages)
             , caller(caller)
@@ -521,12 +517,7 @@ public:
         return eSequentialPreferenceNotSequential;
     }
 
-    enum RenderRoIRetCode
-    {
-        eRenderRoIRetCodeOk = 0,
-        eRenderRoIRetCodeAborted,
-        eRenderRoIRetCodeFailed
-    };
+
 
     /**
      * @brief Renders the image planes at the given time,scale and for the given view & render window.
@@ -609,6 +600,7 @@ public:
 
     struct SetParallelRenderTLSArgs
     {
+        ParallelRenderArgsSetterPtr parent;
         double time;
         ViewIdx view;
         bool isRenderUserInteraction;
@@ -674,7 +666,7 @@ public:
      * for each frame/view pair. This helps to call render a single time per frame/view pair for a node.
      * Implem is in ParallelRenderArgs.cpp
      **/
-    static StatusEnum computeRequestPass(double time,
+    static StatusEnum optimizeRoI(double time,
                                          ViewIdx view,
                                          unsigned int mipMapLevel,
                                          const RectD & renderWindow,
@@ -685,7 +677,7 @@ public:
 
 
     // Implem is in ParallelRenderArgs.cpp
-    static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
+    static RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
                                                                const NodePtr & node,
                                                                const FramesNeededMap & framesNeeded,
                                                                const RoIMap* inputRois, // roi functor specific

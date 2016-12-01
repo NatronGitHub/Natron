@@ -691,11 +691,9 @@ std::pair<ImagePtr, RectI>
 TrackMarker::getMarkerImage(double time,
                             const RectI& roi) const
 {
-    std::list<ImageComponents> components;
-
-    components.push_back( ImageComponents::getRGBComponents() );
 
     const unsigned int mipmapLevel = 0;
+
     assert( !roi.isNull() );
 
     NodePtr node = getModel()->getNode();
@@ -704,79 +702,13 @@ TrackMarker::getMarkerImage(double time,
         return std::make_pair(ImagePtr(), roi);
     }
 
-    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-    const bool isRenderUserInteraction = true;
-    const bool isSequentialRender = false;
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-    if (isAbortable) {
-        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
-    }
+    std::list<ImageComponents> components;
+    components.push_back( ImageComponents::getRGBComponents() );
 
-    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-    tlsArgs->time = time;
-    tlsArgs->view = ViewIdx(0);
-    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-    tlsArgs->isSequential = isSequentialRender;
-    tlsArgs->abortInfo = abortInfo;
-    tlsArgs->treeRoot = getModel()->getNode();
-    tlsArgs->textureIndex = 0;
-    tlsArgs->timeline = node->getApp()->getTimeLine();
-    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->isAnalysis = true;
-    tlsArgs->draftMode = true;
-    tlsArgs->stats = RenderStatsPtr();
-    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
-    try {
-        frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
-    } catch (...) {
-        return std::make_pair(ImagePtr(), roi);
-    }
-
-    EffectInstancePtr effectToRender = input->getEffectInstance();
-
-    U64 effectHash;
-    bool gotHash = effectToRender->getRenderHash(time, ViewIdx(0), &effectHash);
-    assert(gotHash);
-    (void)gotHash;
-    RenderScale scale;
-    scale.x = scale.y = 1.;
-    unsigned int mipMapLevel = 0;
-    RectD precomputedRoD;
-    double par = effectToRender->getAspectRatio(-1);
-
-    {
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &precomputedRoD);
-        if (stat == eStatusFailed) {
-            return std::make_pair(ImagePtr(), roi);
-        }
-    }
-
-    RectD canonicalRoi;
-    roi.toCanonical(mipMapLevel, par, precomputedRoD, &canonicalRoi);
-    if (frameRenderArgs->computeRequestPass(mipmapLevel, canonicalRoi) != eStatusOK) {
-        return std::make_pair(ImagePtr(), roi);
-    }
-
-
-    EffectInstance::RenderRoIArgs args( time,
-                                        scale,
-                                        mipmapLevel, //mipmaplevel
-                                        ViewIdx(0),
-                                        false,
-                                        roi,
-                                        RectD(),
-                                        components,
-                                        eImageBitDepthFloat,
-                                        false,
-                                        node->getEffectInstance(),
-                                        eStorageModeRAM /*returnOpenGlTex*/,
-                                        time);
     std::map<ImageComponents, ImagePtr> planes;
-    EffectInstance::RenderRoIRetCode stat = effectToRender->renderRoI(args, &planes);
+    RenderRoIRetCode stat = input->renderFrame(time, ViewIdx(0), mipmapLevel, false /*isPlayback*/, &roi, components, &planes);
 
-    appPTR->getAppTLS()->cleanupTLSForThread();
-
-    if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {
+    if ( (stat != eRenderRoIRetCodeOk) || planes.empty() ) {
         return std::make_pair(ImagePtr(), roi);
     }
 

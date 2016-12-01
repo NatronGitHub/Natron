@@ -298,9 +298,6 @@ public:
     std::vector<int> inputIsRenderingCounter;
     timeval lastInputNRenderStartedSlotCallTime;
 
-    ///Counter counting how many parallel renders are active on the node
-    int nodeIsRendering;
-    mutable QMutex nodeIsRenderingMutex;
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;

@@ -497,7 +497,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
 /**
  * @brief This function determines the planes to render and calls recursively on upstream nodes unavailable planes
  **/
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::RenderRoIArgs& args, std::list<ImageComponents> *requestedComponents, std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
     EffectInstance::ComponentsAvailableList componentsToFetchUpstream;
@@ -556,7 +556,6 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
         NodePtr node = it->second.lock();
         if (node) {
             boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
-            inArgs->preComputedRoD.clear();
             inArgs->components.clear();
             inArgs->components.push_back(it->first);
             std::map<ImageComponents, ImagePtr> inputPlanes;
@@ -575,7 +574,7 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
 } // determinePlanesToRender
 
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                                      const ParallelRenderArgsPtr& frameArgs,
                                                      const FrameViewRequest* requestPassData,
@@ -639,8 +638,6 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                 argCpy->time = inputTimeIdentity;
                 argCpy->view = inputIdentityView;
 
-                argCpy->preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
-
                 return _publicInterface->renderRoI(*argCpy, outputPlanes);
             }
         }
@@ -664,9 +661,6 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
             boost::scoped_ptr<RenderRoIArgs> inputArgs ( new RenderRoIArgs(args) );
             inputArgs->time = inputTimeIdentity;
             inputArgs->view = inputIdentityView;
-
-            // Make sure we do not hold the RoD for this effect
-            inputArgs->preComputedRoD.clear();
 
 
             /*
@@ -744,7 +738,6 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     if ( (args.view != 0) && (_publicInterface->isViewInvariant() == eViewInvarianceOnlyPassThroughPlanesVariant) ) {
         boost::scoped_ptr<RenderRoIArgs> argCpy( new RenderRoIArgs(args) );
         argCpy->view = ViewIdx(0);
-        argCpy->preComputedRoD.clear();
         argCpy->components = requestedComponents;
         *isIdentity = true;
         return _publicInterface->renderRoI(*argCpy, outputPlanes);
@@ -831,36 +824,33 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
     {
         ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
-        if ( !args.preComputedRoD.isNull() ) {
-            *rod = args.preComputedRoD;
+        ///Check if the pre-pass already has the RoD
+        if (*requestPassData) {
+            *rod = (*requestPassData)->rod;
         } else {
-            ///Check if the pre-pass already has the RoD
-            if (*requestPassData) {
-                *rod = (*requestPassData)->rod;
-            } else {
-                assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
+            assert( !( (*supportsRS == eSupportsNo) && !(renderMappedScale->x == 1. && renderMappedScale->y == 1.) ) );
 
-                StatusEnum stat = _publicInterface->getRegionOfDefinition_public(*frameViewHash, args.time, *renderMappedScale, args.view, rod);
+            StatusEnum stat = _publicInterface->getRegionOfDefinition_public(*frameViewHash, args.time, *renderMappedScale, args.view, rod);
 
-                // The rod might be NULL for a roto that has no beziers and no input
-                if (stat == eStatusFailed) {
-                    // If getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
-                    return false;
-                } else if ( rod->isNull() ) {
-                    // Nothing to render
-                    return false;
-                }
-                if ( (*supportsRS == eSupportsMaybe) && (*renderMappedMipMapLevel != 0) ) {
-                    // supportsRenderScaleMaybe may have changed, update it
-                    *supportsRS = _publicInterface->supportsRenderScaleMaybe();
-                    *renderFullScaleThenDownscale = (*supportsRS == eSupportsNo && args.mipMapLevel != 0);
-                    if (*renderFullScaleThenDownscale) {
-                        renderMappedScale->x = renderMappedScale->y = 1.;
-                        *renderMappedMipMapLevel = 0;
-                    }
+            // The rod might be NULL for a roto that has no beziers and no input
+            if (stat == eStatusFailed) {
+                // If getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
+                return false;
+            } else if ( rod->isNull() ) {
+                // Nothing to render
+                return false;
+            }
+            if ( (*supportsRS == eSupportsMaybe) && (*renderMappedMipMapLevel != 0) ) {
+                // supportsRenderScaleMaybe may have changed, update it
+                *supportsRS = _publicInterface->supportsRenderScaleMaybe();
+                *renderFullScaleThenDownscale = (*supportsRS == eSupportsNo && args.mipMapLevel != 0);
+                if (*renderFullScaleThenDownscale) {
+                    renderMappedScale->x = renderMappedScale->y = 1.;
+                    *renderMappedMipMapLevel = 0;
                 }
             }
         }
+
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End get RoD ///////////////////////////////////////////////////////////////
@@ -996,7 +986,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
                                                     OSGLContextPtr *glRenderContext,
                                                     OSGLContextAttacherPtr *glContextLocker,
                                                     bool *useOpenGL,
-                                                    EffectInstance::RenderRoIRetCode* resolvedError)
+                                                    RenderRoIRetCode* resolvedError)
 {
     *storage = eStorageModeRAM;
     if ( dynamic_cast<DiskCacheNode*>(_publicInterface) ) {
@@ -1287,7 +1277,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 } // EffectInstance::Implementation;;renderRoILookupCacheFirstTime
 
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs & args,
                                                            const EffectDataTLSPtr& tls,
                                                            const U64 /*frameViewHash*/,
@@ -1372,7 +1362,7 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
     return eRenderRoIRetCodeOk;
 } // EffectInstance::Implementation::renderRoIRenderInputImages
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs & args,
                                                            const EffectDataTLSPtr& tls,
                                                            const ParallelRenderArgsPtr& frameArgs,
@@ -2069,7 +2059,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
 
 } // EffectInstance::Implementation::renderRoITermination
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::renderRoI(const RenderRoIArgs & args,
                           std::map<ImageComponents, ImagePtr>* outputPlanes)
 {

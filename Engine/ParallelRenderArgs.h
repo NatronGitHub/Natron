@@ -34,6 +34,8 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Global/GlobalDefines.h"
 
@@ -117,6 +119,10 @@ class ParallelRenderArgs
 public:
     // Developper note: the fields were reordered to optimize packing.
     // see http://www.catb.org/esr/structure-packing/
+
+    // A pointer to the RAII object that set this parallel render args in the first place.
+    // It is guaranteed to live as long as this object lives.
+    ParallelRenderArgsSetterWPtr parent;
 
     ///The initial time requested to render.
     ///This may be different than the time held in RenderArgs
@@ -261,14 +267,10 @@ typedef std::map<NodePtr, NodeFrameRequestPtr > FrameRequestMap;
  * Without this a lot of the compositing engine intelligence cannot work properly.
  * Dependencies are computed recursively. The constructor may throw an exception upon failure.
  **/
-class ParallelRenderArgsSetter
+struct ParallelRenderArgsSetterPrivate;
+class ParallelRenderArgsSetter : public boost::enable_shared_from_this<ParallelRenderArgsSetter>
 {
-    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > argsMap;
-    NodesList nodes;
-    NodeWPtr _treeRoot;
-    double _time;
-    ViewIdx _view;
-    boost::weak_ptr<OSGLContext> _openGLContext, _cpuOpenGLContext;
+
 
 public:
 
@@ -314,6 +316,8 @@ public:
 
     typedef boost::shared_ptr<CtorArgs> CtorArgsPtr;
 
+private:
+
     /**
      * @brief Set the TLS for rendering a frame on the tree upstream of treeRoot (including it) and all nodes that
      * can be reached through expressions.
@@ -321,24 +325,25 @@ public:
      * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
      * relying on other nodes that do not belong in the tree through expressions.
      **/
-    ParallelRenderArgsSetter(const CtorArgsPtr& inArgs);
+    ParallelRenderArgsSetter();
 
-    /**
-     * @brief Ctor used to apply TLS on a helper thread used to back-up the main render thread. This will only copy
-     * the TLS applied on the main-thread onto this thread.
-     **/
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args);
+    void init(const CtorArgsPtr& inArgs);
+
+public:
+
+    static ParallelRenderArgsSetterPtr create(const CtorArgsPtr& inArgs);
 
     /**
      * @brief Should be called before launching any call to renderRoI to optimize the render
      **/
-    StatusEnum computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI);
+    StatusEnum optimizeRoI(unsigned int mipMapLevel, const RectD& canonicalRoI);
 
     virtual ~ParallelRenderArgsSetter();
 
+
 private:
 
-    void fetchOpenGLContext(const CtorArgsPtr& inArgs);
+    boost::scoped_ptr<ParallelRenderArgsSetterPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -93,7 +93,7 @@ private:
 
     virtual RotoDrawableItemPtr createRenderCopy() const OVERRIDE FINAL;
 
-    virtual bool isRenderCloneNeeded() const
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
     {
         return true;
     }

@@ -793,7 +793,9 @@ KnobGui::show()
 {
     // Since the otherKnobsInMainLayout list might have been empty when calling hide() and now be no longer empty,
     // if the mainContainer is not visible show it
-    _imp->mainContainer->show();
+    if (_imp->mainContainer) {
+        _imp->mainContainer->show();
+    }
 
     if (_imp->viewsContainer) {
         _imp->viewsContainer->show();

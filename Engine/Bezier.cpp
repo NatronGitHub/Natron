@@ -1218,45 +1218,6 @@ bezierSegmenEqual(double time,
     }
 }
 
-
-class IsRenderingFlagLocker
-{
-    NodePtr effectNode;
-    EnsureOperationOutOfRender* _locker;
-public:
-
-    IsRenderingFlagLocker(const Bezier* bezier)
-    : effectNode()
-    , _locker(0)
-    {
-        NodePtr mask = bezier->getMaskNode();
-        NodePtr effect = bezier->getEffectNode();
-        if (mask) {
-            effectNode = mask;
-        } else if (effect) {
-            effectNode = effect;
-        }
-        if (effectNode) {
-            _locker = new EnsureOperationOutOfRender(effectNode);
-        }
-    }
-
-    bool isRendering() const
-    {
-        if (_locker) {
-            return _locker->isNodeRendering();
-        } else {
-            return false;
-        }
-    }
-
-    ~IsRenderingFlagLocker()
-    {
-        delete _locker;
-    }
-
-};
-
 void
 Bezier::clearAllPoints()
 {

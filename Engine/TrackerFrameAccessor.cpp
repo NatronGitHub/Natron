@@ -321,11 +321,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         }
     }
 
-    EffectInstancePtr effect;
-    if (_imp->trackerInput) {
-        effect = _imp->trackerInput->getEffectInstance();
-    }
-    if (!effect) {
+
+    if (!_imp->trackerInput) {
         return (mv::FrameAccessor::Key)0;
     }
 
@@ -335,79 +332,13 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
 
     NodePtr node = _imp->node.lock();
 
-
-    const bool isRenderUserInteraction = true;
-    const bool isSequentialRender = false;
-
-    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-    if (isAbortable) {
-        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
-    }
-
-    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-    tlsArgs->time = frame;
-    tlsArgs->view = ViewIdx(0);
-    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-    tlsArgs->isSequential = isSequentialRender;
-    tlsArgs->abortInfo = abortInfo;
-    tlsArgs->treeRoot = node;
-    tlsArgs->textureIndex = 0;
-    tlsArgs->timeline = node->getApp()->getTimeLine();
-    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->isAnalysis = true;
-    tlsArgs->draftMode = false;
-    tlsArgs->stats = RenderStatsPtr();
-    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
-    try {
-        frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
-    } catch (...) {
-        return (mv::FrameAccessor::Key)0;
-    }
-
-    U64 effectHash;
-    bool gotHash = effect->getRenderHash(frame, ViewIdx(0), &effectHash);
-    assert(gotHash);
-    (void)gotHash;
-    double par = effect->getAspectRatio(-1);
-    RectD precomputedRoD;
-    if (!region) {
-
-        StatusEnum stat = effect->getRegionOfDefinition_public(effectHash, frame, scale, ViewIdx(0), &precomputedRoD);
-        if (stat == eStatusFailed) {
-            return (mv::FrameAccessor::Key)0;
-        }
-        precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
-    }
-
     std::list<ImageComponents> components;
     components.push_back( ImageComponents::getRGBComponents() );
 
-
-
-    RectD canonicalRoi;
-    roi.toCanonical(downscale, par, precomputedRoD, &canonicalRoi);
-    if (frameRenderArgs->computeRequestPass(downscale, canonicalRoi) != eStatusOK) {
-        return (mv::FrameAccessor::Key)0;
-    }
-
-    EffectInstance::RenderRoIArgs args( frame,
-                                        scale,
-                                        downscale,
-                                        ViewIdx(0),
-                                        false,
-                                        roi,
-                                        precomputedRoD,
-                                        components,
-                                        eImageBitDepthFloat,
-                                        true,
-                                        node->getEffectInstance(),
-                                        eStorageModeRAM /*returnOpenGLTex*/,
-                                        frame);
     std::map<ImageComponents, ImagePtr> planes;
+    RenderRoIRetCode stat = _imp->trackerInput->renderFrame(frame, ViewIdx(0), (unsigned int)downscale, false /*isPlayback*/, &roi, components, &planes);
 
-    EffectInstance::RenderRoIRetCode stat = effect->renderRoI(args, &planes);
-    if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {
+    if ( (stat != eRenderRoIRetCodeOk) || planes.empty() ) {
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Failed to call renderRoI on input at frame" << frame << "with RoI x1="
                  << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2;
@@ -416,7 +347,6 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         return (mv::FrameAccessor::Key)0;
     }
 
-    assert( !planes.empty() );
     const ImagePtr& sourceImage = planes.begin()->second;
     RectI sourceBounds = sourceImage->getBounds();
     RectI intersectedRoI;

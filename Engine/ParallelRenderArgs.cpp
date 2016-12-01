@@ -116,7 +116,7 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const Effect
 //Same as FramesNeededMap but we also get a pointer to EffectInstancePtr as key
 typedef std::map<EffectInstancePtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const NodePtr& node,
                                    const FramesNeededMap& framesNeeded,
@@ -202,7 +202,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             if ( foundInputRoI->second.isInfinite() ) {
                 effect->setPersistentMessage( eMessageTypeError, tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
 
-                return EffectInstance::eRenderRoIRetCodeFailed;
+                return eRenderRoIRetCodeFailed;
             }
 
             if ( foundInputRoI->second.isNull() ) {
@@ -258,7 +258,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                    *requests);
 
                             if (stat == eStatusFailed) {
-                                return EffectInstance::eRenderRoIRetCodeFailed;
+                                return eRenderRoIRetCodeFailed;
                             }
 
                             ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
@@ -323,7 +323,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                     viewIt->first, //< view
                                                                                     byPassCache,
                                                                                     inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                                    RectD(), // < did we precompute any RoD to speed-up the call ?
                                                                                     componentsToRender, //< requested comps
                                                                                     inputPrefDepth,
                                                                                     false,
@@ -331,9 +330,9 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                     renderStorageMode /*returnStorage*/,
                                                                                     time /*callerRenderTime*/) );
 
-                                EffectInstance::RenderRoIRetCode ret;
+                                RenderRoIRetCode ret;
                                 ret = inputEffect->renderRoI(*renderArgs, &inputImgs); //< requested bitdepth
-                                if (ret != EffectInstance::eRenderRoIRetCodeOk) {
+                                if (ret != eRenderRoIRetCodeOk) {
                                     return ret;
                                 }
                             }
@@ -344,7 +343,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                             }
 
                             if ( effect->aborted() ) {
-                                return EffectInstance::eRenderRoIRetCodeAborted;
+                                return eRenderRoIRetCodeAborted;
                             }
 
                             if ( !inputImgs.empty() ) {
@@ -357,7 +356,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             } // for all views
         } // EffectInstance::NotifyInputNRenderingStarted_RAII
     } // for all inputs
-    return EffectInstance::eRenderRoIRetCodeOk;
+    return eRenderRoIRetCodeOk;
 } // EffectInstance::treeRecurseFunctor
 
 StatusEnum
@@ -405,7 +404,9 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     // Okay now we concentrate on this particular frame/view pair
 
     FrameViewPair frameView;
-    frameView.time = time;
+
+    // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+    frameView.time = roundImageTimeToEpsilon(time);
     frameView.view = view;
 
     FrameViewRequest* fvRequest = 0;
@@ -563,24 +564,24 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
 
 
-    EffectInstance::RenderRoIRetCode ret = treeRecurseFunctor(false,
-                                                              node,
-                                                              fvRequest->frameViewsNeeded,
-                                                              &inputsRoi,
-                                                              fvRequest->transforms,
-                                                              useTransforms,
-                                                              eStorageModeRAM /*returnStorage*/,
-                                                              originalMipMapLevel,
-                                                              time,
-                                                              view,
-                                                              treeRoot,
-                                                              &requests,
-                                                              fvRequest,
-                                                              0,
-                                                              0,
-                                                              false,
-                                                              false);
-    if (ret == EffectInstance::eRenderRoIRetCodeFailed) {
+    RenderRoIRetCode ret = treeRecurseFunctor(false,
+                                              node,
+                                              fvRequest->frameViewsNeeded,
+                                              &inputsRoi,
+                                              fvRequest->transforms,
+                                              useTransforms,
+                                              eStorageModeRAM /*returnStorage*/,
+                                              originalMipMapLevel,
+                                              time,
+                                              view,
+                                              treeRoot,
+                                              &requests,
+                                              fvRequest,
+                                              0,
+                                              0,
+                                              false,
+                                              false);
+    if (ret == eRenderRoIRetCodeFailed) {
         return eStatusFailed;
     }
 
@@ -588,12 +589,12 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 } // EffectInstance::getInputsRoIsFunctor
 
 StatusEnum
-EffectInstance::computeRequestPass(double time,
-                                   ViewIdx view,
-                                   unsigned int mipMapLevel,
-                                   const RectD& renderWindow,
-                                   const NodePtr& treeRoot,
-                                   FrameRequestMap& request)
+EffectInstance::optimizeRoI(double time,
+                            ViewIdx view,
+                            unsigned int mipMapLevel,
+                            const RectD& renderWindow,
+                            const NodePtr& treeRoot,
+                            FrameRequestMap& request)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
     StatusEnum stat = getInputsRoIsFunctor(doTransforms,
@@ -669,19 +670,75 @@ struct FindDependenciesNode
 
 typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 
+struct ParallelRenderArgsSetterPrivate
+{
+
+    ParallelRenderArgsSetter* _publicInterface;
+
+    // A map of the TLS set on each node
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > argsMap;
+
+    // The node list
+    NodesList nodes;
+    NodePtr treeRoot;
+    double time;
+    ViewIdx view;
+    OSGLContextWPtr openGLContext, cpuOpenGLContext;
+
+    ParallelRenderArgsSetterPrivate(ParallelRenderArgsSetter* publicInterface)
+    : _publicInterface(publicInterface)
+    ,argsMap()
+    , nodes()
+    , treeRoot()
+    , time(0)
+    , view()
+    , openGLContext()
+    , cpuOpenGLContext()
+    {
+        
+    }
+
+    void fetchOpenGLContext(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs);
+
+    void getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                                           const bool doNansHandling,
+                                           const OSGLContextPtr& glContext,
+                                           const OSGLContextPtr& cpuContext,
+                                           const NodePtr& node,
+                                           const NodePtr& treeRoot,
+                                           double time,
+                                           ViewIdx view,
+                                           FindDependenciesMap& finalNodes,
+                                           U64* nodeHash);
 
 
-static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
-                               bool doNansHandling,
-                               const NodePtr& node,
-                               bool initTLS,
-                               int visitsCounter,
-                               bool addFrameViewHash,
-                               double time,
-                               ViewIdx view,
-                               U64 hash,
-                               const OSGLContextPtr& gpuContext,
-                               const OSGLContextPtr& cpuContext)
+    void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                            bool doNansHandling,
+                            const NodePtr& node,
+                            bool initTLS,
+                            int visitsCounter,
+                            bool addFrameViewHash,
+                            double time,
+                            ViewIdx view,
+                            U64 hash,
+                            const OSGLContextPtr& gpuContext,
+                            const OSGLContextPtr& cpuContext);
+
+};
+
+
+void
+ParallelRenderArgsSetterPrivate::setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                                             bool doNansHandling,
+                                             const NodePtr& node,
+                                             bool initTLS,
+                                             int visitsCounter,
+                                             bool addFrameViewHash,
+                                             double time,
+                                             ViewIdx view,
+                                             U64 hash,
+                                             const OSGLContextPtr& gpuContext,
+                                             const OSGLContextPtr& cpuContext)
 {
     EffectInstancePtr effect = node->getEffectInstance();
     assert(effect);
@@ -726,6 +783,7 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
         tlsArgs->draftMode = inArgs->draftMode;
         tlsArgs->stats = inArgs->stats;
         tlsArgs->visitsCount = visitsCounter;
+        tlsArgs->parent = _publicInterface->shared_from_this();
         if (addFrameViewHash) {
             FrameViewPair fv = {time, view};
             tlsArgs->frameViewHash[fv] = hash;
@@ -741,23 +799,23 @@ static void setNodeTLSInternal(const ParallelRenderArgsSetter::CtorArgsPtr& inAr
  * The hash is also computed for each frame/view pair of each node.
  * This function throw exceptions upon error.
  **/
-static void
-getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
-                                  const bool doNansHandling,
-                                  const OSGLContextPtr& glContext,
-                                  const OSGLContextPtr& cpuContext,
-                                  const NodePtr& node,
-                                  const NodePtr& treeRoot,
-                                  double time,
-                                  ViewIdx view,
-                                  FindDependenciesMap& finalNodes,
-                                  U64* nodeHash)
+void
+ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs,
+                                                                   const bool doNansHandling,
+                                                                   const OSGLContextPtr& glContext,
+                                                                   const OSGLContextPtr& cpuContext,
+                                                                   const NodePtr& node,
+                                                                   const NodePtr& treeRoot,
+                                                                   double time,
+                                                                   ViewIdx view,
+                                                                   FindDependenciesMap& finalNodes,
+                                                                   U64* nodeHash)
 {
     // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
     // want to recurse upstream for them too
     bool foundInMap = false;
     bool alreadyRecursedUpstream = false;
-
+    
     // Sanity check
     if ( !node || !node->isNodeCreated() ) {
         return;
@@ -873,7 +931,7 @@ getDependenciesRecursive_internal(const ParallelRenderArgsSetter::CtorArgsPtr& i
 
 
 void
-ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
+ParallelRenderArgsSetterPrivate::fetchOpenGLContext(const ParallelRenderArgsSetter::CtorArgsPtr& inArgs)
 {
 
     // Ensure this thread gets an OpenGL context for the render of the frame
@@ -905,113 +963,86 @@ ParallelRenderArgsSetter::fetchOpenGLContext(const CtorArgsPtr& inArgs)
         }
     }
 
-    _openGLContext = glContext;
-    _cpuOpenGLContext = cpuContext;
+    openGLContext = glContext;
+    cpuOpenGLContext = cpuContext;
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const CtorArgsPtr& inArgs)
-: argsMap()
-, nodes()
-, _treeRoot(inArgs->treeRoot)
-, _time(inArgs->time)
-, _view(inArgs->view)
+ParallelRenderArgsSetterPtr
+ParallelRenderArgsSetter::create(const CtorArgsPtr& inArgs)
+{
+    ParallelRenderArgsSetterPtr ret(new ParallelRenderArgsSetter());
+    ret->init(inArgs);
+    return ret;
+}
+
+void
+ParallelRenderArgsSetter::init(const CtorArgsPtr& inArgs)
 {
     assert(inArgs->treeRoot);
 
+    _imp->time = inArgs->time;
+    _imp->view = inArgs->view;
+    _imp->treeRoot = inArgs->treeRoot;
 
+    _imp->fetchOpenGLContext(inArgs);
 
-
-    fetchOpenGLContext(inArgs);
-    OSGLContextPtr glContext = _openGLContext.lock(), cpuContext = _cpuOpenGLContext.lock();
+    OSGLContextPtr glContext = _imp->openGLContext.lock(), cpuContext = _imp->cpuOpenGLContext.lock();
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
 
-    // Get dependencies node tree where to apply TLS
+    // Get dependencies node tree and apply TLS
     FindDependenciesMap dependenciesMap;
-    getDependenciesRecursive_internal(inArgs, doNanHandling, glContext, cpuContext, inArgs->treeRoot, inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
+    _imp->getDependenciesRecursive_internal(inArgs, doNanHandling, glContext, cpuContext, inArgs->treeRoot, inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
 
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
-        nodes.push_back(it->first);
+        _imp->nodes.push_back(it->first);
     }
+
+}
+
+ParallelRenderArgsSetter::ParallelRenderArgsSetter()
+: boost::enable_shared_from_this<ParallelRenderArgsSetter>()
+, _imp(new ParallelRenderArgsSetterPrivate(this))
+{
+
 }
 
 
 StatusEnum
-ParallelRenderArgsSetter::computeRequestPass(unsigned int mipMapLevel, const RectD& canonicalRoI)
+ParallelRenderArgsSetter::optimizeRoI(unsigned int mipMapLevel, const RectD& canonicalRoI)
 {
     FrameRequestMap requestData;
-    NodePtr treeRoot = _treeRoot.lock();
-    assert(treeRoot);
-    StatusEnum stat = EffectInstance::computeRequestPass(_time, _view, mipMapLevel, canonicalRoI, treeRoot, requestData);
+    StatusEnum stat = EffectInstance::optimizeRoI(_imp->time, _imp->view, mipMapLevel, canonicalRoI, _imp->treeRoot, requestData);
     if (stat != eStatusOK) {
         return stat;
     }
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        {
-            FrameRequestMap::const_iterator foundRequest = requestData.find(*it);
-            if ( foundRequest != requestData.end() ) {
-                (*it)->getEffectInstance()->setNodeRequestThreadLocal(foundRequest->second);
-            }
-        }
+
+    for (FrameRequestMap::const_iterator it = requestData.begin(); it != requestData.end(); ++it) {
+        it->first->getEffectInstance()->setNodeRequestThreadLocal(it->second);
     }
     return stat;
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > >& args)
-: argsMap(args)
-, nodes()
-, _treeRoot()
-, _time(0)
-, _view(0)
-{
-    // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext;
-
-    try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender(true /*retrieveLastContext*/);
-        _openGLContext = glContext;
-    } catch (...) {
-    }
-
-    OSGLContextPtr cpuContext;
-    try {
-        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(true /*retrieveLastContext*/);
-        _cpuOpenGLContext = cpuContext;
-    } catch (const std::exception& e) {
-    }
-
-
-    if (args) {
-        for (std::map<NodePtr, ParallelRenderArgsPtr >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->second->openGLContext = glContext;
-            it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
-        }
-    }
-}
 
 ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 {
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    // Invalidate the TLS on all nodes that had it set
+    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( !(*it) || !(*it)->getEffectInstance() ) {
             continue;
         }
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
     }
 
-    if (argsMap) {
-        for (std::map<NodePtr, ParallelRenderArgsPtr >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
-        }
-    }
 
-    OSGLContextPtr glContext = _openGLContext.lock();
+    OSGLContextPtr glContext = _imp->openGLContext.lock();
     if (glContext) {
         // This render is going to end, release the OpenGL context so that another frame render may use it
         appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
     }
 
-    OSGLContextPtr cpuContext = _cpuOpenGLContext.lock();
+    OSGLContextPtr cpuContext = _imp->cpuOpenGLContext.lock();
     if (cpuContext) {
         // This render is going to end, release the OpenGL context so that another frame render may use it
         appPTR->getGPUContextPool()->releaseCPUGLContextFromRender(cpuContext);
@@ -1019,25 +1050,25 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
-    : time(0)
-    , timeline()
-    , request()
-    , view(0)
-    , abortInfo()
-    , treeRoot()
-    , visitsCount(0)
-    , stats()
-    , openGLContext()
-    , textureIndex(0)
-    , currentThreadSafety(eRenderSafetyInstanceSafe)
-    , currentOpenglSupport(ePluginOpenGLRenderSupportNone)
-    , isRenderResponseToUserInteraction(false)
-    , isSequentialRender(false)
-    , isAnalysis(false)
-    , doNansHandling(true)
-    , draftMode(false)
-    , tilesSupported(false)
-    , activeStrokeLastMovementBboxBitmapCleared(false)
+: time(0)
+, timeline()
+, request()
+, view(0)
+, abortInfo()
+, treeRoot()
+, visitsCount(0)
+, stats()
+, openGLContext()
+, textureIndex(0)
+, currentThreadSafety(eRenderSafetyInstanceSafe)
+, currentOpenglSupport(ePluginOpenGLRenderSupportNone)
+, isRenderResponseToUserInteraction(false)
+, isSequentialRender(false)
+, isAnalysis(false)
+, doNansHandling(true)
+, draftMode(false)
+, tilesSupported(false)
+, activeStrokeLastMovementBboxBitmapCleared(false)
 {
 }
 

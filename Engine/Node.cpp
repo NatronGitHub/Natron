@@ -6234,7 +6234,6 @@ Node::makePreviewImage(SequenceTime time,
 
 
     NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(thisNode);
 
 
     {
@@ -6263,7 +6262,7 @@ Node::makePreviewImage(SequenceTime time,
 
         boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
         try {
-            frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
+            frameRenderArgs = ParallelRenderArgsSetter::create(tlsArgs);
         } catch (...) {
             return false;
         }
@@ -6294,7 +6293,7 @@ Node::makePreviewImage(SequenceTime time,
         RectI renderWindow;
         rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
 
-        stat = frameRenderArgs->computeRequestPass(mipMapLevel, rod);
+        stat = frameRenderArgs->optimizeRoI(mipMapLevel, rod);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -6314,16 +6313,15 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            ViewIdx(0), //< preview only renders view 0 (left)
                                                                                                            false,
                                                                                                            renderWindow,
-                                                                                                           rod,
                                                                                                            requestedComps, //< preview is always rgb...
                                                                                                            depth,
                                                                                                            false,
                                                                                                            effect,
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
-            EffectInstance::RenderRoIRetCode retCode;
+            RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
-            if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+            if (retCode != eRenderRoIRetCodeOk) {
                 return false;
             }
         } catch (...) {
@@ -9067,101 +9065,6 @@ Node::canOthersConnectToThisNode() const
 # endif // !DEBUG
 }
 
-void
-Node::setNodeIsRenderingInternal(NodesWList& markedNodes)
-{
-    ///If marked, we alredy set render args
-    for (NodesWList::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
-        if (it->lock().get() == this) {
-            return;
-        }
-    }
-
-
-    ///Increment the node is rendering counter
-    {
-        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-        ++_imp->nodeIsRendering;
-    }
-
-
-    ///mark this
-    markedNodes.push_back( shared_from_this() );
-
-    ///Call recursively
-
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            input->setNodeIsRenderingInternal(markedNodes);
-        }
-    }
-}
-
-RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
-    : node(n)
-    , nodes()
-{
-    n->setNodeIsRendering(nodes);
-}
-
-RenderingFlagSetter::~RenderingFlagSetter()
-{
-    for (NodesWList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr n = it->lock();
-        if (!n) {
-            continue;
-        }
-        n->unsetNodeIsRendering();
-    }
-}
-
-void
-Node::setNodeIsRendering(NodesWList& nodes)
-{
-    setNodeIsRenderingInternal(nodes);
-}
-
-void
-Node::unsetNodeIsRendering()
-{
-
-    // Decrement the node is rendering counter
-    QMutexLocker k(&_imp->nodeIsRenderingMutex);
-    if (_imp->nodeIsRendering > 1) {
-        --_imp->nodeIsRendering;
-    } else {
-        _imp->nodeIsRendering = 0;
-    }
-
-}
-
-bool
-Node::isNodeRendering_nolock() const
-{
-    return _imp->nodeIsRendering > 0;
-}
-
-void
-Node::lockNodeRenderingMutex()
-{
-    _imp->nodeIsRenderingMutex.lock();
-}
-
-void
-Node::unlockNodeRenderingMutex()
-{
-    _imp->nodeIsRenderingMutex.unlock();
-}
-
-bool
-Node::isNodeRendering() const
-{
-    QMutexLocker k(&_imp->nodeIsRenderingMutex);
-
-    return _imp->nodeIsRendering > 0;
-}
 
 
 static void
@@ -10961,6 +10864,114 @@ Node::getHostMixingValue(double time,
     KnobDoublePtr mix = _imp->mixWithSource.lock();
 
     return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
+}
+
+RenderRoIRetCode
+Node::renderFrame(const double time,
+                  const ViewIdx view,
+                  const unsigned int mipMapLevel,
+                  const bool isPlayback,
+                  const RectI* roiParam,
+                  const std::list<ImageComponents>& layersToRender,
+                  std::map<ImageComponents, ImagePtr> *planes)
+{
+    assert(planes);
+    if (!planes) {
+        return eRenderRoIRetCodeFailed;
+    }
+    if (layersToRender.empty()) {
+        return eRenderRoIRetCodeOk;
+    }
+
+    // Create a render ID
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+
+    const bool isRenderUserInteraction = !isPlayback;
+    const bool isSequentialRender = isPlayback;
+
+    // If abortable thread, set abort info on the thread, to make the render abortable faster
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
+    if (isAbortable) {
+        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
+    }
+
+    // Setup frame TLS on the node tree required to render
+    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
+    tlsArgs->time = time;
+    tlsArgs->view = view;
+    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
+    tlsArgs->isSequential = isSequentialRender;
+    tlsArgs->abortInfo = abortInfo;
+    tlsArgs->treeRoot = shared_from_this();
+    tlsArgs->textureIndex = 0;
+    tlsArgs->timeline = getApp()->getTimeLine();
+    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
+    tlsArgs->isAnalysis = !isPlayback;
+    tlsArgs->draftMode = true;
+    tlsArgs->stats = RenderStatsPtr();
+    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
+    try {
+        frameRenderArgs = ParallelRenderArgsSetter::create(tlsArgs);
+    } catch (...) {
+        return eRenderRoIRetCodeFailed;
+    }
+
+
+    // We just applied the TLS, retrieve this node hash
+    U64 effectHash;
+    bool gotHash = _imp->effect->getRenderHash(time, ViewIdx(0), &effectHash);
+    assert(gotHash);
+    (void)gotHash;
+
+    RenderScale scale;
+    scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+
+    double par = _imp->effect->getAspectRatio(-1);
+    RectD rod;
+    {
+        StatusEnum stat = _imp->effect->getRegionOfDefinition_public(effectHash, time, scale, ViewIdx(0), &rod);
+        if (stat == eStatusFailed) {
+            return eRenderRoIRetCodeFailed;
+        }
+    }
+
+    // If there's a supplied RoI, use it otherwise fallback on RoD
+    RectD canonicalRoi;
+    if (roiParam) {
+        roiParam->toCanonical(mipMapLevel, par, rod, &canonicalRoi);
+    } else {
+        canonicalRoi = rod;
+    }
+
+    // optimize RoI on the tree
+    if (frameRenderArgs->optimizeRoI(mipMapLevel, canonicalRoi) != eStatusOK) {
+        return eRenderRoIRetCodeFailed;
+    }
+
+    RectI roi;
+    canonicalRoi.toPixelEnclosing(mipMapLevel, par, &roi);
+
+    EffectInstance::RenderRoIArgs args( time,
+                                       scale,
+                                       mipMapLevel, //mipmaplevel
+                                       view,
+                                       false,
+                                       roi,
+                                       layersToRender,
+                                       eImageBitDepthFloat,
+                                       false,
+                                       _imp->effect,
+                                       eStorageModeRAM /*returnOpenGlTex*/,
+                                       time);
+    RenderRoIRetCode stat = eRenderRoIRetCodeFailed;
+    try {
+        stat = _imp->effect->renderRoI(args, planes);
+    } catch (const std::exception& /*e*/) {
+
+    }
+    appPTR->getAppTLS()->cleanupTLSForThread();
+
+    return stat;
 }
 
 NATRON_NAMESPACE_EXIT;

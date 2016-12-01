@@ -282,6 +282,7 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->stats = inArgs->stats;
     args->openGLContext = inArgs->glContext;
     args->cpuOpenGLContext = inArgs->cpuGlContext;
+    args->parent = inArgs->parent;
 
     assert(args->valuesCache);
 
@@ -837,7 +838,7 @@ EffectInstance::getImage(int inputNb,
      We did not apply any TLS to the node tree, so do it now.
      */
     boost::shared_ptr<ParallelRenderArgsSetter> tlsSetter;
-    if ( !tls || ( !tls->currentRenderArgs.validArgs || tls->frameArgs.empty() ) ) {
+    if ( !tls || !tls->currentRenderArgs.validArgs || tls->frameArgs.empty() ) {
 
         // We set the thread storage render args so that if the instance changed action
         // tries to call getImage it can render with good parameters.
@@ -866,7 +867,7 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->draftMode = false;
         tlsArgs->stats = RenderStatsPtr();
         try {
-            tlsSetter.reset( new ParallelRenderArgsSetter(tlsArgs) );
+            tlsSetter = ParallelRenderArgsSetter::create(tlsArgs);
         } catch (...) {
             // The tree cannot render
 #ifdef DEBUG
@@ -894,27 +895,19 @@ EffectInstance::getImage(int inputNb,
             canonicalRoi = rod;
         }
 
-        if (tlsSetter->computeRequestPass(mipMapLevel, canonicalRoi) != eStatusOK) {
+        if (tlsSetter->optimizeRoI(mipMapLevel, canonicalRoi) != eStatusOK) {
 #ifdef DEBUG
             qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because it failed to compute the request pass on the input stream tree. This is most likely because the input region of definition is empty";
 #endif
             return ImagePtr();
         }
 
-        // Refresh tls variable
-        tls = _imp->tlsData->getTLSData();
+        // Set the tls variable to null to indicate that we are in analysis
+        tls.reset();
 
     }
 
 
-    // The request pass should have been set and should have set the TLS.
-    assert(tls && !tls->frameArgs.empty());
-    if (!tls || tls->frameArgs.empty()) {
-#ifdef DEBUG
-        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because there's no thread local storage set. This is a bug, please investigate!";
-#endif
-        return ImagePtr();
-    }
 
     // Get the RoI from what was computed in the request pass on the input.
     RectD roiCanonical;
@@ -922,18 +915,29 @@ EffectInstance::getImage(int inputNb,
         // TLS should have been set on the input
         ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
         assert(inputFrameArgs);
-        if (!inputFrameArgs || !inputFrameArgs->request) {
+        if (!inputFrameArgs) {
 #ifdef DEBUG
             qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because there is no request pass set on the input. This is a bug, please investigate!";
 #endif
             return ImagePtr();
         }
 
-        const FrameViewRequest* inputFrameViewRequest = inputFrameArgs->request->getFrameViewRequest(time, view);
+        const FrameViewRequest* inputFrameViewRequest = inputFrameArgs->request ? inputFrameArgs->request->getFrameViewRequest(time, view) : 0;
         if (inputFrameViewRequest) {
             // The roi is the optimized roi: the bounding rect of all RoI from different branches leading to that node.
             roiCanonical = inputFrameViewRequest->finalRoi;
         } else {
+
+            // If we were in analysis, the ParallelRenderArgsSetter created applied should have  been set correctly
+            assert(tls && tls->currentRenderArgs.validArgs);
+            if (!tls || !tls->currentRenderArgs.validArgs) {
+#ifdef DEBUG
+                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the TLS set via analysis did not work!";
+#endif
+                return ImagePtr();
+            }
+
+
 
             // If we are in the render action:
             // This node did not request anything on the input in getFramesNeeded action: it did a raw call to fetchImage without advertising us.
@@ -941,52 +945,47 @@ EffectInstance::getImage(int inputNb,
             // If we are in a current render, (tls->currentRenderArgs.validArgs==true)  call getRegionsOfInterest on the current render window
             // If are not in a render, well fall back onto rendering the whole image (RoD).
             //
-            // If we are in an analysis, the effect does not necessarily have to use getFramesNeeded, but the ctor of ParallelRenderArgsSetter in this function should have added a request
-            // at the exact time passed in parameter of this function.
-            assert(!tls->frameArgs.back()->isAnalysis);
-
-            if (tls->currentRenderArgs.validArgs) {
-#ifdef DEBUG
-                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the image at time" << time << "and view" << view << "was not requested properly in the getFramesNeeded action. This is a bug in the plug-in!";
-#endif
-            }
 
             bool gotInputRoI = false;
-            if (tls->currentRenderArgs.validArgs) {
+#ifdef DEBUG
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the image at time" << time << "and view" << view <<
+            "was not requested properly in the getFramesNeeded action. This is a bug either in this plug-in or a plug-in downstream (which should also have this warning displayed)";
+#endif
 
-                // We are in the render action, the frame/view hash was computed in the ParallelRenderArgs ctor.
-                U64 thisNodeHash;
-                bool gothash = getRenderHash(tls->currentRenderArgs.time, tls->currentRenderArgs.view, &thisNodeHash);
-                assert(gothash);
+            // We are in the render action, the frame/view hash was computed in the ParallelRenderArgs ctor.
+            U64 thisNodeHash;
+            bool gothash = getRenderHash(tls->currentRenderArgs.time, tls->currentRenderArgs.view, &thisNodeHash);
+            assert(gothash);
 
-                // Get this node rod
-                RectD outputRod;
-                StatusEnum stat = getRegionOfDefinition_public(thisNodeHash, tls->currentRenderArgs.time, scale, tls->currentRenderArgs.view, &outputRod);
-                if (stat == eStatusFailed) {
-                    return ImagePtr();
-                }
+            // Get this node rod
+            RectD outputRod;
+            StatusEnum stat = getRegionOfDefinition_public(thisNodeHash, tls->currentRenderArgs.time, scale, tls->currentRenderArgs.view, &outputRod);
+            if (stat == eStatusFailed) {
+                return ImagePtr();
+            }
 
-                RectD thisEffectCurrentRenderWindowCanonical;
-                tls->currentRenderArgs.renderWindowPixel.toCanonical(mipMapLevel, getAspectRatio(-1), outputRod, &thisEffectCurrentRenderWindowCanonical);
+            RectD thisEffectCurrentRenderWindowCanonical;
+            tls->currentRenderArgs.renderWindowPixel.toCanonical(mipMapLevel, getAspectRatio(-1), outputRod, &thisEffectCurrentRenderWindowCanonical);
 
-                // Get the roi for the current render window
-                RoIMap inputRoisMap;
-                inputEffect->getRegionsOfInterest_public(tls->currentRenderArgs.time, scale, outputRod, thisEffectCurrentRenderWindowCanonical, tls->currentRenderArgs.view, &inputRoisMap);
-                RoIMap::iterator foundInputEffectRoI = inputRoisMap.find(inputEffect);
-                if (foundInputEffectRoI != inputRoisMap.end()) {
-                    roiCanonical = foundInputEffectRoI->second;
-                    gotInputRoI = true;
-                }
+            // Get the roi for the current render window
+            RoIMap inputRoisMap;
+            inputEffect->getRegionsOfInterest_public(tls->currentRenderArgs.time, scale, outputRod, thisEffectCurrentRenderWindowCanonical, tls->currentRenderArgs.view, &inputRoisMap);
+            RoIMap::iterator foundInputEffectRoI = inputRoisMap.find(inputEffect);
+            if (foundInputEffectRoI != inputRoisMap.end()) {
+                roiCanonical = foundInputEffectRoI->second;
+                gotInputRoI = true;
             }
 
 
-            // There may be no hash on the input, but renderRoI needs it. Compute it if needed.
+            // If getFramesNeeded failed to properly inform us of this time/view pair passed to fetchImage,
+            // there may be no hash on the input, but renderRoI needs it. Compute it if needed.
             U64 inputHash;
             bool gotHash = inputEffect->getRenderHash(time, view, &inputHash);
             if (!gotHash) {
                 FramesNeededMap inputFramesNeeded = inputEffect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &inputHash);
+                (void)inputFramesNeeded;
             }
-
+            
             if (!gotInputRoI) {
                 // Fallback on RoD. There may be no hash after all because the frame was not registered in ParallelRenderArgs.
 
@@ -995,7 +994,22 @@ EffectInstance::getImage(int inputNb,
                     return ImagePtr();
                 }
             }
-        }
+
+
+            // There is no request pass as-well, but renderRoI needs it, comptue it
+            {
+                FrameRequestMap requestData;
+                stat = EffectInstance::optimizeRoI(time, view, mipMapLevel, roiCanonical, inputEffect->getNode(), requestData);
+                if (stat != eStatusOK) {
+
+                }
+
+                for (FrameRequestMap::const_iterator it = requestData.begin(); it != requestData.end(); ++it) {
+                    it->first->getEffectInstance()->setNodeRequestThreadLocal(it->second);
+                }
+            }
+
+        } // inputFrameViewRequest
     }
 
     if (roiCanonical.isNull()) {
@@ -1012,7 +1026,7 @@ EffectInstance::getImage(int inputNb,
     // If within a render action, the input images have been pre-fetched and set on the currentRenderArgs TLS
     EffectInstance::InputImagesMap inputImagesThreadLocal;
 
-    if (tls->currentRenderArgs.validArgs) {
+    if (tls && tls->currentRenderArgs.validArgs) {
         // When rendering, retrieve the time and input images that were set within the renderRoI call
         const RenderArgs& renderArgs = tls->currentRenderArgs;
         thisEffectRenderTime = renderArgs.time;
@@ -1072,7 +1086,6 @@ EffectInstance::getImage(int inputNb,
                                                                         view,
                                                                         false /*byPassCache*/,
                                                                         pixelRoI,
-                                                                        RectD(),
                                                                         requestedComps,
                                                                         depth,
                                                                         true,
@@ -2214,7 +2227,7 @@ EffectInstance::transformInputRois(const EffectInstancePtr& self,
     }
 }
 
-EffectInstance::RenderRoIRetCode
+RenderRoIRetCode
 EffectInstance::renderInputImagesForRoI(bool useTransforms,
                                         StorageModeEnum renderStorageMode,
                                         double time,
@@ -2287,7 +2300,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
                                                                         args.planes);
 
     //Exit of the host frame threading thread
-    appPTR->getAppTLS()->cleanupTLSForThread();
+    if (callingThread != curThread) {
+        appPTR->getAppTLS()->cleanupTLSForThread();
+    }
 
     return ret;
 }
@@ -2541,7 +2556,6 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                                                                    view,
                                                                                                    false,
                                                                                                    downscaledRectToRender,
-                                                                                                   RectD(),
                                                                                                    comps,
                                                                                                    outputClipPrefDepth,
                                                                                                    false,
@@ -2560,7 +2574,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
 
         return eRenderingFunctorRetOK;
     } else {
-        EffectInstance::RenderRoIRetCode renderOk;
+        RenderRoIRetCode renderOk;
         renderOk = rectToRender.identityInput->renderRoI(*renderArgs, &identityPlanes);
         if (renderOk == eRenderRoIRetCodeAborted) {
             return eRenderingFunctorRetAborted;

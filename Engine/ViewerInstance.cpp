@@ -544,8 +544,6 @@ ViewerInstance::renderViewer(ViewIdx view,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
-                // Reset the rednering flag
-                args[i]->isRenderingFlag.reset();
             }
 
             if (ret[i] != eViewerRenderRetCodeRender) {
@@ -791,8 +789,6 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
         }
     }
 
-    // Flag that we are going to render
-    outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 void
@@ -1181,7 +1177,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->draftMode = inArgs.draftModeEnabled;
         tlsArgs->stats = stats;
         try {
-            inArgs.frameArgs.reset( new ParallelRenderArgsSetter(tlsArgs) );
+            inArgs.frameArgs = ParallelRenderArgsSetter::create(tlsArgs);
         } catch (const std::exception& /*e*/) {
             return eViewerRenderRetCodeFail;
         }
@@ -1244,7 +1240,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     {
         RectD canonicalRoi;
         roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
-        if (inArgs.frameArgs->computeRequestPass(inArgs.params->mipMapLevel, canonicalRoi) != eStatusOK) {
+        if (inArgs.frameArgs->optimizeRoI(inArgs.params->mipMapLevel, canonicalRoi) != eStatusOK) {
             return eViewerRenderRetCodeFail;
         }
     }
@@ -1351,7 +1347,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             std::map<ImageComponents, ImagePtr> planes;
-            EffectInstance::RenderRoIRetCode retCode;
+            RenderRoIRetCode retCode;
             {
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
@@ -1360,7 +1356,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     view,
                                                                     inArgs.forceRender,
                                                                     splitRoi[rectIndex],
-                                                                    inArgs.params->rod,
                                                                     requestedComponents,
                                                                     imageDepth,
                                                                     false /*calledFromGetImage*/,
@@ -1371,7 +1366,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             }
             //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
             assert(planes.size() == 0 || planes.size() <= 2);
-            if ( !planes.empty() && (retCode == EffectInstance::eRenderRoIRetCodeOk) ) {
+            if ( !planes.empty() && (retCode == eRenderRoIRetCodeOk) ) {
                 if (planes.size() == 2) {
                     std::map<ImageComponents, ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
                     if ( foundColorLayer != planes.end() ) {
@@ -1397,9 +1392,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 inArgs.params->colorImage = colorImage;
             }
             if (!colorImage) {
-                if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
+                if (retCode == eRenderRoIRetCodeFailed) {
                     return eViewerRenderRetCodeFail;
-                } else if (retCode == EffectInstance::eRenderRoIRetCodeOk) {
+                } else if (retCode == eRenderRoIRetCodeOk) {
                     return eViewerRenderRetCodeBlack;
                 } else {
                     /*

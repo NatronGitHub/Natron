@@ -64,6 +64,13 @@ enum StatusEnum
     eStatusReplyDefault = 14
 };
 
+enum RenderRoIRetCode
+{
+        eRenderRoIRetCodeOk = 0,
+        eRenderRoIRetCodeAborted,
+        eRenderRoIRetCodeFailed
+};
+
 /*Copy of QMessageBox::StandardButton*/
 enum StandardButtonEnum
 {

@@ -314,9 +314,9 @@ public:
                            RectI *lastStrokePixelRoD,
                            RectI *inputsRoDIntersectionPixel);
 
-    EffectInstance::RenderRoIRetCode determinePlanesToRender(const EffectInstance::RenderRoIArgs& args, std::list<ImageComponents> *requestedComponents, std::map<ImageComponents, ImagePtr>* outputPlanes);
+    RenderRoIRetCode determinePlanesToRender(const EffectInstance::RenderRoIArgs& args, std::list<ImageComponents> *requestedComponents, std::map<ImageComponents, ImagePtr>* outputPlanes);
 
-    EffectInstance::RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
+    RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                                           const ParallelRenderArgsPtr& frameArgs,
                                                           const FrameViewRequest* requestPassData,
                                                           SupportsEnum supportsRS,
@@ -369,7 +369,7 @@ public:
                              OSGLContextPtr *glRenderContext,
                              OSGLContextAttacherPtr *glContextLocker,
                              bool *useOpenGL,
-                             EffectInstance::RenderRoIRetCode* resolvedError);
+                             RenderRoIRetCode* resolvedError);
 
     bool renderRoILookupCacheFirstTime(const RenderRoIArgs & args,
                                        const ParallelRenderArgsPtr& frameArgs,
@@ -395,7 +395,7 @@ public:
                                        std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
-    EffectInstance::RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
+    RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
                                                                 const EffectDataTLSPtr& tls,
                                                                 const U64 frameViewHash,
                                                                 const ComponentsNeededMapPtr& neededComps,
@@ -411,7 +411,7 @@ public:
                                                                 bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                 boost::shared_ptr<FramesNeededMap>* framesNeeded);
 
-    EffectInstance::RenderRoIRetCode renderRoISecondCacheLookup(const RenderRoIArgs & args,
+    RenderRoIRetCode renderRoISecondCacheLookup(const RenderRoIArgs & args,
                                                                 const EffectDataTLSPtr& tls,
                                                                 const ParallelRenderArgsPtr& frameArgs,
                                                                 const ComponentsNeededMapPtr& neededComps,

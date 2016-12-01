@@ -52,7 +52,6 @@ struct ViewerArgs
     bool forceRender;
     U64 activeInputHash;
     boost::shared_ptr<UpdateViewerParams> params;
-    boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     bool draftModeEnabled;
     unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;

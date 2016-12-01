@@ -2236,8 +2236,6 @@ private:
             return;
         }
 
-        AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-
         // Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         // Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
         RenderStatsPtr stats( new RenderStats(enableRenderStats) );
@@ -2268,60 +2266,11 @@ private:
 
             NodePtr activeInputNode = activeInputToRender->getNode();
 
-            const double par = activeInputToRender->getAspectRatio(-1);
-            const bool isRenderDueToRenderInteraction = false;
-            const bool isSequentialRender = true;
-
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
-
-
-                // Setup frame TLS args
-                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
-                if (isAbortableThread) {
-                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
-                }
-
-                ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-                tlsArgs->time = time;
-                tlsArgs->view = viewsToRender[view];
-                tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
-                tlsArgs->isSequential = isSequentialRender;
-                tlsArgs->abortInfo = abortInfo;
-                tlsArgs->treeRoot = activeInputNode;
-                tlsArgs->textureIndex = 0;
-                tlsArgs->timeline = output->getApp()->getTimeLine();
-                tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-                tlsArgs->isAnalysis = false;
-                tlsArgs->draftMode = false;
-                tlsArgs->stats = RenderStatsPtr();
-                boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
-                try {
-                    frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
-                } catch (...) {
-                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-
-                    return;
-
-                }
-
-                // Get the hash now that we applied TLS
-                U64 activeInputHash;
-                bool gotHash = activeInputToRender->getRenderHash(time, tlsArgs->view, &activeInputHash);
-                assert(gotHash);
-                (void)gotHash;
-                
-                // Call getRoD to know where to render
-                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputHash, time, scale, viewsToRender[view], &rod);
-                if (stat == eStatusFailed) {
-                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-
-                    return;
-                }
 
 
                 // Get layers to render
                 std::list<ImageComponents> components;
-                ImageBitDepthEnum imageDepth;
 
                 //Use needed components to figure out what we need to render
                 EffectInstance::ComponentsNeededMap neededComps;
@@ -2331,10 +2280,6 @@ private:
                 std::bitset<4> processChannels;
                 NodePtr ptInput;
                 activeInputToRender->getComponentsNeededAndProduced_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
-
-
-                //Retrieve bitdepth only
-                imageDepth = activeInputToRender->getBitDepth(-1);
                 components.clear();
 
                 EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
@@ -2344,39 +2289,11 @@ private:
                     }
                 }
 
-                // The render window is the RoD in pixel coordinates in our case
-                RectI renderWindow;
-                rod.toPixelEnclosing(scale, par, &renderWindow);
-
-                // Optimize roi
-                stat = frameRenderArgs->computeRequestPass(mipMapLevel, rod);
-                if (stat == eStatusFailed) {
-                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
-
-                    return;
-                }
-
-                // Launch render
-                RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
-                                                                                                               scale, //< the scale at which to render
-                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                                               viewsToRender[view], //< the view to render
-                                                                                                               false, //< byPassCache
-                                                                                                               renderWindow, //< the render window (in pixel coordinates)
-                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
-                                                                                                               components,
-                                                                                                               imageDepth,
-                                                                                                               false,
-                                                                                                               activeInputToRender,
-                                                                                                               eStorageModeRAM,
-                                                                                                               time) );
+                RenderRoIRetCode retCode = activeInputNode->renderFrame(time, viewsToRender[view], mipMapLevel, true /*isPlayback*/, 0, components, &planes);
 
-                EffectInstance::RenderRoIRetCode retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
-
-                if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                    if (retCode == EffectInstance::eRenderRoIRetCodeAborted) {
+                if (retCode != eRenderRoIRetCodeOk) {
+                    if (retCode == eRenderRoIRetCodeAborted) {
                         _imp->scheduler->notifyRenderFailure("Render aborted");
                     } else {
                         _imp->scheduler->notifyRenderFailure("Error caught while rendering");
@@ -2424,89 +2341,6 @@ void
 DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
 {
     // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
-#if 0
-    assert(false);
-
-    assert( !frames.empty() );
-    //Only consider the first frame, we shouldn't have multiple view here anyway.
-    const BufferedFrame& frame = frames.front();
-
-    ///Writers render to scale 1 always
-    RenderScale scale(1.);
-    OutputEffectInstancePtr effect = _effect.lock();
-    RectD rod;
-    RectI roi;
-    std::list<ImageComponents> components;
-    components.push_back( effect->getComponents(-1) );
-    ImageBitDepthEnum imageDepth = effect->getBitDepth(-1);
-    const double par = effect->getAspectRatio(-1);
-    const bool isRenderDueToRenderInteraction = false;
-    const bool isSequentialRender = true;
-
-    for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
-
-        setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
-
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = it->time;
-        tlsArgs->view = it->view;
-        tlsArgs->isRenderUserInteraction = isRenderDueToRenderInteraction;
-        tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = abortInfo;
-        tlsArgs->treeRoot = effect->getNode();
-        tlsArgs->textureIndex = 0;
-        tlsArgs->timeline = effect->getApp()->getTimeLine();
-        tlsArgs->activeRotoPaintNode = NodePtr();
-        tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isAnalysis = false;
-        tlsArgs->draftMode = false;
-        tlsArgs->stats = it->stats;
-        boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
-        try {
-            frameRenderArgs.reset(new ParallelRenderArgsSetter(tlsArgs));
-        } catch (...) {
-            continue;
-        }
-
-
-        U64 hash = effect->getRenderHash(it->time, it->view);
-
-        ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod) );
-        rod.toPixelEnclosing(0, par, &roi);
-
-
-        RenderingFlagSetter flagIsRendering( effect->getNode() );
-        ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
-        assert(inputImage);
-
-        EffectInstance::InputImagesMap inputImages;
-        inputImages[0].push_back(inputImage);
-        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(frame.time,
-                                                                                                       scale, 0,
-                                                                                                       it->view,
-                                                                                                       true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                                                                                       roi,
-                                                                                                       rod,
-                                                                                                       components,
-                                                                                                       imageDepth,
-                                                                                                       false,
-                                                                                                       effect,
-                                                                                                       eStorageModeRAM,
-                                                                                                       frame.time,
-                                                                                                       inputImages) );
-        try {
-            std::map<ImageComponents, ImagePtr> planes;
-            EffectInstance::RenderRoIRetCode retCode;
-            retCode = effect->renderRoI(*renderArgs, &planes);
-            if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                notifyRenderFailure("");
-            }
-        } catch (const std::exception& e) {
-            notifyRenderFailure( e.what() );
-        }
-    }
-#endif
 } // DefaultScheduler::processFrame
 
 void

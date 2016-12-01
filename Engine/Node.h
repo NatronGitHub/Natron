@@ -857,9 +857,20 @@ public:
      **/
     void destroyNode(bool blockingDestroy, bool autoReconnect);
 
+    /**
+     * @brief Wrapper around EffectInstance::renderRoI that setup things correctly for a render
+     **/
+    RenderRoIRetCode renderFrame(const double time,
+                                 const ViewIdx view,
+                                 const unsigned int mipMapLevel,
+                                 const bool isPlayback,
+                                 const RectI* roiParam,
+                                 const std::list<ImageComponents>& layersToRender,
+                                 std::map<ImageComponents, ImagePtr> *planes);
+
 private:
-
-
+    
+    
     void doDestroyNodeInternalEnd(bool autoReconnect);
 
 public:
@@ -1143,9 +1154,6 @@ public:
 
     bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
 
-    void setNodeIsRendering(NodesWList& nodes);
-    void unsetNodeIsRendering();
-
     /**
      * @brief Returns true if the parallel render args thread-storage is set
      **/
@@ -1173,10 +1181,6 @@ public:
 
 private:
 
-    friend class EnsureOperationOutOfRender;
-    void lockNodeRenderingMutex();
-    void unlockNodeRenderingMutex();
-    bool isNodeRendering_nolock() const;
 
     /**
      * @brief Declares to Python all parameters, roto, tracking attributes
@@ -1581,8 +1585,6 @@ private:
 
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(NodesWList& markedNodes);
-
 
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
@@ -1593,50 +1595,6 @@ private:
 };
 
 
-
-/**
- * @brief Small RAII style that locks the nodeIsRendering mutex of a node and releases it.
- * The caller should then use the isNodeRendering function to query whether the node is rendering or not
- * and then perform actions if not. This guarantees that a render thread will not use the data pushed by the MT
- * in the meantime.
- **/
-class EnsureOperationOutOfRender
-{
-    NodePtr _node;
-
-public:
-
-    EnsureOperationOutOfRender(const NodePtr& node)
-    : _node(node)
-    {
-        node->lockNodeRenderingMutex();
-    }
-
-    bool isNodeRendering() const
-    {
-        return _node->isNodeRendering_nolock();
-    }
-
-    virtual ~EnsureOperationOutOfRender()
-    {
-        _node->unlockNodeRenderingMutex();
-
-    }
-
-};
-
-
-class RenderingFlagSetter
-{
-    NodeWPtr node;
-    NodesWList nodes;
-
-public:
-
-    RenderingFlagSetter(const NodePtr& n);
-
-    ~RenderingFlagSetter();
-};
 
 NATRON_NAMESPACE_EXIT;
 

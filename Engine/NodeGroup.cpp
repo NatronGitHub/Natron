@@ -427,8 +427,6 @@ NodeCollection::clearNodesInternal(bool blocking)
 
     ///Clear recursively containers inside this group
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        // You should have called quitAnyProcessing before!
-        assert( !(*it)->isNodeRendering() );
 
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
