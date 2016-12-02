@@ -464,15 +464,16 @@ static GLShaderBasePtr
 getOrCreateAccumShaderInternal(bool accum)
 {
     boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
-
+    bool ok;
     std::string fragmentSource;
+
     if (accum) {
         fragmentSource += "#define ACCUMULATE\n";
     }
     fragmentSource += std::string(roto_AccumulateShader);
 #ifdef DEBUG
     std::string error;
-    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
     if (!ok) {
         qDebug() << error.c_str();
     }
@@ -499,12 +500,13 @@ static GLShaderBasePtr
 getOrCreateDivideShaderInternal()
 {
     boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
-
+    bool ok;
     std::string fragmentSource;
+
     fragmentSource += std::string(roto_DivideShader);
 #ifdef DEBUG
     std::string error;
-    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
     if (!ok) {
         qDebug() << error.c_str();
     }
