@@ -2488,6 +2488,8 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames) const
         NodePtr input = _imp->inputs[i].lock();
         if (input) {
             inputNames.insert( std::make_pair( _imp->inputLabels[i], input->getScriptName_mt_safe() ) );
+        } else {
+            inputNames.insert( std::make_pair( _imp->inputLabels[i], std::string()));
         }
     }
 }
