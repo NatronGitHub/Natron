@@ -78,21 +78,15 @@ static const char* rotoDrawDot_VertexShader =
 
 static const char* roto_AccumulateShader =
 "uniform sampler2D sampleTex;\n"
-"#ifdef ACCUMULATE\n"
 "uniform sampler2D accumTex;\n"
-"#endif\n"
 "\n"
 "void main() {\n"
 "   vec4 sampleColor = texture2D(sampleTex,gl_TexCoord[0].st);\n"
-"#ifndef ACCUMULATE\n"
-"   gl_FragColor = sampleColor;\n"
-"#else\n"
 "   vec4 accumColor = texture2D(accumTex,gl_TexCoord[0].st);\n"
 "   gl_FragColor.r = accumColor.r + sampleColor.r;\n"
 "   gl_FragColor.g = accumColor.g + sampleColor.g;\n"
 "   gl_FragColor.b = accumColor.b + sampleColor.b;\n"
 "   gl_FragColor.a = accumColor.a + sampleColor.a;\n"
-"#endif\n"
 "}";
 
 static const char* roto_DivideShader =
@@ -101,11 +95,10 @@ static const char* roto_DivideShader =
 "\n"
 "void main() {\n"
 "   vec4 srcColor = texture2D(srcTex,gl_TexCoord[0].st);\n"
-"   srcColor.r /= nDivisions; \n"
-"   srcColor.g /= nDivisions; \n"
-"   srcColor.b /= nDivisions; \n"
-"   srcColor.a /= nDivisions; \n"
-"   gl_FragColor = srcColor; \n"
+"   gl_FragColor.r = srcColor.r / nDivisions; \n"
+"   gl_FragColor.g = srcColor.g / nDivisions; \n"
+"   gl_FragColor.b = srcColor.b / nDivisions; \n"
+"   gl_FragColor.a = srcColor.a / nDivisions; \n"
 "}";
 
 static const char* rotoDrawDot_FragmentShader =
@@ -203,7 +196,7 @@ RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 , _vboTexID(0)
 , _featherRampShader(5)
 , _strokeDotShader(2)
-, _accumShader(2)
+, _accumShader()
 {
 
 }
@@ -461,15 +454,11 @@ RotoShapeRenderNodeOpenGLData::getOrCreateStrokeDotShader(bool buildUp)
 
 template <typename GL>
 static GLShaderBasePtr
-getOrCreateAccumShaderInternal(bool accum)
+getOrCreateAccumShaderInternal()
 {
     boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
     bool ok;
     std::string fragmentSource;
-
-    if (accum) {
-        fragmentSource += "#define ACCUMULATE\n";
-    }
     fragmentSource += std::string(roto_AccumulateShader);
 #ifdef DEBUG
     std::string error;
@@ -529,18 +518,17 @@ getOrCreateDivideShaderInternal()
 }
 
 GLShaderBasePtr
-RotoShapeRenderNodeOpenGLData::getOrCreateAccumulateShader(bool accum)
+RotoShapeRenderNodeOpenGLData::getOrCreateAccumulateShader()
 {
-    int index = (int)accum;
-    if (_accumShader[index]) {
-        return _accumShader[index];
+    if (_accumShader) {
+        return _accumShader;
     }
     if (isGPUContext()) {
-        _accumShader[index] = getOrCreateAccumShaderInternal<GL_GPU>(accum);
+        _accumShader = getOrCreateAccumShaderInternal<GL_GPU>();
     } else {
-        _accumShader[index] = getOrCreateAccumShaderInternal<GL_CPU>(accum);
+        _accumShader = getOrCreateAccumShaderInternal<GL_CPU>();
     }
-    return _accumShader[index];
+    return _accumShader;
 }
 
 GLShaderBasePtr
@@ -791,12 +779,9 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
     }
     GLShaderBasePtr rampShader = glData->getOrCreateFeatherRampShader(type);
     GLShaderBasePtr fillShader = glContext->getOrCreateFillShader();
-    GLShaderBasePtr accumShader[2];
-    accumShader[0] = glData->getOrCreateAccumulateShader(false);
-    accumShader[1] = glData->getOrCreateAccumulateShader(true);
+    GLShaderBasePtr accumShader = glData->getOrCreateAccumulateShader();
+    GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
     GLShaderBasePtr divideShader = glData->getOrCreateDivideShader();
-
-    GLuint fboID = glContext->getOrCreateFBOId();
 
     // If we do more than 1 pass, do motion blur
     // When motion-blur is enabled, draw each sample to a temporary texture in a first pass.
@@ -833,10 +818,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
             setupTexParams<GL>(target);
 
-            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, perSampleRenderTexture->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
-            GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+            GL::ClearColor(0.,0.,0.,0.);
+            GL::Clear(GL_COLOR_BUFFER_BIT);
+            GL::BindTexture( target, 0 );
         }
 
         double t = nDivisions > 1 ? shutterRange.min + d * interval : time;
@@ -1016,15 +1002,15 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 GL::BindTexture( target, accumulationTexture->getGLTextureID() );
                 setupTexParams<GL>(target);
 
-                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
                 GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
                 glCheckFramebufferError(GL);
 
                 GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
-                accumShader[0]->bind();
-                accumShader[0]->setUniform("sampleTex", 0);
+                copyShader->bind();
+                copyShader->setUniform("srcTex", 0);
                 Image::applyTextureMapping<GL>(roi, roi, roi);
-                accumShader[0]->unbind();
+                copyShader->unbind();
+
 
             } else {
                 // If this is not the first sample, duplicate the accumulation texture so we can read the duplicate in input and write to the
@@ -1033,22 +1019,20 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
                 setupTexParams<GL>(target);
 
-                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
                 GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpAccumulationCpy->getGLTextureID(), 0 /*LoD*/);
                 glCheckFramebufferError(GL);
 
                 GL::BindTexture( target, accumulationTexture->getGLTextureID() );
-                accumShader[0]->bind();
-                accumShader[0]->setUniform("sampleTex", 0);
+                copyShader->bind();
+                copyShader->setUniform("srcTex", 0);
                 Image::applyTextureMapping<GL>(roi, roi, roi);
-                accumShader[0]->unbind();
+                copyShader->unbind();
 
 
                 // Now do the accumulation
                 GL::BindTexture( target, accumulationTexture->getGLTextureID() );
                 setupTexParams<GL>(target);
 
-                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
                 GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
                 glCheckFramebufferError(GL);
 
@@ -1056,12 +1040,13 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
                 GL::ActiveTexture(GL_TEXTURE1);
                 GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
-                accumShader[1]->bind();
-                accumShader[1]->setUniform("accumTex", 0);
-                accumShader[1]->setUniform("sampleTex", 1);
+                accumShader->bind();
+                accumShader->setUniform("accumTex", 0);
+                accumShader->setUniform("sampleTex", 1);
                 Image::applyTextureMapping<GL>(roi, roi, roi);
-                accumShader[1]->unbind();
+                accumShader->unbind();
                 GL::ActiveTexture(GL_TEXTURE0);
+
             }
         } // nDivisions > 1
     } // for all samples
@@ -1071,7 +1056,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         RectI outputBounds;
         if (GL::isGPU()) {
             outputBounds = dstImage->getBounds();
-            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::BindTexture(target, dstImage->getGLTextureID());
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
             glCheckFramebufferError(GL);
         } else {

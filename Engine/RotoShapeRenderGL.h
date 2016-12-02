@@ -76,7 +76,7 @@ class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
 
     std::vector<GLShaderBasePtr> _featherRampShader;
     std::vector<GLShaderBasePtr> _strokeDotShader;
-    std::vector<GLShaderBasePtr> _accumShader;
+    GLShaderBasePtr _accumShader;
     GLShaderBasePtr _strokeDotSecondPassShader;
     GLShaderBasePtr _smearShader;
     GLShaderBasePtr _divideShader;
@@ -99,7 +99,7 @@ public:
 
     GLShaderBasePtr getOrCreateFeatherRampShader(RampTypeEnum type);
 
-    GLShaderBasePtr getOrCreateAccumulateShader(bool accum);
+    GLShaderBasePtr getOrCreateAccumulateShader();
 
     GLShaderBasePtr getOrCreateDivideShader();
 
