@@ -184,17 +184,17 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
     Curve* xCurve = useGuiCurves ? _imp->guiCurveLeftBezierX.get() : _imp->curveLeftBezierX.get();
     Curve* yCurve = useGuiCurves ? _imp->guiCurveLeftBezierY.get() : _imp->curveLeftBezierY.get();
 
-    if ( xCurve->getKeyFrameWithTime(time, &k) ) {
+    if ( xCurve && xCurve->getKeyFrameWithTime(time, &k) ) {
         bool ok;
         *x = k.getValue();
-        ok = yCurve->getKeyFrameWithTime(time, &k);
+        ok = yCurve && yCurve->getKeyFrameWithTime(time, &k);
         assert(ok);
         if (ok) {
             *y = k.getValue();
             ret = true;
         }
     } else {
-        if (xCurve->isAnimated()) {
+        if (xCurve && xCurve->isAnimated()) {
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
         } else {
