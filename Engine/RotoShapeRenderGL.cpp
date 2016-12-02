@@ -819,11 +819,13 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             setupTexParams<GL>(target);
 
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, perSampleRenderTexture->getGLTextureID(), 0 /*LoD*/);
-            glCheckFramebufferError(GL);
-            GL::ClearColor(0.,0.,0.,0.);
-            GL::Clear(GL_COLOR_BUFFER_BIT);
             GL::BindTexture( target, 0 );
         }
+
+        // First clear-out everything to black and transparant
+        glCheckFramebufferError(GL);
+        GL::ClearColor(0.,0.,0.,0.);
+        GL::Clear(GL_COLOR_BUFFER_BIT);
 
         double t = nDivisions > 1 ? shutterRange.min + d * interval : time;
 
