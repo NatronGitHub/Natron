@@ -581,7 +581,7 @@ struct RotoPaintPrivate
     KnobButtonWPtr resetTransformKnob;
 
     KnobChoiceWPtr motionBlurTypeKnob;
-    KnobDoubleWPtr motionBlurKnob, globalMotionBlurKnob;
+    KnobIntWPtr motionBlurKnob, globalMotionBlurKnob;
     KnobDoubleWPtr shutterKnob, globalShutterKnob;
     KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
     KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;

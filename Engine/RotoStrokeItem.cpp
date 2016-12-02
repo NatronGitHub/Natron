@@ -132,12 +132,12 @@ struct RotoStrokeItemPrivate
     // instead of re-computing it from scratch to speed-up the drawing.
     // This avoids re-computing it using computeBoundingBox()
     // Once drawn (finished = true), this member is no longer useful.
-    RectD renderCachedBbox;
+    mutable RectD renderCachedBbox;
 
     // While drawing the stroke, this is the bounding box of the points
     // used to render. Basically this is the bbox of the points extracted
     // in the copy ctor.
-    RectD lastStrokeStepBbox;
+    mutable RectD lastStrokeStepBbox;
 
     // Used only when drawing: Index in the xCurve, yCurve, pressureCurve of the last point (included)
     // that was drawn by a previous draw step.
@@ -337,12 +337,14 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         // since we are drawing anyway nothing else is happening.
         double time = _publicInterface->getCurrentTime();
         ViewIdx view = _publicInterface->getCurrentView();
-        lastStrokeStepBbox = computeBoundingBox(time, view);
+        other.lastStrokeStepBbox = computeBoundingBox(time, view);
         if (pickupPointIndex == 0 && pickupStrokeIndex == 0) {
-            renderCachedBbox = lastStrokeStepBbox;
+            other.renderCachedBbox = other.lastStrokeStepBbox;
         } else {
-            renderCachedBbox.merge(lastStrokeStepBbox);
+            other.renderCachedBbox.merge(other.lastStrokeStepBbox);
         }
+        lastStrokeStepBbox = other.lastStrokeStepBbox;
+        renderCachedBbox = other.renderCachedBbox;
     }
     return hasDoneSomething;
 } // copyStrokeForRendering

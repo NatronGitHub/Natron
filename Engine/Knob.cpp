@@ -2393,6 +2393,33 @@ KnobHelper::hasModifications() const
     return false;
 }
 
+RenderValuesCachePtr
+KnobHelper::getHolderRenderValuesCache(double* currentTime, ViewIdx* currentView) const
+{
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return RenderValuesCachePtr();
+    }
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+    KnobTableItemPtr isTableItem = toKnobTableItem(holder);
+    if (isTableItem) {
+        KnobItemsTablePtr model = isTableItem->getModel();
+        if (!model) {
+            return RenderValuesCachePtr();
+        }
+        NodePtr modelNode = model->getNode();
+        if (!modelNode) {
+            return RenderValuesCachePtr();
+        }
+
+        isEffect = modelNode->getEffectInstance();
+    }
+    if (!isEffect) {
+        return RenderValuesCachePtr();
+    }
+    return isEffect->getRenderValuesCacheTLS(currentTime, currentView);
+}
+
 bool
 KnobHelper::hasModifications(DimIdx dimension) const
 {

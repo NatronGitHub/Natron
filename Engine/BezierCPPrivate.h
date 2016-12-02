@@ -51,7 +51,7 @@ struct BezierCPPrivate
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
     CurvePtr curveLeftBezierX, curveRightBezierX, curveLeftBezierY, curveRightBezierY;
-    mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
+    mutable QMutex lock; //< protects all data
     double leftX, rightX, leftY, rightY; //< used when there is no keyframe
 
     BezierCPPrivate(const BezierPtr& curve)
@@ -64,7 +64,7 @@ struct BezierCPPrivate
         , curveRightBezierX(new Curve)
         , curveLeftBezierY(new Curve)
         , curveRightBezierY(new Curve)
-        , staticPositionMutex()
+        , lock()
         , leftX(0)
         , rightX(0)
         , leftY(0)

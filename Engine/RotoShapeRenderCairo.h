@@ -121,7 +121,7 @@ public:
     /**
      * @brief Low level: renders the given bezier with motion blur onto the given cairo image
      **/
-    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, double time, ViewIdx view, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
+    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, double time, ViewIdx view, unsigned int mipmapLevel);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
@@ -151,12 +151,10 @@ public:
     static void renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                          const RectI & roi,
                                          const ImageComponents& components,
-                                         const double startTime,
-                                         const double endTime,
-                                         const double timeStep,
                                          const double time,
                                          ViewIdx view,
-                                         const ImageBitDepthEnum depth,
+                                         const RangeD& shutterRange,
+                                         int nDivisions,
                                          const unsigned int mipmapLevel,
                                          const bool isDuringPainting,
                                          const double distToNextIn,

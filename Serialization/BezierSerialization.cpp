@@ -95,6 +95,7 @@ static void decodeShape(const YAML::Node& shapeNode, BezierSerialization::Shape*
                 cp.featherPoint.reset(new BezierCPSerialization);
                 cp.featherPoint->decode(cpNode["Feather"]);
             }
+            shape->controlPoints.push_back(cp);
         }
     }
 }

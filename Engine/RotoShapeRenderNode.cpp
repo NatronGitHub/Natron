@@ -176,13 +176,15 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx view, RectD* rod)
 {
     // Account for motion-blur
-    double startTime, endTime, timeStep;
-    item->getMotionBlurSettings(time, view, &startTime, &endTime, &timeStep);
+    RangeD range;
+    int divisions;
+    item->getMotionBlurSettings(time, view, &range, &divisions);
+    double interval = divisions >= 1 ? (range.max - range.min) / divisions : 1.;
 
-    for (double t = startTime; t <= endTime; t += timeStep) {
+    for (int i = 0; i < divisions; ++i) {
         RectD maskRod;
         try {
-
+            double t = divisions > 1 ? range.min + i * interval : time;
             maskRod = item->getBoundingBox(t, view);
         } catch (...) {
         }
@@ -277,6 +279,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         return eStatusFailed;
     }
 
+    // To be thread-safe we can only operate on a render clone.
+    assert(rotoItem->isRenderClone());
+
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
@@ -365,8 +370,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         case eRotoShapeRenderTypeSolid: {
 
             // Account for motion-blur
-            double startTime = args.time, mbFrameStep = 1., endTime = args.time;
-            rotoItem->getMotionBlurSettings(args.time, args.view, &startTime, &endTime, &mbFrameStep);
+            RangeD range;
+            int divisions;
+            rotoItem->getMotionBlurSettings(args.time, args.view, &range, &divisions);
 
             if (isBezier) {
                 RotoPaintPtr rotoPaintNode;
@@ -378,7 +384,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, startTime, endTime, mbFrameStep, args.time, args.view, outputPlane.second->getBitDepth(), mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     isStroke->updateStrokeData(lastCenterOut, distToNextOut);
                 }
@@ -408,7 +414,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, opacity, args.time, args.view, startTime, endTime, mbFrameStep, mipmapLevel, outputPlane.second->getGLTextureTarget());
+                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, mipmapLevel, outputPlane.second->getGLTextureTarget());
                 }
             }
         }   break;

@@ -218,24 +218,17 @@ Knob<T>::getValue(DimIdx dimension,
 
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
-    RenderValuesCachePtr valuesCache;
+
     double tlsCurrentTime = 0;
+    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache(&tlsCurrentTime);
     // Check if value is already in TLS when rendering
-    {
-        KnobHolderPtr holder = getHolder();
-        if (holder) {
-            EffectInstancePtr isEffect = toEffectInstance(holder);
-            if (isEffect) {
-                valuesCache = isEffect->getRenderValuesCacheTLS(&tlsCurrentTime, 0);
-                if (valuesCache) {
-                    T ret;
-                    if (valuesCache->getCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, &ret)) {
-                        return ret;
-                    }
-                }
-            }
+    if (valuesCache) {
+        T ret;
+        if (valuesCache->getCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, &ret)) {
+            return ret;
         }
     }
+
 
     // If an expression is set, read from expression
     std::string hasExpr = getExpression(dimension);
@@ -510,21 +503,12 @@ Knob<T>::getValueAtTime(double time,
 
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
-    RenderValuesCachePtr valuesCache;
+    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache();
     // Check if value is already in TLS when rendering
-    {
-        KnobHolderPtr holder = getHolder();
-        if (holder) {
-            EffectInstancePtr isEffect = toEffectInstance(holder);
-            if (isEffect) {
-                valuesCache = isEffect->getRenderValuesCacheTLS();
-                if (valuesCache) {
-                    T ret;
-                    if (valuesCache->getCachedKnobValue<T>(thisShared, time, dimension, view_i, &ret)) {
-                        return ret;
-                    }
-                }
-            }
+    if (valuesCache) {
+        T ret;
+        if (valuesCache->getCachedKnobValue<T>(thisShared, time, dimension, view_i, &ret)) {
+            return ret;
         }
     }
 

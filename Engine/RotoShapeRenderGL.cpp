@@ -59,8 +59,9 @@ static const char* rotoRamp_FragmentShader =
 "#ifdef RAMP_SMOOTH\n"
 "   t = t * t * (3.0 - 2.0 * t); \n"
 "#endif\n"
-"   gl_FragColor.a = pow(t,fallOff);\n"
-"   gl_FragColor.rgb *= gl_FragColor.a;\n"
+"   vec4 outColor = gl_FragColor;\n"
+"   outColor.a = pow(t,fallOff);\n"
+"   outColor.rgb *= gl_FragColor.a;\n"
 "}";
 
 
@@ -73,6 +74,39 @@ static const char* rotoDrawDot_VertexShader =
 "   gl_FrontColor = gl_Color;\n"
 "}"
 ;
+
+
+static const char* roto_AccumulateShader =
+"uniform sampler2D sampleTex;\n"
+"#ifdef ACCUMULATE\n"
+"uniform sampler2D accumTex;\n"
+"#endif\n"
+"\n"
+"void main() {\n"
+"   vec4 sampleColor = texture2D(sampleTex,gl_TexCoord[0].st);\n"
+"#ifndef ACCUMULATE\n"
+"   gl_FragColor = sampleColor;\n"
+"#else\n"
+"   vec4 accumColor = texture2D(accumTex,gl_TexCoord[0].st);\n"
+"   gl_FragColor.r = accumColor.r + sampleColor.r;\n"
+"   gl_FragColor.g = accumColor.g + sampleColor.g;\n"
+"   gl_FragColor.b = accumColor.b + sampleColor.b;\n"
+"   gl_FragColor.a = accumColor.a + sampleColor.a;\n"
+"#endif\n"
+"}";
+
+static const char* roto_DivideShader =
+"uniform sampler2D srcTex;\n"
+"uniform float nDivisions;\n"
+"\n"
+"void main() {\n"
+"   vec4 srcColor = texture2D(srcTex,gl_TexCoord[0].st);\n"
+"   srcColor.r /= nDivisions; \n"
+"   srcColor.g /= nDivisions; \n"
+"   srcColor.b /= nDivisions; \n"
+"   srcColor.a /= nDivisions; \n"
+"   gl_FragColor = srcColor; \n"
+"}";
 
 static const char* rotoDrawDot_FragmentShader =
 "varying float outHardness;\n"
@@ -169,6 +203,7 @@ RotoShapeRenderNodeOpenGLData::RotoShapeRenderNodeOpenGLData(bool isGPUContext)
 , _vboTexID(0)
 , _featherRampShader(5)
 , _strokeDotShader(2)
+, _accumShader(2)
 {
 
 }
@@ -357,6 +392,7 @@ RotoShapeRenderNodeOpenGLData::getOrCreateFeatherRampShader(RampTypeEnum type)
     return _featherRampShader[type_i];
 }
 
+
 template <typename GL>
 static GLShaderBasePtr
 getOrCreateStrokeDotShaderInternal(bool buildUp)
@@ -421,6 +457,102 @@ RotoShapeRenderNodeOpenGLData::getOrCreateStrokeDotShader(bool buildUp)
     }
 
     return _strokeDotShader[index];
+}
+
+template <typename GL>
+static GLShaderBasePtr
+getOrCreateAccumShaderInternal(bool accum)
+{
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+
+    std::string fragmentSource;
+    if (accum) {
+        fragmentSource += "#define ACCUMULATE\n";
+    }
+    fragmentSource += std::string(roto_AccumulateShader);
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shader;
+}
+
+template <typename GL>
+static GLShaderBasePtr
+getOrCreateDivideShaderInternal()
+{
+    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+
+    std::string fragmentSource;
+    fragmentSource += std::string(roto_DivideShader);
+#ifdef DEBUG
+    std::string error;
+    bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+    assert(ok);
+#ifdef DEBUG
+    ok = shader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = shader->link();
+#endif
+    assert(ok);
+    Q_UNUSED(ok);
+
+    return shader;
+}
+
+GLShaderBasePtr
+RotoShapeRenderNodeOpenGLData::getOrCreateAccumulateShader(bool accum)
+{
+    int index = (int)accum;
+    if (_accumShader[index]) {
+        return _accumShader[index];
+    }
+    if (isGPUContext()) {
+        _accumShader[index] = getOrCreateAccumShaderInternal<GL_GPU>(accum);
+    } else {
+        _accumShader[index] = getOrCreateAccumShaderInternal<GL_GPU>(accum);
+    }
+    return _accumShader[index];
+}
+
+GLShaderBasePtr
+RotoShapeRenderNodeOpenGLData::getOrCreateDivideShader()
+{
+    if (_divideShader) {
+        return _divideShader;
+    }
+    if (isGPUContext()) {
+        _divideShader = getOrCreateDivideShaderInternal<GL_GPU>();
+    } else {
+        _divideShader = getOrCreateDivideShaderInternal<GL_CPU>();
+    }
+    return _divideShader;
 }
 
 template <typename GL>
@@ -625,20 +757,20 @@ void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsign
 
 }
 
-
+template <typename GL>
 void
-RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
-                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
-                                   const RectI& roi,
-                                   const BezierPtr& bezier,
-                                   double opacity,
-                                   double /*time*/,
-                                   ViewIdx view,
-                                   double startTime,
-                                   double endTime,
-                                   double mbFrameStep,
-                                   unsigned int mipmapLevel,
-                                   int target)
+renderBezier_gl_internal(const OSGLContextPtr& glContext,
+                         const RotoShapeRenderNodeOpenGLDataPtr& glData,
+                         const RectI& roi,
+                         const BezierPtr& bezier,
+                         const ImagePtr& dstImage,
+                         double opacity,
+                         double time,
+                         ViewIdx view,
+                         const RangeD& shutterRange,
+                         int nDivisions,
+                         unsigned int mipmapLevel,
+                         int target)
 {
     Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
@@ -649,9 +781,6 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
     RamBuffer<float> colorsArray;
     RamBuffer<unsigned int> indicesArray;
 
-    double mbOpacity = 1. / ((endTime - startTime + 1) / mbFrameStep);
-
-    double shapeOpacity = opacity * mbOpacity;
 
     RampTypeEnum type;
     {
@@ -660,8 +789,56 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
     }
     GLShaderBasePtr rampShader = glData->getOrCreateFeatherRampShader(type);
     GLShaderBasePtr fillShader = glContext->getOrCreateFillShader();
+    GLShaderBasePtr accumShader[2];
+    accumShader[0] = glData->getOrCreateAccumulateShader(false);
+    accumShader[1] = glData->getOrCreateAccumulateShader(true);
+    GLShaderBasePtr divideShader = glData->getOrCreateDivideShader();
 
-    for (double t = startTime; t <= endTime; t+=mbFrameStep) {
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+    // If we do more than 1 pass, do motion blur
+    // When motion-blur is enabled, draw each sample to a temporary texture in a first pass.
+    // On the first sample, just copy the sample texture to the accumulation texture.
+    // Then for other samples, copy the accumulation texture so we can read it in input
+    // and add the sample texture to the accumulation copy and write to the original accumulation texture.
+    // After the last sample, copy the accumulation texture to the dst framebuffer by dividing by the number of steps.
+
+    double interval = nDivisions >= 1 ? (shutterRange.max - shutterRange.min) / nDivisions : 1.;
+
+    ImagePtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
+    if (nDivisions > 1) {
+
+        // Make 2 textures of the same size as the dst image.
+        ImagePtr* tmpTex[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
+        for (int i = 0; i < 3; ++i) {
+            ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+            params->setBounds(roi);
+            {
+                CacheEntryStorageInfo& info = params->getStorageInfo();
+                info.textureTarget = target;
+                info.isGPUTexture = glContext->isGPUContext();
+                info.mode = eStorageModeGLTex;
+            }
+            tmpTex[i]->reset( new Image(dstImage->getKey(), params) );
+        }
+        assert(perSampleRenderTexture && accumulationTexture);
+    }
+
+    for (int d = 0; d < nDivisions; ++d) {
+
+        // If motion-blur enabled, bind the per sample texture so we render on it
+        if (perSampleRenderTexture) {
+            GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+            setupTexParams<GL>(target);
+
+            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, perSampleRenderTexture->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+            GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+        }
+
+        double t = nDivisions > 1 ? shutterRange.min + d * interval : time;
+
         double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
         double featherDist = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
         std::vector<double> shapeColor(3);
@@ -678,24 +855,25 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
             featherDist /= (1 << mipmapLevel);
         }
 
+        // Compute the feather triangles as well as the internal shape triangles.
         RotoBezierTriangulation::PolygonData data;
         RotoBezierTriangulation::computeTriangles(bezier, t, view, mipmapLevel, featherDist, &data);
 
-        if (glContext->isGPUContext()) {
-            setupTexParams<GL_GPU>(target);
-            renderBezier_gl_internal_begin<GL_GPU>(false);
-        } else {
-            renderBezier_gl_internal_begin<GL_CPU>(false);
+        // Tex parameters may not have been set yet in GPU mode if motion blur is disabled
+        if (GL::isGPU() && !perSampleRenderTexture) {
+            setupTexParams<GL>(target);
         }
+
+        renderBezier_gl_internal_begin<GL>(false);
 
 
         rampShader->bind();
-        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)shapeOpacity};
+        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)opacity};
         rampShader->setUniform("fillColor", fillColor);
         rampShader->setUniform("fallOff", (float)fallOff);
 
 
-        // First upload the feather mesh
+        // First upload and render the feather mesh which is composed of GL_TRIANGLES
         {
 
             int nbVertices = data.featherMesh.size();
@@ -720,25 +898,27 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                 v_data[1] = data.featherMesh[i].y;
                 i_data[0] = i;
 
+                // The roi was computed from the RoD, it must include the feather points.
+                // If this crashes here, this is likely because either the computation of the RoD is wrong
+                // or the Knobs of the Bezier have changed since the RoD computation or the Bezier shape itself
+                // has changed since the RoD computation. In all cases datas should remain the same thoughout the render
+                // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
                 c_data[0] = shapeColor[0];
                 c_data[1] = shapeColor[1];
                 c_data[2] = shapeColor[2];
                 if (data.featherMesh[i].isInner) {
-                    c_data[3] = shapeOpacity;
+                    c_data[3] = opacity;
                 } else {
                     c_data[3] = 0.;
                 }
             }
+            renderBezier_gl_singleDrawElements<GL>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
 
-            if (glContext->isGPUContext()) {
-                renderBezier_gl_singleDrawElements<GL_GPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
-            } else {
-                renderBezier_gl_singleDrawElements<GL_CPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
-            }
         }
 
+        // Unbind the Ramp shader used for the feather and bind the Fill shader for the Roto
         rampShader->unbind();
         fillShader->bind();
         fillShader->setUniform("fillColor", fillColor);
@@ -751,14 +931,19 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
         verticesArray.resize(nbVertices * 2);
 
 
-        // Fill buffer
-        float* v_data = verticesArray.getData();
-        for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
-            v_data[0] = data.bezierPolygonJoined[i].x;
-            v_data[1] = data.bezierPolygonJoined[i].y;
-            assert(roi.contains(v_data[0], v_data[1]));
-        }
+        // Fill the vertices buffer with all the points of the internal shape polygon
+        // Each 3 pass of render (the triangles pass, the triangles fan pass, and the triangles strip pass)
+        // will reference these vertices.
+        {
+            float* v_data = verticesArray.getData();
+            for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i, v_data += 2) {
+                v_data[0] = data.bezierPolygonJoined[i].x;
+                v_data[1] = data.bezierPolygonJoined[i].y;
 
+                // The roi was computed from the bounds, it must include the internal shape points.
+                assert(roi.contains(v_data[0], v_data[1]));
+            }
+        }
         bool hasUploadedVertices = false;
         {
             // Render internal triangles
@@ -772,11 +957,9 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                     perDrawsIDVec[i] = (const void*)(&data.internalTriangles[i].indices[0]);
                     perDrawCount[i] = (int)data.internalTriangles[i].indices.size();
                 }
-                if (glContext->isGPUContext()) {
-                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
-                } else {
-                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
-                }
+
+                renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount);
+
                 hasUploadedVertices = true;
 
             }
@@ -795,11 +978,7 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                     perDrawsIDVec[i] = (const void*)(&data.internalFans[i].indices[0]);
                     perDrawCount[i] = (int)data.internalFans[i].indices.size();
                 }
-                if (glContext->isGPUContext()) {
-                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
-                } else {
-                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
-                }
+                renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;
             }
 
@@ -816,26 +995,120 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                     perDrawsIDVec[i] = (const void*)(&data.internalStrips[i].indices[0]);
                     perDrawCount[i] = (int)data.internalStrips[i].indices.size();
                 }
-                if (glContext->isGPUContext()) {
-                    renderBezier_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
-                } else {
-                    renderBezier_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
-                }
+                renderBezier_gl_multiDrawElements<GL>(nbVertices, vboVerticesID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const int*)&perDrawCount[0], (const void**)(&perDrawsIDVec[0]), drawCount, !hasUploadedVertices);
                 hasUploadedVertices = true;
             }
-
+            
         }
         Q_UNUSED(hasUploadedVertices);
 
-        if (glContext->isGPUContext()) {
-            GL_GPU::Disable(GL_BLEND);
-            glCheckError(GL_GPU);
-        } else {
-            GL_CPU::Disable(GL_BLEND);
-            glCheckError(GL_CPU);
+        GL::Disable(GL_BLEND);
+        glCheckError(GL);
+
+        // If motion-blur is enabled, we still have to accumulate, otherwise we are done.
+        if (nDivisions > 1) {
+
+            if (d == 0) {
+                // On the first sample, just copy the sample to the accumulation texture as we need to initialize it.
+
+                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+                setupTexParams<GL>(target);
+
+                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
+                glCheckFramebufferError(GL);
+
+                GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+                accumShader[0]->bind();
+                accumShader[0]->setUniform("sampleTex", 0);
+                Image::applyTextureMapping<GL>(roi, roi, roi);
+                accumShader[0]->unbind();
+
+            } else {
+                // If this is not the first sample, duplicate the accumulation texture so we can read the duplicate in input and write to the
+                // accumulation texture in output.
+
+                GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
+                setupTexParams<GL>(target);
+
+                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpAccumulationCpy->getGLTextureID(), 0 /*LoD*/);
+                glCheckFramebufferError(GL);
+
+                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+                accumShader[0]->bind();
+                accumShader[0]->setUniform("sampleTex", 0);
+                Image::applyTextureMapping<GL>(roi, roi, roi);
+                accumShader[0]->unbind();
+
+
+                // Now do the accumulation
+                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+                setupTexParams<GL>(target);
+
+                GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
+                glCheckFramebufferError(GL);
+
+                GL::ActiveTexture(GL_TEXTURE0);
+                GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
+                GL::ActiveTexture(GL_TEXTURE1);
+                GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+                accumShader[1]->bind();
+                accumShader[1]->setUniform("accumTex", 0);
+                accumShader[1]->setUniform("sampleTex", 1);
+                Image::applyTextureMapping<GL>(roi, roi, roi);
+                accumShader[1]->unbind();
+                GL::ActiveTexture(GL_TEXTURE0);
+            }
         }
+    } // for all samples
+
+    if (nDivisions > 1) {
+        // Copy the accumulation buffer to the destination framebuffer and divide by the number of samples.
+        RectI outputBounds;
+        if (GL::isGPU()) {
+            outputBounds = dstImage->getBounds();
+            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+        } else {
+            outputBounds = roi;
+            // In CPU mode render to the default framebuffer that is already backed by the dstImage
+            GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+        GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+        divideShader->bind();
+        divideShader->setUniform("srcTex", 0);
+        divideShader->setUniform("nDivisions", (float)nDivisions);
+        Image::applyTextureMapping<GL>(roi, outputBounds, roi);
+        divideShader->unbind();
+        glCheckError(GL);
         
-    } // for (double t = startTime; t <= endTime; t+=mbFrameStep) {
+
+    }
+} // renderBezier_gl_internal
+
+
+void
+RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
+                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
+                                   const RectI& roi,
+                                   const BezierPtr& bezier,
+                                   const ImagePtr& dstImage,
+                                   double opacity,
+                                   double time,
+                                   ViewIdx view,
+                                   const RangeD& shutterRange,
+                                   int nDivisions,
+                                   unsigned int mipmapLevel,
+                                   int target)
+{
+    if (glContext->isGPUContext()) {
+        renderBezier_gl_internal<GL_GPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, mipmapLevel, target);
+    } else {
+        renderBezier_gl_internal<GL_CPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, mipmapLevel, target);
+    }
 } // RotoShapeRenderGL::renderBezier_gl
 
 

@@ -76,8 +76,10 @@ class RotoShapeRenderNodeOpenGLData : public EffectOpenGLContextData
 
     std::vector<GLShaderBasePtr> _featherRampShader;
     std::vector<GLShaderBasePtr> _strokeDotShader;
+    std::vector<GLShaderBasePtr> _accumShader;
     GLShaderBasePtr _strokeDotSecondPassShader;
     GLShaderBasePtr _smearShader;
+    GLShaderBasePtr _divideShader;
 
 public:
 
@@ -96,6 +98,10 @@ public:
     unsigned int getOrCreateVBOTexID();
 
     GLShaderBasePtr getOrCreateFeatherRampShader(RampTypeEnum type);
+
+    GLShaderBasePtr getOrCreateAccumulateShader(bool accum);
+
+    GLShaderBasePtr getOrCreateDivideShader();
 
     GLShaderBasePtr getOrCreateStrokeDotShader(bool doPremult);
 
@@ -155,12 +161,12 @@ public:
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const BezierPtr& bezier,
+                                const ImagePtr& dstImage,
                                 double opacity,
                                 double time,
                                 ViewIdx view,
-                                double startTime,
-                                double endTime,
-                                double mbFrameStep,
+                                const RangeD& shutterRange,
+                                int nDivisions,
                                 unsigned int mipmapLevel,
                                 int target);
 

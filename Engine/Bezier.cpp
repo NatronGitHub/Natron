@@ -1367,6 +1367,20 @@ Bezier::addControlPoint(double x,
 void
 Bezier::evaluateCurveModified()
 {
+    // If the curve is not finished, do not evaluate.
+    if (!isOpenBezier()) {
+        bool hasCurveFinished = false;
+        std::list<ViewIdx> views = getViewsList();
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+            if (isCurveFinished(*it)) {
+                hasCurveFinished = true;
+                break;
+            }
+        }
+        if (!hasCurveFinished) {
+            return;
+        }
+    }
     invalidateCacheHashAndEvaluate(true, false);
     
 }

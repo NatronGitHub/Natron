@@ -139,7 +139,7 @@ public:
     KnobDoubleWPtr extraMatrix;
 
     // Motion blur
-    KnobDoubleWPtr motionBlurAmount;
+    KnobIntWPtr motionBlurAmount;
     KnobDoubleWPtr motionBlurShutter;
     KnobChoiceWPtr motionBlurShutterType;
     KnobDoubleWPtr motionBlurCustomShutter;
@@ -1441,14 +1441,16 @@ RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) c
     }
 }
 
+
 void
 RotoDrawableItem::getMotionBlurSettings(const double time,
                                         ViewGetSpec view,
-                                        double* startTime,
-                                        double* endTime,
-                                        double* timeStep) const
+                                        RangeD* range,
+                                        int* divisions) const
 {
-    *startTime = time, *timeStep = 1., *endTime = time;
+    range->min = time;
+    range->max = time;
+    *divisions = 1;
 
 #ifndef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     KnobItemsTablePtr model = getModel();
@@ -1470,40 +1472,45 @@ RotoDrawableItem::getMotionBlurSettings(const double time,
         return;
     }
 
-    KnobDoublePtr motionBlurAmountKnob = _imp->motionBlurAmount.lock();
+    KnobIntPtr motionBlurAmountKnob = _imp->motionBlurAmount.lock();
     if (!motionBlurAmountKnob) {
         return;
     }
-    double nDivisions = motionBlurAmountKnob->getValueAtTime(time, DimIdx(0), view);
-    if ( nDivisions <= 1) {
-        return;
-    }
+
+    *divisions = motionBlurAmountKnob->getValueAtTime(time, DimIdx(0), view);
+
     KnobDoublePtr shutterKnob = _imp->motionBlurShutter.lock();
     assert(shutterKnob);
     double shutterInterval = shutterKnob->getValueAtTime(time, DimIdx(0), view);
-    if (shutterInterval == 0) {
-        return;
-    }
-    int shutterType_i = _imp->motionBlurShutterType.lock()->getValueAtTime(time, DimIdx(0), view);
-    if (nDivisions != 0) {
-        *timeStep = shutterInterval / nDivisions;
-    }
-    if (shutterType_i == 0) { // centered
-        *startTime = time - shutterInterval / 2.;
-        *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) { // start
-        *startTime = time;
-        *endTime = time + shutterInterval;
-    } else if (shutterType_i == 2) { // end
-        *startTime = time - shutterInterval;
-        *endTime = time;
-    } else if (shutterType_i == 3) { // custom
 
-        *startTime = time + _imp->motionBlurCustomShutter.lock()->getValueAtTime(time, DimIdx(0), view);
-        *endTime = *startTime + shutterInterval;
-    } else {
-        assert(false);
+    int shutterType_i = _imp->motionBlurShutterType.lock()->getValueAtTime(time, DimIdx(0), view);
+
+    switch (shutterType_i) {
+        case 0: // centered
+            range->min = time - shutterInterval / 2;
+            range->max = time + shutterInterval / 2;
+            break;
+        case 1: // start
+            range->min = time;
+            range->max = time + shutterInterval;
+            break;
+        case 2: // end
+            range->min = time - shutterInterval;
+            range->max = time;
+            break;
+        case 3: // custom
+        {
+            double shutterCustomOffset = _imp->motionBlurCustomShutter.lock()->getValueAtTime(time, DimIdx(0), view);
+            range->min = time + shutterCustomOffset;
+            range->max = time + shutterCustomOffset + shutterInterval;
+        }   break;
+        default:
+            assert(false);
+            range->min = time;
+            range->max = time;
+            break;
     }
+
 #endif // #ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
     
 }
@@ -1667,7 +1674,7 @@ RotoDrawableItem::initializeKnobs()
     }
 
     if (type == eRotoStrokeTypeSolid) {
-        _imp->motionBlurAmount = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeMotionBlurParam);
+        _imp->motionBlurAmount = createDuplicateOfTableKnob<KnobInt>(kRotoPerShapeMotionBlurParam);
         _imp->motionBlurShutter = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterParam);
         _imp->motionBlurShutterType = createDuplicateOfTableKnob<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
         _imp->motionBlurCustomShutter = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterCustomOffsetParam);

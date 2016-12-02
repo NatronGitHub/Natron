@@ -866,6 +866,9 @@ ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const Paralle
         return;
     }
 
+    // When building the render tree, the actual graph is flattened and groups no longer exist!
+    assert(!dynamic_cast<NodeGroup*>(effect.get()));
+
     double time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
@@ -914,6 +917,16 @@ ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const Paralle
 
     // Now update the TLS with the hash value and initialize data if needed
     setNodeTLSInternal(inArgs, doNansHandling, node, nodeData->visitCounter == 1 /*initTLS*/, nodeData->visitCounter, true /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
+
+    // If the node is within a group, also apply TLS on the group so that knobs have a consistant state throughout the render, even though
+    // the group node will not actually render anything.
+    {
+        NodeGroupPtr isContainerAGroup = toNodeGroup(effect->getNode()->getGroup());
+        if (isContainerAGroup) {
+            isContainerAGroup->createFrameRenderTLS(inArgs->abortInfo);
+            setNodeTLSInternal(inArgs, doNansHandling, isContainerAGroup->getNode(), true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
+        }
+    }
 
 
     // If we already got this node from expressions dependencies, don't do it again

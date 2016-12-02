@@ -196,9 +196,8 @@ public:
 
     void getMotionBlurSettings(const double time,
                                ViewGetSpec view,
-                               double* startTime,
-                               double* endTime,
-                               double* timeStep) const;
+                               RangeD* range,
+                               int* divisions) const;
 
     void setKeyframeOnAllTransformParameters(double time);
 

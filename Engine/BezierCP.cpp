@@ -71,6 +71,7 @@ BezierCP::~BezierCP()
 void
 BezierCP::getKeyframeTimes(std::set<double>* keys) const
 {
+    QMutexLocker l(&_imp->lock);
     KeyFrameSet set;
     set = _imp->curveX->getKeyFrames_mt_safe();
 
@@ -84,6 +85,7 @@ BezierCP::getPositionAtTime(double time,
                             double* x,
                             double* y) const
 {
+    QMutexLocker l(&_imp->lock);
     bool ret = false;
     KeyFrame k;
     Curve* xCurve = _imp->curveX.get();
@@ -103,7 +105,6 @@ BezierCP::getPositionAtTime(double time,
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
         } else {
-            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->x;
             *y = _imp->y;
         }
@@ -119,6 +120,7 @@ BezierCP::setPositionAtTime(double time,
                             double x,
                             double y)
 {
+    QMutexLocker l(&_imp->lock);
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
@@ -135,8 +137,7 @@ void
 BezierCP::setStaticPosition(double x,
                             double y)
 {
-    QMutexLocker l(&_imp->staticPositionMutex);
-
+    QMutexLocker l(&_imp->lock);
     _imp->x = x;
     _imp->y = y;
 }
@@ -145,8 +146,7 @@ void
 BezierCP::setLeftBezierStaticPosition(double x,
                                       double y)
 {
-    QMutexLocker l(&_imp->staticPositionMutex);
-
+    QMutexLocker l(&_imp->lock);
     _imp->leftX = x;
     _imp->leftY = y;
 }
@@ -155,8 +155,7 @@ void
 BezierCP::setRightBezierStaticPosition(double x,
                                        double y)
 {
-    QMutexLocker l(&_imp->staticPositionMutex);
-
+    QMutexLocker l(&_imp->lock);
     _imp->rightX = x;
     _imp->rightY = y;
 }
@@ -166,6 +165,7 @@ BezierCP::getLeftBezierPointAtTime(double time,
                                    double* x,
                                    double* y) const
 {
+    QMutexLocker l(&_imp->lock);
     KeyFrame k;
     bool ret = false;
     Curve* xCurve = _imp->curveLeftBezierX.get();
@@ -185,7 +185,6 @@ BezierCP::getLeftBezierPointAtTime(double time,
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
         } else {
-            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->leftX;
             *y = _imp->leftY;
         }
@@ -202,6 +201,7 @@ BezierCP::getRightBezierPointAtTime(double time,
                                     double *x,
                                     double *y) const
 {
+    QMutexLocker l(&_imp->lock);
     KeyFrame k;
     bool ret = false;
     Curve* xCurve = _imp->curveRightBezierX.get();
@@ -221,7 +221,6 @@ BezierCP::getRightBezierPointAtTime(double time,
             *x = xCurve->getValueAt(time);
             *y = yCurve->getValueAt(time);
         } else {
-            QMutexLocker l(&_imp->staticPositionMutex);
             *x = _imp->rightX;
             *y = _imp->rightY;
         }
@@ -238,6 +237,7 @@ BezierCP::setLeftBezierPointAtTime(double time,
                                    double x,
                                    double y)
 {
+    QMutexLocker l(&_imp->lock);
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
@@ -257,6 +257,7 @@ BezierCP::setRightBezierPointAtTime(double time,
                                     double x,
                                     double y)
 {
+    QMutexLocker l(&_imp->lock);
     {
         KeyFrame k(time, x);
         k.setInterpolation(eKeyframeTypeLinear);
@@ -272,12 +273,10 @@ BezierCP::setRightBezierPointAtTime(double time,
 void
 BezierCP::removeKeyframe(double time)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
 
+    QMutexLocker l(&_imp->lock);
     ///if the keyframe count reaches 0 update the "static" values which may be fetched
     if (_imp->curveX->getKeyFramesCount() == 1) {
-        QMutexLocker l(&_imp->staticPositionMutex);
         _imp->x = _imp->curveX->getValueAt(time);
         _imp->y = _imp->curveY->getValueAt(time);
         _imp->leftX = _imp->curveLeftBezierX->getValueAt(time);
@@ -301,6 +300,8 @@ void
 BezierCP::setKeyFrameInterpolation(KeyframeTypeEnum interp,
                                    int index)
 {
+    QMutexLocker l(&_imp->lock);
+
     _imp->curveX->setKeyFrameInterpolation(interp, index);
     _imp->curveY->setKeyFrameInterpolation(interp, index);
     _imp->curveLeftBezierX->setKeyFrameInterpolation(interp, index);
@@ -638,6 +639,8 @@ BezierCP::getRightYCurve() const
 void
 BezierCP::copyControlPoint(const BezierCP & other)
 {
+    QMutexLocker l(&_imp->lock);
+
     _imp->curveX->clone(*other._imp->curveX);
     _imp->curveY->clone(*other._imp->curveY);
     _imp->curveLeftBezierX->clone(*other._imp->curveLeftBezierX);
@@ -645,16 +648,13 @@ BezierCP::copyControlPoint(const BezierCP & other)
     _imp->curveRightBezierX->clone(*other._imp->curveRightBezierX);
     _imp->curveRightBezierY->clone(*other._imp->curveRightBezierY);
 
+    _imp->x = other._imp->x;
+    _imp->y = other._imp->y;
+    _imp->leftX = other._imp->leftX;
+    _imp->leftY = other._imp->leftY;
+    _imp->rightX = other._imp->rightX;
+    _imp->rightY = other._imp->rightY;
 
-    {
-        QMutexLocker l(&_imp->staticPositionMutex);
-        _imp->x = other._imp->x;
-        _imp->y = other._imp->y;
-        _imp->leftX = other._imp->leftX;
-        _imp->leftY = other._imp->leftY;
-        _imp->rightX = other._imp->rightX;
-        _imp->rightY = other._imp->rightY;
-    }
 }
 
 bool
@@ -682,6 +682,8 @@ BezierCP::equalsAtTime(double time,
 bool
 BezierCP::operator==(const BezierCP& other) const
 {
+    QMutexLocker l(&_imp->lock);
+    QMutexLocker l2(&other._imp->lock);
     if (*_imp->curveX != *other._imp->curveX) {
         return false;
     }
@@ -730,6 +732,7 @@ BezierCP::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
     if (!s) {
         return;
     }
+    QMutexLocker l(&_imp->lock);
     _imp->curveX->toSerialization(&s->xCurve);
     _imp->curveY->toSerialization(&s->yCurve);
     _imp->curveLeftBezierX->toSerialization(&s->leftCurveX);
@@ -737,7 +740,6 @@ BezierCP::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
     _imp->curveRightBezierX->toSerialization(&s->rightCurveX);
     _imp->curveRightBezierY->toSerialization(&s->rightCurveY);
 
-    QMutexLocker k(&_imp->staticPositionMutex);
     s->x = _imp->x;
     s->y = _imp->y;
     s->leftX = _imp->leftX;
@@ -753,6 +755,8 @@ BezierCP::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBa
     if (!s) {
         return;
     }
+    QMutexLocker l(&_imp->lock);
+
     _imp->curveX->fromSerialization(s->xCurve);
     _imp->curveY->fromSerialization(s->yCurve);
     _imp->curveLeftBezierX->fromSerialization(s->leftCurveX);
@@ -760,7 +764,6 @@ BezierCP::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBa
     _imp->curveRightBezierX->fromSerialization(s->rightCurveX);
     _imp->curveRightBezierY->fromSerialization(s->rightCurveY);
 
-    QMutexLocker k(&_imp->staticPositionMutex);
     _imp->x = s->x;
     _imp->y = s->y;
     _imp->leftX = s->leftX;

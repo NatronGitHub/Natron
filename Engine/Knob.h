@@ -1790,6 +1790,7 @@ public:
 
 protected:
 
+    RenderValuesCachePtr getHolderRenderValuesCache(double* currentTime = 0, ViewIdx* currentView = 0) const;
 
     virtual void copyValuesFromCurve(DimSpec /*dim*/, ViewSetSpec /*view*/) {}
 

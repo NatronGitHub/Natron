@@ -1060,7 +1060,7 @@ RotoPaint::initMotionBlurPageKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoMotionBlurParamLabel), 1);
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoMotionBlurParamLabel), 1);
         param->setName(kRotoPerShapeMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         param->setDefaultValue(1);
@@ -1117,7 +1117,7 @@ RotoPaint::initMotionBlurPageKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(effect, tr(kRotoMotionBlurParamLabel), 1);
+        KnobIntPtr param = AppManager::createKnob<KnobInt>(effect, tr(kRotoMotionBlurParamLabel), 1);
         param->setName(kRotoGlobalMotionBlurParam);
         param->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         param->setDefaultValue(1);
