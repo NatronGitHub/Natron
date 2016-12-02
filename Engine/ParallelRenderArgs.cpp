@@ -236,6 +236,16 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
                     int nbFramesPreFetched = 0;
 
+                    if (isRenderFunctor) {
+                        // If the range bounds are no integers and the range covers more than 1 frame (min != max),
+                        // we have no clue of the interval we should use between the min and max.
+                        if (viewIt->second[range].min != viewIt->second[range].max && viewIt->second[range].min != (int)viewIt->second[range].min) {
+                            qDebug() << "WARNING:" <<  effect->getScriptName_mt_safe().c_str() << "is requesting a non integer frame range [" << viewIt->second[range].min << ","
+                            << viewIt->second[range].max <<"], this is border-line and not specified if this is supported by OpenFX. Natron will render "
+                            "this range assuming an interval of 1 between frame times.";
+                        }
+                    }
+                    
                     // For all frames in the range
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         if (!isRenderFunctor) {
@@ -256,15 +266,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                             ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
                             ///limit calculations that will be done later on anyway.
                         } else {
-
-                            // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
-                            /*bool isIntegerFrame = (viewIt->second[range].min == (int)viewIt->second[range].min) &&
-                            ( viewIt->second[range].max == (int)viewIt->second[range].max);
-
-                            if (!isIntegerFrame) {
-                                continue;
-                            }*/
-
                             
                             // Sanity check
                             if (nbFramesPreFetched >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
