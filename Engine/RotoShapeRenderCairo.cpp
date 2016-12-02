@@ -173,9 +173,9 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
                                                   int nDivisions)
 {
     if (accumulate) {
-         convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, true, true>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
+         convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, inverted, true>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
     } else {
-        convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, true, false>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
+        convertCairoImageToNatronImageForAccum_noColor<dstNComps, srcNComps, useOpacity, inverted, false>(cairoImg, image, pixelRod, shapeColor, opacity, nDivisions);
     }
 } // convertCairoImageToNatronImageForInverted_noColor
 

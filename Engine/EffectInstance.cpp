@@ -942,8 +942,8 @@ EffectInstance::getImage(int inputNb,
 
             bool gotInputRoI = false;
 #ifdef DEBUG
-            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the image at time" << time << "and view" << view <<
-            "was not requested properly in the getFramesNeeded action. This is a bug either in this plug-in or a plug-in downstream (which should also have this warning displayed)";
+            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "at time" << time << "and view" << view <<
+            ":The frame was not requested properly in the getFramesNeeded action. This is a bug either in this plug-in or a plug-in downstream (which should also have this warning displayed)";
 #endif
 
             // We are in the render action, the frame/view hash was computed in the ParallelRenderArgs ctor.

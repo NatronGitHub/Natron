@@ -45,7 +45,7 @@ static const char* rotoRamp_FragmentShader =
 "uniform float fallOff;\n"
 "\n"
 "void main() {\n"
-"	gl_FragColor = fillColor;\n"
+"	vec4 outColor = fillColor;\n"
 "   float t = gl_Color.a;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
@@ -59,9 +59,9 @@ static const char* rotoRamp_FragmentShader =
 "#ifdef RAMP_SMOOTH\n"
 "   t = t * t * (3.0 - 2.0 * t); \n"
 "#endif\n"
-"   vec4 outColor = gl_FragColor;\n"
 "   outColor.a = pow(t,fallOff);\n"
-"   outColor.rgb *= gl_FragColor.a;\n"
+"   outColor.rgb *= outColor.a;\n"
+"   gl_FragColor = outColor;\n"
 "}";
 
 
@@ -538,7 +538,7 @@ RotoShapeRenderNodeOpenGLData::getOrCreateAccumulateShader(bool accum)
     if (isGPUContext()) {
         _accumShader[index] = getOrCreateAccumShaderInternal<GL_GPU>(accum);
     } else {
-        _accumShader[index] = getOrCreateAccumShaderInternal<GL_GPU>(accum);
+        _accumShader[index] = getOrCreateAccumShaderInternal<GL_CPU>(accum);
     }
     return _accumShader[index];
 }
@@ -1063,7 +1063,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 accumShader[1]->unbind();
                 GL::ActiveTexture(GL_TEXTURE0);
             }
-        }
+        } // nDivisions > 1
     } // for all samples
 
     if (nDivisions > 1) {

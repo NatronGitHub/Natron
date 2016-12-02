@@ -258,12 +258,12 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                         } else {
 
                             // if the range bounds are not ints, the fetched images will probably anywhere within this range - no need to pre-render
-                            bool isIntegerFrame = (viewIt->second[range].min == (int)viewIt->second[range].min) &&
+                            /*bool isIntegerFrame = (viewIt->second[range].min == (int)viewIt->second[range].min) &&
                             ( viewIt->second[range].max == (int)viewIt->second[range].max);
 
                             if (!isIntegerFrame) {
                                 continue;
-                            }
+                            }*/
 
                             
                             // Sanity check

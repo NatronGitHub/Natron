@@ -3074,7 +3074,18 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
     KnobIPtr shutterKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamShutter);
     KnobIPtr shutterTypeKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamShutterOffset);
     KnobIPtr shutterCustomOffsetKnob = globalTimeBlurNode->getKnobByName(kTimeBlurParamCustomOffset);
-    assert(divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
+    KnobBoolPtr disabledKnob = globalTimeBlurNode->getDisabledKnob();
+
+    assert(disabledKnob && divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
+    {
+        // The global time blur is disabled if the motion blur is set to per-shape
+        std::string expression = "thisGroup.motionBlurMode.get() == 0";
+        try {
+            disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, false, true);
+        } catch (...) {
+            assert(false);
+        }
+    }
     divisionsKnob->slaveTo(globalMotionBlurKnob.lock());
     shutterKnob->slaveTo(globalShutterKnob.lock());
     shutterTypeKnob->slaveTo(globalShutterTypeKnob.lock());
