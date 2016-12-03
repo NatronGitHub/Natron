@@ -561,9 +561,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (tab && _imp->_evtState == eEventStateNone) {
         // If the Viewer is in a tab, send the tab widget the event directly
         qApp->sendEvent(tab, e);
-    } else {
-        QGraphicsView::mouseMoveEvent(e);
-    }
+    } 
+    QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 NATRON_NAMESPACE_EXIT;
