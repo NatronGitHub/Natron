@@ -1180,6 +1180,7 @@ RotoPaint::initMotionBlurPageKnobs()
         _imp->globalCustomOffsetKnob = param;
     }
 
+    _imp->refreshMotionBlurKnobsVisibility();
 } // void initMotionBlurPageKnobs();
 
 void
