@@ -3220,7 +3220,8 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             KnobSerialization::PerDimensionValueSerializationVec& dimValues = serialization->_values[view];
 
             bool allDimensionsVisible = getAllDimensionsVisible(*it);
-            if (allDimensionsVisible) {
+            bool allDimensionsEqual = areDimensionsEqual(*it);
+            if (allDimensionsVisible && !allDimensionsEqual) {
                 dimValues.resize(serialization->_dimension);
             } else {
                 dimValues.resize(1);
