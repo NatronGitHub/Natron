@@ -246,13 +246,20 @@ KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
 }
 
 void
-KnobI::autoAdjustFoldExpandDimensions(ViewIdx view)
+KnobHelper::autoAdjustFoldExpandDimensions(ViewIdx view)
 {
     bool currentVisibility = getAllDimensionsVisible(view);
     bool allEqual = areDimensionsEqual(view);
     if (allEqual) {
-        if (currentVisibility) {
-            setAllDimensionsVisible(view, false);
+        // If auto-fold is enabled, fold it
+        if (isAutoFoldDimensionsEnabled()) {
+            if (currentVisibility) {
+                setAllDimensionsVisible(view, false);
+            }
+        } else {
+            if (!currentVisibility) {
+                setAllDimensionsVisible(view, true);
+            }
         }
     } else {
         if (!currentVisibility) {
@@ -260,6 +267,50 @@ KnobI::autoAdjustFoldExpandDimensions(ViewIdx view)
         }
     }
 }
+
+
+void
+KnobHelper::autoExpandDimensions(ViewIdx view)
+{
+    if (!isAutoExpandDimensionsEnabled()) {
+        return;
+    }
+
+    bool curVisible = getAllDimensionsVisible(view);
+
+    // If already expanded, don't do anything
+    if (curVisible) {
+        return;
+    }
+
+    bool allEquals = areDimensionsEqual(view);
+    if (!allEquals) {
+        setAllDimensionsVisible(view, true);
+    }
+
+}
+
+void
+KnobHelper::autoFoldDimensions(ViewIdx view)
+{
+    if (!isAutoFoldDimensionsEnabled()) {
+        return;
+    }
+
+    bool curVisible = getAllDimensionsVisible(view);
+
+    // If already folded, don't do anything
+    if (!curVisible) {
+        return;
+    }
+
+    bool allEquals = areDimensionsEqual(view);
+    if (allEquals) {
+        setAllDimensionsVisible(view, false);
+    }
+    
+}
+
 
 void
 KnobHelper::setCanAutoFoldDimensions(bool enabled)

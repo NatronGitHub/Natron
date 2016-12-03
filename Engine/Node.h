@@ -489,8 +489,6 @@ public:
      * This function uses thread-local storage because several render thread can be rendering concurrently
      * and we want the rendering of a frame to have a "snap-shot" of the tree throughout the rendering of the
      * frame.
-     *
-     * DO NOT CALL THIS ON THE SERIALIZATION THREAD, INSTEAD PREFER USING getInputNames()
      **/
     NodePtr getInput(int index) const;
 
@@ -625,11 +623,12 @@ public:
     void getOutputsWithGroupRedirection(NodesList& outputs) const;
 
     /**
-     * @brief Each input name is appended to the vector, in the same order
-     * as they are in the internal inputs vector. Disconnected inputs are
-     * represented as empty strings.
+     * @brief Each input label is mapped against the script-name of the input
+     * node, or an empty string if disconnected. Masks are placed in a separate map;
      **/
-    void getInputNames(std::map<std::string, std::string> & inputNames) const;
+    void getInputNames(std::map<std::string, std::string> & inputNames,
+                       std::map<std::string, std::string> & maskNames) const;
+
 
     enum CanConnectInputReturnValue
     {

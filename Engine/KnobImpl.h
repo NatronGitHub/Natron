@@ -1604,50 +1604,6 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
     return valuesEqual;
 }
 
-template <typename T>
-void
-Knob<T>::autoExpandDimensions(ViewIdx view)
-{
-    if (!isAutoExpandDimensionsEnabled()) {
-        return;
-    }
-
-    bool curVisible = getAllDimensionsVisible(view);
-
-    // If already expanded, don't do anything
-    if (curVisible) {
-        return;
-    }
-
-    bool allEquals = areDimensionsEqual(view);
-    if (!allEquals) {
-        setAllDimensionsVisible(view, true);
-    }
-
-}
-
-template <typename T>
-void
-Knob<T>::autoFoldDimensions(ViewIdx view)
-{
-    if (!isAutoFoldDimensionsEnabled()) {
-        return;
-    }
-
-    bool curVisible = getAllDimensionsVisible(view);
-
-    // If already folded, don't do anything
-    if (!curVisible) {
-        return;
-    }
-
-    bool allEquals = areDimensionsEqual(view);
-    if (allEquals) {
-        setAllDimensionsVisible(view, false);
-    }
-    
-}
-
 NATRON_NAMESPACE_EXIT;
 
 #endif // KNOBIMPL_H

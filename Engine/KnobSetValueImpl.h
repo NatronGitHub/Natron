@@ -672,13 +672,12 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
             }
         }
     }
-    if (!hasChanged) {
-        return;
-    }
-    if (dimension.isAll()) {
-        setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
-    } else {
-        ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+    if (hasChanged) {
+        if (dimension.isAll()) {
+            setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
+        } else {
+            ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+        }
     }
 
     if (view.isAll()) {
@@ -748,16 +747,14 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
             }
         }
     }
-    if (!hasChanged) {
-        return;
+    if (hasChanged) {
+        if (dimension.isAll()) {
+            setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
+        } else {
+            ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
+        }
     }
-
-    if (dimension.isAll()) {
-        setValueAcrossDimensions(defValues, DimIdx(0), view, eValueChangedReasonRestoreDefault);
-    } else {
-        ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
-    }
-
+    
     if (view.isAll()) {
         std::list<ViewIdx> views = getViewsList();
         for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {

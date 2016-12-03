@@ -133,7 +133,7 @@ public:
     std::string _masterNodecriptName;
 
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node
-    std::map<std::string, std::string> _inputs;
+    std::map<std::string, std::string> _inputs, _masks;
 
     // If this node has an item model (Roto, tracker...), this points to its serialization
     KnobItemsTableSerializationPtr _tableModel;

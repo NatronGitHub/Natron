@@ -100,13 +100,13 @@ Children:
       - Name: NatronParamFormatChoice
         String: PC_Video 640x480
       - Name: color
-        Float: [1, 1, 1]
+        Float: 1
         Props: [MasterIsAlias]
     Pos: [776, 134]
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
     Version: [2, 0]
-    Inputs: {Source: Clamp1}
+    Inputs: Clamp1
     Params:
       - Name: premultChanged
         Bool: true
@@ -119,7 +119,7 @@ Children:
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1
     Version: [2, 0]
-    Inputs: {Source: ColorCorrect1}
+    Inputs: ColorCorrect1
     Params:
       - Name: premultChanged
         Bool: true
@@ -127,7 +127,7 @@ Children:
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: ColorCorrect1
     Version: [2, 0]
-    Inputs: {Source: Merge1}
+    Inputs: Merge1
     Params:
       - Name: MasterContrast
         Props: [MasterIsAlias]

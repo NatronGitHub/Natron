@@ -1431,7 +1431,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Only serialize inputs for regular serialization
     if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
-        getInputNames(serialization->_inputs);
+        getInputNames(serialization->_inputs, serialization->_masks);
     }
 
 
@@ -2477,19 +2477,37 @@ Node::getOutputs_mt_safe(NodesWList& outputs) const
 }
 
 void
-Node::getInputNames(std::map<std::string, std::string> & inputNames) const
+Node::getInputNames(std::map<std::string, std::string> & inputNames,
+                    std::map<std::string, std::string> & maskNames) const
 {
     // This is called by the serialization thread.
     // We use the inputs because we want to serialize exactly how the tree was to the user
 
-    QMutexLocker l(&_imp->inputsLabelsMutex);
-    assert( _imp->inputs.size() == _imp->inputLabels.size() );
-    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-        NodePtr input = _imp->inputs[i].lock();
-        if (input) {
-            inputNames.insert( std::make_pair( _imp->inputLabels[i], input->getScriptName_mt_safe() ) );
+    std::vector<std::string> inputLabels;
+    InputsV inputsVec;
+    {
+        QMutexLocker l(&_imp->inputsLabelsMutex);
+        inputLabels = _imp->inputLabels;
+    }
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        inputsVec = _imp->inputs;
+    }
+    assert( inputsVec.size() == inputLabels.size() );
+
+    for (std::size_t i = 0; i < inputsVec.size(); ++i) {
+        NodePtr input = inputsVec[i].lock();
+
+        std::map<std::string, std::string>* container = 0;
+        if (_imp->effect->isInputMask(i)) {
+            container = &maskNames;
         } else {
-            inputNames.insert( std::make_pair( _imp->inputLabels[i], std::string()));
+            container = &inputNames;
+        }
+        if (input) {
+            (*container)[inputLabels[i]] = input->getScriptName_mt_safe();
+        } else {
+            (*container)[inputLabels[i]] = std::string();
         }
     }
 }

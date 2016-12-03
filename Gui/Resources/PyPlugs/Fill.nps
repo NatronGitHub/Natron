@@ -74,7 +74,8 @@ Children:
     Pos: [1036, 185]
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge1
-    Inputs: {A: Solid1, B: Unpremult1, Mask: Input2}
+    Inputs: {A: Solid1, B: Unpremult1}
+    Masks: Input2
     Params:
       - Name: operation
         Props: [MasterIsAlias]

@@ -30,6 +30,30 @@ static double roundDecimals(double value, int decimals)
     return std::floor(value * exp + 0.5) / exp;
 }
 
+static void serializeInputsMap(const std::map<std::string, std::string>& inputs, const std::string& tokenName, YAML::Emitter& em)
+{
+    bool hasInput = false;
+    for (std::map<std::string, std::string>::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        if (!it->second.empty()) {
+            hasInput = true;
+            break;
+        }
+    }
+    if (hasInput) {
+        if (inputs.size() == 1) {
+            em << YAML::Key << tokenName << YAML::Value << inputs.begin()->second;
+        } else {
+            em << YAML::Key << tokenName << YAML::Value << YAML::Flow << YAML::BeginMap;
+            for (std::map<std::string, std::string>::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+                if (!it->second.empty()) {
+                    em << YAML::Key << it->first << YAML::Value << it->second;
+                }
+            }
+            em << YAML::EndMap;
+        }
+    }
+} // serializeInputsMap
+
 void
 NodeSerialization::encode(YAML::Emitter& em) const
 {
@@ -72,26 +96,8 @@ NodeSerialization::encode(YAML::Emitter& em) const
 
     // When PyPlug or preset, no need to serialize inputs
     if (_encodeType == eNodeSerializationTypeRegular) {
-        bool hasInput = false;
-        for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-            if (!it->second.empty()) {
-                hasInput = true;
-                break;
-            }
-        }
-        if (hasInput) {
-            if (_inputs.size() == 1) {
-                em << YAML::Key << "Inputs" << YAML::Value << _inputs.begin()->second;
-            } else {
-                em << YAML::Key << "Inputs" << YAML::Value << YAML::Flow << YAML::BeginMap;
-                for (std::map<std::string, std::string>::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-                    if (!it->second.empty()) {
-                        em << YAML::Key << it->first << YAML::Value << it->second;
-                    }
-                }
-                em << YAML::EndMap;
-            }
-        }
+        serializeInputsMap(_inputs, "Inputs", em);
+        serializeInputsMap(_masks, "Masks", em);
     }
 
     if (!_knobsValues.empty()) {
@@ -174,6 +180,22 @@ NodeSerialization::encode(YAML::Emitter& em) const
     em << YAML::EndMap;
 } // NodeSerialization::encode
 
+static void tryDecodeInputsMap(const YAML::Node& node, const std::string& token, std::map<std::string, std::string>* container)
+{
+    if (node[token]) {
+        YAML::Node inputsNode = node[token];
+        if (inputsNode.IsMap()) {
+            for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
+                container->insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
+            }
+        } else {
+            // When single input, just use the index as key
+            container->insert(std::make_pair("0", inputsNode.as<std::string>()));
+        }
+    }
+
+}
+
 void
 NodeSerialization::decode(const YAML::Node& node)
 {
@@ -219,17 +241,9 @@ NodeSerialization::decode(const YAML::Node& node)
         _pluginMinorVersion = versionNode[1].as<int>();
     }
 
-    if (node["Inputs"]) {
-        YAML::Node inputsNode = node["Inputs"];
-        if (inputsNode.IsMap()) {
-            for (YAML::const_iterator it = inputsNode.begin(); it!=inputsNode.end(); ++it) {
-                _inputs.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
-            }
-        } else {
-            // When single input, just use the index as key
-            _inputs.insert(std::make_pair("0", inputsNode.as<std::string>()));
-        }
-    }
+    tryDecodeInputsMap(node, "Inputs", &_inputs);
+    tryDecodeInputsMap(node, "Masks", &_masks);
+
     
     if (node["Params"]) {
         YAML::Node paramsNode = node["Params"];

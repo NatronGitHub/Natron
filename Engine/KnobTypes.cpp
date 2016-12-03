@@ -2399,7 +2399,7 @@ KnobParametric::loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::C
 }
 
 void
-KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
+KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec /*view*/)
 {
     assert( _curves.size() == _defaultCurves.size() );
     if (dimension.isAll()) {

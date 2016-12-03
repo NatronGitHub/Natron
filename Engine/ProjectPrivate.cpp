@@ -175,6 +175,9 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
         // Loop over the inputs map
         // This is a map <input label, input node name>
+        //
+        // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
+        //
         const std::map<std::string, std::string>& inputs = it->second->_inputs;
         for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             if ( it2->second.empty() ) {
@@ -203,7 +206,28 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
 
         }
-        
+
+        // After Natron 2.2, masks are saved separatly
+        const std::map<std::string, std::string>& masks = it->second->_masks;
+        for (std::map<std::string, std::string>::const_iterator it2 = masks.begin(); it2 != masks.end(); ++it2) {
+            if ( it2->second.empty() ) {
+                continue;
+            }
+            int index = it2->first.empty() ? -1 : it->first->getInputNumberFromLabel(it2->first);
+            if (index == -1) {
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
+                                                tr("Could not find input named %1")
+                                                .arg( QString::fromUtf8( it2->first.c_str() ) ) );
+            }
+            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
+                                                tr("Failed to connect node %1 to %2")
+                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
+                                                .arg( QString::fromUtf8( it2->second.c_str() ) ));
+            }
+
+            
+        }
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     // Now that the graph is setup, restore expressions and slave/master links for knobs

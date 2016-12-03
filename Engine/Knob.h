@@ -421,7 +421,7 @@ public:
     /**
      * @brief Calls areDimensionsEqual to figure out if all dimensions should be made visible or not.
      **/
-    void autoAdjustFoldExpandDimensions(ViewIdx view);
+    virtual void autoAdjustFoldExpandDimensions(ViewIdx view) = 0;
 
     /**
      * @brief Given the dimension and view in input, if the knob has all its dimensions folded or is not multi-view,
@@ -1436,6 +1436,17 @@ protected:
 
 public:
 
+
+    /**
+     * @brief Called after a call to setValue/setValueAtTime to check if we need to expand all dimensions or not
+     **/
+    virtual void autoExpandDimensions(ViewIdx view) OVERRIDE FINAL;
+    
+    virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
+
+
+    virtual void autoAdjustFoldExpandDimensions(ViewIdx view) OVERRIDE FINAL;
+
     virtual void convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec viewIn, DimSpec* dimOut, ViewSetSpec* viewOut) const OVERRIDE FINAL;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
@@ -2255,12 +2266,6 @@ public:
 
     virtual bool unSplitView(ViewIdx view) OVERRIDE;
 
-
-    /**
-     * @brief Called after a call to setValue/setValueAtTime to check if we need to expand all dimensions or not
-     **/
-    virtual void autoExpandDimensions(ViewIdx view) OVERRIDE FINAL;
-    virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
 
     /**
      * @brief Returns whether 2 dimensions are equal.
