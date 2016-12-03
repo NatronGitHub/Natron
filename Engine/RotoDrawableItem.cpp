@@ -861,12 +861,12 @@ RotoDrawableItem::refreshNodesConnections()
 
 
 #ifdef ROTOPAINT_MOTIONBLUR_USE_TIMEBLUR
-        bool perShapeMotionBlurEnabled = rotoPaintNode->getMotionBlurTypeKnob()->getValue() == 0;
+        RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
         if (_imp->timeBlurNode) {
-            _imp->timeBlurNode->swapInput(perShapeMotionBlurEnabled ? _imp->effectNode : NodePtr(), 0);
+            _imp->timeBlurNode->swapInput(mbType == eRotoMotionBlurModePerShape ? _imp->effectNode : NodePtr(), 0);
         }
 
-        if (perShapeMotionBlurEnabled && _imp->timeBlurNode) {
+        if (mbType == eRotoMotionBlurModePerShape && _imp->timeBlurNode) {
             mergeInputA = _imp->timeBlurNode;
         } else
 #endif
@@ -1467,8 +1467,8 @@ RotoDrawableItem::getMotionBlurSettings(const double time,
         return;
     }
 
-    bool perShapeMotionBlurEnabled = rotoPaintNode->getMotionBlurTypeKnob()->getValue() == 0;
-    if (!perShapeMotionBlurEnabled) {
+    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)rotoPaintNode->getMotionBlurTypeKnob()->getValue();
+    if (mbType != eRotoMotionBlurModePerShape) {
         return;
     }
 

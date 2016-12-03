@@ -320,40 +320,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // For strokes and open-bezier evaluate them to get the points and their pressure
     // We also compute the bounding box of the item taking into account the motion blur
-    std::list<std::list<std::pair<Point, double> > > strokes;
     if (isStroke) {
-        isStroke->evaluateStroke(mipmapLevel, args.time, args.view, &strokes, 0);
         strokePointIndex = isStroke->getRenderCloneCurrentStrokeStartPointIndex();
         strokeMultiIndex = isStroke->getRenderCloneCurrentStrokeIndex();
         isStroke->getStrokeState(&lastCenterIn, &distNextIn);
-
-        if (strokes.empty()) {
-            return eStatusOK;
-        }
-
-    } else if (isBezier) {
-
-        if ( isBezier->isOpenBezier() ) {
-            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(args.time, args.view, mipmapLevel, &decastelJauPolygon, 0);
-            std::list<std::pair<Point, double> > points;
-            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
-                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-                    Point p = {it2->x, it2->y};
-                    points.push_back( std::make_pair(p, 1.) );
-                }
-            }
-            if ( !points.empty() ) {
-                strokes.push_back(points);
-            }
-
-            if (strokes.empty()) {
-                return eStatusOK;
-            }
-
-        }
-    }
-
+    } 
     // Now we are good to start rendering
 
     double distToNextOut = 0.;
@@ -384,7 +355,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, strokes, outputPlane.second, &distToNextOut, &lastCenterOut);
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     isStroke->updateStrokeData(lastCenterOut, distToNextOut);
                 }
@@ -407,7 +378,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, strokes, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting && isStroke) {
                         isStroke->updateStrokeData(lastCenterOut, distToNextOut);
                     }
@@ -473,14 +444,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             bool renderedDot;
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, strokes, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             }
 #endif
             if (args.useOpenGL) {
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, strokes, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
             }
 
             if (isDuringPainting) {

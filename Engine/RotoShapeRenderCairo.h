@@ -159,7 +159,6 @@ public:
                                          const bool isDuringPainting,
                                          const double distToNextIn,
                                          const Point& lastCenterPointIn,
-                                         const std::list<std::list<std::pair<Point, double> > >& strokes,
                                          const ImagePtr &dstImage,
                                          double* distToNextOut,
                                          Point* lastCenterPointOut);
@@ -173,7 +172,6 @@ public:
                                   const ImagePtr& dstImage,
                                   const double distToNextIn,
                                   const Point& lastCenterPointIn,
-                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
                                   double* distToNextOut,
                                   Point* lastCenterPointOut);
 

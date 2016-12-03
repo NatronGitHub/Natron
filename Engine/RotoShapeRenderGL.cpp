@@ -748,6 +748,111 @@ void renderBezier_gl_multiDrawElements(int nbVertices, int vboVerticesID, unsign
 }
 
 template <typename GL>
+void motionBlurEndSample(int nDivisions,
+                         int d,
+                         const GLShaderBasePtr &accumShader,
+                         const GLShaderBasePtr &copyShader,
+                         int target,
+                         const ImagePtr& perSampleRenderTexture,
+                         const ImagePtr& accumulationTexture,
+                         const ImagePtr& tmpAccumulationCpy,
+                         const RectI& roi)
+{
+    GL::Disable(GL_BLEND);
+    glCheckError(GL);
+
+    // If motion-blur is enabled, we still have to accumulate, otherwise we are done.
+    if (nDivisions > 1) {
+
+        if (d == 0) {
+            // On the first sample, just copy the sample to the accumulation texture as we need to initialize it.
+
+            GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+            setupTexParams<GL>(target);
+
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+
+            GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+            copyShader->bind();
+            copyShader->setUniform("srcTex", 0);
+            Image::applyTextureMapping<GL>(roi, roi, roi);
+            copyShader->unbind();
+
+
+        } else {
+            // If this is not the first sample, duplicate the accumulation texture so we can read the duplicate in input and write to the
+            // accumulation texture in output.
+
+            GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
+            setupTexParams<GL>(target);
+
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpAccumulationCpy->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+
+            GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+            copyShader->bind();
+            copyShader->setUniform("srcTex", 0);
+            Image::applyTextureMapping<GL>(roi, roi, roi);
+            copyShader->unbind();
+
+
+            // Now do the accumulation
+            GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+            setupTexParams<GL>(target);
+
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+
+            GL::ActiveTexture(GL_TEXTURE0);
+            GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
+            GL::ActiveTexture(GL_TEXTURE1);
+            GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
+            accumShader->bind();
+            accumShader->setUniform("accumTex", 0);
+            accumShader->setUniform("sampleTex", 1);
+            Image::applyTextureMapping<GL>(roi, roi, roi);
+            accumShader->unbind();
+            GL::ActiveTexture(GL_TEXTURE0);
+
+        }
+    } // nDivisions > 1
+} // motionBlurEndSample
+
+
+template <typename GL>
+void motionBlurEnd(int nDivisions,
+                   const GLShaderBasePtr &divideShader,
+                   int target,
+                   const ImagePtr& dstImage,
+                   const ImagePtr& accumulationTexture,
+                   const RectI& roi)
+{
+    if (nDivisions > 1) {
+        // Copy the accumulation buffer to the destination framebuffer and divide by the number of samples.
+        RectI outputBounds;
+        if (GL::isGPU()) {
+            outputBounds = dstImage->getBounds();
+            GL::BindTexture(target, dstImage->getGLTextureID());
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+            glCheckFramebufferError(GL);
+        } else {
+            outputBounds = roi;
+            // In CPU mode render to the default framebuffer that is already backed by the dstImage
+            GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+        GL::BindTexture( target, accumulationTexture->getGLTextureID() );
+        divideShader->bind();
+        divideShader->setUniform("srcTex", 0);
+        divideShader->setUniform("nDivisions", (float)nDivisions);
+        Image::applyTextureMapping<GL>(roi, outputBounds, roi);
+        divideShader->unbind();
+        glCheckError(GL);
+
+    }
+}
+
+template <typename GL>
 void
 renderBezier_gl_internal(const OSGLContextPtr& glContext,
                          const RotoShapeRenderNodeOpenGLDataPtr& glData,
@@ -762,6 +867,10 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                          unsigned int mipmapLevel,
                          int target)
 {
+
+    // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
+    GL::Disable(GL_SCISSOR_TEST);
+
     Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
     int vboColorsID = glData->getOrCreateVBOColorsID();
@@ -992,90 +1101,11 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
         }
         Q_UNUSED(hasUploadedVertices);
 
-        GL::Disable(GL_BLEND);
-        glCheckError(GL);
+        motionBlurEndSample<GL>(nDivisions, d, accumShader, copyShader, target, perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy, roi);
 
-        // If motion-blur is enabled, we still have to accumulate, otherwise we are done.
-        if (nDivisions > 1) {
-
-            if (d == 0) {
-                // On the first sample, just copy the sample to the accumulation texture as we need to initialize it.
-
-                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
-                setupTexParams<GL>(target);
-
-                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
-                glCheckFramebufferError(GL);
-
-                GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
-                copyShader->bind();
-                copyShader->setUniform("srcTex", 0);
-                Image::applyTextureMapping<GL>(roi, roi, roi);
-                copyShader->unbind();
-
-
-            } else {
-                // If this is not the first sample, duplicate the accumulation texture so we can read the duplicate in input and write to the
-                // accumulation texture in output.
-
-                GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
-                setupTexParams<GL>(target);
-
-                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tmpAccumulationCpy->getGLTextureID(), 0 /*LoD*/);
-                glCheckFramebufferError(GL);
-
-                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
-                copyShader->bind();
-                copyShader->setUniform("srcTex", 0);
-                Image::applyTextureMapping<GL>(roi, roi, roi);
-                copyShader->unbind();
-
-
-                // Now do the accumulation
-                GL::BindTexture( target, accumulationTexture->getGLTextureID() );
-                setupTexParams<GL>(target);
-
-                GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, accumulationTexture->getGLTextureID(), 0 /*LoD*/);
-                glCheckFramebufferError(GL);
-
-                GL::ActiveTexture(GL_TEXTURE0);
-                GL::BindTexture( target, tmpAccumulationCpy->getGLTextureID() );
-                GL::ActiveTexture(GL_TEXTURE1);
-                GL::BindTexture( target, perSampleRenderTexture->getGLTextureID() );
-                accumShader->bind();
-                accumShader->setUniform("accumTex", 0);
-                accumShader->setUniform("sampleTex", 1);
-                Image::applyTextureMapping<GL>(roi, roi, roi);
-                accumShader->unbind();
-                GL::ActiveTexture(GL_TEXTURE0);
-
-            }
-        } // nDivisions > 1
     } // for all samples
 
-    if (nDivisions > 1) {
-        // Copy the accumulation buffer to the destination framebuffer and divide by the number of samples.
-        RectI outputBounds;
-        if (GL::isGPU()) {
-            outputBounds = dstImage->getBounds();
-            GL::BindTexture(target, dstImage->getGLTextureID());
-            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
-            glCheckFramebufferError(GL);
-        } else {
-            outputBounds = roi;
-            // In CPU mode render to the default framebuffer that is already backed by the dstImage
-            GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
-        GL::BindTexture( target, accumulationTexture->getGLTextureID() );
-        divideShader->bind();
-        divideShader->setUniform("srcTex", 0);
-        divideShader->setUniform("nDivisions", (float)nDivisions);
-        Image::applyTextureMapping<GL>(roi, outputBounds, roi);
-        divideShader->unbind();
-        glCheckError(GL);
-        
-
-    }
+    motionBlurEnd<GL>(nDivisions, divideShader, target, dstImage, accumulationTexture, roi);
 } // renderBezier_gl_internal
 
 
@@ -1116,6 +1146,7 @@ struct RenderStrokeGLData
     bool pressureAffectsHardness;
     bool pressureAffectsSize;
     bool buildUp;
+    bool dstImageIsFinalTexture;
     double shapeColor[3];
     double opacity;
 
@@ -1317,6 +1348,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
                                        const OfxRGBAColourF& fillColor,
                                        const RectI& roi,
                                        const ImagePtr& dstImage,
+                                       bool dstImageIsFinalTexture, // < when doing motion-blur this is false
                                        unsigned int primitiveType,
                                        const void* verticesData,
                                        const void* colorsData,
@@ -1495,7 +1527,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         // because we cannot render to dstImage (which is not a texture) and we cannot use tmpTexture
         // both as input and output.
         RectI outputBounds;
-        if (GL::isGPU()) {
+        if (GL::isGPU() || !dstImageIsFinalTexture) {
             outputBounds = dstBounds;
             GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
@@ -1516,9 +1548,24 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     } else if (tmpTexture) {
         // With OSMesa  we copy back the content of the tmpTexture to the dstImage.
         assert(!GL::isGPU());
-        GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL::BindTexture( target, tmpTexture->getGLTextureID() );
-        Image::applyTextureMapping<GL>(roi, roi, roi);
+        if (!dstImageIsFinalTexture) {
+            GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+            GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstImage->getGLTextureID(), 0 /*LoD*/);
+
+
+            GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
+            copyShader->bind();
+            GL::BindTexture( target, tmpTexture->getGLTextureID() );
+            copyShader->setUniform("srcTex", 0);
+            Image::applyTextureMapping<GL>(roi, dstBounds, roi);
+            copyShader->unbind();
+            glCheckError(GL);
+
+        } else {
+            GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
+            GL::BindTexture( target, tmpTexture->getGLTextureID() );
+            Image::applyTextureMapping<GL>(roi, roi, roi);
+        }
     }
     GL::BindTexture( target, 0);
 
@@ -1534,6 +1581,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
     int vboColorsID = myData->glData->getOrCreateVBOColorsID();
     int vboVerticesID = myData->glData->getOrCreateVBOVerticesID();
     int vboHardnessID = myData->glData->getOrCreateVBOHardnessID();
+    bool dstImageIsFinalTexture = myData->dstImageIsFinalTexture;
     GLShaderBasePtr strokeShader = myData->glData->getOrCreateStrokeDotShader(myData->buildUp);
     GLShaderBasePtr buildUpPassShader = myData->glData->getOrCreateStrokeSecondPassShader();
 
@@ -1551,11 +1599,11 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
 
     if (myData->glContext->isGPUContext()) {
 
-        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_GPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
 
     } else {
-        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
+        renderStroke_gl_multiDrawElements<GL_CPU>(nbVertices, vboVerticesID, vboColorsID, vboHardnessID, myData->glContext, strokeShader, buildUpPassShader, myData->buildUp, fillColor, myData->roi, myData->dstImage, dstImageIsFinalTexture, GL_TRIANGLE_FAN, (const void*)(myData->primitivesVertices.getData()), (const void*)(myData->primitivesColors.getData()), (const void*)(myData->primitivesHardness.getData()), (const int*)(&perDrawCount[0]), (const void**)(&indicesVec[0]), indicesVec.size());
 
     }
 }
@@ -1596,7 +1644,6 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const ImagePtr& dstImage,
-                                   const std::list<std::list<std::pair<Point, double> > >& strokes,
                                    const double distToNextIn,
                                    const Point& lastCenterPointIn,
                                    const RotoDrawableItemPtr& stroke,
@@ -1604,31 +1651,116 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    double opacity,
                                    double time,
                                    ViewIdx view,
+                                   const RangeD& shutterRange,
+                                   int nDivisions,
                                    unsigned int mipmapLevel,
                                    double *distToNextOut,
                                    Point* lastCenterPointOut)
 {
-    RenderStrokeGLData data;
-    data.glContext = glContext;
-    data.glData = glData;
-    data.dstImage = dstImage;
-    data.roi = roi;
-    RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
-                                                     renderStrokeBegin_gl,
-                                                     renderStrokeRenderDot_gl,
-                                                     renderStrokeEnd_gl,
-                                                     strokes,
-                                                     distToNextIn,
-                                                     lastCenterPointIn,
-                                                     stroke,
-                                                     doBuildup,
-                                                     opacity,
-                                                     time,
-                                                     view,
-                                                     mipmapLevel,
-                                                     distToNextOut,
-                                                     lastCenterPointOut);
-}
+
+    GLShaderBasePtr accumShader = glData->getOrCreateAccumulateShader();
+    GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
+    GLShaderBasePtr divideShader = glData->getOrCreateDivideShader();
+
+    // If we do more than 1 pass, do motion blur
+    // When motion-blur is enabled, draw each sample to a temporary texture in a first pass.
+    // On the first sample, just copy the sample texture to the accumulation texture.
+    // Then for other samples, copy the accumulation texture so we can read it in input
+    // and add the sample texture to the accumulation copy and write to the original accumulation texture.
+    // After the last sample, copy the accumulation texture to the dst framebuffer by dividing by the number of steps.
+
+    double interval = nDivisions >= 1 ? (shutterRange.max - shutterRange.min) / nDivisions : 1.;
+
+    int target = dstImage->getGLTextureTarget();
+
+    ImagePtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
+    if (nDivisions > 1) {
+
+        // Make 2 textures of the same size as the dst image.
+        ImagePtr* tmpTex[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
+        for (int i = 0; i < 3; ++i) {
+            ImageParamsPtr params(new ImageParams(*dstImage->getParams()));
+            params->setBounds(roi);
+            {
+                CacheEntryStorageInfo& info = params->getStorageInfo();
+                info.textureTarget = target;
+                info.isGPUTexture = glContext->isGPUContext();
+                info.mode = eStorageModeGLTex;
+            }
+            tmpTex[i]->reset( new Image(dstImage->getKey(), params) );
+        }
+        assert(perSampleRenderTexture && accumulationTexture);
+    }
+
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(stroke);
+    BezierPtr isBezier = toBezier(stroke);
+
+    for (int d = 0; d < nDivisions; ++d) {
+
+        double t = nDivisions > 1 ? shutterRange.min + d * interval : time;
+
+        RenderStrokeGLData data;
+        data.glContext = glContext;
+        data.glData = glData;
+        data.dstImage = perSampleRenderTexture ? perSampleRenderTexture : dstImage;
+        data.roi = roi;
+
+        // When doing motion-blur we render to temporary buffers
+        data.dstImageIsFinalTexture = nDivisions <= 1;
+
+
+        std::list<std::list<std::pair<Point, double> > > strokes;
+        if (isStroke) {
+            isStroke->evaluateStroke(mipmapLevel, t, view, &strokes, 0);
+        } else if (isBezier && isBezier->isOpenBezier()) {
+            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, mipmapLevel, &decastelJauPolygon, 0);
+            std::list<std::pair<Point, double> > points;
+            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                    Point p = {it2->x, it2->y};
+                    points.push_back( std::make_pair(p, 1.) );
+                }
+            }
+            if ( !points.empty() ) {
+                strokes.push_back(points);
+            }
+        } else {
+            assert(false);
+        }
+        if (strokes.empty()) {
+            continue;
+        }
+
+        RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
+                                                         renderStrokeBegin_gl,
+                                                         renderStrokeRenderDot_gl,
+                                                         renderStrokeEnd_gl,
+                                                         strokes,
+                                                         distToNextIn,
+                                                         lastCenterPointIn,
+                                                         stroke,
+                                                         doBuildup,
+                                                         opacity,
+                                                         t,
+                                                         view,
+                                                         mipmapLevel,
+                                                         distToNextOut,
+                                                         lastCenterPointOut);
+
+        if (glContext->isGPUContext()) {
+            motionBlurEndSample<GL_GPU>(nDivisions, d, accumShader, copyShader, target, perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy, roi);
+        } else {
+            motionBlurEndSample<GL_CPU>(nDivisions, d, accumShader, copyShader, target, perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy, roi);
+        }
+
+    } // for each sample
+    if (glContext->isGPUContext()) {
+        motionBlurEnd<GL_GPU>(nDivisions, divideShader, target, dstImage, accumulationTexture, roi);
+    } else {
+        motionBlurEnd<GL_CPU>(nDivisions, divideShader, target, dstImage, accumulationTexture, roi);
+    }
+} // renderStroke_gl
 
 
 struct RenderSmearGLData
@@ -1929,7 +2061,6 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                   const RectI& roi,
                                   const ImagePtr& dstImage,
-                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
                                   const double distToNextIn,
                                   const Point& lastCenterPointIn,
                                   const RotoStrokeItemPtr& stroke,
@@ -1945,6 +2076,10 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
     data.glData = glData;
     data.dstImage = dstImage;
     data.roi = roi;
+
+    std::list<std::list<std::pair<Point, double> > > strokes;
+    stroke->evaluateStroke(mipmapLevel, time, view, &strokes, 0);
+
     bool hasRenderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                                            renderSmearBegin_gl,
                                                                            renderSmearRenderDot_gl,

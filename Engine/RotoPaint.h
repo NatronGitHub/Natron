@@ -321,6 +321,23 @@ enum RotoPaintItemLifeTimeTypeEnum
 "more expensive than the per-shape motion blur. Note that when using the global motion-blur, all shapes will have the same motion-blur " \
 "settings applied to them."
 
+#define kRotoMotionBlurModeNone "None"
+#define kRotoMotionBlurModeNoneHint "No motion-blur will be applied"
+#define kRotoMotionBlurModePerShape "Per-Shape"
+#define kRotoMotionBlurModePerShapeHint "Applies motion-blur independently to each shape and then blends them together." \
+" This may produce artifacts when shapes blur over the same portion of the image, but might be more efficient than global motion-blur."
+#define kRotoMotionBlurModeGlobal "Global"
+#define kRotoMotionBlurModeGlobalHint " Global motion-blur takes into account the interaction between shapes and will not create artifacts " \
+"at the expense of being more expensive than the per-shape motion blur. " \
+"Note that when using the global motion-blur, all shapes will have the same motion-blur settings applied to them."
+
+enum RotoMotionBlurModeEnum
+{
+    eRotoMotionBlurModeNone,
+    eRotoMotionBlurModePerShape,
+    eRotoMotionBlurModeGlobal
+};
+
 #define kRotoPerShapeMotionBlurParam "motionBlur"
 #define kRotoGlobalMotionBlurParam "globalMotionBlur"
 #define kRotoMotionBlurParamLabel "Motion Blur"

@@ -1050,9 +1050,16 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setHintToolTip( tr(kRotoMotionBlurModeParamHint) );
         param->setAnimationEnabled(false);
         {
-            std::vector<std::string> entries;
-            entries.push_back("Per-Shape");
-            entries.push_back("Global");
+            std::vector<std::string> entries, helps;
+            assert((int)entries.size() == eRotoMotionBlurModeNone);
+            entries.push_back(kRotoMotionBlurModeNone);
+            helps.push_back(tr(kRotoMotionBlurModeNoneHint).toStdString());
+            assert((int)entries.size() == eRotoMotionBlurModePerShape);
+            entries.push_back(kRotoMotionBlurModePerShape);
+            helps.push_back(tr(kRotoMotionBlurModePerShapeHint).toStdString());
+            assert((int)entries.size() == eRotoMotionBlurModeGlobal);
+            entries.push_back(kRotoMotionBlurModeGlobal);
+            helps.push_back(tr(kRotoMotionBlurModeGlobalHint).toStdString());
             param->populateChoices(entries);
         }
         mbPage->addKnob(param);
@@ -2512,8 +2519,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->resetCloneTransformKnob.lock() ) {
         _imp->resetCloneTransform();
     } else if ( k == _imp->motionBlurTypeKnob.lock() ) {
-        int mbType_i = _imp->motionBlurTypeKnob.lock()->getValue();
-        bool isPerShapeMB = mbType_i == 0;
+        RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)_imp->motionBlurTypeKnob.lock()->getValue();
+        bool isPerShapeMB = mbType == eRotoMotionBlurModePerShape;
         _imp->motionBlurKnob.lock()->setSecret(!isPerShapeMB);
         _imp->shutterKnob.lock()->setSecret(!isPerShapeMB);
         _imp->shutterTypeKnob.lock()->setSecret(!isPerShapeMB);
@@ -3336,9 +3343,9 @@ RotoPaint::refreshRotoPaintTree()
     // to the first item merge node.
 
     // Default to noop node as bottom of the tree (if any)
-    bool globalMotionBlurEnabled = _imp->motionBlurTypeKnob.lock()->getValue() == 1;
+    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)_imp->motionBlurTypeKnob.lock()->getValue();
     NodePtr timeBlurNode = _imp->getOrCreateGlobalTimeBlurNode();
-    if (!globalMotionBlurEnabled) {
+    if (mbType != eRotoMotionBlurModeGlobal) {
         timeBlurNode->disconnectInput(0);
     }
     mergeNodeBeginPos.y += 150;

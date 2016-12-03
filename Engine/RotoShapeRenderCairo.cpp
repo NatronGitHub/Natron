@@ -1024,7 +1024,6 @@ RotoShapeRenderCairo::renderSmear_cairo(double time,
                                         const ImagePtr& dstImage,
                                         const double distToNextIn,
                                         const Point& lastCenterPointIn,
-                                        const std::list<std::list<std::pair<Point, double> > >& strokes,
                                         double* distToNextOut,
                                         Point* lastCenterPointOut)
 {
@@ -1032,6 +1031,9 @@ RotoShapeRenderCairo::renderSmear_cairo(double time,
     RenderSmearCairoData data;
     data.opacity = rotoItem->getOpacityKnob()->getValueAtTime(time, DimIdx(0), view);
     data.dstImage = dstImage;
+
+    std::list<std::list<std::pair<Point, double> > > strokes;
+    rotoItem->evaluateStroke(mipMapLevel, time, view, &strokes, 0);
 
     bool renderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                                         renderSmearBegin_cairo,
@@ -1852,7 +1854,6 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                                                const bool isDuringPainting,
                                                const double distToNextIn,
                                                const Point& lastCenterPointIn,
-                                               const std::list<std::list<std::pair<Point, double> > >& strokes,
                                                const ImagePtr &dstImage,
                                                double* distToNextOut,
                                                Point* lastCenterPointOut)
@@ -1886,6 +1887,30 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
     for (int d = 0; d < nDivisions; ++d) {
 
         const double t = nDivisions > 1 ? shutterRange.min + d * interval : time;
+
+        std::list<std::list<std::pair<Point, double> > > strokes;
+        if (isStroke) {
+            isStroke->evaluateStroke(mipmapLevel, t, view, &strokes, 0);
+        } else if (isBezier && isBezier->isOpenBezier()) {
+            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, mipmapLevel, &decastelJauPolygon, 0);
+            std::list<std::pair<Point, double> > points;
+            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                    Point p = {it2->x, it2->y};
+                    points.push_back( std::make_pair(p, 1.) );
+                }
+            }
+            if ( !points.empty() ) {
+                strokes.push_back(points);
+            }
+        } else {
+            assert(false);
+        }
+        if (strokes.empty()) {
+            continue;
+        }
+
 
         double shapeColor[3];
         {
