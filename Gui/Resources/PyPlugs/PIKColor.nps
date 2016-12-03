@@ -105,12 +105,12 @@ Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Grade11
     Version: [2, 0]
-    Inputs: Dot2
+    Inputs: {Source: Dot2}
     Params:
       - Name: multiply
         Float: {Expr: thisGroup.mult.get().r}
       - Name: offset
-        Float: {Expr: thisGroup.off.get().r}
+        Float: [{Expr: thisGroup.off.get().r}, {Expr: thisGroup.off.get().g}, {Expr: thisGroup.off.get().b}, 0]
       - Name: clampBlack
         Bool: true
         DefaultBool: false
@@ -122,7 +122,7 @@ Children:
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp2
     Version: [2, 0]
-    Inputs: Grade11
+    Inputs: {Source: Grade11}
     Params:
       - Name: maximumEnable
         Bool: false
@@ -134,7 +134,7 @@ Children:
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
     Version: [2, 0]
-    Inputs: PIK2
+    Inputs: {Source: PIK2}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -150,7 +150,7 @@ Children:
   - PluginID: eu.cimg.ErodeBlur
     Name: Erode1
     Version: [4, 0]
-    Inputs: Invert1
+    Inputs: {Source: Invert1}
     Params:
       - Name: size
         Float: {Expr: thisGroup.erode.get()}
@@ -202,7 +202,7 @@ Children:
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1
     Version: [2, 0]
-    Inputs: Shuffle1
+    Inputs: {Source: Shuffle1}
     Params:
       - Name: maximum
         Float: 0
@@ -263,7 +263,7 @@ Children:
   - PluginID: net.sf.openfx.Invert
     Name: Invert2
     Version: [2, 0]
-    Inputs: Clamp1
+    Inputs: {Source: Clamp1}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -318,7 +318,7 @@ Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Grade1
     Version: [2, 0]
-    Inputs: ChannelCopy2
+    Inputs: {Source: ChannelCopy2}
     Params:
       - Name: multiply
         Float: {Expr: thisGroup.level.get()}
@@ -350,10 +350,10 @@ Children:
     Name: Blur2
     Label: Blur1
     Version: [4, 0]
-    Inputs: ChannelCopy1
+    Inputs: {Source: ChannelCopy1}
     Params:
       - Name: size
-        Float: {Expr: thisGroup.size.get()*3*thisGroup.multi.get()}
+        Float: [{Expr: thisGroup.size.get()*3*thisGroup.multi.get()}, {Expr: thisGroup.size.get()*3*thisGroup.multi.get()}]
       - Name: filter
         String: Quadratic
       - Name: expandRoD
@@ -364,10 +364,10 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur4
     Version: [4, 0]
-    Inputs: Premult3
+    Inputs: {Source: Premult3}
     Params:
       - Name: size
-        Float: {Expr: thisGroup.size.get()}
+        Float: [{Expr: thisGroup.size.get()}, {Expr: thisGroup.size.get()}]
       - Name: filter
         String: Quadratic
       - Name: expandRoD
@@ -390,7 +390,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: BlurBox1
     Version: [4, 0]
-    Inputs: DilateFast1
+    Inputs: {Source: DilateFast1}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -399,7 +399,7 @@ Children:
       - Name: NatronOfxParamProcessB
         Bool: false
       - Name: size
-        Float: {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*4}
+        Float: [{Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*4}, {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*4}]
       - Name: expandRoD
         Bool: false
       - Name: cropToFormat
@@ -410,7 +410,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: BlurBox2
     Version: [4, 0]
-    Inputs: DilateFast2
+    Inputs: {Source: DilateFast2}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -419,7 +419,7 @@ Children:
       - Name: NatronOfxParamProcessB
         Bool: false
       - Name: size
-        Float: {Expr: (thisGroup.size.get()/5)*2}
+        Float: [{Expr: (thisGroup.size.get()/5)*2}, {Expr: (thisGroup.size.get()/5)*2}]
       - Name: filter
         String: Box
       - Name: expandRoD
@@ -437,7 +437,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: Unpremult4
+    Inputs: {A: Unpremult4}
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -459,7 +459,7 @@ Children:
   - PluginID: net.sf.cimg.CImgDilate
     Name: DilateFast1
     Version: [2, 1]
-    Inputs: Invert2
+    Inputs: {Source: Invert2}
     Params:
       - Name: size
         Int: {Expr: (thisGroup.size.get()/5)*thisGroup.multi.get()*2}
@@ -475,7 +475,7 @@ Children:
   - PluginID: net.sf.cimg.CImgDilate
     Name: DilateFast2
     Version: [2, 1]
-    Inputs: Invert2
+    Inputs: {Source: Invert2}
     Params:
       - Name: size
         Int: {Expr: thisGroup.size.get()/5}

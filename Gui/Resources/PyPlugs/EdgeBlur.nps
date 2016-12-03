@@ -67,7 +67,7 @@ Children:
   - PluginID: eu.cimg.EdgeDetect
     Name: EdgeDetect1
     Version: [4, 0]
-    Inputs: Shuffle1
+    Inputs: {Source: Shuffle1}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -88,7 +88,7 @@ Children:
   - PluginID: net.sf.openfx.GammaPlugin
     Name: Gamma1
     Version: [2, 0]
-    Inputs: EdgeDetect1
+    Inputs: {Source: EdgeDetect1}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -107,7 +107,7 @@ Children:
     Inputs: {Mask: Merge1, Source: Dot1}
     Params:
       - Name: size
-        Float: {N: EdgeDetect1, K: blurSize}
+        Float: [{N: EdgeDetect1, K: blurSize}, {N: EdgeDetect1, K: blurSize}]
       - Name: cropToFormat
         Props: [MasterIsAlias]
       - Name: mix
@@ -118,7 +118,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: Dot1
+    Inputs: {A: Dot1}
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA

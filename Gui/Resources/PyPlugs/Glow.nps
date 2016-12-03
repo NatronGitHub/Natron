@@ -342,7 +342,7 @@ Children:
   - PluginID: net.sf.openfx.SaturationPlugin
     Name: Saturation2
     Version: [2, 0]
-    Inputs: Dot20
+    Inputs: {Source: Dot20}
     Params:
       - Name: saturation
         Float: 0
@@ -350,10 +350,10 @@ Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Tolerance
     Version: [2, 0]
-    Inputs: Saturation2
+    Inputs: {Source: Saturation2}
     Params:
       - Name: blackPoint
-        Float: {Expr: thisGroup.isolateHighlights.get()}
+        Float: [{Expr: thisGroup.isolateHighlights.get()}, {Expr: thisGroup.isolateHighlights.get()}, {Expr: thisGroup.isolateHighlights.get()}, {Expr: thisGroup.isolateHighlights.get()}]
       - Name: clampBlack
         Bool: true
         DefaultBool: false
@@ -389,7 +389,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle2
     Version: [2, 0]
-    Inputs: mask
+    Inputs: {A: mask}
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -413,7 +413,7 @@ Children:
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: PostGrade
     Version: [2, 0]
-    Inputs: RoD
+    Inputs: {Source: RoD}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
@@ -456,7 +456,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: HSVTool1
+    Inputs: {A: HSVTool1}
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA
@@ -471,7 +471,7 @@ Children:
     Pos: [1290, -206]
   - PluginID: net.sf.openfx.HSVToolPlugin
     Name: HSVTool1
-    Inputs: Dot3
+    Inputs: {Source: Dot3}
     Params:
       - Name: bottomLeft
         Float: [960, 540]
@@ -495,12 +495,12 @@ Children:
   - PluginID: net.sf.cimg.CImgBloom
     Name: Bloom
     Version: [3, 0]
-    Inputs: Dot14
+    Inputs: {Source: Dot14}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
       - Name: size
-        Float: {Expr: thisGroup.size.get()}
+        Float: [{Expr: thisGroup.size.get()}, {Expr: thisGroup.size.get()*(1-thisGroup.stretch.get())}]
       - Name: bloomRatio
         Props: [MasterIsAlias]
       - Name: bloomCount
@@ -578,7 +578,7 @@ Children:
   - PluginID: net.sf.openfx.Clamp
     Name: ClampAlpha
     Version: [2, 0]
-    Inputs: GlowOnly
+    Inputs: {Source: GlowOnly}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}

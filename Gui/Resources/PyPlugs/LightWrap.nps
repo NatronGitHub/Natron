@@ -362,7 +362,7 @@ Children:
     Pos: [198, -35]
   - PluginID: net.sf.openfx.KeyerPlugin
     Name: Keyer1
-    Inputs: Dot1
+    Inputs: {Source: Dot1}
     Params:
       - Name: softnessLower
         Float: {Expr: thisGroup.lumaTolerance.getValue() - 1}
@@ -377,7 +377,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: BGBlur
     Version: [3, 0]
-    Inputs: Premult1
+    Inputs: {Source: Premult1}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
@@ -394,7 +394,7 @@ Children:
       - Name: size
         Float: [960, 540]
       - Name: color
-        Float: 1
+        Float: [1, 1, 1, 1]
         Props: [MasterIsAlias]
       - Name: NatronOfxParamProcessA
         Bool: false
@@ -452,7 +452,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: FGBlur
     Version: [3, 0]
-    Inputs: Dot2
+    Inputs: {Source: Dot2}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -463,7 +463,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: 1
+        Float: [1, 1]
         Props: [MasterIsAlias]
       - Name: boundary
         Props: [MasterIsAlias]
@@ -501,12 +501,12 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: Diffuse
     Version: [3, 0]
-    Inputs: MaskMerge
+    Inputs: {Source: MaskMerge}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: 15
+        Float: [15, 15]
         Props: [MasterIsAlias]
       - Name: expandRoD
         Bool: false
@@ -514,7 +514,7 @@ Children:
   - PluginID: net.sf.openfx.MultiplyPlugin
     Name: Intensity
     Version: [2, 0]
-    Inputs: Diffuse
+    Inputs: {Source: Diffuse}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
@@ -524,7 +524,7 @@ Children:
   - PluginID: net.sf.openfx.SaturationPlugin
     Name: Saturation1
     Version: [2, 0]
-    Inputs: Intensity
+    Inputs: {Source: Intensity}
     Params:
       - Name: saturation
         Props: [MasterIsAlias]
@@ -534,7 +534,7 @@ Children:
   - PluginID: net.sf.openfx.ColorCorrectPlugin
     Name: ColorCorrect1
     Version: [2, 0]
-    Inputs: Saturation1
+    Inputs: {Source: Saturation1}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
@@ -599,7 +599,7 @@ Children:
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
     Version: [2, 0]
-    Inputs: MaskMerge2
+    Inputs: {A: MaskMerge2}
     Params:
       - Name: outputChannelsChoice
         String: Color.RGBA

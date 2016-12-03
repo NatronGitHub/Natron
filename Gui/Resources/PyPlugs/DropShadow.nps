@@ -90,7 +90,7 @@ Children:
     Inputs: Shuffle1
     Params:
       - Name: translate
-        Float: {Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}
+        Float: [{Expr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {Expr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
       - Name: center
         Float: [480, 270]
       - Name: transformCenterChanged
@@ -104,7 +104,7 @@ Children:
   - PluginID: net.sf.openfx.MultiplyPlugin
     Name: Multiply1
     Version: [2, 0]
-    Inputs: InputSource
+    Inputs: {Source: InputSource}
     Params:
       - Name: NatronOfxParamProcessR
         Bool: false
@@ -143,7 +143,7 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur1
     Version: [3, 0]
-    Inputs: Transform2
+    Inputs: {Source: Transform2}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true

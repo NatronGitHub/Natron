@@ -69,10 +69,10 @@ Children:
   - PluginID: net.sf.cimg.CImgBlur
     Name: Blur2
     Version: [3, 0]
-    Inputs: Transform1
+    Inputs: {Source: Transform1}
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: {Expr: thisGroup.angleBlur_distance.get()}
+        Float: [{Expr: thisGroup.angleBlur_distance.get()}, 0]
     Pos: [1000, 246]

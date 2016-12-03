@@ -72,7 +72,7 @@ Children:
   - PluginID: net.sf.openfx.GradePlugin
     Name: Grade1
     Version: [2, 0]
-    Inputs: InputSource
+    Inputs: {Source: InputSource}
     Params:
       - Name: blackPoint
         Props: [MasterIsAlias]
@@ -94,7 +94,7 @@ Children:
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
     Version: [2, 0]
-    Inputs: Grade1
+    Inputs: {Source: Grade1}
     Params:
       - Name: premultChanged
         Bool: true
