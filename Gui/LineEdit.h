@@ -67,7 +67,6 @@ public:
 
     void setCustomTextColor(const QColor& color);
 
-
 Q_SIGNALS:
 
     void textDropped();

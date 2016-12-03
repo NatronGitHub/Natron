@@ -811,8 +811,6 @@ KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
-        //_textEdit->setEnabled(b);
-        //_textEdit->setReadOnly(!b);
         if ( !knob->isCustomHTMLText() ) {
             _textEdit->setEnabled(perDimEnabled[0]);
         }

@@ -13,7 +13,7 @@
 - Fix a bug where removing all control points from ColorLookup would crash the application
 - Fix bugs in curves drawing.
 - Fix potential crashes when using KDE on Linux
-- Fix a bug where Roto strokes drawn at a different frame of the current frame would disappear
+- Fix a bug where Roto strokes drawn at a different frame than the current frame would disappear
 - (macOS) Fix a bug where the interface would become very slow after a String parameter is disabled or enabled
 
 ### Plugins
