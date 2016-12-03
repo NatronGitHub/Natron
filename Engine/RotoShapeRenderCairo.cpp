@@ -1891,6 +1891,10 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {
             isStroke->evaluateStroke(mipmapLevel, t, view, &strokes, 0);
+            if (strokes.empty()) {
+                continue;
+            }
+
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
             isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, mipmapLevel, &decastelJauPolygon, 0);
@@ -1904,12 +1908,12 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
             if ( !points.empty() ) {
                 strokes.push_back(points);
             }
-        } else {
-            assert(false);
+            if (strokes.empty()) {
+                continue;
+            }
+
         }
-        if (strokes.empty()) {
-            continue;
-        }
+
 
 
         double shapeColor[3];

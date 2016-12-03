@@ -620,6 +620,7 @@ struct RotoPaintPrivate
                                                int* blendingMode) const;
 
 
+    void refreshMotionBlurKnobsVisibility();
 
 
     void resetTransformCenter();

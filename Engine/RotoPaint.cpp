@@ -2359,6 +2359,8 @@ RotoPaint::onKnobsLoaded()
 
     }
 
+    _imp->refreshMotionBlurKnobsVisibility();
+
     _imp->refreshSourceKnobs();
 
     // Refresh solo items
@@ -2519,17 +2521,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     } else if ( k == _imp->resetCloneTransformKnob.lock() ) {
         _imp->resetCloneTransform();
     } else if ( k == _imp->motionBlurTypeKnob.lock() ) {
-        RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)_imp->motionBlurTypeKnob.lock()->getValue();
-        bool isPerShapeMB = mbType == eRotoMotionBlurModePerShape;
-        _imp->motionBlurKnob.lock()->setSecret(!isPerShapeMB);
-        _imp->shutterKnob.lock()->setSecret(!isPerShapeMB);
-        _imp->shutterTypeKnob.lock()->setSecret(!isPerShapeMB);
-        _imp->customOffsetKnob.lock()->setSecret(!isPerShapeMB);
-
-        _imp->globalMotionBlurKnob.lock()->setSecret(isPerShapeMB);
-        _imp->globalShutterKnob.lock()->setSecret(isPerShapeMB);
-        _imp->globalShutterTypeKnob.lock()->setSecret(isPerShapeMB);
-        _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
+        _imp->refreshMotionBlurKnobsVisibility();
         refreshRotoPaintTree();
 
     } else if ( k == _imp->removeItemButtonKnob.lock()) {
@@ -2551,6 +2543,21 @@ RotoPaint::knobChanged(const KnobIPtr& k,
 
     return ret;
 } // RotoPaint::knobChanged
+
+void
+RotoPaintPrivate::refreshMotionBlurKnobsVisibility()
+{
+    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)motionBlurTypeKnob.lock()->getValue();
+    motionBlurKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
+    shutterKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
+    shutterTypeKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
+    customOffsetKnob.lock()->setSecret(mbType != eRotoMotionBlurModePerShape);
+
+    globalMotionBlurKnob.lock()->setSecret(mbType != eRotoMotionBlurModeGlobal);
+    globalShutterKnob.lock()->setSecret(mbType != eRotoMotionBlurModeGlobal);
+    globalShutterTypeKnob.lock()->setSecret(mbType != eRotoMotionBlurModeGlobal);
+    globalCustomOffsetKnob.lock()->setSecret(mbType != eRotoMotionBlurModeGlobal);
+}
 
 void
 RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
@@ -3086,7 +3093,7 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
     assert(disabledKnob && divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
     {
         // The global time blur is disabled if the motion blur is set to per-shape
-        std::string expression = "thisGroup.motionBlurMode.get() == 0";
+        std::string expression = "thisGroup.motionBlurMode.get() != 2";
         try {
             disabledKnob->setExpression(DimSpec(0), ViewSetSpec(0), expression, false, true);
         } catch (...) {

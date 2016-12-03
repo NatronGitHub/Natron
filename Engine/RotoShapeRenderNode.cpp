@@ -136,10 +136,10 @@ RotoShapeRenderNode::initializeKnobs()
 void
 RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
-    // Append the position of the curve at the given time
     RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
     assert(item);
 
+    // The render of the Roto shape/stroke depends on the points at the current time/view
     RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     if (isBezier) {
@@ -152,7 +152,20 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
         
     }
 
-    
+    RotoPaintPtr rotoPaintNode;
+    KnobItemsTablePtr model = item->getModel();
+    if (model) {
+        rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
+    }
+
+    // we also depend on the motion-blur type knob of the RotoPaint node itself.
+    // If we had a knob that would be linked to it we wouldn't need this, but since
+    // we directly refer to this knob, we must explicitly add it to the hash.
+    if  (rotoPaintNode) {
+        rotoPaintNode->getMotionBlurTypeKnob()->appendToHash(time, view, hash);
+    }
+
+
     EffectInstance::appendToHash(time, view, hash);
 
 }
