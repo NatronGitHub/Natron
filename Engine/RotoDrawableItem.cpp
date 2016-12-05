@@ -1052,12 +1052,11 @@ RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
                 return roundedTime >= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
             case eRotoPaintItemLifeTimeTypeCustom:
                 return _imp->customRange.lock()->getValueAtTime(time, DimIdx(0), view);
-
         }
 
     } catch (std::runtime_error) {
-        return false;
     }
+    return false;
 }
 
 std::vector<RangeD>
