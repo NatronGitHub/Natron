@@ -357,6 +357,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         outputPlane.second->fillBoundsZero(glContext);
     }
 
+
+    // Since this effect can temporarily accumulate (when drawing) we still need to remember the last image rendered even
+    // when not accumulating, to have the result of the previous strokes.
+    getNode()->setLastRenderedImage(outputPlane.second);
+
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
 

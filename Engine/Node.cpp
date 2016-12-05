@@ -5617,7 +5617,29 @@ Node::inputIndex(const NodePtr& n) const
 void
 Node::clearLastRenderedImage()
 {
+    {
+        QMutexLocker k(&_imp->lastRenderedImageMutex);
+        _imp->lastRenderedImage.reset();
+    }
     _imp->effect->clearLastRenderedImage();
+}
+
+void
+Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
+{
+    {
+        QMutexLocker k(&_imp->lastRenderedImageMutex);
+        _imp->lastRenderedImage = lastRenderedImage;
+    }
+}
+
+ImagePtr
+Node::getLastRenderedImage() const
+{
+    {
+        QMutexLocker k(&_imp->lastRenderedImageMutex);
+        return _imp->lastRenderedImage;
+    }
 }
 
 void

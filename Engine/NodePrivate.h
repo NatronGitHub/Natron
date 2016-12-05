@@ -319,8 +319,10 @@ public:
     mutable QMutex lastStrokeMovementMutex;
     bool strokeBitmapCleared;
 
-    // During painting this is the buffer we use
-    ImagePtr paintBuffer;
+    // During painting we keep track of the image that was rendered
+    // at the previous step;
+    mutable QMutex lastRenderedImageMutex;
+    ImagePtr lastRenderedImage;
 
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;

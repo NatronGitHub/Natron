@@ -1838,6 +1838,20 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
+    // If an effect accumulates, make sure we use the last rendered buffer.
+    if (isDuringPaintStroke || isPaintingOverItselfEnabled()) {
+        ImagePtr buffer = getNode()->getLastRenderedImage();
+        if (buffer) {
+            // If the last rendered image is on GPU, ensure we are using the same OpenGL context.
+            if (buffer->getStorageMode() != eStorageModeGLTex ||
+                (glContextAttacher && glContextAttacher->getContext() == buffer->getParams()->getStorageInfo().glContext.lock())) {
+                *image = buffer;
+                isCached = true;
+            }
+
+        }
+    }
+
     if (!isCached) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {

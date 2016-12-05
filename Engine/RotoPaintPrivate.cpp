@@ -2800,7 +2800,7 @@ RotoPaint::onOverlayPenDown(double time,
                 /*
                  Check that all viewers downstream are connected directly to the RotoPaint to avoid glitches and bugs
                  */
-                _imp->ui->checkViewersAreDirectlyConnected();
+                //_imp->ui->checkViewersAreDirectlyConnected();
                 bool multiStrokeEnabled = _imp->ui->isMultiStrokeEnabled();
                 if (_imp->ui->strokeBeingPaint &&
                     _imp->ui->strokeBeingPaint->getParent() &&

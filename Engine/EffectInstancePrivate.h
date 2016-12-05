@@ -452,7 +452,6 @@ public:
                                        const ImagePlanesToRenderPtr &planesToRender,
                                        const OSGLContextAttacherPtr& glContextLocker,
                                        const OSGLContextPtr& glRenderContext,
-                                       bool isDuringPaintStrokeDrawing,
                                        ImageFieldingOrderEnum fieldingOrder,
                                        ImageBitDepthEnum outputDepth,
                                        bool fillGrownBoundsWithZeroes,
