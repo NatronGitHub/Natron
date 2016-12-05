@@ -488,10 +488,12 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
                 }
             }
             for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
-                RectToRender r;
-                r.rect = *it;
-                r.isIdentity = false;
-                planesToRender->rectsToRender.push_back(r);
+                if (!it->isNull()) {
+                    RectToRender r;
+                    r.rect = *it;
+                    r.isIdentity = false;
+                    planesToRender->rectsToRender.push_back(r);
+                }
             }
         } else {
             for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
@@ -880,6 +882,10 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
         } else {
             *roi = args.roi;
         }
+    }
+
+    if ( roi->isNull() ) {
+        return false;
     }
 
     // Determine render planes
@@ -2182,6 +2188,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // Keep in memory what the user has requested, and change the roi to the full bounds if the effect doesn't support tiles
     RectI originalRoI;
     if (!resolveRoI(args.mipMapLevel, par, args.roi, rod, frameArgs->tilesSupported, renderFullScaleThenDownscale, &downscaledImageBounds, &upscaledImageBounds, &roi, &originalRoI, &canonicalRoI)) {
+        return eRenderRoIRetCodeOk;
+    }
+
+    if (roi.isNull()) {
         return eRenderRoIRetCodeOk;
     }
 
