@@ -160,6 +160,7 @@ AnimatingTextEdit::refreshStylesheet()
                                         "color: rgb(%1, %2, %3);\n"
                                         "%4\n"
                                         "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue()).arg(bgColorStyleSheetStr));
+
     }
 
 
@@ -822,7 +823,11 @@ KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
         if ( !knob->isCustomKnob() ) {
+<<<<<<< HEAD
             _lineEdit->setReadOnly_NoFocusRect(!perDimEnabled[0]);
+=======
+            _lineEdit->setReadOnly_NoFocusRect(!b);
+>>>>>>> RB-2.1
         }
     }
 }
