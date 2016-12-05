@@ -116,6 +116,10 @@ struct RotoStrokeItemPrivate
     // A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
     std::vector<StrokeCurves> strokes;
 
+    // The hash used by the stroke when drawing. This is a constant hash so that the same image is used always
+    // when drawing, but it is not the same as another stroke hash (it uses the timestamp curveT0)
+    U64 drawingHash;
+
     // timestamp of the first point in curve
     double curveT0;
 
@@ -178,6 +182,7 @@ struct RotoStrokeItemPrivate
     , type(type)
     , usePaintBuffers(false)
     , strokes()
+    , drawingHash(0)
     , curveT0(0)
     , lastTimestamp(0)
     , distToNextIn(0)
@@ -201,6 +206,7 @@ struct RotoStrokeItemPrivate
     , type(other.type)
     , usePaintBuffers(other.usePaintBuffers)
     , strokes()
+    , drawingHash(other.drawingHash)
     , curveT0(other.curveT0)
     , lastTimestamp(other.lastTimestamp)
     , distToNextIn(other.distToNextIn)
@@ -239,6 +245,8 @@ struct RotoStrokeItemPrivate
     bool copyStrokeForRendering(const RotoStrokeItemPrivate& other);
 
     RectD computeBoundingBox(double time, ViewGetSpec view) const;
+
+    U64 computeHashFromStrokes();
 
 };
 
@@ -284,7 +292,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         bool hasDataToCopy = true;
         {
             int nKeys = originalStroke->xCurve->getKeyFramesCount();
-            if (nKeys == 0 || (usePaintBuffers && other.lastPointIndexInSubStroke != -1 && other.lastPointIndexInSubStroke < nKeys)) {
+            if (nKeys == 0 || (usePaintBuffers && other.lastPointIndexInSubStroke != -1 && other.lastPointIndexInSubStroke >= nKeys - 1)) {
                 hasDataToCopy = false;
             }
         }
@@ -308,7 +316,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
             }
             // Update the last point index
             int newIndex = originalStroke->xCurve->getKeyFramesCount() - 1;
-            if ((other.lastPointIndexInSubStroke != -1 && newIndex > other.lastPointIndexInSubStroke) || (other.lastPointIndexInSubStroke == -1 && newIndex > 0)) {
+            if ((other.lastPointIndexInSubStroke != -1 && newIndex > other.lastPointIndexInSubStroke) || (other.lastPointIndexInSubStroke == -1 && newIndex >= 0)) {
                 hasDoneSomething = true;
             }
             other.lastPointIndexInSubStroke = newIndex;
@@ -324,13 +332,14 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
             // Reset the last point index
             other.lastPointIndexInSubStroke = -1;
         }
+
     }
 
     // Compute the bounding box of the stroke by extending the bbox
     // that was computed at the previous draw step.
     // If we never drawn so far, this is the first
     // tick hence we recompute it from the strokes.
-    if (usePaintBuffers) {
+    if (usePaintBuffers && hasDoneSomething) {
 
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
@@ -743,11 +752,19 @@ RotoStrokeItem::endSubStroke()
         // We are no longer in drawing state
         _imp->usePaintBuffers = false;
 
+        // Update the drawing hash for the next sub-stroke:
+        // The drawing hash will be the same of the full strokes so far, so that the user will paint on the
+        // previous strokes image.
+        _imp->drawingHash = _imp->computeHashFromStrokes();
+
         // Purge cairo cache
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
         RotoShapeRenderCairo::purgeCaches_cairo_internal(_imp->strokeDotPatterns);
 #endif
     }
+
+
+    
     // The stroke is finished, reset the transform center
     resetTransformCenter();
     
@@ -837,6 +854,16 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         stroke->xCurve->setKeyFrameInterpolation(interpolation, ki);
         stroke->yCurve->setKeyFrameInterpolation(interpolation, ki);
         stroke->pressureCurve->setKeyFrameInterpolation(interpolation, ki);
+
+        // Set the drawing hash on the first keyframe
+        if (_imp->strokes.size() == 1 && nk == 0) {
+            Hash64 obj;
+            obj.append(_imp->curveT0);
+            obj.append(p.pos().x);
+            obj.append(p.pos().y);
+            obj.computeHash();
+            _imp->drawingHash = obj.value();
+        }
     } // QMutexLocker k(&itemMutex);
 
 
@@ -960,9 +987,19 @@ RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 void
 RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGLContextPtr& cpuContext)
 {
-    QMutexLocker k(&_imp->lock);
-    _imp->drawingGlGpuContext = gpuContext;
-    _imp->drawingGlCpuContext = cpuContext;
+    {
+        QMutexLocker k(&_imp->lock);
+        _imp->drawingGlGpuContext = gpuContext;
+        _imp->drawingGlCpuContext = cpuContext;
+    }
+    // If we change the drawing context, clear the RotoShapeRender node cache since GL textures that are cached are
+    // tied to the drawing context
+    if (getBrushType() == eRotoStrokeTypeSolid) {
+        NodePtr effectNode = getEffectNode();
+        if (effectNode) {
+            effectNode->removeAllImagesFromCache();
+        }
+    }
 }
 
 
@@ -1300,6 +1337,26 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
     }
 }
 
+U64
+RotoStrokeItemPrivate::computeHashFromStrokes()
+{
+    // Private- should not lock
+    assert(!lock.tryLock());
+
+    Hash64 hash;
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = strokes.begin(); it != strokes.end(); ++it) {
+        Hash64::appendCurve(it->xCurve, &hash);
+        Hash64::appendCurve(it->yCurve, &hash);
+
+        // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
+        if (it->pressureCurve->getKeyFramesCount() == 1) {
+            Hash64::appendCurve(it->pressureCurve, &hash);
+        }
+    }
+    hash.computeHash();
+    return hash.value();
+}
+
 void
 RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
 {
@@ -1310,31 +1367,13 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
         // When in drawing state, do not add the strokes to the hash so that the stroke keep the same hash and the image buffer stays in the cache.
         // This is more powerful than e.g storing the image pointer directly on the node associated with this item because even nodes downstream
         // in the graph will keep the same hash and thus the same buffers.
-        // We still need to identify this stroke drawing with a timestamp so that the cache does not pick-up another stroke that was drawn. For that
-        // just use the first point!
+        // We still need to identify this stroke drawing with a timestamp so that the cache does not pick-up another stroke that was drawn. We
+        // use the timestamp of the first point
         if (_imp->usePaintBuffers) {
-            if (!_imp->strokes.empty()) {
-                RotoStrokeItemPrivate::StrokeCurves& firstStroke = _imp->strokes.front();
-
-                KeyFrame k;
-                if (firstStroke.xCurve->getKeyFrameWithIndex(0, &k)) {
-                    hash->append(k.getTime());
-                    hash->append(k.getValue());
-                    hash->append(k.getLeftDerivative());
-                    hash->append(k.getRightDerivative());
-                }
-
-            }
+            hash->append(_imp->drawingHash);
         } else {
-            for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
-                Hash64::appendCurve(it->xCurve, hash);
-                Hash64::appendCurve(it->yCurve, hash);
-
-                // We don't add the pressure curve if there is more than 1 point, because it's extremely unlikely that the user draws twice the same curve with different pressure
-                if (it->pressureCurve->getKeyFramesCount() == 1) {
-                    Hash64::appendCurve(it->pressureCurve, hash);
-                }
-            }
+            U64 strokesHash = _imp->computeHashFromStrokes();
+            hash->append(strokesHash);
         }
     }
 

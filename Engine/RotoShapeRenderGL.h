@@ -127,6 +127,7 @@ public:
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const ImagePtr& dstImage,
+                                bool isDuringPaintStrokeDrawing,
                                 const double distToNextIn,
                                 const Point& lastCenterPointIn,
                                 const RotoDrawableItemPtr& stroke,

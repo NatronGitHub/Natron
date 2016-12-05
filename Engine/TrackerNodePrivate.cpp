@@ -364,7 +364,7 @@ TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 
     _p->knobsTable->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        (*it)->deleteValueAtTime(time, ViewSetSpec::all(), DimSpec(0));
+        (*it)->deleteValueAtTime(time, ViewSetSpec::all(), DimSpec(0), eValueChangedReasonUserEdited);
     }
 }
 

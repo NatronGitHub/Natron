@@ -130,6 +130,7 @@ public:
                 ImageFieldingOrderEnum fielding,
                 ImagePremultiplicationEnum premult,
                 const ImageComponents& components,
+                const OSGLContextPtr& context,
                 StorageModeEnum storageMode,
                 U32 textureTarget)
         : NonKeyParams()
@@ -148,6 +149,7 @@ public:
         info.dataTypeSize = getSizeOfForBitDepth(bitdepth);
         info.numComponents = (std::size_t)components.getNumComponents();
         info.textureTarget = textureTarget;
+        info.glContext = context;
         info.isGPUTexture = true;
     }
 

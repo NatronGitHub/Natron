@@ -208,7 +208,9 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                 targetDepth,
                                 inputImage->getPremultiplication(),
                                 inputImage->getFieldingOrder(),
-                                false) );
+                                false,
+                                eStorageModeRAM,
+                                OSGLContextPtr(), GL_TEXTURE_2D, true) );
         tmp->setKey(inputImage->getKey());
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
@@ -259,7 +261,7 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
     std::list<RectI> rectsLeftToRender;
     *fillGrownBoundsWithZeroes = false;
     *redoCacheLookup = false;
-    //While painting, clear only the needed portion of the bitmap
+    // While painting, clear only the needed portion of the bitmap
     if ( isCurrentlyDrawingPaintStroke && argsInputImageList.empty() ) {
         RectD lastStrokeRoD;
         NodePtr node = _publicInterface->getNode();
@@ -984,7 +986,6 @@ static bool resolveRoI(unsigned int mipMapLevel,
 bool
 EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
                                                     const ParallelRenderArgsPtr& frameArgs,
-                                                    const AbortableRenderInfoPtr& abortInfo,
                                                     const OSGLContextPtr& glGpuContext,
                                                     const OSGLContextPtr& glCpuContext,
                                                     const RectI& downscaledImageBounds,
@@ -1063,11 +1064,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
     bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa() && glCpuContext;
     if (*storage == eStorageModeGLTex) {
         // Make the OpenGL context current to this thread
-        glContextLocker->reset( new OSGLContextAttacher(*glRenderContext, abortInfo
-#ifdef DEBUG
-                                                       , frameArgs->time
-#endif
-                                                       ) );
+        glContextLocker->reset( new OSGLContextAttacher(*glRenderContext) );
     } else {
         if (supportsOSMesa) {
             *glRenderContext = glCpuContext;
@@ -1114,8 +1111,8 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
     //_publicInterface->isFrameVaryingOrAnimated_Recursive();
 
     assert(createInCache);
-    // Do not use the cache for OpenGL rendering
-    if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
+    // Do not use the cache for OpenGL rendering EXCEPT when doing painting because we need to keep images in buffers
+    if (storage == eStorageModeGLTex && glRenderContext->isGPUContext() && !isDuringPaintStrokeDrawing) {
         *createInCache = false;
     } else {
         // in Analysis, the node upstream of the analysis node should always cache
@@ -1580,8 +1577,9 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             continue;
         }
 
-
-        if (!it->second.fullscaleImage) {
+        bool hasResized = false;
+        bool isCached = it->second.fullscaleImage;
+        if (!isCached) {
             ///The image is not cached
             _publicInterface->allocateImagePlane(*key,
                                rod,
@@ -1600,11 +1598,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                &it->second.fullscaleImage,
                                &it->second.downscaleImage);
             
-            // For plug-ins that paint over themselves, the first time clear the image out
-            if (isDuringPaintStrokeDrawing) {
-                it->second.downscaleImage->fillBoundsZero(glRenderContext);
-            }
-
+    
         } else {
             /*
              * There might be a situation  where the RoD of the cached image
@@ -1623,7 +1617,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
              * Another thread might have allocated the same image in the cache but with another RoI, make sure
              * it is big enough for us, or resize it to our needs.
              */
-            bool hasResized;
             if (it->second.fullscaleImage->getStorageMode() == eStorageModeGLTex) {
                 assert(glContextLocker);
                 glContextLocker->attach();
@@ -1648,11 +1641,8 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
             } else {
                 hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                      fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
-                if (hasResized) {
-                    // Set the painting buffer for this node if we are creating a paint stroke or doing the "clean" render following up a drawing
-                    // to prepare the potential next paint brush stroke made by the user
-                    it->second.downscaleImage = it->second.fullscaleImage;
-                }
+                it->second.downscaleImage = it->second.fullscaleImage;
+
             }
 
             /*
@@ -1674,11 +1664,13 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                                            outputDepth,
                                                            planesToRender->outputPremult,
                                                            fieldingOrder,
-                                                           true) );
+                                                           true,
+                                                           eStorageModeRAM,
+                                                           OSGLContextPtr(), GL_TEXTURE_2D, true) );
 
                 it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
             }
-        }
+        } // !isCached
 
         ///The image and downscaled image are pointing to the same image in 2 cases:
         ///1) Proxy mode is turned off
@@ -1875,7 +1867,6 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 void
 EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
                                                      const ParallelRenderArgsPtr& frameArgs,
-                                                     const AbortableRenderInfoPtr& abortInfo,
                                                      const ImagePlanesToRenderPtr &planesToRender,
                                                      const OSGLContextPtr& glGpuContext,
                                                      bool hasSomethingToRender,
@@ -1944,10 +1935,6 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
 
     const bool useAlpha0ForRGBToRGBAConversion = false;
 
-    // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
-    //bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
-
-    //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         //If we have worked on a local swaped image, swap it in the cache
         if (it->second.cacheSwapImage) {
@@ -1975,7 +1962,9 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
                                                            it->second.fullscaleImage->getBitDepth(),
                                                            it->second.fullscaleImage->getPremultiplication(),
                                                            it->second.fullscaleImage->getFieldingOrder(),
-                                                           false) );
+                                                           false,
+                                                           eStorageModeRAM,
+                                                           OSGLContextPtr(), GL_TEXTURE_2D, true) );
                 it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 
@@ -2004,11 +1993,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!*glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker->reset( new OSGLContextAttacher(glGpuContext, abortInfo
-#ifdef DEBUG
-                                                                   , frameArgs->time
-#endif
-                                                                   ) );
+                    glContextLocker->reset( new OSGLContextAttacher(glGpuContext) );
                 }
                 (*glContextLocker)->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage, glGpuContext);
@@ -2191,7 +2176,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     OSGLContextAttacherPtr glContextLocker;
     {
         RenderRoIRetCode errorCode;
-        if (!_imp->resolveRenderDevice(args, frameArgs, abortInfo, glGpuContext, glCpuContext, downscaledImageBounds, &renderMappedScale, &renderMappedMipMapLevel, &renderFullScaleThenDownscale, &roi, &storage, &glRenderContext, &glContextLocker, &planesToRender->useOpenGL, &errorCode)) {
+        if (!_imp->resolveRenderDevice(args, frameArgs, glGpuContext, glCpuContext, downscaledImageBounds, &renderMappedScale, &renderMappedMipMapLevel, &renderFullScaleThenDownscale, &roi, &storage, &glRenderContext, &glContextLocker, &planesToRender->useOpenGL, &errorCode)) {
             return errorCode;
         }
     }
@@ -2274,13 +2259,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
     if ( renderAborted && (renderRetCode != eRenderRoIStatusImageAlreadyRendered) ) {
-        ///Return a NULL image
-
-        if (isDuringPaintStrokeDrawing) {
-            //We know the image will never be used ever again
-            getNode()->removeAllImagesFromCache();
-        }
-
         return eRenderRoIRetCodeAborted;
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
         // Throwing this exception will ensure the render stops.
@@ -2302,7 +2280,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Termination /////////////////////////////////////////////////////////////////////////////
-    _imp->renderRoITermination(args, frameArgs, abortInfo, planesToRender, glGpuContext, hasSomethingToRender, isDuringPaintStrokeDrawing, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
+    _imp->renderRoITermination(args, frameArgs, planesToRender, glGpuContext, hasSomethingToRender, isDuringPaintStrokeDrawing, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

@@ -99,7 +99,8 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
 void
 KnobHelper::deleteValuesAtTime(const std::list<double>& times,
                                ViewSetSpec view,
-                               DimSpec dimension)
+                               DimSpec dimension,
+                               ValueChangedReasonEnum reason)
 {
 
     if ( times.empty() ) {
@@ -141,7 +142,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
 
 
     // Evaluate the change
-    evaluateValueChange(dimension, *times.begin(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, *times.begin(), view, reason);
 
 
 
@@ -689,7 +690,7 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
 } // removeAnimationInternal
 
 void
-KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension)
+KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
 
     if (!canAnimate()) {
@@ -723,7 +724,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension)
     }
     
     
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, getCurrentTime(), view, reason);
 } // removeAnimation
 
 NATRON_NAMESPACE_EXIT

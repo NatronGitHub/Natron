@@ -3627,7 +3627,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     }
 
     // Clear any existing animation
-    removeAnimation(ViewSetSpec::all(), DimSpec::all());
+    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonRestoreDefault);
 
     for (std::size_t i = 0; i < serialization->_defaultValues.size(); ++i) {
         if (serialization->_defaultValues[i].serializeDefaultValue) {

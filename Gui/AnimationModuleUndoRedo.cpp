@@ -111,7 +111,7 @@ removeKeyFrames(const AnimItemDimViewKeyFramesMap& keys, const AnimItemBasePtr d
         for (KeyFrameWithStringSet ::const_iterator it2 = keyStringSet.begin(); it2 != keyStringSet.end(); ++it2) {
             keyTimes.push_back(it2->key.getTime());
         }
-        obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim);
+        obj->deleteValuesAtTime(keyTimes, it->first.view, it->first.dim, eValueChangedReasonUserEdited);
 
     }
 }
@@ -147,7 +147,7 @@ addKeyFrames(const AnimItemDimViewKeyFramesMap& keys,
 
         if (clearExisting) {
             // Remove all existing animation
-            obj->removeAnimation(view, dim);
+            obj->removeAnimation(view, dim, eValueChangedReasonUserEdited);
         }
 
         AnimatingObjectI::KeyframeDataTypeEnum dataType = obj->getKeyFrameDataType();

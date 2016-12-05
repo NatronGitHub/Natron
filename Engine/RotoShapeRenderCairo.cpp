@@ -946,7 +946,9 @@ renderSmearDot(const unsigned char* maskData,
                                outputImage->getBitDepth(),
                                outputImage->getPremultiplication(),
                                outputImage->getFieldingOrder(),
-                               false) );
+                               false,
+                               eStorageModeRAM,
+                               OSGLContextPtr(), GL_TEXTURE_2D, true) );
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
 
     Image::ReadAccess tmpAcc( tmpBuf.get() );

@@ -1348,7 +1348,7 @@ RotoDrawableItem::resetTransformCenter()
     centerKnob->beginChanges();
 
     //centerKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
-    centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+    centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
     
     std::vector<double> values(2);
     values[0] = (bbox.x1 + bbox.x2) / 2.;

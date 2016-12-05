@@ -2494,7 +2494,7 @@ KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, d
 }
 
 void
-KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension)
+KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
     if (dimension.isAll()) {
         for (std::size_t i = 0; i < _curves.size(); ++i) {
@@ -2542,7 +2542,7 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
 }
 
 void
-KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim)
+KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReasonEnum reason)
 {
     for (std::size_t i = 0; i < _curves.size(); ++i) {
         if (!dim.isAll() && dim != (int)i) {
@@ -2551,7 +2551,7 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim)
         _curves[i]->clearKeyFrames();
     }
     Q_EMIT curveChanged(dim);
-    evaluateValueChange(DimIdx(0), getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(DimIdx(0), getCurrentTime(), view, reason);
 
 }
 

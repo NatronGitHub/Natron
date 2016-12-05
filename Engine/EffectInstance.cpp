@@ -1112,7 +1112,12 @@ EffectInstance::getImage(int inputNb,
                                         par,
                                         inputImg->getBitDepth(),
                                         inputImg->getPremultiplication(),
-                                        inputImg->getFieldingOrder() ) );
+                                        inputImg->getFieldingOrder(),
+                                        true,
+                                        eStorageModeRAM,
+                                        OSGLContextPtr(),
+                                        GL_TEXTURE_2D,
+                                        true) );
 
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
 
@@ -1527,7 +1532,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
     info.isGPUTexture = GL::isGPU();
-
+    info.glContext = glContext;
 
     GLuint pboID = glContext->getOrCreatePBOId();
     assert(pboID != 0);
@@ -1552,7 +1557,7 @@ convertRAMImageToOpenGLTextureForGL(const ImagePtr& image,
     ImagePtr tmpImg;
     std::size_t srcRowBytes;
     if (useTmpImage) {
-        tmpImg.reset( new Image( ImageComponents::getRGBAComponents(), image->getRoD(), roi, 0, image->getPixelAspectRatio(), eImageBitDepthFloat, image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
+        tmpImg.reset( new Image( ImageComponents::getRGBAComponents(), image->getRoD(), roi, 0, image->getPixelAspectRatio(), eImageBitDepthFloat, image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
         tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, roi);
@@ -1721,7 +1726,9 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
                                                        oldParams->getBitDepth(),
                                                        oldParams->getPremultiplication(),
                                                        oldParams->getFieldingOrder(),
-                                                       eStorageModeRAM);
+                                                       glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(),
+                                                       eStorageModeRAM,
+                                                       GL_TEXTURE_2D);
 
 
 
@@ -1774,7 +1781,9 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
                                                        oldParams->getBitDepth(),
                                                        oldParams->getPremultiplication(),
                                                        oldParams->getFieldingOrder(),
-                                                       eStorageModeRAM);
+                                                       glContextAttacher->getContext(),
+                                                       eStorageModeRAM,
+                                                       GL_TEXTURE_2D);
 
 
 
@@ -2116,7 +2125,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
-        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
+        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
         ImageParamsPtr upscaledImageParams = Image::makeParams(rod,
                                                                fullScaleImageBounds,
                                                                par,
@@ -2125,6 +2134,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                depth,
                                                                premult,
                                                                fielding,
+                                                               glContext,
                                                                storage,
                                                                GL_TEXTURE_2D);
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
@@ -2145,6 +2155,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                            depth,
                                                            premult,
                                                            fielding,
+                                                           glContext,
                                                            storage,
                                                            GL_TEXTURE_2D);
 
@@ -2597,7 +2608,11 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                      it->second.fullscaleImage->getBitDepth(),
                                                      idIt->second->getPremultiplication(),
                                                      idIt->second->getFieldingOrder(),
-                                                     false) );
+                                                     false,
+                                                     eStorageModeRAM,
+                                                     OSGLContextPtr(),
+                                                     GL_TEXTURE_2D,
+                                                     true) );
 
                         ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( idIt->second->getBitDepth() );
                         ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
@@ -2618,7 +2633,9 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                    it->second.renderMappedImage->getBitDepth(),
                                                    it->second.renderMappedImage->getPremultiplication(),
                                                    it->second.renderMappedImage->getFieldingOrder(),
-                                                   false) );
+                                                   false,
+                                                   eStorageModeRAM,
+                                                   OSGLContextPtr(), GL_TEXTURE_2D, true) );
                     sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
                     it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                     it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
@@ -2655,8 +2672,6 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
 template <typename GL>
 static void setupGLForRender(const ImagePtr& image,
                              const OSGLContextPtr& glContext,
-                             const AbortableRenderInfoPtr& abortInfo,
-                             double time,
                              const RectI& roi,
                              bool callGLFinish,
                              boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher)
@@ -2690,14 +2705,7 @@ static void setupGLForRender(const ImagePtr& image,
         assert(data);
 
         // With OSMesa we render directly to the context framebuffer
-        glContextAttacher->reset(new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                         , time
-#endif
-                                                         , roi.width()
-                                                         , roi.height()
-                                                         , imageBounds.width()
-                                                        , data));
+        glContextAttacher->reset(new OSGLContextAttacher(glContext, roi.width(), roi.height(), imageBounds.width() , data));
         (*glContextAttacher)->attach();
     }
 
@@ -2766,7 +2774,11 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
                                                  outputClipPrefDepth,
                                                  it->second.renderMappedImage->getPremultiplication(),
                                                  it->second.renderMappedImage->getFieldingOrder(),
-                                                 false) ); //< no bitmap
+                                                 false,
+                                                 eStorageModeRAM,
+                                                 OSGLContextPtr(),
+                                                 GL_TEXTURE_2D,
+                                                 true) ); //< no bitmap
         } else {
             it->second.tmpImage = it->second.renderMappedImage;
         }
@@ -2808,9 +2820,9 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
             assert(actionArgs.outputPlanes.size() == 1);
             if (glContext->isGPUContext()) {
-                setupGLForRender<GL_GPU>(mainImagePlane, glContext, frameArgs->abortInfo.lock(), actionArgs.time, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), glContextAttacher);
+                setupGLForRender<GL_GPU>(mainImagePlane, glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), glContextAttacher);
             } else {
-                setupGLForRender<GL_CPU>(mainImagePlane, glContext, frameArgs->abortInfo.lock(), actionArgs.time, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), glContextAttacher);
+                setupGLForRender<GL_CPU>(mainImagePlane, glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), glContextAttacher);
             }
         }
 
@@ -2979,7 +2991,11 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
                                                 it->second.tmpImage->getBitDepth(),
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
-                                                false) );
+                                                false,
+                                                eStorageModeRAM,
+                                                OSGLContextPtr(),
+                                                GL_TEXTURE_2D,
+                                                true) );
                         originalInputImage->upscaleMipMap( downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }
@@ -3004,7 +3020,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
                                             it->second.fullscaleImage->getBitDepth(),
                                             it->second.fullscaleImage->getPremultiplication(),
                                             it->second.fullscaleImage->getFieldingOrder(),
-                                            false) );
+                                            false,
+                                            eStorageModeRAM,
+                                            OSGLContextPtr(), GL_TEXTURE_2D, true) );
 
                     it->second.tmpImage->convertToFormat( actionArgs.roi,
                                                          _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -3127,11 +3145,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
 
         // Ensure the context is current
         if (glContext->isGPUContext()) {
-            glContextAttacher->reset( new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                             , actionArgs.time
-#endif
-                                                             ) );
+            glContextAttacher->reset( new OSGLContextAttacher(glContext) );
             (*glContextAttacher)->attach();
 
 
@@ -3213,7 +3227,9 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
                                         p.renderMappedImage->getPremultiplication(),
                                         p.renderMappedImage->getFieldingOrder(),
                                         false /*useBitmap*/,
-                                        img->getParams()->getStorageInfo().mode) );
+                                        img->getParams()->getStorageInfo().mode,
+                                        frameArgs->openGLContext.lock(),
+                                        GL_TEXTURE_2D, true) );
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -4184,7 +4200,17 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+    bool foundInCache = false;
+
+    bool useCache = !getNode()->isDuringPaintStrokeCreation();
+
+    // When drawing a paint-stroke, never use the getRegionOfDefinition cache because the RoD changes at each render step
+    // but the hash does not (so that each draw step can re-use the same image.)
+    if (useCache) {
+        foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+    }
+
+
 
     if (foundInCache) {
         if ( rod->isNull() ) {
@@ -4256,7 +4282,9 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-        _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
+        if (useCache) {
+            _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
+        }
 
 
         return ret;
@@ -4643,7 +4671,9 @@ EffectInstance::dettachAllOpenGLContexts()
         if (!context) {
             continue;
         }
-        context->setContextCurrentNoRender();
+        OSGLContextAttacher attacher(context);
+        attacher.attach();
+
         if (it->second.use_count() == 1) {
             // If no render is using it, dettach the context
             dettachOpenGLContext(context, it->second);

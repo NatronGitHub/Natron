@@ -2825,7 +2825,6 @@ RotoPaint::onOverlayPenDown(double time,
                     }
                     _imp->ui->makeStroke( false, RotoPoint(pos.x(), pos.y(), pressure, timestamp) );
                 }
-                _imp->ui->strokeBeingPaint->invalidateCacheHashAndEvaluate(true, false);
                 _imp->ui->state = eEventStateBuildingStroke;
                 setCurrentCursor(eCursorBlank);
             }

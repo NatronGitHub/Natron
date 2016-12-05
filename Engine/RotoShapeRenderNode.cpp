@@ -149,7 +149,6 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
     } else if (isStroke) {
         U64 sh = isStroke->computeHash(time, view);
         hash->append(sh);
-        
     }
 
     RotoPaintPtr rotoPaintNode;
@@ -162,7 +161,8 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
     // If we had a knob that would be linked to it we wouldn't need this, but since
     // we directly refer to this knob, we must explicitly add it to the hash.
     if  (rotoPaintNode) {
-        rotoPaintNode->getMotionBlurTypeKnob()->appendToHash(time, view, hash);
+        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(time, view);
+        hash->append(sh);
     }
 
 
@@ -349,6 +349,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         assert(glData);
     }
 
+    // First first time we draw this clear the background.
+    if (strokePointIndex == 0 && strokeMultiIndex == 0) {
+        outputPlane.second->fillBoundsZero(glContext);
+    }
 
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
@@ -357,6 +361,12 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             RangeD range;
             int divisions;
             rotoItem->getMotionBlurSettings(args.time, args.view, &range, &divisions);
+
+            if (isDuringPainting) {
+                // Do not use motion-blur when drawing.
+                range.min = range.max = args.time;
+                divisions = 1;
+            }
 
             if (isBezier) {
                 RotoPaintPtr rotoPaintNode;
@@ -391,7 +401,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting && isStroke) {
                         isStroke->updateStrokeData(lastCenterOut, distToNextOut);
                     }
@@ -411,11 +421,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 Image::WriteAccess outputWriteAccess(outputPlane.second.get());
                 unsigned char* data = outputWriteAccess.pixelAt(bounds.x1, bounds.y1);
                 assert(data);
-                contextLocker.reset(new OSGLContextAttacher(glContext, frameArgs->abortInfo.lock(),
-#ifdef DEBUG
-                                                            args.time,
-#endif
-                                                            bounds.width(), bounds.height(), bounds.width(), data));
+                contextLocker.reset(new OSGLContextAttacher(glContext, bounds.width(), bounds.height(), bounds.width(), data));
                 contextLocker->attach();
             }
 

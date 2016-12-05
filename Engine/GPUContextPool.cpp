@@ -112,7 +112,7 @@ GPUContextPool::attachGLContextToRender(bool retrieveLastContext, bool checkIfGL
 
     if ( (int)_imp->glContextPool.size() < maxContexts ) {
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), true /*useGPU*/, -1, -1, rendererID ) );
+        newContext = OSGLContext::create( FramebufferConfig(), shareContext.get(), true /*useGPU*/, -1, -1, rendererID );
         _imp->glContextPool.insert(newContext);
     } else {
         while ((int)_imp->glContextPool.size() > maxContexts) {
@@ -191,7 +191,7 @@ GPUContextPool::attachCPUGLContextToRender(bool retrieveLastContext)
 
     if ( (int)_imp->cpuGLContextPool.size() < maxContexts ) {
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), false /*useGPU*/, -1, -1, rendererID ) );
+        newContext = OSGLContext::create( FramebufferConfig(), shareContext.get(), false /*useGPU*/, -1, -1, rendererID );
         _imp->cpuGLContextPool.insert(newContext);
     } else {
         while ((int)_imp->cpuGLContextPool.size() > maxContexts) {

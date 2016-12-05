@@ -641,7 +641,7 @@ template <typename T>
 void
 Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 {
-    removeAnimation(view, dimension);
+    removeAnimation(view, dimension, eValueChangedReasonRestoreDefault);
 
 
     // Prevent clearExpression from triggereing evaluateValueChange with a reason different than eValueChangedReasonRestoreDefault
@@ -695,7 +695,7 @@ template<>
 void
 KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 {
-    removeAnimation(view, dimension);
+    removeAnimation(view, dimension, eValueChangedReasonRestoreDefault);
 
     ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);

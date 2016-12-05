@@ -1441,7 +1441,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
 
     renderBezier_gl_internal_begin<GL>(doBuildUp);
 
-    if (!GL::isGPU() && firstPassDstImage == dstImage) {
+    if (!GL::isGPU() && firstPassDstImage == dstImage && dstImageIsFinalTexture) {
         GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
     } else {
         GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -1644,6 +1644,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const ImagePtr& dstImage,
+                                   bool isDuringPaintStrokeDrawing,
                                    const double distToNextIn,
                                    const Point& lastCenterPointIn,
                                    const RotoDrawableItemPtr& stroke,
@@ -1658,6 +1659,9 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    Point* lastCenterPointOut)
 {
 
+    *distToNextOut = distToNextIn;
+    *lastCenterPointOut = lastCenterPointIn;
+
     GLShaderBasePtr accumShader = glData->getOrCreateAccumulateShader();
     GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
     GLShaderBasePtr divideShader = glData->getOrCreateDivideShader();
@@ -1669,6 +1673,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
     // and add the sample texture to the accumulation copy and write to the original accumulation texture.
     // After the last sample, copy the accumulation texture to the dst framebuffer by dividing by the number of steps.
 
+    
     double interval = nDivisions >= 1 ? (shutterRange.max - shutterRange.min) / nDivisions : 1.;
 
     int target = dstImage->getGLTextureTarget();
@@ -1708,6 +1713,11 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
         // When doing motion-blur we render to temporary buffers
         data.dstImageIsFinalTexture = nDivisions <= 1;
 
+        if (!isDuringPaintStrokeDrawing && perSampleRenderTexture) {
+            // When not painting, only the dstImage has been cleared in RotoShapeRenderNode::render.
+            // If motion-blur is enabled, we need to first clear out each sample
+            perSampleRenderTexture->fillBoundsZero(glContext);
+        }
 
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {

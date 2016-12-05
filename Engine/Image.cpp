@@ -716,6 +716,7 @@ Image::Image(const ImageComponents& components,
              ImageFieldingOrderEnum fielding,
              bool useBitmap,
              StorageModeEnum storage,
+             const OSGLContextPtr& context,
              U32 textureTarget,
              bool isGPUTexture )
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
@@ -723,15 +724,16 @@ Image::Image(const ImageComponents& components,
 {
     setCacheEntry(ImageKey(std::string(), 0, 0, ViewIdx(0), false),
                   ImageParamsPtr( new ImageParams(regionOfDefinition,
-                                                                  par,
-                                                                  mipMapLevel,
-                                                                  bounds,
-                                                                  bitdepth,
-                                                                  fielding,
-                                                                  premult,
-                                                                  components,
-                                                                  storage,
-                                                                  textureTarget) ),
+                                                  par,
+                                                  mipMapLevel,
+                                                  bounds,
+                                                  bitdepth,
+                                                  fielding,
+                                                  premult,
+                                                  components,
+                                                  context,
+                                                  storage,
+                                                  textureTarget) ),
                   NULL /*cacheAPI*/
                   );
     _params->getStorageInfo().isGPUTexture = isGPUTexture;
@@ -788,6 +790,7 @@ Image::makeParams(const RectD & rod,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
+                  const OSGLContextPtr& context,
                   StorageModeEnum storage,
                   U32 textureTarget)
 {
@@ -803,6 +806,7 @@ Image::makeParams(const RectD & rod,
                                            fielding,
                                            premult,
                                            components,
+                                           context,
                                            storage,
                                            textureTarget) );
 }
@@ -816,6 +820,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
+                  const OSGLContextPtr& context,
                   StorageModeEnum storage,
                   U32 textureTarget)
 {
@@ -834,6 +839,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                            fielding,
                                            premult,
                                            components,
+                                           context,
                                            storage,
                                            textureTarget) );
 }
@@ -1001,7 +1007,7 @@ pasteFromGL(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
@@ -1062,7 +1068,7 @@ pasteFromGL(const Image & src,
         GL::Finish();
         glCheckError(GL);
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
@@ -1143,6 +1149,7 @@ Image::resizeInternal(const OSGLContextPtr& glContext,
                                       srcImg->getFieldingOrder(),
                                       srcImg->usesBitMap(),
                                       srcImg->getStorageMode(),
+                                      glContext,
                                       srcImg->getGLTextureTarget(),
                                       srcImg->getParams()->getStorageInfo().isGPUTexture) );
     } else {
@@ -2042,7 +2049,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     assert( !copyBitMap || _bitmap.getBitmap() );
 
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true) );
+    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -2227,7 +2234,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
+        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), true, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image

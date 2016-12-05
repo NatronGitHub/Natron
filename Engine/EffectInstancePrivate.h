@@ -369,7 +369,6 @@ public:
 
     bool resolveRenderDevice(const RenderRoIArgs & args,
                              const ParallelRenderArgsPtr& frameArgs,
-                             const AbortableRenderInfoPtr& abortInfo,
                              const OSGLContextPtr& glGpuContext,
                              const OSGLContextPtr& glCpuContext,
                              const RectI& downscaleImageBounds,
@@ -491,7 +490,6 @@ public:
 
     void renderRoITermination(const RenderRoIArgs & args,
                               const ParallelRenderArgsPtr& frameArgs,
-                              const AbortableRenderInfoPtr& abortInfo,
                               const ImagePlanesToRenderPtr &planesToRender,
                               const OSGLContextPtr& glGpuContext,
                               bool hasSomethingToRender,

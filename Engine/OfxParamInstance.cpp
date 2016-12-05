@@ -260,7 +260,7 @@ deleteKey(const KnobIPtr& knob,
     assert(startDim < endDim && startDim >= 0);
     knob->beginChanges();
     for (int i = startDim; i < endDim; ++i) {
-        knob->deleteValueAtTime(time, ViewSetSpec::all(), DimIdx(i));
+        knob->deleteValueAtTime(time, ViewSetSpec::all(), DimIdx(i), eValueChangedReasonPluginEdited);
     }
     knob->endChanges();
 
@@ -284,7 +284,7 @@ deleteAllKeys(const KnobIPtr& knob,
     }
     assert(startDim < endDim && startDim >= 0);
 
-    knob->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+    knob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }

@@ -44,6 +44,7 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
+#include <QtCore/QThread>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
@@ -59,6 +60,7 @@
 #include "Engine/NonKeyParams.h"
 #include "Engine/Texture.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/OSGLContext.h"
 #include "Global/GlobalDefines.h"
 #include "Global/GLIncludes.h"
 #include "Global/StrUtils.h"
@@ -450,7 +452,8 @@ public:
         }
     }
 
-    void allocateGLTexture(const RectI& rectangle,
+    void allocateGLTexture(const OSGLContextPtr& glContext,
+                           const RectI& rectangle,
                            U32 target,
                            bool isGPUTexture)
     {
@@ -458,6 +461,10 @@ public:
             return;
         }
 
+        // We are about to make GL calls, ensure that the context is current.
+        assert(glContext->getCurrentThread() == QThread::currentThread());
+
+        _glContext = glContext;
         _storageMode = eStorageModeGLTex;
         assert(!_glTexture);
 
@@ -604,7 +611,16 @@ public:
             }
         } else if (_storageMode == eStorageModeGLTex) {
             if (_glTexture) {
-                _glTexture.reset();
+                OSGLContextPtr glContext = _glContext.lock();
+                
+                // The context must still be alive while textures are created in this context!
+                assert(glContext);
+                if (glContext) {
+                    // Ensure the context is current to the thread
+                    OSGLContextAttacher attacher(glContext);
+                    attacher.attach();
+                    _glTexture.reset();
+                }
             }
         }
     }
@@ -748,6 +764,7 @@ private:
     // Used when we store images as OpenGL textures
     boost::scoped_ptr<Texture> _glTexture;
     StorageModeEnum _storageMode;
+    OSGLContextWPtr _glContext;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1232,7 +1249,7 @@ private:
             U64 count = getElementsCountFromParams();
             _data.allocateRAM(count);
         } else if (info.mode == eStorageModeGLTex) {
-            _data.allocateGLTexture(info.bounds, info.textureTarget, info.isGPUTexture);
+            _data.allocateGLTexture(info.glContext.lock(), info.bounds, info.textureTarget, info.isGPUTexture);
         }
     }
 

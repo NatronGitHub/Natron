@@ -2428,7 +2428,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             if (!isBezier) {
                 continue;
             }
-            isBezier->deleteValueAtTime(time, view, DimSpec(0));
+            isBezier->deleteValueAtTime(time, view, DimSpec(0), eValueChangedReasonUserEdited);
         }
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
         ///if control points are selected, delete them, otherwise delete the selected beziers
@@ -2747,14 +2747,14 @@ RotoPaintPrivate::resetTransformsCenter(bool doClone,
     if (doTransform) {
         KnobDoublePtr center = centerKnob.lock();
         center->beginChanges();
-        center->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+        center->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
         center->setValueAcrossDimensions(values);
         center->endChanges();
     }
     if (doClone) {
         KnobDoublePtr centerKnob = cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+        centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
         centerKnob->setValueAcrossDimensions(values);
         centerKnob->endChanges();
     }

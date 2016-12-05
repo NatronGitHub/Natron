@@ -188,10 +188,11 @@ public:
           ImageBitDepthEnum bitdepth,
           ImagePremultiplicationEnum premult,
           ImageFieldingOrderEnum fielding,
-          bool useBitmap = false,
-          StorageModeEnum storage = eStorageModeRAM,
-          U32 textureTarget = GL_TEXTURE_2D,
-          bool isGPUTexture = true);
+          bool useBitmap,
+          StorageModeEnum storage,
+          const OSGLContextPtr& context,
+          U32 textureTarget,
+          bool isGPUTexture);
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
@@ -216,8 +217,10 @@ public:
                                      ImageBitDepthEnum bitdepth,
                                      ImagePremultiplicationEnum premult,
                                      ImageFieldingOrderEnum fielding,
-                                     StorageModeEnum storage = eStorageModeRAM,
-                                     U32 textureTarget = GL_TEXTURE_2D);
+                                     const OSGLContextPtr& context,
+                                     StorageModeEnum storage,
+                                     U32 textureTarget);
+    
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                      const RectI& bounds,
                                      const double par,
@@ -226,8 +229,9 @@ public:
                                      ImageBitDepthEnum bitdepth,
                                      ImagePremultiplicationEnum premult,
                                      ImageFieldingOrderEnum fielding,
-                                     StorageModeEnum storage = eStorageModeRAM,
-                                     U32 textureTarget = GL_TEXTURE_2D);
+                                     const OSGLContextPtr& context,
+                                     StorageModeEnum storage,
+                                     U32 textureTarget);
 
     // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
 

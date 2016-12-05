@@ -308,11 +308,11 @@ AnimatingObjectI::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStr
 
 
 void
-AnimatingObjectI::deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension)
+AnimatingObjectI::deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
     std::list<double> times;
     times.push_back(time);
-    deleteValuesAtTime(times, view, dimension);
+    deleteValuesAtTime(times, view, dimension, reason);
 }
 
 bool

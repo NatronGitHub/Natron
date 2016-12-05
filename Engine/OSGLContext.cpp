@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QThread>
 
 #include "Engine/OSGLFunctions.h"
 #ifdef __NATRON_WIN32__
@@ -292,10 +293,10 @@ struct OSGLContextPrivate
 #endif
 
     // When we use a single GL context, renders are all sharing the same context and lock it when trying to render
-    QMutex renderOwningContextMutex;
-    QWaitCondition renderOwningContextCond;
-    AbortableRenderInfoPtr renderOwningContext;
-    int renderOwningContextCount;
+    QMutex threadOwningContextMutex;
+    QWaitCondition threadOwningContextCond;
+    int threadOwningContextCount;
+    QThread* threadOwningContext;
 #ifdef DEBUG
     double renderOwningContextFrameTime;
 #endif
@@ -318,10 +319,10 @@ struct OSGLContextPrivate
         , _osmesaContext()
         , _osmesaStubBuffer()
 #endif
-        , renderOwningContextMutex()
-        , renderOwningContextCond()
-        , renderOwningContext()
-        , renderOwningContextCount(0)
+        , threadOwningContextMutex()
+        , threadOwningContextCond()
+        , threadOwningContextCount(0)
+        , threadOwningContext(0)
 #ifdef DEBUG
         , renderOwningContextFrameTime(0)
 #endif
@@ -381,7 +382,8 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 
 OSGLContext::~OSGLContext()
 {
-    setContextCurrentNoRender();
+    setContextCurrentInternal(0, 0, 0, 0);
+
     if (_imp->pboID) {
         if (_imp->useGPUContext) {
             GL_GPU::DeleteBuffers(1, &_imp->pboID);
@@ -437,14 +439,22 @@ OSGLContext::getMaxOpenGLWidth()
     static int maxGPUWidth = 0;
     if (_imp->useGPUContext) {
         if (maxGPUWidth == 0) {
-            setContextCurrentNoRender();
+            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            if (getCurrentThread() != QThread::currentThread()) {
+                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher->attach();
+            }
             GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUWidth);
         }
         return maxGPUWidth;
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUWidth == 0) {
-            setContextCurrentNoRender();
+            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            if (getCurrentThread() != QThread::currentThread()) {
+                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher->attach();
+            }
             GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUWidth);
             int osmesaMaxWidth = OSGLContext_osmesa::getMaxWidth();
             maxCPUWidth = std::min(maxCPUWidth, osmesaMaxWidth);
@@ -461,14 +471,22 @@ OSGLContext::getMaxOpenGLHeight()
     static int maxGPUHeight = 0;
     if (_imp->useGPUContext) {
         if (maxGPUHeight == 0) {
-            setContextCurrentNoRender();
+            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            if (getCurrentThread() != QThread::currentThread()) {
+                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher->attach();
+            }
             GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUHeight);
         }
         return maxGPUHeight;
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUHeight == 0) {
-            setContextCurrentNoRender();
+            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            if (getCurrentThread() != QThread::currentThread()) {
+                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher->attach();
+            }
             GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUHeight);
             int osmesaMaxHeight = OSGLContext_osmesa::getMaxHeight();
             maxCPUHeight = std::min(maxCPUHeight, osmesaMaxHeight);
@@ -506,8 +524,35 @@ OSGLContext::getOrCreateFBOId()
 
 
 void
-OSGLContext::setContextCurrentNoRender(int width, int height, int rowWidth, void* buffer)
+OSGLContext::setContextCurrent_GPU()
 {
+    setContextCurrentInternal(0,0,0,0);
+}
+
+void
+OSGLContext::setContextCurrent_CPU(int width, int height, int rowWidth, void* buffer)
+{
+    setContextCurrentInternal(width, height, rowWidth, buffer);
+}
+
+void
+OSGLContext::setContextCurrentInternal(int width, int height, int rowWidth, void* buffer)
+{
+    assert(_imp && (_imp->_platformContext
+#ifdef HAVE_OSMESA
+                    || _imp->_osmesaContext
+#endif
+                    ));
+
+    QThread* curThread = QThread::currentThread();
+
+    QMutexLocker k(&_imp->threadOwningContextMutex);
+    while (_imp->threadOwningContext && _imp->threadOwningContext != curThread) {
+        _imp->threadOwningContextCond.wait(&_imp->threadOwningContextMutex);
+    }
+    _imp->threadOwningContext = curThread;
+
+    ++_imp->threadOwningContextCount;
 
     if (_imp->useGPUContext) {
 #     ifdef __NATRON_WIN32__
@@ -533,70 +578,7 @@ OSGLContext::setContextCurrentNoRender(int width, int height, int rowWidth, void
         Q_UNUSED(buffer);
 #     endif
     }
-}
 
-void
-OSGLContext::setContextCurrent_GPU(const AbortableRenderInfoPtr& abortInfo
-#ifdef DEBUG
-                               ,
-                               double frameTime
-#endif
-                               )
-{
-    setContextCurrentInternal(abortInfo,
-#ifdef DEBUG
-                              frameTime,
-#endif
-                              0, 0, 0, 0);
-}
-
-void
-OSGLContext::setContextCurrent_CPU(const AbortableRenderInfoPtr& abortInfo
-#ifdef DEBUG
-                                   , double frameTime
-#endif
-                                   , int width
-                                   , int height
-                                   , int rowWidth
-                                   , void* buffer)
-{
-    setContextCurrentInternal(abortInfo,
-#ifdef DEBUG
-                              frameTime,
-#endif
-                              width, height, rowWidth, buffer);
-}
-
-void
-OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
-#ifdef DEBUG
-                                       , double frameTime
-#endif
-                                       , int width
-                                       , int height
-                                       , int rowWidth
-                                       , void* buffer)
-{
-    assert(_imp && (_imp->_platformContext
-#ifdef HAVE_OSMESA
-                    || _imp->_osmesaContext
-#endif
-                    ));
-
-    QMutexLocker k(&_imp->renderOwningContextMutex);
-    while (_imp->renderOwningContext && _imp->renderOwningContext != abortInfo) {
-        _imp->renderOwningContextCond.wait(&_imp->renderOwningContextMutex);
-    }
-    _imp->renderOwningContext = abortInfo;
-#ifdef DEBUG
-    if (!_imp->renderOwningContextCount) {
-        _imp->renderOwningContextFrameTime = frameTime;
-        //qDebug() << "Attaching" << this << "to render frame" << frameTime;
-    }
-#endif
-    ++_imp->renderOwningContextCount;
-
-    setContextCurrentNoRender(width, height, rowWidth, buffer);
 
 }
 
@@ -621,29 +603,33 @@ OSGLContext::unsetCurrentContextNoRenderInternal(bool useGPU, const Natron::OSGL
     }
 }
 
-void
-OSGLContext::unsetCurrentContextNoRender(bool useGPU)
-{
-    unsetCurrentContextNoRenderInternal(useGPU, this);
-}
 
 void
-OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
+OSGLContext::unsetCurrentContext()
 {
-    QMutexLocker k(&_imp->renderOwningContextMutex);
-    if (abortInfo != _imp->renderOwningContext) {
+    QThread* curThread = QThread::currentThread();
+
+    QMutexLocker k(&_imp->threadOwningContextMutex);
+    if (curThread != _imp->threadOwningContext) {
+        qDebug() << "Thread" << curThread << "is trying to call unsetCurrentContext but it does not own the OpenGL context.";
         return;
     }
-    --_imp->renderOwningContextCount;
-    if (!_imp->renderOwningContextCount) {
-#ifdef DEBUG
-        //qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
-#endif
-        _imp->renderOwningContext.reset();
-        unsetCurrentContextNoRender(_imp->useGPUContext);
-        //Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
-        _imp->renderOwningContextCond.wakeOne();
+    --_imp->threadOwningContextCount;
+    if (!_imp->threadOwningContextCount) {
+        _imp->threadOwningContext = 0;
+
+        unsetCurrentContextNoRenderInternal(_imp->useGPUContext, this);
+
+        // Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
+        _imp->threadOwningContextCond.wakeOne();
     }
+}
+
+QThread*
+OSGLContext::getCurrentThread() const
+{
+    QMutexLocker k(&_imp->threadOwningContextMutex);
+    return _imp->threadOwningContext;
 }
 
 

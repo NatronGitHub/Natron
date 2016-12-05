@@ -2252,7 +2252,7 @@ KnobTableItem::deleteValuesAtTimeInternal(const std::list<double>& times, ViewId
 }
 
 void
-KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec /*dimension*/)
+KnobTableItem::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/)
 {
     if (view.isAll()) {
         for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it!=_imp->animationCurves.end(); ++it) {
@@ -2336,7 +2336,7 @@ KnobTableItem::removeAnimationInternal(ViewIdx view, const CurvePtr& curve)
 
 
 void
-KnobTableItem::removeAnimation(ViewSetSpec view, DimSpec /*dimensions*/)
+KnobTableItem::removeAnimation(ViewSetSpec view, DimSpec /*dimensions*/, ValueChangedReasonEnum /*reason*/)
 {
 
     if (view.isAll()) {
@@ -2453,7 +2453,7 @@ KnobItemsTable::setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
 static void removeKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->deleteValueAtTime(time, view, DimSpec::all());
+        item->deleteValueAtTime(time, view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();
@@ -2475,7 +2475,7 @@ KnobItemsTable::removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec vie
 static void removeAnimationRecursively(const KnobTableItemPtr& item, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->removeAnimation(view, DimSpec::all());
+        item->removeAnimation(view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();

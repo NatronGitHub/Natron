@@ -53,7 +53,7 @@ struct HashableObjectPrivate
 
     HashableObjectPrivate(const HashableObjectPrivate& other)
     : hashListeners(other.hashListeners)
-    , hashCache()
+    , hashCache() // do not copy the cache! During a render we need a hash that corresponds exactly to the render values.
     , hashCacheMutex(QMutex::Recursive)
     {
 

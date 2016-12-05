@@ -68,14 +68,16 @@ struct CacheEntryStorageInfo
     StorageModeEnum mode;
     U32 textureTarget;
     bool isGPUTexture;
+    OSGLContextWPtr glContext;
 
     CacheEntryStorageInfo()
-        : bounds()
-        , dataTypeSize(0)
-        , numComponents(0)
-        , mode(eStorageModeNone)
-        , textureTarget(0)
-        , isGPUTexture(true)
+    : bounds()
+    , dataTypeSize(0)
+    , numComponents(0)
+    , mode(eStorageModeNone)
+    , textureTarget(0)
+    , isGPUTexture(true)
+    , glContext()
     {
     }
 

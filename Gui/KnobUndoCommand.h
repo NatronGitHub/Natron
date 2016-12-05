@@ -158,7 +158,7 @@ private:
         for (std::size_t i = 0; i < _oldValue.size(); ++i) {
             if (_dimension.isAll() || (int)i == _dimension) {
                 if (_valueChangedReturnCode[i] == eValueChangedReturnCodeKeyframeAdded) {
-                    knob->deleteValueAtTime(_timelineTime, _view, DimIdx(i));
+                    knob->deleteValueAtTime(_timelineTime, _view, DimIdx(i), eValueChangedReasonUserEdited);
                 }
             }
         }

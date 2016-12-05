@@ -544,7 +544,7 @@ MultipleKnobEditsUndoCommand::undo()
 
             // If we added a keyframe (due to auto-keying or not) remove it
             if (it2->setValueRetCode == eValueChangedReturnCodeKeyframeAdded) {
-                knob->deleteValueAtTime(it2->time, it2->view, it2->dimension);
+                knob->deleteValueAtTime(it2->time, it2->view, it2->dimension, eValueChangedReasonUserEdited);
             }
 
             int nDims = knob->getNDimensions();

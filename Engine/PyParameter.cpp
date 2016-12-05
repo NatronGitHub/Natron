@@ -1051,7 +1051,7 @@ AnimatedParam::deleteValueAtTime(double time,
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
-    knob->deleteValueAtTime(time, thisViewSpec, dim);
+    knob->deleteValueAtTime(time, thisViewSpec, dim, eValueChangedReasonNatronInternalEdited);
 
 }
 
@@ -1076,7 +1076,7 @@ AnimatedParam::removeAnimation(int dimension, const QString& view)
 
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
-    knob->removeAnimation(thisViewSpec, dim);
+    knob->removeAnimation(thisViewSpec, dim, eValueChangedReasonNatronInternalEdited);
 
 }
 

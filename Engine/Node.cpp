@@ -703,15 +703,7 @@ bool
 Node::isDuringPaintStrokeCreation() const
 {
     // We should render only
-    RotoStrokeItemPtr attachedStroke = getApp()->getActiveRotoDrawingStroke();
-    if (!attachedStroke) {
-        return false;
-    }
-    ParallelRenderArgsPtr frameArgs = _imp->effect->getParallelRenderArgsTLS();
-    if (!frameArgs) {
-        return false;
-    }
-    attachedStroke = toRotoStrokeItem(attachedStroke->getCachedDrawable(frameArgs->abortInfo.lock()));
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
     if (!attachedStroke) {
         return false;
     }
@@ -9271,8 +9263,8 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 return true;
             }
 
-            if ( isRotoPaintingNode() && isSettingsPanelVisible() ) {
-                ///The Roto node is being edited, cache its output (special case because Roto has an internal node tree)
+            if ( isDuringPaintStrokeCreation() ) {
+                // When painting we must always cache 
                 return true;
             }
 

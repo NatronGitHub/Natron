@@ -442,7 +442,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * The default implementation just calls deleteValuesAtTime.
      **/
-    virtual void deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension);
+    virtual void deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
 
     /**
      * @brief Removes the keyframes at the given times if they exist on the curve for the given view and dimension.
@@ -452,7 +452,7 @@ public:
      * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
      * at the given index will receive the change, otherwise no change occurs.
      **/
-    virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension) = 0;
+    virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief If a keyframe at the given time exists in the curve at the given view and dimension then it will be moved by dt in time
@@ -539,7 +539,7 @@ public:
      * @param reason Identifies who called the function to optimize redraws of the Gui
      * The default implementation just calls removeAnimationAcrossDimensions.
      **/
-    virtual void removeAnimation(ViewSetSpec view, DimSpec dimension) = 0;
+    virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) = 0;
 
 
     /**

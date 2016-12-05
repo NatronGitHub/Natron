@@ -502,7 +502,7 @@ deleteKnobAnimation(const std::set<double>& userKeyframes,
             break;
         }
         }
-        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i));
+        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i), eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -587,7 +587,7 @@ TrackMarker::resetTrack()
         if (*it != centerKnob) {
             (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         } else {
-            (*it)->removeAnimation(ViewSetSpec::all(), DimSpec::all());
+            (*it)->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
             std::vector<double> values(2);
             values[0] = curCenter.x;
@@ -596,7 +596,7 @@ TrackMarker::resetTrack()
         }
     }
 
-    removeAnimation(ViewSetSpec::all(), DimSpec::all());
+    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 }
 
 

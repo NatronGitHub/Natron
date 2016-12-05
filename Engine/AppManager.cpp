@@ -952,14 +952,16 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     if (!_imp->hasInitializedOpenGLFunctions) {
         OSGLContextPtr glContext;
         bool checkRenderingReq = true;
+        boost::scoped_ptr<OSGLContextAttacher> attacher;
         if (createOpenGLContext) {
             try {
                 _imp->initGLAPISpecific();
 
                 glContext = _imp->renderingContextPool->attachGLContextToRender(false, false /*checkIfGLLoaded*/);
                 if (glContext) {
+                    attacher.reset(new OSGLContextAttacher(glContext));
+                    attacher->attach();
                     // Make the context current and check its version
-                    glContext->setContextCurrentNoRender();
                 } else {
                     AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
                     AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
@@ -1012,7 +1014,11 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             }
             
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
-            glContext->unsetCurrentContextNoRender(true);
+
+            // Deattach the context
+            if (attacher) {
+                attacher.reset();
+            }
 
             // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
             // selected by the user in the settings (which are not created yet).
