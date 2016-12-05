@@ -183,18 +183,20 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             if ( it2->second.empty() ) {
                 continue;
             }
-            int index = it2->first.empty() ? -1 : it->first->getInputNumberFromLabel(it2->first);
+            std::string inputLabel = it2->first;
+            int index = inputLabel.empty() ? -1 : it->first->getInputNumberFromLabel(inputLabel);
+
             if (index == -1) {
                 // Prior to Natron 1.1, input names were not serialized, try to convert to index
                 bool ok;
-                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
+                index = QString::fromUtf8(inputLabel.c_str()).toInt(&ok);
                 if (!ok) {
                     index = -1;
                 }
                 if (index == -1) {
                     appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
                                                     tr("Could not find input named %1")
-                                                    .arg( QString::fromUtf8( it2->first.c_str() ) ) );
+                                                    .arg( QString::fromUtf8( inputLabel.c_str() ) ) );
                 }
             }
             if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
@@ -215,9 +217,33 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
             }
             int index = it2->first.empty() ? -1 : it->first->getInputNumberFromLabel(it2->first);
             if (index == -1) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
-                                                tr("Could not find input named %1")
-                                                .arg( QString::fromUtf8( it2->first.c_str() ) ) );
+
+                // If the name of the input was not serialized, the string is the index (of the mask)
+                bool ok;
+                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
+                if (!ok) {
+                    index = -1;
+                }
+                if (index == -1) {
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
+                                                    tr("Could not find input named %1")
+                                                    .arg( QString::fromUtf8( it2->first.c_str() ) ) );
+
+                }
+                // Find the mask corresponding to the index
+                int nInputs = it->first->getMaxInputCount();
+                int maskIndex = 0;
+                for (int i = 0; i < nInputs; ++i) {
+                    if (it->first->getEffectInstance()->isInputMask(i)) {
+                        if (maskIndex == index) {
+                            index = i;
+                            break;
+                        }
+                        ++maskIndex;
+                        break;
+                    }
+                }
+
             }
             if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
                 appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),

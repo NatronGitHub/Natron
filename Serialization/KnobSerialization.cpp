@@ -294,27 +294,33 @@ KnobSerialization::encode(YAML::Emitter& em) const
             }
         } else if (textData) {
             if (!textData->keyframes.empty()) {
-                em << YAML::Key << "TextAnim" << YAML::Value;
 
-                if (textData->keyframes.size() > 1) {
-                    // Multi-view: start a map
-                    em << YAML::BeginMap;
-                }
+                bool hasDeclaredTextAnim = false;
                 for (std::map<std::string,std::map<double, std::string> >::const_iterator it = textData->keyframes.begin(); it != textData->keyframes.end(); ++it) {
-                    if (textData->keyframes.size() > 1) {
-                        em << YAML::Key << it->first << YAML::Value;
-                    }
                     if (it->second.empty()) {
                         continue;
+                    }
+                    if (!hasDeclaredTextAnim) {
+                        hasDeclaredTextAnim = true;
+
+                        em << YAML::Key << "TextAnim" << YAML::Value;
+
+                        if (textData->keyframes.size() > 1) {
+                            // Multi-view: start a map
+                            em << YAML::BeginMap;
+                        }
+                    }
+                    if (textData->keyframes.size() > 1) {
+                        em << YAML::Key << it->first << YAML::Value;
                     }
                     em << YAML::Flow;
                     em << YAML::BeginSeq;
                     for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-                        em << it->first << it->second;
+                        em << it2->first << it2->second;
                     }
                     em << YAML::EndSeq;
                 }
-                if (textData->keyframes.size() > 1) {
+                if (hasDeclaredTextAnim && textData->keyframes.size() > 1) {
                     em << YAML::EndMap;
                 }
 

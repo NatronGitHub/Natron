@@ -989,6 +989,9 @@ NodeGui::refreshPosition(double x,
                          bool skipMagnet,
                          const QPointF & mouseScenePos)
 {
+    if (x == INT_MIN || x == INT_MAX || y == INT_MIN || y == INT_MAX) {
+        return;
+    }
     NodePtr node = getNode();
     if (!node) {
         return;
