@@ -418,7 +418,6 @@ RotoStrokeItem::updateStrokeData(const Point& lastCenter, double distNextOut)
     QMutexLocker k(&_imp->lock);
     _imp->distToNextOut = distNextOut;
     _imp->lastCenter = lastCenter;
-
 }
 
 void

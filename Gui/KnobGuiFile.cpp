@@ -536,9 +536,20 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
 void
 KnobGuiPath::onOpenFileButtonClicked()
 {
+    KnobPathPtr knob = _knob.lock();
+
+    std::string oldPath = knob->getValue(DimIdx(0), getView());
+    QString pathWhereToOpen;
+    if ( oldPath.empty() ) {
+        pathWhereToOpen = _lastOpened;
+    } else {
+        pathWhereToOpen = QString::fromUtf8( oldPath.c_str() );
+    }
+
+
     KnobGuiPtr knobUI = getKnobGui();
     std::vector<std::string> filters;
-    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(), knobUI->getGui(), true );
+    SequenceFileDialog dialog( _mainContainer, filters, false, SequenceFileDialog::eFileDialogModeDir, pathWhereToOpen.toStdString(), knobUI->getGui(), true );
 
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
@@ -554,9 +565,20 @@ KnobGuiPath::onOpenFileButtonClicked()
 bool
 KnobGuiPath::addNewUserEntry(QStringList& row)
 {
+    KnobPathPtr knob = _knob.lock();
+
     std::vector<std::string> filters;
+
+    std::string oldPath = knob->getValue(DimIdx(0), getView());
+    QString pathWhereToOpen;
+    if ( oldPath.empty() ) {
+        pathWhereToOpen = _lastOpened;
+    } else {
+        pathWhereToOpen = QString::fromUtf8( oldPath.c_str() );
+    }
+
     KnobGuiPtr knobUI = getKnobGui();
-    SequenceFileDialog dialog( knobUI->getGui(), filters, false, SequenceFileDialog::eFileDialogModeDir, _lastOpened.toStdString(), knobUI->getGui(), true);
+    SequenceFileDialog dialog( knobUI->getGui(), filters, false, SequenceFileDialog::eFileDialogModeDir, pathWhereToOpen.toStdString(), knobUI->getGui(), true);
 
     if ( dialog.exec() ) {
         std::string dirPath = dialog.selectedDirectory();
