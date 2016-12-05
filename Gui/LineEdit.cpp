@@ -269,6 +269,24 @@ LineEdit::getBorderDisabled() const
 
 
 void
+LineEdit::setReadOnly_NoFocusRect(bool readOnly)
+{
+    QLineEdit::setReadOnly(readOnly);
+
+    //setReadonly set the flag but we don't want it
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
+}
+
+void
+LineEdit::setReadOnly(bool ro)
+{
+    // Should never be called since on Mac is set the WA_ShowFocusRect attribute to 1 which
+    // makes the application UI redraw all its widgets for any change.
+    assert(false);
+    QLineEdit::setReadOnly(ro);
+}
+
+void
 LineEdit::keyPressEvent(QKeyEvent* e)
 {
     QLineEdit::keyPressEvent(e);
