@@ -116,9 +116,6 @@ struct RotoStrokeItemPrivate
     // A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
     std::vector<StrokeCurves> strokes;
 
-    // The hash used by the stroke when drawing. This is a constant hash so that the same image is used always
-    // when drawing, but it is not the same as another stroke hash (it uses the timestamp curveT0)
-    U64 drawingHash;
 
     // timestamp of the first point in curve
     double curveT0;
@@ -182,7 +179,6 @@ struct RotoStrokeItemPrivate
     , type(type)
     , usePaintBuffers(false)
     , strokes()
-    , drawingHash(0)
     , curveT0(0)
     , lastTimestamp(0)
     , distToNextOut(0)
@@ -205,7 +201,6 @@ struct RotoStrokeItemPrivate
     , type(other.type)
     , usePaintBuffers(other.usePaintBuffers)
     , strokes()
-    , drawingHash(other.drawingHash)
     , curveT0(other.curveT0)
     , lastTimestamp(other.lastTimestamp)
     , distToNextOut(other.distToNextOut)
@@ -744,10 +739,6 @@ RotoStrokeItem::endSubStroke()
         // We are no longer in drawing state
         _imp->usePaintBuffers = false;
 
-        // Update the drawing hash for the next sub-stroke:
-        // The drawing hash will be the same of the full strokes so far, so that the user will paint on the
-        // previous strokes image.
-        _imp->drawingHash = _imp->computeHashFromStrokes();
 
         // Purge cairo cache
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
@@ -847,15 +838,6 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         stroke->yCurve->setKeyFrameInterpolation(interpolation, ki);
         stroke->pressureCurve->setKeyFrameInterpolation(interpolation, ki);
 
-        // Set the drawing hash on the first keyframe
-        if (_imp->strokes.size() == 1 && nk == 0) {
-            Hash64 obj;
-            obj.append(_imp->curveT0);
-            obj.append(p.pos().x);
-            obj.append(p.pos().y);
-            obj.computeHash();
-            _imp->drawingHash = obj.value();
-        }
     } // QMutexLocker k(&itemMutex);
 
 
@@ -1355,18 +1337,8 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
     {
         // Append the item knobs
         QMutexLocker k(&_imp->lock);
-
-        // When in drawing state, do not add the strokes to the hash so that the stroke keep the same hash and the image buffer stays in the cache.
-        // This is more powerful than e.g storing the image pointer directly on the node associated with this item because even nodes downstream
-        // in the graph will keep the same hash and thus the same buffers.
-        // We still need to identify this stroke drawing with a timestamp so that the cache does not pick-up another stroke that was drawn. We
-        // use the timestamp of the first point
-        if (_imp->usePaintBuffers) {
-            hash->append(_imp->drawingHash);
-        } else {
-            U64 strokesHash = _imp->computeHashFromStrokes();
-            hash->append(strokesHash);
-        }
+        U64 strokesHash = _imp->computeHashFromStrokes();
+        hash->append(strokesHash);
     }
 
 

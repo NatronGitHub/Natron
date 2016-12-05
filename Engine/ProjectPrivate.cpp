@@ -178,6 +178,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         //
         // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
         //
+   
         const std::map<std::string, std::string>& inputs = it->second->_inputs;
         for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             if ( it2->second.empty() ) {

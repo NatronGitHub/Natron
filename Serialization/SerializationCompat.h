@@ -1383,7 +1383,8 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
             for (std::size_t i = 0; i < oldInputs.size(); ++i) {
                 oldInputs[i] = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(oldInputs[i]);
                 std::stringstream ss;
-                ss << i;
+                // Prior to Natron 2, inputs were reversed
+                ss << oldInputs.size() - 1 - i;
                 _inputs[ss.str()] = oldInputs[i];
             }
         }

@@ -1357,7 +1357,9 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
                                        const void** perDrawIdsPtr,
                                        int drawCount)
 {
-
+    glCheckError(GL);
+    glCheckFramebufferError(GL);
+    
     int target = GL_TEXTURE_2D;
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);

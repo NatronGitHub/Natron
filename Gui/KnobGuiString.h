@@ -74,6 +74,7 @@ public:
 
     virtual ~AnimatingTextEdit();
 
+
 Q_SIGNALS:
 
     void editingFinished();

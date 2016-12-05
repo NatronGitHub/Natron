@@ -186,6 +186,9 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                              ImagePremultiplicationEnum outputPremult,
                                              int channelForAlpha)
 {
+    if (!inputImage) {
+        return inputImage;
+    }
     // Do not do any conversion for OpenGL textures, OpenGL is managing it for us.
     if (inputImage->getStorageMode() == eStorageModeGLTex) {
         return inputImage;
@@ -1111,8 +1114,9 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
     //_publicInterface->isFrameVaryingOrAnimated_Recursive();
 
     assert(createInCache);
-    // Do not use the cache for OpenGL rendering EXCEPT when doing painting because we need to keep images in buffers
-    if (storage == eStorageModeGLTex && glRenderContext->isGPUContext() && !isDuringPaintStrokeDrawing) {
+
+    // Do not use the cache for OpenGL
+    if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
         *createInCache = false;
     } else {
         // in Analysis, the node upstream of the analysis node should always cache
@@ -1534,7 +1538,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                                               const ImagePlanesToRenderPtr &planesToRender,
                                                               const OSGLContextAttacherPtr& glContextLocker,
                                                               const OSGLContextPtr& glRenderContext,
-                                                              bool isDuringPaintStrokeDrawing,
                                                               ImageFieldingOrderEnum fieldingOrder,
                                                               ImageBitDepthEnum outputDepth,
                                                               bool fillGrownBoundsWithZeroes,
@@ -1597,6 +1600,11 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                createInCache,
                                &it->second.fullscaleImage,
                                &it->second.downscaleImage);
+
+            // Set the accumulation buffer for this node if needed
+            if (_publicInterface->isPaintingOverItselfEnabled()) {
+                _publicInterface->getNode()->setLastRenderedImage(it->second.downscaleImage);
+            }
             
     
         } else {
@@ -1642,6 +1650,12 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                 hasResized = it->second.fullscaleImage->ensureBounds(glRenderContext, renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds,
                                                                      fillGrownBoundsWithZeroes, fillGrownBoundsWithZeroes);
                 it->second.downscaleImage = it->second.fullscaleImage;
+
+                // Set the accumulation buffer for this node if needed
+                if (_publicInterface->isPaintingOverItselfEnabled()) {
+                    _publicInterface->getNode()->setLastRenderedImage(it->second.downscaleImage);
+                }
+
 
             }
 
@@ -1936,6 +1950,9 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
     const bool useAlpha0ForRGBToRGBAConversion = false;
 
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        if (!it->second.fullscaleImage && !it->second.downscaleImage) {
+            continue;
+        }
         //If we have worked on a local swaped image, swap it in the cache
         if (it->second.cacheSwapImage) {
             const CacheAPI* cache = it->second.cacheSwapImage->getCacheAPI();
@@ -1987,7 +2004,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
         ///The image might need to be converted to fit the original requested format
         if (comp) {
             it->second.downscaleImage = convertPlanesFormatsIfNeeded(_publicInterface->getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
-            assert(it->second.downscaleImage->getStorageMode() == eStorageModeGLTex ||  (it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth));
+            assert(it->second.downscaleImage && it->second.downscaleImage->getStorageMode() == eStorageModeGLTex ||  (it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth));
 
             StorageModeEnum imageStorage = it->second.downscaleImage->getStorageMode();
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
@@ -2248,7 +2265,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
 
     if (hasSomethingToRender) {
-        _imp->renderRoIAllocateOutputPlanes(args, planesToRender, glContextLocker, glRenderContext, isDuringPaintStrokeDrawing, fieldingOrder, outputDepth, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
+        _imp->renderRoIAllocateOutputPlanes(args, planesToRender, glContextLocker, glRenderContext, fieldingOrder, outputDepth, fillGrownBoundsWithZeroes, storage, *outputComponents, rod, upscaledImageBounds, downscaledImageBounds, lastStrokePixelRoD, par, renderFullScaleThenDownscale, createInCache, key);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
