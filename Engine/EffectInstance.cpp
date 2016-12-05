@@ -1781,7 +1781,7 @@ static ImagePtr ensureImageScale(unsigned int mipMapLevel,
                                                        oldParams->getBitDepth(),
                                                        oldParams->getPremultiplication(),
                                                        oldParams->getFieldingOrder(),
-                                                       glContextAttacher->getContext(),
+                                                       glContextAttacher ? glContextAttacher->getContext() : OSGLContextPtr(),
                                                        eStorageModeRAM,
                                                        GL_TEXTURE_2D);
 

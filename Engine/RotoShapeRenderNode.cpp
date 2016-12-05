@@ -300,6 +300,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
     BezierPtr isBezier = toBezier(rotoItem);
 
+    // Get the real stroke (the one the user interacts with)
+    RotoStrokeItemPtr nonRenderStroke = toRotoStrokeItem(getNode()->getOriginalAttachedItem());
+
     if (type == eRotoShapeRenderTypeSmear && !isStroke) {
         return eStatusFailed;
     }
@@ -380,7 +383,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (!args.useOpenGL) {
                 RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
-                    isStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                    nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
                 }
             }
 #endif
@@ -403,7 +406,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                     RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting && isStroke) {
-                        isStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                        nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
                     }
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
@@ -475,11 +478,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
             if (isDuringPainting) {
                 Q_UNUSED(renderedDot);
-                /*if (!renderedDot) {
-                    lastCenterOut = lastCenterIn;
-                    distToNextOut = distNextIn;
-                }*/
-                isStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
             }
 
         }   break;

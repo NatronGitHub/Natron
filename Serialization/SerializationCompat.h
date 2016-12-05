@@ -1136,7 +1136,10 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         //isParametric->loadParametricCurves(extraData->parametricCurves);
     } else if (isString || isFile) {
         TextExtraData* extraData = dynamic_cast<TextExtraData*>(_extraData.get());
-        ar & ::boost::serialization::make_nvp("StringsAnimation", extraData->keyframes);
+
+        std::map<double, std::string> keys;
+        ar & ::boost::serialization::make_nvp("StringsAnimation", keys);
+        extraData->keyframes["Main"] = keys;
         ///Don't load animation for input image files: they no longer hold keyframes
         // in the Reader context, the script name must be kOfxImageEffectFileParamName, @see kOfxImageEffectContextReader
         /*if ( !isFile || ( isFile && (isFile->getName() != kOfxImageEffectFileParamName) ) ) {

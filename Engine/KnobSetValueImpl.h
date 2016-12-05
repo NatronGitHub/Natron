@@ -678,6 +678,8 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
         } else {
             ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
         }
+    } else {
+        computeHasModifications();
     }
 
     if (view.isAll()) {
@@ -753,6 +755,8 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
         } else {
             ignore_result( setValue(defValues[dimension], view, dimension, eValueChangedReasonRestoreDefault, NULL) );
         }
+    } else {
+        computeHasModifications();
     }
     
     if (view.isAll()) {

@@ -128,7 +128,7 @@ struct RotoStrokeItemPrivate
 
     // Used when drawing by the algorithm in RotoShapeRenderNodePrivate::renderStroke_generic
     // to know where we stopped along the path at a given draw step.
-    mutable double distToNextIn, distToNextOut;
+    mutable double distToNextOut;
     Point lastCenter;
 
     // when creating a render clone for this stroke with the copy ctor,
@@ -185,7 +185,6 @@ struct RotoStrokeItemPrivate
     , drawingHash(0)
     , curveT0(0)
     , lastTimestamp(0)
-    , distToNextIn(0)
     , distToNextOut(0)
     , lastCenter()
     , renderCachedBbox()
@@ -209,7 +208,6 @@ struct RotoStrokeItemPrivate
     , drawingHash(other.drawingHash)
     , curveT0(other.curveT0)
     , lastTimestamp(other.lastTimestamp)
-    , distToNextIn(other.distToNextIn)
     , distToNextOut(other.distToNextOut)
     , lastCenter(other.lastCenter)
     , renderCachedBbox(other.renderCachedBbox)
@@ -256,11 +254,6 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     QMutexLocker k1(&lock);
 
     assert(!other.lock.tryLock());
-
-    // Update dist to next for next drawing step
-    other.distToNextIn = other.distToNextOut;
-    distToNextIn = distToNextOut;
-
 
     assert(other.lastStrokeIndex >= 0);
 

@@ -309,7 +309,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
                     }
                     em << YAML::Flow;
                     em << YAML::BeginSeq;
-                    for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it) {
+                    for (std::map<double, std::string>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
                         em << it->first << it->second;
                     }
                     em << YAML::EndSeq;
