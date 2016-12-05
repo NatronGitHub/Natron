@@ -4,6 +4,13 @@
 
 # History
 
+## Version 2.1.10
+
+### Plugins
+
+- PIKColor: do not expand region of definition
+- Shadertoy: support iDate, add presets
+
 ## Version 2.1.9
 
 - Read/Write: Do not automatically set parameters when changing the filename (#1492). Creating a new Reader/Writer still sets those automatically.
