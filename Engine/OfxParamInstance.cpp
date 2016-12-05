@@ -2262,7 +2262,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
 
     // Position knobs should not have their dimensions folded by default (e.g: The Translate parameter of a Transform node is not
     // expected to be folded by default, but the Size of a Blur node is.)
-    dblKnob->setCanAutoFoldDimensions(doubleType != kOfxParamDoubleTypeNormalisedXYAbsolute & doubleType != kOfxParamDoubleTypeXYAbsolute);
+    dblKnob->setCanAutoFoldDimensions( (doubleType != kOfxParamDoubleTypeNormalisedXYAbsolute) && (doubleType != kOfxParamDoubleTypeXYAbsolute) );
 
     dblKnob->setSpatial(doubleType == kOfxParamDoubleTypeNormalisedXY ||
                         doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute ||
