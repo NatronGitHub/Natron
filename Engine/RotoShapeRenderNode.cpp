@@ -346,7 +346,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // Ensure that the indices of the draw step are valid.
     // +2 because we also add the last point of the previous draw step
-    assert((strokeStartPointIndex == 0 && (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0)) ||
+    assert(!isDuringPainting || (strokeStartPointIndex == 0 && (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0)) ||
            (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 2 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
 
     // Now we are good to start rendering
