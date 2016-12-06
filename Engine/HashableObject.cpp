@@ -152,6 +152,11 @@ HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
 
     {
         QMutexLocker k(&_imp->hashCacheMutex);
+
+        // If the cache hash is empty, then all hash listeners must also have their hash empty. 
+        if (_imp->hashCache.empty()) {
+            return false;
+        }
         _imp->hashCache.clear();
     }
     for (std::list<HashableObjectWPtr>::const_iterator it = _imp->hashListeners.begin(); it != _imp->hashListeners.end(); ++it) {

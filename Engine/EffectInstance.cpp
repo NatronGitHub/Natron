@@ -2694,9 +2694,9 @@ static void setupGLForRender(const ImagePtr& image,
     Q_UNUSED(time);
 #endif
     RectI imageBounds = image->getBounds();
-    assert(image->getParams()->getStorageInfo().glContext.lock() == glContext);
     RectI viewportBounds;
     if (GL::isGPU()) {
+        assert(image->getParams()->getStorageInfo().glContext.lock() == glContext);
         viewportBounds = imageBounds;
         int textureTarget = image->getGLTextureTarget();
         GL::Enable(textureTarget);
