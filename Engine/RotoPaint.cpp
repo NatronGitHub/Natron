@@ -3092,7 +3092,7 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
     KnobBoolPtr disabledKnob = globalTimeBlurNode->getDisabledKnob();
 
     assert(disabledKnob && divisionsKnob && shutterKnob && shutterTypeKnob && shutterCustomOffsetKnob);
-    {
+    if (rotoPaintEffect->getMotionBlurTypeKnob()) {
         // The global time blur is disabled if the motion blur is set to per-shape
         std::string expression = "thisGroup.motionBlurMode.get() != 2";
         try {

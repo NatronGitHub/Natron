@@ -1432,7 +1432,6 @@ RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) cons
 void
 RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const
 {
-    assert(isRenderCloneNeeded());
     QMutexLocker k(&_imp->renderClonesMutex);
     RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(renderID);
     if (found != _imp->renderClones.end()) {
