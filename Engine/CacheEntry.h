@@ -46,9 +46,11 @@
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 #ifdef DEBUG
