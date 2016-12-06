@@ -1073,7 +1073,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
     bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa() && glCpuContext;
     if (*storage == eStorageModeGLTex) {
         // Make the OpenGL context current to this thread
-        glContextLocker->reset( new OSGLContextAttacher(*glRenderContext) );
+        *glContextLocker = OSGLContextAttacher::create(*glRenderContext);
     } else {
         if (supportsOSMesa) {
             *glRenderContext = glCpuContext;
@@ -1631,10 +1631,7 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
              * Another thread might have allocated the same image in the cache but with another RoI, make sure
              * it is big enough for us, or resize it to our needs.
              */
-            if (it->second.fullscaleImage->getStorageMode() == eStorageModeGLTex) {
-                assert(glContextLocker);
-                glContextLocker->attach();
-            }
+
             if (args.calledFromGetImage) {
                 /*
                  * When called from EffectInstance::getImage() we must prevent from taking any write lock because
@@ -2016,7 +2013,7 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!*glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker->reset( new OSGLContextAttacher(glGpuContext) );
+                    *glContextLocker = OSGLContextAttacher::create(glGpuContext);
                 }
                 (*glContextLocker)->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage, glGpuContext);
@@ -2255,6 +2252,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
     boost::shared_ptr<FramesNeededMap> framesNeeded;
     {
+        // Ensure that we release the context while waiting for input images to be rendered.
+        assert(!glContextLocker || !glContextLocker->isAttached());
+
         RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;

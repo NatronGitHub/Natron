@@ -952,14 +952,14 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     if (!_imp->hasInitializedOpenGLFunctions) {
         OSGLContextPtr glContext;
         bool checkRenderingReq = true;
-        boost::scoped_ptr<OSGLContextAttacher> attacher;
+        boost::shared_ptr<OSGLContextAttacher> attacher;
         if (createOpenGLContext) {
             try {
                 _imp->initGLAPISpecific();
 
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false, false /*checkIfGLLoaded*/);
+                glContext = _imp->renderingContextPool->getOrCreateOpenGLContext(false, false /*checkIfGLLoaded*/);
                 if (glContext) {
-                    attacher.reset(new OSGLContextAttacher(glContext));
+                    attacher = OSGLContextAttacher::create(glContext);
                     attacher->attach();
                     // Make the context current and check its version
                 } else {
@@ -1013,7 +1013,6 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 }
             }
             
-            _imp->renderingContextPool->releaseGLContextFromRender(glContext);
 
             // Deattach the context
             if (attacher) {

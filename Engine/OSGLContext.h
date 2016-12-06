@@ -145,19 +145,6 @@ public:
 
 private:
 
-
-    /*  @brief Makes the context current for the calling
-     *  thread. A context can only be made current on
-     *  a single thread at a time and each thread can have only a single current
-     *  context at a time.
-     *
-     *  @thread_safety This function may be called from any thread.
-     */
-    void setContextCurrent_GPU();
-
-
-    void setContextCurrent_CPU(int width, int height, int rowWidth, void* buffer);
-
     void setContextCurrentInternal(int width, int height, int rowWidth, void* buffer);
 
     /**
@@ -172,10 +159,10 @@ private:
 
 
 /**
- * @brief RAII style class to safely call setContextCurrent() and unsetCurrentContext().
+ * @brief RAII style class to safely ensure a context is current to the calling thread.
  * This can be created recursively on the same thread, however 2 threads cannot concurrently own the context.
  **/
-class OSGLContextAttacher
+class OSGLContextAttacher : public boost::enable_shared_from_this<OSGLContextAttacher>
 {
     OSGLContextPtr _c;
 
@@ -185,67 +172,70 @@ class OSGLContextAttacher
     int _rowWidth;
     void* _buffer;
 
-public:
-
     /**
      * @brief Locks the given context to this thread.
      **/
-    OSGLContextAttacher(const OSGLContextPtr& c)
-    : _c(c)
-    , _attached(false)
-    , _width(0)
-    , _height(0)
-    , _rowWidth(0)
-    , _buffer(0)
-    {
-        assert(c);
-    }
+    OSGLContextAttacher(const OSGLContextPtr& c);
 
     /**
      * @brief Locks the given context to this thread. The context MUST be a CPU OpenGL context.
      **/
-    OSGLContextAttacher(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer)
-    : _c(c)
-    , _attached(false)
-    , _width(width)
-    , _height(height)
-    , _rowWidth(rowWidth)
-    , _buffer(buffer)
-    {
-        assert(c && !c->isGPUContext());
-    }
-
-    OSGLContextPtr getContext() const
-    {
-        return _c;
-    }
-
-    void attach()
-    {
-        if (!_attached) {
-            if (!_c->isGPUContext()) {
-                _c->setContextCurrent_CPU(_width, _height, _rowWidth, _buffer);
-            } else {
-                _c->setContextCurrent_GPU();
-            }
-            _attached = true;
-        }
-    }
-
-    void dettach()
-    {
-
-        if (_attached) {
-            _c->unsetCurrentContext();
-            _attached = false;
-        }
-    }
+    OSGLContextAttacher(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer);
 
 
-    ~OSGLContextAttacher()
-    {
-        dettach();
-    }
+public:
+
+    /**
+     * @brief Create an attacher object. If an attacher object already exists on this thread local storage it will
+     * be retrieved instead of creating a new one. 
+     * When leaving the ctor, the context is not necessarily attached, to ensure it is correctly attached, call attach().
+     **/
+    static OSGLContextAttacherPtr create(const OSGLContextPtr& c);
+
+    /**
+     * @brief Same as create(c) but also provides the default framebuffer for OSMesa contexts.
+     **/
+    static OSGLContextAttacherPtr create(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer);
+
+    /**
+     * @brief Ensures the dettach() function is called if isAttached() returns true
+     **/
+    ~OSGLContextAttacher();
+
+    OSGLContextPtr getContext() const;
+
+    /**
+     * @brief Attaches the context to the current thread. Does nothing if already attached.
+     **/
+    void attach();
+
+    /**
+     * @brief Returns true if the context is attached
+     **/
+    bool isAttached() const;
+
+    /**
+     * @brief Dettaches the context from the current thread. Does nothing if already dettached.
+     * This is called from the dtor of this object and does not need to be called explicitly.
+     **/
+    void dettach();
+
+};
+
+/**
+ * @brief RAII style class to help switching temporarily context on a thread.
+ * The ctor will save the current context while the dtor will dettach whatever context
+ * was made current in-between and make the original context prior to the ctor current again.
+ **/
+class OSGLContextSaver
+{
+    OSGLContextAttacherPtr savedContext;
+
+public:
+
+    OSGLContextSaver();
+
+    ~OSGLContextSaver();
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -611,7 +611,7 @@ public:
                                                   const ImageComponents & outputClipPrefsComps,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
                                                   std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
-                                                  boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher);
+                                                  boost::shared_ptr<OSGLContextAttacher>* glContextAttacher);
 
     void setupRenderArgs(const EffectDataTLSPtr& tls,
                          const OSGLContextPtr& glContext,
@@ -624,7 +624,7 @@ public:
                          const std::bitset<4>& processChannels,
                          const EffectInstance::InputImagesMap& inputImages,
                          EffectInstance::RenderActionArgs &actionArgs,
-                         boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
+                         boost::shared_ptr<OSGLContextAttacher>* glContextAttacher,
                          TimeLapsePtr *timeRecorder);
 
     void renderHandlerPostProcess(const EffectDataTLSPtr& tls,

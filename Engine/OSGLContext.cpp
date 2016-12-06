@@ -439,9 +439,9 @@ OSGLContext::getMaxOpenGLWidth()
     static int maxGPUWidth = 0;
     if (_imp->useGPUContext) {
         if (maxGPUWidth == 0) {
-            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            boost::shared_ptr<OSGLContextAttacher> attacher;
             if (getCurrentThread() != QThread::currentThread()) {
-                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher = OSGLContextAttacher::create(shared_from_this());
                 attacher->attach();
             }
             GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUWidth);
@@ -450,9 +450,9 @@ OSGLContext::getMaxOpenGLWidth()
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUWidth == 0) {
-            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            boost::shared_ptr<OSGLContextAttacher> attacher;
             if (getCurrentThread() != QThread::currentThread()) {
-                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher = OSGLContextAttacher::create(shared_from_this());
                 attacher->attach();
             }
             GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUWidth);
@@ -471,9 +471,9 @@ OSGLContext::getMaxOpenGLHeight()
     static int maxGPUHeight = 0;
     if (_imp->useGPUContext) {
         if (maxGPUHeight == 0) {
-            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            boost::shared_ptr<OSGLContextAttacher> attacher;
             if (getCurrentThread() != QThread::currentThread()) {
-                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher = OSGLContextAttacher::create(shared_from_this());
                 attacher->attach();
             }
             GL_GPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxGPUHeight);
@@ -482,9 +482,9 @@ OSGLContext::getMaxOpenGLHeight()
     } else {
 #ifdef HAVE_OSMESA
         if (maxCPUHeight == 0) {
-            boost::scoped_ptr<OSGLContextAttacher> attacher;
+            boost::shared_ptr<OSGLContextAttacher> attacher;
             if (getCurrentThread() != QThread::currentThread()) {
-                attacher.reset(new OSGLContextAttacher(shared_from_this()));
+                attacher = OSGLContextAttacher::create(shared_from_this());
                 attacher->attach();
             }
             GL_CPU::GetIntegerv(GL_MAX_TEXTURE_SIZE, &maxCPUHeight);
@@ -523,17 +523,6 @@ OSGLContext::getOrCreateFBOId()
 }
 
 
-void
-OSGLContext::setContextCurrent_GPU()
-{
-    setContextCurrentInternal(0,0,0,0);
-}
-
-void
-OSGLContext::setContextCurrent_CPU(int width, int height, int rowWidth, void* buffer)
-{
-    setContextCurrentInternal(width, height, rowWidth, buffer);
-}
 
 void
 OSGLContext::setContextCurrentInternal(int width, int height, int rowWidth, void* buffer)
@@ -921,7 +910,123 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
     }
     
     return _imp->copyUnprocessedChannelsShader[index];
-    
+
+}
+
+
+OSGLContextAttacher::OSGLContextAttacher(const OSGLContextPtr& c)
+: _c(c)
+, _attached(false)
+, _width(0)
+, _height(0)
+, _rowWidth(0)
+, _buffer(0)
+{
+    assert(c);
+}
+
+OSGLContextAttacher::OSGLContextAttacher(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer)
+: _c(c)
+, _attached(false)
+, _width(width)
+, _height(height)
+, _rowWidth(rowWidth)
+, _buffer(buffer)
+{
+    assert(c && !c->isGPUContext());
+}
+
+
+OSGLContextAttacherPtr
+OSGLContextAttacher::create(const OSGLContextPtr& c)
+{
+    OSGLContextAttacherPtr curAttacher = appPTR->getGPUContextPool()->getThreadLocalContext();
+    if (curAttacher) {
+        if (curAttacher->getContext() == c) {
+            return curAttacher;
+        } else {
+            curAttacher->dettach();
+        }
+    }
+    OSGLContextAttacherPtr ret(new OSGLContextAttacher(c));
+    return ret;
+}
+
+OSGLContextAttacherPtr
+OSGLContextAttacher::create(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer)
+{
+    OSGLContextAttacherPtr curAttacher = appPTR->getGPUContextPool()->getThreadLocalContext();
+    if (curAttacher) {
+        if (curAttacher->getContext() == c) {
+            return curAttacher;
+        } else {
+            curAttacher->dettach();
+        }
+    }
+    OSGLContextAttacherPtr ret(new OSGLContextAttacher(c, width, height, rowWidth, buffer));
+    return ret;
+}
+
+
+OSGLContextPtr
+OSGLContextAttacher::getContext() const
+{
+    return _c;
+}
+
+void
+OSGLContextAttacher::attach()
+{
+    if (!_attached) {
+        appPTR->getGPUContextPool()->registerContextForThread(shared_from_this());
+        _c->setContextCurrentInternal(_width, _height, _rowWidth, _buffer);
+        _attached = true;
+    }
+}
+
+bool
+OSGLContextAttacher::isAttached() const
+{
+    return _attached;
+}
+
+void
+OSGLContextAttacher::dettach()
+{
+
+    if (_attached) {
+        appPTR->getGPUContextPool()->unregisterContextForThread();
+        _c->unsetCurrentContext();
+        _attached = false;
+    }
+}
+
+
+OSGLContextAttacher::~OSGLContextAttacher()
+{
+    dettach();
+}
+
+OSGLContextSaver::OSGLContextSaver()
+: savedContext()
+{
+    // Remember the active context
+    savedContext = appPTR->getGPUContextPool()->getThreadLocalContext();
+
+}
+
+OSGLContextSaver::~OSGLContextSaver()
+{
+    // Dettach whichever context was made current in the middle
+    OSGLContextAttacherPtr curContext = appPTR->getGPUContextPool()->getThreadLocalContext();
+    if (curContext) {
+        curContext->dettach();
+    }
+
+    // re-attach the old one
+    if (savedContext) {
+        savedContext->attach();
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

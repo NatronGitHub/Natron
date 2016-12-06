@@ -5627,6 +5627,7 @@ Node::clearLastRenderedImage()
 void
 Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
 {
+
     {
         QMutexLocker k(&_imp->lastRenderedImageMutex);
         _imp->lastRenderedImage = lastRenderedImage;

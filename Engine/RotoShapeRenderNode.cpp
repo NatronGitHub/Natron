@@ -327,6 +327,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
+    assert(outputPlane.second->getParams()->getStorageInfo().glContext.lock() == glContext);
+
 
     bool isDuringPainting = isStroke && isStroke->isPaintBuffersEnabled();
     double distNextIn = 0.;
@@ -429,7 +431,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 Image::WriteAccess outputWriteAccess(outputPlane.second.get());
                 unsigned char* data = outputWriteAccess.pixelAt(bounds.x1, bounds.y1);
                 assert(data);
-                contextLocker.reset(new OSGLContextAttacher(glContext, bounds.width(), bounds.height(), bounds.width(), data));
+                contextLocker = OSGLContextAttacher::create(glContext, bounds.width(), bounds.height(), bounds.width(), data);
                 contextLocker->attach();
             }
 

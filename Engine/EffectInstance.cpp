@@ -1845,7 +1845,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             // If the last rendered image is on GPU, ensure we are using the same OpenGL context.
             if (buffer->getStorageMode() != eStorageModeGLTex ||
                 (glContextAttacher && glContextAttacher->getContext() == buffer->getParams()->getStorageInfo().glContext.lock())) {
-                *image = buffer;
+                cachedImages.push_back(buffer);
                 isCached = true;
             }
 
@@ -2497,7 +2497,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     TimeLapsePtr timeRecorder;
     RenderActionArgs actionArgs;
-    boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
+    boost::shared_ptr<OSGLContextAttacher> glContextAttacher;
     setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, rectToRender.imgs, actionArgs, &glContextAttacher, &timeRecorder);
 
     // If this tile is identity, copy input image instead
@@ -2688,13 +2688,13 @@ static void setupGLForRender(const ImagePtr& image,
                              const OSGLContextPtr& glContext,
                              const RectI& roi,
                              bool callGLFinish,
-                             boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher)
+                             boost::shared_ptr<OSGLContextAttacher>* glContextAttacher)
 {
 #ifndef DEBUG
     Q_UNUSED(time);
 #endif
     RectI imageBounds = image->getBounds();
-
+    assert(image->getParams()->getStorageInfo().glContext.lock() == glContext);
     RectI viewportBounds;
     if (GL::isGPU()) {
         viewportBounds = imageBounds;
@@ -2719,7 +2719,7 @@ static void setupGLForRender(const ImagePtr& image,
         assert(data);
 
         // With OSMesa we render directly to the context framebuffer
-        glContextAttacher->reset(new OSGLContextAttacher(glContext, roi.width(), roi.height(), imageBounds.width() , data));
+        *glContextAttacher = OSGLContextAttacher::create(glContext, roi.width(), roi.height(), imageBounds.width() , data);
         (*glContextAttacher)->attach();
     }
 
@@ -2760,7 +2760,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
                                                       const ImageComponents & outputClipPrefsComps,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
                                                       std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
-                                                      boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher)
+                                                      boost::shared_ptr<OSGLContextAttacher>* glContextAttacher)
 {
     const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
     std::list<std::pair<ImageComponents, ImagePtr> > tmpPlanes;
@@ -3110,7 +3110,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
                                                 const std::bitset<4>& processChannels,
                                                 const InputImagesMap& inputImages,
                                                 RenderActionArgs &actionArgs,
-                                                boost::scoped_ptr<OSGLContextAttacher>* glContextAttacher,
+                                                boost::shared_ptr<OSGLContextAttacher>* glContextAttacher,
                                                 TimeLapsePtr *timeRecorder)
 {
     const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
@@ -3159,7 +3159,7 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
 
         // Ensure the context is current
         if (glContext->isGPUContext()) {
-            glContextAttacher->reset( new OSGLContextAttacher(glContext) );
+            *glContextAttacher = OSGLContextAttacher::create(glContext);
             (*glContextAttacher)->attach();
 
 
@@ -4685,8 +4685,8 @@ EffectInstance::dettachAllOpenGLContexts()
         if (!context) {
             continue;
         }
-        OSGLContextAttacher attacher(context);
-        attacher.attach();
+        OSGLContextAttacherPtr attacher = OSGLContextAttacher::create(context);
+        attacher->attach();
 
         if (it->second.use_count() == 1) {
             // If no render is using it, dettach the context

@@ -1008,8 +1008,8 @@ ParallelRenderArgsSetterPrivate::fetchOpenGLContext(const ParallelRenderArgsSett
             isStroke->getDrawingGLContext(&glContext, &cpuContext);
             if (!glContext && !cpuContext) {
                 try {
-                    glContext = appPTR->getGPUContextPool()->attachGLContextToRender(true/*retrieveLastContext*/);
-                    cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(true/*retrieveLastContext*/);
+                    glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(true/*retrieveLastContext*/);
+                    cpuContext = appPTR->getGPUContextPool()->getOrCreateCPUOpenGLContext(true/*retrieveLastContext*/);
                     isStroke->setDrawingGLContext(glContext, cpuContext);
                 } catch (const std::exception& /*e*/) {
 
@@ -1018,8 +1018,8 @@ ParallelRenderArgsSetterPrivate::fetchOpenGLContext(const ParallelRenderArgsSett
         }
     } else {
         try {
-            glContext = appPTR->getGPUContextPool()->attachGLContextToRender(false/*retrieveLastContext*/);
-            cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender(false/*retrieveLastContext*/);
+            glContext = appPTR->getGPUContextPool()->getOrCreateOpenGLContext(false/*retrieveLastContext*/);
+            cpuContext = appPTR->getGPUContextPool()->getOrCreateCPUOpenGLContext(false/*retrieveLastContext*/);
         } catch (const std::exception& /*e*/) {
 
         }
@@ -1092,18 +1092,6 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
     }
 
-
-    OSGLContextPtr glContext = _imp->openGLContext.lock();
-    if (glContext) {
-        // This render is going to end, release the OpenGL context so that another frame render may use it
-        appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
-    }
-
-    OSGLContextPtr cpuContext = _imp->cpuOpenGLContext.lock();
-    if (cpuContext) {
-        // This render is going to end, release the OpenGL context so that another frame render may use it
-        appPTR->getGPUContextPool()->releaseCPUGLContextFromRender(cpuContext);
-    }
 }
 
 ParallelRenderArgs::ParallelRenderArgs()

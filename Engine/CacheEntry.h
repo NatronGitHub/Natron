@@ -611,14 +611,19 @@ public:
             }
         } else if (_storageMode == eStorageModeGLTex) {
             if (_glTexture) {
+
+                // This will make current and OpenGL context which may not be the current context used during a render
+                // hence save the current context.
+                OSGLContextSaver saveCurrentContext;
+
                 OSGLContextPtr glContext = _glContext.lock();
                 
                 // The context must still be alive while textures are created in this context!
                 assert(glContext);
                 if (glContext) {
                     // Ensure the context is current to the thread
-                    OSGLContextAttacher attacher(glContext);
-                    attacher.attach();
+                    OSGLContextAttacherPtr attacher = OSGLContextAttacher::create(glContext);
+                    attacher->attach();
                     _glTexture.reset();
                 }
             }

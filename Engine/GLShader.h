@@ -126,8 +126,12 @@ public:
     virtual bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0) OVERRIDE FINAL
     {
         if (_firstTime) {
-            _firstTime = false;
             _shaderID = GL::CreateProgram();
+            if (!_shaderID) {
+                return false;
+            }
+            _firstTime = false;
+
         }
 
         GLuint shader = 0;

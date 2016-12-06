@@ -265,14 +265,15 @@ public:
     static void setupGLViewport(const RectI& bounds, const RectI& roi)
     {
         GL::Viewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        glCheckError(GL);
         GL::MatrixMode(GL_PROJECTION);
         GL::LoadIdentity();
         GL::Ortho( roi.x1, roi.x2,
                     roi.y1, roi.y2,
                     -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        glCheckError(GL);
         GL::MatrixMode(GL_MODELVIEW);
         GL::LoadIdentity();
-        glCheckError(GL);
     }
 
     template <typename GL>

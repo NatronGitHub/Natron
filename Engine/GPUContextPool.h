@@ -46,48 +46,26 @@ public:
 
     ~GPUContextPool();
 
-
-    //////////////////////////////// OpenGL related /////////////////////////////////
-
     /**
-     * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
-     * Multiple frame renders may share the same context, but when they lock it with the 
-     * setContextCurrent() function, they own the context and lock out all other renders trying to use it.
-     * After returning this function, the context must be made current before
-     * OpenGL calls can be made.
+     * @brief Get an existing OpenGL context in the GPU pool or create a new one.
+     * This function cycles through existing contexts so that each contexts gets to work.
+     * When exiting this function, the context is not necessarily current to the thread.
+     * To make it current, create a OSGLContextAttacher object and call the attach() function.
      *
+     * @param retrieveLastContext If true, the context that was asked for the last time is re-used
      * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    OSGLContextPtr attachGLContextToRender(bool retrieveLastContext = false, bool checkIfGLLoaded = true);
+    OSGLContextPtr getOrCreateOpenGLContext(bool retrieveLastContext = false, bool checkIfGLLoaded = true);
 
     /**
-     * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()
-     **/
-    void releaseGLContextFromRender(const OSGLContextPtr& context);
-
-    ////////////////////////////////////////////////////////////////
-
-    ////////////////////////////// OpenGL CPU related (OSMesa) //////////////////////
-
-    /**
-     * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
-     * Multiple frame renders may share the same context, but when they lock it with the
-     * setContextCurrent() function, they own the context and lock out all other renders trying to use it.
-     * After returning this function, the context must be made current before
-     * OpenGL calls can be made.
+     * @brief Get an existing OpenGL OSMA context in the GPU pool or create a new one.
+     * This function cycles through existing contexts so that each contexts gets to work.
+     * When exiting this function, the context is not necessarily current to the thread.
+     * To make it current, create a OSGLContextAttacher object and call the attach() function.
      *
-     * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
+     * @param retrieveLastContext If true, the context that was asked for the last time is re-used
      **/
-    OSGLContextPtr attachCPUGLContextToRender(bool retrieveLastContext = false);
-
-    /**
-     * @brief Releases the given OpenGL context from a render which was previously retrieved from attachGLContextToRender()
-     **/
-    void releaseCPUGLContextFromRender(const OSGLContextPtr& context);
-
-
-
-    ////////////////////////////////////////////////////////////////
+    OSGLContextPtr getOrCreateCPUOpenGLContext(bool retrieveLastContext = false);
 
 
     /**
@@ -95,9 +73,20 @@ public:
      **/
     void clear();
 
+    /**
+     * @brief If this thread currently has a bound OpenGL context, this returns a valid pointer to the object
+     * that attached the context, otherwise NULL.
+     **/
+    OSGLContextAttacherPtr getThreadLocalContext() const;
+
 private:
 
+    void registerContextForThread(const OSGLContextAttacherPtr& context);
 
+    void unregisterContextForThread();
+
+
+    friend class OSGLContextAttacher;
     boost::scoped_ptr<GPUContextPoolPrivate> _imp;
 };
 

@@ -3351,7 +3351,11 @@ RotoPaint::refreshRotoPaintTree()
     // to the first item merge node.
 
     // Default to noop node as bottom of the tree (if any)
-    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)_imp->motionBlurTypeKnob.lock()->getValue();
+    KnobChoicePtr mbTypeKnob = _imp->motionBlurTypeKnob.lock();
+    RotoMotionBlurModeEnum mbType = eRotoMotionBlurModeNone;
+    if (mbTypeKnob) {
+        mbType = (RotoMotionBlurModeEnum)mbTypeKnob->getValue();
+    }
     NodePtr timeBlurNode = _imp->getOrCreateGlobalTimeBlurNode();
     if (mbType != eRotoMotionBlurModeGlobal) {
         timeBlurNode->disconnectInput(0);
