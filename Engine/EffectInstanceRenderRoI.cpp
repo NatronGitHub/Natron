@@ -2253,7 +2253,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::shared_ptr<FramesNeededMap> framesNeeded;
     {
         // Ensure that we release the context while waiting for input images to be rendered.
-        assert(!glContextLocker || !glContextLocker->isAttached());
+        if (glContextLocker) {
+            glContextLocker->dettach();
+        }
 
         RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {

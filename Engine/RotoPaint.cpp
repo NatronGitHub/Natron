@@ -2888,6 +2888,7 @@ RotoPaint::setIsDoingNeatRender(bool doing)
 {
     bool setUserPaintingOff = false;
     {
+#pragma message WARN("move this to RotoStrokeItem")
         QMutexLocker k(&_imp->doingNeatRenderMutex);
 
         if (doing && _imp->mustDoNeatRender) {
