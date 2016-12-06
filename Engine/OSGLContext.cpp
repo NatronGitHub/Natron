@@ -1020,7 +1020,9 @@ OSGLContextSaver::~OSGLContextSaver()
     // Dettach whichever context was made current in the middle
     OSGLContextAttacherPtr curContext = appPTR->getGPUContextPool()->getThreadLocalContext();
     if (curContext) {
-        curContext->dettach();
+        if (curContext != savedContext) {
+            curContext->dettach();
+        }
     }
 
     // re-attach the old one

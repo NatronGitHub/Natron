@@ -145,11 +145,11 @@ struct RotoStrokeItemPrivate
     // This is used when creating a render clone for this stroke in the copy ctor to only
     // copy the points that are left to render.
     // Mutable since it is updated from the copy ctor of the render clone
-    mutable int lastPointIndexInSubStroke;
+    mutable int lastPointIndexInSubStroke, pickupPointIndexInSubStroke;
 
     // The index of the sub-stroke (in the strokes vector) for which the lastPointIndexInSubStroke corresponds to.
     // Mutable since it is updated from the copy ctor of the render clone
-    mutable int lastStrokeIndex;
+    mutable int currentSubStroke;
 
     // For cairo back-end, we cache the cairo_pattern used to render the stroke dots. This cache
     // is only valid throughout a single render or during the drawing action.
@@ -186,7 +186,8 @@ struct RotoStrokeItemPrivate
     , renderCachedBbox()
     , lastStrokeStepBbox()
     , lastPointIndexInSubStroke(-1)
-    , lastStrokeIndex(0)
+    , pickupPointIndexInSubStroke(0)
+    , currentSubStroke(0)
     , strokeDotPatternsMutex()
     , strokeDotPatterns()
     , drawingGlCpuContext()
@@ -208,7 +209,8 @@ struct RotoStrokeItemPrivate
     , renderCachedBbox(other.renderCachedBbox)
     , lastStrokeStepBbox(other.lastStrokeStepBbox)
     , lastPointIndexInSubStroke(other.lastPointIndexInSubStroke)
-    , lastStrokeIndex(other.lastStrokeIndex)
+    , pickupPointIndexInSubStroke(other.pickupPointIndexInSubStroke)
+    , currentSubStroke(other.currentSubStroke)
     , strokeDotPatternsMutex()
     , strokeDotPatterns(other.strokeDotPatterns)
     , drawingGlCpuContext(other.drawingGlCpuContext)
@@ -249,16 +251,15 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     QMutexLocker k1(&lock);
 
     assert(!other.lock.tryLock());
-
-    assert(other.lastStrokeIndex >= 0);
+    assert(currentSubStroke >= 0);
 
     bool hasDoneSomething = false;
 
     // If the curve is in a drawing state, pick-up from where
     // the drawing was at.
     // Otherwise render all sub-strokes
-    int pickupPointIndex = (!usePaintBuffers || other.lastPointIndexInSubStroke == -1) ? 0 : other.lastPointIndexInSubStroke + 1;
-    int pickupStrokeIndex = usePaintBuffers ? other.lastStrokeIndex : 0;
+    pickupPointIndexInSubStroke = (!usePaintBuffers || lastPointIndexInSubStroke == -1) ? 0 : lastPointIndexInSubStroke + 1;
+    int pickupStrokeIndex = usePaintBuffers ? currentSubStroke : 0;
 
     for (int strokeIndex = pickupStrokeIndex; strokeIndex < (int)other.strokes.size(); ++strokeIndex) {
 
@@ -280,7 +281,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         bool hasDataToCopy = true;
         {
             int nKeys = originalStroke->xCurve->getKeyFramesCount();
-            if (nKeys == 0 || (usePaintBuffers && other.lastPointIndexInSubStroke != -1 && other.lastPointIndexInSubStroke >= nKeys - 1)) {
+            if (nKeys == 0 || (usePaintBuffers && lastPointIndexInSubStroke != -1 && lastPointIndexInSubStroke >= nKeys - 1)) {
                 hasDataToCopy = false;
             }
         }
@@ -292,56 +293,58 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
             strokeCopy.pressureCurve.reset(new Curve);
 
 
-            // Copy what we need from the sub-stroke
-            if (other.lastPointIndexInSubStroke == -1 || !usePaintBuffers) {
+            // Copy what we need from the sub-stroke.
+            // we still need to add to the stroke the last point rendered before so that
+            // the interval between the last draw step and the next step is drawn.
+            if (pickupPointIndexInSubStroke <= 1) {
                 strokeCopy.xCurve->clone(*(originalStroke->xCurve));
                 strokeCopy.yCurve->clone(*(originalStroke->yCurve));
                 strokeCopy.pressureCurve->clone(*(originalStroke->pressureCurve));
             } else {
-                strokeCopy.xCurve->cloneIndexRange(*(originalStroke->xCurve), other.lastPointIndexInSubStroke + 1);
-                strokeCopy.yCurve->cloneIndexRange(*(originalStroke->yCurve), other.lastPointIndexInSubStroke + 1);
-                strokeCopy.pressureCurve->cloneIndexRange(*(originalStroke->pressureCurve), other.lastPointIndexInSubStroke + 1);
+                strokeCopy.xCurve->cloneIndexRange(*(originalStroke->xCurve), pickupPointIndexInSubStroke - 1);
+                strokeCopy.yCurve->cloneIndexRange(*(originalStroke->yCurve), pickupPointIndexInSubStroke - 1);
+                strokeCopy.pressureCurve->cloneIndexRange(*(originalStroke->pressureCurve), pickupPointIndexInSubStroke - 1);
             }
-            // Update the last point index
-            int newIndex = originalStroke->xCurve->getKeyFramesCount() - 1;
-            if ((other.lastPointIndexInSubStroke != -1 && newIndex > other.lastPointIndexInSubStroke) || (other.lastPointIndexInSubStroke == -1 && newIndex >= 0)) {
+            // Store on the render clone the new index: it will be updated in updateStrokeData() on the "main instance" when the render is finished, so we are sure we rendered this stroke
+            // so far
+            lastPointIndexInSubStroke = originalStroke->xCurve->getKeyFramesCount() - 1;
+            if (lastPointIndexInSubStroke >= pickupPointIndexInSubStroke) {
                 hasDoneSomething = true;
             }
-            other.lastPointIndexInSubStroke = newIndex;
+
             strokes.push_back(strokeCopy);
         }
 
+        // If the user previously drawn a stroke, there may be nothing to render in that stroke but a new stroke was made.
+        // In this case, go on to the next stroke
+        if (usePaintBuffers && !hasDataToCopy && currentSubStroke < (int)other.strokes.size() - 1) {
 
-        // When drawing, if there is a stroke after this one to be rendered, increment the index
-        if (usePaintBuffers && other.lastStrokeIndex < (int)other.strokes.size() - 1) {
             // Increment the stroke index
-            other.lastStrokeIndex += 1;
+            other.currentSubStroke += 1;
+            currentSubStroke = other.currentSubStroke;
 
             // Reset the last point index
+            other.pickupPointIndexInSubStroke = 0;
+            pickupPointIndexInSubStroke = 0;
             other.lastPointIndexInSubStroke = -1;
+            lastPointIndexInSubStroke = -1;
         }
 
     }
 
-    // Compute the bounding box of the stroke by extending the bbox
-    // that was computed at the previous draw step.
-    // If we never drawn so far, this is the first
-    // tick hence we recompute it from the strokes.
+    // During painting, we copy on the clone only the points that were not rendered yet.
+    // In order for the getBoundingBox function to return something decent, we still need
+    // to know the bounding box of the full stroke
     if (usePaintBuffers && hasDoneSomething) {
-
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
         double time = _publicInterface->getCurrentTime();
         ViewIdx view = _publicInterface->getCurrentView();
-        other.lastStrokeStepBbox = computeBoundingBox(time, view);
-        if (pickupPointIndex == 0 && pickupStrokeIndex == 0) {
-            other.renderCachedBbox = other.lastStrokeStepBbox;
-        } else {
-            other.renderCachedBbox.merge(other.lastStrokeStepBbox);
-        }
-        lastStrokeStepBbox = other.lastStrokeStepBbox;
-        renderCachedBbox = other.renderCachedBbox;
+
+        lastStrokeStepBbox = computeBoundingBox(time, view);
+        renderCachedBbox = other.computeBoundingBox(time, view);
+
     }
     return hasDoneSomething;
 } // copyStrokeForRendering
@@ -352,9 +355,18 @@ RotoStrokeItem::getRenderCloneCurrentStrokeIndex() const
     assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
     if (_imp->usePaintBuffers) {
-        return _imp->lastStrokeIndex;
+        return _imp->currentSubStroke;
     }
     return 0;
+}
+
+int
+RotoStrokeItem::getRenderCloneCurrentStrokeEndPointIndex() const
+{
+    assert(isRenderClone());
+    QMutexLocker k(&_imp->lock);
+        return _imp->lastPointIndexInSubStroke;
+
 }
 
 int
@@ -363,7 +375,7 @@ RotoStrokeItem::getRenderCloneCurrentStrokeStartPointIndex() const
     assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
     if (_imp->usePaintBuffers) {
-        return _imp->lastPointIndexInSubStroke == -1 ? 0 : _imp->lastPointIndexInSubStroke + 1;
+        return _imp->pickupPointIndexInSubStroke;
     }
     return 0;
 }
@@ -408,11 +420,13 @@ RotoStrokeItem::createRenderCopy() const
 
 
 void
-RotoStrokeItem::updateStrokeData(const Point& lastCenter, double distNextOut)
+RotoStrokeItem::updateStrokeData(const Point& lastCenter, double distNextOut, int lastSubStrokePointIndex)
 {
+    assert(!isRenderClone());
     QMutexLocker k(&_imp->lock);
     _imp->distToNextOut = distNextOut;
     _imp->lastCenter = lastCenter;
+    _imp->lastPointIndexInSubStroke = lastSubStrokePointIndex;
 }
 
 void
@@ -729,6 +743,17 @@ RotoStrokeItem::endSubStroke()
                    stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
 
             int nk = stroke->xCurve->getKeyFramesCount();
+
+            // When ending the stroke, set the points interpolation to catmullrom the the stroke appears smooth even if the user was
+            // too sharp with the pen.
+            // For smear we don't do this as it changes too much the render in output.
+            if (getBrushType() != eRotoStrokeTypeSmear) {
+                for (int i = 0; i < nk; ++i) {
+                    stroke->xCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, i);
+                    stroke->yCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, i);
+                    stroke->pressureCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, i);
+                }
+            }
             if (nk == 0) {
                 // If the stroke did not have any point, remove it
                 _imp->strokes.pop_back();
@@ -831,9 +856,9 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
                 throw std::logic_error("RotoStrokeItem::appendPoint");
             }
         }
-        // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
-        // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
-        KeyframeTypeEnum interpolation = _imp->type == eRotoStrokeTypeSmear ? eKeyframeTypeFree : eKeyframeTypeCatmullRom;
+        // While editing a stroke, use linear tangents because we don't have much informations.
+        // When the stroke ends, we set all points interpolation to catmull-rom
+        KeyframeTypeEnum interpolation = eKeyframeTypeLinear;
         stroke->xCurve->setKeyFrameInterpolation(interpolation, ki);
         stroke->yCurve->setKeyFrameInterpolation(interpolation, ki);
         stroke->pressureCurve->setKeyFrameInterpolation(interpolation, ki);
@@ -1263,6 +1288,19 @@ RotoStrokeItem::getYControlPoints() const
     }
 
     return ret;
+}
+
+int
+RotoStrokeItem::getNumControlPoints(int strokeIndex) const
+{
+    QMutexLocker k(&_imp->lock);
+    if (strokeIndex >= (int)_imp->strokes.size() || strokeIndex < 0) {
+        return 0;
+    }
+    if (!_imp->strokes[strokeIndex].xCurve) {
+        return 0;
+    }
+    return _imp->strokes[strokeIndex].xCurve->getKeyFramesCount();
 }
 
 void

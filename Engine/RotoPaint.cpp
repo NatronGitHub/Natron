@@ -1467,7 +1467,7 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     multiStroke->setInViewerContextLabel( tr(kRotoUIParamMultiStrokeEnabledLabel) );
     multiStroke->setHintToolTip( tr(kRotoUIParamMultiStrokeEnabledHint) );
     multiStroke->setEvaluateOnChange(false);
-    multiStroke->setDefaultValue(false);
+    multiStroke->setDefaultValue(true);
     multiStroke->setSecret(true);
     generalPage->addKnob(multiStroke);
     _imp->ui->multiStrokeEnabled = multiStroke;

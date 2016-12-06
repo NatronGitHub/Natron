@@ -138,7 +138,7 @@ public:
      * @brief When drawing, each step need to store some data in order
      * to the next step to pick-up from the same state.
      **/
-    void updateStrokeData(const Point& lastCenter, double distNextOut);
+    void updateStrokeData(const Point& lastCenter, double distNextOut, int lastSubStrokePointIndex);
 
     /**
      * @brief Get the state of the stroke rendering algorithm at the previous draw step.
@@ -152,10 +152,11 @@ public:
     int getRenderCloneCurrentStrokeIndex() const;
 
     /**
-     * @briefS hould only be called on the render clone: this is used to determine
+     * @brief Should only be called on the render clone: this is used to determine
      * if we are rendering the first drawing tick for a sub-stroke.
      **/
     int getRenderCloneCurrentStrokeStartPointIndex() const;
+    int getRenderCloneCurrentStrokeEndPointIndex() const;
 
     /**
      * @brief Internal to the cairo implementation of the stroke rendering. Do not call.
@@ -213,6 +214,8 @@ public:
 
     std::list<CurvePtr > getXControlPoints() const;
     std::list<CurvePtr > getYControlPoints() const;
+
+    int getNumControlPoints(int strokeIndex) const;
 
 
     KnobDoublePtr getBrushEffectKnob() const;

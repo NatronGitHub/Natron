@@ -327,22 +327,28 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
-    assert(outputPlane.second->getParams()->getStorageInfo().glContext.lock() == glContext);
+    assert(!args.useOpenGL || outputPlane.second->getParams()->getStorageInfo().glContext.lock() == glContext);
 
 
     bool isDuringPainting = isStroke && isStroke->isPaintBuffersEnabled();
     double distNextIn = 0.;
     Point lastCenterIn = { INT_MIN, INT_MIN };
-    int strokePointIndex = 0;
+    int strokeStartPointIndex = 0;
     int strokeMultiIndex = 0;
 
     // For strokes and open-bezier evaluate them to get the points and their pressure
     // We also compute the bounding box of the item taking into account the motion blur
     if (isStroke) {
-        strokePointIndex = isStroke->getRenderCloneCurrentStrokeStartPointIndex();
+        strokeStartPointIndex = isStroke->getRenderCloneCurrentStrokeStartPointIndex();
         strokeMultiIndex = isStroke->getRenderCloneCurrentStrokeIndex();
         isStroke->getStrokeState(&lastCenterIn, &distNextIn);
-    } 
+    }
+
+    // Ensure that the indices of the draw step are valid.
+    // +2 because we also add the last point of the previous draw step
+    assert((strokeStartPointIndex == 0 && (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0)) ||
+           (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 2 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
+
     // Now we are good to start rendering
 
     double distToNextOut = 0.;
@@ -355,7 +361,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 
     // First first time we draw this clear the background.
-    if (strokePointIndex == 0 && strokeMultiIndex == 0) {
+    if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
         outputPlane.second->fillBoundsZero(glContext);
     }
 
@@ -390,7 +396,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (!args.useOpenGL) {
                 RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
-                    nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                    nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
             }
 #endif
@@ -413,7 +419,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                     RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting && isStroke) {
-                        nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                        nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                     }
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
@@ -436,7 +442,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 
             // Ensure that initially everything in the background is the source image
-            if (strokePointIndex == 0 && strokeMultiIndex == 0) {
+            if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
                 RectI bgImgRoI;
                 ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
@@ -460,7 +466,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
                 }
             } else {
-                if (strokePointIndex == 0 && !glContext->isGPUContext()) {
+                if (strokeStartPointIndex == 0 && !glContext->isGPUContext()) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
                     const RectD& rod = outputPlane.second->getRoD();
@@ -485,7 +491,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
             if (isDuringPainting) {
                 Q_UNUSED(renderedDot);
-                nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut);
+                nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
             }
 
         }   break;

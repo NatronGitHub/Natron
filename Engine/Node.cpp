@@ -5628,10 +5628,15 @@ void
 Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
 {
 
+    ImagePtr curLastRenderedImage;
     {
         QMutexLocker k(&_imp->lastRenderedImageMutex);
+        curLastRenderedImage = _imp->lastRenderedImage;
         _imp->lastRenderedImage = lastRenderedImage;
     }
+    // Ensure it is not destroyed while under the mutex, this could lead to a deadlock if the OpenGL context
+    // switches during the texture destruction.
+    curLastRenderedImage.reset();
 }
 
 ImagePtr
