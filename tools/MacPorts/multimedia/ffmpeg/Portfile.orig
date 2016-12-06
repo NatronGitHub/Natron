@@ -9,7 +9,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.2
+version             3.2.2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -51,8 +51,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  ed34d7d669f66f587efcbb7092781a48f629eef8 \
-                    sha256  88f70c1b8cab108f494ecbab5ba302cdb35d59a84cea88008b5fe49be068d5da
+checksums           rmd160  967ad4c72d6cf050dbdfcc7b356220f0a0742154 \
+                    sha256  3f01bd1fe1a17a277f8c84869e5d9192b4b978cb660872aa2b54c3cc8a2fedfc
 
 # root directory of extracted tarball is owned by root and has permissions 700
 # set to 755 to facilitate maintenance
@@ -152,6 +152,13 @@ platform darwin {
         configure.args-delete --enable-libbluray
         configure.args-append --disable-libbluray
         configure.args-append --disable-asm
+    }
+
+    # as of 1.6.0 libvpx only supports darwin 10 or later
+    if {${os.major} < 10} {
+        depends_build-delete port:libvpx
+        configure.args-delete --enable-libvpx
+        configure.args-append --disable-libvpx
     }
 
     # filters coreimage and coreimagesrc don't build on 10.6
@@ -288,15 +295,12 @@ variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// proto
 
 # x265 currently does not support OS X < 10.6 (#48336, #48338)
 # x265 cmake issues cause universal build to fail (#48331)
-# make libx265 support optional via +libx265 variant
-# only define variant for non-universal builds on 10.6 or greater
+# only enable libx265 support for non-universal builds on 10.6 or greater
 
 platform darwin {
-    if {${os.major} > 8 && [variant_isset gpl2] && ![variant_isset universal]} {
-        variant libx265 description {Build with support for encoding HEVC video using libx265} {
-            configure.args-append   --enable-libx265
-            depends_lib-append      port:x265
-        }
+    if {${os.major} > 9 && [variant_isset gpl2] && ![variant_isset universal]} {
+        configure.args-append   --enable-libx265
+        depends_lib-append      port:x265
     }
 }
 

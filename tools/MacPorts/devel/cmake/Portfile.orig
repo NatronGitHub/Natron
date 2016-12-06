@@ -29,9 +29,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.0
-    checksums       rmd160 e0a40516e55a52e1c18d93bdf7cd1d06cf6dc4cd \
-                    sha256 ed63e05c41aeb6c036e503114ab15847f29c312f9f21f5f1a7060a4b4ec2fb31
+    version         ${branch}.1
+    checksums       rmd160 6a1b7bfb15d882826ecafa5c74d5e4ae2f0530a4 \
+                    sha256 449a5bce64dbd4d5b9517ebd1a1248ed197add6ad27934478976fd5f1f9330e1
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -54,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20161114
+    version         20161130
     set dist_branch 3.7
-    set dist_date   20161114
-    set dist_hash   g647c3
-    checksums       rmd160 82f283c4d48f656d1688c71ec19f25f008d63d0c \
-                    sha256 0001306fe7c3d28c4d371a47df277ea6294c5ac521f92d447bb90528192302a8
+    set dist_date   20161129
+    set dist_hash   gc97471
+    checksums       rmd160 4d15fb15630f4b35f27e6d25a00f42a4cc22dafd \
+                    sha256 55c9289700696ce92e65db3c62a7a2e90609cfe1377c952c726503db1e0a2758
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
