@@ -453,12 +453,6 @@ public:
     virtual void onKnobsLoaded() OVERRIDE FINAL;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
 
-    bool mustDoNeatRender() const;
-
-    void setIsDoingNeatRender(bool doing);
-
-    bool isDoingNeatRender() const;
-
     virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
     NodePtr getPremultNode() const;
@@ -575,15 +569,6 @@ private:
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
-
-
-    /**
-     * @brief When finishing a stroke with the paint brush, we need to re-render it because the interpolation of the curve
-     * will be much smoother with more points than what it was during painting.
-     * We explicitly freeze the UI while waiting for the image to be drawn, otherwise the user might attempt to do a
-     * multiple stroke on top of it which could make some artifacts.
-     **/
-    void evaluateNeatStrokeRender();
 
     
     boost::scoped_ptr<RotoPaintPrivate> _imp;

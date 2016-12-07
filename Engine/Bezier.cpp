@@ -150,14 +150,16 @@ struct BezierPrivate
     BezierPrivate(const BezierPrivate& other)
     : itemMutex()
     , viewShapes()
-    , autoRecomputeOrientation(other.autoRecomputeOrientation)
-    , isOpenBezier(other.isOpenBezier)
-    , baseName(other.baseName)
-    , feather(other.feather)
-    , featherFallOff(other.featherFallOff)
-    , fallOffRampType(other.fallOffRampType)
     {
         QMutexLocker k(&other.itemMutex);
+
+        autoRecomputeOrientation = other.autoRecomputeOrientation;
+        isOpenBezier = other.isOpenBezier;
+        baseName = other.baseName;
+        feather = other.feather;
+        featherFallOff = other.featherFallOff;
+        fallOffRampType = other.fallOffRampType;
+
         for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
             BezierShape& thisShape = viewShapes[it->first];
             thisShape.isClockwiseOriented = it->second.isClockwiseOriented;

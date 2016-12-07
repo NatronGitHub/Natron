@@ -123,7 +123,7 @@ ProjectGui::create(const ProjectPtr& projectInternal,
                                tr("Project Settings"),
                                tr("The settings of the current project."),
                                parent);
-
+    projectInternal->setPanelPointer(_panel);
 
     _created = true;
 }

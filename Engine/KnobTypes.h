@@ -774,14 +774,12 @@ private:
 
     virtual bool hasModificationsVirtual(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL;
 
-    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
                              KnobChoiceMergeEntriesData* mergingData = 0);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
     virtual bool cloneExtraData(const KnobIPtr& other,
                                 ViewSetSpec view,
@@ -790,6 +788,9 @@ private:
                                 DimSpec otherDimension,
                                 double offset,
                                 const RangeD* range) OVERRIDE FINAL;
+
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
+
 
 private:
 
@@ -1505,9 +1506,11 @@ Q_SIGNALS:
 
 private:
 
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
+
     ValueChangedReturnCodeEnum setKeyFrameInternal(double time, double value, const CurvePtr& curve, KeyFrame* newKey);
 
-    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAliasLink(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;

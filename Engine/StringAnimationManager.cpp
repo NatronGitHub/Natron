@@ -77,6 +77,16 @@ struct StringAnimationManagerPrivate
         , knob(knob)
     {
     }
+
+    StringAnimationManagerPrivate(const StringAnimationManagerPrivate& other)
+    : customInterpolation(other.customInterpolation)
+    , ofxParamHandle(other.ofxParamHandle)
+    , keyframesMutex()
+    , keyframes(other.keyframes)
+    , knob(other.knob)
+    {
+
+    }
 };
 
 StringAnimationManager::StringAnimationManager(const KnobIConstPtr& knob)
@@ -86,6 +96,12 @@ StringAnimationManager::StringAnimationManager(const KnobIConstPtr& knob)
 
 StringAnimationManager::~StringAnimationManager()
 {
+}
+
+StringAnimationManager::StringAnimationManager(const StringAnimationManager& other)
+: _imp(new StringAnimationManagerPrivate(*other._imp))
+{
+
 }
 
 void

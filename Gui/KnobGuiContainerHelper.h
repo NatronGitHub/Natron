@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiContainerI.h"
 
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
+#define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
 
 NATRON_NAMESPACE_ENTER;
@@ -189,12 +190,22 @@ public:
     boost::shared_ptr<QUndoStack> getUndoStack() const;
 
     /**
-     * @brief Returns whether paging is enabled or not. If paging is disabled, there should only be a single page
+     * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab. This must be called before
+     * calling initializeKnobs()
      **/
-    virtual bool isPagingEnabled() const
-    {
-        return true;
-    }
+    void turnOffPages();
+
+    /**
+     * @brief Configures the container so it only displays the knobs within the given group knob.
+     * The knob should have its getIsDialog() function returning true.
+     **/
+    void setAsDialogForGroup(const KnobGroupPtr& groupKnobDialog);
+    KnobGroupPtr isDialogForGroup() const;
+
+    /**
+     * @brief Returns whether paging is enabled or not. If paging is disabled, there will be only a single plain widget without header.
+     **/
+    bool isPagingEnabled() const;
 
     /**
      * @brief Returns whether the container for knobs should use a scroll-area or a plain widget
@@ -273,6 +284,11 @@ public:
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE WARN_UNUSED_RETURN;
     
 protected:
+
+    /**
+     * @brief To be implemented when turnOffPages() is called, to destroy or hide the main pages widget container (the TabWidget)
+     **/
+    virtual void onPagingTurnedOff() {}
 
     /**
      * @brief Set the pointer to the current page, this should be called by the derived implementation when the current page has changed,
@@ -359,6 +375,8 @@ private:
     void clearUndoRedoStack();
 
     KnobGuiPtr findKnobGuiOrCreate(const KnobIPtr &knob);
+
+    void createTabedGroupGui(const KnobGroupPtr& knob);
 
     void initializeKnobVectorInternal(const KnobsVec& siblingsVec, KnobsVec* regularKnobsVec);
 

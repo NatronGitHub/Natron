@@ -662,7 +662,7 @@ private:
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
+    boost::shared_ptr<GroupKnobDialog> _activeNodeCustomModalDialog;
 
     struct KnobKeyFramesData
     {
@@ -679,6 +679,31 @@ toNodeGui(const NodeGuiIPtr& nodeGuiI)
 {
     return boost::dynamic_pointer_cast<NodeGui>(nodeGuiI);
 }
+
+struct GroupKnobDialogPrivate;
+class GroupKnobDialog : public QDialog
+{
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+public:
+
+
+    GroupKnobDialog(Gui* gui,
+                    const KnobGroupConstPtr& group);
+
+    virtual ~GroupKnobDialog();
+
+public Q_SLOTS:
+
+    void onDialogBoxButtonClicked(QAbstractButton* button);
+    
+private:
+
+    boost::scoped_ptr<GroupKnobDialogPrivate> _imp;
+};
 
 NATRON_NAMESPACE_EXIT;
 

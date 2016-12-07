@@ -60,8 +60,6 @@ RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
     , nodeType(type)
     , premultKnob()
     , enabledKnobs()
-    , doingNeatRender(false)
-    , mustDoNeatRender(false)
     , ui( RotoPaintInteract::create(this) )
     , inputNodes()
     , premultNode()
@@ -1115,7 +1113,6 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     if (!prepareForLater) {
         RotoLayerPtr layer = p->publicInterface->getLayerForNewItem();
         p->knobsTable->addItem(strokeBeingPaint, layer, eTableChangeReasonInternal);
-        strokeBeingPaint->getApp()->setUserIsPainting(strokeBeingPaint);
         strokeBeingPaint->beginSubStroke();
         strokeBeingPaint->appendPoint(point);
     }
@@ -2440,9 +2437,7 @@ RotoPaint::onOverlayPenDown(double time,
                             double timestamp,
                             PenType pen)
 {
-    if (isDoingNeatRender()) {
-        return true;
-    }
+
     NodePtr node = getNode();
 
     std::pair<double, double> pixelScale;
@@ -2810,7 +2805,6 @@ RotoPaint::onOverlayPenDown(double time,
                         layer = getLayerForNewItem();
                         _imp->knobsTable->insertItem(0, _imp->ui->strokeBeingPaint, layer, eTableChangeReasonInternal);
                     }
-                    getApp()->setUserIsPainting(_imp->ui->strokeBeingPaint);
 
                     KnobIntPtr lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
                     lifeTimeFrameKnob->setValue(time);
@@ -2851,9 +2845,7 @@ RotoPaint::onOverlayPenMotion(double time,
                               double pressure,
                               double timestamp)
 {
-    if (isDoingNeatRender()) {
-        return true;
-    }
+
     std::pair<double, double> pixelScale;
 
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
@@ -3191,7 +3183,6 @@ RotoPaint::onOverlayPenMotion(double time,
                 RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
                 _imp->ui->strokeBeingPaint->appendPoint(p);
                 _imp->ui->lastMousePos = pos;
-                _imp->ui->strokeBeingPaint->invalidateCacheHashAndEvaluate(true, false);
 
                 return true;
 
@@ -3260,9 +3251,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
                           double /*pressure*/,
                           double /*timestamp*/)
 {
-    if (isDoingNeatRender()) {
-        return true;
-    }
+
 
     if (_imp->ui->evaluateOnPenUp) {
         invalidateCacheHashAndEvaluate(true, false);
@@ -3295,6 +3284,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         assert(_imp->ui->strokeBeingPaint);
         assert( _imp->ui->strokeBeingPaint->getParent() );
 
+        _imp->ui->strokeBeingPaint->endSubStroke();
+        
         bool multiStrokeEnabled = _imp->ui->isMultiStrokeEnabled();
         if (!multiStrokeEnabled) {
             pushUndoCommand( new AddStrokeUndoCommand(_imp->ui, _imp->ui->strokeBeingPaint) );
@@ -3303,8 +3294,6 @@ RotoPaint::onOverlayPenUp(double /*time*/,
             pushUndoCommand( new AddMultiStrokeUndoCommand(_imp->ui, _imp->ui->strokeBeingPaint) );
         }
 
-        // Do a neat render for the stroke (better interpolation).
-        evaluateNeatStrokeRender();
         ret = true;
     }
 
@@ -3331,9 +3320,7 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
                             Key key,
                             KeyboardModifiers /*modifiers*/)
 {
-    if (isDoingNeatRender()) {
-        return true;
-    }
+
     bool didSomething = false;
 
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
@@ -3373,9 +3360,7 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
                           Key key,
                           KeyboardModifiers /*modifiers*/)
 {
-    if (isDoingNeatRender()) {
-        return true;
-    }
+  
     bool didSomething = false;
     
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {

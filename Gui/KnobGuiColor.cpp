@@ -464,7 +464,7 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     }
 
     KnobGuiPtr knobUI = getKnobGui();
-    knob->setValueAcrossDimensions(values, DimIdx(0), getView(), eValueChangedReasonNatronInternalEdited);
+    knob->setValueAcrossDimensions(values, DimIdx(0), getView(), eValueChangedReasonNatronGuiEdited);
     if ( knobUI->getGui() ) {
         knobUI->getGui()->setDraftRenderEnabled(true);
     }
@@ -510,11 +510,17 @@ KnobGuiColor::showColorDialog()
         knob->setValueAcrossDimensions(_lastColor, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
     } else {
         QColor userColor = dialog.currentColor();
-        std::vector<double> color(4);
+        std::vector<double> color(nDims);
         color[0] = isSimple ? userColor.redF() : Color::from_func_srgb( userColor.redF() );
-        color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb( userColor.greenF() );
-        color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb( userColor.blueF() );
-        color[3] = userColor.alphaF();
+        if (nDims > 1) {
+            color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb( userColor.greenF() );
+        }
+        if (nDims > 2) {
+            color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb( userColor.blueF() );
+        }
+        if (nDims > 3) {
+            color[3] = userColor.alphaF();
+        }
 
         for (int i = 0; i < 3; ++i) {
             SpinBox* sb = 0;
@@ -524,10 +530,12 @@ KnobGuiColor::showColorDialog()
             }
         }
 
-        // Refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
-        knob->setValueAcrossDimensions(_lastColor, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
-
-        onSpinBoxValueChanged();
+        std::vector<double> oldColor(nDims);
+        for (int i = 0; i < nDims; ++i) {
+            oldColor[i] = _lastColor[i];
+        }
+        KnobGuiPtr knobUI = getKnobGui();
+        knobUI->pushUndoCommand( new KnobUndoCommand<double>(knob, oldColor, color, getView()) );
 
     }
     KnobGuiPtr knobUI = getKnobGui();

@@ -707,7 +707,7 @@ Node::isDuringPaintStrokeCreation() const
     if (!attachedStroke) {
         return false;
     }
-    return attachedStroke->isPaintBuffersEnabled();
+    return attachedStroke->isCurrentlyDrawing();
 }
 
 
@@ -2088,7 +2088,16 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         {
             const KnobsVec& knobs = getKnobs();
             for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+                if (!(*it)->getEvaluateOnChange()) {
+                    continue;
+                }
+                // Don't call instanceChanged action on buttons otherwise it could popup a menu for some plug-ins
+                KnobButtonPtr isButton = toKnobButton(*it);
+                if (isButton) {
+                    continue;
+                }
                 _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+
             }
         }
     }
@@ -3406,7 +3415,6 @@ Node::createPyPlugExportGroup()
         KnobGroupPtr param = AppManager::createKnob<KnobGroup>( _imp->effect, tr(kNatronNodeKnobExportPyPlugGroupLabel), 1, false );
         group = param;
         param->setName(kNatronNodeKnobExportPyPlugGroup);
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setDefaultValue(false);
         param->setIsPersistent(false);
@@ -3435,7 +3443,6 @@ Node::createPyPlugExportGroup()
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogOkButtonLabel), 1, false );
         param->setName(kNatronNodeKnobExportDialogOkButton);
-        param->setSecret(true);
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
@@ -3446,7 +3453,6 @@ Node::createPyPlugExportGroup()
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogCancelButtonLabel), 1, false );
         param->setName(kNatronNodeKnobExportDialogCancelButton);
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
         param->setIsPersistent(false);

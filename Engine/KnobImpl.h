@@ -772,6 +772,21 @@ void initDefaultValue(bool* value)
     *value = false;
 }
 
+template <typename T>
+ValueKnobDimView<T>::ValueKnobDimView()
+: KnobDimViewBase()
+, value()
+{
+    initDefaultValue(&value);
+}
+
+template <typename T>
+KnobDimViewBasePtr
+Knob<T>::createDimViewData() const
+{
+    KnobDimViewBasePtr ret(new ValueKnobDimView<T>);
+    return ret;
+}
 
 template<>
 void
@@ -1152,44 +1167,6 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
 
 
     }
-}
-
-template<typename T>
-bool
-Knob<T>::copyKnob(const KnobIPtr& other,
-                  ViewSetSpec view,
-                  DimSpec dimension,
-                  ViewSetSpec otherView,
-                  DimSpec otherDimension,
-                  const RangeD* range,
-                  double offset)
-{
-    if (!other || (other.get() == this && dimension == otherDimension && view == otherView)) {
-        // Cannot clone itself
-        return false;
-    }
-    if ((!dimension.isAll() || !otherDimension.isAll()) && (dimension.isAll() || otherDimension.isAll())) {
-        throw std::invalid_argument("KnobHelper::slaveTo: invalid dimension argument");
-    }
-    if ((!view.isAll() || !otherView.isAll()) && (!view.isViewIdx() || !otherView.isViewIdx())) {
-        throw std::invalid_argument("KnobHelper::slaveTo: invalid view argument");
-    }
-
-    beginChanges();
-
-    bool hasChanged = false;
-    hasChanged |= cloneValues(other, view, otherView, dimension, otherDimension);
-    hasChanged |= cloneExpressions(other, view, otherView, dimension, otherDimension);
-    hasChanged |= cloneCurves(other, view, otherView, dimension, otherDimension, offset, range);
-    hasChanged |= cloneExtraData(other, view, otherView, dimension, otherDimension, offset, range);
-
-
-    if (hasChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
-    }
-    endChanges();
-
-    return hasChanged;
 }
 
 

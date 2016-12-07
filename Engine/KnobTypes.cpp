@@ -1110,18 +1110,35 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value)
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
+KnobDimViewBasePtr
+KnobChoice::createDimViewData() const
+{
+    boost::shared_ptr<ChoiceKnobDimView> ret(new ChoiceKnobDimView);
+    return ret;
+}
 
 void
-KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
+KnobChoice::onKnobAliasLink(const KnobIPtr &master, bool doAlias)
 {
-    KnobChoicePtr isChoice = toKnobChoice(slave);
-
-    if (isChoice) {
-        populateChoices(isChoice->getEntries(),
-                        isChoice->getEntriesHelp(),
-                        0,
-                        0);
+    KnobChoicePtr masterIsChoice = toKnobChoice(master);
+    if (!masterIsChoice) {
+        return;
     }
+    if (doAlias) {
+
+        masterIsChoice->populateChoices(getEntries(), getEntriesHelp(), 0, 0);
+
+        connect( this, SIGNAL(populated()), masterIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
+        connect( this, SIGNAL(entriesReset()), masterIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
+        connect( this, SIGNAL(entryAppended(QString,QString)), masterIsChoice.get(),
+                         SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+    } else {
+        disconnect( this, SIGNAL(populated()), masterIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
+        disconnect( this, SIGNAL(entriesReset()), masterIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
+        disconnect( this, SIGNAL(entryAppended(QString,QString)), masterIsChoice.get(),
+                            SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+    }
+
 }
 
 void
@@ -1145,28 +1162,6 @@ KnobChoice::onOriginalKnobEntryAppend(const QString& text,
                                       const QString& help)
 {
     appendChoice( text.toStdString(), help.toStdString() );
-}
-
-void
-KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
-                                          bool connect)
-{
-    assert(alias);
-    KnobChoicePtr aliasIsChoice = toKnobChoice(alias);
-    if (!aliasIsChoice) {
-        return;
-    }
-    if (connect) {
-        QObject::connect( this, SIGNAL(populated()), aliasIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
-        QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
-        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice.get(),
-                          SLOT(onOriginalKnobEntryAppend(QString,QString)) );
-    } else {
-        QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
-        QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
-        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice.get(),
-                             SLOT(onOriginalKnobEntryAppend(QString,QString)) );
-    }
 }
 
 /******************************KnobSeparator**************************************/
@@ -1948,6 +1943,15 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
     setCanAutoFoldDimensions(false);
 }
 
+KnobDimViewBasePtr
+KnobParametric::createDimViewData() const
+{
+    boost::shared_ptr<ParametricKnobDimView> ret(new ParametricKnobDimView);
+    ret->parametricCurve.reset(new Curve(Curve::eCurveTypeParametric));
+    ret->defaultParametricCurve.reset(new Curve(Curve::eCurveTypeParametric));
+    return ret;
+}
+
 void
 KnobParametric::populate()
 {
@@ -1956,8 +1960,6 @@ KnobParametric::populate()
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = CurvePtr( new Curve(shared_from_this(), DimIdx(i), ViewIdx(0)) );
-        _defaultCurves[i] = CurvePtr( new Curve(shared_from_this(), DimIdx(i), ViewIdx(0)) );
     }
 }
 

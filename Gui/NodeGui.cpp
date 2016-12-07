@@ -40,6 +40,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextCursor>
 #include <QGridLayout>
 #include <QCursor>
+#include <QDialogButtonBox>
 #include <QtCore/QFile>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
@@ -409,11 +410,9 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
 
         _graph->getGui()->setNodeViewerInterface(thisShared);
+        gui->addNodeGuiToAnimationModuleEditor(thisShared);
+
     }
-
-    gui->addNodeGuiToAnimationModuleEditor(thisShared);
-
-    //Ensure panel for all children if multi-instance
 
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
@@ -451,6 +450,7 @@ NodeGui::createPanel(QVBoxLayout* container,
         panel = new NodeSettingsPanel(_graph->getGui(), thisAsShared, container, container->parentWidget() );
 
         if (panel) {
+            node->getEffectInstance()->setPanelPointer(panel);
             if (!node->getApp()->isTopLevelNodeBeingCreated(node)) {
                 panel->setClosed(true);
             } else {
@@ -3817,34 +3817,199 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     return true;
 }
 
-class GroupKnobDialog
-    : public NATRON_PYTHON_NAMESPACE::PyModalDialog
+struct GroupKnobDialogPrivate
 {
-public:
-
-
-    GroupKnobDialog(Gui* gui,
-                    const KnobGroupConstPtr& group);
-
-    virtual ~GroupKnobDialog()
+    QVBoxLayout* mainLayout;
+    QDialogButtonBox* buttonBox;
+    DockablePanel* panel;
+    KnobGroupPtr knob;
+    
+    GroupKnobDialogPrivate()
+    : mainLayout(0)
+    , buttonBox(0)
+    , panel(0)
+    , knob()
     {
+        
     }
 };
 
-GroupKnobDialog::GroupKnobDialog(Gui* gui,
-                                 const KnobGroupConstPtr& group)
-    : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
+
+GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroupConstPtr& group)
+: QDialog(gui)
+, _imp(new GroupKnobDialogPrivate())
 {
+    _imp->knob = boost::const_pointer_cast<KnobGroup>(group);
+
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(getKnobsHolder(), tr("Page"));
-    KnobsVec children = group->getChildren();
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), page, KnobGroupPtr(), i, KnobI::eDuplicateKnobTypeAlias, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
-        duplicate->setAddNewLine( children[i]->isNewLineActivated() );
+
+    _imp->mainLayout = new QVBoxLayout(this);
+
+    _imp->panel = new DockablePanel(gui,
+                                    group->getHolder(),
+                                    _imp->mainLayout,
+                                    DockablePanel::eHeaderModeNoHeader,
+                                    false,
+                                    boost::shared_ptr<QUndoStack>(),
+                                    QString(), QString(),
+                                    this);
+    _imp->panel->setAsDialogForGroup(_imp->knob);
+
+    _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _imp->panel->initializeKnobs();
+
+    _imp->mainLayout->addWidget(_imp->panel);
+
+    // If the group contains knob buttons, try to match them to standard button and use
+    // the standard dialog button box instead of knob buttons if possible.
+    KnobsVec knobs = group->getChildren();
+    QDialogButtonBox::StandardButtons buttons;
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        if (!isButton || isButton->getIsCheckable()) {
+            continue;
+        }
+        std::string label =  (*it)->getLabel();
+        bool gotIt = true;
+        if (label == "Ok") {
+            buttons |= QDialogButtonBox::Ok;
+        } else if (label == "Save") {
+            buttons |= QDialogButtonBox::Save;
+        } else if (label == "SaveAll") {
+            buttons |= QDialogButtonBox::SaveAll;
+        } else if (label == "Open") {
+            buttons |= QDialogButtonBox::Open;
+        } else if (label == "Yes") {
+            buttons |= QDialogButtonBox::Yes;
+        } else if (label == "YesToAll") {
+            buttons |= QDialogButtonBox::YesToAll;
+        } else if (label == "No") {
+            buttons |= QDialogButtonBox::No;
+        } else if (label == "NoToAll") {
+            buttons |= QDialogButtonBox::NoToAll;
+        } else if (label == "Abort") {
+            buttons |= QDialogButtonBox::Abort;
+        } else if (label == "Retry") {
+            buttons |= QDialogButtonBox::Retry;
+        } else if (label == "Ignore") {
+            buttons |= QDialogButtonBox::Ignore;
+        } else if (label == "Close") {
+            buttons |= QDialogButtonBox::Close;
+        } else if (label == "Cancel") {
+            buttons |= QDialogButtonBox::Cancel;
+        } else if (label == "Discard") {
+            buttons |= QDialogButtonBox::Discard;
+        } else if (label == "Help") {
+            buttons |= QDialogButtonBox::Help;
+        } else if (label == "Apply") {
+            buttons |= QDialogButtonBox::Apply;
+        } else if (label == "Reset") {
+            buttons |= QDialogButtonBox::Reset;
+        } else if (label == "RestoreDefaults") {
+            buttons |= QDialogButtonBox::RestoreDefaults;
+        } else {
+            gotIt = false;
+        }
+        (*it)->setSecret(gotIt);
     }
 
-    refreshUserParamsGUI();
+    if (buttons != QDialogButtonBox::NoButton) {
+        _imp->buttonBox = new QDialogButtonBox(buttons, Qt::Horizontal, this);
+        connect(_imp->buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(onDialogBoxButtonClicked(QAbstractButton*)));
+        _imp->mainLayout->addWidget(_imp->buttonBox);
+    }
+
+
+    
 }
+
+GroupKnobDialog::~GroupKnobDialog()
+{
+}
+
+void
+GroupKnobDialog::onDialogBoxButtonClicked(QAbstractButton* button)
+{
+    if (!_imp->buttonBox || !button) {
+        return;
+    }
+    QDialogButtonBox::StandardButton type = _imp->buttonBox->standardButton(button);
+    std::string knobLabel;
+    switch (type) {
+        case QDialogButtonBox::Ok:
+            knobLabel = "Ok";
+            break;
+        case QDialogButtonBox::Save:
+            knobLabel = "Save";
+            break;
+        case QDialogButtonBox::SaveAll:
+            knobLabel = "SaveAll";
+            break;
+        case QDialogButtonBox::Open:
+            knobLabel = "Open";
+            break;
+        case QDialogButtonBox::Yes:
+            knobLabel = "Yes";
+            break;
+        case QDialogButtonBox::YesToAll:
+            knobLabel = "YesToAll";
+            break;
+        case QDialogButtonBox::No:
+            knobLabel = "No";
+            break;
+        case QDialogButtonBox::NoToAll:
+            knobLabel = "NoToAll";
+            break;
+        case QDialogButtonBox::Abort:
+            knobLabel = "Abort";
+            break;
+        case QDialogButtonBox::Retry:
+            knobLabel = "Retry";
+            break;
+        case QDialogButtonBox::Ignore:
+            knobLabel = "Ignore";
+            break;
+        case QDialogButtonBox::Close:
+            knobLabel = "Close";
+            break;
+        case QDialogButtonBox::Cancel:
+            knobLabel = "Cancel";
+            break;
+        case QDialogButtonBox::Discard:
+            knobLabel = "Discard";
+            break;
+        case QDialogButtonBox::Help:
+            knobLabel = "Help";
+            break;
+        case QDialogButtonBox::Apply:
+            knobLabel = "Apply";
+            break;
+        case QDialogButtonBox::Reset:
+            knobLabel = "Reset";
+            break;
+        case QDialogButtonBox::RestoreDefaults:
+            knobLabel = "RestoreDefaults";
+            break;
+        case QDialogButtonBox::NoButton:
+            break;
+    }
+
+
+    // Find a corresponding knob by label
+    KnobsVec knobs = _imp->knob->getChildren();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        if (!isButton) {
+            continue;
+        }
+        std::string label =  (*it)->getLabel();
+        if (label == knobLabel) {
+            isButton->trigger();
+            break;
+        }
+
+    }
+} // onDialogBoxButtonClicked
 
 void
 NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)

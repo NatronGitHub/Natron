@@ -200,68 +200,16 @@ KeyFrame::getRightDerivative() const
 
 /************************************CURVEPATH************************************/
 
-Curve::Curve()
+Curve::Curve(CurveTypeEnum type)
     : SERIALIZATION_NAMESPACE::SerializableObjectBase()
-    , _imp(new CurvePrivate)
+    , _imp(new CurvePrivate())
 {
-}
-
-Curve::Curve(const KnobIPtr& owner,
-             DimIdx dimensionInOwner,
-             ViewIdx viewInOwner)
-    : SERIALIZATION_NAMESPACE::SerializableObjectBase()
-    , _imp(new CurvePrivate)
-{
-    assert(owner);
-    _imp->owner = owner;
-    _imp->dimensionInOwner = dimensionInOwner;
-    _imp->viewInOwner = viewInOwner;
-    //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
-    bool found = false;
-    // use RTTI to guess curve type
-    if ( !found && toKnobDouble(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeDouble;
-        found = true;
-    }
-    if ( !found && toKnobColor(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeDouble;
-        found = true;
-    }
-    if ( !found && toKnobInt(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeInt;
-        found = true;
-    }
-    if ( !found && toKnobChoice(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
-        found = true;
-    }
-    if ( !found && toKnobString(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeString;
-        found = true;
-    }
-    if ( !found && toKnobFile(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeString;
-        found = true;
-    }
-    if ( !found && toKnobPath(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeString;
-        found = true;
-    }
-    if ( !found && toKnobBool(owner) ) {
-        _imp->type = CurvePrivate::eCurveTypeBool;
-        found = true;
-    }
-    
-    if ( !found && toKnobParametric(owner) ) {
-        _imp->isParametric = true;
-        found = true;
-    }
-
-    if (_imp->type == CurvePrivate::eCurveTypeString) {
+    _imp->type = type;
+    if (type == eCurveTypeString) {
         _imp->canMoveY = false;
     }
-    assert(found);
 }
+
 
 Curve::Curve(const Curve & other)
     : _imp( new CurvePrivate(*other._imp) )
@@ -271,6 +219,12 @@ Curve::Curve(const Curve & other)
 Curve::~Curve()
 {
     clearKeyFrames();
+}
+
+CurveTypeEnum
+Curve::getType() const
+{
+    return _imp->type;
 }
 
 void
@@ -306,7 +260,7 @@ Curve::areKeyFramesTimeClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return !_imp->isParametric;
+    return _imp->type != eCurveTypeParametric;
 }
 
 void
@@ -435,8 +389,8 @@ Curve::addKeyFrame(KeyFrame key)
 {
     QMutexLocker l(&_imp->_lock);
 
-    if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
-         ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) {
+    if ( (_imp->type == Curve::eCurveTypeBool) || (_imp->type == Curve::eCurveTypeString) ||
+         ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) {
         key.setInterpolation(eKeyframeTypeConstant);
     }
 
@@ -452,8 +406,8 @@ Curve::addKeyFrame(KeyFrame key)
 ValueChangedReturnCodeEnum
 Curve::setOrAddKeyframe(KeyFrame key)
 {
-    if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
-        ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) {
+    if ( (_imp->type == Curve::eCurveTypeBool) || (_imp->type == Curve::eCurveTypeString) ||
+        ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) {
         key.setInterpolation(eKeyframeTypeConstant);
     }
 
@@ -479,7 +433,7 @@ Curve::setOrAddKeyframe(KeyFrame key)
 std::pair<KeyFrameSet::iterator, bool> Curve::addKeyFrameNoUpdate(const KeyFrame & cp)
 {
     // PRIVATE - should not lock
-    if (!_imp->isParametric) { //< if keyframes are clamped to integers
+    if (_imp->type != eCurveTypeParametric) { //< if keyframes are clamped to integers
         std::pair<KeyFrameSet::iterator, bool> newKey = _imp->keyFrames.insert(cp);
         // keyframe at this time exists, erase and insert again
         bool addedKey = true;
@@ -997,19 +951,16 @@ Curve::getValueAt(double t,
 #endif
     }
 
-    if ( doClamp && mustClamp() ) {
+    if ( doClamp ) {
         v = clampValueToCurveYRange(v);
     }
 
     switch (_imp->type) {
-    case CurvePrivate::eCurveTypeString:
-    case CurvePrivate::eCurveTypeInt:
+    case Curve::eCurveTypeString:
+    case Curve::eCurveTypeInt:
 
         return std::floor(v + 0.5);
-    case CurvePrivate::eCurveTypeDouble:
-
-        return v;
-    case CurvePrivate::eCurveTypeBool:
+    case Curve::eCurveTypeBool:
 
         return v >= 0.5 ? 1. : 0.;
     default:
@@ -1026,7 +977,7 @@ Curve::getDerivativeAt(double t) const
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == CurvePrivate::eCurveTypeDouble); // only real-valued curves can be derived
+    assert(_imp->type == Curve::eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -1057,14 +1008,13 @@ Curve::getDerivativeAt(double t) const
 
     double d;
 
-    if ( mustClamp() ) {
-        Curve::YRange minmax = getCurveYRange();
+    if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
         d = Interpolation::derive_clamp(tcur, vcur,
                                         vcurDerivRight,
                                         vnextDerivLeft,
                                         tnext, vnext,
                                         t,
-                                        minmax.min, minmax.max,
+                                        _imp->yMin, _imp->yMax,
                                         interp,
                                         interpNext);
     } else {
@@ -1096,7 +1046,7 @@ Curve::getIntegrateFromTo(double t1,
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-    assert(_imp->type == CurvePrivate::eCurveTypeDouble); // only real-valued curves can be derived
+    assert(_imp->type == Curve::eCurveTypeDouble); // only real-valued curves can be derived
 
     // even when there is only one keyframe, there may be tangents!
     //if (_imp->keyFrames.size() == 1) {
@@ -1130,14 +1080,13 @@ Curve::getIntegrateFromTo(double t1,
     // while there are still keyframes after the current time, add to the total sum and advance
     while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
         // add integral from t1 to itup->getTime() to sum
-        if ( mustClamp() ) {
-            Curve::YRange minmax = getCurveYRange();
+        if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
             sum += Interpolation::integrate_clamp(tcur, vcur,
                                                   vcurDerivRight,
                                                   vnextDerivLeft,
                                                   tnext, vnext,
                                                   t1, itup->getTime(),
-                                                  minmax.min, minmax.max,
+                                                  _imp->yMin, _imp->yMax,
                                                   interp,
                                                   interpNext);
         } else {
@@ -1170,14 +1119,13 @@ Curve::getIntegrateFromTo(double t1,
 
     assert( itup == _imp->keyFrames.end() || t2 <= itup->getTime() );
     // add integral from t1 to t2 to sum
-    if ( mustClamp() ) {
-        Curve::YRange minmax = getCurveYRange();
+    if ( _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity()) {
         sum += Interpolation::integrate_clamp(tcur, vcur,
                                               vcurDerivRight,
                                               vnextDerivLeft,
                                               tnext, vnext,
                                               t1, t2,
-                                              minmax.min, minmax.max,
+                                              _imp->yMin, _imp->yMax,
                                               interp,
                                               interpNext);
     } else {
@@ -1197,73 +1145,13 @@ Curve::YRange
 Curve::getCurveDisplayYRange() const
 {
     QMutexLocker l(&_imp->_lock);
-
-    if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
-    }
-
-    KnobIPtr owner = _imp->owner.lock();
-    if (!owner) {
-        return YRange(_imp->yMin, _imp->yMax);
-    }
-
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(owner);
-    KnobIntBasePtr isInt = toKnobIntBase(owner);
-    if (isDouble) {
-        double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
-            min = -std::numeric_limits<double>::infinity();
-        }
-        double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
-            max = std::numeric_limits<double>::infinity();
-        }
-
-        return YRange(min, max);
-    } else if (isInt) {
-        double min = isInt->getDisplayMinimum(_imp->dimensionInOwner);
-        double max = isInt->getDisplayMaximum(_imp->dimensionInOwner);
-
-        return YRange(min, max);
-    } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
-    }
+    return YRange(_imp->displayMin, _imp->displayMax);
 }
 
 Curve::YRange Curve::getCurveYRange() const
 {
     QMutexLocker l(&_imp->_lock);
-
-    if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
-    }
-    KnobIPtr owner = _imp->owner.lock();
-    if (!owner) {
-        return YRange(_imp->yMin, _imp->yMax);
-    }
-
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(owner);
-    KnobIntBasePtr isInt = toKnobIntBase(owner);
-    if (isDouble) {
-        double min = isDouble->getMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
-            min = -std::numeric_limits<double>::infinity();
-        }
-        double max = isDouble->getMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
-            max = std::numeric_limits<double>::infinity();
-        }
-
-        return YRange(min, max);
-    } else if (isInt) {
-        double min = isInt->getMinimum(_imp->dimensionInOwner);
-        double max = isInt->getMaximum(_imp->dimensionInOwner);
-
-        return YRange(min, max);
-    } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
-    }
-
+    return YRange(_imp->yMin, _imp->yMax);
 }
 
 double
@@ -1271,12 +1159,10 @@ Curve::clampValueToCurveYRange(double v) const
 {
     // PRIVATE - should not lock
     ////clamp to min/max if the owner of the curve is a Double or Int knob.
-    YRange minmax = getCurveYRange();
-
-    if (v > minmax.max) {
-        return minmax.max;
-    } else if (v < minmax.min) {
-        return minmax.min;
+    if (v > _imp->yMax) {
+        return _imp->yMax;
+    } else if (v < _imp->yMin) {
+        return _imp->yMin;
     }
 
     return v;
@@ -1661,8 +1547,8 @@ Curve::setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int*
         assert( it != _imp->keyFrames.end() );
 
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
-              ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
+        if ( ( (_imp->type == Curve::eCurveTypeString) || (_imp->type == Curve::eCurveTypeBool) ||
+              ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
             return *it;
         }
 
@@ -1708,8 +1594,8 @@ Curve::setCurveInterpolation(KeyframeTypeEnum interp)
     {
         QMutexLocker l(&_imp->_lock);
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
-        if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
-               ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
+        if ( ( (_imp->type == Curve::eCurveTypeString) || (_imp->type == Curve::eCurveTypeBool) ||
+               ( _imp->type == Curve::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
             return;
         }
         for (int i = 0; i < (int)_imp->keyFrames.size(); ++i) {
@@ -1992,7 +1878,7 @@ Curve::areKeyFramesValuesClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type == CurvePrivate::eCurveTypeInt;
+    return _imp->type == Curve::eCurveTypeInt || _imp->type == Curve::eCurveTypeIntConstantInterp;
 }
 
 bool
@@ -2000,7 +1886,17 @@ Curve::areKeyFramesValuesClampedToBooleans() const
 {
     QMutexLocker l(&_imp->_lock);
 
-    return _imp->type == CurvePrivate::eCurveTypeBool;
+    return _imp->type == Curve::eCurveTypeBool;
+}
+
+
+void
+Curve::setDisplayYRange(double displayMin, double displayMax)
+{
+    QMutexLocker l(&_imp->_lock);
+
+    _imp->displayMin = displayMin;
+    _imp->displayMax = displayMax;
 }
 
 void
@@ -2013,22 +1909,9 @@ Curve::setYRange(double yMin,
     _imp->yMax = yMax;
 }
 
-bool
-Curve::mustClamp() const
-{
-    // PRIVATE - should not lock
-    KnobIPtr owner = _imp->owner.lock();
-    return (bool)owner;
-}
-
 void
 Curve::onCurveChanged()
 {
-    // PRIVATE - should not lock
-    KnobIPtr owner = _imp->owner.lock();
-    if (owner) {
-        owner->clearExpressionsResults(_imp->dimensionInOwner, ViewSetSpec(_imp->viewInOwner));
-    }
 #ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
 #endif

@@ -194,7 +194,11 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
             Q_EMIT editingFinished();
         }
     }
-    _hasChanged = true;
+    if (e->key() != Qt::Key_Control &&
+        e->key() != Qt::Key_Shift &&
+        e->key() != Qt::Key_Alt) {
+        _hasChanged = true;
+    }
     QTextEdit::keyPressEvent(e);
 }
 
@@ -729,7 +733,6 @@ KnobGuiString::updateGUI()
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
-        _textEdit->blockSignals(true);
         QTextCursor cursor = _textEdit->textCursor();
         int pos = cursor.position();
         int selectionStart = cursor.selectionStart();
@@ -742,12 +745,14 @@ KnobGuiString::updateGUI()
             if (oldText == txt) {
                 return;
             }
+            _textEdit->blockSignals(true);
             _textEdit->setHtml(txt);
         } else {
             QString oldText = _textEdit->toPlainText();
             if (oldText == txt) {
                 return;
             }
+            _textEdit->blockSignals(true);
             _textEdit->setPlainText(txt);
         }
 

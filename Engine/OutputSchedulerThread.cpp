@@ -2735,7 +2735,7 @@ private:
 
         if ( ( args[0] && (status[0] != ViewerInstance::eViewerRenderRetCodeFail) ) || ( args[1] && (status[1] != ViewerInstance::eViewerRenderRetCodeFail) ) ) {
             try {
-                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/, RotoStrokeItemPtr(), false /*rotoNeatRender*/,  args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
+                stat = viewer->renderViewer(view, false /*singleThreaded*/, true /*sequential*/, RotoStrokeItemPtr(), args, boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(), stats);
             } catch (...) {
                 stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
@@ -3256,7 +3256,6 @@ public:
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     RotoStrokeItemPtr strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
-    bool isRotoNeatRender;
 
     CurrentFrameFunctorArgs()
         : GenericThreadStartArgs()
@@ -3268,7 +3267,6 @@ public:
         , scheduler(0)
         , strokeItem()
         , args()
-        , isRotoNeatRender(false)
     {
     }
 
@@ -3277,8 +3275,7 @@ public:
                             const RenderStatsPtr& stats,
                             const ViewerInstancePtr& viewer,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
-                            const RotoStrokeItemPtr& strokeItem,
-                            bool isRotoNeatRender)
+                            const RotoStrokeItemPtr& strokeItem)
         : GenericThreadStartArgs()
         , view(view)
         , time(time)
@@ -3288,24 +3285,13 @@ public:
         , scheduler(scheduler)
         , strokeItem(strokeItem)
         , args()
-        , isRotoNeatRender(isRotoNeatRender)
     {
-        if (strokeItem && isRotoNeatRender) {
-            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(strokeItem->getModel()->getNode()->getEffectInstance().get());
-            if (isRotoNode) {
-                isRotoNode->setIsDoingNeatRender(true);
-            }
-        }
+
     }
 
     ~CurrentFrameFunctorArgs()
     {
-        if (strokeItem && isRotoNeatRender) {
-            RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>(strokeItem->getModel()->getNode()->getEffectInstance().get());
-            if (isRotoNode) {
-                isRotoNode->setIsDoingNeatRender(false);
-            }
-        }
+
     }
 };
 
@@ -3418,7 +3404,7 @@ public:
         BufferableObjectList ret;
         try {
             stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false,
-                                               _args->strokeItem, _args->isRotoNeatRender, _args->args, _args->request, _args->stats);
+                                               _args->strokeItem, _args->args, _args->request, _args->stats);
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
         }
@@ -3725,17 +3711,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
     // While drawing, use a single render thread and always the same thread.
     bool rotoUse1Thread = false;
-    bool isRotoNeatRender = false;
-    if (curStroke) {
-        RotoPaint* isRotoPaint = dynamic_cast<RotoPaint*>(curStroke->getModel()->getNode()->getEffectInstance().get());
-        if (isRotoPaint) {
-            isRotoNeatRender = isRotoPaint->mustDoNeatRender();
-        }
-    }
     if (curStroke) {
         rotoUse1Thread = true;
-    } else {
-        curStroke.reset();
     }
 
     // For each A and B inputs, the viewer render args
@@ -3827,15 +3804,10 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         stats,
                                                                                         _imp->viewer,
                                                                                         _imp.get(),
-                                                                                        curStroke,
-                                                                                        isRotoNeatRender) );
+                                                                                        curStroke) );
     functorArgs->args[0] = args[0];
     functorArgs->args[1] = args[1];
 
-    // If we need roto to make a neat render force the render to happen even if other renders are queued behind
-    if (isRotoNeatRender) {
-        functorArgs->setCanSkip(false);
-    }
 
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         RenderCurrentFrameFunctorRunnable task(functorArgs);
@@ -3847,9 +3819,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         request->functorArgs = functorArgs;
         // When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
         request->useSingleThread = rotoUse1Thread || isTracking;
-        if (isRotoNeatRender) {
-            request->setCanSkip(false);
-        }
+
         // If we reached the max amount of age, reset to 0... should never happen anyway
         if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {
             _imp->ageCounter = 0;

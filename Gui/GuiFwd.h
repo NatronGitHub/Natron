@@ -127,6 +127,7 @@ class Histogram;
 class GeneralProgressDialog;
 class Gui;
 class GuiAppInstance;
+class GroupKnobDialog;
 class Histogram;
 class HostOverlay;
 class InfoViewerWidget;

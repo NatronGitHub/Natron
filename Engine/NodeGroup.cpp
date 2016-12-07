@@ -1372,8 +1372,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                     break;
                 }
             }
-            ///The input must have been tracked before
-            assert(false);
+        
         }
         GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {

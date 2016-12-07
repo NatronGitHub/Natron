@@ -546,10 +546,6 @@ struct RotoPaintPrivate
     KnobBoolWPtr premultKnob;
     KnobBoolWPtr enabledKnobs[4];
 
-    mutable QMutex doingNeatRenderMutex;
-    bool doingNeatRender;
-    bool mustDoNeatRender;
-
     RotoPaintInteractPtr ui;
 
     // The group internal input nodes

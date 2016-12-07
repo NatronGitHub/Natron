@@ -46,6 +46,8 @@ class StringAnimationManager
 public:
     StringAnimationManager(const KnobIConstPtr& knob);
 
+    StringAnimationManager(const StringAnimationManager& other);
+
     ~StringAnimationManager();
 
     ///for integration of openfx custom params

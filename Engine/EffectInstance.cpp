@@ -2887,6 +2887,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
                     return eRenderingFunctorRetAborted;
             }
         } // if (st != eStatusOK || renderAborted) {
+        
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
     
     assert(!renderAborted);
@@ -2934,6 +2935,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
     if ( ( foundMaskInput != rectToRender.imgs.end() ) && !foundMaskInput->second.empty() ) {
         maskImage = foundMaskInput->second.front();
     }
+
+    // A node that is part of a stroke render implementation needs to accumulate so set the last rendered image pointer
+    RotoStrokeItemPtr attachedItem = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
 
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = hostMasking || _publicInterface->isHostMixingEnabled();
@@ -3093,6 +3097,13 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
         if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
             frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), actionArgs.roi, timeRecorder->getTimeSinceCreation() );
         }
+
+
+        // Set the accumulation buffer for this node if needed
+        if (attachedItem) {
+            _publicInterface->getNode()->setLastRenderedImage(renderFullScaleThenDownscale ?  it->second.fullscaleImage : it->second.downscaleImage);
+        }
+
     } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
 
 } // EffectInstance::Implementation::renderHandlerPostProcess

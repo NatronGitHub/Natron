@@ -499,7 +499,6 @@ ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
                              const RotoStrokeItemPtr& activeStrokeItem,
-                             bool isDoingRotoNeatRender,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                              const RenderStatsPtr& stats)
@@ -540,7 +539,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                 }
             }
             if (args[i]) {
-                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, activeStrokeItem, isDoingRotoNeatRender, request,
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, activeStrokeItem, request,
                                                i == 0 ? stats : RenderStatsPtr(),
                                                *args[i]);
 
@@ -1153,7 +1152,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
                                       const RotoStrokeItemPtr& activeStrokeItem,
-                                      bool isDoingRotoNeatRender,
                                       const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
@@ -1490,7 +1488,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 assert(!_imp->lastRenderParams[updateParams->textureIndex] || _imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
 
 
-                bool canUseOldTex = !isDoingRotoNeatRender && _imp->lastRenderParams[updateParams->textureIndex] &&
+                bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
                                     updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
 

@@ -2854,64 +2854,6 @@ RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelectio
 
 
 
-void
-RotoPaint::evaluateNeatStrokeRender()
-{
-    {
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-        _imp->mustDoNeatRender = true;
-    }
-
-    invalidateCacheHashAndEvaluate(true, false);
-
-}
-
-
-bool
-RotoPaint::isDoingNeatRender() const
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->doingNeatRender;
-}
-
-bool
-RotoPaint::mustDoNeatRender() const
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->mustDoNeatRender;
-}
-
-void
-RotoPaint::setIsDoingNeatRender(bool doing)
-{
-    bool setUserPaintingOff = false;
-    {
-#pragma message WARN("move this to RotoStrokeItem")
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-        if (doing && _imp->mustDoNeatRender) {
-            assert(!_imp->doingNeatRender);
-            _imp->doingNeatRender = true;
-            _imp->mustDoNeatRender = false;
-        } else if (_imp->doingNeatRender) {
-            _imp->doingNeatRender = false;
-            _imp->mustDoNeatRender = false;
-            setUserPaintingOff = true;
-        }
-    }
-    if (setUserPaintingOff) {
-        RotoStrokeItemPtr activeStroke = getApp()->getActiveRotoDrawingStroke();
-        assert(activeStroke);
-        if (activeStroke) {
-            activeStroke->endSubStroke();
-        }
-        getApp()->setUserIsPainting(RotoStrokeItemPtr());
-    }
-}
-
-
 KnobTableItemPtr
 RotoPaintKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr& data)
 {

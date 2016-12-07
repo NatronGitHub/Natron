@@ -76,28 +76,15 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
-///for each dimension, the dimension of the master this dimension is linked to, and a pointer to the master
-typedef std::map<ViewIdx, MasterKnobLink> PerViewMasterLink;
-typedef std::vector<PerViewMasterLink> PerDimensionMasterVec;
 
-///a curve for each dimension
-typedef std::map<ViewIdx, CurvePtr> PerViewCurveMap;
-typedef std::vector<PerViewCurveMap> PerDimensionCurveVec;
-
-typedef std::map<ViewIdx, AnimationLevelEnum> PerViewAnimLevelMap;
-typedef std::vector<PerViewAnimLevelMap> PerDimensionAnimLevelVec;
-
-
-
-typedef std::map<ViewIdx, KnobI::Expr> ExprPerViewMap;
-typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
+typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
+typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
 
 typedef std::map<ViewIdx, bool> PerViewHasModificationMap;
 typedef std::vector<PerViewHasModificationMap> PerDimensionModificationMap;
 
 typedef std::map<ViewIdx, bool> PerViewEnabledMap;
 typedef std::vector<PerViewEnabledMap> PerDimensionEnabledMap;
-
 
 typedef std::map<ViewIdx, bool> PerViewAllDimensionsVisible;
 
@@ -168,8 +155,8 @@ struct KnobHelperPrivate
     // Tells whether the knob is secret in the viewer. By default it is always visible in the viewer (if it has a viewer UI)
     bool inViewerContextSecret;
 
-    // For each dimension tells whether the knob is enabled
-    PerDimensionEnabledMap enabled;
+    // Is this parameter enabled
+    bool enabled;
 
     // True if this knob can use the undo/redo stack
     bool CanUndo;
@@ -200,35 +187,19 @@ struct KnobHelperPrivate
     bool autoFoldEnabled;
 
     // When true, autoExpandDimensions can be called to check if dimensions can be expanded or not.
+    // This is mostly used internally when setting multiple dimensions at once to prevent the dimensions from switching state
     bool autoExpandEnabled;
 
-    // Protect curves
-    mutable QMutex curvesMutex;
-
-    // For each dimension and view an animation curve
-    PerDimensionCurveVec curves;
-
-    // Read/Write lock protecting _masters & ignoreMasterPersistence & listeners
-    mutable QReadWriteLock mastersMutex;
-
-    // For each dimension and view, tells to which knob and the dimension in that knob it is slaved to
-    PerDimensionMasterVec masters;
+    // For each dimension and view the value stuff
+    mutable QMutex perDimViewDataMutex;
+    PerDimensionKnobDataMap perDimViewData;
 
     // When true masters will not be serialized
     bool ignoreMasterPersistence;
 
-    // Used when this knob is an alias of another knob. The other knob is set in "slaveForAlias"
-    KnobIWPtr slaveForAlias;
-
-    // This is a list of all the knobs that have expressions/links refering to this knob.
+    // This is a list of all the knobs that have expressions refering to this knob.
     // For each knob, a ListenerDim struct associated to each of its dimension informs as to the nature of the link (i.e: slave/master link or expression link)
     KnobI::ListenerDimsMap listeners;
-
-    // Protects animationLevel
-    mutable QMutex animationLevelMutex;
-
-    // Indicates for each dimension whether it is static/interpolated/onkeyframe
-    PerDimensionAnimLevelVec animationLevel;
 
     // Was the knob declared by a plug-in or added by Natron?
     bool declaredByPlugin;
@@ -248,12 +219,6 @@ struct KnobHelperPrivate
 
     // For each dimension, the label displayed on the interface (e.g: "R" "G" "B" "A")
     std::vector<std::string> dimensionNames;
-
-    // Protects expressions
-    mutable QMutex expressionMutex;
-
-    // For each dimension its expression
-    ExprPerDimensionVec expressions;
 
     // Protects lastRandomHash
     mutable QMutex lastRandomHashMutex;
@@ -310,7 +275,7 @@ struct KnobHelperPrivate
     , stateMutex()
     , IsSecret(false)
     , inViewerContextSecret(false)
-    , enabled()
+    , enabled(true)
     , CanUndo(true)
     , evaluateOnChange(true)
     , IsPersistent(true)
@@ -321,22 +286,16 @@ struct KnobHelperPrivate
     , allDimensionsVisible()
     , autoFoldEnabled(true)
     , autoExpandEnabled(true)
-    , curves()
-    , mastersMutex()
-    , masters()
+    , perDimViewDataMutex()
+    , perDimViewData()
     , ignoreMasterPersistence(false)
-    , slaveForAlias()
     , listeners()
-    , animationLevelMutex()
-    , animationLevel()
     , declaredByPlugin(declaredByPlugin_)
     , userKnob(false)
     , customInteract()
     , gui()
     , ofxParamHandle(0)
     , dimensionNames()
-    , expressionMutex()
-    , expressions()
     , lastRandomHash(0)
     , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
     , hasModificationsMutex()
@@ -354,20 +313,10 @@ struct KnobHelperPrivate
             }
         }
 
-        enabled.resize(dimension);
-        curves.resize(dimension);
-        masters.resize(dimension);
-        animationLevel.resize(dimension);
-        expressions.resize(dimension);
         dimensionNames.resize(dimension);
         hasModifications.resize(dimension);
         allDimensionsVisible[ViewIdx(0)] = true;
         for (int i = 0; i < nDims; ++i) {
-            enabled[i][ViewIdx(0)] = true;
-            curves[i][ViewIdx(0)] = CurvePtr();
-            masters[i][ViewIdx(0)] = MasterKnobLink();
-            animationLevel[i][ViewIdx(0)] = eAnimationLevelNone;
-            expressions[i][ViewIdx(0)] = KnobI::Expr();
             hasModifications[i][ViewIdx(0)] = false;
         }
     }

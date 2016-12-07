@@ -181,7 +181,7 @@ public:
      * @brief Returns true if we currently are drawing. In this case the paint-buffers should be the same and only the portion
      * of the un-rendereed points should be rendered.
      **/
-    bool isPaintBuffersEnabled() const;
+    bool isCurrentlyDrawing() const;
 
 
     virtual void copyItem(const KnobTableItem& other) OVERRIDE FINAL;

@@ -208,9 +208,9 @@ Knob<T>::setValue(const T & v,
 
                 for (int i = 0; i < nDims; ++i) {
                     for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
+                        hasChanged |= checkIfValueChanged(v, DimIdx(i), *it);
                         _values[i][*it] = v;
-                        if (checkIfValueChanged(v, DimIdx(i), *it)) {
-                            hasChanged = true;
+                        if (hasChanged) {
                             // If dimensions are folded but a setValue call is made on one of them, expand them
                             if (i == nDims - 1 && nDims > 1) {
                                 autoExpandDimensions(*it);
@@ -221,9 +221,9 @@ Knob<T>::setValue(const T & v,
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
                 for (int i = 0; i < nDims; ++i) {
+                    hasChanged |= checkIfValueChanged(v, DimIdx(i), view_i);
                     _values[i][view_i] = v;
-                    if (checkIfValueChanged(v, DimIdx(i), view_i)) {
-                        hasChanged = true;
+                    if (hasChanged) {
 
                         // If dimensions are folded but a setValue call is made on one of them, expand them
                         if (i == nDims - 1 && nDims > 1) {
@@ -242,9 +242,9 @@ Knob<T>::setValue(const T & v,
             if (view.isAll()) {
                 std::list<ViewIdx> availableView = getViewsList();
                 for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
+                    hasChanged |= checkIfValueChanged(v, DimIdx(dimension), *it);
                     _values[dimension][*it] = v;
-                    if (checkIfValueChanged(v, DimIdx(dimension), *it)) {
-                        hasChanged = true;
+                    if (hasChanged) {
                         // If dimensions are folded but a setValue call is made on one of them, expand them
                         if (nDims > 1) {
                             autoExpandDimensions(*it);
@@ -253,9 +253,9 @@ Knob<T>::setValue(const T & v,
                 }
             } else {
                 ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+                hasChanged |= checkIfValueChanged(v, DimIdx(dimension), view_i);
                 _values[dimension][view_i] = v;
-                if (checkIfValueChanged(v, DimIdx(dimension), view_i)) {
-                    hasChanged = true;
+                if (hasChanged) {
                     // If dimensions are folded but a setValue call is made on one of them, expand them
                     if (nDims > 1) {
                         autoExpandDimensions(view_i);

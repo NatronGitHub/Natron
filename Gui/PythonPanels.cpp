@@ -215,6 +215,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     QString(), QString(),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
+    _imp->holder->setPanelPointer(_imp->panel);
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _imp->centerLayout->insertWidget(0, _imp->panel);
 
@@ -399,6 +400,7 @@ PyPanel::PyPanel(const QString& scriptName,
                                         boost::shared_ptr<QUndoStack>(),
                                         QString(), QString(),
                                         _imp->centerContainer);
+        _imp->holder->setPanelPointer(_imp->panel);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0, _imp->panel);
 

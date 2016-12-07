@@ -772,7 +772,9 @@ KnobGui::hide()
 
     // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widget
     if (!newLineActivated) {
-        _imp->mainContainer->hide();
+        if (_imp->mainContainer) {
+            _imp->mainContainer->hide();
+        }
     } else {
         if (_imp->viewsContainer) {
             _imp->viewsContainer->hide();

@@ -105,7 +105,7 @@ struct RotoStrokeItemPrivate
 
     // When true, the render will be optimized to render only new points that were added to the curve
     // and will re-use the same image.
-    bool usePaintBuffers;
+    bool isCurrentlyDrawing;
 
     // A stroke is composed of 3 interpolation curves
     struct StrokeCurves
@@ -177,7 +177,7 @@ struct RotoStrokeItemPrivate
     : _publicInterface(publicInterface)
     , lock()
     , type(type)
-    , usePaintBuffers(false)
+    , isCurrentlyDrawing(false)
     , strokes()
     , curveT0(0)
     , lastTimestamp(0)
@@ -196,43 +196,6 @@ struct RotoStrokeItemPrivate
 
     }
 
-    RotoStrokeItemPrivate(RotoStrokeItem* publicInterface, const RotoStrokeItemPrivate& other)
-    : _publicInterface(publicInterface)
-    , lock()
-    , type(other.type)
-    , usePaintBuffers(other.usePaintBuffers)
-    , strokes()
-    , curveT0(other.curveT0)
-    , lastTimestamp(other.lastTimestamp)
-    , distToNextOut(other.distToNextOut)
-    , lastCenter(other.lastCenter)
-    , renderCachedBbox(other.renderCachedBbox)
-    , lastStrokeStepBbox(other.lastStrokeStepBbox)
-    , lastPointIndexInSubStroke(other.lastPointIndexInSubStroke)
-    , pickupPointIndexInSubStroke(other.pickupPointIndexInSubStroke)
-    , currentSubStroke(other.currentSubStroke)
-    , strokeDotPatternsMutex()
-    , strokeDotPatterns(other.strokeDotPatterns)
-    , drawingGlCpuContext(other.drawingGlCpuContext)
-    , drawingGlGpuContext(other.drawingGlGpuContext)
-    , effectStrength(other.effectStrength)
-    , pressureOpacity(other.pressureOpacity)
-    , pressureSize(other.pressureSize)
-    , pressureHardness(other.pressureHardness)
-    , buildUp(other.buildUp)
-    , cloneTranslate(other.cloneTranslate)
-    , cloneRotate(other.cloneRotate)
-    , cloneScale(other.cloneScale)
-    , cloneScaleUniform(other.cloneScaleUniform)
-    , cloneSkewX(other.cloneSkewX)
-    , cloneSkewY(other.cloneSkewY)
-    , cloneSkewOrder(other.cloneSkewOrder)
-    , cloneCenter(other.cloneCenter)
-    , cloneFilter(other.cloneFilter)
-    , cloneBlackOutside(other.cloneBlackOutside)
-    {
-
-    }
 
     /**
      * @brief Copy from the other stroke the points that still need to be rendered in the stroke so far.
@@ -251,6 +214,37 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     QMutexLocker k1(&lock);
 
     assert(!other.lock.tryLock());
+
+    type = other.type;
+    isCurrentlyDrawing = other.isCurrentlyDrawing;
+    curveT0 = other.curveT0;
+    lastTimestamp = other.lastTimestamp;
+    distToNextOut = other.distToNextOut;
+    lastCenter = other.lastCenter;
+    renderCachedBbox = other.renderCachedBbox;
+    lastStrokeStepBbox = other.lastStrokeStepBbox;
+    lastPointIndexInSubStroke = other.lastPointIndexInSubStroke;
+    pickupPointIndexInSubStroke = other.pickupPointIndexInSubStroke;
+    currentSubStroke = other.currentSubStroke;
+    strokeDotPatterns = other.strokeDotPatterns;
+    drawingGlCpuContext = other.drawingGlCpuContext;
+    drawingGlGpuContext = other.drawingGlGpuContext;
+    effectStrength = other.effectStrength;
+    pressureOpacity = other.pressureOpacity;
+    pressureSize = other.pressureSize;
+    pressureHardness = other.pressureHardness;
+    buildUp = other.buildUp;
+    cloneTranslate = other.cloneTranslate;
+    cloneRotate = other.cloneRotate;
+    cloneScale = other.cloneScale;
+    cloneScaleUniform = other.cloneScaleUniform;
+    cloneSkewX = other.cloneSkewX;
+    cloneSkewY = other.cloneSkewY;
+    cloneSkewOrder = other.cloneSkewOrder;
+    cloneCenter = other.cloneCenter;
+    cloneFilter = other.cloneFilter;
+    cloneBlackOutside = other.cloneBlackOutside;
+
     assert(currentSubStroke >= 0);
 
     bool hasDoneSomething = false;
@@ -258,8 +252,8 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // If the curve is in a drawing state, pick-up from where
     // the drawing was at.
     // Otherwise render all sub-strokes
-    pickupPointIndexInSubStroke = (!usePaintBuffers || lastPointIndexInSubStroke == -1) ? 0 : lastPointIndexInSubStroke + 1;
-    int pickupStrokeIndex = usePaintBuffers ? currentSubStroke : 0;
+    pickupPointIndexInSubStroke = (!isCurrentlyDrawing || lastPointIndexInSubStroke == -1) ? 0 : lastPointIndexInSubStroke + 1;
+    int pickupStrokeIndex = isCurrentlyDrawing ? currentSubStroke : 0;
 
     for (int strokeIndex = pickupStrokeIndex; strokeIndex < (int)other.strokes.size(); ++strokeIndex) {
 
@@ -281,11 +275,10 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         bool hasDataToCopy = true;
         {
             int nKeys = originalStroke->xCurve->getKeyFramesCount();
-            if (nKeys == 0 || (usePaintBuffers && lastPointIndexInSubStroke != -1 && lastPointIndexInSubStroke >= nKeys - 1)) {
+            if (nKeys == 0 || (isCurrentlyDrawing && lastPointIndexInSubStroke != -1 && lastPointIndexInSubStroke >= nKeys - 1)) {
                 hasDataToCopy = false;
             }
         }
-
         if (hasDataToCopy) {
             StrokeCurves strokeCopy;
             strokeCopy.xCurve.reset(new Curve);
@@ -317,25 +310,28 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
 
         // If the user previously drawn a stroke, there may be nothing to render in that stroke but a new stroke was made.
         // In this case, go on to the next stroke
-        if (usePaintBuffers && !hasDataToCopy && currentSubStroke < (int)other.strokes.size() - 1) {
+        if (isCurrentlyDrawing && !hasDataToCopy && currentSubStroke < (int)other.strokes.size() - 1) {
 
             // Increment the stroke index
             other.currentSubStroke += 1;
             currentSubStroke = other.currentSubStroke;
 
             // Reset the last point index
-            other.pickupPointIndexInSubStroke = 0;
             pickupPointIndexInSubStroke = 0;
             other.lastPointIndexInSubStroke = -1;
             lastPointIndexInSubStroke = -1;
         }
 
+        // Only draw one sub-stroke by step
+        if (isCurrentlyDrawing && hasDataToCopy) {
+            break;
+        }
     }
 
     // During painting, we copy on the clone only the points that were not rendered yet.
     // In order for the getBoundingBox function to return something decent, we still need
     // to know the bounding box of the full stroke
-    if (usePaintBuffers && hasDoneSomething) {
+    if (isCurrentlyDrawing && hasDoneSomething) {
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
@@ -354,7 +350,7 @@ RotoStrokeItem::getRenderCloneCurrentStrokeIndex() const
 {
     assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-    if (_imp->usePaintBuffers) {
+    if (_imp->isCurrentlyDrawing) {
         return _imp->currentSubStroke;
     }
     return 0;
@@ -365,7 +361,7 @@ RotoStrokeItem::getRenderCloneCurrentStrokeEndPointIndex() const
 {
     assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-        return _imp->lastPointIndexInSubStroke;
+    return _imp->lastPointIndexInSubStroke;
 
 }
 
@@ -374,7 +370,7 @@ RotoStrokeItem::getRenderCloneCurrentStrokeStartPointIndex() const
 {
     assert(isRenderClone());
     QMutexLocker k(&_imp->lock);
-    if (_imp->usePaintBuffers) {
+    if (_imp->isCurrentlyDrawing) {
         return _imp->pickupPointIndexInSubStroke;
     }
     return 0;
@@ -391,7 +387,7 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 
 RotoStrokeItem::RotoStrokeItem(const RotoStrokeItem& other)
 : RotoDrawableItem(other)
-, _imp(new RotoStrokeItemPrivate(this, *other._imp))
+, _imp(new RotoStrokeItemPrivate(this, other.getBrushType()))
 {
 
 }
@@ -433,7 +429,7 @@ void
 RotoStrokeItem::getStrokeState(Point* lastCenterIn, double* distNextIn) const
 {
     QMutexLocker k(&_imp->lock);
-    if (!_imp->usePaintBuffers) {
+    if (!_imp->isCurrentlyDrawing) {
         *distNextIn = 0;
         lastCenterIn->x = lastCenterIn->y = INT_MIN;
     } else {
@@ -621,22 +617,28 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         p3 = Transform::matApply(transform, p3);
 
 
-
-        /*
-         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
-         */
-        double dx1, dy1, dx2, dy2, dx3, dy3;
-        dx1 = p1.x - p0.x;
-        dy1 = p1.y - p0.y;
-        dx2 = p2.x - p1.x;
-        dy2 = p2.y - p1.y;
-        dx3 = p3.x - p2.x;
-        dy3 = p3.y - p2.y;
-        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-        std::sqrt(dx2 * dx2 + dy2 * dy2) +
-        std::sqrt(dx3 * dx3 + dy3 * dy3);
-        double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        // If the end-points are linear for the segment, just add a straight line to speed up evaluation.
+        double nbPointsPerSegment;
+        if (xIt->getInterpolation() == eKeyframeTypeLinear && yIt->getInterpolation() == eKeyframeTypeLinear) {
+            nbPointsPerSegment = 2;
+        } else {
+            /*
+             * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+             */
+            double dx1, dy1, dx2, dy2, dx3, dy3;
+            dx1 = p1.x - p0.x;
+            dy1 = p1.y - p0.y;
+            dx2 = p2.x - p1.x;
+            dy2 = p2.y - p1.y;
+            dx3 = p3.x - p2.x;
+            dy3 = p3.y - p2.y;
+            double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+            std::sqrt(dx2 * dx2 + dy2 * dy2) +
+            std::sqrt(dx3 * dx3 + dy3 * dy3);
+            nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        }
         double incr = 1. / (double)(nbPointsPerSegment - 1);
+
 
         RectD pointBox;
         bool pointBboxSet = false;
@@ -703,27 +705,35 @@ void
 RotoStrokeItem::beginSubStroke()
 {
     // Make-up a new sub-stroke
-    QMutexLocker k(&_imp->lock);
-    RotoStrokeItemPrivate::StrokeCurves s;
-    s.xCurve.reset(new Curve);
-    s.yCurve.reset(new Curve);
-    s.pressureCurve.reset(new Curve);
+    {
+        QMutexLocker k(&_imp->lock);
+        RotoStrokeItemPrivate::StrokeCurves s;
+        s.xCurve.reset(new Curve);
+        s.yCurve.reset(new Curve);
+        s.pressureCurve.reset(new Curve);
 
-    _imp->strokes.push_back(s);
+        _imp->strokes.push_back(s);
 
-    // set thread-safety so that we ensure only 1 thread is rendering
-    if (!_imp->usePaintBuffers) {
-        _imp->usePaintBuffers = true;
-        setNodesThreadSafetyForRotopainting();
-    }
+        // set thread-safety so that we ensure only 1 thread is rendering
+        if (!_imp->isCurrentlyDrawing) {
+            _imp->isCurrentlyDrawing = true;
+            setNodesThreadSafetyForRotopainting();
+        }
 
-    // For cairo, setup the dot pattern cache
-    if ( _imp->strokeDotPatterns.empty() ) {
-        _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
-        for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
-            _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
+        // For cairo, setup the dot pattern cache
+        if ( _imp->strokeDotPatterns.empty() ) {
+            _imp->strokeDotPatterns.resize(ROTO_PRESSURE_LEVELS);
+            for (std::size_t i = 0; i < _imp->strokeDotPatterns.size(); ++i) {
+                _imp->strokeDotPatterns[i] = (cairo_pattern_t*)0;
+            }
         }
     }
+
+    // Only 1 stroke can be drawn at a time in the UI: make it global to the application instance.
+    // The OutputSchedulerThread will use it to only launch a single thread and OpenGL context during the drawing of this stroke.
+    RotoStrokeItemPtr thisShared = toRotoStrokeItem(shared_from_this());
+    getApp()->setUserIsPainting(thisShared);
+
 }
 
 void
@@ -762,7 +772,7 @@ RotoStrokeItem::endSubStroke()
         }
 
         // We are no longer in drawing state
-        _imp->usePaintBuffers = false;
+        _imp->isCurrentlyDrawing = false;
 
 
         // Purge cairo cache
@@ -776,8 +786,15 @@ RotoStrokeItem::endSubStroke()
     // The stroke is finished, reset the transform center
     resetTransformCenter();
     
-    // Reset nodes thread-safety
+    // Reset nodes thread-safety since we now allow multiple concurrent threads again
     resetNodesThreadSafety();
+
+    // We no longer are drawing this stroke, flag it on the app
+    getApp()->setUserIsPainting(RotoStrokeItemPtr());
+
+    // Trigger a new render: Since we set the isCurrentlyDrawing flag to false, it will not use the same
+    // buffer as it was using during painting hence a new correct image will be created and cached.
+    invalidateCacheHashAndEvaluate(true, false);
 
 
 } // endSubStroke
@@ -865,7 +882,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
 
     } // QMutexLocker k(&itemMutex);
 
-
+    invalidateCacheHashAndEvaluate(true, false);
 } // RotoStrokeItem::appendPoint
 
 void
@@ -925,6 +942,9 @@ RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
         _imp->strokes.push_back(s);
 
     }
+
+    invalidateCacheHashAndEvaluate(true, false);
+
 } // setStrokes
 
 void
@@ -1019,10 +1039,10 @@ RotoStrokeItem::getLastStrokeMovementBbox() const
 }
 
 bool
-RotoStrokeItem::isPaintBuffersEnabled() const
+RotoStrokeItem::isCurrentlyDrawing() const
 {
     QMutexLocker k(&_imp->lock);
-    return _imp->usePaintBuffers;
+    return _imp->isCurrentlyDrawing;
 }
 
 void
@@ -1049,7 +1069,7 @@ RotoStrokeItem::copyItem(const KnobTableItem& other)
             _imp->strokes.push_back(s);
         }
         _imp->type = otherStroke->_imp->type;
-        _imp->usePaintBuffers = false;
+        _imp->isCurrentlyDrawing = false;
     }
     RotoDrawableItem::copyItem(other);
     resetNodesThreadSafety();
@@ -1127,7 +1147,7 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
             stroke.pressureCurve->fromSerialization(*it->pressure);
             _imp->strokes.push_back(stroke);
         }
-        _imp->usePaintBuffers = false;
+        _imp->isCurrentlyDrawing = false;
     }
 
 }
@@ -1258,7 +1278,7 @@ RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
         return RectD();
     }
     QMutexLocker k(&_imp->lock);
-    if (isRenderClone() && _imp->usePaintBuffers) {
+    if (isRenderClone() && _imp->isCurrentlyDrawing) {
         return _imp->renderCachedBbox;
     }
     return _imp->computeBoundingBox(time, view);

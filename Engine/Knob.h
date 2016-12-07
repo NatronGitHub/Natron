@@ -319,8 +319,6 @@ public:
 
     struct ListenerLink
     {
-        // Is the link made with an expression?
-        bool isExpr;
 
         // The view of the listener that is listening
         ViewIdx listenerView;
@@ -335,8 +333,7 @@ public:
         ViewIdx targetView;
 
         ListenerLink()
-        : isExpr(false)
-        , listenerView()
+        : listenerView()
         , listenerDimension()
         , targetDim()
         , targetView()
@@ -1031,9 +1028,9 @@ public:
     virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) = 0;
 
     /**
-     * @brief Is the dimension enabled ?
+     * @brief Is the parameter enabled ?
      **/
-    virtual bool isEnabled(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec(0)) const = 0;
+    virtual bool isEnabled() const = 0;
 
     /**
      * @brief Set the knob visible/invisible on the GUI representing it.
@@ -1276,7 +1273,7 @@ protected:
 
 public:
 
-    virtual void onKnobAboutToAlias(const KnobIPtr& /*slave*/) {}
+    virtual void onKnobAliasLink(const KnobIPtr& /*master*/, bool /*doAlias*/) {}
 
 
     /**
@@ -1326,11 +1323,6 @@ public:
                                             bool refreshParams,
                                             bool isUserKnob) = 0;
 
-    /**
-     * @brief If a knob was created using createDuplicateOnHolder(effect,true), this function will return true
-     **/
-    virtual KnobIPtr getAliasMaster() const = 0;
-    virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) = 0;
 
 
     /**
@@ -1370,6 +1362,125 @@ public:
     virtual bool isTypeCompatible(const KnobIPtr & other) const = 0;
     KnobPagePtr getTopLevelPage() const;
 
+};
+
+
+
+/**
+ * @brief The internal class that holds a value in a knob.
+ * These are not directly members of the knob class so that it is possible
+ * to make bi-directional knobs that share a value but not the decoration properties.
+ **/
+class KnobDimViewBase
+{
+public:
+
+    // Protects all fields of this class and derivatives
+    QMutex valueMutex;
+
+    // The animation curve if it can animate
+    CurvePtr animationCurve;
+
+    // The expression if any
+    KnobI::Expr expression;
+
+    // The hard-link if any
+    MasterKnobLink link;
+
+    KnobDimViewBase()
+    : valueMutex()
+    , animationCurve()
+    , expression()
+    , link()
+    {
+
+    }
+
+    KnobDimViewBase(const KnobDimViewBase& other);
+
+};
+
+
+template <typename T>
+class ValueKnobDimView : public KnobDimViewBase
+{
+public:
+
+    // The static value if not animated
+    T value;
+
+    ValueKnobDimView();
+
+    ValueKnobDimView(const ValueKnobDimView& other)
+    : KnobDimViewBase(other)
+    , value(other.value)
+    {
+
+    }
+};
+
+
+class StringKnobDimView : public ValueKnobDimView<std::string>
+{
+
+public:
+    // For a string parameter, we need to also have strings for keyframes and not just
+    // the keyframe value
+    StringAnimationManagerPtr stringAnimation;
+
+    StringKnobDimView()
+    : ValueKnobDimView<std::string>()
+    , stringAnimation()
+    {
+
+    }
+
+    StringKnobDimView(const StringKnobDimView& other);
+};
+
+class ChoiceKnobDimView : public ValueKnobDimView<int>
+{
+public:
+
+    // For a choice parameter we need to know the strings
+    std::vector<std::string> menuOptions, menuOptionTooltips;
+
+    // For choice parameters the value is held by a string because if the option disappears from the menu
+    // we still need to remember the user choice
+    std::string activeEntry;
+
+    ChoiceKnobDimView()
+    : ValueKnobDimView<int>()
+    , menuOptions()
+    , menuOptionTooltips()
+    , activeEntry()
+    {
+
+    }
+
+    ChoiceKnobDimView(const ChoiceKnobDimView& other)
+    : ValueKnobDimView<int>(other)
+    , menuOptions(other.menuOptions)
+    , menuOptionTooltips(other.menuOptionTooltips)
+    , activeEntry(other.activeEntry)
+    {
+
+    }
+};
+
+class ParametricKnobDimView : public ValueKnobDimView<double>
+{
+public:
+
+    CurvePtr parametricCurve;
+
+    ParametricKnobDimView()
+    : parametricCurve()
+    {
+
+    }
+
+    ParametricKnobDimView(const ParametricKnobDimView& other);
 };
 
 
@@ -1432,6 +1543,8 @@ private:
 
 protected:
 
+    KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view);
+
     virtual void onAllDimensionsMadeVisible(ViewIdx view, bool visible) = 0;
 
 public:
@@ -1490,6 +1603,9 @@ private:
     bool isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const WARN_UNUSED_RETURN;
 
 protected:
+
+    virtual KnobDimViewBasePtr createDimViewData() const = 0;
+
     // Returns true if the knobChanged handler was called
     bool evaluateValueChangeInternal(DimSpec dimension,
                                      double time,
@@ -1647,7 +1763,7 @@ public:
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) OVERRIDE FINAL;
-    virtual bool isEnabled(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec(0)) const OVERRIDE FINAL;
+    virtual bool isEnabled() const OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getIsSecretRecursive() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1712,8 +1828,13 @@ public:
                                             const std::string& newToolTip,
                                             bool refreshParams,
                                             bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KnobIPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
+    virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
+
+protected:
+
+    virtual bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension) = 0;
+    
+public:
 
 private:
 
@@ -1806,11 +1927,6 @@ protected:
     virtual void copyValuesFromCurve(DimSpec /*dim*/, ViewSetSpec /*view*/) {}
 
 
-    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& /*alias*/,
-                                               bool /*connect*/)
-    {
-    }
-
     /**
      * @brief Called when you must copy any extra data you maintain from the other knob.
      * The other knob is guaranteed to be of the same type.
@@ -1873,6 +1989,7 @@ toKnobHelper(const KnobIPtr& knob)
     return boost::dynamic_pointer_cast<KnobHelper>(knob);
 }
 
+
 /**
  * @brief A Knob is a parameter, templated by a data type.
  * The template parameter is meant to be used with POD types or strings,
@@ -1922,6 +2039,8 @@ public:
     virtual void computeHasModifications() OVERRIDE FINAL;
 
 protected:
+
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
     virtual bool computeValuesHaveModifications(DimIdx dimension,
                                                 const T& value,
@@ -2228,7 +2347,8 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all()) OVERRIDE FINAL;
-    virtual bool copyKnob(const KnobIPtr& other, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec::all(), ViewSetSpec otherView = ViewSetSpec::all(), DimSpec otherDimension = DimSpec::all(), const RangeD* range = 0, double offset = 0) OVERRIDE FINAL;
+
+
     virtual void cloneDefaultValues(const KnobIPtr& other) OVERRIDE FINAL;
 
     ///MT-safe
@@ -2301,7 +2421,7 @@ private:
     template <typename OTHERTYPE>
     bool copyValueForType(const boost::shared_ptr<Knob<OTHERTYPE> >& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension);
 
-    bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension);
+    virtual bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension) OVERRIDE FINAL;
 
     virtual void cloneExpressionsResults(const KnobIPtr& other,
                                          ViewSetSpec view,
@@ -2404,6 +2524,7 @@ typedef boost::shared_ptr<KnobStringBase> KnobStringBasePtr;
 
 
 
+
 class AnimatingKnobStringHelper
     : public KnobStringBase
 {
@@ -2415,6 +2536,7 @@ public:
                               bool declaredByPlugin = true);
 
     virtual ~AnimatingKnobStringHelper();
+
 
     void stringToKeyFrameValue(double time, ViewIdx view, const std::string & v, double* returnValue);
 
@@ -2445,6 +2567,7 @@ public:
 
 protected:
 
+    virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
 
     virtual bool cloneExtraData(const KnobIPtr& other,
@@ -2457,7 +2580,6 @@ protected:
     virtual void onKeyframesRemoved(const std::list<double>& keysRemoved,
                                     ViewSetSpec view,
                                     DimSpec dimension) OVERRIDE FINAL;
-    virtual void populate() OVERRIDE;
 private:
     
 

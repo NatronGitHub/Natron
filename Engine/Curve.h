@@ -154,21 +154,26 @@ public:
         double max;
     };
 
+    enum CurveTypeEnum
+    {
+        eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
+        eCurveTypeParametric, // < same as double but the curve may have a X range
+        eCurveTypeInt, //< the values held by the keyframes can only be integers
+        eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
+        eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
+        eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
+        // and times
+    };
+
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
      * An empty curve has a value of zero everywhere (@see getValueAt()).
      **/
-    Curve();
-
-    /**
-     * @brief An empty curve, held by owner. This is the "normal" constructor.
-     * An empty curve has a value of zero everywhere (@see getValueAt()).
-     **/
-    Curve(const KnobIPtr& owner,
-          DimIdx dimensionInOwner,
-          ViewIdx viewInOwner);
+    Curve(CurveTypeEnum type = eCurveTypeDouble);
 
     Curve(const Curve & other);
+
+    CurveTypeEnum getType() const;
 
     /**
      * @brief Set the curve to be periodic, i.e: the first keyframe is considered to be equal to the last keyframe.
@@ -536,10 +541,12 @@ public:
 
     YRange getCurveDisplayYRange() const WARN_UNUSED_RETURN;
 
+    void setYRange(double yMin, double yMax);
+
+    void setDisplayYRange(double displayMin, double displayMax);
+
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
 
-    /// set the curve Y range (used for testing, when the Curve his not owned by a Knob)
-    void setYRange(double yMin, double yMax);
 
     /**
      * @brief Find a keyframe by time in the given keys set.
@@ -590,7 +597,6 @@ private:
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReasonEnum reason, KeyFrameSet::iterator key);
     KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
 
-    bool mustClamp() const;
 
     KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it, KeyframeTypeEnum type);
 

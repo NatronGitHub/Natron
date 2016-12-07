@@ -116,6 +116,7 @@ RotoShapeRenderNode::initializeKnobs()
             options.push_back(kRotoShapeRenderNodeParamOutputComponentsAlpha);
             param->populateChoices(options);
         }
+        param->setIsMetadataSlave(true);
         page->addKnob(param);
         _imp->outputComponents = param;
     }
@@ -128,6 +129,7 @@ RotoShapeRenderNode::initializeKnobs()
             options.push_back(kRotoShapeRenderNodeParamTypeSmear);
             param->populateChoices(options);
         }
+        param->setIsMetadataSlave(true);
         page->addKnob(param);
         _imp->renderType = param;
     }
@@ -174,12 +176,16 @@ StatusEnum
 RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
 {
 
-#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-    int index = _imp->outputComponents.lock()->getValue();
-    ImageComponents comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
-#else
-    const ImageComponents& comps = ImageComponents::getRGBAComponents();
-#endif
+
+    RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
+    ImageComponents comps;
+    if (type == eRotoShapeRenderTypeSolid) {
+        int index = _imp->outputComponents.lock()->getValue();
+        comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
+    } else {
+        comps = ImageComponents::getRGBAComponents();
+    }
+
     metadata.setImageComponents(-1, comps);
     metadata.setImageComponents(0, comps);
     metadata.setIsContinuous(true);
@@ -327,10 +333,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
-    assert(!args.useOpenGL || outputPlane.second->getParams()->getStorageInfo().glContext.lock() == glContext);
 
 
-    bool isDuringPainting = isStroke && isStroke->isPaintBuffersEnabled();
+
+    bool isDuringPainting = isStroke && isStroke->isCurrentlyDrawing();
     double distNextIn = 0.;
     Point lastCenterIn = { INT_MIN, INT_MIN };
     int strokeStartPointIndex = 0;
@@ -345,9 +351,16 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 
     // Ensure that the indices of the draw step are valid.
-    // +2 because we also add the last point of the previous draw step
-    assert(!isDuringPainting || (strokeStartPointIndex == 0 && (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0)) ||
-           (isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 2 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
+#ifdef DEBUG
+    if (isDuringPainting) {
+        if (strokeStartPointIndex == 0) {
+            assert((isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 1 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
+        } else {
+            // +2 because we also add the last point of the previous draw step
+            assert((isStroke->getRenderCloneCurrentStrokeEndPointIndex() + 2 - strokeStartPointIndex) == isStroke->getNumControlPoints(0));
+        }
+    }
+#endif
 
     // Now we are good to start rendering
 
@@ -364,11 +377,6 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
         outputPlane.second->fillBoundsZero(glContext);
     }
-
-
-    // Since this effect can temporarily accumulate (when drawing) we still need to remember the last image rendered even
-    // when not accumulating, to have the result of the previous strokes.
-    getNode()->setLastRenderedImage(outputPlane.second);
 
     switch (type) {
         case eRotoShapeRenderTypeSolid: {
