@@ -1602,29 +1602,39 @@ MakeEllipseUndoCommand::redo()
             _curve->setPointByIndex(1, _time, xright, ymid); // right
             _curve->setPointByIndex(2, _time, xmid, ybottom); // bottom
             _curve->setPointByIndex(3, _time, xleft, ymid); // left
-
-            boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
-            boost::shared_ptr<BezierCP> right = _curve->getControlPointAtIndex(1);
-            boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
-            boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
-            double topX, topY, rightX, rightY, btmX, btmY, leftX, leftY;
-            top->getPositionAtTime(true, _time, ViewIdx(0), &topX, &topY);
-            right->getPositionAtTime(true, _time, ViewIdx(0), &rightX, &rightY);
-            bottom->getPositionAtTime(true, _time, ViewIdx(0), &btmX, &btmY);
-            left->getPositionAtTime(true, _time, ViewIdx(0), &leftX, &leftY);
-
-            _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
-            _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);
-
-            _curve->setLeftBezierPoint(1, _time,  rightX, (rightY + topY) / 2.);
-            _curve->setRightBezierPoint(1, _time, rightX, (rightY + btmY) / 2.);
-
-            _curve->setLeftBezierPoint(2, _time,  (rightX + btmX) / 2., btmY);
-            _curve->setRightBezierPoint(2, _time, (leftX + btmX) / 2., btmY);
-
-            _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
-            _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
         }
+        boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
+        boost::shared_ptr<BezierCP> right = _curve->getControlPointAtIndex(1);
+        boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
+        boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
+        double topX, topY, rightX, rightY, btmX, btmY, leftX, leftY;
+        top->getPositionAtTime(true, _time, ViewIdx(0), &topX, &topY);
+        right->getPositionAtTime(true, _time, ViewIdx(0), &rightX, &rightY);
+        bottom->getPositionAtTime(true, _time, ViewIdx(0), &btmX, &btmY);
+        left->getPositionAtTime(true, _time, ViewIdx(0), &leftX, &leftY);
+
+        // The bezier control points should be:
+        // P_0 = (0,1), P_1 = (c,1), P_2 = (1,c), P_3 = (1,0)
+        // with c = 0.551915024494
+        // See http://spencermortensen.com/articles/bezier-circle/
+
+        const double c = 0.551915024494;
+        // top
+        _curve->setLeftBezierPoint(0, _time,  topX + (leftX  - topX) * c, topY);
+        _curve->setRightBezierPoint(0, _time, topX + (rightX - topX) * c, topY);
+
+        // right
+        _curve->setLeftBezierPoint(1, _time,  rightX, rightY + (topY - rightY) * c);
+        _curve->setRightBezierPoint(1, _time, rightX, rightY + (btmY - rightY) * c);
+
+        // btm
+        _curve->setLeftBezierPoint(2, _time,  btmX + (rightX - btmX) * c, btmY);
+        _curve->setRightBezierPoint(2, _time, btmX + (leftX  - btmX) * c, btmY);
+
+        // left
+        _curve->setLeftBezierPoint(3, _time,  leftX, leftY + (btmY - leftY) * c);
+        _curve->setRightBezierPoint(3, _time, leftX, leftY + (topY - leftY) * c);
+
         boost::shared_ptr<RotoItem> parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
