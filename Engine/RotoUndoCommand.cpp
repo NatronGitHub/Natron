@@ -1576,15 +1576,15 @@ MakeEllipseUndoCommand::redo()
             _curve->setPointByIndex(2, _time, ViewSetSpec::all(), xmid, ybottom); // bottom
             _curve->setPointByIndex(3, _time, ViewSetSpec::all(), xleft, ymid); // left
         }
-        BezierCPPtr top = _curve->getControlPointAtIndex(0);
-        BezierCPPtr right = _curve->getControlPointAtIndex(1);
-        BezierCPPtr bottom = _curve->getControlPointAtIndex(2);
-        BezierCPPtr left = _curve->getControlPointAtIndex(3);
+        BezierCPPtr top = _curve->getControlPointAtIndex(0, ViewIdx(0));
+        BezierCPPtr right = _curve->getControlPointAtIndex(1, ViewIdx(0));
+        BezierCPPtr bottom = _curve->getControlPointAtIndex(2, ViewIdx(0));
+        BezierCPPtr left = _curve->getControlPointAtIndex(3, ViewIdx(0));
         double topX, topY, rightX, rightY, btmX, btmY, leftX, leftY;
-        top->getPositionAtTime(true, _time, ViewIdx(0), &topX, &topY);
-        right->getPositionAtTime(true, _time, ViewIdx(0), &rightX, &rightY);
-        bottom->getPositionAtTime(true, _time, ViewIdx(0), &btmX, &btmY);
-        left->getPositionAtTime(true, _time, ViewIdx(0), &leftX, &leftY);
+        top->getPositionAtTime(_time, &topX, &topY);
+        right->getPositionAtTime(_time, &rightX, &rightY);
+        bottom->getPositionAtTime(_time, &btmX, &btmY);
+        left->getPositionAtTime(_time, &leftX, &leftY);
 
         // The bezier control points should be:
         // P_0 = (0,1), P_1 = (c,1), P_2 = (1,c), P_3 = (1,0)
@@ -1593,20 +1593,20 @@ MakeEllipseUndoCommand::redo()
 
         const double c = 0.551915024494;
         // top
-        _curve->setLeftBezierPoint(0, _time,  topX + (leftX  - topX) * c, topY);
-        _curve->setRightBezierPoint(0, _time, topX + (rightX - topX) * c, topY);
+        _curve->setLeftBezierPoint(0, _time, ViewSetSpec::all(),  topX + (leftX  - topX) * c, topY);
+        _curve->setRightBezierPoint(0, _time, ViewSetSpec::all(), topX + (rightX - topX) * c, topY);
 
         // right
-        _curve->setLeftBezierPoint(1, _time,  rightX, rightY + (topY - rightY) * c);
-        _curve->setRightBezierPoint(1, _time, rightX, rightY + (btmY - rightY) * c);
+        _curve->setLeftBezierPoint(1, _time, ViewSetSpec::all(),  rightX, rightY + (topY - rightY) * c);
+        _curve->setRightBezierPoint(1, _time, ViewSetSpec::all(), rightX, rightY + (btmY - rightY) * c);
 
         // btm
-        _curve->setLeftBezierPoint(2, _time,  btmX + (rightX - btmX) * c, btmY);
-        _curve->setRightBezierPoint(2, _time, btmX + (leftX  - btmX) * c, btmY);
+        _curve->setLeftBezierPoint(2, _time, ViewSetSpec::all(),  btmX + (rightX - btmX) * c, btmY);
+        _curve->setRightBezierPoint(2, _time, ViewSetSpec::all(), btmX + (leftX  - btmX) * c, btmY);
 
         // left
-        _curve->setLeftBezierPoint(3, _time,  leftX, leftY + (btmY - leftY) * c);
-        _curve->setRightBezierPoint(3, _time, leftX, leftY + (topY - leftY) * c);
+        _curve->setLeftBezierPoint(3, _time, ViewSetSpec::all(),  leftX, leftY + (btmY - leftY) * c);
+        _curve->setRightBezierPoint(3, _time, ViewSetSpec::all(), leftX, leftY + (topY - leftY) * c);
 
         RotoLayerPtr parentItem = toRotoLayer(_curve->getParent());
         if (parentItem) {
