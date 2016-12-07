@@ -10,6 +10,7 @@
 
 - PIKColor: do not expand region of definition
 - Shadertoy: support iDate, add presets
+- Transform & CornerPin: additional "Amount" parameter to control the amount of transform to apply.
 
 ## Version 2.1.9
 
