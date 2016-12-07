@@ -30,30 +30,15 @@ NATRON_NAMESPACE_ENTER
 
 
 CurvePtr KnobHelper::getCurve(ViewGetSpec view,
-                              DimIdx dimension,
-                              bool byPassMaster) const
+                              DimIdx dimension) const
 {
-    if ( (dimension < 0) || ( dimension >= (int)_imp->curves.size() ) ) {
+    if ( (dimension < 0) || ( dimension >= _imp->dimension) ) {
         throw std::invalid_argument("KnobHelper::getCurve: dimension out of range");
     }
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-
-    MasterKnobLink linkData;
-    if (!byPassMaster && getMaster(dimension, view_i, &linkData)) {
-        KnobIPtr masterKnob = linkData.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getCurve(linkData.masterView, linkData.masterDimension);
-        }
-    }
-
-    QMutexLocker k(&_imp->curvesMutex);
-    PerViewCurveMap::const_iterator foundView = _imp->curves[dimension].find(view_i);
-    if (foundView == _imp->curves[dimension].end()) {
-        return CurvePtr();
-    }
-
-    return foundView->second;
+    KnobDimViewBasePtr dimViewData = getDataForDimView(dimension, view_i);
+    return dimViewData->animationCurve;
 } // getCurve
 
 CurvePtr
@@ -68,7 +53,7 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(ViewGetSpec(view), dimension, true);
+    CurvePtr curve = getCurve(ViewGetSpec(view), dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::deleteValuesAtTimeInternal: curve is null");
     }
@@ -124,7 +109,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::deleteValuesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -154,7 +139,7 @@ KnobHelper::deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::deleteAnimationConditionalInternal: curve is null");
     }
@@ -190,7 +175,7 @@ KnobHelper::deleteAnimationConditional(double time,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::deleteAnimationConditional(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -232,7 +217,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::warpValuesAtTimeInternal: curve is null");
     }
@@ -300,7 +285,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::warpValuesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -328,11 +313,11 @@ KnobHelper::cloneCurve(ViewIdx view,
                        const RangeD* range,
                        const StringAnimationManager* stringAnimation)
 {
-    if (dimension < 0 || dimension >= (int)_imp->curves.size()) {
+    if (dimension < 0 || dimension >= _imp->dimension) {
         throw std::invalid_argument("KnobHelper::cloneCurve: Dimension out of range");
     }
 
-    CurvePtr thisCurve = getCurve(view, dimension, true);
+    CurvePtr thisCurve = getCurve(view, dimension);
     if (!thisCurve) {
         return false;
     }
@@ -344,9 +329,9 @@ KnobHelper::cloneCurve(ViewIdx view,
 
     // Clone string animation if necesssary
     if (stringAnimation) {
-        StringAnimationManagerPtr thisStringAnimation = getStringAnimation();
+        StringAnimationManagerPtr thisStringAnimation = getStringAnimation(view);
         if (thisStringAnimation) {
-            thisStringAnimation->clone(*stringAnimation, view, view, offset, range);
+            thisStringAnimation->clone(*stringAnimation, offset, range);
         }
     }
 
@@ -360,22 +345,8 @@ KnobHelper::cloneCurve(ViewIdx view,
         KeyFrameSet keys = thisCurve->getKeyFrames_mt_safe();
 
         std::list<double> keysRemoved, keysAdded;
-        for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-            KeyFrameSet::iterator foundInOldKeys = Curve::findWithTime(oldKeys, oldKeys.end(), it->getTime());
-            if (foundInOldKeys == oldKeys.end()) {
-                keysAdded.push_back(it->getTime());
-            } else {
-                oldKeys.erase(foundInOldKeys);
-            }
-        }
-
-        for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
-            KeyFrameSet::iterator foundInNextKeys = Curve::findWithTime(keys, keys.end(), it->getTime());
-            if (foundInNextKeys == keys.end()) {
-                keysRemoved.push_back(it->getTime());
-            }
-        }
-
+        Curve::computeKeyFramesDiff(oldKeys, keys, &keysAdded, &keysRemoved);
+       
         _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
 
     }
@@ -400,22 +371,21 @@ KnobHelper::cloneCurves(const KnobIPtr& other,
 
     std::list<ViewIdx> views = other->getViewsList();
     int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-    StringAnimationManagerPtr stringAnim = other->getStringAnimation();
 
     bool hasChanged = false;
     if (dimension.isAll()) {
         for (int i = 0; i < dimMin; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                    CurvePtr otherCurve = other->getCurve(*it, DimIdx(i), true);
+                    CurvePtr otherCurve = other->getCurve(*it, DimIdx(i));
                     if (otherCurve) {
-                        hasChanged |= cloneCurve(*it, DimIdx(i), *otherCurve, offset, range, stringAnim.get());
+                        hasChanged |= cloneCurve(*it, DimIdx(i), *otherCurve, offset, range, other->getStringAnimation(*it).get());
                     }
                 }
             } else {
-                CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(i), true);
+                CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(i));
                 if (otherCurve) {
-                    hasChanged |= cloneCurve(ViewIdx(view), DimIdx(i), *otherCurve, offset, range, stringAnim.get());
+                    hasChanged |= cloneCurve(ViewIdx(view), DimIdx(i), *otherCurve, offset, range, other->getStringAnimation(ViewIdx(otherView)).get());
                 }
             }
 
@@ -423,15 +393,15 @@ KnobHelper::cloneCurves(const KnobIPtr& other,
     } else {
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                CurvePtr otherCurve = other->getCurve(*it, DimIdx(otherDimension), true);
+                CurvePtr otherCurve = other->getCurve(*it, DimIdx(otherDimension));
                 if (otherCurve) {
-                    hasChanged |= cloneCurve(*it, DimIdx(dimension), *otherCurve, offset, range, stringAnim.get());
+                    hasChanged |= cloneCurve(*it, DimIdx(dimension), *otherCurve, offset, range, other->getStringAnimation(*it).get());
                 }
             }
         } else {
-            CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(otherDimension), true);
+            CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(otherDimension));
             if (otherCurve) {
-                hasChanged |= cloneCurve(ViewIdx(view), DimIdx(dimension), *otherCurve, offset, range, stringAnim.get());
+                hasChanged |= cloneCurve(ViewIdx(view), DimIdx(dimension), *otherCurve, offset, range, other->getStringAnimation(ViewIdx(otherView)).get());
             }
         }
     }
@@ -448,7 +418,7 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
     if (times.empty()) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::setInterpolationAtTimesInternal: curve is null");
     }
@@ -490,7 +460,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setInterpolationAtTimes(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -515,7 +485,7 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::setLeftAndRightDerivativesAtTimeInternal: curve is null");
     }
@@ -557,7 +527,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setLeftAndRightDerivativesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -581,7 +551,7 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double t
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::setDerivativeAtTimeInternal: curve is null");
     }
@@ -628,7 +598,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setDerivativeAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -652,7 +622,7 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::removeAnimationInternal: curve is null");
     }
@@ -710,7 +680,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
         }
         if (view.isAll()) {

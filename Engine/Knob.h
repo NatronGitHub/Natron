@@ -320,6 +320,9 @@ public:
     struct ListenerLink
     {
 
+        // Is the link made with an expression?
+        bool isExpr;
+        
         // The view of the listener that is listening
         ViewIdx listenerView;
 
@@ -333,7 +336,8 @@ public:
         ViewIdx targetView;
 
         ListenerLink()
-        : listenerView()
+        : isExpr(false)
+        , listenerView()
         , listenerDimension()
         , targetDim()
         , targetView()
@@ -468,8 +472,6 @@ public:
      **/
     bool hasDefaultValueChanged() const;
     virtual bool hasDefaultValueChanged(DimIdx dimension) const = 0;
-
-    virtual void refreshAnimationLevel(ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -883,7 +885,7 @@ public:
     /**
      * @brief Returns a pointer to the curve in the given dimension and view.
      **/
-    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension, bool byPassMaster = false) const = 0;
+    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension) const = 0;
 
     /**
      * @brief Returns true if the curve corresponding to the dimension/view is animated with keyframes.
@@ -1025,7 +1027,7 @@ public:
     /**
      * @brief Enables/disables user interaction with the given dimension.
      **/
-    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) = 0;
+    virtual void setEnabled(bool b);
 
     /**
      * @brief Is the parameter enabled ?
@@ -1270,7 +1272,7 @@ public:
 protected:
 
     virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) = 0;
-
+    
 public:
 
     virtual void onKnobAliasLink(const KnobIPtr& /*master*/, bool /*doAlias*/) {}
@@ -1384,19 +1386,59 @@ public:
     // The expression if any
     KnobI::Expr expression;
 
-    // The hard-link if any
-    MasterKnobLink link;
-
     KnobDimViewBase()
     : valueMutex()
     , animationCurve()
     , expression()
-    , link()
     {
 
     }
 
-    KnobDimViewBase(const KnobDimViewBase& other);
+    struct CopyInArgs
+    {
+        // Pointer to the other dim/view value to copy
+        const KnobDimViewBase* other;
+        
+        // A range of keyframes to copy
+        const RangeD* keysToCopyRange;
+        
+        // A offset to copy keyframes
+        double keysToCopyOffset;
+        
+        CopyInArgs(const KnobDimViewBase& other)
+        : other(&other)
+        , keysToCopyRange(0)
+        , keysToCopyOffset(0)
+        {
+            
+        }
+    };
+    
+    struct CopyOutArgs
+    {
+        
+        // If the copy operation should report keyframes removed, this is a pointer
+        // to the keyframes removed list
+        std::list<double>* keysRemoved;
+        
+        // If the copy operation should report keyframes added, this is a pointer
+        // to the keyframes added list
+        std::list<double>* keysAdded;
+        
+        CopyOutArgs()
+        : keysRemoved(0)
+        , keysAdded(0)
+        {
+            
+        }
+        
+    };
+    
+    /**
+     * @brief Copy the other dimension/view value with the given args.
+     * @returns Returns true if something changed, false otherwise.
+     **/
+    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs);
 
 };
 
@@ -1411,11 +1453,17 @@ public:
 
     ValueKnobDimView();
 
-    ValueKnobDimView(const ValueKnobDimView& other)
-    : KnobDimViewBase(other)
-    , value(other.value)
+    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE
     {
-
+        bool hasChanged = KnobDimViewBase::copy(inArgs, outArgs);
+        
+        const ValueKnobDimView<T>* otherType = dynamic_cast<const ValueKnobDimView<T>*>(inArgs.other);
+        assert(otherType);
+        if (value != otherType->value) {
+            value = otherType->value;
+            hasChanged = true;
+        }
+        return hasChanged;
     }
 };
 
@@ -1435,7 +1483,7 @@ public:
 
     }
 
-    StringKnobDimView(const StringKnobDimView& other);
+    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
 };
 
 class ChoiceKnobDimView : public ValueKnobDimView<int>
@@ -1448,23 +1496,29 @@ public:
     // For choice parameters the value is held by a string because if the option disappears from the menu
     // we still need to remember the user choice
     std::string activeEntry;
-
+    
     ChoiceKnobDimView()
     : ValueKnobDimView<int>()
     , menuOptions()
     , menuOptionTooltips()
     , activeEntry()
     {
-
+        
     }
-
-    ChoiceKnobDimView(const ChoiceKnobDimView& other)
-    : ValueKnobDimView<int>(other)
-    , menuOptions(other.menuOptions)
-    , menuOptionTooltips(other.menuOptionTooltips)
-    , activeEntry(other.activeEntry)
+    
+    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE
     {
-
+        bool hasChanged = ValueKnobDimView<int>::copy(inArgs, outArgs);
+    
+        const ChoiceKnobDimView* otherType = dynamic_cast<const ChoiceKnobDimView*>(inArgs.other);
+        assert(otherType);
+        menuOptions = otherType->menuOptions;
+        menuOptionTooltips = otherType->menuOptionTooltips;
+        if (activeEntry != otherType->activeEntry) {
+            activeEntry = otherType->activeEntry;
+            hasChanged = true;
+        }
+        return hasChanged;
     }
 };
 
@@ -1480,7 +1534,7 @@ public:
 
     }
 
-    ParametricKnobDimView(const ParametricKnobDimView& other);
+    virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
 };
 
 
@@ -1543,7 +1597,7 @@ private:
 
 protected:
 
-    KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view);
+    KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view) const;
 
     virtual void onAllDimensionsMadeVisible(ViewIdx view, bool visible) = 0;
 
@@ -1673,7 +1727,7 @@ public:
     virtual int getKeyFramesCount(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getNearestKeyFrameTime(ViewGetSpec view, DimIdx dimension, double time, double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getKeyFrameIndex(ViewGetSpec view, DimIdx dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension, bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual CurvePtr getCurve(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated( DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidExpressions() OVERRIDE FINAL;
@@ -1708,11 +1762,9 @@ public:
     virtual bool slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL;
     virtual void unSlave(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
 
-protected:
-
-    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, bool copyState) = 0;
-
 private:
+    
+    void unSlaveInternal(DimIdx dimension, ViewIdx view, bool copyState);
 
     bool slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView) WARN_UNUSED_RETURN;
 
@@ -1762,7 +1814,7 @@ public:
     virtual ViewerContextLayoutTypeEnum getInViewerContextLayoutType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
     virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setEnabled(bool b, DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec(0)) OVERRIDE FINAL;
+    virtual void setEnabled(bool b) OVERRIDE FINAL;
     virtual bool isEnabled() const OVERRIDE FINAL;
     virtual void setSecret(bool b) OVERRIDE FINAL;
     virtual bool getIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1817,7 +1869,6 @@ public:
     virtual void setDimensionName(DimIdx dim, const std::string & name) OVERRIDE FINAL;
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModifications(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void refreshAnimationLevel(ViewSetSpec view, DimSpec dimension) OVERRIDE FINAL;
     virtual KnobIPtr createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
                                             const KnobPagePtr& page,
                                             const KnobGroupPtr& group,
@@ -1834,12 +1885,6 @@ protected:
 
     virtual bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension) = 0;
     
-public:
-
-private:
-
-    void refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension);
-
 protected:
 
     virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) OVERRIDE FINAL;
@@ -2097,10 +2142,6 @@ public:
     PerDimensionValuesVec getRawValues() const;
     T getRawValue(DimIdx dimension, ViewIdx view) const;
 
-private:
-
-
-    virtual void unSlaveInternal(DimIdx dimension, ViewIdx view, bool copyState) OVERRIDE FINAL;
 
 public:
 
@@ -2546,11 +2587,8 @@ public:
                                                            OfxPropertySetHandle outArgsRaw);
 
 
-    virtual StringAnimationManagerPtr getStringAnimation() const OVERRIDE FINAL
-    {
-        return _animation;
-    }
-
+    virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const OVERRIDE FINAL;
+    
     void loadAnimation(const std::map<std::string,std::map<double, std::string> > & keyframes);
 
     void saveAnimation(std::map<std::string,std::map<double, std::string> >* keyframes) const;
@@ -2583,7 +2621,6 @@ protected:
 private:
     
 
-    StringAnimationManagerPtr _animation;
 };
 
 

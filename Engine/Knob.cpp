@@ -143,11 +143,6 @@ KnobHelper::deleteKnob()
         if (!knob) {
             continue;
         }
-        KnobIPtr aliasKnob = knob->getAliasMaster();
-        if (aliasKnob.get() == this) {
-            knob->setKnobAsAliasOfThis(aliasKnob, false);
-        }
-
         knob->setExpressionInvalid( DimSpec::all(), ViewSetSpec::all(), false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
         if (knob.get() != this) {
             knob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
@@ -552,31 +547,75 @@ KnobHelper::canSplitViews() const
     return isAnimationEnabled();
 }
 
-KnobDimViewBase::KnobDimViewBase(const KnobDimViewBase& other)
-: valueMutex()
-, animationCurve()
-, expression(other.expression)
-, link(other.link)
+bool
+KnobDimViewBase::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
 {
-    if (other.animationCurve) {
-        animationCurve.reset(new Curve(*other.animationCurve));
+    bool hasChanged = false;
+    if (expression.originalExpression != inArgs.other->expression.originalExpression) {
+        expression = inArgs.other->expression;
+        hasChanged = true;
+    }
+    KeyFrameSet oldKeys;
+    if (animationCurve) {
+        oldKeys = animationCurve->getKeyFrames_mt_safe();
+    }
+    
+    if (inArgs.other->animationCurve) {
+        if (!animationCurve) {
+            animationCurve.reset(new Curve(inArgs.other->animationCurve->getType()));
+        }
+        hasChanged |= animationCurve->cloneAndCheckIfChanged(*inArgs.other->animationCurve, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
+    }
+    if (hasChanged) {
+        // Compute the keyframes diff
+        KeyFrameSet keys;
+        if (animationCurve) {
+            keys = animationCurve->getKeyFrames_mt_safe();
+        }
+        Curve::computeKeyFramesDiff(oldKeys, keys, outArgs->keysAdded, outArgs->keysRemoved);
+    }
+
+    return hasChanged;
+} // copy
+
+bool
+ParametricKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
+{
+    bool hasChanged = ValueKnobDimView<double>::copy(inArgs, outArgs);
+    const ParametricKnobDimView* otherType = dynamic_cast<const ParametricKnobDimView*>(inArgs.other);
+    assert(otherType);
+    
+
+    if (otherType->parametricCurve) {
+        if (!parametricCurve) {
+            parametricCurve.reset(new Curve(otherType->parametricCurve->getType()));
+        }
+        hasChanged |= parametricCurve->cloneAndCheckIfChanged(*otherType->parametricCurve, 0 /*offset*/, 0 /*range*/);
     }
 }
 
-ParametricKnobDimView::ParametricKnobDimView(const ParametricKnobDimView& other)
-: ValueKnobDimView<double>(other)
-, parametricCurve()
+bool
+StringKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
 {
-    if (other.parametricCurve) {
-        parametricCurve.reset(new Curve(*other.parametricCurve));
+    bool hasChanged = ValueKnobDimView<std::string>::copy(inArgs, outArgs);
+    
+    const StringKnobDimView* otherType = dynamic_cast<const StringKnobDimView*>(inArgs.other);
+    assert(otherType);
+    if (otherType->stringAnimation) {
+        if (!stringAnimation) {
+            stringAnimation.reset(new StringAnimationManager());
+        }
+        hasChanged |= stringAnimation->clone(*otherType->stringAnimation, inArgs.keysToCopyOffset, inArgs.keysToCopyRange);
     }
+    return hasChanged;
 }
+
 
 KnobDimViewBasePtr
-KnobHelper::getDataForDimView(DimIdx dimension, ViewIdx view)
+KnobHelper::getDataForDimView(DimIdx dimension, ViewIdx view) const
 {
     if (dimension < 0 || dimension >= (int)_imp->dimension) {
-        throw std::invalid_argument("KnobHelper::getDataForDimView; dimension out of range");
+        throw std::invalid_argument("KnobHelper::getDataForDimView: dimension out of range");
     }
     QMutexLocker k(&_imp->perDimViewDataMutex);
     PerViewKnobDataMap::iterator found = _imp->perDimViewData[dimension].find(view);
@@ -594,16 +633,29 @@ KnobHelper::splitView(ViewIdx view)
     }
     int nDims = getNDimensions();
     for (int i = 0; i < nDims; ++i) {
+        std::list<double> keyframeAdded, keyframeRemoved;
         {
             QMutexLocker k(&_imp->perDimViewDataMutex);
             const KnobDimViewBasePtr& mainViewData = _imp->perDimViewData[i][ViewIdx(0)];
             if (mainViewData) {
                 KnobDimViewBasePtr& viewData = _imp->perDimViewData[i][view];
-                if (!viewCurve) {
-                    viewData.reset(new Curve(shared_from_this(), DimIdx(i), view));
-                    viewCurve->clone(*mainViewCurve);
+                if (!viewData) {
+                    viewData = createDimViewData();
                 }
+                KnobDimViewBase::CopyInArgs inArgs(*mainViewData);
+                KnobDimViewBase::CopyOutArgs outArgs;
+                outArgs.keysAdded = &keyframeAdded;
+                outArgs.keysRemoved = &keyframeRemoved;
+                viewData->copy(inArgs, &outArgs);
             }
+        }
+        _signalSlotHandler->s_curveAnimationChanged(keyframeRemoved, keyframeRemoved, view, DimIdx(i));
+
+        {
+            QWriteLocker k(&_imp->mastersMutex);
+            const MasterKnobLinkAndSavedValue& mainViewLink = _imp->masters[i][ViewIdx(0)];
+            MasterKnobLinkAndSavedValue& viewLink = _imp->masters[i][view];
+            viewLink = mainViewLink;
         }
         {
             QMutexLocker k(&_imp->hasModificationsMutex);
@@ -634,6 +686,12 @@ KnobHelper::unSplitView(ViewIdx view)
                 _imp->perDimViewData[i].erase(foundView);
 
             }
+        }
+        {
+            QWriteLocker k(&_imp->mastersMutex);
+            const MasterKnobLinkAndSavedValue& mainViewLink = _imp->masters[i][ViewIdx(0)];
+            MasterKnobLinkAndSavedValue& viewLink = _imp->masters[i][view];
+            viewLink = mainViewLink;
         }
         {
             QMutexLocker k(&_imp->hasModificationsMutex);
@@ -800,7 +858,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChange
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::isAutoKeyingEnabled(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -858,7 +916,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(view, originalReason, dimension);
         }
-        refreshAnimationLevel(view, dimension);
     }
 
     return ret;
@@ -1018,37 +1075,11 @@ KnobHelper::getInViewerContextSecret() const
 }
 
 void
-KnobHelper::setEnabled(bool b, DimSpec dimension, ViewSetSpec view)
+KnobHelper::setEnabled(bool b)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
-        if (dimension.isAll()) {
-            if (view.isAll()) {
-                std::list<ViewIdx> views = getViewsList();
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    for (int i = 0; i < _imp->dimension; ++i) {
-                        _imp->enabled[i][*it] = b;
-                    }
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                for (int i = 0; i < _imp->dimension; ++i) {
-                    _imp->enabled[i][view_i] = b;
-                }
-            }
-
-        } else {
-            if (view.isAll()) {
-                std::list<ViewIdx> views = getViewsList();
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    _imp->enabled[dimension][*it] = b;
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                _imp->enabled[dimension][view_i] = b;
-
-            }
-        }
+        _imp->enabled = b;
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_enabledChanged();
@@ -1149,18 +1180,16 @@ KnobHelper::getIconLabel(bool checked) const
 bool
 KnobHelper::hasAnimation() const
 {
-    QMutexLocker k(&_imp->curvesMutex);
-    QMutexLocker k2(&_imp->expressionMutex);
-    for (int i = 0; i < getNDimensions(); ++i) {
-        const PerViewCurveMap& curvesPerView = _imp->curves[i];
-        for (PerViewCurveMap::const_iterator it = curvesPerView.begin(); it!=curvesPerView.end(); ++it) {
-            if (it->second && it->second->getKeyFramesCount() > 0) {
+    std::list<ViewIdx> views = getViewsList();
+    QMutexLocker k(&_imp->perDimViewDataMutex);
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        for (int i = 0; i < _imp->dimension; ++i) {
+            KnobDimViewBasePtr value = getDataForDimView(DimIdx(i), *it);
+            assert(value);
+            if (value->animationCurve && value->animationCurve->getKeyFramesCount() > 0) {
                 return true;
             }
-        }
-        const ExprPerViewMap& exprPerView = _imp->expressions[i];
-        for (ExprPerViewMap::const_iterator it = exprPerView.begin(); it!=exprPerView.end(); ++it) {
-            if (!it->second.originalExpression.empty()) {
+            if (!value->expression.originalExpression.empty()) {
                 return true;
             }
         }
@@ -1711,21 +1740,28 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
 
 bool
-KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView)
+KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx thisView, ViewIdx otherView)
 {
-    if (!otherKnob || (otherKnob.get() == this && (thisDimension == otherDimension) && (view == otherView))) {
+    if (!otherKnob || (otherKnob.get() == this && (thisDimension == otherDimension) && (thisView == otherView))) {
         return false;
     }
     if (thisDimension < 0 || thisDimension >= (int)_imp->masters.size()) {
         return false;
     }
 
-
+    KnobHelperPtr otherIsHelper = toKnobHelper(otherKnob);
+    assert(otherIsHelper);
+    if (!otherIsHelper) {
+        return false;
+    }
     {
+        // Avoid recursion
         MasterKnobLink otherLinkData;
         if (otherKnob->getMaster(otherDimension, otherView, &otherLinkData)) {
             if (otherLinkData.masterKnob.lock().get() == this) {
-                // Avoid recursion
+                
+                // Ensure pointers are correctly set to the good dimension/view value
+                assert(otherIsHelper->getDataForDimView(otherDimension, otherView) == getDataForDimView(thisDimension, thisView));
                 return false;
             }
         }
@@ -1734,40 +1770,27 @@ KnobHelper::slaveToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, Di
     {
 
         QWriteLocker l(&_imp->mastersMutex);
-        MasterKnobLink& linkData = _imp->masters[thisDimension][view];
+        MasterKnobLinkAndSavedValue& linkData = _imp->masters[thisDimension][thisView];
         if ( linkData.masterKnob.lock() ) {
             // Already slaved
             return false;
         }
-
+        linkData.savedValue = getDataForDimView(thisDimension, thisView);
         linkData.masterKnob = otherKnob;
         linkData.masterDimension = otherDimension;
         linkData.masterView = otherView;
     }
-
-
-    // Copy the master state for the dimension/view
-    bool hasChanged = copyKnob(otherKnob, view, thisDimension, otherView, otherDimension, 0 /*range*/, 0 /*offset*/);
-    (void)hasChanged;
-
-    // Disable the slaved knob to the user
-    // Do not disable buttons when they are slaved
-
-    KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
-    if (!isBtn) {
-        setEnabled(false, thisDimension);
+    
+    // Copy the pointer to the master value to this knob
+    {
+        QMutexLocker k(&_imp->perDimViewDataMutex);
+        _imp->perDimViewData[thisDimension][thisView] = otherIsHelper->getDataForDimView(otherDimension, otherView);
     }
 
-    if (!isMastersPersistenceIgnored()) {
-        // Force the parameter to be persistent if it's not, otherwise thestate will not be saved
-        setIsPersistent(true);
-    }
-
-    _signalSlotHandler->s_knobSlaved(thisDimension, view, true /* slaved*/);
-
+    _signalSlotHandler->s_knobSlaved(thisDimension, thisView, true /* slaved*/);
 
     // Register this as a listener of the master
-    otherKnob->addListener( false, thisDimension, otherDimension, view, otherView, shared_from_this() );
+    otherKnob->addListener( false, thisDimension, otherDimension, thisView, otherView, shared_from_this() );
 
 
     return true;
@@ -1832,6 +1855,82 @@ KnobHelper::slaveTo(const KnobIPtr & otherKnob, DimSpec thisDimension, DimSpec o
 
 
 void
+KnobHelper::unSlaveInternal(DimIdx dimension,
+                         ViewIdx view,
+                         bool copyState)
+{
+    if (dimension < 0 || dimension >= (int)_imp->dimension) {
+        throw std::invalid_argument("KnobHelper::unSlaveInternal: dimension out of range");
+    }
+    
+    // If not link, exit
+    MasterKnobLink linkData;
+    if (!getMaster(dimension, view, &linkData)) {
+        return;
+    }
+    
+    
+    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(linkData.masterKnob.lock());
+    if (!masterHelper) {
+        return;
+    }
+    
+    // Remove the master from the masters map and retrive the saved dim/view data
+    KnobDimViewBasePtr savedData;
+    {
+        QWriteLocker l(&_imp->mastersMutex);
+        PerViewMasterLink::iterator foundView = _imp->masters[dimension].find(view);
+        if (foundView != _imp->masters[dimension].end()) {
+            foundView->second.masterKnob.reset();
+            savedData = foundView->second.savedValue;
+        }
+        
+    }
+    
+    // Reset back the dim/view value data pointer
+    std::list<double> keysAdded, keysRemoved;
+    if (savedData) {
+        QMutexLocker k(&_imp->perDimViewDataMutex);
+        PerViewKnobDataMap::iterator foundView = _imp->perDimViewData[dimension].find(view);
+        if (foundView != _imp->perDimViewData[dimension].end()) {
+            KnobDimViewBasePtr oldData = foundView->second;
+            foundView->second = savedData;
+            
+            // Ensure the keyframes are in sync
+            KeyFrameSet oldKeys,newKeys;
+            if (oldData->animationCurve) {
+                oldKeys = oldData->animationCurve->getKeyFrames_mt_safe();
+            }
+            if (savedData->animationCurve) {
+                newKeys = savedData->animationCurve->getKeyFrames_mt_safe();
+            }
+            Curve::computeKeyFramesDiff(oldKeys, newKeys, &keysAdded, &keysRemoved);
+        }
+    }
+    if (!keysAdded.empty() || !keysRemoved.empty()) {
+        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+    }
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
+    }
+
+    
+    if (getHolder()) {
+        getHolder()->onKnobSlaved( shared_from_this(), masterHelper, dimension, view, false );
+    }
+    if (masterHelper) {
+        masterHelper->removeListener(shared_from_this(), dimension, view);
+    }
+    if (!copyState) {
+        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    } else {
+        copyKnob(masterHelper, view, dimension, linkData.masterView, linkData.masterDimension);
+    }
+} // unSlaveInternal
+
+
+void
 KnobHelper::unSlave(DimSpec dimension,
                     ViewSetSpec view,
                     bool copyState)
@@ -1862,6 +1961,7 @@ KnobHelper::unSlave(DimSpec dimension,
             unSlaveInternal(DimIdx(dimension), view_i, copyState);
         }
     }
+    
     endChanges();
 } // unSlave
 
@@ -1884,20 +1984,6 @@ KnobHelper::getMaster(DimIdx dimension, ViewIdx view, MasterKnobLink* masterLink
     return bool(foundView->second.masterKnob.lock());
 }
 
-void
-KnobHelper::resetMaster(DimIdx dimension, ViewIdx view)
-{
-    if (dimension < 0 || dimension >= (int)_imp->masters.size()) {
-        throw std::invalid_argument("KnobHelper::resetMaster: dimension out of range");
-    }
-    QWriteLocker l(&_imp->mastersMutex);
-    PerViewMasterLink::iterator foundView = _imp->masters[dimension].find(view);
-    if (foundView == _imp->masters[dimension].end()) {
-        return;
-    }
-    foundView->second.masterKnob.reset();
-}
-
 bool
 KnobHelper::isSlave(DimIdx dimension, ViewIdx view) const
 {
@@ -1912,21 +1998,22 @@ KnobHelper::isSlave(DimIdx dimension, ViewIdx view) const
     return bool( foundView->second.masterKnob.lock() );
 }
 
-void
-KnobHelper::refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension)
+
+AnimationLevelEnum
+KnobHelper::getAnimationLevel(DimIdx dimension, ViewGetSpec view) const
 {
     AnimationLevelEnum level = eAnimationLevelNone;
-
+    
     std::string expr = getExpression(dimension, view);
     if (!expr.empty()) {
         level = eAnimationLevelExpression;
     } else {
-
+        
         CurvePtr c;
         if (canAnimate() && isAnimationEnabled()) {
             c = getCurve(view, dimension);
         }
-
+        
         if (!c || !c->isAnimated()) {
             level = eAnimationLevelNone;
         } else {
@@ -1940,88 +2027,7 @@ KnobHelper::refreshAnimationLevelInternal(ViewIdx view, DimIdx dimension)
             }
         }
     }
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->animationLevelMutex);
-        assert( dimension < (int)_imp->animationLevel.size() );
-        AnimationLevelEnum& curValue = _imp->animationLevel[dimension][view];
-        if (curValue != level) {
-            curValue = level;
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        KnobGuiIPtr hasGui = getKnobGuiPointer();
-        if (hasGui && !hasGui->isGuiFrozenForPlayback()) {
-            _signalSlotHandler->s_animationLevelChanged(view, dimension );
-        }
-    }
-}
-
-void
-KnobHelper::refreshAnimationLevel(ViewSetSpec view,
-                                  DimSpec dimension)
-{
-    if (!canAnimate()) {
-        return;
-    }
-    if (!getHolder() || !getHolder()->getApp()) {
-        return;
-    }
-    KnobHolderPtr holder = getHolder();
-    std::list<ViewIdx> views = getViewsList();
-    if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    refreshAnimationLevelInternal(*it, DimIdx(i));
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                refreshAnimationLevelInternal(view_i, DimIdx(i));
-            }
-        }
-    } else {
-        if ( ( dimension >= (int)_imp->animationLevel.size() ) || (dimension < 0) ) {
-            throw std::invalid_argument("KnobHelper::refreshAnimationLevel(): Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                refreshAnimationLevelInternal(*it, DimIdx(dimension));
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            refreshAnimationLevelInternal(view_i, DimIdx(dimension));
-        }
-    }
-}
-
-AnimationLevelEnum
-KnobHelper::getAnimationLevel(DimIdx dimension, ViewGetSpec view) const
-{
-    // If the knob is slaved to another knob, returns the other knob value
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-    MasterKnobLink linkdata;
-    if (getMaster(dimension, view_i, &linkdata)) {
-        KnobIPtr masterKnob = linkdata.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getAnimationLevel(linkdata.masterDimension, linkdata.masterView);
-        }
-    }
-
-
-    QMutexLocker l(&_imp->animationLevelMutex);
-    if ( dimension < 0 || dimension >= (int)_imp->animationLevel.size() ) {
-        throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
-    }
-    PerViewAnimLevelMap::const_iterator foundView = _imp->animationLevel[dimension].find(view_i);
-    if (foundView == _imp->animationLevel[dimension].end()) {
-        return eAnimationLevelNone;
-    }
-
-    return foundView->second;
+    return level;
 }
 
 bool
@@ -2030,7 +2036,7 @@ KnobHelper::getKeyFrameTime(ViewGetSpec view,
                             DimIdx dimension,
                             double* time) const
 {
-    if ( dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+    if ( dimension < 0 || dimension >= _imp->dimension ) {
         throw std::invalid_argument("Knob::getKeyFrameTime(): Dimension out of range");
     }
 
@@ -2053,7 +2059,7 @@ KnobHelper::getLastKeyFrameTime(ViewGetSpec view,
                                 DimIdx dimension,
                                 double* time) const
 {
-    if ( dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+    if ( dimension < 0 || dimension >= _imp->dimension ) {
         throw std::invalid_argument("Knob::getLastKeyFrameTime(): Dimension out of range");
     }
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
@@ -2099,7 +2105,7 @@ KnobHelper::getNearestKeyFrameTime(ViewGetSpec view,
                                    double time,
                                    double* nearestTime) const
 {
-    if ( dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+    if ( dimension < 0 || dimension >= _imp->dimension ) {
         throw std::invalid_argument("Knob::getNearestKeyFrameTime(): Dimension out of range");
     }
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
@@ -2126,7 +2132,7 @@ KnobHelper::getKeyFrameIndex(ViewGetSpec view,
                              DimIdx dimension,
                              double time) const
 {
-    if ( dimension < 0 || dimension >= (int)_imp->curves.size() ) {
+    if ( dimension < 0 || dimension >= _imp->dimension ) {
         throw std::invalid_argument("Knob::getKeyFrameIndex(): Dimension out of range");
     }
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
@@ -5390,14 +5396,12 @@ AnimatingKnobStringHelper::createDimViewData() const
     return ret;
 }
 
-StringKnobDimView::StringKnobDimView(const StringKnobDimView& other)
-: ValueKnobDimView<std::string>(other)
-, stringAnimation()
+StringAnimationManagerPtr
+AnimatingKnobStringHelper::getStringAnimation(ViewIdx view) const
 {
-    if (other.stringAnimation) {
-        stringAnimation.reset(new StringAnimationManager(*other.stringAnimation));
-    }
+    return _animation;
 }
+
 
 void
 AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
@@ -5469,7 +5473,7 @@ void
 AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
                                                   void* ofxParamHandle)
 {
-    _animation->setCustomInterpolation(func, ofxParamHandle);
+    _animation->setCustomInterpolation(func, ofxParamHandle, getName());
 }
 
 void

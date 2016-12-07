@@ -478,6 +478,11 @@ public:
                                         std::vector<KeyFrame>* newKeys = NULL,
                                         std::list<double>* keysAdded = 0,
                                         std::list<double>* keysRemoved = 0);
+    
+    static void computeKeyFramesDiff(const KeyFrameSet& keysA,
+                                     const KeyFrameSet& keysB,
+                                     std::list<double>* keysAdded,
+                                     std::list<double>* keysRemoved);
 
 private:
 

@@ -364,6 +364,33 @@ Curve::clone(const Curve & other,
     onCurveChanged();
 }
 
+void
+Curve::computeKeyFramesDiff(const KeyFrameSet& keysA,
+                            const KeyFrameSet& keysB,
+                            std::list<double>* keysAdded,
+                            std::list<double>* keysRemoved)
+{
+    KeyFrameSet keysACopy = keysA;
+    if (keysAdded) {
+        for (KeyFrameSet::iterator it = keysB.begin(); it != keysB.end(); ++it) {
+            KeyFrameSet::iterator foundInOldKeys = Curve::findWithTime(keysACopy, keysACopy.end(), it->getTime());
+            if (foundInOldKeys == keysA.end()) {
+                keysAdded->push_back(it->getTime());
+            } else {
+                keysACopy.erase(foundInOldKeys);
+            }
+        }
+    }
+    if (keysRemoved) {
+        for (KeyFrameSet::iterator it = keysACopy.begin(); it != keysACopy.end(); ++it) {
+            KeyFrameSet::iterator foundInNextKeys = Curve::findWithTime(keysB, keysB.end(), it->getTime());
+            if (foundInNextKeys == keysB.end()) {
+                keysRemoved->push_back(it->getTime());
+            }
+        }
+    }
+}
+
 double
 Curve::getMinimumTimeCovered() const
 {

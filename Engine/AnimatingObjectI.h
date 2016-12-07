@@ -196,7 +196,10 @@ public:
     /**
      * @brief For an object that supports animating strings, this is should return a pointer to it
      **/
-    virtual StringAnimationManagerPtr getStringAnimation() const { return StringAnimationManagerPtr(); };
+    virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const {
+        Q_UNUSED(view);
+        return StringAnimationManagerPtr();
+    }
 
 
     /**

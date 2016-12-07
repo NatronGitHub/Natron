@@ -513,60 +513,6 @@ KnobStringBase::makeKeyFrame(double time,
 }
 
 
-template<typename T>
-void
-Knob<T>::unSlaveInternal(DimIdx dimension,
-                         ViewIdx view,
-                         bool copyState)
-{
-
-    MasterKnobLink linkData;
-    if (!getMaster(dimension, view, &linkData)) {
-        return;
-    }
-    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(linkData.masterKnob.lock());
-    if (!masterHelper) {
-        return;
-    }
-
-    resetMaster(dimension, view);
-
-    // Re-enable the parameter. This is not wrong since anyway if the parameter was disabled in the first place, user shouldn't even have been able to slave it.
-    setEnabled(true, dimension);
-
-    bool hasChanged = false;
-    if (copyState) {
-        // Recurse until we find the top level master then copy its state
-        KnobIPtr masterKnobToCopy = masterHelper;
-        for (;;) {
-            if (!masterKnobToCopy->getMaster(linkData.masterDimension, linkData.masterView, &linkData)) {
-                break;
-            }
-            KnobIPtr masterKnob = linkData.masterKnob.lock();
-            if (!masterKnob) {
-                break;
-            }
-            masterKnobToCopy = masterKnob;
-        }
-        hasChanged |= copyKnob( masterKnobToCopy, view, dimension, linkData.masterView, linkData.masterDimension );
-    }
-
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_knobSlaved(dimension, view, false /*slaved*/);
-    }
-
-    
-    if (getHolder()) {
-        getHolder()->onKnobSlaved( shared_from_this(), masterHelper, dimension, view, false );
-    }
-    if (masterHelper) {
-        masterHelper->removeListener(shared_from_this(), dimension, view);
-    }
-    if (!hasChanged) {
-        // At least refresh animation level if clone did not change anything
-        refreshAnimationLevel(view, dimension);
-    }
-}
 
 template<typename T>
 T

@@ -44,7 +44,7 @@ struct StringAnimationManagerPrivate;
 class StringAnimationManager
 {
 public:
-    StringAnimationManager(const KnobIConstPtr& knob);
+    StringAnimationManager();
 
     StringAnimationManager(const StringAnimationManager& other);
 
@@ -57,29 +57,25 @@ public:
 
     bool hasCustomInterp() const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle, const std::string& knobName);
 
-    bool customInterpolation(double time, ViewIdx view, std::string* ret) const;
+    bool customInterpolation(double time, std::string* ret) const;
 
-    void insertKeyFrame(double time, ViewIdx view, const std::string & v, double* index);
+    void insertKeyFrame(double time, const std::string & v, double* index);
 
-    void removeKeyFrame(double time, ViewIdx view);
+    void removeKeyFrame(double time);
 
-    void removeKeyframes(const std::list<double>& keysRemoved, ViewIdx view);
+    void removeKeyframes(const std::list<double>& keysRemoved);
 
     void clearKeyFrames();
 
-    void stringFromInterpolatedIndex(double interpolated, ViewIdx view, std::string* returnValue) const;
+    void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
 
-    bool clone(const StringAnimationManager & other, ViewIdx view, ViewIdx otherView, SequenceTime offset, const RangeD* range);
+    bool clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
 
-    void load(const std::map<ViewIdx,std::map<double, std::string> > & keyframes);
+    void load(const std::map<double, std::string> & keyframes);
 
-    void save(std::map<ViewIdx,std::map<double, std::string> >* keyframes) const;
-
-    void splitView(ViewIdx view);
-
-    void unSplitView(ViewIdx view);
+    void save(std::map<double, std::string>* keyframes) const;
 
 private:
 

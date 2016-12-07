@@ -76,6 +76,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
+struct MasterKnobLinkAndSavedValue : public MasterKnobLink
+{
+    // When linked, keep the original pointer of this knob dimension/view value
+    KnobDimViewBasePtr savedValue;
+};
+
+typedef std::map<ViewIdx, MasterKnobLinkAndSavedValue> PerViewMasterLink;
+typedef std::vector<PerViewMasterLink> PerDimensionMasterVec;
 
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
@@ -190,9 +198,17 @@ struct KnobHelperPrivate
     // This is mostly used internally when setting multiple dimensions at once to prevent the dimensions from switching state
     bool autoExpandEnabled;
 
-    // For each dimension and view the value stuff
+    // protects perDimViewData
     mutable QMutex perDimViewDataMutex;
+    
+    // For each dimension and view the value stuff
     PerDimensionKnobDataMap perDimViewData;
+    
+    // Read/Write lock protecting _masters & ignoreMasterPersistence & listeners
+    mutable QReadWriteLock mastersMutex;
+    
+    // For each dimension and view, tells to which knob and the dimension in that knob it is slaved to
+    PerDimensionMasterVec masters;
 
     // When true masters will not be serialized
     bool ignoreMasterPersistence;
@@ -288,6 +304,8 @@ struct KnobHelperPrivate
     , autoExpandEnabled(true)
     , perDimViewDataMutex()
     , perDimViewData()
+    , mastersMutex()
+    , masters()
     , ignoreMasterPersistence(false)
     , listeners()
     , declaredByPlugin(declaredByPlugin_)
