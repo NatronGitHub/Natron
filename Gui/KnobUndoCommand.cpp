@@ -840,7 +840,7 @@ RestoreDefaultsCommand::redo()
             continue;
         }
         if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->onKnobValueChanged_public(itKnob, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            itKnob->getHolder()->onKnobValueChanged_public(itKnob, eValueChangedReasonRestoreDefault, time, ViewIdx(0));
         }
     }
 

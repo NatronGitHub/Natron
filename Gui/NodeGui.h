@@ -389,10 +389,6 @@ public:
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
     virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
-    void onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved);
-
-    void onKnobSecretChanged(const KnobIPtr& knob, bool isSecret);
-
     void getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const;
 
 protected:
@@ -498,8 +494,6 @@ public Q_SLOTS:
     void beginEditKnobs();
 
     void centerGraphOnIt();
-
-    void onAllKnobsSlaved(bool b);
 
     void onKnobsLinksChanged();
 
@@ -663,14 +657,6 @@ private:
     NodeWPtr _identityInput;
     bool identityStateSet;
     boost::shared_ptr<GroupKnobDialog> _activeNodeCustomModalDialog;
-
-    struct KnobKeyFramesData
-    {
-        std::set<int> keyframes, userKeyframes;
-    };
-    typedef std::map<KnobIWPtr, KnobKeyFramesData > KnobsKeyFramesDataMap;
-    // All keyframes that should be display for the node on the timeline
-    KnobsKeyFramesDataMap _knobsWithKeyframesDisplayed;
 
 };
 

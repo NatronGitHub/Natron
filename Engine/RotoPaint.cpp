@@ -2378,8 +2378,7 @@ bool
 RotoPaint::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSetSpec view,
-                       double time,
-                       bool /*originatedFromMainThread*/)
+                       double time)
 {
     if (!k) {
         return false;

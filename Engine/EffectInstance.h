@@ -260,12 +260,6 @@ public:
     // dtor
     virtual ~EffectInstance();
 
-
-    virtual bool canHandleEvaluateOnChangeInOtherThread() const OVERRIDE
-    {
-        return true;
-    }
-
     /**
      * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
      * the createInstanceAction
@@ -697,7 +691,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1456,8 +1450,7 @@ public:
     virtual bool knobChanged(const KnobIPtr& /*k*/,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/)
+                             double /*time*/)
     {
         return false;
     }
@@ -1633,13 +1626,6 @@ public:
     virtual void onEffectCreated(const CreateNodeArgs& /*args*/) {}
 
 
-
-    virtual void onKnobSlaved(const KnobIPtr& slave,
-                              const KnobIPtr& master,
-                              DimIdx dimension,
-                              ViewIdx view,
-                              bool isSlave) OVERRIDE FINAL;
-
     /**
      * @brief This function calls the impementation specific attachOpenGLContext()
      **/
@@ -1673,7 +1659,6 @@ public:
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
 
 protected:
 
@@ -2118,8 +2103,6 @@ private:
                             ImagePtr* downscaleImage);
 
 
-
-    virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
 
 public:
 

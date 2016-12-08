@@ -510,7 +510,9 @@ public:
 
     virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
 
-    void refreshTimelineGuiKeyframes();
+    void refreshTimelineGuiKeyframesLater();
+
+    void refreshTimelineGuiKeyframesNow();
 
     const TimeLineKeysSet& getTimelineGuiKeyframes() const;
 
@@ -526,6 +528,7 @@ protected:
 
 Q_SIGNALS:
 
+    void mustRefreshTimelineGuiKeyframesLater();
 
     void doDialog(int type, const QString & title, const QString & content, bool useHtml, StandardButtons buttons, int defaultB);
 
@@ -543,6 +546,8 @@ Q_SIGNALS:
     void s_showLogOnMainThread();
 
 public Q_SLOTS:
+
+    void onMustRefreshTimelineGuiKeyframesLaterReceived();
 
     void onShowLogOnMainThreadReceived();
 

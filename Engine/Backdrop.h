@@ -78,8 +78,7 @@ private:
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+                             double /*time*/) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     boost::scoped_ptr<BackdropPrivate> _imp;
 };

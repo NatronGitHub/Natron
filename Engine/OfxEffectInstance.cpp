@@ -2296,7 +2296,6 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     switch (reason) {
     case eValueChangedReasonUserEdited:
     case eValueChangedReasonNatronGuiEdited:
-    case eValueChangedReasonSlaveRefresh:
     case eValueChangedReasonRestoreDefault:
     case eValueChangedReasonNatronInternalEdited:
 
@@ -2369,8 +2368,7 @@ bool
 OfxEffectInstance::knobChanged(const KnobIPtr& k,
                                ValueChangedReasonEnum reason,
                                ViewSetSpec view,
-                               double time,
-                               bool /*originatedFromMainThread*/)
+                               double time)
 {
     if (!_imp->initialized) {
         return false;

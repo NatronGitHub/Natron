@@ -221,7 +221,7 @@ Curve::~Curve()
     clearKeyFrames();
 }
 
-CurveTypeEnum
+Curve::CurveTypeEnum
 Curve::getType() const
 {
     return _imp->type;

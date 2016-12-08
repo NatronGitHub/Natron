@@ -29,7 +29,7 @@
 NATRON_NAMESPACE_ENTER
 
 
-CurvePtr KnobHelper::getCurve(ViewGetSpec view,
+CurvePtr KnobHelper::getAnimationCurve(ViewGetSpec view,
                               DimIdx dimension) const
 {
     if ( (dimension < 0) || ( dimension >= _imp->dimension) ) {
@@ -41,11 +41,6 @@ CurvePtr KnobHelper::getCurve(ViewGetSpec view,
     return dimViewData->animationCurve;
 } // getCurve
 
-CurvePtr
-KnobHelper::getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const
-{
-    return getCurve(idx, dimension);
-}
 
 void
 KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension)
@@ -53,7 +48,12 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(ViewGetSpec(view), dimension);
+
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::deleteValuesAtTimeInternal: curve is null");
     }
@@ -66,19 +66,16 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     }
 
     // Update internal curve
-    std::list<double> keysRemoved;
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             // This may throw exceptions if keyframes do not exist
             curve->removeKeyFrameWithTime(*it);
-            keysRemoved.push_back(*it);
         }
     } catch (const std::exception & /*e*/) {
     }
 
 
-    std::list<double> keysAdded;
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+    data->notifyCurveChanged();
 }
 
 void
@@ -139,20 +136,23 @@ KnobHelper::deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::deleteAnimationConditionalInternal: curve is null");
     }
-    std::list<double> keysRemoved;
     if (before) {
-        curve->removeKeyFramesBeforeTime(time, &keysRemoved);
+        curve->removeKeyFramesBeforeTime(time, 0);
     } else {
-        curve->removeKeyFramesAfterTime(time, &keysRemoved);
+        curve->removeKeyFramesAfterTime(time, 0);
     }
 
 
-    std::list<double> keysAdded;
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+
+    data->notifyCurveChanged();
 
 } // deleteAnimationConditionalInternal
 
@@ -217,12 +217,14 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return false;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::warpValuesAtTimeInternal: curve is null");
     }
-
-    std::list<double> keysAdded, keysRemoved;
 
     // Make sure string animation follows up the warp
     std::vector<std::string> oldStringValues;
@@ -242,7 +244,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
 
     // This may fail if we cannot find a keyframe at the given time
     std::vector<KeyFrame> newKeys;
-    if ( !curve->transformKeyframesValueAndTime(times, warp, &newKeys, &keysAdded, &keysRemoved) ) {
+    if ( !curve->transformKeyframesValueAndTime(times, warp, &newKeys, 0, 0) ) {
         return false;
     }
     if (outKeys) {
@@ -260,7 +262,7 @@ KnobHelper::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx vie
         }
     }
 
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+    data->notifyCurveChanged();
     return true;
 } // warpValuesAtTimeInternal
 
@@ -317,7 +319,11 @@ KnobHelper::cloneCurve(ViewIdx view,
         throw std::invalid_argument("KnobHelper::cloneCurve: Dimension out of range");
     }
 
-    CurvePtr thisCurve = getCurve(view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return false;
+    }
+    CurvePtr thisCurve = data->animationCurve;
     if (!thisCurve) {
         return false;
     }
@@ -341,73 +347,12 @@ KnobHelper::cloneCurve(ViewIdx view,
 
 
     if (hasChanged) {
-        // Compute the keyframes diff
-        KeyFrameSet keys = thisCurve->getKeyFrames_mt_safe();
-
-        std::list<double> keysRemoved, keysAdded;
-        Curve::computeKeyFramesDiff(oldKeys, keys, &keysAdded, &keysRemoved);
-       
-        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+        data->notifyCurveChanged();
 
     }
     return hasChanged;
 } // cloneCurve
 
-bool
-KnobHelper::cloneCurves(const KnobIPtr& other,
-                        ViewSetSpec view,
-                        ViewSetSpec otherView,
-                        DimSpec dimension,
-                        DimSpec otherDimension,
-                        double offset,
-                        const RangeD* range)
-{
-
-    assert((view.isAll() && otherView.isAll()) || (view.isViewIdx() && view.isViewIdx()));
-    assert((dimension.isAll() && otherDimension.isAll()) || (!dimension.isAll() && !otherDimension.isAll()));
-    if (!other) {
-        return false;
-    }
-
-    std::list<ViewIdx> views = other->getViewsList();
-    int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-
-    bool hasChanged = false;
-    if (dimension.isAll()) {
-        for (int i = 0; i < dimMin; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                    CurvePtr otherCurve = other->getCurve(*it, DimIdx(i));
-                    if (otherCurve) {
-                        hasChanged |= cloneCurve(*it, DimIdx(i), *otherCurve, offset, range, other->getStringAnimation(*it).get());
-                    }
-                }
-            } else {
-                CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(i));
-                if (otherCurve) {
-                    hasChanged |= cloneCurve(ViewIdx(view), DimIdx(i), *otherCurve, offset, range, other->getStringAnimation(ViewIdx(otherView)).get());
-                }
-            }
-
-        }
-    } else {
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                CurvePtr otherCurve = other->getCurve(*it, DimIdx(otherDimension));
-                if (otherCurve) {
-                    hasChanged |= cloneCurve(*it, DimIdx(dimension), *otherCurve, offset, range, other->getStringAnimation(*it).get());
-                }
-            }
-        } else {
-            CurvePtr otherCurve = other->getCurve(ViewIdx(otherView), DimIdx(otherDimension));
-            if (otherCurve) {
-                hasChanged |= cloneCurve(ViewIdx(view), DimIdx(dimension), *otherCurve, offset, range, other->getStringAnimation(ViewIdx(otherView)).get());
-            }
-        }
-    }
-
-    return hasChanged;
-} // cloneCurves
 
 void
 KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys)
@@ -418,7 +363,7 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
     if (times.empty()) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension);
+    CurvePtr curve = getAnimationCurve(view, dimension);
     if (!curve) {
         throw std::runtime_error("KnobHelper::setInterpolationAtTimesInternal: curve is null");
     }
@@ -431,8 +376,9 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
             }
         }
     }
-    std::list<double> keysAdded, keysRemoved;
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    assert(data);
+    data->notifyCurveChanged();
 
 }
 
@@ -485,7 +431,11 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return false;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::setLeftAndRightDerivativesAtTimeInternal: curve is null");
     }
@@ -497,8 +447,8 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
 
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
-    std::list<double> keysAdded, keysRemoved;
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+
+    data->notifyCurveChanged();
     return true;
 } // setLeftAndRightDerivativesAtTimeInternal
 
@@ -551,7 +501,11 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double t
     if (!isAnimated(dimension, view)) {
         return false;
     }
-    CurvePtr curve = getCurve(view, dimension);
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return false;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::setDerivativeAtTimeInternal: curve is null");
     }
@@ -568,8 +522,7 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double t
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
 
-    std::list<double> keysAdded, keysRemoved;
-    _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
+    data->notifyCurveChanged();
 
     return true;
 }
@@ -622,7 +575,12 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     if (!isAnimated(dimension, view)) {
         return;
     }
-    CurvePtr curve = getCurve(view, dimension);
+
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    if (!data) {
+        return;
+    }
+    CurvePtr curve = data->animationCurve;
     if (!curve) {
         throw std::runtime_error("KnobHelper::removeAnimationInternal: curve is null");
     }
@@ -655,8 +613,7 @@ KnobHelper::removeAnimationInternal(ViewIdx view, DimIdx dimension)
     onKeyframesRemoved(timesRemoved, view, dimension);
 
 
-    std::list<double> timesAdded;
-    _signalSlotHandler->s_curveAnimationChanged(timesAdded, timesRemoved, view, dimension);
+    data->notifyCurveChanged();
 } // removeAnimationInternal
 
 void

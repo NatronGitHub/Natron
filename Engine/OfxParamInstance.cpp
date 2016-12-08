@@ -722,9 +722,7 @@ OfxIntegerInstance::OfxIntegerInstance(const OfxEffectInstancePtr& node,
     int def = properties.getIntProperty(kOfxParamPropDefault);
 
     k->setIncrement(1); // kOfxParamPropIncrement only exists for Double
-    k->blockValueChanges();
     k->setDefaultValue(def);
-    k->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, 0);
     k->setDimensionName(DimIdx(0), dimensionName);
 }
@@ -969,9 +967,7 @@ OfxDoubleInstance::OfxDoubleInstance(const OfxEffectInstancePtr& node,
                                            doubleType ==  kOfxParamDoubleTypeNormalisedYAbsolute ||
                                            doubleType ==  kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType ==  kOfxParamDoubleTypeNormalisedXYAbsolute);
-    dblKnob->blockValueChanges();
     dblKnob->setDefaultValue(def);
-    dblKnob->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, 0);
     dblKnob->setDimensionName(DimIdx(0), dimensionName);
 }
@@ -1190,9 +1186,7 @@ OfxBooleanInstance::OfxBooleanInstance(const OfxEffectInstancePtr& node,
 
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    b->blockValueChanges();
     b->setDefaultValue( (bool)def);
-    b->unblockValueChanges();
 }
 
 OfxStatus
@@ -1382,9 +1376,7 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
     choice->populateChoices(entires, helpStrings);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    choice->blockValueChanges();
     choice->setDefaultValue(def);
-    choice->unblockValueChanges();
     bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
     choice->setCascading(cascading);
 
@@ -2276,9 +2268,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
-    dblKnob->blockValueChanges();
     dblKnob->setDefaultValues(def, DimIdx(_startIndex));
-    dblKnob->unblockValueChanges();
 }
 
 OfxStatus
@@ -2825,9 +2815,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const OfxEffectInstancePtr& node,
         knob->setDecimals(decimals[i], DimIdx(_startIndex + i));
     }
 
-    knob->blockValueChanges();
     knob->setDefaultValues(def, DimIdx(_startIndex));
-    knob->unblockValueChanges();
 }
 
 OfxStatus
@@ -3334,9 +3322,7 @@ OfxGroupInstance::OfxGroupInstance(const OfxEffectInstancePtr& node,
         group->setAsTab();
     }
 
-    group->blockValueChanges();
     group->setDefaultValue(opened);
-    group->unblockValueChanges();
 }
 
 void
@@ -3551,20 +3537,14 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
         if (fileKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobFilePtr k = _imp->fileKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         } else if (stringKnob) {
             KnobStringPtr k = _imp->stringKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         } else if (pathKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobPathPtr k = _imp->pathKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         }
     }
 }
@@ -4064,9 +4044,7 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     _imp->knob = knob;
 
     knob->setAsCustom();
-    knob->blockValueChanges();
     knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault));
-    knob->unblockValueChanges();
     _imp->customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_imp->customParamInterpolationV1Entry) {
         knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );

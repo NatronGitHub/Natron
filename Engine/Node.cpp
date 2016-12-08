@@ -2096,7 +2096,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                 if (isButton) {
                     continue;
                 }
-                _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+                _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0));
 
             }
         }
@@ -7106,141 +7106,11 @@ Node::refreshPreviewsRecursivelyDownstream(double time)
     refreshPreviewsRecursivelyDownstreamInternal(time, shared_from_this(), marked);
 }
 
-void
-Node::onAllKnobsSlaved(bool isSlave,
-                       const KnobHolderPtr& master)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    if (isSlave) {
-        EffectInstancePtr effect = toEffectInstance(master);
-        assert(effect);
-        if (effect) {
-            NodePtr masterNode = effect->getNode();
-            {
-                QMutexLocker l(&_imp->masterNodeMutex);
-                _imp->masterNode = masterNode;
-            }
-            QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
-        }
-    } else {
-        NodePtr master = getMasterNode();
-        QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
-        {
-            QMutexLocker l(&_imp->masterNodeMutex);
-            _imp->masterNode.reset();
-        }
-    }
-
-    Q_EMIT allKnobsSlaved(isSlave);
-}
-
-void
-Node::onKnobSlaved(const KnobIPtr& slave,
-                   const KnobIPtr& master,
-                   DimIdx /*dimension*/,
-                   ViewIdx /*view*/,
-                   bool isSlave)
-{
-    // If this is a unslave action, remove the clone state
-    if (!isSlave) {
-        NodePtr masterNode = getMasterNode();
-        if ( masterNode ) {
-            onAllKnobsSlaved(false, KnobHolderPtr());
-        }
-    }
-
-    if (slave == master) {
-        return;
-    }
-
-    ///If the holder isn't an effect, ignore it too
-    EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );
-    NodePtr parentNode;
-    if (!isEffect) {
-        KnobTableItemPtr isItem = toKnobTableItem(master->getHolder());
-        if (isItem) {
-            parentNode = isItem->getModel()->getNode();
-        }
-    } else {
-        parentNode = isEffect->getNode();
-    }
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->masterNodeMutex);
-        KnobLinkList::iterator found = _imp->nodeLinks.end();
-        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->slaveKnob.lock() == slave) {
-                found = it;
-                break;
-            }
-        }
-
-        if ( found == _imp->nodeLinks.end() ) {
-            if (!isSlave) {
-                ///We want to unslave from the given node but the link didn't existed, just return
-                return;
-            } else {
-                ///Add a new link
-                KnobLink link;
-                link.masterNode = parentNode;
-                link.slaveKnob = slave;
-                link.masterKnob = master;
-                _imp->nodeLinks.push_back(link);
-                changed = true;
-            }
-        } else if ( found != _imp->nodeLinks.end() ) {
-            if (isSlave) {
-                ///We want to slave to the given node but it already has a link on another parameter, just return
-                return;
-            } else {
-                ///Remove the given link
-                _imp->nodeLinks.erase(found);
-                changed = true;
-            }
-        }
-    }
-    if (changed) {
-        Q_EMIT knobsLinksChanged();
-    }
-} // onKnobSlaved
-
-void
-Node::getKnobsLinks(std::list<KnobLink> & links) const
-{
-    QMutexLocker l(&_imp->masterNodeMutex);
-
-    links = _imp->nodeLinks;
-}
-
-void
-Node::onMasterNodeDeactivated()
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->effect) {
-        return;
-    }
-    _imp->effect->unslaveAllKnobs();
-}
 
 NodePtr
 Node::getIOContainer() const
 {
     return _imp->ioContainer.lock();
-}
-
-
-NodePtr
-Node::getMasterNode() const
-{
-    QMutexLocker l(&_imp->masterNodeMutex);
-
-    return _imp->masterNode.lock();
 }
 
 bool
@@ -8323,7 +8193,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock() ) {
-        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
+        if (reason == eValueChangedReasonUserEdited ) {
             Q_EMIT previewKnobToggled();
         }
     } else if ( what == _imp->renderButton.lock() ) {
@@ -9845,10 +9715,6 @@ Node::isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) cons
     recursionList.insert(shared_from_this());
 
     {
-        NodePtr master = getMasterNode();
-        if (master) {
-            return master->isSettingsPanelVisible();
-        }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
             NodePtr masterNode = it->masterNode.lock();
             if ( masterNode && (masterNode.get() != this) && masterNode->isSettingsPanelVisibleInternal(recursionList) ) {

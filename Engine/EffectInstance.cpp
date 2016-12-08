@@ -3265,43 +3265,26 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
 } // allocateImagePlaneAndSetInThreadLocalStorage
 
 
-
-void
-EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, DimSpec /*dimension*/, double /*time*/, ViewSetSpec /*view*/)
-{
-    //We changed, abort any ongoing current render to refresh them with a newer version
-    abortAnyEvaluation();
-
-    NodePtr node = getNode();
-    if ( !node->isNodeCreated() ) {
-        return;
-    }
-
-    bool isMT = QThread::currentThread() == qApp->thread();
-
-    if ( isMT && ( !knob || knob->getEvaluateOnChange() ) ) {
-        getApp()->triggerAutoSave();
-    }
-
-
-    node->refreshIdentityState();
-    if (knob) {
-        knob->invalidateHashCache();
-    } else {
-        invalidateHashCache();
-    }
-
-}
-
 void
 EffectInstance::evaluate(bool isSignificant,
                          bool refreshMetadatas)
 {
+
+    // We changed, abort any ongoing current render to refresh them with a newer version
+    abortAnyEvaluation();
+
     NodePtr node = getNode();
 
     if ( refreshMetadatas && node && node->isNodeCreated() ) {
         refreshMetaDatas_public(true);
     }
+
+    if (isSignificant) {
+        getApp()->triggerAutoSave();
+    }
+
+    node->refreshIdentityState();
+
 
     double time = getCurrentTime();
 
@@ -3523,22 +3506,6 @@ EffectInstance::unregisterPluginMemory(size_t nBytes)
     getNode()->unregisterPluginMemory(nBytes);
 }
 
-void
-EffectInstance::onAllKnobsSlaved(bool isSlave,
-                                 const KnobHolderPtr& master)
-{
-    getNode()->onAllKnobsSlaved(isSlave, master);
-}
-
-void
-EffectInstance::onKnobSlaved(const KnobIPtr& slave,
-                             const KnobIPtr& master,
-                             DimIdx dimension,
-                             ViewIdx view,
-                             bool isSlave)
-{
-    getNode()->onKnobSlaved(slave, master, dimension, view, isSlave);
-}
 
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
@@ -5289,8 +5256,7 @@ bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          ViewSetSpec view,
-                                          bool originatedFromMainThread)
+                                          ViewSetSpec view)
 {
     NodePtr node = getNode();
     if (!node->isNodeCreated()) {
@@ -5322,12 +5288,11 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             if (reason == eValueChangedReasonNatronGuiEdited) {
                 reason = eValueChangedReasonUserEdited;
             } 
-            ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
+            ret |= knobChanged(k, reason, view, time);
         }
     }
 
-    if ( kh && ( QThread::currentThread() == qApp->thread() ) &&
-         originatedFromMainThread && ( reason != eValueChangedReasonTimeChanged) ) {
+    if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
         if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.

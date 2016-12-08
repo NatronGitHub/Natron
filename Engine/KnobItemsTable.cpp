@@ -663,43 +663,6 @@ KnobTableItem::onItemInsertedInModel_recursive()
 }
 
 void
-KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view)
-{
-
-    // If the item is not part of the model, do nothing
-    if (getIndexInParent() == -1) {
-        return;
-    }
-    KnobItemsTablePtr model = getModel();
-    if (model) {
-        NodePtr node = model->getNode();
-        if ( !node || !node->isNodeCreated() ) {
-            return;
-        }
-        node->getEffectInstance()->abortAnyEvaluation();
-    }
-    
-    
-    if (knob) {
-        // This will also invalidate this hash cache
-        knob->invalidateHashCache();
-    } else {
-        invalidateHashCache();
-    }
-
-    bool isMT = QThread::currentThread() == qApp->thread();
-    if ( isMT && ( !knob || knob->getEvaluateOnChange() ) ) {
-        getApp()->triggerAutoSave();
-    }
-
-    Q_UNUSED(reason);
-    Q_UNUSED(dimension);
-    Q_UNUSED(time);
-    Q_UNUSED(view);
-
-}
-
-void
 KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
 {
     // If the item is not part of the model, do nothing
@@ -714,6 +677,8 @@ KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
     if (!node) {
         return;
     }
+
+    // Evaluate the node itself
     node->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
 }
 

@@ -82,8 +82,7 @@ public:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+                             double /*time*/) OVERRIDE FINAL;
 };
 
 inline GroupInputPtr

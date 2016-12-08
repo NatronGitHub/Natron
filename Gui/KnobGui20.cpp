@@ -71,6 +71,11 @@ void
 KnobGui::refreshGuiNow()
 {
 
+    if (getGui()) {
+        if (getGui()->isGUIFrozen()) {
+            return;
+        }
+    }
     if (!_imp->customInteract) {
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             it->second.widgets->updateGUI();
@@ -81,30 +86,18 @@ KnobGui::refreshGuiNow()
 }
 
 void
-KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
-                                           const std::list<double>& keysRemoved,
-                                           ViewIdx /*view*/,
-                                           DimIdx /*dimension*/)
+KnobGui::onCurveAnimationChangedInternally(ViewSetSpec /*view*/,
+                                           DimSpec /*dimension*/)
 {
     if (!getGui()) {
-        return;
-    }
-    if (!getGui()->getAnimationModuleEditor()) {
-        return;
-    }
-    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
-    if (!model) {
         return;
     }
     KnobIPtr internalKnob = getKnob();
     if (!internalKnob) {
         return;
     }
-
-    NodeGuiPtr nodeUI = getContainer()->getNodeGui();
-
-    if (nodeUI && (!keysAdded.empty() || !keysRemoved.empty())) {
-        nodeUI->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
+    if (internalKnob->isKeyFrameTrackingEnabled()) {
+        getGui()->refreshTimelineGuiKeyframesLater();
     }
 
     // Refresh the knob anim visibility in a queued connection
@@ -112,8 +105,6 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
     if (knobAnim) {
         knobAnim->emit_s_refreshKnobVisibilityLater();
     }
-
-
 }
 
 

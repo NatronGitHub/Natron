@@ -432,11 +432,6 @@ protected:
 
     /**
      * @brief Reimplemented from KnobHolder.
-     **/
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
-
-    /**
-     * @brief Reimplemented from KnobHolder.
      * This implementation forwards the evaluation request to the node holding the model.
      **/
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;

@@ -2538,8 +2538,7 @@ ViewerNode::isInfoBarVisible() const
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                         ViewSetSpec /*view*/,
-                        double /*time*/,
-                        bool /*originatedFromMainThread*/)
+                        double /*time*/)
 {
     if (!k || reason == eValueChangedReasonRestoreDefault) {
         return false;

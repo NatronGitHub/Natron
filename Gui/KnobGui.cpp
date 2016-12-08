@@ -86,31 +86,12 @@ KnobGui::initialize()
 
     NodeGuiPtr nodeUI = getContainer()->getNodeGui();
 
-    if (nodeUI) {
-        // Refresh the timeline keyframes on the NodeGui from the existing keyframes on the internal knob
-        std::list<double> keysAdded, keysRemoved;
-        std::list<ViewIdx> views = knob->getViewsList();
-        int nDims = knob->getNDimensions();
-        for (std::list<ViewIdx>::iterator it = views.begin(); it != views.end(); ++it) {
-            for (int i = 0; i < nDims; ++i) {
-                CurvePtr curve = knob->getCurve(*it, DimIdx(i));
-                if (!curve) {
-                    continue;
-                }
-                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-                for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                    keysAdded.push_back(it2->getTime());
-                }
-            }
-        }
-        nodeUI->onKnobKeyFramesChanged(knob, keysAdded, keysRemoved);
-    }
     KnobHelperPtr helper = toKnobHelper(knob);
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
         QObject::connect( handler, SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onMustRefreshGuiActionTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
-        QObject::connect( handler, SIGNAL(curveAnimationChanged(std::list<double>,std::list<double>,ViewIdx,DimIdx)), this, SLOT(onCurveAnimationChangedInternally(std::list<double>,std::list<double>,ViewIdx,DimIdx)));
+        QObject::connect( handler, SIGNAL(curveAnimationChanged(ViewSetSpec,DimSpec)), this, SLOT(onCurveAnimationChangedInternally(ViewSetSpec,DimSpec)));
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );

@@ -992,16 +992,6 @@ public:
 
 public:
 
-    void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
-
-    void onKnobSlaved(const KnobIPtr& slave,
-                      const KnobIPtr& master,
-                      DimIdx dimension,
-                      ViewIdx view,
-                      bool isSlave);
-
-    NodePtr getMasterNode() const;
-
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
 
@@ -1100,8 +1090,6 @@ public:
         // The master node to which the knob is slaved to
         NodeWPtr masterNode;
     };
-
-    void getKnobsLinks(std::list<KnobLink> & links) const;
 
     /*Initialises inputs*/
     void initializeInputs();
@@ -1492,8 +1480,6 @@ public Q_SLOTS:
         Q_EMIT previewImageChanged(time);
     }
 
-    void onMasterNodeDeactivated();
-
     void onInputLabelChanged(const QString& oldName, const QString& newName);
 
     void notifySettingsPanelClosed(bool closed )
@@ -1565,11 +1551,6 @@ Q_SIGNALS:
     ///how much has just changed, this not the new value but the difference between the new value
     ///and the old value
     void pluginMemoryUsageChanged(qint64 mem);
-
-    void allKnobsSlaved(bool b);
-
-    ///Called when a knob is either slaved or unslaved
-    void knobsLinksChanged();
 
     void knobSlaved();
 

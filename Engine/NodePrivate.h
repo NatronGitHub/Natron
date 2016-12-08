@@ -233,9 +233,6 @@ public:
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
-    NodeWPtr masterNode; //< this points to the master when the node is a clone
-    KnobLinkList nodeLinks; //< these point to the parents of the params links
 
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodeWPtr ioContainer;

@@ -231,8 +231,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
     QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
-    QObject::connect( internalNode.get(), SIGNAL(allKnobsSlaved(bool)), this, SLOT(onAllKnobsSlaved(bool)) );
-    QObject::connect( internalNode.get(), SIGNAL(knobsLinksChanged()), this, SLOT(onKnobsLinksChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
     QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()), this, SLOT(onPreviewKnobToggled()) );
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
@@ -364,9 +362,6 @@ NodeGui::restoreStateAfterCreation()
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 
-    if (internalNode->getMasterNode()) {
-        onAllKnobsSlaved(true);
-    }
     onKnobsLinksChanged();
 }
 
@@ -1901,13 +1896,6 @@ NodeGui::showGui()
         }
     }
 
-    if (_slaveMasterLink) {
-        if ( !node->getMasterNode() ) {
-            onAllKnobsSlaved(false);
-        } else {
-            _slaveMasterLink->show();
-        }
-    }
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         it->second.arrow->show();
     }
@@ -2268,48 +2256,6 @@ NodeGui::centerGraphOnIt()
     _graph->centerOnItem(this);
 }
 
-void
-NodeGui::onAllKnobsSlaved(bool b)
-{
-    NodePtr node = getNode();
-
-    if (b) {
-        NodePtr masterNode = node->getMasterNode();
-        assert(masterNode);
-        NodeGuiIPtr masterNodeGui_i = masterNode->getNodeGui();
-        assert(masterNodeGui_i);
-        NodeGuiPtr masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
-        _masterNodeGui = masterNodeGui;
-        assert(!_slaveMasterLink);
-
-        if ( masterNode->getGroup() == node->getGroup() ) {
-            _slaveMasterLink.reset(new LinkArrow( masterNodeGui, shared_from_this(), parentItem() ));
-            _slaveMasterLink->setColor( QColor(200, 100, 100) );
-            _slaveMasterLink->setArrowHeadColor( QColor(243, 137, 20) );
-            _slaveMasterLink->setWidth(3);
-        }
-        if ( !node->getDisabledKnobValue() ) {
-            if ( !isSelected() ) {
-                applyBrush(_clonedColor);
-            }
-        }
-    } else {
-        if (_slaveMasterLink) {
-            _slaveMasterLink.reset();
-        }
-        _masterNodeGui.reset();
-        if ( !node->getDisabledKnobValue() ) {
-            if ( !isSelected() ) {
-                applyBrush(getCurrentColor());
-            }
-        }
-    }
-
-    // Also refresh links
-    onKnobsLinksChanged();
-    
-    update();
-}
 
 static QString
 makeLinkString(const NodePtr& masterNode,
@@ -4168,60 +4114,77 @@ NodeGui::onInputVisibilityChanged(int /*inputNb*/)
     refreshEdgesVisility();
 }
 
-
-
-void
-NodeGui::onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved)
+static void addAnimatingItemKeys(const AnimatingObjectIPtr& obj, bool isUserKey, TimeLineKeysSet* keys)
 {
-
-    KnobKeyFramesData& data = _knobsWithKeyframesDisplayed[knob];
-
-    for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
-        data.keyframes.insert((int)*it);
-    }
-    for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-        std::set<int>::iterator found = data.keyframes.find((int)*it);
-        if (found != data.keyframes.end()) {
-            data.keyframes.erase(found);
+    std::list<ViewIdx> views = obj->getViewsList();
+    int nDims = obj->getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+            CurvePtr curve = obj->getAnimationCurve(*it, DimIdx(i));
+            if (!curve) {
+                continue;
+            }
+            KeyFrameSet keysSet = curve->getKeyFrames_mt_safe();
+            for (KeyFrameSet::const_iterator it2 = keysSet.begin(); it2!=keysSet.end(); ++it2) {
+                TimeLineKey k((int)it2->getTime());
+                k.isUserKey = isUserKey;
+                insertTimelineKey(k, keys);
+            }
         }
-    }
-
-    if (_settingsPanel && !_settingsPanel->isClosed()) {
-        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
     }
 }
 
-void
-NodeGui::onKnobSecretChanged(const KnobIPtr& knob, bool /*isSecret*/)
+static void addKnobsKeys(const KnobsVec& knobs, TimeLineKeysSet* keys)
 {
-    // If the knob has keyframes, we must redraw the timeline
-    KnobsKeyFramesDataMap::iterator foundKnob = _knobsWithKeyframesDisplayed.find(knob);
-    if (foundKnob != _knobsWithKeyframesDisplayed.end()) {
-        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
-    }
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
+        if ((*it)->getIsSecret()) {
+            continue;
+        }
+
+        if (!(*it)->isAnimationEnabled()) {
+            continue;
+        }
+
+        if (!(*it)->isKeyFrameTrackingEnabled()) {
+            continue;
+        }
+
+        addAnimatingItemKeys(*it, false /*isUserKey*/, keys);
+    }
+}
+
+static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLineKeysSet* keys)
+{
+    // Add the master keyframes
+    addAnimatingItemKeys(item, true /*isUserKey*/, keys);
+
+    // Add knobs keyframes
+    const KnobsVec& knobs = item->getKnobs();
+    addKnobsKeys(knobs, keys);
+
+    // Recurse on children
+    std::vector<KnobTableItemPtr> children = item->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        addKnobTableItemKeysRecursive(children[i], keys);
+    }
 }
 
 void
 NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
 {
-    for (KnobsKeyFramesDataMap::const_iterator it = _knobsWithKeyframesDisplayed.begin(); it!= _knobsWithKeyframesDisplayed.end(); ++it) {
-        KnobIPtr knob = it->first.lock();
-        if (!knob) {
-            continue;
-        }
-        if (knob->getIsSecret()) {
-            continue;
-        }
-        for (std::set<int>::const_iterator it2 = it->second.userKeyframes.begin(); it2 != it->second.userKeyframes.end(); ++it2) {
-            TimeLineKey k(*it2);
-            k.isUserKey = true;
-            insertTimelineKey(k, keys);
-        }
-        for (std::set<int>::const_iterator it2 = it->second.keyframes.begin(); it2 != it->second.keyframes.end(); ++it2) {
-            TimeLineKey k(*it2);
-            k.isUserKey = false;
-            insertTimelineKey(k, keys);
+    EffectInstancePtr effect = getNode()->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+    const KnobsVec& knobs = effect->getKnobs();
+    addKnobsKeys(knobs, keys);
+
+    KnobItemsTablePtr table = effect->getItemsTable();
+    if (table) {
+        std::vector<KnobTableItemPtr> items = table->getTopLevelItems();
+        for (std::size_t i = 0; i < items.size(); ++i) {
+            addKnobTableItemKeysRecursive(items[i], keys);
         }
     }
 }

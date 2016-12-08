@@ -756,8 +756,7 @@ TrackMarkerPM::trackMarker(bool forward,
     KnobDoublePtr center = centerKnob.lock();
     center->unSlave(DimSpec::all(), ViewSetSpec::all(), true);
 
-    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0),
-                                                                true);
+    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0));
 
     KnobDoublePtr markerCenter = getCenterKnob();
     // The TrackerPM plug-in has set a keyframe at the refFrame and frame, copy them

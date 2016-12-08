@@ -716,7 +716,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             assert(fileKnob);
             if (fileKnob) {
                 // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0), true);
+                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
             }
             return;
         }
@@ -1052,8 +1052,7 @@ bool
 WriteNode::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum reason,
                        ViewSetSpec view,
-                       double time,
-                       bool originatedFromMainThread)
+                       double time)
 {
     bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();
@@ -1061,7 +1060,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
     if ( ( k == _imp->outputFileKnob.lock() ) && (reason != eValueChangedReasonTimeChanged) ) {
         if (_imp->creatingWriteNode) {
             if (writer) {
-                writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+                writer->getEffectInstance()->knobChanged(k, reason, view, time);
             }
 
             return false;

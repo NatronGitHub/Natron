@@ -612,7 +612,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0), true);
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
 
         }
 
@@ -1078,8 +1078,7 @@ bool
 ReadNode::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum reason,
                       ViewSetSpec view,
-                      double time,
-                      bool originatedFromMainThread)
+                      double time)
 {
     bool ret =  true;
 
@@ -1093,7 +1092,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         if (_imp->creatingReadNode) {
             NodePtr p = getEmbeddedReader();
             if (p) {
-                p->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+                p->getEffectInstance()->knobChanged(k, reason, view, time);
             }
 
             return false;

@@ -53,7 +53,7 @@ Knob<T>::getValueFromExpression(double time,
     ///Check first if a value was already computed:
 
     {
-        QMutexLocker k(&_valueMutex);
+        QMutexLocker k(&_defaultValueMutex);
         typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
         if (foundView != _exprRes[dimension].end()) {
             typename FrameValueMap::iterator foundValue = foundView->second.find(time);
@@ -86,7 +86,7 @@ Knob<T>::getValueFromExpression(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    QMutexLocker k(&_valueMutex);
+    QMutexLocker k(&_defaultValueMutex);
     _exprRes[dimension][view_i][time] = *ret;
 
     return true;
@@ -158,7 +158,7 @@ Knob<T>::getValueFromExpression_pod(double time,
 
 
     {
-        QMutexLocker k(&_valueMutex);
+        QMutexLocker k(&_defaultValueMutex);
         typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
         if (foundView != _exprRes[dimension].end()) {
             typename FrameValueMap::iterator foundValue = foundView->second.find(time);
@@ -207,7 +207,7 @@ Knob<T>::getValue(DimIdx dimension,
                   bool byPassMaster)
 {
 
-    if ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValue: dimension out of range");
     }
 

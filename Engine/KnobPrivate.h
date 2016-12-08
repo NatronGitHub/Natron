@@ -76,17 +76,19 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
-struct MasterKnobLinkAndSavedValue : public MasterKnobLink
-{
-    // When linked, keep the original pointer of this knob dimension/view value
-    KnobDimViewBasePtr savedValue;
-};
-
-typedef std::map<ViewIdx, MasterKnobLinkAndSavedValue> PerViewMasterLink;
-typedef std::vector<PerViewMasterLink> PerDimensionMasterVec;
-
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
+
+typedef std::map<ViewIdx, KnobI::Expr> ExprPerViewMap;
+typedef std::vector<ExprPerViewMap> ExprPerDimensionVec;
+
+struct RedirectionLink
+{
+    KnobDimViewBasePtr savedData;
+};
+typedef std::map<ViewIdx, RedirectionLink> PerViewSavedDataMap;
+typedef std::vector<PerViewSavedDataMap> PerDimensionSavedDataVec;
+
 
 typedef std::map<ViewIdx, bool> PerViewHasModificationMap;
 typedef std::vector<PerViewHasModificationMap> PerDimensionModificationMap;
@@ -198,20 +200,17 @@ struct KnobHelperPrivate
     // This is mostly used internally when setting multiple dimensions at once to prevent the dimensions from switching state
     bool autoExpandEnabled;
 
-    // protects perDimViewData
+    // protects perDimViewData and perDimViewSavedData
     mutable QMutex perDimViewDataMutex;
     
     // For each dimension and view the value stuff
     PerDimensionKnobDataMap perDimViewData;
-    
-    // Read/Write lock protecting _masters & ignoreMasterPersistence & listeners
-    mutable QReadWriteLock mastersMutex;
-    
-    // For each dimension and view, tells to which knob and the dimension in that knob it is slaved to
-    PerDimensionMasterVec masters;
 
-    // When true masters will not be serialized
-    bool ignoreMasterPersistence;
+    // When a dimension/view is linked to another knob, we save it so it can be restored
+    // further on
+    PerDimensionSavedDataVec perDimViewSavedData;
+
+    mutable QMutex listenersMutex;
 
     // This is a list of all the knobs that have expressions refering to this knob.
     // For each knob, a ListenerDim struct associated to each of its dimension informs as to the nature of the link (i.e: slave/master link or expression link)
@@ -233,6 +232,12 @@ struct KnobHelperPrivate
     // A blind handle to the ofx param, needed for custom OpenFX interpolation
     void* ofxParamHandle;
 
+    // Protects expressions
+    mutable QMutex expressionMutex;
+
+    // For each dimension its expression
+    ExprPerDimensionVec expressions;
+
     // For each dimension, the label displayed on the interface (e.g: "R" "G" "B" "A")
     std::vector<std::string> dimensionNames;
 
@@ -251,20 +256,21 @@ struct KnobHelperPrivate
     // For each dimension tells whether the knob is considered to have modification or not
     mutable PerDimensionModificationMap hasModifications;
 
-    // Protects valueChangedBlocked & listenersNotificationBlocked & guiRefreshBlocked
+    // Protects valueChangedBlocked
     mutable QMutex valueChangedBlockedMutex;
 
     // Recursive counter to prevent calls to knobChanged callback
     int valueChangedBlocked;
-
-    // Recursive counter to prevent calls to knobChanged callback for listeners knob (i.e: knobs that refer to this one)
-    int listenersNotificationBlocked;
 
     // Recursive counter to prevent autokeying in setValue
     int autoKeyingDisabled;
 
     // If true, when this knob change, it is required to refresh the meta-data on a Node
     bool isClipPreferenceSlave;
+
+    // When enabled the keyframes can be displayed on the timeline if the knob is visible
+    // protected by stateMutex
+    bool keyframeTrackingEnabled;
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       const KnobHolderPtr& holder_,
@@ -304,15 +310,16 @@ struct KnobHelperPrivate
     , autoExpandEnabled(true)
     , perDimViewDataMutex()
     , perDimViewData()
-    , mastersMutex()
-    , masters()
-    , ignoreMasterPersistence(false)
+    , perDimViewSavedData()
+    , listenersMutex()
     , listeners()
     , declaredByPlugin(declaredByPlugin_)
     , userKnob(false)
     , customInteract()
     , gui()
     , ofxParamHandle(0)
+    , expressionMutex()
+    , expressions()
     , dimensionNames()
     , lastRandomHash(0)
     , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
@@ -320,9 +327,9 @@ struct KnobHelperPrivate
     , hasModifications()
     , valueChangedBlockedMutex()
     , valueChangedBlocked(0)
-    , listenersNotificationBlocked(0)
     , autoKeyingDisabled(0)
     , isClipPreferenceSlave(false)
+    , keyframeTrackingEnabled(true)
     {
         {
             KnobHolderPtr h = holder.lock();
@@ -334,6 +341,9 @@ struct KnobHelperPrivate
         dimensionNames.resize(dimension);
         hasModifications.resize(dimension);
         allDimensionsVisible[ViewIdx(0)] = true;
+        perDimViewData.resize(dimension);
+        expressions.resize(dimension);
+        perDimViewSavedData.resize(dimension);
         for (int i = 0; i < nDims; ++i) {
             hasModifications[i][ViewIdx(0)] = false;
         }

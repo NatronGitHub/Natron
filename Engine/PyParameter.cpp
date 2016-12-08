@@ -1203,12 +1203,12 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
         return;
     }
 
-    if (thisDimension == -1) {
+    if (thisDimension == kPyParamDimSpecAll) {
         for (int i = 0; i < getValueCallerKnob->getNDimensions(); ++i) {
-            getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+            getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
         }
     } else {
-        getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+        getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
     }
 }
 

@@ -319,9 +319,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             KnobBoolPtr enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
 
             tracks[i]->natronMarker->notifyTrackingEnded();
-            contextEnabledKnob->blockListenersNotification();
             contextEnabledKnob->copyKnob( enabledKnob );
-            contextEnabledKnob->unblockListenersNotification();
             enabledKnob->slaveTo(contextEnabledKnob);
         }
         contextEnabledKnob->setKnobSelectedMultipleTimes(tracks.size() > 1);

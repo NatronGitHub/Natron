@@ -401,9 +401,6 @@ enum ValueChangedReasonEnum
     //A time-line seek changed the call, called when timeline time changes
     eValueChangedReasonTimeChanged,
 
-    //A master parameter ordered the slave to refresh its value
-    eValueChangedReasonSlaveRefresh,
-
     //The knob value has been restored to its defaults
     eValueChangedReasonRestoreDefault,
 };

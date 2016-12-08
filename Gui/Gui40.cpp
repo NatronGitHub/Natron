@@ -867,7 +867,25 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
 } // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
 
 void
-Gui::refreshTimelineGuiKeyframes()
+Gui::refreshTimelineGuiKeyframesLater()
+{
+    // Concatenate refresh requests
+    ++_imp->nKeysRefreshRequests;
+    Q_EMIT mustRefreshTimelineGuiKeyframesLater();
+}
+
+void
+Gui::onMustRefreshTimelineGuiKeyframesLaterReceived()
+{
+    if (_imp->nKeysRefreshRequests == 0) {
+        return;
+    }
+    _imp->nKeysRefreshRequests = 0;
+    refreshTimelineGuiKeyframesNow();
+}
+
+void
+Gui::refreshTimelineGuiKeyframesNow()
 {
     _imp->keyframesVisibleOnTimeline.clear();
 
@@ -881,6 +899,7 @@ Gui::refreshTimelineGuiKeyframes()
         if (!node) {
             continue;
         }
+        
         node->getAllVisibleKnobsKeyframes(&_imp->keyframesVisibleOnTimeline);
     }
 

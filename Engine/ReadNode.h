@@ -115,8 +115,7 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time,
-                             bool originatedFromMainThread) OVERRIDE FINAL;
+                             double time) OVERRIDE FINAL;
     virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,

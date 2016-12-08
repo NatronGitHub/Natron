@@ -267,10 +267,8 @@ public Q_SLOTS:
 
     void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
-    void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
-                                           const std::list<double>& keysRemoved,
-                                           ViewIdx view,
-                                           DimIdx dimension);
+    void onCurveAnimationChangedInternally(ViewSetSpec view,
+                                           DimSpec dimension);
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().

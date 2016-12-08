@@ -419,18 +419,26 @@ KnobDouble::normalize(DimIdx dimension,
 }
 
 bool
-KnobDouble::computeValuesHaveModifications(DimIdx dimension,
-                                           const double& value,
-                                           const double& defaultValue) const
+KnobDouble::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const
 {
-    if (_defaultValuesAreNormalized) {
-        double tmp = denormalize(dimension, 0, defaultValue);
+    if (Knob<double>::hasModificationsVirtual(data, dimension)) {
+        return true;
+    }
 
-        return value != tmp;
+    ValueKnobDimView<double>* doubleData = dynamic_cast<ValueKnobDimView<double>*>(data.get());
+    assert(doubleData);
+
+    double defaultValue = getDefaultValue(dimension);
+    if (_defaultValuesAreNormalized) {
+        double denormalizedDefaultValue = denormalize(dimension, 0, defaultValue);
+        QMutexLocker k(&doubleData->valueMutex);
+        return doubleData->value != denormalizedDefaultValue;
     } else {
-        return value != defaultValue;
+        QMutexLocker k(&doubleData->valueMutex);
+        return doubleData->value != defaultValue;
     }
 }
+
 
 /******************************KnobButton**************************************/
 
@@ -476,20 +484,79 @@ KnobButton::trigger()
 // don't show help in the tootlip if there are more entries that this
 #define KNOBCHOICE_MAX_ENTRIES_HELP 40
 
+ChoiceKnobDimView::ChoiceKnobDimView()
+: ValueKnobDimView<int>()
+, menuOptions()
+, menuOptionTooltips()
+, activeEntry()
+, separators()
+, shortcuts()
+, menuIcons()
+, addNewChoiceCallback(0)
+, textToFitHorizontally()
+, isCascading(false)
+, showMissingEntryWarning(true)
+, menuColors()
+{
+
+}
+
+bool
+ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
+{
+    ValueKnobDimView<int>::setValueAndCheckIfChanged(v);
+
+    QMutexLocker k(&valueMutex);
+    std::string newChoice;
+    if (v >= 0 && v < (int)menuOptions.size()) {
+        newChoice = menuOptions[v];
+    } else {
+        // No current value, assume they are different
+        return true;
+    }
+    if (activeEntry != newChoice) {
+        activeEntry = newChoice;
+        return true;
+    }
+    return false;
+}
+
+bool
+ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
+{
+    bool hasChanged = ValueKnobDimView<int>::copy(inArgs, outArgs);
+
+    const ChoiceKnobDimView* otherType = dynamic_cast<const ChoiceKnobDimView*>(inArgs.other);
+    assert(otherType);
+
+    QMutexLocker k(&valueMutex);
+    QMutexLocker k2(&inArgs.other->valueMutex);
+
+    menuOptions = otherType->menuOptions;
+    menuOptionTooltips = otherType->menuOptionTooltips;
+    separators = otherType->separators;
+    shortcuts = otherType->shortcuts;
+    menuIcons = otherType->menuIcons;
+    addNewChoiceCallback = otherType->addNewChoiceCallback;
+    textToFitHorizontally = otherType->textToFitHorizontally;
+    isCascading = otherType->isCascading;
+    showMissingEntryWarning = otherType->showMissingEntryWarning;
+    menuColors = otherType->menuColors;
+
+    if (activeEntry != otherType->activeEntry) {
+        activeEntry = otherType->activeEntry;
+        hasChanged = true;
+    }
+
+    return hasChanged;
+}
 
 KnobChoice::KnobChoice(const KnobHolderPtr& holder,
                        const std::string &label,
                        int nDims,
                        bool declaredByPlugin)
-    : KnobIntBase(holder, label, nDims, declaredByPlugin)
-    , _entriesMutex()
-    , _activeEntryMap()
-    , _addNewChoice(false)
-    , _isCascading(false)
-    , _showMissingEntryWarning(true)
-    , _isDisplayChannelKnob(false)
+: KnobIntBase(holder, label, nDims, declaredByPlugin)
 {
-    _activeEntryMap.insert(std::make_pair(ViewIdx(0), std::string()));
 }
 
 KnobChoice::~KnobChoice()
@@ -499,50 +566,98 @@ KnobChoice::~KnobChoice()
 void
 KnobChoice::setMissingEntryWarningEnabled(bool enabled)
 {
-    _showMissingEntryWarning = enabled;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    data->showMissingEntryWarning = enabled;
 }
 
 bool
 KnobChoice::isMissingEntryWarningEnabled() const
 {
-    return _showMissingEntryWarning;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    return data->showMissingEntryWarning;
 }
 
 void
-KnobChoice::setIsDisplayChannelsKnob(bool b)
+KnobChoice::setColorForIndex(int index, const RGBAColourD& color)
 {
-    _isDisplayChannelKnob = b;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    data->menuColors[index] = color;
 }
 
 bool
-KnobChoice::isDisplayChannelsKnob() const
+KnobChoice::getColorForIndex(int index, RGBAColourD* color) const
 {
-    return _isDisplayChannelKnob;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    std::map<int, RGBAColourD>::const_iterator found = data->menuColors.find(index);
+    if (found == data->menuColors.end()) {
+        return false;
+    }
+    *color = found->second;
+    return true;
 }
 
 void
 KnobChoice::setTextToFitHorizontally(const std::string& text)
 {
-    _textToFitHorizontally = text;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    data->textToFitHorizontally = text;
 }
 
 std::string
 KnobChoice::getTextToFitHorizontally() const
 {
-    return _textToFitHorizontally;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    return data->textToFitHorizontally;
 }
 
 void
-KnobChoice::setHostCanAddOptions(bool add)
+KnobChoice::setNewOptionCallback(ChoiceKnobDimView::KnobChoiceNewItemCallback callback)
 {
-    _addNewChoice = add;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    data->addNewChoiceCallback = callback;
+}
+
+ChoiceKnobDimView::KnobChoiceNewItemCallback
+KnobChoice::getNewOptionCallback() const
+{
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    return data->addNewChoiceCallback;
+}
+
+void
+KnobChoice::setCascading(bool cascading)
+{
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    data->isCascading = cascading;
 }
 
 bool
-KnobChoice::getHostCanAddOptions() const
+KnobChoice::isCascading() const
 {
-    return _addNewChoice;
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    QMutexLocker k(&data->valueMutex);
+    return data->isCascading;
 }
+
 
 bool
 KnobChoice::canAnimate() const
@@ -563,115 +678,31 @@ KnobChoice::typeName() const
     return typeNameStatic();
 }
 
-bool
-KnobChoice::cloneExtraData(const KnobIPtr& other,
-                           ViewSetSpec view,
-                           ViewSetSpec otherView,
-                           DimSpec /*dimension*/,
-                           DimSpec /*otherDimension*/,
-                           double /*offset*/,
-                           const RangeD* /*range*/)
-{
-    assert((view.isAll() && otherView.isAll()) || (view.isViewIdx() && view.isViewIdx()));
-
-    if (!other) {
-        return false;
-    }
-
-    KnobChoicePtr isChoice = toKnobChoice(other);
-    if (!isChoice) {
-        return false;
-    }
-
-    bool hasChanged = false;
-    if (view.isAll()) {
-        std::list<ViewIdx> views = other->getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-            std::string otherChoice = isChoice->getActiveEntryText(*it);
-            std::string& thisChoice = _activeEntryMap[*it];
-            if (otherChoice != thisChoice) {
-                thisChoice = otherChoice;
-                hasChanged = true;
-            }
-        }
-    } else {
-        std::string otherChoice = isChoice->getActiveEntryText(ViewIdx(otherView));
-        std::string& thisChoice = _activeEntryMap[ViewIdx(view)];
-        if (otherChoice != thisChoice) {
-            thisChoice = otherChoice;
-            hasChanged = true;
-        }
-    }
-    return hasChanged;
-}
-
-
-
 
 bool
-KnobChoice::hasModificationsVirtual(DimIdx dimension, ViewIdx view) const
+KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const
 {
+    if (Knob<int>::hasModificationsVirtual(data, dimension)) {
+        return true;
+    }
     int def_i = getDefaultValue(dimension);
     std::string defaultVal;
 
-    QMutexLocker k(&_entriesMutex);
-    if (def_i >= 0 && def_i < (int)_entries.size()) {
-        defaultVal = _entries[def_i];
+    ChoiceKnobDimViewPtr choiceData = toChoiceKnobDimView(data);
+    assert(choiceData);
+    QMutexLocker k(&data->valueMutex);
+
+    if (def_i >= 0 && def_i < (int)choiceData->menuOptions.size()) {
+        defaultVal = choiceData->menuOptions[def_i];
     }
-    PerViewActiveEntryMap::const_iterator foundView = _activeEntryMap.find(view);
-    if (foundView != _activeEntryMap.end()) {
-        if (foundView->second != defaultVal) {
-            return true;
-        }
+
+    if (choiceData->activeEntry != defaultVal) {
+        return true;
     }
+
     return false;
 }
 
-bool
-KnobChoice::checkIfValueChanged(const int& a, DimIdx /*dimension*/, ViewIdx view) const
-{
-    std::string aStr;
-    QMutexLocker k(&_entriesMutex);
-    if (a >= 0 && a < (int)_entries.size()) {
-        aStr = _entries[a];
-    } else {
-        // No current value, assume they are different
-        return true;
-    }
-    PerViewActiveEntryMap::const_iterator it = _activeEntryMap.find(view);
-    if (it == _activeEntryMap.end()) {
-        // No current value, assume they are different
-        return true;
-    }
-    return it->second != aStr;
-
-}
-
-void
-KnobChoice::onInternalValueChanged(DimSpec /*dimension*/,
-                                   double time,
-                                   ViewSetSpec view)
-{
-    // by-pass any master/slave link here
-    std::list<ViewIdx> views = getViewsList();
-    if (view.isAll()) {
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-            int index = getValueAtTime(time, DimIdx(0), *it, true, true);
-            QMutexLocker k(&_entriesMutex);
-            if ( (index >= 0) && ( index < (int)_entries.size() ) ) {
-                _activeEntryMap[*it] = _entries[index];
-            }
-        }
-    } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-        int index = getValueAtTime(time, DimIdx(0), view_i, true, true);
-        QMutexLocker k(&_entriesMutex);
-        if ( (index >= 0) && ( index < (int)_entries.size() ) ) {
-            _activeEntryMap[view_i] = _entries[index];
-        }
-    }
-
-}
 
 
 static bool
@@ -1928,7 +1959,24 @@ KnobPage::moveOneStepDown(const KnobIPtr& k)
 
 /******************************KnobParametric**************************************/
 
-#pragma message WARN("KnobParametric does not support multi-view yet")
+bool
+ParametricKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
+{
+    bool hasChanged = ValueKnobDimView<double>::copy(inArgs, outArgs);
+    const ParametricKnobDimView* otherType = dynamic_cast<const ParametricKnobDimView*>(inArgs.other);
+    assert(otherType);
+
+    QMutexLocker k(&valueMutex);
+    QMutexLocker k2(&inArgs.other->valueMutex);
+
+    if (otherType->parametricCurve) {
+        if (!parametricCurve) {
+            parametricCurve.reset(new Curve(otherType->parametricCurve->getType()));
+        }
+        hasChanged |= parametricCurve->cloneAndCheckIfChanged(*otherType->parametricCurve, 0 /*offset*/, 0 /*range*/);
+    }
+    return hasChanged;
+}
 
 KnobParametric::KnobParametric(const KnobHolderPtr& holder,
                                const std::string &label,
@@ -2349,35 +2397,6 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
     return eStatusOK;
 }
 
-bool
-KnobParametric::cloneExtraData(const KnobIPtr& other,
-                               ViewSetSpec /*view*/,
-                               ViewSetSpec /*otherView*/,
-                               DimSpec dimension,
-                               DimSpec otherDimension,
-                               double offset,
-                               const RangeD* range)
-{
-    assert((dimension.isAll() && otherDimension.isAll()) || (!dimension.isAll() && !otherDimension.isAll()));
-    ///Mt-safe as Curve is MT-safe
-    KnobParametricPtr isParametric = toKnobParametric(other);
-
-    if (!isParametric) {
-        return false;
-    }
-    bool hasChanged = false;
-    if (dimension.isAll()) {
-        int dimMin = std::min( getNDimensions(), isParametric->getNDimensions() );
-        for (int i = 0; i < dimMin; ++i) {
-            hasChanged |= _curves[i]->cloneAndCheckIfChanged(*isParametric->_curves[i], offset /*offset*/, range /*range*/);
-        }
-    } else {
-        assert( dimension >= 0 && dimension < getNDimensions() && otherDimension >= 0 && otherDimension < getNDimensions() );
-        hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension], offset /*offset*/, range /*range*/);
-    }
-
-    return hasChanged;
-}
 
 void
 KnobParametric::saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const
@@ -2428,13 +2447,15 @@ KnobParametric::setDefaultCurvesFromCurves()
 }
 
 bool
-KnobParametric::hasModificationsVirtual(DimIdx dimension, ViewIdx /*view*/) const
+KnobParametric::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const
 {
-    if  (dimension < 0 || dimension >= (int)_curves.size()) {
-        throw std::invalid_argument("KnobParametric::hasModificationsVirtual: dimension out of range");
-    }
+
     KeyFrameSet defKeys = _defaultCurves[dimension]->getKeyFrames_mt_safe();
-    KeyFrameSet keys = _curves[dimension]->getKeyFrames_mt_safe();
+    ParametricKnobDimViewPtr parametricData = toParametricKnobDimView(data);
+    assert(parametricData);
+    assert(parametricData->parametricCurve);
+
+    KeyFrameSet keys = parametricData->parametricCurve->getKeyFrames_mt_safe();
     if ( defKeys.size() != keys.size() ) {
         return true;
     }
