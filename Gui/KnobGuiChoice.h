@@ -82,26 +82,13 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
 
 private:
+    KnobChoiceWPtr _knob;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
-class ChannelsComboBox
-: public KnobComboBox
-{
-public:
-
-    ChannelsComboBox(const KnobGuiPtr& knob,
-                     DimSpec dimension,
-                     ViewIdx view,
-                     QWidget* parent = 0)
-    : KnobComboBox(knob, dimension, view, parent) {}
-
-private:
-
-    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
-};
 
 class KnobGuiChoice
     : public QObject, public KnobGuiWidgets

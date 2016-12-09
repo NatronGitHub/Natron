@@ -394,7 +394,7 @@ moveReader(const NodePtr &reader,
 {
     KnobIntBasePtr startingTimeKnob = toKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
     assert(startingTimeKnob);
-    ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -404,7 +404,7 @@ moveTimeOffset(const NodePtr& node,
 {
     KnobIntBasePtr timeOffsetKnob = toKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
     assert(timeOffsetKnob);
-    ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronGuiEdited, 0);
+    ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -417,7 +417,7 @@ moveFrameRange(const NodePtr& node,
     std::vector<int> values(2);
     values[0] = frameRangeKnob->getValue(DimIdx(0)) + dt;
     values[1] = frameRangeKnob->getValue(DimIdx(1)) + dt;
-    frameRangeKnob->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonNatronGuiEdited);
+    frameRangeKnob->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 static void
@@ -435,7 +435,7 @@ moveNodeIfLifetimeActivated(const NodePtr& node,
     std::vector<int> values(2);
     values[0] = lifeTimeKnob->getValue(DimIdx(0)) + dt;
     values[1] = lifeTimeKnob->getValue(DimIdx(1)) + dt;
-    lifeTimeKnob->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonNatronGuiEdited);
+    lifeTimeKnob->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 static void
@@ -477,7 +477,7 @@ moveGroupNode(const NodePtr& node,
             std::list<ViewIdx> views = knob->getViewsList();
             for (int dim = 0; dim < knob->getNDimensions(); ++dim) {
                 for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
-                    CurvePtr curve = knob->getCurve(*it2, DimIdx(dim));
+                    CurvePtr curve = knob->getAnimationCurve(*it2, DimIdx(dim));
                     if (!curve) {
                         continue;
                     }
@@ -619,9 +619,9 @@ WarpKeysCommand::warpKeys()
             }
         }
 
-        for (std::vector<TableItemAnimPtr>::iterator it = _tableItems.begin(); it != _tableItems.end(); ++it) {
+        //for (std::vector<TableItemAnimPtr>::iterator it = _tableItems.begin(); it != _tableItems.end(); ++it) {
 #pragma message WARN("TODO: move lifetime table item")
-        }
+        //}
     }
     
     
@@ -646,7 +646,6 @@ WarpKeysCommand::warpKeys()
             assert(newKeyframe.size() == keyStringSet.size());
 
             // Modify original keys by warped keys
-            StringAnimationManagerPtr stringAnim = obj->getStringAnimation();
             KeyFrameWithStringIndexSet newKeyStringSet;
             KeyFrameWithStringIndexSet::const_iterator keysIt = keyStringSet.begin();
             for (std::size_t i = 0; i < newKeyframe.size(); ++i, ++keysIt) {

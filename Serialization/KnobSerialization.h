@@ -49,7 +49,7 @@
 #define kKnobInViewerContextDefaultItemSpacing 5
 #define kKnobStringDefaultFontSize 11
 
-// When the knob is slaved to a knob on the Group node containing the node
+// When the knob is linked to a knob on the Group node containing the node
 // we use this special string instead for masterNodeName because the group name
 // might change from one group to another.
 // We make sure to include a character that is not allowed to Python (the '@' character)
@@ -84,7 +84,24 @@ struct MasterSerialization
     // The dimension the knob is slaved to in the master knob
     std::string masterDimensionName;
 
-    // the node script-name holding this knob
+    // the node script-name holding this knob. This is a relative script-name.
+    // E.G: "Blur1" would reference the node named "Blur1" within the same group.
+    // To recurse into sub-groups, separate node names with a dot, e.g: "Blur1.ColorCorrect1"
+    // This works much like fully qualified script-names except that the origin is not the root
+    // node-graph.
+    // If this knob is linked to a knob of the Group node encapsulating this node then
+    // to reference the Group node you would use the kKnobMasterNodeIsGroup token.
+    // To reference a node that is in the node-graph of the Group itself (that is one level up)
+    // you can use the kKnobMasterNodeIsGroup twice.
+    // E.G: Imagine a nodegraph as such:
+    //  App:
+    //      Blur1:
+    //          size
+    //      Group1:
+    //          Blur2:
+    //              size
+    // to reference app.Blur1.size from app.Group1.Blur2.size you would use
+    // "@thisGroup.@thisGroup.Blur1" for the masterNodeName
     std::string masterNodeName;
 
     // if the master knob is part of a table item this is the table item fully qualified script-name
@@ -254,7 +271,7 @@ public:
 
     }
 
-    std::list<CurveSerialization> parametricCurves;
+    std::map<std::string,std::list<CurveSerialization> > parametricCurves;
 };
 
 
@@ -372,7 +389,6 @@ public:
     int _dimension; // the number of dimensions held by the knob
     bool _isSecret; // true if the knob is hidden, only serialized for user knob,s
     bool _disabled; // true if the knob is disabled, only serialized for user knobs
-    bool _masterIsAlias; // is the master/slave link an alias ?
 
     typedef std::vector<ValueSerialization> PerDimensionValueSerializationVec;
     typedef std::map<std::string, PerDimensionValueSerializationVec> PerViewValueSerializationMap;
@@ -418,7 +434,6 @@ public:
     , _dimension(0)
     , _isSecret(false)
     , _disabled(false)
-    , _masterIsAlias(false)
     , _values()
     , _defaultValues()
     , _dataType(eSerializationValueVariantTypeNone)

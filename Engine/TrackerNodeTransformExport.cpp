@@ -154,7 +154,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                 if (!linked) {
                     cornerPinToPoints[i]->copyKnob( toPoints[i].lock() );
                 } else {
-                    bool ok = cornerPinToPoints[i]->slaveTo(toPoints[i].lock());
+                    bool ok = cornerPinToPoints[i]->linkTo(toPoints[i].lock());
                     (void)ok;
                     assert(ok);
                 }
@@ -178,7 +178,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(translate.lock() );
                     } else {
-                        isDbl->slaveTo(translate.lock());
+                        (void)isDbl->linkTo(translate.lock());
                     }
                 }
             }
@@ -190,7 +190,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(scale.lock() );
                     } else {
-                        isDbl->slaveTo(scale.lock());
+                        (void)isDbl->linkTo(scale.lock());
                     }
                 }
             }
@@ -202,7 +202,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
                     if (!linked) {
                         isDbl->copyKnob(rotate.lock());
                     } else {
-                        isDbl->slaveTo(rotate.lock());
+                        (void)isDbl->linkTo(rotate.lock());
                     }
                 }
             }
@@ -224,7 +224,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
             if (!linked) {
                 isBool->copyKnob(invertTransform.lock());
             } else {
-                isBool->slaveTo(invertTransform.lock());
+                (void)isBool->linkTo(invertTransform.lock());
             }
         }
     }
@@ -709,7 +709,7 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
                 KeyFrame ky(dataAtTime.time, toPoint.y);
                 tmpToPointsCurveX[c].addKeyFrame(kx);
                 tmpToPointsCurveY[c].addKeyFrame(ky);
-                //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                //toPoints[c]->setValuesAtTime(dataAtTime[i].time, toPoint.x, toPoint.y, ViewSpec::all(), eValueChangedReasonUserEdited);
             }
         } else {
             // Average to points before and after if using jitter
@@ -775,7 +775,7 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonNatronInternalEdited);
+        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonUserEdited);
     }
 
     endSolve();
@@ -955,7 +955,7 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
 
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonNatronInternalEdited);
+        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonUserEdited);
     }
     endSolve();
 } // TrackerNodePrivate::computeTransformParamsFromTracksEnd

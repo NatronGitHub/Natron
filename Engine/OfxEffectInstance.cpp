@@ -2295,9 +2295,7 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
 {
     switch (reason) {
     case eValueChangedReasonUserEdited:
-    case eValueChangedReasonNatronGuiEdited:
     case eValueChangedReasonRestoreDefault:
-    case eValueChangedReasonNatronInternalEdited:
 
         return kOfxChangeUserEdited;
     case eValueChangedReasonPluginEdited:
@@ -2306,10 +2304,9 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     case eValueChangedReasonTimeChanged:
 
         return kOfxChangeTime;
-    default:
-        assert(false);         // all Natron reasons should be processed
-        return "";
     }
+    assert(false);         // all Natron reasons should be processed
+    return "";
 }
 
 class OfxUndoCommand : public UndoCommand
@@ -2355,7 +2352,7 @@ public:
         KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(currentValue);
-        state->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonNatronInternalEdited, 0);
+        state->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
         if (!currentValue) {
             state->evaluateValueChange(DimSpec::all(), 0 /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }

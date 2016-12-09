@@ -96,6 +96,7 @@ KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
                            ViewIdx view,
                            QWidget* parent)
     : ComboBox(parent)
+    , _knob(toKnobChoice(knob->getKnob()))
     , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
 }
@@ -209,51 +210,38 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
 }
 
 void
-ChannelsComboBox::paintEvent(QPaintEvent* event)
+KnobComboBox::paintEvent(QPaintEvent* event)
 {
     ComboBox::paintEvent(event);
-    int idx = activeIndex();
-
-    if (idx != 1) {
-        QColor color;
-        QPainter p(this);
-        QPen pen;
-
-        switch (idx) {
-            case 0:
-                //luminance
-                color.setRgbF(0.5, 0.5, 0.5);
-                break;
-            case 2:
-                //r
-                color.setRgbF(1., 0, 0);
-                break;
-            case 3:
-                //g
-                color.setRgbF(0., 1., 0.);
-                break;
-            case 4:
-                //b
-                color.setRgbF(0., 0., 1.);
-                break;
-            case 5:
-                //a
-                color.setRgbF(1., 1., 1.);
-                break;
-        }
-
-        pen.setColor(color);
-        p.setPen(pen);
-
-
-        QRectF bRect = rect();
-        QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
-        double roundPixels = 3;
-        QPainterPath path;
-        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
-        p.drawPath(path);
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
     }
-}
+    int idx = activeIndex();
+    RGBAColourD color;
+    if (!knob->getColorForIndex(idx, &color)) {
+        return;
+    }
+
+    QPainter p(this);
+    QPen pen;
+    QColor color;
+    color.setRgbF(Image::clamp(color.r,0.,1.),
+                  Image::clamp(color.g,0.,1.),
+                  Image::clamp(color.b,0.,1.));
+    color.setAlphaF(Image::clamp(color.a,0.,1.));
+
+    pen.setColor(color);
+    p.setPen(pen);
+
+    QRectF bRect = rect();
+    QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+    double roundPixels = 3;
+    QPainterPath path;
+    path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+    p.drawPath(path);
+    
+} // paintEvent
 
 KnobGuiChoice::KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiWidgets(knob, view)
@@ -282,11 +270,10 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     KnobChoicePtr knob = _knob.lock();
     KnobGuiPtr knobUI = getKnobGui();
-    if (knob->isDisplayChannelsKnob()) {
-        _comboBox = new ChannelsComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
-    } else {
-        _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
-    }
+
+
+    _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
+
 
 
     _comboBox->setCascading( _knob.lock()->isCascading() );
@@ -326,8 +313,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     }
     std::string activeEntry = knob->getActiveEntryText();
 
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
+    if ( knob->getNewOptionCallback()) {
         _comboBox->insertItem(_comboBox->count() - 1, entry, QIcon(), QKeySequence(), help);
     } else {
         _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
@@ -468,8 +454,7 @@ KnobGuiChoice::onEntriesPopulated()
     }
 
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
+    if ( knob->getHostCanAddOptions()) {
         _comboBox->addItemNew();
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
@@ -495,27 +480,16 @@ KnobGuiChoice::onEntriesPopulated()
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getKnobGui()->getGui() );
-
-    if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
-            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
-                                                                "Python compliant.").toStdString() );
-
-            return;
-        }
-        KnobHolderPtr holder = _knob.lock()->getHolder();
-        assert(holder);
-        EffectInstancePtr effect = toEffectInstance(holder);
-        assert(effect);
-        if (effect) {
-            assert( effect->getNode() );
-            if ( !effect->getNode()->addUserComponents(comps) ) {
-                Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
-            }
-        }
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        continue;
     }
+    ChoiceKnobDimView::KnobChoiceNewItemCallback callback = knob->getNewOptionCallback();
+    if (!callback) {
+        return;
+    }
+    callback(knob);
+  
 }
 
 void

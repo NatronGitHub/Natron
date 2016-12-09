@@ -329,7 +329,7 @@ ItemBase::deleteUserKeyframe(double frame, const QString& view)
         PythonSetInvalidViewName(view);
         return;
     }
-    item->deleteValueAtTime(frame, viewSpec, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+    item->deleteValueAtTime(frame, viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
 
 }
 

@@ -5140,8 +5140,7 @@ bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   ViewSetSpec /*view*/,
-                                   bool /*originatedFromMainThread*/)
+                                   ViewSetSpec /*view*/)
 {
     return false;
 }
@@ -5285,7 +5284,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             RECURSIVE_ACTION();
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
             // Map to a plug-in known reason
-            if (reason == eValueChangedReasonNatronGuiEdited) {
+            if (reason == eValueChangedReasonUserEdited) {
                 reason = eValueChangedReasonUserEdited;
             } 
             ret |= knobChanged(k, reason, view, time);
@@ -5317,7 +5316,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///If there's a knobChanged Python callback, run it
     {
-        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        bool userEdited = reason == eValueChangedReasonUserEdited ||
         reason == eValueChangedReasonUserEdited;
         getNode()->runChangedParamCallback(k, userEdited);
     }

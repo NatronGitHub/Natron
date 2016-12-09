@@ -185,8 +185,6 @@ Knob<T>::setValue(const T & v,
     // Apply changes
     bool hasChanged = forceHandlerEvenIfNoChange;
 
-    int nDims = getNDimensions();
-
     double time = getCurrentTime();
 
     // Check if we can add automatically a new keyframe
@@ -200,77 +198,38 @@ Knob<T>::setValue(const T & v,
     }
 
     {
-        if (dimension.isAll()) {
-
-            if (view.isAll()) {
-                std::list<ViewIdx> availableView = getViewsList();
-
-                for (int i = 0; i < nDims; ++i) {
-                    for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
-                        ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it));
-                        if (data) {
-                            hasChanged |= data->setValueAndCheckIfChanged(v);
-                        }
-                        if (hasChanged) {
-                            // If dimensions are folded but a setValue call is made on one of them, expand them
-                            if (i == nDims - 1 && nDims > 1) {
-                                autoExpandDimensions(*it);
-                            }
-                        }
-                    }
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                for (int i = 0; i < nDims; ++i) {
-                    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), view_i));
-                    if (data) {
-                        hasChanged |= data->setValueAndCheckIfChanged(v);
-                    }
-                    if (hasChanged) {
-                        // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (i == nDims - 1 && nDims > 1) {
-                            autoExpandDimensions(view_i);
-                        }
-                    }
+        std::list<ViewIdx> views = getViewsList();
+        int nDims = getNDimensions();
+        ViewIdx view_i;
+        if (!view.isAll()) {
+            view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        }
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (!view.isAll()) {
+                if (view_i != *it) {
+                    continue;
                 }
             }
-
-        } else {
-            // Check for a valid dimension
-            if ( (dimension < 0) || ( dimension >= (int)_values.size() ) ) {
-                throw std::invalid_argument("Knob::setValue: dimension out of range");
-            }
-
-            if (view.isAll()) {
-                std::list<ViewIdx> availableView = getViewsList();
-                for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
-                    ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(dimension), *it));
-                    if (data) {
-                        hasChanged |= data->setValueAndCheckIfChanged(v);
-                    }
-                    if (hasChanged) {
-                        // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (i == nDims - 1 && nDims > 1) {
-                            autoExpandDimensions(*it);
-                        }
-                    }
+            for (int i = 0; i < nDims; ++i) {
+                if (!dimension.isAll() && dimension != i) {
+                    continue;
                 }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(dimension), view_i));
+
+                ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it).get());
                 if (data) {
                     hasChanged |= data->setValueAndCheckIfChanged(v);
                 }
                 if (hasChanged) {
                     // If dimensions are folded but a setValue call is made on one of them, expand them
                     if (i == nDims - 1 && nDims > 1) {
-                        autoExpandDimensions(view_i);
+                        autoExpandDimensions(*it);
                     }
                 }
-            }
 
+            }
         }
-    } // QMutexLocker
+
+    }
 
 
     ValueChangedReturnCodeEnum ret;
@@ -418,50 +377,32 @@ Knob<T>::setValueAtTime(double time,
 
     ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
-    int nDims = getNDimensions();
-
-    if (dimension.isAll()) {
-        if (view.isAll()) {
-            std::list<ViewIdx> availableView = getViewsList();
-            for (int i = 0; i < nDims; ++i) {
-                for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
-                    // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (i == nDims - 1 && nDims > 1) {
-                        autoExpandDimensions(*it);
-                    }
-                    setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
+    {
+        std::list<ViewIdx> views = getViewsList();
+        int nDims = getNDimensions();
+        ViewIdx view_i;
+        if (!view.isAll()) {
+            view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        }
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (!view.isAll()) {
+                if (view_i != *it) {
+                    continue;
                 }
             }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
             for (int i = 0; i < nDims; ++i) {
-                setValueOnCurveInternal(time, v, DimIdx(i), view_i, newKey, &ret);
+                if (!dimension.isAll() && dimension != i) {
+                    continue;
+                }
+
+                setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
                 // If dimensions are folded but a setValue call is made on one of them, expand them
                 if (i == nDims - 1 && nDims > 1) {
-                    autoExpandDimensions(view_i);
-                }
-            }
-        }
-
-    } else {
-        if (view.isAll()) {
-            std::list<ViewIdx> availableView = getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
-                setValueOnCurveInternal(time, v, DimIdx(dimension), *it, newKey, &ret);
-                // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (nDims > 1) {
                     autoExpandDimensions(*it);
                 }
             }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-
-            setValueOnCurveInternal(time, v, DimIdx(dimension), view_i, newKey, &ret);
-            // If dimensions are folded but a setValue call is made on one of them, expand them
-            if (nDims > 1) {
-                autoExpandDimensions(view_i);
-            }
         }
+        
     }
 
 

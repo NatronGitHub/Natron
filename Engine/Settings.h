@@ -115,8 +115,7 @@ public:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread) OVERRIDE FINAL;
+                                    ViewSetSpec view) OVERRIDE FINAL;
 
     double getRamMaximumPercent() const;
 

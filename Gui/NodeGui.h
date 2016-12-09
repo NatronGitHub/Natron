@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/TimeLineKeys.h"
 
 #include "Gui/GuiFwd.h"
@@ -390,6 +391,8 @@ public:
     virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
     void getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const;
+
+    virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) OVERRIDE FINAL;
 
 protected:
 

@@ -1318,7 +1318,6 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 
     EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
     if (isEffect) {
-        NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
         QAction* userParams = new QAction(tr("Manage user parameters..."), &menu);
@@ -1332,7 +1331,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         menu.addAction(removeAnimation);
 
         KnobHolderPtr holder = _imp->_holder.lock();
-        if ( master || !holder || !holder->getApp() || holder->getApp()->isGuiFrozen() ) {
+        if ( !holder || !holder->getApp() || holder->getApp()->isGuiFrozen() ) {
             setKeys->setEnabled(false);
             removeAnimation->setEnabled(false);
         }

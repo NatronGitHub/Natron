@@ -181,7 +181,7 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
 
 
 bool
-KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec /*fromView*/, DimSpec /*targetDimensionIn*/, ViewSetSpec /*targetViewIn*/, bool showErrorDialog)
+KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimensionIn, ViewSetSpec targetViewIn, bool showErrorDialog)
 {
     KnobIPtr knob = getKnob();
 
@@ -202,7 +202,7 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
         }
     }
 
-    // If target knob does not support animation, cancel
+    // If pasting animation and target knob does not support animation, cancel
     if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
         if (showErrorDialog) {
             Dialogs::errorDialog( tr("Paste").toStdString(), tr("%1 parameter does not support animation").arg(QString::fromUtf8(knob->getLabel().c_str())).toStdString() );
@@ -211,27 +211,34 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
         return false;
     }
 
-    // If types are incompatible, cancel
-    if ( !fromKnob->isTypeCompatible(knob) ) {
-        if (showErrorDialog) {
-            Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
-        }
-
-        return false;
-    }
 
     // If drag & dropping all source dimensions and destination does not have the same amounto of dimensions, fail
     if ( fromDim.isAll() && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
         if (showErrorDialog) {
-            Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+            Dialogs::errorDialog( tr("Paste").toStdString(), tr("All dimensions of the original parameter were copied but the target parameter does not have the same amount of dimensions. To overcome this copy them one by one.").toStdString() );
         }
-        
+
         return false;
     }
 
 
+    // If pasting links and types are incompatible, cancel
+    {
+        DimIdx thisDimToCheck = targetDimensionIn.isAll() ? DimIdx(0) : DimIdx(targetDimensionIn);
+        ViewIdx thisViewToCheck = targetViewIn.isAll() ? ViewIdx(0): ViewIdx(targetViewIn);
+        DimIdx otherDimToCheck = fromDim.isAll() ? DimIdx(0) : DimIdx(fromDim);
+        ViewIdx otherViewToCheck = fromView.isAll() ? ViewIdx(0): ViewIdx(fromView);
+        std::string error;
+        if ( !knob->canLinkWith(fromKnob, thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+            if (!error.empty()) {
+                Dialogs::errorDialog( tr("Paste").toStdString(), error );
+            }
+            return false;
+        }
+    }
+
     return true;
-}
+} // canPasteKnob
 
 bool
 KnobGui::pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView)
@@ -688,7 +695,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 
 
     // Refresh the animation curve
-    onCurveAnimationChangedInternally(std::list<double>(), std::list<double>(), view, dimension);
+    onCurveAnimationChangedInternally(view, dimension);
 
 } // KnobGui::onExprChanged
 

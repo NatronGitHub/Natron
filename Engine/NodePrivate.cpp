@@ -30,6 +30,7 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/Project.h"
 #include "Engine/Timer.h"
+#include "Engine/NodeGuiI.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -69,9 +70,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , mustQuitPreviewMutex()
 , mustQuitPreviewCond()
 , renderInstancesSharedMutex(QMutex::Recursive)
-, masterNodeMutex()
-, masterNode()
-, nodeLinks()
 , ioContainer()
 , frameIncrKnob()
 , nodeLabelKnob()
@@ -152,6 +150,24 @@ NodePrivate::NodePrivate(Node* publicInterface,
 }
 
 void
+Node::choiceParamAddLayerCallback(const KnobChoicePtr& knob)
+{
+    if (!knob) {
+        return ;
+    }
+    EffectInstancePtr effect = toEffectInstance(knob->getHolder());
+    if (!effect) {
+        return;
+    }
+    NodeGuiIPtr gui = effect->getNode()->getNodeGui();
+    if (!gui) {
+        return;
+    }
+    gui->addComponentsWithDialog(knob);
+}
+
+
+void
 NodePrivate::createChannelSelector(int inputNb,
                                             const std::string & inputName,
                                             bool isOutput,
@@ -160,7 +176,7 @@ NodePrivate::createChannelSelector(int inputNb,
 {
     ChannelSelector sel;
     KnobChoicePtr layer = AppManager::createKnob<KnobChoice>(effect, isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
-    layer->setHostCanAddOptions(isOutput);
+    layer->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
     if (!isOutput) {
         layer->setName( inputName + std::string("_") + std::string(kOutputChannelsKnobName) );
     } else {
@@ -310,10 +326,10 @@ NodePrivate::onMaskSelectorChanged(int inputNb,
     int index = channel->getValue();
     KnobBoolPtr enabled = selector.enabled.lock();
 
-    if ( (index == 0) && enabled->isEnabled(DimIdx(0)) ) {
+    if ( (index == 0) && enabled->isEnabled() ) {
         enabled->setValue(false);
         enabled->setEnabled(false);
-    } else if ( !enabled->isEnabled(DimIdx(0)) ) {
+    } else if ( !enabled->isEnabled() ) {
         enabled->setEnabled(true);
         if ( _publicInterface->getInput(inputNb) ) {
             enabled->setValue(true);

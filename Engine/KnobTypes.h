@@ -615,6 +615,11 @@ public:
 
     ChoiceKnobDimView();
 
+    virtual ~ChoiceKnobDimView()
+    {
+        
+    }
+
     virtual bool setValueAndCheckIfChanged(const int& value) OVERRIDE;
 
     virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
@@ -704,14 +709,14 @@ public:
      * on the node during the getPluginShortcuts function on the same node.
      **/
     void setShortcuts(const std::map<int, std::string>& shortcuts);
-    const std::map<int, std::string>& getShortcuts() const;
+    std::map<int, std::string> getShortcuts() const;
 
     /**
      * @brief Set optional icons for menu entries. All items in the menu don't need an icon
      * so they are mapped against their index.
      **/
     void setIcons(const std::map<int, std::string>& icons);
-    const std::map<int, std::string>& getIcons() const;
+    std::map<int, std::string> getIcons() const;
 
 
     /**
@@ -719,18 +724,18 @@ public:
      * specified by the integer.
      **/
     void setSeparators(const std::vector<int>& separators);
-    const std::vector<int>& getSeparators() const;
+    std::vector<int> getSeparators() const;
 
     /**
      * @brief Clears the menu, the current index will no longer correspond to a valid entry
      **/
-    void resetChoices();
+    void resetChoices(ViewSetSpec view = ViewSetSpec::all());
 
     /**
      * @brief Append an option to the menu 
      * @param help Optionnally specify the tooltip that should be displayed when the user hovers the entry in the menu
      **/
-    void appendChoice( const std::string& entry, const std::string& help = std::string() );
+    void appendChoice( const std::string& entry, const std::string& help = std::string(), ViewSetSpec view = ViewSetSpec::all() );
 
     /**
      * @brief Returns true if the entry for the given view is valid, that is: it still belongs to the menu entries.
@@ -740,17 +745,17 @@ public:
     /**
      * @brief Get all menu entries
      **/
-    std::vector<std::string> getEntries() const;
+    std::vector<std::string> getEntries(ViewGetSpec view = ViewGetSpec::current()) const;
 
     /**
      * @brief Get one menu entry. Throws an invalid_argument exception if index is invalid
      **/
-    std::string getEntry(int v) const;
+    std::string getEntry(int v, ViewGetSpec view = ViewGetSpec::current()) const;
 
     /**
      * @brief Get all menu entry tooltips
      **/
-    std::vector<std::string> getEntriesHelp() const;
+    std::vector<std::string> getEntriesHelp(ViewGetSpec view = ViewGetSpec::current()) const;
 
     /**
      * @brief Get the active entry text
@@ -761,9 +766,9 @@ public:
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
      * argument exception is thrown
      **/
-    void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::current());
+    void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
 
-    int getNumEntries() const;
+    int getNumEntries(ViewGetSpec view = ViewGetSpec::current()) const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -803,15 +808,7 @@ public:
     void setTextToFitHorizontally(const std::string& text);
     std::string getTextToFitHorizontally() const;
 
-    virtual bool splitView(ViewIdx view) OVERRIDE FINAL;
-
-    virtual bool unSplitView(ViewIdx view) OVERRIDE FINAL;
-
-public Q_SLOTS:
-
-    void onOriginalKnobPopulated();
-    void onOriginalKnobEntriesReset();
-    void onOriginalKnobEntryAppend(const QString& text, const QString& help);
+    virtual bool canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const OVERRIDE WARN_UNUSED_RETURN;
 
 Q_SIGNALS:
 
@@ -1407,6 +1404,11 @@ public:
 
     }
 
+    virtual ~ParametricKnobDimView()
+    {
+        
+    }
+
     virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
 };
 
@@ -1466,7 +1468,7 @@ public:
     }
 
     // Don't allow other knobs to slave to this one
-    virtual bool isTypeCompatible(const KnobIPtr & /*other*/) const OVERRIDE FINAL
+    virtual bool canLinkWith(const KnobIPtr & /*other*/, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* /*error*/) const OVERRIDE FINAL
     {
         return false;
     }
@@ -1482,17 +1484,19 @@ public:
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    CurvePtr getParametricCurve(DimIdx dimension) const;
+    CurvePtr getParametricCurve(DimIdx dimension, ViewGetSpec view) const;
     CurvePtr getDefaultParametricCurve(DimIdx dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum getValue(DimIdx dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(DimIdx dimension, int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getValue(DimIdx dimension, ViewGetSpec view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(DimIdx dimension, ViewGetSpec view, int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(DimIdx dimension,
+                                  ViewGetSpec view,
                                   int nthCtl,
                                   double *key,
                                   double *value) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(DimIdx dimension,
+                                  ViewGetSpec view,
                                   int nthCtl,
                                   double *key,
                                   double *value,
@@ -1501,17 +1505,20 @@ public:
 
     StatusEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
                                                DimIdx dimension,
+                                               ViewSetSpec view,
                                                int nThCtl,
                                                KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
 
     StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
                                   DimIdx dimension,
+                                  ViewSetSpec view,
                                   int nthCtl,
                                   double key,
                                   double value) WARN_UNUSED_RETURN;
 
     StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
                                   DimIdx dimension,
+                                  ViewSetSpec view,
                                   int nthCtl,
                                   double key,
                                   double value,
@@ -1519,13 +1526,13 @@ public:
                                   double rightDerivative) WARN_UNUSED_RETURN;
 
 
-    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, int nthCtl) WARN_UNUSED_RETURN;
-    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension) WARN_UNUSED_RETURN;
+    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< SERIALIZATION_NAMESPACE::CurveSerialization >* curves) const;
+    void saveParametricCurves(std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const;
 
-    void loadParametricCurves(const std::list< SERIALIZATION_NAMESPACE::CurveSerialization > & curves);
+    void loadParametricCurves(const std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >& curves);
 
     virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
@@ -1542,10 +1549,10 @@ public:
     virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
 
 Q_SIGNALS:
@@ -1560,7 +1567,11 @@ private:
 
     virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
-    ValueChangedReturnCodeEnum setKeyFrameInternal(double time, double value, const CurvePtr& curve, KeyFrame* newKey);
+    ValueChangedReturnCodeEnum setKeyFrameInternal(double time,
+                                                   double value,
+                                                   DimIdx dimension,
+                                                   ViewIdx view,
+                                                   KeyFrame* newKey);
 
     virtual void onKnobAliasLink(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;

@@ -147,7 +147,7 @@ NodeGraph::refreshAllKnobsGui()
                 KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
                     if (knob->hasAnimation()) {
-                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
                         knob->refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
                     }
                 }

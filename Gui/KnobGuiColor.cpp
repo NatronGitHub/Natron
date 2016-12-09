@@ -464,7 +464,7 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     }
 
     KnobGuiPtr knobUI = getKnobGui();
-    knob->setValueAcrossDimensions(values, DimIdx(0), getView(), eValueChangedReasonNatronGuiEdited);
+    knob->setValueAcrossDimensions(values, DimIdx(0), getView(), eValueChangedReasonUserEdited);
     if ( knobUI->getGui() ) {
         knobUI->getGui()->setDraftRenderEnabled(true);
     }
@@ -507,7 +507,7 @@ KnobGuiColor::showColorDialog()
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onDialogCurrentColorChanged(QColor)) );
     if ( !dialog.exec() ) {
-        knob->setValueAcrossDimensions(_lastColor, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+        knob->setValueAcrossDimensions(_lastColor, DimIdx(0), view, eValueChangedReasonUserEdited);
     } else {
         QColor userColor = dialog.currentColor();
         std::vector<double> color(nDims);

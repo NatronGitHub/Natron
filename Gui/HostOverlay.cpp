@@ -1684,7 +1684,7 @@ PositionInteract::penMotion(double time,
         }
 
 
-        knob->setValueAcrossDimensions(p, DimIdx(0), ViewSetSpec(view), eValueChangedReasonNatronGuiEdited);
+        knob->setValueAcrossDimensions(p, DimIdx(0), ViewSetSpec(view), eValueChangedReasonUserEdited);
     }
 
     return (didSomething || valuesChanged);
@@ -2129,33 +2129,33 @@ TransformInteract::penMotion(double time,
             std::vector<double> val(2);
             val[0] = center.x;
             val[1] = center.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         if (translateChanged) {
             KnobDoublePtr knob = _translate.lock();
             std::vector<double> val(2);
             val[0] = translate.x;
             val[1] = translate.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         if (scaleChanged) {
             KnobDoublePtr knob = _scale.lock();
             std::vector<double> val(2);
             val[0] = scale.x;
             val[1] = scale.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         if (rotateChanged) {
             KnobDoublePtr knob = _rotate.lock();
-            knob->setValue(rotate, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(rotate, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
         if (skewXChanged) {
             KnobDoublePtr knob = _skewX.lock();
-            knob->setValue(skewX, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewX, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
         if (skewYChanged) {
             KnobDoublePtr knob = _skewY.lock();
-            knob->setValue(skewY, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewY, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
         holder->endMultipleEdits();
     } else if (didSomething || valuesChanged) {
@@ -2371,33 +2371,33 @@ TransformInteract::penUp(double /*time*/,
             std::vector<double> val(2);
             val[0] = _centerDrag.x;
             val[1] = _centerDrag.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         {
             KnobDoublePtr knob = _translate.lock();
             std::vector<double> val(2);
             val[0] = _translateDrag.x;
             val[1] = _translateDrag.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         {
             KnobDoublePtr knob = _scale.lock();
             std::vector<double> val(2);
             val[0] = _scaleParamDrag.x;
             val[1] = _scaleParamDrag.y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
         {
             KnobDoublePtr knob = _rotate.lock();
-            knob->setValue(_rotateDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(_rotateDrag, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
         {
             KnobDoublePtr knob = _skewX.lock();
-            knob->setValue(_skewXDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(_skewXDrag, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
         {
             KnobDoublePtr knob = _skewY.lock();
-            knob->setValue(_skewYDrag, view, DimIdx(0), eValueChangedReasonNatronGuiEdited);
+            knob->setValue(_skewYDrag, view, DimIdx(0), eValueChangedReasonUserEdited);
         }
 
         holder->endMultipleEdits();
@@ -2438,14 +2438,14 @@ CornerPinInteract::penUp(double /*time*/,
             std::vector<double> val(2);
             val[0] = _fromDrag[_dragging].x;
             val[1] = _fromDrag[_dragging].y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         } else {
             KnobDoublePtr knob = _to[_dragging].lock();
             assert(knob);
             std::vector<double> val(2);
             val[0] = _toDrag[_dragging].x;
             val[1] = _toDrag[_dragging].y;
-            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            knob->setValueAcrossDimensions(val, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
     }
     _dragging = -1;

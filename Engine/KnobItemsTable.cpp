@@ -1227,8 +1227,8 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
                         hasExpr = true;
                         break;
                     }
-                    MasterKnobLink linkData;
-                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                    KnobDimViewKey linkData;
+                    if (knobs[i]->getSharingMaster(DimIdx(d), *itV, &linkData)) {
                         hasExpr = true;
                         break;
                     }
@@ -2418,7 +2418,7 @@ KnobItemsTable::setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
 static void removeKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->deleteValueAtTime(time, view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+        item->deleteValueAtTime(time, view, DimSpec::all(), eValueChangedReasonUserEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();
@@ -2440,7 +2440,7 @@ KnobItemsTable::removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec vie
 static void removeAnimationRecursively(const KnobTableItemPtr& item, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->removeAnimation(view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+        item->removeAnimation(view, DimSpec::all(), eValueChangedReasonUserEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();

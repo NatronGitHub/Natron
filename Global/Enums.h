@@ -392,12 +392,6 @@ enum ValueChangedReasonEnum
     //to calls made directly from an OpenFX plug-in
     eValueChangedReasonPluginEdited,
 
-    // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed
-    eValueChangedReasonNatronGuiEdited,
-
-    // Natron engine called setValue itself, instanceChangedAction will be called (with a reason of plugin edited) AND knob gui refreshed
-    eValueChangedReasonNatronInternalEdited,
-
     //A time-line seek changed the call, called when timeline time changes
     eValueChangedReasonTimeChanged,
 

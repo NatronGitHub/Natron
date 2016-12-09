@@ -2362,7 +2362,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     QString configFile;
 
 
-    if ( _customOcioConfigFile->isEnabled(DimIdx(0)) ) {
+    if ( _customOcioConfigFile->isEnabled() ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2456,8 +2456,7 @@ bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             ViewSetSpec /*view*/,
-                             bool /*originatedFromMainThread*/)
+                             ViewSetSpec /*view*/)
 {
 
     Q_EMIT settingChanged(k, reason);
@@ -2504,7 +2503,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         bool useTP = _imp->_useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _imp->_customOcioConfigFile ) {
-        if ( _imp->_customOcioConfigFile->isEnabled(DimIdx(0)) ) {
+        if ( _imp->_customOcioConfigFile->isEnabled() ) {
             _imp->tryLoadOpenColorIOConfig();
         }
     } else if ( k == _imp->_maxUndoRedoNodeGraph ) {

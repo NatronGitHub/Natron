@@ -908,7 +908,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
     endChanges();
 } // setExpressionCommon
 
@@ -1033,7 +1033,6 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
             foundView->second.originalExpression.clear();
             foundView->second.exprInvalid.clear();
 
-            QWriteLocker kk(&_imp->mastersMutex);
             dependencies = foundView->second.dependencies;
             foundView->second.dependencies.clear();
         }
@@ -1053,7 +1052,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
 
             ListenerDimsMap otherListeners;
             {
-                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
+                QMutexLocker otherMastersLocker(&other->_imp->listenersMutex);
                 otherListeners = other->_imp->listeners;
             }
 
@@ -1077,15 +1076,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
             }
 
             {
-                KnobHolderPtr holder = getHolder();
-                if (holder) {
-                    holder->onKnobSlaved(thisShared, otherKnob, dimension, view, false );
-                }
-            }
-
-
-            {
-                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
+                QMutexLocker otherMastersLocker(&other->_imp->listenersMutex);
                 other->_imp->listeners = otherListeners;
             }
         }
@@ -1135,7 +1126,7 @@ KnobHelper::clearExpression(DimSpec dimension,
     }
 
     if (didSomething) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
     }
 
 } // KnobHelper::clearExpression

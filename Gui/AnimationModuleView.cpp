@@ -105,7 +105,7 @@ AnimationModuleView::initialize(Gui* gui, const AnimationModuleBasePtr& model)
         assert(project);
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
         QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(update()) );
-        onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
+        onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonUserEdited);
     }
     if (isAnimModule) {
         _imp->treeView = isAnimModule->getEditor()->getTreeView();

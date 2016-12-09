@@ -129,7 +129,10 @@ public:
     int _pluginMajorVersion;
     int _pluginMinorVersion;
 
-    // If this node is a clone of another one, this is the script-name of the master node
+    // Before Natron 2.2, we had a flag indicating if a node is a clone of another one.
+    // This is the script-name of the master node.
+    // Now in Natron post 2.2, a node is considered clone of another node if all
+    // knobs that have the evaluateOnChange flag to true are linked
     std::string _masterNodecriptName;
 
     // Serialization of inputs, this is a map of the input label to the script-name (not full) of the input node

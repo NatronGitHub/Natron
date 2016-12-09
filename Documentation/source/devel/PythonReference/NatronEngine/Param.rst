@@ -22,7 +22,7 @@ Functions
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
 *    def :meth:`getHelp<NatronEngine.Param.getHelp>` ()
 *    def :meth:`getIsAnimationEnabled<NatronEngine.Param.getIsAnimationEnabled>` ()
-*    def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ([dimension=0])
+*    def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ()
 *    def :meth:`getIsPersistent<NatronEngine.Param.getIsPersistent>` ()
 *    def :meth:`getIsVisible<NatronEngine.Param.getIsVisible>` ()
 *    def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
@@ -45,21 +45,20 @@ Functions
 *	 def :meth:`randomInt<NatronEngine.Param.randomInt>` (seed)
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
-*    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
+*    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 *    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon [,checked=False])
 *	 def :meth:`setLabel<NatronEngine.Param.setLabel>` (label)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
-*    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
 *    def :meth:`setViewerUILayoutType<NatronEngine.Param.setViewerUILayoutType>` (type)
 *    def :meth:`setViewerUIItemSpacing<NatronEngine.Param.setViewerUIItemSpacing>` (spacingPx)
 *    def :meth:`setViewerUIIconFilePath<NatronEngine.Param.setViewerUIIconFilePath>` (filePath[, checked])
 *    def :meth:`setViewerUILabel<NatronEngine.Param.setViewerUILabel>` (label)
 *    def :meth:`setViewerUIVisible<NatronEngine.Param.setViewerUIVisible>` (visible)
-*    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam[, thisDimension=-1, otherDimension=-1, thisView="All", otherView="All")
-*    def :meth:`unslave<NatronEngine.Param.unslave>` ([dimension=-1,view="All"])
+*    def :meth:`linkTo<NatronEngine.Param.linkTo>` (otherParam[, thisDimension=-1, otherDimension=-1, thisView="All", otherView="All")
+*    def :meth:`unlink<NatronEngine.Param.unlink>` ([dimension=-1,view="All"])
 
 .. _details:
 
@@ -256,14 +255,14 @@ parameter *can animate*.
 
 
 
-.. method:: NatronEngine.Param.getIsEnabled([dimension=0])
+.. method:: NatronEngine.Param.getIsEnabled()
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-Returns whether the given *dimension* is enabled or not.
-
+Returns whether parameter is enabled or not.
+When disabled the parameter cannot be edited from the user interface, however it can
+still be edited from the Python A.P.I.
 
 
 
@@ -489,13 +488,12 @@ See :func:`getIsAnimationEnabled()<NatronEngine.Param.getIsAnimationEnabled>`
 
 
 
-.. method:: NatronEngine.Param.setEnabled(enabled[, dimension=0])
+.. method:: NatronEngine.Param.setEnabled(enabled)
 
 
     :param enabled: :class:`bool<PySide.QtCore.bool>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
 
-Set whether the given *dimension* of the parameter should be enabled or not.
+Set whether the parameter should be enabled or not.
 When disabled, the parameter will be displayed in black and the user will not be able
 to edit it.
 See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
@@ -563,20 +561,6 @@ See :func:`getIsPersistent<NatronEngine.Param.getIsPersistent>`
 Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 
-.. method:: NatronEngine.Param.setAsAlias(otherParam)
-
-	:param otherParam: :class:`Param<NatronEngine.Param>`
-	:rtype: :class:`bool<PySide.QtCore.bool>`
-	
-		
-Set this parameter as an alias of *otherParam*. 
-They need to be both of the same *type* and of the same *dimension*.
-This parameter will control *otherParam* entirely and in case of a choice param, its 
-drop-down menu will be updated whenever the *otherParam* menu is updated.
-
-This is used generally to make user parameters on groups with the "Pick" option of the
-"Manage User Parameters" dialog.
-
 
 .. method:: NatronEngine.Param.setViewerUILayoutType (type)
 
@@ -620,7 +604,7 @@ This is used generally to make user parameters on groups with the "Pick" option 
 	the function :func:`getHasViewerUI()<NatronEngine.Param.getHasViewerUI>` returns *True*.
 
 
-.. method:: NatronEngine.Param.slaveTo(otherParam[, thisDimension=-1, otherDimension=-1,thisView="All",otherView="All"])
+.. method:: NatronEngine.Param.linkTo(otherParam[, thisDimension=-1, otherDimension=-1,thisView="All",otherView="All"])
 
 	:param otherParam: :class:`Param<NatronEngine.Param>`
 	:param thisDimension: :class:`int<PySide.QtCore.int>`
@@ -629,7 +613,7 @@ This is used generally to make user parameters on groups with the "Pick" option 
 	:param otherView: :class:`str<PySide.QtCore.QString>`
 	:rtype: :class:`bool<PySide.QtCore.bool>`	
 	
-Set this parameter as a slave of *otherParam*. 
+This parameter will share the value of *otherParam*. 
 They need to be both of the same *type* but may vary in dimension, as long as 
 *thisDimension* is valid according to the number of dimensions of this parameter and 
 *otherDimension* is valid according to the number of dimensions of *otherParam*.
@@ -644,18 +628,17 @@ name valid views in the project settings.
 
 
 This parameter *thisDimension* will be controlled entirely by the *otherDimension* of
-*otherParam* until a call to :func:`unslave(thisDimension)<NatronEngine.Param.unslave>` is made
+*otherParam* until a call to :func:`unlink(thisDimension)<NatronEngine.Param.unlink>` is made
 
-.. method:: NatronEngine.Param.unslave([dimension=-1,view="All"])
+.. method:: NatronEngine.Param.unlink([dimension=-1,view="All"])
 
 	:param dimension: :class:`int<PySide.QtCore.int>`
 	:param view: :class:`str<PySide.QtCore.QString>`
 
-If the given *dimension* of this parameter was previously slaved, then this function will
-remove the link between parameters, and the user will be free again to use this parameter
-as any other.
-If *dimension* equals -1 then all dimensions will be unslaved.
-If *view* is set to "All" then all views will be unslaved, otherwise it should 
+If the given *dimension* of this parameter was previously linked, then this function will
+remove the link and the value will no longer be shared with any other parameters.
+If *dimension* equals -1 then all dimensions will be unlinked.
+If *view* is set to "All" then all views will be unlinked, otherwise it should 
 name valid views in the project settings.
 
 .. note::

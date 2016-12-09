@@ -62,7 +62,7 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
 
     // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
     if (nKeys - times.size() == 0) {
-        copyValuesFromCurve(dimension, ViewSetSpec(view));
+        copyValuesFromCurve(dimension, view);
     }
 
     // Update internal curve
@@ -190,7 +190,7 @@ KnobHelper::deleteAnimationConditional(double time,
 
 
 
-    evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
 
 } // deleteAnimationConditional
@@ -300,7 +300,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
 
     return ret;
 
@@ -342,7 +342,7 @@ KnobHelper::cloneCurve(ViewIdx view,
     }
 
     if (hasChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonUserEdited);
     }
 
 
@@ -419,7 +419,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
 
 
 } // setInterpolationAtTimes
@@ -490,7 +490,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
         }
     }
 
-    evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
     return ok;
 } // KnobHelper::moveDerivativesAtTime
@@ -564,7 +564,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
         }
     }
 
-    evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
     return true;
 } // KnobHelper::moveDerivativeAtTime

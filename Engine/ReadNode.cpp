@@ -612,7 +612,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
 
         }
 
@@ -1084,11 +1084,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
     if ( ( k == _imp->inputFileKnob.lock() ) && (reason != eValueChangedReasonTimeChanged) ) {
 
-        NodePtr hasMaster = getNode()->getMasterNode();
-        if (hasMaster) {
-            // Unslave all knobs since we are going to remove some and recreate others
-            unslaveAllKnobs();
-        }
+
         if (_imp->creatingReadNode) {
             NodePtr p = getEmbeddedReader();
             if (p) {
@@ -1111,9 +1107,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-        if (hasMaster) {
-            slaveAllKnobs(hasMaster->getEffectInstance());
-        }
+    
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
@@ -1174,7 +1168,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
     NodePtr p = getEmbeddedReader();
     if (!ret && p) {
-        ret |= p->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+        ret |= p->getEffectInstance()->knobChanged(k, reason, view, time);
     }
 
     return ret;

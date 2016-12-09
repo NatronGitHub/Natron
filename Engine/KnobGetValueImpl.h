@@ -201,10 +201,40 @@ Knob<T>::getValueFromExpression_pod(double time,
 
 template <typename T>
 T
+Knob<T>::getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
+                          const RenderValuesCachePtr& valuesCache,
+                          double tlsCurrentTime,
+                          DimIdx dimension,
+                          ViewIdx view,
+                          bool clamp)
+{
+    ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view).get());
+    if (!dataForDimView) {
+        return T();
+    }
+    {
+        QMutexLocker k(&dataForDimView->valueMutex);
+        if (clamp) {
+            T ret = clampToMinMax(dataForDimView->value, dimension);
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view, ret);
+            }
+            return ret;
+        } else {
+            const T& ret = dataForDimView->value;
+            if (valuesCache) {
+                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view, ret);
+            }
+            return ret;
+        }
+    }
+} // getValueInternal
+
+template <typename T>
+T
 Knob<T>::getValue(DimIdx dimension,
                   ViewGetSpec view,
-                  bool clamp,
-                  bool byPassMaster)
+                  bool clamp)
 {
 
     if ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
@@ -249,122 +279,9 @@ Knob<T>::getValue(DimIdx dimension,
         return getValueAtTime(time, dimension, view, clamp);
     }
 
-
-    // If the knob is slaved to another knob, returns the other knob value
-    {
-        MasterKnobLink linkData;
-        if (!byPassMaster && getMaster(dimension, view_i, &linkData)) {
-            KnobIPtr masterKnob = linkData.masterKnob.lock();
-            if (masterKnob) {
-                return getValueFromMaster(linkData.masterView, linkData.masterDimension, masterKnob, clamp);
-            }
-        }
-
-    }
-    {
-        QMutexLocker k(&_valueMutex);
-        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
-        if (foundView == _values[dimension].end()) {
-            return T();
-        }
-        if (clamp) {
-            T ret = clampToMinMax(foundView->second, dimension);
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
-            }
-            return ret;
-        } else {
-            const T& ret = foundView->second;
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
-            }
-            return ret;
-        }
-    } // QMutexLocker k(&_valueMutex);
-
+    return getValueInternal(thisShared, valuesCache, tlsCurrentTime, dimension, view_i, clamp);
 
 } // getValue
-
-
-
-template <>
-std::string
-KnobStringBase::getValueFromMasterAt(double time,
-                                     ViewGetSpec view,
-                                     DimIdx dimension,
-                                     const KnobIPtr& master)
-{
-    KnobStringBasePtr isString = toKnobStringBase(master);
-    assert(isString); //< other data types aren't supported
-    if (isString) {
-        return isString->getValueAtTime(time, dimension, view, false);
-    }
-
-    // coverity[dead_error_line]
-    return std::string();
-} // getValueFromMasterAt
-
-template <>
-std::string
-KnobStringBase::getValueFromMaster(ViewGetSpec view,
-                                   DimIdx dimension,
-                                   const KnobIPtr& master,
-                                   bool /*clamp*/)
-{
-    KnobStringBasePtr isString = toKnobStringBase(master);
-    assert(isString); //< other data types aren't supported
-    if (isString) {
-        return isString->getValue(dimension, view, false);
-    }
-
-    // coverity[dead_error_line]
-    return std::string();
-} // getValueFromMaster
-
-template <typename T>
-T
-Knob<T>::getValueFromMasterAt(double time,
-                              ViewGetSpec view,
-                              DimIdx dimension,
-                              const KnobIPtr& master)
-{
-    KnobIntBasePtr isInt = toKnobIntBase(master);
-    KnobBoolBasePtr isBool = toKnobBoolBase(master);
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(master);
-    assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    if (isInt) {
-        return isInt->getValueAtTime(time, dimension, view);
-    } else if (isBool) {
-        return isBool->getValueAtTime(time, dimension, view);
-    } else if (isDouble) {
-        return isDouble->getValueAtTime(time, dimension, view);
-    }
-
-    return T();
-} // getValueFromMasterAt
-
-template <typename T>
-T
-Knob<T>::getValueFromMaster(ViewGetSpec view,
-                            DimIdx dimension,
-                            const KnobIPtr& master,
-                            bool clamp)
-{
-    KnobIntBasePtr isInt = toKnobIntBase(master);
-    KnobBoolBasePtr isBool = toKnobBoolBase(master);
-    KnobDoubleBasePtr isDouble = toKnobDoubleBase(master);
-    assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    if (isInt) {
-        return (T)isInt->getValue(dimension, view, clamp);
-    } else if (isBool) {
-        return (T)isBool->getValue(dimension, view, clamp);
-    } else if (isDouble) {
-        return (T)isDouble->getValue(dimension, view, clamp);
-    }
-
-    return T();
-} // getValueFromMaster
-
 
 
 template <typename T>
@@ -372,13 +289,12 @@ bool
 Knob<T>::getValueFromCurve(double time,
                            ViewGetSpec view,
                            DimIdx dimension,
-                           bool byPassMaster,
                            bool clamp,
                            T* ret)
 {
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    CurvePtr curve = getCurve(view_i, dimension, byPassMaster);
+    CurvePtr curve = getAnimationCurve(view_i, dimension);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -395,7 +311,6 @@ bool
 KnobStringBase::getValueFromCurve(double time,
                                   ViewGetSpec view,
                                   DimIdx dimension,
-                                  bool byPassMaster,
                                   bool /*clamp*/,
                                   std::string* ret)
 {
@@ -410,7 +325,7 @@ KnobStringBase::getValueFromCurve(double time,
     }
     assert( ret->empty() );
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    CurvePtr curve = getCurve(view_i, dimension, byPassMaster);
+    CurvePtr curve = getAnimationCurve(view_i, dimension);
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         assert(isStringAnimated);
         if (isStringAnimated) {
@@ -431,7 +346,7 @@ KnobStringBase::getRawCurveValueAt(double time,
                                    DimIdx dimension)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    CurvePtr curve  = getCurve(view_i, dimension, true);
+    CurvePtr curve  = getAnimationCurve(view_i, dimension);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -447,7 +362,7 @@ Knob<T>::getRawCurveValueAt(double time,
                             ViewGetSpec view,
                             DimIdx dimension)
 {
-    CurvePtr curve  = getCurve(view, dimension, true);
+    CurvePtr curve  = getAnimationCurve(view, dimension);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -455,13 +370,15 @@ Knob<T>::getRawCurveValueAt(double time,
     }
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
-    QMutexLocker l(&_valueMutex);
-    typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
-    if (foundView == _values[dimension].end()) {
-        return 0;
+    ValueKnobDimView<T>* dataForDimView = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(dimension, view_i).get());
+    if (!dataForDimView) {
+        return T();
     }
-    T ret = foundView->second;
-
+    T ret;
+    {
+        QMutexLocker k(&dataForDimView->valueMutex);
+        ret = dataForDimView->value;
+    }
     return clampToMinMax(ret, dimension);
 } // getRawCurveValueAt
 
@@ -489,11 +406,10 @@ T
 Knob<T>::getValueAtTime(double time,
                         DimIdx dimension,
                         ViewGetSpec view,
-                        bool clamp,
-                        bool byPassMaster)
+                        bool clamp)
 {
 
-    if  ( ( dimension >= (int)_values.size() ) || (dimension < 0) ) {
+    if  ( ( dimension >= getNDimensions() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime: dimension out of range");
     }
 
@@ -523,22 +439,10 @@ Knob<T>::getValueAtTime(double time,
         }
     }
 
-    // If the knob is slaved to another knob, returns the other knob value
-    MasterKnobLink linkData;
-    KnobIPtr masterKnob;
-    {
-        if (!byPassMaster && getMaster(dimension, view_i, &linkData)) {
-            masterKnob = linkData.masterKnob.lock();
-            if (masterKnob) {
-                return getValueFromMasterAt(time, linkData.masterView, linkData.masterDimension, masterKnob);
-            }
-        }
-
-    }
 
 
     T ret;
-    if ( getValueFromCurve(time, view_i, dimension, byPassMaster, clamp, &ret) ) {
+    if ( getValueFromCurve(time, view_i, dimension, clamp, &ret) ) {
         if (valuesCache) {
             valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
         }
@@ -547,30 +451,7 @@ Knob<T>::getValueAtTime(double time,
     }
 
     // If the knob as no keys at this dimension/view, return the underlying value
-    if (masterKnob && !byPassMaster) {
-        return getValueFromMaster(linkData.masterView, linkData.masterDimension, masterKnob, clamp);
-    }
-
-    {
-        QMutexLocker k(&_valueMutex);
-        typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view_i);
-        if (foundView == _values[dimension].end()) {
-            return T();
-        }
-        if (clamp) {
-            T ret = clampToMinMax(foundView->second, dimension);
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
-            }
-            return ret;
-        } else {
-            const T& ret = foundView->second;
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
-            }
-            return ret;
-        }
-    } // QMutexLocker k(&_valueMutex);
+    return getValueInternal(thisShared, valuesCache, time, dimension, view_i, clamp);
 } // getValueAtTime
 
 
@@ -593,16 +474,7 @@ Knob<T>::getDerivativeAtTime(double time,
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
-    // If the knob is slaved to another knob, returns the other knob value
-    MasterKnobLink linkData;
-    if (getMaster(dimension, view_i, &linkData)) {
-        KnobIPtr masterKnob = linkData.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getDerivativeAtTime(time, linkData.masterView, linkData.masterDimension);
-        }
-    }
-
-    CurvePtr curve  = getCurve(view_i, dimension);
+    CurvePtr curve  = getAnimationCurve(view_i, dimension);
     if (curve->getKeyFramesCount() > 0) {
         return curve->getDerivativeAt(time);
     } else {
@@ -678,17 +550,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
-    // If the knob is slaved to another knob, returns the other knob value
-    MasterKnobLink linkData;
-    if (getMaster(dimension, view_i, &linkData)) {
-        KnobIPtr masterKnob = linkData.masterKnob.lock();
-        if (masterKnob) {
-            return masterKnob->getIntegrateFromTimeToTime(time1, time2, linkData.masterView, linkData.masterDimension);
-        }
-    }
-
-
-    CurvePtr curve  = getCurve(view_i, dimension);
+    CurvePtr curve  = getAnimationCurve(view_i, dimension);
     if (curve->getKeyFramesCount() > 0) {
         return curve->getIntegrateFromTo(time1, time2);
     } else {

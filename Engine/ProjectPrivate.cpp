@@ -257,12 +257,6 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         }
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-    // Now that the graph is setup, restore expressions and slave/master links for knobs
-    NodesList nodes = group->getNodes();
-    if (isGrp) {
-        nodes.push_back( isGrp->getNode() );
-    }
-
 
     for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         it->first->restoreKnobsLinks(*it->second, nodes);

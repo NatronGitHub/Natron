@@ -91,6 +91,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
+#include "Gui/NewLayerDialog.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGraphTextItem.h"
@@ -4250,8 +4251,30 @@ NodeGui::onNodePresetsChanged()
             }
         }
     }
-}
+} // onNodePresetsChanged
 
+bool
+NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
+{
+
+    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getDagGui()->getGui() );
+
+    if ( dialog.exec() ) {
+        ImageComponents comps = dialog.getComponents();
+        if ( comps == ImageComponents::getNoneComponents() ) {
+            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
+                                                                "Python compliant.").toStdString() );
+
+            return;
+        }
+        assert(knob->getHolder() == getNode()->getEffectInstance());
+
+        if ( !getNode()->addUserComponents(comps) ) {
+            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
+        }
+
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 

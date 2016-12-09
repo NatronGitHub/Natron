@@ -114,7 +114,7 @@ getOfxKeyFrames(const KnobIPtr& knob,
                     keyframes.insert(0);
                     keyframes.insert(1);
                 } else {
-                    CurvePtr curve = knob->getCurve(*it, DimIdx(i));
+                    CurvePtr curve = knob->getAnimationCurve(*it, DimIdx(i));
                     if (curve) {
                         KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it2 = dimKeys.begin(); it2 != dimKeys.end(); ++it2) {
@@ -125,8 +125,8 @@ getOfxKeyFrames(const KnobIPtr& knob,
             }
         }
     }
-    
-}
+
+} // getOfxKeyFrames
 
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
 /// in a generalized manner
@@ -1342,6 +1342,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
+
 OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
@@ -1382,7 +1383,11 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
 
     bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
     if (canAddOptions) {
-        choice->setHostCanAddOptions(true);
+        // Currently the extension does not provide a way to specify a callback function pointer so only use
+        // it for the shuffle node to add new layers.
+        if ((descriptor.getName() == kNatronOfxParamOutputChannels)) {
+            choice->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
+        }
     }
     QObject::connect( choice.get(), SIGNAL(populated()), this, SLOT(onChoiceMenuPopulated()) );
     QObject::connect( choice.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onChoiceMenuEntryAppended(QString,QString)) );
@@ -4419,7 +4424,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getValue(DimIdx(curveIndex), parametricPosition, returnValue);
+    StatusEnum stat = _knob.lock()->getValue(DimIdx(curveIndex), ViewGetSpec::current(), parametricPosition, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4433,7 +4438,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), returnValue);
+    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), ViewGetSpec::current(), returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4449,7 +4454,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4467,7 +4472,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4521,7 +4526,7 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), nthCtl);
+    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4533,7 +4538,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex));
+    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current());
 
     if (stat == eStatusOK) {
         return kOfxStatOK;

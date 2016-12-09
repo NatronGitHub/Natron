@@ -430,8 +430,7 @@ private:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread)  OVERRIDE FINAL;
+                                    ViewSetSpec view)  OVERRIDE FINAL;
 
     bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);
 

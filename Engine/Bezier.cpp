@@ -1223,7 +1223,7 @@ bezierSegmenEqual(double time,
 void
 Bezier::clearAllPoints()
 {
-    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
     QMutexLocker k(&_imp->itemMutex);
     for (PerViewBezierShapeMap::iterator it = _imp->viewShapes.begin(); it != _imp->viewShapes.end(); ++it) {
         it->second.points.clear();

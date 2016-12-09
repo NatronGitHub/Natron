@@ -211,14 +211,12 @@ public:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread)
+                                    ViewSetSpec view)
     {
         Q_UNUSED(k);
         Q_UNUSED(reason);
         Q_UNUSED(time);
         Q_UNUSED(view);
-        Q_UNUSED(originatedFromMainThread);
 
         return false;
     }

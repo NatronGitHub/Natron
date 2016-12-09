@@ -278,8 +278,7 @@ protected:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread) OVERRIDE;
+                                    ViewSetSpec view) OVERRIDE;
 
     virtual void onTransformSet(double /*time*/, ViewSetSpec /*view*/) {}
 

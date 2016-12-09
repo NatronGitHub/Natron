@@ -207,20 +207,21 @@ public:
 
     void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
 
+
+    /**
+     * @brief Links all the evaluateOnChange knobs to the other one except
+     * trigger buttons. The other node must be the same plug-in
+     **/
+    bool linkToNode(const NodePtr& other);
+
+
 private:
 
     void initNodeNameFallbackOnPluginDefault();
 
     void createNodeGuiInternal(const CreateNodeArgsPtr& args);
 
-    /**
-     * @brief Restores all links for the given knob if it has masters or expressions.
-     * This function cannot be called until all knobs of the node group have been created because it needs to reference other knobs
-     * from other nodes.
-     * This function throws an exception if no serialization is valid in the object
-     **/
-    void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
-                          const NodesList & allNodes);
+  
 
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
@@ -308,8 +309,7 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                           const NodesList & allNodes);
+    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
@@ -991,6 +991,8 @@ public:
     void refreshPreviewsRecursivelyUpstream(double time);
 
 public:
+
+    static void choiceParamAddLayerCallback(const KnobChoicePtr& knob);
 
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;

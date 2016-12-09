@@ -1549,8 +1549,7 @@ bool
 Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
-                            ViewSetSpec /*view*/,
-                            bool /*originatedFromMainThread*/)
+                            ViewSetSpec /*view*/)
 {
     if (reason == eValueChangedReasonRestoreDefault) {
         return false;

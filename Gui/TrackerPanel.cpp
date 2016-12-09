@@ -1385,9 +1385,9 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     double value = item->data(Qt::DisplayRole).toDouble();
                     if ( knob->isAnimationEnabled() && knob->isAnimated(dim) ) {
                         KeyFrame kf;
-                        knob->setValueAtTime(time, value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, &kf);
+                        knob->setValueAtTime(time, value, ViewSpec(0), dim, eValueChangedReasonUserEdited, &kf);
                     } else {
-                        knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, 0);
+                        knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonUserEdited, 0);
                     }
                     if (i != COL_ERROR) {
                         NodePtr node = getContext()->getNode();
@@ -1808,7 +1808,7 @@ TrackerPanel::onCenterKnobValueChanged(const TrackMarkerPtr& marker,
                                        int dimension,
                                        int reason)
 {
-    if (reason == eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonUserEdited) {
         return;
     }
 
@@ -1833,7 +1833,7 @@ TrackerPanel::onOffsetKnobValueChanged(const TrackMarkerPtr& marker,
                                        int dimension,
                                        int reason)
 {
-    if (reason == eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonUserEdited) {
         return;
     }
     ++_imp->itemDataChangedRecursion;
@@ -1856,7 +1856,7 @@ TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,
                                       int /*dimension*/,
                                       int reason)
 {
-    if (reason == eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonUserEdited) {
         return;
     }
     TableItem* item = getItemAt(marker, COL_ERROR);
@@ -1873,7 +1873,7 @@ TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,
                                             int /*dimension*/,
                                             int reason)
 {
-    if (reason == eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonUserEdited) {
         return;
     }
     int row = getMarkerRow(marker);
@@ -1892,7 +1892,7 @@ void
 TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,
                                int reason)
 {
-    if (reason == eValueChangedReasonNatronGuiEdited) {
+    if (reason == eValueChangedReasonUserEdited) {
         return;
     }
     int row = getMarkerRow(marker);

@@ -474,14 +474,14 @@ ProjectGui::setPickersColor(ViewIdx view,
             values[0] = r;
             values[1] = g;
             values[2] = b;
-            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonUserEdited);
         } else {
             std::vector<double> values(4);
             values[0] = r;
             values[1] = g;
             values[2] = b;
             values[3] = a;
-            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonNatronGuiEdited);
+            it->knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonUserEdited);
         }
     }
 }

@@ -98,7 +98,6 @@ struct TrackMarkerPrivate
 
     // Only used by the TrackScheduler thread
     int trackingStartedCount;
-    std::list<double> keyframesAddedWhileTracking;
 
     TrackMarkerPrivate(TrackMarker* publicInterface)
         : _publicInterface(publicInterface)
@@ -118,7 +117,6 @@ struct TrackMarkerPrivate
         , trackMutex()
         , enabled()
         , trackingStartedCount(0)
-        , keyframesAddedWhileTracking()
     {
     }
 };
@@ -343,7 +341,7 @@ TrackMarker::getEnabledKnob() const
 void
 TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 {
-    CurvePtr curve = _imp->center.lock()->getCurve(ViewGetSpec(0), DimIdx(0));
+    CurvePtr curve = _imp->center.lock()->getAnimationCurve(ViewGetSpec(0), DimIdx(0));
 
     assert(curve);
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
@@ -355,7 +353,7 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 bool
 TrackMarker::isEnabled(double time) const
 {
-    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewGetSpec::current(), true, true /*byPassMaster*/);
+    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewGetSpec::current(), true);
 }
 
 void
@@ -463,7 +461,7 @@ deleteKnobAnimation(const std::set<double>& userKeyframes,
                     double currentTime)
 {
     for (int i = 0; i < knob->getNDimensions(); ++i) {
-        CurvePtr curve = knob->getCurve(ViewGetSpec(0), DimIdx(i));
+        CurvePtr curve = knob->getAnimationCurve(ViewGetSpec(0), DimIdx(i));
         assert(curve);
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
         std::list<double> toRemove;
@@ -502,7 +500,7 @@ deleteKnobAnimation(const std::set<double>& userKeyframes,
             break;
         }
         }
-        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i), eValueChangedReasonNatronInternalEdited);
+        knob->deleteValuesAtTime(toRemove, ViewSetSpec::all(), DimIdx(i), eValueChangedReasonUserEdited);
     }
 }
 
@@ -624,8 +622,17 @@ TrackMarker::setKeyFrameOnCenterAndPatternAtTime(double time)
 void
 TrackMarker::notifyTrackingStarted()
 {
+    if (!_imp->trackingStartedCount) {
+        // When tracking disable keyframes tracking on knobs that get updated at each track
+        // step to keep the UI from refreshing at each frame.
+        _imp->center.lock()->setKeyFrameTrackingEnabled(false);
+        _imp->error.lock()->setKeyFrameTrackingEnabled(false);
+        _imp->patternBtmLeft.lock()->setKeyFrameTrackingEnabled(false);
+        _imp->patternBtmRight.lock()->setKeyFrameTrackingEnabled(false);
+        _imp->patternTopLeft.lock()->setKeyFrameTrackingEnabled(false);
+        _imp->patternTopRight.lock()->setKeyFrameTrackingEnabled(false);
+    }
     ++_imp->trackingStartedCount;
-    _imp->keyframesAddedWhileTracking.clear();
 }
 
 void
@@ -637,16 +644,12 @@ TrackMarker::notifyTrackingEnded()
 
     // Refresh knobs once finished
     if (!_imp->trackingStartedCount) {
-#pragma message WARN("Handle keyframes for trackmarker center knob")
-        /*TrackMarkerPtr marker = shared_from_this();
-        getContext()->s_errorKnobValueChanged(marker, 0, eValueChangedReasonNatronInternalEdited);
-        for (int i = 0; i < 2; ++i) {
-            getContext()->s_centerKnobValueChanged(marker, i, eValueChangedReasonNatronInternalEdited);
-        }
-        if (!_imp->keyframesAddedWhileTracking.empty()) {
-            getContext()->s_multipleKeyframesSetOnTrackCenter(marker, _imp->keyframesAddedWhileTracking);
-            _imp->keyframesAddedWhileTracking.clear();
-        }*/
+        _imp->center.lock()->setKeyFrameTrackingEnabled(true);
+        _imp->error.lock()->setKeyFrameTrackingEnabled(true);
+        _imp->patternBtmLeft.lock()->setKeyFrameTrackingEnabled(true);
+        _imp->patternBtmRight.lock()->setKeyFrameTrackingEnabled(true);
+        _imp->patternTopLeft.lock()->setKeyFrameTrackingEnabled(true);
+        _imp->patternTopRight.lock()->setKeyFrameTrackingEnabled(true);
     }
 }
 
@@ -754,9 +757,9 @@ TrackMarkerPM::trackMarker(bool forward,
 
     // Unslave the center knob since the trackerNode will update it, then update the marker center
     KnobDoublePtr center = centerKnob.lock();
-    center->unSlave(DimSpec::all(), ViewSetSpec::all(), true);
+    (void)center->unlink(DimSpec::all(), ViewSetSpec::all(), true);
 
-    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonNatronInternalEdited, frame, ViewIdx(0));
+    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonUserEdited, frame, ViewIdx(0));
 
     KnobDoublePtr markerCenter = getCenterKnob();
     // The TrackerPM plug-in has set a keyframe at the refFrame and frame, copy them
@@ -819,7 +822,7 @@ TrackMarkerPM::trackMarker(bool forward,
         }
     }
 
-    center->slaveTo(markerCenter);
+    (void)center->linkTo(markerCenter);
 
     return ret;
 } // TrackMarkerPM::trackMarker
@@ -878,12 +881,12 @@ TrackMarkerPM::initializeKnobs()
     centerKnob = center;
 
     // Slave the center knob and unslave when tracking
-    center->slaveTo(getCenterKnob());
+    (void)center->linkTo(getCenterKnob());
 
     KnobDoublePtr offset = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingOffset);
 
     // Slave the offset knob
-    offset->slaveTo(getOffsetKnob());
+    (void)offset->linkTo(getOffsetKnob());
 
     offsetKnob = offset;
 
@@ -899,7 +902,7 @@ TrackMarkerPM::initializeKnobs()
 #ifdef kTrackerParamPatternMatchingScoreType
         KnobIPtr modelKnob = effect->getKnobByName(kTrackerParamPatternMatchingScoreType);
         if (modelKnob) {
-            scoreType->slaveTo(modelKnob);
+            (void)scoreType->linkTo(modelKnob);
         }
 #endif
     }
@@ -913,19 +916,19 @@ TrackMarkerPM::initializeKnobs()
     patternBtmLeftKnob = patternBtmLeft;
 
     // Slave the search window and pattern of the node to the parameters of the marker
-    patternBtmLeft->slaveTo(getPatternBtmLeftKnob());
+    (void)patternBtmLeft->linkTo(getPatternBtmLeftKnob());
 
     KnobDoublePtr patternTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingPatternBoxTopRight);
     patternTopRightKnob = patternTopRight;
-    patternTopRight->slaveTo(getPatternTopRightKnob());
+    (void)patternTopRight->linkTo(getPatternTopRightKnob());
 
     KnobDoublePtr searchWindowBtmLeft = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxBtmLeft);
     searchWindowBtmLeftKnob = searchWindowBtmLeft;
-    searchWindowBtmLeft->slaveTo(getSearchWindowBottomLeftKnob());
+    (void)searchWindowBtmLeft->linkTo(getSearchWindowBottomLeftKnob());
 
     KnobDoublePtr searchWindowTopRight = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingSearchBoxTopRight);
     searchWindowTopRightKnob = searchWindowTopRight;
-    searchWindowTopRight->slaveTo(getSearchWindowTopRightKnob());
+    (void)searchWindowTopRight->linkTo(getSearchWindowTopRightKnob());
 
 } // TrackMarkerPM::initializeKnobs
 

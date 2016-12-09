@@ -915,199 +915,6 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
 
 
 
-static KnobIPtr
-findMasterKnob(const KnobIPtr & knob,
-           const NodesList & allNodes,
-           const std::string& masterKnobName,
-           const std::string& masterNodeName,
-           const std::string& masterItemName)
-{
-    ///we need to cycle through all the nodes of the project to find the real master
-    NodePtr masterNode;
-
-    if (masterNodeName == kKnobMasterNodeIsGroup) {
-        EffectInstancePtr thisEffect = toEffectInstance(knob->getHolder());
-        if (thisEffect) {
-            NodeGroupPtr thisGroup = toNodeGroup(thisEffect->getNode()->getGroup());
-            if (thisGroup) {
-                masterNode = thisGroup->getNode();
-            }
-        }
-        assert(masterNode);
-    } else {
-
-        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-            if ( (*it2)->getScriptName() == masterNodeName ) {
-                masterNode = *it2;
-                break;
-            }
-        }
-    }
-    if (!masterNode) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
-
-        return KnobIPtr();
-    }
-
-    if ( !masterItemName.empty() ) {
-        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable();
-        if (table) {
-            KnobTableItemPtr item = table->getItemByFullyQualifiedScriptName(masterItemName);
-            if (item) {
-                return item->getKnobByName(masterKnobName);
-            }
-        }
-    } else {
-        ///now that we have the master node, find the corresponding knob
-        const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
-        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) ) {
-                return otherKnobs[j];
-            }
-        }
-    }
-
-    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
-
-    return KnobIPtr();
-}
-
-
-void
-Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
-                       const NodesList & allNodes)
-{
-
-    SERIALIZATION_NAMESPACE::KnobSerialization* isKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serialization.get());
-    SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serialization.get());
-
-    if (isGroupKnobSerialization) {
-        for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
-            try {
-                restoreKnobLinks(*it, allNodes);
-            } catch (const std::exception& e) {
-                LogEntry::LogEntryColor c;
-                if (getColor(&c.r, &c.g, &c.b)) {
-                    c.colorSet = true;
-                }
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
-
-
-            }
-        }
-    } else if (isKnobSerialization) {
-        KnobIPtr knob =  getKnobByName(isKnobSerialization->_scriptName);
-        if (!knob) {
-            throw std::invalid_argument(tr("Could not find a parameter named \"%1\"").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
-
-            return;
-        }
-
-
-        // Restore slave/master links first
-        {
-            if (isKnobSerialization->_masterIsAlias) {
-                if (!isKnobSerialization->_values.empty()) {
-                    const SERIALIZATION_NAMESPACE::ValueSerialization value = isKnobSerialization->_values.begin()->second[0];
-                    const std::string& aliasKnobName = value._slaveMasterLink.masterKnobName;
-                    const std::string& aliasNodeName = value._slaveMasterLink.masterNodeName;
-                    const std::string& masterTableItemName  = value._slaveMasterLink.masterTableItemName;
-                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTableItemName);
-                    if (alias) {
-                        knob->setKnobAsAliasOfThis(alias, true);
-                    }
-                }
-            } else {
-                const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
-                for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
-                     it != isKnobSerialization->_values.end(); ++it) {
-
-                    // Find a matching view name
-                    ViewIdx view_i(0);
-                    Project::getViewIndex(projectViews, it->first, &view_i);
-
-                    for (std::size_t i = 0; i < it->second.size(); ++i) {
-                        if (!it->second[i]._slaveMasterLink.hasLink) {
-                            continue;
-                        }
-
-                        std::string masterKnobName, masterNodeName, masterTableItemName;
-                        if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
-                            // Node name empty, assume this is the same node
-                            masterNodeName = getScriptName_mt_safe();
-                        }
-
-                        if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
-                            // Knob name empty, assume this is the same knob unless it has a single dimension
-                            if (knob->getNDimensions() == 1) {
-                                continue;
-                            }
-                            masterKnobName = knob->getName();
-                        }
-
-                        masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
-                        KnobIPtr master = findMasterKnob(knob,
-                                                         allNodes,
-                                                         masterKnobName,
-                                                         masterNodeName,
-                                                         masterTableItemName);
-                        if (master) {
-                            // Find dimension in master by name
-                            int otherDimIndex = -1;
-                            if (master->getNDimensions() == 1) {
-                                otherDimIndex = 0;
-                            } else {
-                                for (int d = 0; d < master->getNDimensions(); ++d) {
-                                    if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[i]._slaveMasterLink.masterDimensionName) ) {
-                                        otherDimIndex = d;
-                                        break;
-                                    }
-                                }
-                                if (otherDimIndex == -1) {
-                                    // Before Natron 2.2 we serialized the dimension index. Try converting to an int
-                                    otherDimIndex = QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
-                                }
-                            }
-                            ViewIdx otherView(0);
-                            Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
-
-                            if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
-                                knob->slaveTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
-                            } else {
-                                throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
-                            }
-                        }
-
-                    } // for each dimensions
-                } // for each view
-            } // isAlias
-        }
-
-        // Restore expressions
-        {
-            const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
-            for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
-                 it != isKnobSerialization->_values.end(); ++it) {
-                // Find a matching view name
-                ViewIdx view_i(0);
-                Project::getViewIndex(projectViews, it->first, &view_i);
-                
-                for (std::size_t i = 0; i < it->second.size(); ++i) {
-                    try {
-                        if ( !it->second[i]._expression.empty() ) {
-                            knob->restoreExpression(DimIdx(it->second[i]._dimension), view_i,  it->second[i]._expression, it->second[i]._expresionHasReturnVariable);
-                        }
-                    } catch (const std::exception& e) {
-                        QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
-                        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
-                    }
-                } // for all dimensions
-            } // for all views
-        }
-    }
-}
-
-
 void
 Node::restoreUserKnob(const KnobGroupPtr& group,
                       const KnobPagePtr& page,
@@ -1346,8 +1153,8 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
                         hasExpr = true;
                         break;
                     }
-                    MasterKnobLink linkData;
-                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                    KnobDimViewKey linkData;
+                    if (knobs[i]->getSharingMaster(DimIdx(d), *itV, &linkData)) {
                         hasExpr = true;
                         break;
                     }
@@ -1426,11 +1233,6 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         getInputNames(serialization->_inputs, serialization->_masks);
     }
 
-
-    NodePtr masterNode = getMasterNode();
-    if (masterNode) {
-        serialization->_masterNodecriptName = masterNode->getScriptName_mt_safe();
-    }
 
     KnobItemsTablePtr table = _imp->effect->getItemsTable();
     if (table && table->getNumTopLevelItems() > 0) {
@@ -2148,10 +1950,37 @@ Node::loadKnob(const KnobIPtr & knob,
 
 } // Node::loadKnob
 
+bool
+Node::linkToNode(const NodePtr& other)
+{
+    // Only link same plug-in
+    if (!other || other->getPluginID() != getPluginID()) {
+        return false;
+    }
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        {
+            KnobButtonPtr isButton = toKnobButton(*it);
+            if (isButton && !isButton->getIsCheckable()) {
+                // Don't link trigger buttons
+                continue;
+            }
+        }
+        if (!(*it)->getEvaluateOnChange()) {
+            continue;
+        }
+
+        KnobIPtr masterKnob = other->getKnobByName((*it)->getName());
+        if (!masterKnob) {
+            continue;
+        }
+        (*it)->linkTo(masterKnob);
+    }
+    return true;
+}
 
 void
-Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                        const NodesList & allNodes)
+Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2184,7 +2013,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
                                             .arg( QString::fromUtf8( serialization._nodeScriptName.c_str() ) )
                                             .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
         } else {
-            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance() );
+            linkToNode( masterNode );
         }
         return;
     }
@@ -2193,8 +2022,12 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
     const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+        KnobIPtr knob = getKnobByName((*it)->_scriptName);
+        if (!knob) {
+            continue;
+        }
         try {
-            restoreKnobLinks(*it, allNodes);
+            knob->restoreKnobLinks(*it);
         } catch (const std::exception& e) {
             // For stub nodes don't report errors
             if (!isEffectStubNode()) {
@@ -2210,7 +2043,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
     const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
     for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
         try {
-            restoreKnobLinks(*it, allNodes);
+            restoreKnobLinks(*it);
         } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {
@@ -2942,9 +2775,7 @@ Node::setNameInternal(const std::string& name,
                     continue;
                 }
                 for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    if (it2->isExpr) {
-                        listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
-                    }
+                    listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
                 }
             }
         }
@@ -5732,11 +5563,11 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 std::list<ViewIdx> views = listener->getViewsList();
                 for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
                     for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
-                        MasterKnobLink linkData;
-                        if (listener->getMaster(DimIdx(dim), *it2, &linkData)) {
-                            KnobIPtr masterKnob = linkData.masterKnob.lock();
+                        KnobDimViewKey linkData;
+                        if (listener->getSharingMaster(DimIdx(dim), *it2, &linkData)) {
+                            KnobIPtr masterKnob = linkData.knob.lock();
                             if (masterKnob == knobs[i]) {
-                                listener->unSlave(DimIdx(dim), *it2, true);
+                                listener->unlink(DimIdx(dim), *it2, true);
                             }
                         }
 
@@ -8332,7 +8163,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     if (!ret) {
         KnobGroupPtr isGroup = toKnobGroup(what);
-        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonNatronInternalEdited) {
+        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonUserEdited) {
             NodeGuiIPtr gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);
@@ -9709,19 +9540,11 @@ Node::isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) cons
         return false;
     }
 
-    if ( recursionList.find(shared_from_this()) != recursionList.end() ) {
+    NodeConstPtr thisShared = shared_from_this();
+    if ( recursionList.find(thisShared) != recursionList.end() ) {
         return false;
     }
-    recursionList.insert(shared_from_this());
-
-    {
-        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            NodePtr masterNode = it->masterNode.lock();
-            if ( masterNode && (masterNode.get() != this) && masterNode->isSettingsPanelVisibleInternal(recursionList) ) {
-                return true;
-            }
-        }
-    }
+    recursionList.insert(thisShared);
 
     return gui->isSettingsPanelVisible();
 }

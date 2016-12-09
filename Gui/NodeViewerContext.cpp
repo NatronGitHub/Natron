@@ -559,7 +559,7 @@ NodeViewerContext::onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReaso
         return;
     }
 
-    if ( (reason == eValueChangedReasonNatronGuiEdited) ||
+    if ( (reason == eValueChangedReasonUserEdited) ||
          ( reason == eValueChangedReasonUserEdited) ) {
         return;
     }
@@ -592,7 +592,7 @@ NodeViewerContext::onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReas
         return;
     }
 
-    if ( (reason == eValueChangedReasonNatronGuiEdited) ||
+    if ( (reason == eValueChangedReasonUserEdited) ||
          ( reason == eValueChangedReasonUserEdited) ) {
         return;
     }

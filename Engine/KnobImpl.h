@@ -869,12 +869,18 @@ KnobDoubleBase::isTypePOD() const
 
 template<typename T>
 bool
-Knob<T>::isTypeCompatible(const KnobIPtr & other) const
+Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* error) const
 {
-    if (typeName() == other->typeName()) {
-        return true;
+    Knob<T>* otherType = dynamic_cast<Knob<T>*>(other.get());
+    if (otherType == 0) {
+        if (error) {
+            *error = tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString();
+        }
+        return false;
     }
-    return isTypePOD() == other->isTypePOD();
+
+
+    return true;
 }
 
 
@@ -951,7 +957,7 @@ Knob<T>::cloneDefaultValues(const KnobIPtr& other)
 
     std::vector<DefaultValue> otherDef;
     {
-        QMutexLocker l(&otherT->_valueMutex);
+        QMutexLocker l(&otherT->_defaultValueMutex);
         otherDef = otherT->_defaultValues;
     }
     for (int i = 0; i < dims; ++i) {
@@ -1039,7 +1045,7 @@ void handleAnimatedHashing(Knob<T>* knob, ViewIdx view, DimIdx dimension, Hash64
 }
 
 template <>
-void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, DimIdx dimension, Hash64* hash)
+void handleAnimatedHashing(Knob<std::string>* knob, ViewIdx view, DimIdx /*dimension*/, Hash64* hash)
 {
     AnimatingKnobStringHelper* isAnimated = dynamic_cast<AnimatingKnobStringHelper*>(knob);
     assert(isAnimated);
@@ -1125,7 +1131,7 @@ template <typename T>
 void
 Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
 {
-    QMutexLocker k(&_valueMutex);
+    QMutexLocker k(&_defaultValueMutex);
 
     if (dimension.isAll()) {
         for (int i = 0; i < getNDimensions(); ++i) {
@@ -1182,25 +1188,6 @@ Knob<T>::getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) 
 }
 
 template <typename T>
-void
-Knob<T>::onAllDimensionsMadeVisible(ViewIdx view, bool visible)
-{
-
-    int nDims = getNDimensions();
-    beginChanges();
-    for (int i = 1; i < nDims; ++i) {
-        // Unlink if already linked
-        removeLink(DimIdx(i), view, false /*copyState*/);
-        if (!visible) {
-            // When folding, slave other dimensions to the first one
-            slaveTo(shared_from_this(), DimIdx(i), DimIdx(0), view, view);
-        }
-    }
-    endChanges();
-
-}
-
-template <typename T>
 bool
 Knob<T>::areDimensionsEqual(ViewIdx view)
 {
@@ -1222,35 +1209,29 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
         }
     }
 
-    // Check if there's a master knob
-    if (valuesEqual) {
-        MasterKnobLink dim0Link;
-        KnobIPtr dim0Master;
-        (void)getMaster(DimIdx(0), view, &dim0Link);
-        dim0Master = dim0Link.masterKnob.lock();
+    ValueKnobDimView<T>* dim0Data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), view).get());
+    CurvePtr curve0 = dim0Data->animationCurve;
+    T val0 = getValue(DimIdx(0), view, true /*doClamp*/);
 
+    for (int i = 1; i < nDims; ++i) {
+        ValueKnobDimView<T>* dimData = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), view).get());
+        if (dimData == dim0Data) {
+            // If they point to the same data, don't bother checking values
+            continue;
+        }
 
-        for (int i = 1; i < nDims; ++i) {
-            MasterKnobLink dimLink;
-            KnobIPtr dimMaster;
-            (void)getMaster(DimIdx(i), view, &dimLink);
-            dimMaster = dimLink.masterKnob.lock();
-            if (dimMaster.get() == this) {
-                // If the dimension is linked to dimension 0, assume it is not linked
-                dimMaster.reset();
-            }
-            if (dimMaster != dim0Master || dimLink.masterDimension != dim0Link.masterDimension || dimLink.masterView != dim0Link.masterDimension) {
+        // If the dimension is shared among multiple knob, let the user unlink instead of
+        // overwriting anything.
+        {
+            QMutexLocker k(&dimData->valueMutex);
+            if (dimData->sharedKnobs.size() > 1) {
                 valuesEqual = false;
-                break;
             }
         }
-    }
 
-    // Check animation curves
-    if (valuesEqual) {
-        CurvePtr curve0 = getCurve(view, DimIdx(0));
-        for (int i = 1; i < nDims; ++i) {
-            CurvePtr dimCurve = getCurve(view, DimIdx(i));
+        // Check animation curves
+        if (valuesEqual) {
+            CurvePtr dimCurve = dimData->animationCurve;
             if (dimCurve && curve0) {
                 if (*dimCurve != *curve0) {
                     valuesEqual = false;
@@ -1258,21 +1239,19 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
                 }
             }
         }
-    }
-    // Check if values are equal
-    if (valuesEqual) {
-        T val0 = getValue(DimIdx(0), view, true /*doClamp*/, true /*byPassMaster*/);
-        for (int i = 1; i < nDims; ++i) {
-            T val = getValue(DimIdx(i), view, true /*doClamp*/, true /*byPassMaster*/);
+        
+        // Check if values are equal
+        if (valuesEqual) {
+            T val = getValue(DimIdx(i), view, true /*doClamp*/);
             if (val0 != val) {
                 valuesEqual = false;
                 break;
             }
         }
-        
+
     }
     return valuesEqual;
-}
+} // areDimensionsEqual
 
 NATRON_NAMESPACE_EXIT;
 

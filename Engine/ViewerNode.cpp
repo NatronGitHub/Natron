@@ -1158,7 +1158,31 @@ ViewerNode::initializeKnobs()
         param->setTextToFitHorizontally("Luminance");
         page->addKnob(param);
         param->setDefaultValue(1);
-        param->setIsDisplayChannelsKnob(true);
+        {
+            // Luminance
+            RGBAColourD color = {0.398979, 0.398979, 0.398979, 1.};
+            param->setColorForIndex(0, color);
+        }
+        {
+            // Red
+            RGBAColourD color = {0.851643, 0.196936, 0.196936, 1.};
+            param->setColorForIndex(2, color);
+        }
+        {
+            // Green
+            RGBAColourD color = {0., 0.654707, 0., 1.};
+            param->setColorForIndex(3, color);
+        }
+        {
+            // Blue
+            RGBAColourD color = {0.345293, 0.345293, 1., 1.};
+            param->setColorForIndex(4, color);
+        }
+        {
+            // Alpha
+            RGBAColourD color = {1., 1., 1., 1.};
+            param->setColorForIndex(5, color);
+        }
         param->setSecret(true);
         _imp->displayChannelsKnob[0] = param;
     }

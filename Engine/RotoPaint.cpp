@@ -2795,7 +2795,7 @@ RotoPaintPrivate::resetTransformInternal(const KnobDoublePtr& translate,
     if (extraMatrix) {
         knobs.push_back(extraMatrix);
     }
-    bool wasEnabled = translate->isEnabled(DimIdx(0));
+    bool wasEnabled = translate->isEnabled();
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         (*it)->setEnabled(wasEnabled);
@@ -3043,10 +3043,10 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
             assert(false);
         }
     }
-    divisionsKnob->slaveTo(globalMotionBlurKnob.lock());
-    shutterKnob->slaveTo(globalShutterKnob.lock());
-    shutterTypeKnob->slaveTo(globalShutterTypeKnob.lock());
-    shutterCustomOffsetKnob->slaveTo(globalCustomOffsetKnob.lock());
+    divisionsKnob->linkTo(globalMotionBlurKnob.lock());
+    shutterKnob->linkTo(globalShutterKnob.lock());
+    shutterTypeKnob->linkTo(globalShutterTypeKnob.lock());
+    shutterCustomOffsetKnob->linkTo(globalCustomOffsetKnob.lock());
     return globalTimeBlurNode;
 }
 
@@ -3112,7 +3112,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         if (glRenderKnob) {
             KnobChoicePtr rotoPaintGLRenderKnob = node->getOrCreateOpenGLEnabledKnob();
             assert(rotoPaintGLRenderKnob);
-            glRenderKnob->slaveTo(rotoPaintGLRenderKnob);
+            bool ok = glRenderKnob->linkTo(rotoPaintGLRenderKnob);
+            assert(ok);
+            (void)ok;
         }
     }
     *availableInputIndex = 1;
@@ -3130,7 +3132,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         mergeRGBA[2] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsB));
         mergeRGBA[3] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsA));
         for (int i = 0; i < 4; ++i) {
-            mergeRGBA[i]->slaveTo(rotoPaintRGBA[i]);
+            bool ok = mergeRGBA[i]->linkTo(rotoPaintRGBA[i]);
+            assert(ok);
+            (void)ok;
         }
 
         // Link mix
@@ -3138,7 +3142,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         if (nodeType != RotoPaint::eRotoPaintTypeComp) {
             rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
             KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
-            mergeMix->slaveTo(rotoPaintMix);
+            bool ok = mergeMix->linkTo(rotoPaintMix);
+            assert(ok);
+            (void)ok;
         }
 
 

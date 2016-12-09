@@ -748,7 +748,7 @@ createDuplicateKnob( const std::string& knobName,
     if (otherNode) {
         KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
         assert(otherNodeKnob);
-        otherNodeKnob->slaveTo(duplicateKnob);
+        otherNodeKnob->linkTo(duplicateKnob);
     }
 
     return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);

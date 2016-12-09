@@ -1546,7 +1546,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
                 KnobColorPtr colorKnob = drawable->getColorKnob();
-                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewSpec::all(), eValueChangedReasonUserEdited);
                 QIcon icon;
                 double colorArray[3];
                 colorArray[0] = color.redF();
@@ -1555,7 +1555,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
                 KnobColorPtr contextKnob = _imp->context->getColorKnob();
-                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewSpec::all(), eValueChangedReasonUserEdited);
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
                 colorArray[0] = color.redF();
@@ -1733,7 +1733,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                     if (drawable) {
                         KnobColorPtr colorKnob = drawable->getColorKnob();
-                        colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                        colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonUserEdited);
                         found->treeItem->setIcon(COL_COLOR, icon);
                     }
                 }
@@ -1741,7 +1741,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
 
             if ( colorChosen && !selected.empty() ) {
                 KnobColorPtr colorKnob = _imp->context->getColorKnob();
-                colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonUserEdited);
             }
 
             break;
