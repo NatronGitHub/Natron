@@ -568,6 +568,7 @@ NodeGraph::refreshNodeLinksNow()
             }
         }
 
+        (*it)->refreshLinkIndicators(linkedNodes);
     }
 
 } // refreshNodeLinksNow

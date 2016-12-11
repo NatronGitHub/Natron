@@ -207,13 +207,15 @@ public:
 
     void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
 
-
     /**
      * @brief Links all the evaluateOnChange knobs to the other one except
      * trigger buttons. The other node must be the same plug-in
      **/
     bool linkToNode(const NodePtr& other);
 
+    /**
+     * @brief Unlink all knobs of the node.
+     **/
     void unlinkAllKnobs();
 
     /**
@@ -228,6 +230,11 @@ public:
      * @brief Wrapper around getLinkedNodes() that returns cloned nodes
      **/
     void getCloneLinkedNodes(std::list<NodePtr>* clones) const;
+
+    /**
+     * @brief Move this node to the given group
+     **/
+    void moveToGroup(const NodeCollectionPtr& group);
 
 private:
 

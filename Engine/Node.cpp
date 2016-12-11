@@ -837,6 +837,7 @@ Node::declareTablePythonFields()
 NodeCollectionPtr
 Node::getGroup() const
 {
+    QMutexLocker k(&_imp->groupMutex);
     return _imp->group.lock();
 }
 
@@ -2173,6 +2174,66 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
 }
 
 void
+Node::moveToGroup(const NodeCollectionPtr& group)
+{
+    NodeCollectionPtr currentGroup = getGroup();
+    assert(currentGroup);
+
+    if (currentGroup == group) {
+        return;
+    }
+
+
+    bool settingsPanelVisible = isSettingsPanelVisible();
+
+    // Destroy the node gui
+    {
+        NodeGuiIPtr oldNodeGui = getNodeGui();
+        if (oldNodeGui) {
+            oldNodeGui->destroyGui();
+        }
+        _imp->guiPointer.reset();
+    }
+
+    // Remove this node from the group
+    currentGroup->removeNode(this);
+
+
+
+    // Remove the old Python attribute
+    {
+        std::string currentFullName = getFullyQualifiedName();
+        deleteNodeVariableToPython(currentFullName);
+    }
+    std::string currentScriptName = getScriptName_mt_safe();
+
+    {
+        QMutexLocker k(&_imp->groupMutex);
+        _imp->group = group;
+    }
+
+
+    // Refresh the script-name, this will automatically re-declare the attribute to Python
+    setScriptName(currentScriptName);
+    
+    // Create the new node gui
+    NodeGraphI* newGraph = group->getNodeGraph();
+    if (newGraph) {
+        double position[2];
+        getPosition(&position[0], &position[1]);
+        CreateNodeArgsPtr args(CreateNodeArgs::create(getPluginID(), group));
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, settingsPanelVisible);
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[0], 0);
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[1], 1);
+
+        newGraph->createNodeGui(shared_from_this(), *args);
+    }
+
+} // moveToGroup
+
+void
 Node::setPagesOrder(const std::list<std::string>& pages)
 {
     //re-order the pages
@@ -2826,11 +2887,6 @@ Node::setNameInternal(const std::string& name,
     }
 
 
-    if (oldName == newName) {
-        return;
-    }
-
-
     if ( !newName.empty() ) {
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
@@ -2867,7 +2923,6 @@ Node::setNameInternal(const std::string& name,
         }
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
-
 
     if (collection) {
         if ( !oldName.empty() ) {

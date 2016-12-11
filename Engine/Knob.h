@@ -1289,7 +1289,6 @@ protected:
     
 public:
 
-    virtual void onKnobAliasLink(const KnobIPtr& /*master*/, bool /*doAlias*/) {}
 
 
     /**
@@ -1861,7 +1860,6 @@ public:
     virtual void getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* sharedKnobs) const OVERRIDE FINAL;
 
     virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
 
     /**

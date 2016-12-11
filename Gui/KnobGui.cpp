@@ -106,6 +106,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
         QObject::connect( handler, SIGNAL(availableViewsChanged()), this, SLOT(onInternalKnobAvailableViewsChanged()) );
         QObject::connect( handler, SIGNAL(dimensionsVisibilityChanged(ViewSetSpec)), this, SLOT(onInternalKnobDimensionsVisibilityChanged(ViewSetSpec)) );
+        QObject::connect( handler, SIGNAL(linkChanged()), this, SLOT(onInternalKnobLinksChanged()) );
     }
     KnobHolderPtr holder = knob->getHolder();
     AppInstancePtr app;

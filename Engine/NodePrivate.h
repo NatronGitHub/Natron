@@ -183,6 +183,7 @@ public:
     Node* _publicInterface;
 
     // The group containing this node
+    mutable QMutex groupMutex;
     boost::weak_ptr<NodeCollection> group;
 
     // If this node is part of a precomp, this is a pointer to it

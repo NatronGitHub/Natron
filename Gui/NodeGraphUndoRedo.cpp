@@ -1400,18 +1400,20 @@ ExtractNodeUndoRedoCommand::redo()
     setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::redo
 
-GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
-                                                     const NodesGuiList & nodes)
+GroupFromSelectionCommand::GroupFromSelectionCommand(const NodesList & nodes)
     : QUndoCommand()
-    , _graph(graph)
-    , _group()
-    , _firstRedoCalled(false)
-    , _isRedone(false)
+    , _oldGroup()
+    , _newGroup()
 {
     setText( tr("Group from selection") );
 
     assert( !nodes.empty() );
-    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodeCollectionPtr group = (*it)->getGroup();
+
+        // All nodes must belong to the same group
+        assert(!_oldGroup.lock() || _oldGroup.lock() == group);
+        _oldGroup = group;
         _originalNodes.push_back(*it);
     }
 
@@ -1426,36 +1428,46 @@ GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
 
-    for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-        NodePtr outputNode = it->first.lock();
-        if (!outputNode) {
+    // Restore all links to the selection
+    for (LinksMap::iterator it = _savedLinks.begin(); it != _savedLinks.end(); ++it) {
+        NodePtr node = it->first.lock();
+        if (!node) {
             continue;
         }
-        NodePtr input = it->second.inputNode.lock();
-        if (!input) {
-            continue;
+        
+        const std::vector<NodeWPtr>& oldInputs = it->second;
+        for (std::size_t i = 0; i < oldInputs.size(); ++i) {
+            node->swapInput(oldInputs[i].lock(), i);
         }
-        outputNode->swapInput(input, it->second.inputIdx);
+
     }
 
+    NodeCollectionPtr oldGroup = _oldGroup.lock();
+    NodeGraph* oldGraph = dynamic_cast<NodeGraph*>(oldGroup->getNodeGraph());
 
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
-        NodeGuiPtr node = it->lock();
+    // Restore original selection
+    for (NodesWList::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodePtr node = it->lock();
         if (node) {
-            node->getNode()->activate(NodesList(), true, false);
-            nodesToSelect.push_back(node);
+            node->moveToGroup(oldGroup);
+            NodeGuiPtr nodeGui = toNodeGui(node->getNodeGui());
+            if (nodeGui) {
+                nodesToSelect.push_back(nodeGui);
+            }
         }
     }
-    _graph->setSelection(nodesToSelect);
-    _group.lock()->getNode()->deactivate(NodesList(),
-                                         true,
-                                         false,
-                                         true,
-                                         true,
-                                         false);
+    oldGraph->setSelection(nodesToSelect);
 
-    _isRedone = false;
-}
+    // Destroy the created group
+    {
+        NodePtr groupNode = _newGroup.lock();
+        if (groupNode) {
+            groupNode->destroyNode(true, false);
+        }
+        _newGroup.reset();
+    }
+
+} // GroupFromSelectionCommand::undo
 
 void
 GroupFromSelectionCommand::redo()
@@ -1463,16 +1475,18 @@ GroupFromSelectionCommand::redo()
     // The group position will be at the centroid of all selected nodes
     QPointF groupPosition;
 
-    NodesGuiList originalNodes;
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
-        NodeGuiPtr n = it->lock();
+    NodesList originalNodes;
+    for (NodesWList::const_iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodePtr n = it->lock();
         if (!n) {
             continue;
         }
         originalNodes.push_back(n);
 
-        QPointF nodePos = n->pos();
-        groupPosition += nodePos;
+        double x,y;
+        n->getPosition(&x, &y);
+        groupPosition.rx() += x;
+        groupPosition.ry() += y;
     }
 
     unsigned sz = originalNodes.size();
@@ -1481,405 +1495,259 @@ GroupFromSelectionCommand::redo()
         groupPosition.ry() /= sz;
     }
 
-    NodeGroupPtr isGrp;
-    if (_firstRedoCalled) {
-        isGrp = toNodeGroup(_group.lock()->getNode()->getEffectInstance());
-        assert(isGrp);
-        if (!isGrp) {
-            throw std::logic_error("GroupFromSelectionCommand::redo()");
-        }
-    } else {
-        NodesList internalNewNodes;
-        // Create the actual Group node
-        CreateNodeArgsPtr groupArgs(CreateNodeArgs::create(PLUGINID_NATRON_GROUP, _graph->getGroup() ));
-        groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
-        groupArgs->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        groupArgs->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        groupArgs->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
-        NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
-
-        isGrp = toNodeGroup( containerNode->getEffectInstance()->shared_from_this() );
-        assert(isGrp);
-        if (!isGrp) {
-            throw std::logic_error("GroupFromSelectionCommand::redo()");
-        }
-        NodeGuiIPtr container_i = containerNode->getNodeGui();
-        assert(container_i);
-        _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
-        assert( _group.lock() );
-
-        // Set the position of the group
-        container_i->setPosition( groupPosition.x(), groupPosition.y() );
-
-        // Copy all the selected nodes and paste them in the newly created Group
-        std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-        _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
-
-        for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
-            internalNewNodes.push_back( it->second->getNode() );
-        }
-
-        // Extract all trees from these new nodes
-        std::list<Project::NodesTree> trees;
-        Project::extractTreesFromNodes(internalNewNodes, trees);
-        bool hasCreatedOutput = false;
-        int inputNb = 0;
-        for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-            NodeGuiPtr foundOriginalOutputNode;
-            for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                if ( (*it3)->getNode()->getScriptName_mt_safe() == it->output.node->getScriptName_mt_safe() ) {
-                    foundOriginalOutputNode = *it3;
-                    break;
-                }
-            }
-            assert(foundOriginalOutputNode);
-            if (!foundOriginalOutputNode) {
-                continue;
-            }
-
-            // For each input node of each tree branch within the group, add a Input node in input of that branch
-            // to actually create the input on the Group node
-            for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
-                // Find the equivalent node in the original nodes and see which inputs we need to create
-                NodeGuiPtr foundOriginalNode;
-                for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                    if ( (*it3)->getNode()->getScriptName_mt_safe() == it2->node->getScriptName_mt_safe() ) {
-                        foundOriginalNode = *it3;
-                        break;
-                    }
-                }
-                assert(foundOriginalNode);
-                if (!foundOriginalNode) {
-                    continue;
-                }
-
-                // For each connected input of the original node, create a corresponding Input node with the appropriate name
-                NodePtr originalNodeInternal = foundOriginalNode->getNode();
-                const std::vector<NodeWPtr >& originalNodeInputs = originalNodeInternal->getInputs();
-                for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
-                    NodePtr originalInput = originalNodeInputs[i].lock();
-                    if (originalInput) {
-                        //Create an input node corresponding to this input
-                        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, isGrp));
-                        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
-
-                        NodePtr input = _graph->getGui()->getApp()->createNode(args);
-                        assert(input);
-                        std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
-                        input->setLabel(inputLabel);
-
-                        // Position the input node correctly
-                        double offsetX, offsetY;
-                        {
-                            double inputX, inputY;
-                            originalInput->getPosition(&inputX, &inputY);
-                            double originalX, originalY;
-                            foundOriginalNode->getPosition(&originalX, &originalY);
-                            offsetX = inputX - originalX;
-                            offsetY = inputY - originalY;
-                        }
-                        double thisInputX, thisInputY;
-                        it2->node->getPosition(&thisInputX, &thisInputY);
-
-                        thisInputX += offsetX;
-                        thisInputY += offsetY;
-
-                        input->setPosition(thisInputX, thisInputY);
-
-                        it2->node->connectInput(input, i);
-
-                        isGrp->getNode()->connectInput(originalInput, inputNb);
-
-                        ++inputNb;
-                    }
-                } // for all node's inputs
-            } // for all inputs in the tree
-            //Create only a single output
-
-            if (!hasCreatedOutput) {
-                CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, isGrp));
-                args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                NodePtr output = _graph->getGui()->getApp()->createNode(args);
-       
-                assert(output);
-
-                double thisNodeX, thisNodeY;
-                it->output.node->getPosition(&thisNodeX, &thisNodeY);
-                double thisNodeW, thisNodeH;
-                it->output.node->getSize(&thisNodeW, &thisNodeH);
-
-                thisNodeY += thisNodeH * 2;
-
-                output->setPosition(thisNodeX, thisNodeY);
-
-                output->connectInput(it->output.node, 0);
-
-                hasCreatedOutput = true;
-            }
-            // Connect all outputs of the original node to the new Group
-            NodesWList originalOutputs;
-            foundOriginalOutputNode->getNode()->getOutputs_mt_safe(originalOutputs);
-            for (NodesWList::const_iterator it2 = originalOutputs.begin(); it2 != originalOutputs.end(); ++it2) {
-                NodePtr output = it2->lock();
-                if (!output) {
-                    continue;
-                }
-                int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode());
-                assert(inputIdx != -1);
-                output->swapInput(isGrp->getNode(), inputIdx);
-                OutputLink& link = _outputLinks[*it2];
-                link.inputNode = foundOriginalOutputNode->getNode();
-                link.inputIdx = inputIdx;
-            }
-        } // for all trees
-    } // !_firstRedoCalled
-
-    if (_firstRedoCalled) {
-        for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-            NodePtr outputNode = it->first.lock();
-            if (!outputNode) {
-                continue;
-            }
-            outputNode->swapInput(isGrp->getNode(), it->second.inputIdx);
-        }
+    // Create the actual Group node
+    NodeCollectionPtr oldContainer = _oldGroup.lock();
+    if (!oldContainer) {
+        return;
+    }
+    NodeGraph* oldContainerGraph = dynamic_cast<NodeGraph*>(oldContainer->getNodeGraph());
+    assert(oldContainerGraph);
+    if (!oldContainerGraph) {
+        return;
     }
 
+    CreateNodeArgsPtr groupArgs(CreateNodeArgs::create(PLUGINID_NATRON_GROUP, oldContainer ));
+    groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+    groupArgs->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    groupArgs->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    groupArgs->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
 
 
-    for (NodesGuiList::iterator it = originalNodes.begin(); it != originalNodes.end(); ++it) {
-        (*it)->getNode()->deactivate(NodesList(),
-                                     true,
-                                     false,
-                                     true,
-                                     false,
-                                     false);
+    NodePtr containerNode = oldContainerGraph->getGui()->getApp()->createNode(groupArgs);
+
+    NodeGroupPtr containerGroup = containerNode->isEffectNodeGroup();
+    assert(containerGroup);
+    if (!containerGroup) {
+        return;
     }
 
+    NodeGraph* newContainerGraph = dynamic_cast<NodeGraph*>(containerGroup->getNodeGraph());
+    assert(newContainerGraph);
+    if (!newContainerGraph) {
+        return;
+    }
+
+    _newGroup = containerNode;
+
+    // Set the position of the group
+    containerNode->setPosition( groupPosition.x(), groupPosition.y() );
+
+    // Move all the selected nodes to the newly created Group
+    for (NodesList::const_iterator it = originalNodes.begin(); it!=originalNodes.end(); ++it) {
+        (*it)->moveToGroup(containerGroup);
+    }
+
+    // Just moving nodes into the group is not enough: we need to create the appropriate number
+    // of Input nodes in the group to match the input of the selection so that the graph is not broken
+    // and undoing this operation would restore the state.
+    std::list<Project::NodesTree> trees;
+    Project::extractTreesFromNodes(originalNodes, trees);
+    int inputNb = 0;
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
+
+        // For each input node of each tree branch within the group, add a Input node in input of that branch
+        // to actually create the input on the Group node
+        for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
+
+            // For each connected input of the original node, create a corresponding Input node with the appropriate name
+            const std::vector<NodeWPtr >& originalNodeInputs = it2->node->getInputs();
+            _savedLinks[it2->node] = originalNodeInputs;
+            for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
+                NodePtr originalInput = originalNodeInputs[i].lock();
+                if (originalInput) {
+
+                    //Create an input node corresponding to this input
+                    CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, containerGroup));
+                    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
+
+                    NodePtr input = containerNode->getApp()->createNode(args);
+                    assert(input);
+
+                    // Name the Input node with the label of the node and the input label
+                    std::string inputLabel = it2->node->getLabel() + '_' + it2->node->getInputLabel(i);
+                    input->setLabel(inputLabel);
+
+                    // Position the input node correctly
+                    double offsetX, offsetY;
+                    {
+                        double inputX, inputY;
+                        originalInput->getPosition(&inputX, &inputY);
+                        double outputX, outputY;
+                        it->output.node->getPosition(&outputX, &outputY);
+                        offsetX = inputX - outputX;
+                        offsetY = inputY - outputY;
+                    }
+                    double thisInputX, thisInputY;
+                    it2->node->getPosition(&thisInputX, &thisInputY);
+
+                    thisInputX += offsetX;
+                    thisInputY += offsetY;
+
+                    input->setPosition(thisInputX, thisInputY);
+
+                    it2->node->connectInput(input, i);
+
+                    containerGroup->getNode()->connectInput(originalInput, inputNb);
+
+                    ++inputNb;
+                }
+            } // for all node's inputs
+        } // for all inputs in the tree
+
+        //Create only a single output
+
+        {
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, containerGroup));
+            args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            NodePtr output = containerNode->getApp()->createNode(args);
+
+            assert(output);
+
+            double thisNodeX, thisNodeY;
+            it->output.node->getPosition(&thisNodeX, &thisNodeY);
+            double thisNodeW, thisNodeH;
+            it->output.node->getSize(&thisNodeW, &thisNodeH);
+
+            thisNodeY += thisNodeH * 2;
+
+            output->setPosition(thisNodeX, thisNodeY);
+
+            output->connectInput(it->output.node, 0);
+        }
+
+        // Connect all outputs of the original node to the new Group
+        NodesWList originalOutputs;
+        it->output.node->getOutputs_mt_safe(originalOutputs);
+        for (NodesWList::const_iterator it2 = originalOutputs.begin(); it2 != originalOutputs.end(); ++it2) {
+            NodePtr output = it2->lock();
+            if (!output) {
+                continue;
+            }
+            _savedLinks[output] = output->getInputs();
+
+        }
+    } // for all trees
+
+    // Select the group node in the old graph
     std::list<NodeGuiPtr> nodesToSelect;
-    NodeGuiPtr nodeGroup = _group.lock();
-    if (_firstRedoCalled && nodeGroup) {
-        nodeGroup->getNode()->activate(NodesList(), true, false);
+    NodeGuiPtr nodeGroupGui = toNodeGui(containerNode->getNodeGui());
+    if (nodeGroupGui) {
+        nodesToSelect.push_back(nodeGroupGui);
     }
-    if (nodeGroup) {
-        nodesToSelect.push_back(nodeGroup);
-    }
-    _graph->setSelection(nodesToSelect);
+    oldContainerGraph->setSelection(nodesToSelect);
 
 
-    std::list<ViewerInstancePtr> viewers;
-    _graph->getGroup()->getViewers(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-    NodeGraphI* graph_i = isGrp->getNodeGraph();
-    assert(graph_i);
-    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-    assert(graph);
-    if (graph) {
-        graph->centerOnAllNodes();
-    }
-    _firstRedoCalled = true;
-    _isRedone = true;
-}
+    // Ensure all viewers are refreshed
+    containerNode->getApp()->renderAllViewers(true);
 
-InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
-                                       const std::list<NodeGuiPtr > & groupNodes)
-    : QUndoCommand()
-    , _graph(graph)
-    , _groupNodes()
-    , _firstRedoCalled(false)
+    // Center the new nodegraph on all its nodes
+    if (newContainerGraph) {
+        newContainerGraph->centerOnAllNodes();
+    }
+} // GroupFromSelectionCommand::redo
+
+InlineGroupCommand::InlineGroupCommand(const NodeCollectionPtr& newGroup, const NodesList & groupNodes)
+: QUndoCommand()
+, _newGroup(newGroup)
+, _oldGroups()
 {
-    setText( tr("Inline group(s)") );
+    setText( tr("Inline Group(s)") );
 
-    for (std::list<NodeGuiPtr >::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
-        NodeGroupPtr group = (*it)->getNode()->isEffectNodeGroup();
+    for (NodesList::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
+        NodeGroupPtr group = (*it)->isEffectNodeGroup();
         assert(group);
         if (!group) {
             continue;
         }
-        InlinedGroup expandedGroup;
+        InlinedGroup inlinedGroup;
+        inlinedGroup.oldGroupNode = group;
+        inlinedGroup.groupInputs = (*it)->getInputs();
 
-        /*
-         * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
-         */
-        SERIALIZATION_NAMESPACE::NodeClipBoard cb;
-        NodesList nodes = group->getNodes();
-        std::vector<NodePtr> groupInputs;
-        NodePtr groupOutput = group->getOutputNode();
-        group->getInputs(&groupInputs);
 
-        std::list<NodeGuiPtr > nodesToCopy;
-        for (NodesList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-            GroupInputPtr inp = (*it2)->isEffectGroupInput();
-            GroupOutputPtr output = (*it2)->isEffectGroupOutput();
-            if ( !inp && !output) {
-                NodeGuiIPtr gui_i = (*it2)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(nodeGui);
-                nodesToCopy.push_back(nodeGui);
-            }
-        }
+        std::vector<NodePtr> inputNodes;
+        group->getInputs(&inputNodes);
 
-        {
-            NodeGraphI *graph_i = group->getNodeGraph();
-            assert(graph_i);
-            {
-                NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
-                assert(thisGroupGraph);
-                if (thisGroupGraph) {
-                    thisGroupGraph->copyNodes(nodesToCopy, cb);
-                }
-            }
-        }
-        std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-        _graph->pasteCliboard(cb, &newNodes);
 
-        NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
-        assert(groupGui_i);
-        NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
-        assert(groupGui);
-        expandedGroup.group = groupGui;
+        NodePtr outputNode = group->getOutputNode();
+        for (std::size_t i = 0; i < inputNodes.size(); ++i) {
 
-        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->pos() ) );
-
-        //This is the BBox of the new inlined nodes
-        RectD bbox;
-        bbox.setupInfinity();
-        for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
-             it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
-            bbox.x1 = std::min( bbox.x1, p.x() );
-            bbox.x2 = std::max( bbox.x2, p.x() );
-
-            //Qt coord system is top down
-            bbox.y1 = std::min( bbox.y1, p.y() );
-            bbox.y2 = std::max( bbox.y2, p.y() );
-            expandedGroup.inlinedNodes.push_back(it2->second);
-        }
-
-        QPointF bboxCenter( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2. );
-        // Remember the links from the Group node we are expending to its inputs and outputs
-
-        // This is the y coord. of the bottom-most input
-        double inputY = INT_MIN;
-        int maxInputs = group->getNode()->getMaxInputCount();
-        assert( maxInputs == (int)groupInputs.size() );
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = group->getNode()->getInput(i);
-            if (input) {
-                NodeToConnect ntc;
-
-                assert(groupInputs[i]);
-                std::map<NodePtr, int> outputConnected;
-                groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
-
-                NodeGuiIPtr inputGui_i = input->getNodeGui();
-                assert(inputGui_i);
-                NodeGuiPtr inputGui = boost::dynamic_pointer_cast<NodeGui>(inputGui_i);
-                assert(inputGui);
-                ntc.input = inputGui;
-
-                QPointF p = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
-                if (p.y() > inputY) {
-                    inputY = p.y();
-                }
-
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
-                    NodeGuiPtr outputGui;
-                    ///Find the new node that was inlined, based on the script name of the old node in the group
-                    for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
-                        if ( it3->first == it2->first->getScriptName() ) {
-                            outputGui = it3->second;
-                            break;
-                        }
-                    }
-                    assert(outputGui);
-                    ntc.outputs.insert( std::make_pair(outputGui, it2->second) );
-                }
-
-                expandedGroup.connections[i] = ntc;
-            }
-        }
-
-        std::list<NodeGuiPtr > outputsConnectedToGroup;
-        QPointF firstInputPos;
-
-        // This is the y coord of the top most output
-        double outputY = INT_MAX;
-        if (groupOutput) {
-            NodePtr groupOutputInput = groupOutput->getInput(0);
-            if (groupOutputInput) {
-                NodeToConnect outputConnection;
-                NodeGuiPtr inputGui;
-                ///Find the new node that was inlined, based on the script name of the old node in the group
-                for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
-                    if ( it3->first == groupOutputInput->getScriptName() ) {
-                        inputGui = it3->second;
-                        break;
-                    }
-                }
-
-                if (!inputGui) {
+            const NodesWList& inputOutputs = inputNodes[i]->getOutputs();
+            for (NodesWList::const_iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
+                NodePtr inputOutput = it2->lock();
+                if (!inputOutput) {
                     continue;
                 }
-                firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->pos() ) );
-                outputConnection.input = inputGui;
+                InlinedGroup::InputOutput p;
+                p.output = inputOutput;
+                p.inputNodes = inputOutput->getInputs();
+                p.inputIndex = i;
+                p.outputInputIndex = inputOutput->getInputIndex(inputNodes[i]);
+                inlinedGroup.inputsMap.push_back(p);
+            }
 
-                std::map<NodePtr, int> outputConnected;
-                group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
-                    NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
-                    assert(outputGui_i);
-                    NodeGuiPtr outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
-                    assert(outputGui);
-                    outputsConnectedToGroup.push_back(outputGui);
+        }
+        if (outputNode) {
+            inlinedGroup.outputNodeInput = outputNode->getInput(0);
+        }
 
-                    QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->pos() ) );
-                    if (p.y() < outputY) {
-                        outputY = p.y();
+        const NodesWList& groupOutputs = (*it)->getOutputs();
+        for (NodesWList::const_iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            NodePtr groupOutput = it2->lock();
+            if (!groupOutput) {
+                continue;
+            }
+            InlinedGroup::GroupNodeOutput outp;
+            outp.output = groupOutput;
+            outp.inputIndex = groupOutput->getInputIndex(*it);
+            outp.outputNodeInputs = groupOutput->getInputs();
+            groupOutput->getPosition(&outp.position[0], &outp.position[1]);
+            inlinedGroup.groupOutputs.push_back(outp);
+        }
+
+
+        NodesList nodes = group->getNodes();
+        // Only move the nodes that are not GroupInput and GroupOutput
+        // Compute the BBox of the inlined nodes so we can make space
+        {
+            bool bboxSet = false;
+            for (NodesList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                GroupInputPtr inp = (*it2)->isEffectGroupInput();
+                GroupOutputPtr output = (*it2)->isEffectGroupOutput();
+                if ( !inp && !output) {
+
+                    InlinedGroup::MovedNode mnode;
+                    double x,y;
+                    (*it2)->getPosition(&x, &y);
+                    mnode.position[0] = x;
+                    mnode.position[1] = y;
+                    if (!bboxSet) {
+                        inlinedGroup.movedNodesBbox.x1 = inlinedGroup.movedNodesBbox.x2 = x;
+                        inlinedGroup.movedNodesBbox.y1 = inlinedGroup.movedNodesBbox.y2 = y;
+                        bboxSet = true;
+                    } else {
+                        inlinedGroup.movedNodesBbox.x1 = std::min(inlinedGroup.movedNodesBbox.x1, x);
+                        inlinedGroup.movedNodesBbox.x2 = std::max(inlinedGroup.movedNodesBbox.x2, x);
+                        inlinedGroup.movedNodesBbox.y1 = std::min(inlinedGroup.movedNodesBbox.y1, y);
+                        inlinedGroup.movedNodesBbox.y2 = std::max(inlinedGroup.movedNodesBbox.y2, y);
                     }
-                    outputConnection.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    mnode.node = *it2;
+                    inlinedGroup.movedNodes.push_back(mnode);
                 }
-                expandedGroup.connections[-1] = outputConnection;
+
             }
         }
 
-        // If there is no output to the group, the output is considered to be infinite (so we don't move any node)
-        if (outputY == INT_MIN) {
-            outputY = INT_MAX;
-        }
+        (*it)->getPosition(&inlinedGroup.groupNodePos[0], &inlinedGroup.groupNodePos[1]);
 
-        const double ySpaceAvailable = outputY  - inputY;
-        const double ySpaceNeeded = bbox.y2 - bbox.y1 + TO_DPIX(100);
+        _oldGroups.push_back(inlinedGroup);
+    }
 
-        //  Move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
-        QRectF rectToClear(bbox.x1, bbox.y1, bbox.x2 - bbox.x1, ySpaceNeeded - ySpaceAvailable);
-        for (std::list<NodeGuiPtr >::iterator it2 = outputsConnectedToGroup.begin();
-             it2 != outputsConnectedToGroup.end(); ++it2) {
-            (*it2)->moveBelowPositionRecursively(rectToClear);
-        }
-
-
-        // Move all created nodes by this delta to fit in the space we've just made
-        for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
-             it2 != newNodes.end(); ++it2) {
-            QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->pos() ) );
-            QPointF delta = p - bboxCenter;
-            p = groupNodePos + delta;
-            p = it2->second->mapToParent( it2->second->mapFromScene(p) );
-            it2->second->setPosition( p.x(), p.y() );
-        }
-
-
-        _groupNodes.push_back(expandedGroup);
-    } // for (std::list<NodeGuiPtr >::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
 }
 
 InlineGroupCommand::~InlineGroupCommand()
@@ -1889,86 +1757,171 @@ InlineGroupCommand::~InlineGroupCommand()
 void
 InlineGroupCommand::undo()
 {
-    std::set<ViewerInstancePtr> viewers;
-    std::list<NodeGuiPtr> nodesToSelect;
 
-    for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
-        NodeGuiPtr groupNode = it->group.lock();
-        if (groupNode) {
-            groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstancePtr> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstancePtr>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
+    AppInstancePtr app;
+    for (std::list<InlinedGroup>::const_iterator it = _oldGroups.begin(); it != _oldGroups.end(); ++it) {
+        NodeGroupPtr group = it->oldGroupNode.lock();
+        if (!group) {
+            continue;
+        }
+        app = group->getApp();
+
+        // Re-activate the group node
+        group->getNode()->activate(NodesList(), true, false);
+
+        // Re-position back all moved nodes
+        for (std::list<InlinedGroup::MovedNode>::const_iterator it2 = it->movedNodes.begin(); it2 != it->movedNodes.end(); ++it2) {
+            NodePtr movedNode = it2->node.lock();
+            if (!movedNode) {
+                continue;
             }
-            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
-                 it2 != it->inlinedNodes.end(); ++it2) {
-                NodeGuiPtr node = (*it2).lock();
-                if (node) {
-                    node->getNode()->deactivate(NodesList(), false, false, true, false, false);
-                }
+            movedNode->moveToGroup(group);
+            movedNode->setPosition(it2->position[0], it2->position[1]);
+        }
+
+        
+        // Re-connect all input outputs to the GroupInput
+        for (std::vector<InlinedGroup::InputOutput>::const_iterator it2 = it->inputsMap.begin(); it2 != it->inputsMap.end(); ++it2) {
+            NodePtr inputOutput = it2->output.lock();
+            for (std::size_t i = 0; i < it2->inputNodes.size(); ++i) {
+                inputOutput->swapInput(it2->inputNodes[i].lock(), i);
             }
         }
-        nodesToSelect.push_back(groupNode);
-    }
-    _graph->setSelection(nodesToSelect);
-    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
 
-    _graph->getGui()->getApp()->triggerAutoSave();
+        // Re-connect the output node to the group output input
+        NodePtr outputNode = group->getOutputNode();
+        if (outputNode) {
+            outputNode->swapInput(it->outputNodeInput.lock(), 0);
+        }
+
+        // Re-connect all Group node outputs
+        for (std::list<InlinedGroup::GroupNodeOutput>::const_iterator it2 = it->groupOutputs.begin(); it2 != it->groupOutputs.end(); ++it2) {
+            NodePtr output = it2->output.lock();
+            if (!output) {
+                continue;
+            }
+            for (std::size_t i = 0; i < it2->outputNodeInputs.size(); ++i) {
+                output->swapInput(it2->outputNodeInputs[i].lock(), i);
+            }
+        }
+
+    } // for each group
+
+    if (app) {
+        app->triggerAutoSave();
+        app->renderAllViewers(true);
+    }
 }
 
 void
 InlineGroupCommand::redo()
 {
-    std::set<ViewerInstancePtr> viewers;
-    std::list<NodeGuiPtr> nodesToSelect;
 
-    for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
-        NodeGuiPtr groupNode = it->group.lock();
-        if (groupNode) {
-            std::list<ViewerInstancePtr> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstancePtr>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
-            }
-            groupNode->getNode()->deactivate(NodesList(), true, false, true, false, false);
-            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
-                 it2 != it->inlinedNodes.end(); ++it2) {
-                NodeGuiPtr node = (*it2).lock();
-                if (node) {
-                    if  (_firstRedoCalled) {
-                        node->getNode()->activate(NodesList(), false, false);
-                    }
-                    nodesToSelect.push_back(node);
-                }
-            }
+    NodeCollectionPtr newGroup = _newGroup.lock();
+    AppInstancePtr app;
+    for (std::list<InlinedGroup>::const_iterator it = _oldGroups.begin(); it != _oldGroups.end(); ++it) {
+        NodeGroupPtr group = it->oldGroupNode.lock();
+        if (!group) {
+            continue;
+        }
 
-            for (std::map<int, NodeToConnect>::iterator it2 = it->connections.begin(); it2 != it->connections.end(); ++it2) {
-                NodeGuiPtr input = it2->second.input.lock();
-                if (!input) {
-                    continue;
-                }
-                for (std::map<boost::weak_ptr<NodeGui>, int>::iterator it3 = it2->second.outputs.begin();
-                     it3 != it2->second.outputs.end(); ++it3) {
-                    NodeGuiPtr node = it3->first.lock();
-                    if (node) {
-                        node->getNode()->disconnectInput(it3->second);
-                        NodeCollection::connectNodes(it3->second, input->getNode(), node->getNode(), false);
-                    }
-                }
+        app = group->getApp();
+
+        std::vector<NodePtr> groupInputs;
+        NodePtr groupOutput = group->getOutputNode();
+        group->getInputs(&groupInputs);
+
+
+
+        // Remember the links from the Group node we are expending to its inputs and outputs
+
+        // This is the y coord. of the bottom-most input
+        double inputY = INT_MIN;
+        for (std::size_t i = 0; i < it->groupInputs.size(); ++i) {
+            NodePtr input = it->groupInputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            double x,y;
+            input->getPosition(&x, &y);
+
+            // Qt coord system is top down
+            inputY = std::max(y, inputY);
+        }
+
+        // This is the y coord of the top most output
+        double outputY = INT_MAX;
+        {
+            NodePtr groupOutputInput = it->outputNodeInput.lock();
+            if (groupOutputInput) {
+                double x;
+                groupOutputInput->getPosition(&x, &outputY);
             }
         }
-    }
-    _graph->setSelection(nodesToSelect);
 
-    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
+        const double ySpaceAvailable = outputY  - inputY;
+        const double ySpaceNeeded = it->movedNodesBbox.y2 - it->movedNodesBbox.y1 + TO_DPIX(100);
+
+        //  Move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
+        const QRectF rectToClear(it->movedNodesBbox.x1, it->movedNodesBbox.y1, it->movedNodesBbox.x2 - it->movedNodesBbox.x1, ySpaceNeeded - ySpaceAvailable);
+
+        for (std::list<InlinedGroup::GroupNodeOutput>::const_iterator it2 = it->groupOutputs.begin(); it2 != it->groupOutputs.end(); ++it2) {
+            NodePtr groupOutput = it2->output.lock();
+            if (!groupOutput) {
+                continue;
+            }
+            NodeGuiPtr groupOutputGui = toNodeGui(groupOutput->getNodeGui());
+            if (groupOutputGui) {
+                groupOutputGui->moveBelowPositionRecursively(rectToClear);
+            }
+
+        }
+
+        const QPointF bboxCenter( (it->movedNodesBbox.x1 + it->movedNodesBbox.x2) / 2., (it->movedNodesBbox.y1 + it->movedNodesBbox.y2) / 2. );
+
+        // Move the node to the new group
+        // Also move all created nodes by this delta to fit in the space we've just made
+        for (std::list<InlinedGroup::MovedNode>::const_iterator it2 = it->movedNodes.begin(); it2 != it->movedNodes.end(); ++it2) {
+            QPointF curPos(it2->position[0], it2->position[1]);
+            QPointF delta = curPos - bboxCenter;
+            curPos = QPointF(it->groupNodePos[0], it->groupNodePos[1]) + delta;
+            NodePtr movedNode = it2->node.lock();
+            if (movedNode) {
+                movedNode->moveToGroup(newGroup);
+                movedNode->setPosition(curPos.x(), curPos.y());
+            }
+        }
+
+        // Connect all GroupInput output nodes to the original Group node inputs
+        for (std::size_t i = 0; i < it->inputsMap.size(); ++i) {
+            NodePtr inputOutput = it->inputsMap[i].output.lock();
+            if (!inputOutput) {
+                continue;
+            }
+            assert(it->inputsMap[i].inputIndex >= 0 && it->inputsMap[i].inputIndex < (int)it->groupInputs.size());
+            inputOutput->swapInput(it->groupInputs[it->inputsMap[i].inputIndex].lock(), it->inputsMap[i].outputInputIndex);
+        }
+
+        // Connect all original group node outputs to the  outputNodeInput
+        for (std::list<InlinedGroup::GroupNodeOutput>::const_iterator it2 = it->groupOutputs.begin(); it2 != it->groupOutputs.end(); ++it2) {
+            NodePtr output = it2->output.lock();
+            if (!output) {
+                continue;
+            }
+            output->swapInput(it->outputNodeInput.lock(), it2->inputIndex);
+        }
+
+        // Deactivate the group node
+        group->getNode()->deactivate(NodesList(), true, false, true, false, false);
+        
+    } // for each group
+
+
+    if (app) {
+        app->triggerAutoSave();
+        app->renderAllViewers(true);
     }
-    _graph->getGui()->getApp()->triggerAutoSave();
-    _firstRedoCalled = true;
-}
+} // redo
 
 RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & nodes)
 : QUndoCommand()

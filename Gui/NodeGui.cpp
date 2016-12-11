@@ -186,6 +186,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _panelCreated(false)
     , _wasBeginEditCalled(false)
     , _expressionIndicator()
+    , _cloneIndicator()
     , _magnecEnabled()
     , _magnecDistance()
     , _updateDistanceSinceLastMagnec()
@@ -587,9 +588,11 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69, 96, 63) ) );
     _expressionIndicator.reset( new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("E"), bbox.topRight(), ellipseDiam, ellipseDiam, exprGrad, QColor(255, 255, 255), this) );
-    _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
-                                                                        "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
     _expressionIndicator->setActive(false);
+
+    _cloneIndicator.reset( new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("C"), bbox.topRight(), ellipseDiam, ellipseDiam, exprGrad, QColor(255, 255, 255), this) );
+    _cloneIndicator->setActive(false);
 
     QGradientStops animGrad;
     animGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
@@ -918,6 +921,9 @@ NodeGui::resize(int width,
 
     if (_expressionIndicator) {
         _expressionIndicator->refreshPosition(topRight);
+    }
+    if (_cloneIndicator) {
+        _cloneIndicator->refreshPosition(topRight);
     }
     if (_animationIndicator) {
         _animationIndicator->refreshPosition(bottomLeft);
@@ -4069,6 +4075,41 @@ NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
         return true;
     }
     return false;
+}
+
+void
+NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links)
+{
+    if (links.empty()) {
+        if (_cloneIndicator) {
+            _cloneIndicator->setActive(false);
+        }
+        if (_expressionIndicator) {
+            _expressionIndicator->setActive(false);
+        }
+    }
+
+    bool isClone = false;
+    for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
+        if (it->second) {
+            isClone = true;
+            break;
+        }
+    }
+    if (_cloneIndicator) {
+        _cloneIndicator->setActive(isClone);
+    }
+    if (_expressionIndicator) {
+        _expressionIndicator->setActive(!isClone);
+    }
+
+    if (isClone) {
+        NodePtr cloneNode = links.front().first;
+        QString tooltip = tr("This node is a clone of %1").arg(QString::fromUtf8(cloneNode->getFullyQualifiedName().c_str()));
+        _cloneIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tooltip, NATRON_NAMESPACE::WhiteSpaceNormal) );
+    } else {
+        _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or multiple link(s) or expression(s) involving values of parameters of other nodes in the project."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

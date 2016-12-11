@@ -1573,7 +1573,6 @@ private:
                                                    ViewIdx view,
                                                    KeyFrame* newKey);
 
-    virtual void onKnobAliasLink(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;

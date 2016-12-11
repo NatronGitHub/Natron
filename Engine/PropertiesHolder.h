@@ -226,7 +226,8 @@ public:
         if (!propTemplate) {
             propTemplate = createProperty<T>(name, values);
         }
-        propTemplate->value = values;    }
+        propTemplate->value = values;
+    }
 
     /**
      * @brief Returns the number of dimensions of the property associated to the given name

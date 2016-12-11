@@ -263,6 +263,8 @@ public Q_SLOTS:
 
     void onDimensionNameChanged(DimIdx dimension);
 
+    void onInternalKnobLinksChanged();
+
     void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
     void onCurveAnimationChangedInternally(ViewSetSpec view,

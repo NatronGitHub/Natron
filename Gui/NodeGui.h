@@ -390,6 +390,8 @@ public:
 
     virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) OVERRIDE FINAL;
 
+    void refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links);
+
 protected:
 
     virtual int getBaseDepth() const { return 20; }
@@ -603,6 +605,7 @@ private:
     bool _wasBeginEditCalled;
 
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _cloneIndicator;
     boost::shared_ptr<NodeGuiIndicator> _animationIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y

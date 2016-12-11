@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeAnim.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
 #include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
@@ -828,6 +829,24 @@ KnobGui::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view)
     _imp->refreshDimensionVisibilityRequests.push_back(view);
     Q_EMIT s_refreshDimensionsVisibilityLater();
 
+}
+
+void
+KnobGui::onInternalKnobLinksChanged()
+{
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    EffectInstancePtr effect = toEffectInstance(knob->getHolder());
+    if (!effect) {
+        return;
+    }
+    NodeGuiPtr node = toNodeGui(effect->getNode()->getNodeGui());
+    if (!node) {
+        return;
+    }
+    node->getDagGui()->refreshNodeLinksLater();
 }
 
 NATRON_NAMESPACE_EXIT;
