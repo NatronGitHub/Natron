@@ -2503,7 +2503,7 @@ public:
 
 typedef boost::shared_ptr<StringKnobDimView> StringKnobDimViewPtr;
 
-StringKnobDimViewPtr
+inline StringKnobDimViewPtr
 toStringKnobDImView(const KnobDimViewBasePtr& data)
 {
     return boost::dynamic_pointer_cast<StringKnobDimView>(data);

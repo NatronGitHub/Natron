@@ -259,8 +259,6 @@ public Q_SLOTS:
 
     void onProjectViewsChanged();
 
-    void onRemoveAliasLinkActionTriggered();
-
     void onUnlinkActionTriggered();
 
     void onDimensionNameChanged(DimIdx dimension);

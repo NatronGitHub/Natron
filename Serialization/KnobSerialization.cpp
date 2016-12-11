@@ -295,7 +295,7 @@ KnobSerialization::encode(YAML::Emitter& em) const
 
                     em << YAML::BeginSeq;
                     for (std::list<CurveSerialization>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
-                        it->encode(em);
+                        it2->encode(em);
                     }
                     em << YAML::EndSeq;
 

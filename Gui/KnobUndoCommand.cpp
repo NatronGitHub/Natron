@@ -182,11 +182,6 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
     std::list<ViewIdx> targetKnobViews = internalKnob->getViewsList();
 
 
-    StringAnimationManagerPtr fromAnimString;
-    if (fromKnob) {
-        fromAnimString = fromKnob->getStringAnimation();
-    }
-
     for (std::list<ViewIdx>::const_iterator it = targetKnobViews.begin(); it != targetKnobViews.end(); ++it) {
         if ( ( !_imp->targetView.isAll()) && ( *it != _imp->targetView) ) {
             continue;
@@ -244,6 +239,12 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                     if (!foundFromView->second[_imp->fromDimension]._animationCurve.keys.empty()) {
                         fromCurve->fromSerialization(foundFromView->second[_imp->fromDimension]._animationCurve);
                     }
+
+                    StringAnimationManagerPtr fromAnimString;
+                    if (fromKnob) {
+                        fromAnimString = fromKnob->getStringAnimation(fromView);
+                    }
+
                     internalKnob->cloneCurve(*it, DimIdx(i), *fromCurve, 0 /*offset*/, 0 /*range*/, fromAnimString.get());
 
                     break;
@@ -269,9 +270,9 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                 }
                 case eKnobClipBoardTypeCopyLink: {
                     if (isRedo) {
-                        internalKnob->slaveTo(fromKnob, DimIdx(i), fromDim, *it, fromView);
+                        internalKnob->linkTo(fromKnob, DimIdx(i), fromDim, *it, fromView);
                     } else {
-                        internalKnob->unSlave(DimIdx(i), *it, false /*copyState*/);
+                        internalKnob->unlink(DimIdx(i), *it, false /*copyState*/);
                     }
                     break;
                 }

@@ -138,7 +138,8 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     if (dragView.isAll()) {
         dragView = ViewSetSpec(0);
     }
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(DimIdx(dragDim), ViewIdx(dragView)) || internalKnob->isSlave(DimIdx(dragDim), ViewIdx(dragView)) ) ) {
+
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && internalKnob->isEnabled() ) {
 
         _imp->dragPos = e->pos();
         _imp->dragging = true;
@@ -339,7 +340,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     ViewSetSpec targetView;
     thisKnob->convertDimViewArgAccordingToKnobState(dimension, view, &targetDim, &targetView);
 
-    bool isEnabled = targetDim.isAll() ? thisKnob->isEnabled(DimIdx(0), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView)) : thisKnob->isEnabled(DimIdx(targetDim), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView));
+    bool isEnabled = thisKnob->isEnabled();
     if (!isEnabled) {
         return false;
     }
@@ -429,7 +430,7 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
     ViewSetSpec targetView;
     internalKnob->convertDimViewArgAccordingToKnobState(_imp->dimension, _imp->view, &targetDim, &targetView);
 
-    bool isEnabled = targetDim.isAll() ? internalKnob->isEnabled(DimIdx(0), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView)) : internalKnob->isEnabled(DimIdx(targetDim), targetView.isAll() ? ViewIdx(0) : ViewIdx(targetView));
+    bool isEnabled = internalKnob->isEnabled();
 
     if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && isEnabled) {
         _imp->widget->setFocus();

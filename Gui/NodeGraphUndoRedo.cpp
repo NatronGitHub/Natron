@@ -697,17 +697,16 @@ ResizeBackdropCommand::mergeWith(const QUndoCommand *command)
 }
 
 DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
-                                                         const std::list<NodeGuiPtr > & nodes,
+                                                         const  std::map<NodeGuiPtr, NodePtr> & nodes,
                                                          QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
     , _graph(graph)
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for ( std::map<NodeGuiPtr, NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToDeclone n;
-        n.node = *it;
-        n.master = (*it)->getNode()->getMasterNode();
-        assert( n.master.lock() );
+        n.node = it->first;
+        n.master = it->second;
         _nodes.push_back(n);
     }
 }
@@ -720,7 +719,7 @@ void
 DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node.lock()->getNode()->getEffectInstance()->slaveAllKnobs( it->master.lock()->getEffectInstance() );
+        it->node.lock()->getNode()->linkToNode( it->master.lock());
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -731,7 +730,7 @@ void
 DecloneMultipleNodesCommand::redo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node.lock()->getNode()->getEffectInstance()->unslaveAllKnobs();
+        it->node.lock()->getNode()->unlinkAllKnobs();
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();

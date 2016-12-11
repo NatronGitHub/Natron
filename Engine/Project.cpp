@@ -2904,6 +2904,21 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
     
 } // Project::toSerialization
 
+void
+Project::restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes)
+{
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodePtr node = group->getNodeByName((*it)->_nodeScriptName);
+        if (!node) {
+            continue;
+        }
+        node->restoreKnobsLinks(**it);
+        NodeGroupPtr isGroup = toNodeGroup(node->getEffectInstance());
+        if (isGroup) {
+            restoreLinksRecursive(isGroup, (*it)->_children);
+        }
+    }
+}
 
 void
 Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
@@ -2987,10 +3002,12 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
 
         // Restore the nodes
-        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this());
+        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), false /*restoreLinks*/);
         getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
 
+    // Restore links and expressions
+    restoreLinksRecursive(shared_from_this(), serialization->_nodes);
 
     // Recompute all meta-datas and stuff depending on the trees now
     forceComputeInputDependentDataOnAllTrees();

@@ -838,7 +838,7 @@ KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     KnobStringPtr knob = _knob.lock();
-    bool isEnabled = knob->isEnabled(DimIdx(0), getView());
+    bool isEnabled = knob->isEnabled();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);

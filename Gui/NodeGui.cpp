@@ -184,11 +184,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _settingsPanel(NULL)
     , _mainInstancePanel(NULL)
     , _panelCreated(false)
-    , _clonedColor()
     , _wasBeginEditCalled(false)
-    , _slaveMasterLink()
-    , _masterNodeGui()
-    , _knobsLinks()
     , _expressionIndicator()
     , _magnecEnabled()
     , _magnecDistance()
@@ -291,8 +287,6 @@ NodeGui::initialize(NodeGraph* dag,
     }
 
 
-    _clonedColor.setRgb(200, 70, 100);
-
 
     ///Make the output edge
     EffectInstancePtr iseffect = internalNode->getEffectInstance();
@@ -363,7 +357,7 @@ NodeGui::restoreStateAfterCreation()
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 
-    onKnobsLinksChanged();
+    getDagGui()->refreshNodeLinksLater();
 }
 
 void
@@ -1221,16 +1215,6 @@ NodeGui::refreshEdges()
     }
 }
 
-void
-NodeGui::refreshKnobLinks()
-{
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->refreshPosition();
-    }
-    if (_slaveMasterLink) {
-        _slaveMasterLink->refreshPosition();
-    }
-}
 
 void
 NodeGui::markInputNull(Edge* e)
@@ -1686,8 +1670,17 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    if (_slaveMasterLink) {
-        applyBrush(_clonedColor);
+    bool isCloneLinked = getDagGui()->isNodeCloneLinked(getNode());
+    if (isCloneLinked) {
+        QColor cloneLinkColor;
+        {
+            double  cloneColor[3];
+            appPTR->getCurrentSettings()->getCloneColor(&cloneColor[0], &cloneColor[1], &cloneColor[2]);
+            cloneLinkColor.setRgbF(Image::clamp(cloneColor[0], 0., 1.),
+                                   Image::clamp(cloneColor[1], 0., 1.),
+                                   Image::clamp(cloneColor[2], 0., 1.));
+        }
+        applyBrush(cloneLinkColor);
     } else {
         applyBrush(getCurrentColor());
     }
@@ -1897,9 +1890,8 @@ NodeGui::showGui()
         }
     }
 
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->show();
-    }
+    getDagGui()->refreshNodeLinksLater();
+
 } // NodeGui::showGui
 
 void
@@ -1943,12 +1935,8 @@ NodeGui::hideGui()
         _outputEdge->setActive(false);
     }
 
-    if (_slaveMasterLink) {
-        _slaveMasterLink->hide();
-    }
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->hide();
-    }
+    getDagGui()->refreshNodeLinksLater();
+    
     NodePtr node = getNode();
     ViewerNodePtr isViewer = node->isEffectViewerNode();
     if (isViewer) {
@@ -2256,193 +2244,6 @@ NodeGui::centerGraphOnIt()
 {
     _graph->centerOnItem(this);
 }
-
-
-static QString
-makeLinkString(const NodePtr& masterNode,
-               const KnobIPtr& master,
-               const NodePtr& slaveNode,
-               const KnobIPtr& slave)
-{
-    QString tt = QString::fromUtf8("<p>");
-
-    tt.append( QString::fromUtf8( masterNode->getLabel().c_str() ) );
-    tt.append( QLatin1Char('.') );
-    tt.append( QString::fromUtf8( master->getName().c_str() ) );
-
-
-    tt.append( QString::fromUtf8(" (master) ") );
-
-    tt.append( QString::fromUtf8("------->") );
-
-    tt.append( QString::fromUtf8( slaveNode->getLabel().c_str() ) );
-    tt.append( QString::fromUtf8(".") );
-    tt.append( QString::fromUtf8( slave->getName().c_str() ) );
-
-
-    tt.append( QString::fromUtf8(" (slave)</p>") );
-
-    return tt;
-}
-
-void
-NodeGui::onKnobExpressionChanged(const KnobGui* knob)
-{
-    KnobIPtr internalKnob = knob->getKnob();
-
-    // Find the knob
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-
-        for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
-            KnobIPtr slave = it2->slave.lock();
-            if (slave != internalKnob) {
-                continue;
-            }
-
-            // Ok found, now refresh the valid flag
-
-            int ndims = slave->getNDimensions();
-            std::list<ViewIdx> views = slave->getViewsList();
-
-            int invalid = false;
-            for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
-                for (int i = 0; i < ndims; ++i) {
-                    if ( !slave->getExpression(DimIdx(i), *it3).empty() && !slave->isExpressionValid(DimIdx(i), *it3, 0) ) {
-                        invalid = true;
-                        break;
-                    }
-                }
-            }
-            it2->linkInValid = invalid;
-
-            // Now cycle through all links against the node, if there are all invalids, hide the link
-            bool hasAtLeastOneLinkValid = false;
-            for (std::list<LinkedKnob>::iterator it3 = it->second.knobs.begin(); it3 != it->second.knobs.end(); ++it3) {
-                if (!it3->linkInValid) {
-                    hasAtLeastOneLinkValid = true;
-                    break;
-                }
-            }
-            it->second.arrow->setVisible(hasAtLeastOneLinkValid);
-
-            return;
-        }
-
-    }
-}
-
-void
-NodeGui::onKnobsLinksChanged()
-{
-    if (!_expressionIndicator) {
-        return;
-    }
-    NodePtr node = getNode();
-
-    typedef std::list<Node::KnobLink> InternalLinks;
-    InternalLinks links;
-    node->getKnobsLinks(links);
-
-    // When the node is cloned, don't consider links
-    NodePtr nodeIsCloned = node->getMasterNode();
-
-    ///1st pass: remove the no longer needed links
-    KnobGuiLinks newLinks;
-    if (nodeIsCloned) {
-        links.clear();
-    } else {
-        for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-            bool found = false;
-            for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
-                if ( it2->masterNode.lock() == it->first.lock() ) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                delete it->second.arrow;
-            } else {
-                newLinks.insert(*it);
-            }
-        }
-    }
-    _knobsLinks = newLinks;
-
-    ///2nd pass: create the new links
-
-    NodeGuiPtr thisShared = shared_from_this();
-
-    int nbVisibleLinks = 0;
-    for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
-        if (it->masterKnob.lock()->getIsSecret() || it->slaveKnob.lock()->getIsSecret()) {
-            continue;
-        }
-
-        ++nbVisibleLinks;
-
-        NodePtr masterNode = it->masterNode.lock();
-        KnobGuiLinks::iterator foundGuiLink = masterNode ? _knobsLinks.find(it->masterNode) : _knobsLinks.end();
-        if ( foundGuiLink != _knobsLinks.end() ) {
-            //We already have a link to the master node
-            std::list<LinkedKnob>::iterator found = foundGuiLink->second.knobs.end();
-
-            for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                if ( ( it2->slave.lock() == it->slaveKnob.lock() ) && ( it2->slave.lock() == it->masterKnob.lock() ) ) {
-                    found = it2;
-                    break;
-                }
-            }
-            if ( found == foundGuiLink->second.knobs.end() ) {
-                ///There's no link for this knob, add info to the tooltip of the link arrow
-                LinkedKnob k;
-                k.slave = it->slaveKnob;
-                k.master = it->masterKnob;
-                k.linkInValid = false;
-                foundGuiLink->second.knobs.push_back(k);
-                QString fullToolTip;
-                for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                    QString tt = makeLinkString( masterNode, it2->master.lock(), node, it2->slave.lock() );
-                    fullToolTip.append(tt);
-                }
-            }
-        } else {
-            ///There's no link to the master node yet
-            if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == getNode()->getGroup() ) ) {
-                NodeGuiIPtr master_i = masterNode->getNodeGui();
-                NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
-                assert(master);
-
-                LinkArrow* arrow = new LinkArrow( master, thisShared, parentItem() );
-                arrow->setWidth(2);
-                arrow->setColor( QColor(143, 201, 103) );
-                arrow->setArrowHeadColor( QColor(200, 255, 200) );
-
-                QString tt = makeLinkString( masterNode, it->masterKnob.lock(), node, it->slaveKnob.lock() );
-                arrow->setToolTip(tt);
-                if ( !getDagGui()->areKnobLinksVisible() ) {
-                    arrow->setVisible(false);
-                }
-                LinkedDim& guilink = _knobsLinks[it->masterNode];
-                guilink.arrow = arrow;
-                LinkedKnob k;
-                k.slave = it->slaveKnob;
-                k.master = it->masterKnob;
-                k.linkInValid = false;
-                guilink.knobs.push_back(k);
-            }
-        }
-    }
-
-    if (nbVisibleLinks > 0) {
-        if ( !_expressionIndicator->isActive() ) {
-            _expressionIndicator->setActive(true);
-        }
-    } else {
-        if ( _expressionIndicator->isActive() ) {
-            _expressionIndicator->setActive(false);
-        }
-    }
-} // onKnobsLinksChanged
 
 void
 NodeGui::refreshOutputEdgeVisibility()
@@ -3183,14 +2984,6 @@ void
 NodeGui::setParentMultiInstance(const NodeGuiPtr & node)
 {
     _parentMultiInstance = node;
-}
-
-void
-NodeGui::setKnobLinksVisible(bool visible)
-{
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->setVisible(visible);
-    }
 }
 
 void
@@ -4265,15 +4058,17 @@ NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
                                                                 "Python compliant.").toStdString() );
 
-            return;
+            return false;
         }
         assert(knob->getHolder() == getNode()->getEffectInstance());
 
         if ( !getNode()->addUserComponents(comps) ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
+            return false;
         }
-
+        return true;
     }
+    return false;
 }
 
 NATRON_NAMESPACE_EXIT;

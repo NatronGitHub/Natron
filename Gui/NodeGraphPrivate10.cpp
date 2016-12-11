@@ -153,11 +153,7 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
     }
 
     if (cloneMaster) {
-        DotGui* isDot = dynamic_cast<DotGui*>( duplicateNodeUI.get() );
-        // Dots cannot be cloned, just copy them
-        if (!isDot) {
-            duplicateNode->getEffectInstance()->slaveAllKnobs( cloneMaster->getEffectInstance() );
-        }
+        duplicateNode->linkToNode(cloneMaster);
     }
 
 

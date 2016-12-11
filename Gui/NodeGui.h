@@ -311,8 +311,6 @@ public:
     KnobItemsTableGuiPtr getKnobItemsTable() const;
 
 
-    void setKnobLinksVisible(bool visible);
-
     void setMergeHintActive(bool active);
 
 
@@ -376,8 +374,6 @@ public:
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
-
-    void onKnobExpressionChanged(const KnobGui* knob);
 
     virtual void pushUndoCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
 
@@ -470,8 +466,6 @@ public Q_SLOTS:
      **/
     void refreshDashedStateOfEdges();
 
-    void refreshKnobLinks();
-
     void refreshAnimationIcon();
 
     /*initialises the input edges*/
@@ -497,8 +491,6 @@ public Q_SLOTS:
     void beginEditKnobs();
 
     void centerGraphOnIt();
-
-    void onKnobsLinksChanged();
 
     void refreshOutputEdgeVisibility();
 
@@ -608,39 +600,8 @@ private:
 
     //True when the settings panel has been  created
     bool _panelCreated;
-    QColor _clonedColor;
     bool _wasBeginEditCalled;
 
-    ///This is the garphical red line displayed when the node is a clone
-    boost::scoped_ptr<LinkArrow> _slaveMasterLink;
-    boost::weak_ptr<NodeGui> _masterNodeGui;
-
-    ///For each knob that has a link to another parameter, display an arrow
-    struct LinkedKnob
-    {
-        KnobIWPtr master;
-        KnobIWPtr slave;
-
-        // Is this link valid (counter for all dimensions)
-        bool linkInValid;
-
-
-        LinkedKnob()
-            : master()
-            , slave()
-            , linkInValid(false)
-        {
-        }
-    };
-
-    struct LinkedDim
-    {
-        std::list<LinkedKnob> knobs;
-        LinkArrow* arrow;
-    };
-
-    typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
-    KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     boost::shared_ptr<NodeGuiIndicator> _animationIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y

@@ -225,13 +225,13 @@ KnobComboBox::paintEvent(QPaintEvent* event)
 
     QPainter p(this);
     QPen pen;
-    QColor color;
-    color.setRgbF(Image::clamp(color.r,0.,1.),
+    QColor c;
+    c.setRgbF(Image::clamp(color.r,0.,1.),
                   Image::clamp(color.g,0.,1.),
                   Image::clamp(color.b,0.,1.));
-    color.setAlphaF(Image::clamp(color.a,0.,1.));
+    c.setAlphaF(Image::clamp(color.a,0.,1.));
 
-    pen.setColor(color);
+    pen.setColor(c);
     p.setPen(pen);
 
     QRectF bRect = rect();
@@ -454,7 +454,7 @@ KnobGuiChoice::onEntriesPopulated()
     }
 
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
-    if ( knob->getHostCanAddOptions()) {
+    if (knob->getNewOptionCallback()) {
         _comboBox->addItemNew();
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
@@ -482,7 +482,7 @@ KnobGuiChoice::onItemNewSelected()
 {
     KnobChoicePtr knob = _knob.lock();
     if (!knob) {
-        continue;
+        return;
     }
     ChoiceKnobDimView::KnobChoiceNewItemCallback callback = knob->getNewOptionCallback();
     if (!callback) {
@@ -533,7 +533,7 @@ KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
 
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+    bool isEnabled = _knob.lock()->isEnabled();
     _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
 
     if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {

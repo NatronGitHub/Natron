@@ -146,6 +146,8 @@ public:
 
     void setColor(const QColor & color);
 
+    void setArrowHeadVisible(bool visible);
+
     void setArrowHeadColor(const QColor & headColor);
 
     void setWidth(int lineWidth);
@@ -165,6 +167,7 @@ private:
     QColor _renderColor;
     QColor _headColor;
     int _lineWidth;
+    bool _arrowVisible;
 };
 
 NATRON_NAMESPACE_EXIT;

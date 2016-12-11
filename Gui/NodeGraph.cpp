@@ -88,6 +88,9 @@ NodeGraph::NodeGraph(Gui* gui,
     , PanelWidget(scriptName, this, gui)
     , _imp( new NodeGraphPrivate(this, group) )
 {
+
+    QObject::connect(this, SIGNAL(mustRefreshNodeLinksLater()), this, SLOT(onMustRefreshNodeLinksLaterReceived()), Qt::QueuedConnection);
+
     group->setNodeGraphPointer(this);
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);

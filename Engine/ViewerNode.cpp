@@ -1002,7 +1002,7 @@ ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* proje
             clearGroupWithoutViewerProcess();
 
             // Restore group
-            Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(thisShared));
+            Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(thisShared), false /*restoreLinks*/);
 
             setSubGraphEditedByUser(true);
         } else {

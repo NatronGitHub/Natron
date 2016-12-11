@@ -223,12 +223,8 @@ LinkToKnobDialog::onNodeComboEditingFinished()
 
 
             QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
-            bool canInsertKnob = true;
-            for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
-                if ( knobs[j]->isSlave(DimIdx(k), ViewIdx(0)) || !knobs[j]->isEnabled(DimIdx(k)) || name.isEmpty() ) {
-                    canInsertKnob = false;
-                }
-            }
+            bool canInsertKnob = knobs[j]->isEnabled() && !name.isEmpty();
+        
             if (canInsertKnob) {
                 _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
                 _imp->knobSelectionCombo->addItem(name);

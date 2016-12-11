@@ -140,11 +140,15 @@ NodeSettingsPanel::getCurrentColor() const
 void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
-    Menu menu(this);
+
     //menu.setFont(QFont(appFont,appFontSize));
     NodeGuiPtr node = getNodeGui();
-    NodePtr master = node->getNode()->getMasterNode();
 
+    if ( !node->getDagGui() || !node->getDagGui()->getGui() || node->getDagGui()->getGui()->isGUIFrozen() ) {
+        return;
+    }
+    
+    Menu menu(this);
     Menu* loadPresetsMenu = new Menu(tr("Load presets"),&menu);
 
     PluginPtr internalPlugin = node->getNode()->getPlugin();
@@ -248,13 +252,6 @@ NodeSettingsPanel::onSettingsButtonClicked()
     QObject::connect( removeAnimationOnAll, SIGNAL(triggered()), this, SLOT(removeAnimationOnAllParameters()) );
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
-
-    if ( master || !node->getDagGui() || !node->getDagGui()->getGui() || node->getDagGui()->getGui()->isGUIFrozen() ) {
-        importPresets->setEnabled(false);
-        exportAsPresets->setEnabled(false);
-        setKeyOnAll->setEnabled(false);
-        removeAnimationOnAll->setEnabled(false);
-    }
 
     menu.exec( _settingsButton->mapToGlobal( _settingsButton->pos() ) );
 }

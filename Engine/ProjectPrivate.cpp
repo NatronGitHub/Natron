@@ -100,10 +100,73 @@ ProjectPrivate::ProjectPrivate(Project* project)
     autoSaveTimer->setSingleShot(true);
 }
 
+void
+Project::restoreInput(const NodePtr& node,
+                      const std::string& inputLabel,
+                      const std::string& inputNodeScriptName,
+                      bool isMaskInput)
+{
+    if ( inputNodeScriptName.empty() ) {
+        return;
+    }
+    int index = inputLabel.empty() ? -1 : node->getInputNumberFromLabel(inputLabel);
+    if (index == -1) {
+
+        // If the name of the input was not serialized, the string is the index
+        bool ok;
+        index = QString::fromUtf8(inputLabel.c_str()).toInt(&ok);
+        if (!ok) {
+            index = -1;
+        }
+        if (index == -1) {
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
+                                            tr("Could not find input named %1")
+                                            .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ) );
+
+        }
+
+        // If the node had a single mask, the inputLabel was "0", indicating the index of the mask
+        // So iterate through masks to find it
+        if (isMaskInput) {
+            // Find the mask corresponding to the index
+            int nInputs = node->getMaxInputCount();
+            int maskIndex = 0;
+            for (int i = 0; i < nInputs; ++i) {
+                if (node->getEffectInstance()->isInputMask(i)) {
+                    if (maskIndex == index) {
+                        index = i;
+                        break;
+                    }
+                    ++maskIndex;
+                    break;
+                }
+            }
+        }
+    }
+    if (!node->getGroup()->connectNodes(index, inputNodeScriptName, node)) {
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
+                                        tr("Failed to connect node %1 to %2")
+                                        .arg( QString::fromUtf8( node->getScriptName().c_str() ) )
+                                        .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ));
+    }
+
+
+} //restoreInput
+
+void
+Project::restoreInputs(const NodePtr& node,
+                       const std::map<std::string, std::string>& inputsMap,
+                       bool isMaskInputs)
+{
+    for (std::map<std::string, std::string>::const_iterator it = inputsMap.begin(); it != inputsMap.end(); ++it) {
+        restoreInput(node, it->first, it->second, isMaskInputs);
+    }
+} // restoreInputs
 
 bool
 Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                       const NodeCollectionPtr& group)
+                                       const NodeCollectionPtr& group,
+                                       bool loadLinks)
 {
     bool mustShowErrorsLog = false;
 
@@ -178,88 +241,19 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         //
         // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
         //
-   
-        const std::map<std::string, std::string>& inputs = it->second->_inputs;
-        for (std::map<std::string, std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            if ( it2->second.empty() ) {
-                continue;
-            }
-            std::string inputLabel = it2->first;
-            int index = inputLabel.empty() ? -1 : it->first->getInputNumberFromLabel(inputLabel);
 
-            if (index == -1) {
-                // Prior to Natron 1.1, input names were not serialized, try to convert to index
-                bool ok;
-                index = QString::fromUtf8(inputLabel.c_str()).toInt(&ok);
-                if (!ok) {
-                    index = -1;
-                }
-                if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
-                                                    tr("Could not find input named %1")
-                                                    .arg( QString::fromUtf8( inputLabel.c_str() ) ) );
-                }
-            }
-            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
-                                                tr("Failed to connect node %1 to %2")
-                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
-                                                .arg( QString::fromUtf8( it2->second.c_str() ) ));
-            }
-
-
-        }
+        restoreInputs(it->first, it->second->_inputs, false /*isMasks*/);
 
         // After Natron 2.2, masks are saved separatly
-        const std::map<std::string, std::string>& masks = it->second->_masks;
-        for (std::map<std::string, std::string>::const_iterator it2 = masks.begin(); it2 != masks.end(); ++it2) {
-            if ( it2->second.empty() ) {
-                continue;
-            }
-            int index = it2->first.empty() ? -1 : it->first->getInputNumberFromLabel(it2->first);
-            if (index == -1) {
+        restoreInputs(it->first, it->second->_masks, true /*isMasks*/);
 
-                // If the name of the input was not serialized, the string is the index (of the mask)
-                bool ok;
-                index = QString::fromUtf8(it2->first.c_str()).toInt(&ok);
-                if (!ok) {
-                    index = -1;
-                }
-                if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
-                                                    tr("Could not find input named %1")
-                                                    .arg( QString::fromUtf8( it2->first.c_str() ) ) );
-
-                }
-                // Find the mask corresponding to the index
-                int nInputs = it->first->getMaxInputCount();
-                int maskIndex = 0;
-                for (int i = 0; i < nInputs; ++i) {
-                    if (it->first->getEffectInstance()->isInputMask(i)) {
-                        if (maskIndex == index) {
-                            index = i;
-                            break;
-                        }
-                        ++maskIndex;
-                        break;
-                    }
-                }
-
-            }
-            if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(it->second->_nodeScriptName.c_str()), QDateTime::currentDateTime(),
-                                                tr("Failed to connect node %1 to %2")
-                                                .arg( QString::fromUtf8( it->second->_nodeScriptName.c_str() ) )
-                                                .arg( QString::fromUtf8( it2->second.c_str() ) ));
-            }
-
-            
-        }
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
+    if (loadLinks) {
+        for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
 
-    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        it->first->restoreKnobsLinks(*it->second, nodes);
+            it->first->restoreKnobsLinks(*it->second);
+        }
     }
 
 

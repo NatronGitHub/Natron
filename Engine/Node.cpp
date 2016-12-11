@@ -1966,10 +1966,7 @@ Node::linkToNode(const NodePtr& other)
                 continue;
             }
         }
-        if (!(*it)->getEvaluateOnChange()) {
-            continue;
-        }
-
+       
         KnobIPtr masterKnob = other->getKnobByName((*it)->getName());
         if (!masterKnob) {
             continue;
@@ -1980,12 +1977,128 @@ Node::linkToNode(const NodePtr& other)
 }
 
 void
+Node::unlinkAllKnobs()
+{
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        (*it)->unlink(DimSpec::all(), ViewSetSpec::all(), true);
+    }
+}
+
+void
+Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
+{
+    // For each knob we keep track of the master nodes we find.
+    // If the number of knobs refering the node is equal to the number of knobs dimension/view pairs
+    // then the node is considered a clone.
+    std::map<NodePtr, int> masterNodes;
+    int nVisitedKnobDimensionView = 0;
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+        // Should we consider this knob to determine if the node is a clone or not ?
+        bool countKnobAmongstVisited = true;
+        {
+            KnobButtonPtr isButton = toKnobButton(*it);
+            if (isButton && !isButton->getIsCheckable()) {
+                // Ignore trigger buttons
+                countKnobAmongstVisited = false;
+            }
+        }
+
+        if (!(*it)->getEvaluateOnChange()) {
+            countKnobAmongstVisited = false;
+        }
+
+        int nDims = (*it)->getNDimensions();
+        std::list<ViewIdx> views = (*it)->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+            for (int i = 0; i < nDims; ++i) {
+
+                if (countKnobAmongstVisited) {
+                    ++nVisitedKnobDimensionView;
+                }
+
+
+                KnobDimViewKeySet dimViewSharedKnobs;
+                (*it)->getSharedValues(DimIdx(i), *it2, &dimViewSharedKnobs);
+                // insert all shared knobs for this dimension/view to the global sharedKnobs set
+                for (KnobDimViewKeySet::const_iterator it3 = dimViewSharedKnobs.begin(); it3 != dimViewSharedKnobs.end() ;++it3) {
+                    KnobIPtr sharedKnob = it3->knob.lock();
+                    if (!sharedKnob) {
+                        continue;
+                    }
+                    EffectInstancePtr holder = toEffectInstance(sharedKnob->getHolder());
+                    if (!holder) {
+                        continue;
+                    }
+
+                    // Increment the number of references to that node
+                    NodePtr masterNode = holder->getNode();
+                    std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+                    if (found == masterNodes.end()) {
+                        masterNodes[masterNode] = 1;
+                    } else {
+                        ++found->second;
+                    }
+                } // for all shared knobs
+            } // for all dimensions
+        } // for all views
+
+        // Also add expression links
+        KnobI::ListenerDimsMap listeners;
+        (*it)->getListeners(listeners);
+        for (KnobI::ListenerDimsMap::const_iterator it2 = listeners.begin(); it2!= listeners.end(); ++it2) {
+            KnobIPtr listenerKnob = it2->first.lock();
+            if (!listenerKnob) {
+                continue;
+            }
+
+            EffectInstancePtr holder = toEffectInstance(listenerKnob->getHolder());
+            if (!holder) {
+                continue;
+            }
+
+            // Increment the number of references to that node
+            NodePtr masterNode = holder->getNode();
+            std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+            if (found == masterNodes.end()) {
+                masterNodes[masterNode] = 1;
+            } else {
+                ++found->second;
+            }
+
+        }
+
+    } // for all knobs
+
+    for (std::map<NodePtr, int>::const_iterator it = masterNodes.begin(); it!=masterNodes.end(); ++it) {
+        bool isCloneLink = it->second >= nVisitedKnobDimensionView;
+        nodes->push_back(std::make_pair(it->first, isCloneLink));
+
+    }
+
+} // getLinkedNodes
+
+void
+Node::getCloneLinkedNodes(std::list<NodePtr>* clones) const
+{
+    std::list<std::pair<NodePtr, bool> > links;
+    getLinkedNodes(&links);
+    for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
+        if (it->second) {
+            clones->push_back(it->first);
+        }
+    }
+}
+
+void
 Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-
+    // In Natron 2.1.x and older we serialized the name of the master node
     const std::string & masterNodeName = serialization._masterNodecriptName;
     if ( !masterNodeName.empty() ) {
 
@@ -2042,8 +2155,12 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
 
     const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
     for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+        KnobIPtr knob = getKnobByName((*it)->_name);
+        if (!knob) {
+            continue;
+        }
         try {
-            restoreKnobLinks(*it);
+            knob->restoreKnobLinks(*it);
         } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {

@@ -78,29 +78,6 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
 }
 
 void
-KnobGui::onRemoveAliasLinkActionTriggered()
-{
-    KnobIPtr thisKnob = getKnob();
-    KnobI::ListenerDimsMap listeners;
-
-    thisKnob->getListeners(listeners);
-    KnobIPtr aliasMaster;
-    KnobIPtr listener;
-    if ( !listeners.empty() ) {
-        listener = listeners.begin()->first.lock();
-        if (listener) {
-            aliasMaster = listener->getAliasMaster();
-        }
-        if (aliasMaster != thisKnob) {
-            aliasMaster.reset();
-        }
-    }
-    if (aliasMaster && listener) {
-        listener->setKnobAsAliasOfThis(aliasMaster, false);
-    }
-}
-
-void
 KnobGui::onUnlinkActionTriggered()
 {
     QAction* action = qobject_cast<QAction*>( sender() );
@@ -114,18 +91,15 @@ KnobGui::onUnlinkActionTriggered()
 
     KnobIPtr thisKnob = getKnob();
     int dims = thisKnob->getNDimensions();
-    KnobIPtr aliasMaster = thisKnob->getAliasMaster();
-    if (aliasMaster) {
-        thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
-    } else {
-        thisKnob->beginChanges();
-        for (int i = 0; i < dims; ++i) {
-            if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
-                thisKnob->unSlave(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
-            }
+
+    thisKnob->beginChanges();
+    for (int i = 0; i < dims; ++i) {
+        if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
+            thisKnob->unlink(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
         }
-        thisKnob->endChanges();
     }
+    thisKnob->endChanges();
+
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
@@ -201,17 +175,8 @@ KnobGui::setSecret()
     } else {
         hide();
     }
-    KnobHolderPtr holder = knob->getHolder();
-    EffectInstancePtr isEffect = toEffectInstance(holder);
-    if (isEffect) {
-        NodePtr node = isEffect->getNode();
-        if (node) {
-            NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
-            if (nodeUi) {
-                nodeUi->onKnobSecretChanged(knob, knob->getIsSecret());
-            }
-        }
-    }
+
+    getGui()->refreshTimelineGuiKeyframesLater();
 
 
     boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(getWidgetsForView(ViewIdx(0)));
@@ -226,7 +191,7 @@ KnobGui::setSecret()
         }
     }
 
-}
+} // setSecret
 
 void
 KnobGui::onViewerContextSecretChanged()
@@ -575,7 +540,10 @@ KnobGui::onRemoveKeyActionTriggered()
             KeyFrameWithString kf;
             if (curve->getKeyFrameWithTime(time, &kf.key)) {
                 if (isString) {
-                    isString->getStringAnimation()->stringFromInterpolatedIndex(time, *it, &kf.string);
+                    StringAnimationManagerPtr sAnim = isString->getStringAnimation(*it);
+                    if (sAnim) {
+                        sAnim->stringFromInterpolatedIndex(time, &kf.string);
+                    }
                 }
 
                 AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
@@ -902,10 +870,11 @@ KnobGui::setEnabledSlot()
     KnobIPtr knob = getKnob();
 
     bool labelEnabled = false;
+    bool knobEnabled = knob->isEnabled();
     for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
         std::vector<bool> enabled;
         for (int i = 0; i < knob->getNDimensions(); ++i) {
-            enabled.push_back(knob->isEnabled(DimIdx(i), it->first));
+            enabled.push_back(knobEnabled);
             if (enabled.back()) {
                 // If all dim/view are disabled, draw label disabled
                 labelEnabled = true;
@@ -933,13 +902,14 @@ KnobGui::onFrozenChanged(bool frozen)
     }
 
     bool labelEnabled = false;
+    bool knobEnabled = knob->isEnabled();
     for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
         std::vector<bool> enabled;
         for (int i = 0; i < knob->getNDimensions(); ++i) {
             if (frozen) {
                 enabled.push_back(false);
             } else {
-                enabled.push_back(knob->isEnabled(DimIdx(i), it->first));
+                enabled.push_back(knobEnabled);
             }
             if (enabled.back()) {
                 // If all dim/view are disabled, draw label disabled

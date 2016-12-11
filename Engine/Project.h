@@ -371,7 +371,8 @@ public:
 
 
     static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                          const NodeCollectionPtr& group);
+                                              const NodeCollectionPtr& group,
+                                              bool loadLinks);
 
 public Q_SLOTS:
 
@@ -400,6 +401,19 @@ Q_SIGNALS:
     void projectViewsChanged();
 
 private:
+
+
+    static void restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes);
+
+    static void restoreInputs(const NodePtr& node,
+                              const std::map<std::string, std::string>& inputsMap,
+                              bool isMaskInputs);
+
+    static void restoreInput(const NodePtr& node,
+                             const std::string& inputLabel,
+                             const std::string& inputNodeScriptName,
+                             bool isMaskInput);
+
 
 
     /*Returns the index of the format*/

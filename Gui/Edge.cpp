@@ -798,6 +798,7 @@ LinkArrow::LinkArrow(const NodeGuiPtr& master,
     , _renderColor(Qt::black)
     , _headColor(Qt::white)
     , _lineWidth(1)
+    , _arrowVisible(true)
 {
     assert(master && slave);
     QObject::connect( master.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
@@ -815,6 +816,12 @@ void
 LinkArrow::setColor(const QColor & color)
 {
     _renderColor = color;
+}
+
+void
+LinkArrow::setArrowHeadVisible(bool visible)
+{
+    _arrowVisible = visible;
 }
 
 void
@@ -840,7 +847,6 @@ LinkArrow::refreshPosition()
         bboxSlave = mapFromItem( slave.get(), slave->boundingRect() ).boundingRect();
     }
 
-    ///like the box master in kfc! was bound to name it so I'm hungry atm
     QRectF boxMaster;
     if (master) {
         boxMaster = mapFromItem( master.get(), master->boundingRect() ).boundingRect();
@@ -849,6 +855,10 @@ LinkArrow::refreshPosition()
     QPointF src = bboxSlave.center();
 
     setLine( QLineF(src, dst) );
+
+    if (!_arrowVisible) {
+        return;
+    }
 
     ///Get the intersections of the line with the nodes
     std::vector<QLineF> masterEdges;
@@ -900,6 +910,7 @@ LinkArrow::refreshPosition()
         a = 2 * M_PI - a;
     }
 
+
     qreal arrowSize = 10. * scale();
     QPointF arrowP1 = middle + QPointF(std::cos(a + ARROW_HEAD_ANGLE / 2) * arrowSize,
                                        std::sin(a + ARROW_HEAD_ANGLE / 2) * arrowSize);
@@ -908,6 +919,7 @@ LinkArrow::refreshPosition()
 
     _arrowHead.clear();
     _arrowHead << middle << arrowP1 << arrowP2;
+
 } // refreshPosition
 
 void
@@ -928,13 +940,15 @@ LinkArrow::paint(QPainter *painter,
     QLineF l = line();
     painter->drawLine(l);
 
-    myPen.setStyle(Qt::SolidLine);
-    painter->setPen(myPen);
+    if (_arrowVisible) {
+        myPen.setStyle(Qt::SolidLine);
+        painter->setPen(myPen);
 
-    QPainterPath headPath;
-    headPath.addPolygon(_arrowHead);
-    headPath.closeSubpath();
-    painter->fillPath(headPath, _headColor);
+        QPainterPath headPath;
+        headPath.addPolygon(_arrowHead);
+        headPath.closeSubpath();
+        painter->fillPath(headPath, _headColor);
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

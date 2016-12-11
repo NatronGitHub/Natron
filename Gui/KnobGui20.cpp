@@ -651,14 +651,6 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
     if ( !exp.empty() ) {
 
-        NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
-        if (isNodeSettings) {
-            NodeGuiPtr node = isNodeSettings->getNodeGui();
-            if (node) {
-                node->onKnobExpressionChanged(this);
-            }
-        }
-
         if (_imp->warningIndicator) {
             bool invalid = false;
             QString fullErrToolTip;

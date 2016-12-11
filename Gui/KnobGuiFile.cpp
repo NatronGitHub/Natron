@@ -462,7 +462,7 @@ void
 KnobGuiFile::reflectAnimationLevel(DimIdx /*dimension*/,
                                    AnimationLevelEnum level)
 {
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+    bool isEnabled = _knob.lock()->isEnabled();
     _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
     _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
     _lineEdit->setAnimation(level);
@@ -855,7 +855,7 @@ KnobGuiPath::reflectAnimationLevel(DimIdx /*dimension*/,
 
     if ( !knob->isMultiPath() ) {
         _lineEdit->setAnimation(level);
-        bool isEnabled = knob->isEnabled(DimIdx(0), getView());
+        bool isEnabled = knob->isEnabled();
         _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
         _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
     }

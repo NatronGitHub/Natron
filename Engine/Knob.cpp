@@ -3898,13 +3898,13 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
     }
     // A knob that does not belong to a node cannot have links
     if (!thisKnobNode) {
-        return;
+        return KnobIPtr();
     }
 
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode = findMasterNode(thisKnobNode->getGroup(), 0, masterNodeName);
     if (!masterNode) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
+        qDebug() << "Link slave/master for " << getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
 
         return KnobIPtr();
     }
@@ -3927,15 +3927,14 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
         }
     }
 
-    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
+    qDebug() << "Link slave/master for " << getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
 
     return KnobIPtr();
 } // findMasterKnob
 
 
 void
-KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
-                       const NodesList & allNodes)
+KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization)
 {
 
 
@@ -3947,7 +3946,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
     if (isGroupKnobSerialization) {
         for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
             try {
-                restoreKnobLinks(*it, allNodes);
+                restoreKnobLinks(*it);
             } catch (const std::exception& e) {
                 LogEntry::LogEntryColor c;
                 EffectInstancePtr effect = toEffectInstance(getHolder());
@@ -4006,9 +4005,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                     }
 
                     masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
-                    KnobIPtr master = findMasterKnob(shared_from_this(),
-                                                     allNodes,
-                                                     masterKnobName,
+                    KnobIPtr master = findMasterKnob(masterKnobName,
                                                      masterNodeName,
                                                      masterTableItemName);
                     if (master) {

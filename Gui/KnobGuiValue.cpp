@@ -872,11 +872,11 @@ KnobGuiValue::reflectAnimationLevel(DimIdx dimension,
     }
     KnobIPtr knob = _imp->knob.lock();
 
+    bool isEnabled = knob->isEnabled();
     if (_imp->slider) {
-        bool isEnabled0 = knob->isEnabled(DimIdx(0));
-        _imp->slider->setReadOnly(!isEnabled0 || level == eAnimationLevelExpression);
+        _imp->slider->setReadOnly(!isEnabled || level == eAnimationLevelExpression);
     }
-    bool isEnabled = knob->isEnabled(dimension);
+
     _imp->spinBoxes[dimension].box->setReadOnly_NoFocusRect(!isEnabled || level == eAnimationLevelExpression);
     if ( level != (AnimationLevelEnum)_imp->spinBoxes[dimension].box->getAnimation() ) {
         _imp->spinBoxes[dimension].box->setAnimation((int)level);
@@ -887,7 +887,7 @@ KnobGuiValue::reflectAnimationLevel(DimIdx dimension,
 void
 KnobGuiValue::onSliderValueChanged(const double d)
 {
-    assert( _imp->knob.lock()->isEnabled(DimIdx(0), getView()) );
+    assert( _imp->knob.lock()->isEnabled() );
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -899,7 +899,7 @@ KnobGuiValue::onSliderValueChanged(const double d)
 void
 KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
 {
-    assert( _imp->knob.lock()->isEnabled(DimIdx(0), getView()) );
+    assert( _imp->knob.lock()->isEnabled() );
     SettingsPtr settings = appPTR->getCurrentSettings();
     bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
     bool autoProxyEnabled = settings->isAutoProxyEnabled();
@@ -1315,11 +1315,10 @@ KnobGuiInt::onKeybindRecorderEditingFinished()
 
     KnobIntPtr knob = _knob.lock();
 
-    typename Knob<int>::PerDimensionValuesVec oldValues = knob->getRawValues();
-    std::vector<int> oldValuesVec;
-    for (typename Knob<int>::PerDimensionValuesVec::const_iterator it = oldValues.begin(); it != oldValues.end(); ++it) {
-        assert(!it->empty());
-        oldValuesVec.push_back(it->begin()->second);
+
+    std::vector<int> oldValuesVec(knob->getNDimensions());
+    for (int i = 0; i < knob->getNDimensions(); ++i) {
+        oldValuesVec[i] = knob->getValue(DimIdx(i), getView());
     }
     getKnobGui()->pushUndoCommand(new KnobUndoCommand<int>(knob, oldValuesVec, newValues, getView()));
 }

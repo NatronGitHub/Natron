@@ -292,15 +292,10 @@ void
 NodeGraph::toggleKnobLinksVisible()
 {
     _imp->_knobLinksVisible = !_imp->_knobLinksVisible;
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-            (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
-        }
-        for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-            (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
-        }
-    }
+
+    refreshNodeLinksLater();
+
+  
 }
 
 void

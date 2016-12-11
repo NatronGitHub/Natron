@@ -869,7 +869,7 @@ KnobDoubleBase::isTypePOD() const
 
 template<typename T>
 bool
-Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* error) const
+Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView,  DimIdx otherDim, ViewIdx otherView, std::string* error) const
 {
     Knob<T>* otherType = dynamic_cast<Knob<T>*>(other.get());
     if (otherType == 0) {
@@ -878,8 +878,13 @@ Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx /*thisDimension*/, ViewIdx /
         }
         return false;
     }
-
-
+    std::string hasExpr = getExpression(thisDimension, thisView);
+    std::string otherExpr = other->getExpression(otherDim, otherView);
+    if (!hasExpr.empty() || !otherExpr.empty()) {
+        if (error) {
+            *error = tr("An expression is already set on the parameter, please remove it first.").toStdString();
+        }
+    }
     return true;
 }
 

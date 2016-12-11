@@ -627,7 +627,7 @@ public:
 
 typedef boost::shared_ptr<ChoiceKnobDimView> ChoiceKnobDimViewPtr;
 
-ChoiceKnobDimViewPtr
+inline ChoiceKnobDimViewPtr
 toChoiceKnobDimView(const KnobDimViewBasePtr& data)
 {
     return boost::dynamic_pointer_cast<ChoiceKnobDimView>(data);
@@ -1414,7 +1414,7 @@ public:
 
 typedef boost::shared_ptr<ParametricKnobDimView> ParametricKnobDimViewPtr;
 
-ParametricKnobDimViewPtr
+inline ParametricKnobDimViewPtr
 toParametricKnobDimView(const KnobDimViewBasePtr& data)
 {
     return boost::dynamic_pointer_cast<ParametricKnobDimView>(data);

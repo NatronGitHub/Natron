@@ -214,6 +214,20 @@ public:
      **/
     bool linkToNode(const NodePtr& other);
 
+    void unlinkAllKnobs();
+
+    /**
+     * @brief Get a list of all nodes that are linked to this one.
+     * For each node in return a boolean indicates whether the link is a clone link
+     * or a just a regular link.
+     * A node is considered clone if all its evaluate on change knobs are linked.
+     **/
+    void getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const;
+
+    /**
+     * @brief Wrapper around getLinkedNodes() that returns cloned nodes
+     **/
+    void getCloneLinkedNodes(std::list<NodePtr>* clones) const;
 
 private:
 

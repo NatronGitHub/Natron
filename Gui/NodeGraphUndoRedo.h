@@ -236,7 +236,7 @@ class DecloneMultipleNodesCommand
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
-                                const NodesGuiList & nodes,
+                                const  std::map<NodeGuiPtr, NodePtr> & nodes,
                                 QUndoCommand *parent = 0);
 
 
@@ -249,7 +249,7 @@ private:
 
     struct NodeToDeclone
     {
-        boost::weak_ptr<NodeGui> node;
+        NodeGuiWPtr node;
         NodeWPtr master;
     };
 

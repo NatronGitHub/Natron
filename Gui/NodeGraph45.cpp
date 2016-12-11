@@ -148,7 +148,6 @@ NodeGraph::refreshAllKnobsGui()
                 if ( !knob->getIsSecret() ) {
                     if (knob->hasAnimation()) {
                         knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
-                        knob->refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
                     }
                 }
             }
