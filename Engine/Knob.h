@@ -316,16 +316,12 @@ class KnobI
 protected: // parent of KnobHelper
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    KnobI()
-    {
-    }
+    KnobI();
 
 public:
 
     // dtor
-    virtual ~KnobI()
-    {
-    }
+    virtual ~KnobI();
 
 protected:
     /**
@@ -1042,7 +1038,7 @@ public:
     /**
      * @brief Enables/disables user interaction with the given dimension.
      **/
-    virtual void setEnabled(bool b);
+    virtual void setEnabled(bool b) = 0;
 
     /**
      * @brief Is the parameter enabled ?

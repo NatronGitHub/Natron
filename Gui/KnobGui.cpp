@@ -95,7 +95,6 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );
-        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSetSpec,DimSpec)), this, SLOT(onInternalKnobAnimationLevelChanged(ViewSetSpec,DimSpec)) );
         QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,double,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,double,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
@@ -123,7 +122,6 @@ KnobGui::initialize()
 
     }
     QObject::connect( this, SIGNAL(s_doUpdateGuiLater()), this, SLOT(onDoUpdateGuiLaterReceived()), Qt::QueuedConnection );
-    QObject::connect( this, SIGNAL(s_updateAnimationLevelLater()), this, SLOT(onDoUpdateAnimationLevelLaterReceived()), Qt::QueuedConnection );
     QObject::connect( this, SIGNAL(s_updateModificationsStateLater()), this, SLOT(onDoUpdateModificationsStateLaterReceived()), Qt::QueuedConnection );
     QObject::connect( this, SIGNAL( s_refreshDimensionsVisibilityLater()), this, SLOT(onRefreshDimensionsVisibilityLaterReceived()), Qt::QueuedConnection);
 }

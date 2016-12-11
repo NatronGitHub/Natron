@@ -317,8 +317,6 @@ public Q_SLOTS:
 
     void onKnobMultipleSelectionChanged(bool d);
 
-    void onInternalKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
-
     void onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
                                   const PerDimViewVariantMap& oldValue,
@@ -350,8 +348,6 @@ public Q_SLOTS:
 
     void onDoUpdateGuiLaterReceived();
 
-    void onDoUpdateAnimationLevelLaterReceived();
-
     void onSplitViewActionTriggered();
 
     void onUnSplitViewActionTriggered();
@@ -369,8 +365,6 @@ Q_SIGNALS:
 
     void s_doUpdateGuiLater();
 
-    void s_updateAnimationLevelLater();
-
     void s_updateModificationsStateLater();
 
     void s_refreshDimensionsVisibilityLater();
@@ -384,8 +378,6 @@ private:
     void refreshModificationsStateNow();
 
     void refreshGuiNow();
-
-    void refreshAnimationLevelNow();
 
     void createViewContainers(ViewIdx view);
 

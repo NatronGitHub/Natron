@@ -208,8 +208,6 @@ struct KnobGuiPrivate
     // Used to concatenate onHasModificationsChanged() request
     int refreshModifStateRequests;
     
-    // Used to concatenate onAnimationLevelChanged() request
-    int refreshAnimationLevelRequests;
 
     // used to concatenate onInternalKnobDimensionsVisibilityChanged
     std::list<ViewSetSpec> refreshDimensionVisibilityRequests;

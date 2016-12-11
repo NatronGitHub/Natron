@@ -377,12 +377,32 @@ OfxParamToKnob::connectDynamicProperties()
     QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHintTooltipChanged()) );
     QObject::connect( handler, SIGNAL(inViewerContextLabelChanged()), this, SLOT(onInViewportLabelChanged()) );
     QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onInViewportSecretChanged()) );
+
+    QObject::connect( this, SIGNAL(mustRefreshAnimationLevelLater()), this, SLOT(onMustRefreshAutoKeyingPropsLaterReceived()), Qt::QueuedConnection );
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(ViewSetSpec /*view*/,
-                                            DimSpec /*dimension*/)
+OfxParamToKnob::refreshAutoKeyingPropsLater()
 {
+    ++_nRefreshAutoKeyingRequests;
+    Q_EMIT mustRefreshAnimationLevelLater();
+
+}
+
+void
+OfxParamToKnob::onMustRefreshAutoKeyingPropsLaterReceived()
+{
+    if (!_nRefreshAutoKeyingRequests) {
+        return;
+    }
+    _nRefreshAutoKeyingRequests = 0;
+    refreshAutoKeyingPropsNow();
+}
+
+void
+OfxParamToKnob::refreshAutoKeyingPropsNow()
+{
+    
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     KnobIPtr knob = getKnob();
@@ -406,6 +426,12 @@ OfxParamToKnob::onKnobAnimationLevelChanged(ViewSetSpec /*view*/,
 
     param->getProperties().setIntProperty(kOfxParamPropIsAnimating, level != eAnimationLevelNone);
     param->getProperties().setIntProperty(kOfxParamPropIsAutoKeying, level == eAnimationLevelInterpolatedValue);
+}
+
+void
+OfxParamToKnob::onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)
+{
+    refreshAutoKeyingPropsLater();
 }
 
 void

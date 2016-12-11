@@ -547,36 +547,6 @@ KnobGui::setKnobGuiPointer()
     getKnob()->setKnobGuiPointer( shared_from_this() );
 }
 
-void
-KnobGui::onDoUpdateAnimationLevelLaterReceived()
-{
-    if (_imp->customInteract || !_imp->refreshAnimationLevelRequests) {
-        return;
-    }
-    _imp->refreshAnimationLevelRequests = 0;
-    refreshAnimationLevelNow();
-}
-
-void
-KnobGui::refreshAnimationLevelNow()
-{
-    KnobIPtr knob = getKnob();
-    int nDim = knob->getNDimensions();
-    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        for (int i = 0; i < nDim; ++i) {
-            if (it->second.widgets) {
-                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first) );
-            }
-        }
-    }
-}
-
-void
-KnobGui::onInternalKnobAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dimension*/)
-{
-    ++_imp->refreshAnimationLevelRequests;
-    Q_EMIT s_updateAnimationLevelLater();
-}
 
 void
 KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,

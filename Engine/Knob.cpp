@@ -34,6 +34,19 @@ SERIALIZATION_NAMESPACE_USING
 
 NATRON_NAMESPACE_ENTER;
 
+KnobI::KnobI()
+: AnimatingObjectI()
+, OverlaySupport()
+, boost::enable_shared_from_this<KnobI>()
+, SERIALIZATION_NAMESPACE::SerializableObjectBase()
+, HashableObject()
+{
+}
+
+
+KnobI::~KnobI()
+{
+}
 
 KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobIPtr& knob)
     : QObject()

@@ -99,6 +99,7 @@ class OfxParamToKnob
     mutable QMutex dynamicPropModifiedMutex;
     int _dynamicPropModified;
     boost::weak_ptr<EffectInstance> _effect;
+    int _nRefreshAutoKeyingRequests;
 
 public:
 
@@ -107,6 +108,7 @@ public:
         : dynamicPropModifiedMutex()
         , _dynamicPropModified(0)
         , _effect(effect)
+        , _nRefreshAutoKeyingRequests(0)
     {
     }
 
@@ -169,12 +171,23 @@ public Q_SLOTS:
     void onLabelChanged();
     void onDisplayMinMaxChanged(DimSpec dimension);
     void onMinMaxChanged(DimSpec dimension);
-    void onKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
+    void onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
     void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
     void onInViewportSecretChanged();
     void onInViewportLabelChanged();
+
+    void onMustRefreshAutoKeyingPropsLaterReceived();
+
+    void refreshAutoKeyingPropsLater();
+
+    void refreshAutoKeyingPropsNow();
+
+Q_SIGNALS:
+
+    void mustRefreshAnimationLevelLater();
+
 protected:
 
     void setDynamicPropertyModified(bool dynamicPropModified)
