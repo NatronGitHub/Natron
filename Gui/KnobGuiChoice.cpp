@@ -98,6 +98,7 @@ KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
     : ComboBox(parent)
     , _knob(toKnobChoice(knob->getKnob()))
     , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
+    , _drawLinkedFrame(false)
 {
 }
 
@@ -210,6 +211,13 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
 }
 
 void
+KnobComboBox::setLinkedFrameEnabled(bool enabled)
+{
+    _drawLinkedFrame = enabled;
+    update();
+}
+
+void
 KnobComboBox::paintEvent(QPaintEvent* event)
 {
     ComboBox::paintEvent(event);
@@ -217,18 +225,24 @@ KnobComboBox::paintEvent(QPaintEvent* event)
     if (!knob) {
         return;
     }
-    int idx = activeIndex();
+
     RGBAColourD color;
-    if (!knob->getColorForIndex(idx, &color)) {
-        return;
+    if (_drawLinkedFrame) {
+        appPTR->getCurrentSettings()->getExprColor(&color.r, &color.g, &color.b);
+        color.a = 1.;
+    } else {
+        int idx = activeIndex();
+        if (!knob->getColorForIndex(idx, &color)) {
+            return;
+        }
     }
 
     QPainter p(this);
     QPen pen;
     QColor c;
     c.setRgbF(Image::clamp(color.r,0.,1.),
-                  Image::clamp(color.g,0.,1.),
-                  Image::clamp(color.b,0.,1.));
+              Image::clamp(color.g,0.,1.),
+              Image::clamp(color.b,0.,1.));
     c.setAlphaF(Image::clamp(color.a,0.,1.));
 
     pen.setColor(c);
@@ -568,6 +582,11 @@ KnobGuiChoice::reflectSelectionState(bool selected)
     _comboBox->setIsSelected(selected);
 }
 
+void
+KnobGuiChoice::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    _comboBox->setLinkedFrameEnabled(linked);
+}
 
 void
 KnobGuiChoice::reflectModificationsState()

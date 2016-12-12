@@ -4091,9 +4091,11 @@ NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links
         eLinkTypeClone
     };
     LinkType type = eLinkTypeNone;
+    std::string cloneNodeName;
     for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
         if (it->second) {
             type = eLinkTypeClone;
+            cloneNodeName = it->first->getFullyQualifiedName();
             break;
         } else if (it->first != getNode()) {
             type = eLinkTypeSimple;
@@ -4108,7 +4110,7 @@ NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links
 
     if (type == eLinkTypeClone) {
         NodePtr cloneNode = links.front().first;
-        QString tooltip = tr("This node is a clone of %1").arg(QString::fromUtf8(cloneNode->getFullyQualifiedName().c_str()));
+        QString tooltip = tr("This node is a clone of %1").arg(QString::fromUtf8(cloneNodeName.c_str()));
         _cloneIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tooltip, NATRON_NAMESPACE::WhiteSpaceNormal) );
     } else if (type == eLinkTypeSimple) {
         _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or multiple link(s) or expression(s) involving values of parameters of other nodes in the project."), NATRON_NAMESPACE::WhiteSpaceNormal) );

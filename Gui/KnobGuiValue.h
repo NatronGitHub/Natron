@@ -77,6 +77,8 @@ public:
 
     void disableSpinBoxesBorder();
 
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
+
 public Q_SLOTS:
 
     void onSpinBoxValueChanged();

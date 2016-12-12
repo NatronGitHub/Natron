@@ -67,6 +67,8 @@ public:
 
     virtual ~KnobComboBox();
 
+    void setLinkedFrameEnabled(bool enabled);
+
 private:
 
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
@@ -87,6 +89,7 @@ private:
 private:
     KnobChoiceWPtr _knob;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
+    bool _drawLinkedFrame;
 };
 
 
@@ -112,6 +115,8 @@ public:
     static QString getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
 
     ComboBox* getCombobox() const;
+
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
 public Q_SLOTS:
 

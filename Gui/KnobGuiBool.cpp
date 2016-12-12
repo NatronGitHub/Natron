@@ -330,6 +330,12 @@ KnobGuiBool::reflectSelectionState(bool selected)
 }
 
 void
+KnobGuiBool::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    _checkBox->setLinked(linked);
+}
+
+void
 KnobGuiBool::updateToolTip()
 {
     KnobGuiPtr knob = getKnobGui();

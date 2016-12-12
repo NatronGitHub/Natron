@@ -158,6 +158,14 @@ public:
     }
 
     /**
+     * @brief Can be implemented to reflect the linked state of a knob
+     **/
+    virtual void reflectLinkedState(DimIdx dimension, bool linked)
+    {
+        Q_UNUSED(linked);
+    }
+
+    /**
      * @brief Can be implemented to reflect that the knob has modifications
      **/
     virtual void reflectModificationsState() {}

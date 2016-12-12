@@ -418,25 +418,22 @@ KnobGuiColor::onDimensionsMadeVisible(bool visible)
 
 
     if (!visible) {
-    for (int i = 0; i < nDims; ++i) {
-        SpinBox* sb = 0;
-        getSpinBox(DimIdx(i), &sb);
-        assert(sb);
-        if (!visible) {
-            sb->setUseLineColor(false, Qt::red);
-        } else {
-            sb->setUseLineColor(true, colors[i]);
+        for (int i = 0; i < nDims; ++i) {
+            SpinBox* sb = 0;
+            getSpinBox(DimIdx(i), &sb);
+            assert(sb);
+            if (!visible) {
+                sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, false);
+            } else {
+                sb->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, true, colors[i]);
+            }
         }
+        
     }
-    } else {
-
-    }
-
 }
 
-
-void
-KnobGuiColor::setEnabledExtraGui(bool enabled)
+    void
+    KnobGuiColor::setEnabledExtraGui(bool enabled)
 {
     if (_colorDialogButton) {
         _colorDialogButton->setEnabled(enabled);

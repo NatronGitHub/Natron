@@ -976,12 +976,17 @@ Knob<T>::cloneDefaultValues(const KnobIPtr& other)
 
 template <typename T>
 bool
-Knob<T>::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx /*dimension*/) const
+Knob<T>::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const
 {
     if (data->animationCurve && data->animationCurve->isAnimated()) {
         return true;
     }
-    return false;
+    ValueKnobDimView<T>* isDataType = dynamic_cast<ValueKnobDimView<T>*>(data.get());
+    if (!isDataType) {
+        return false;
+    }
+    bool hasModif = isDataType->value != getDefaultValue(dimension);
+    return hasModif;
 }
 
 template <typename T>
@@ -1225,14 +1230,6 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
             continue;
         }
 
-        // If the dimension is shared among multiple knob, let the user unlink instead of
-        // overwriting anything.
-        {
-            QMutexLocker k(&dimData->valueMutex);
-            if (dimData->sharedKnobs.size() > 1) {
-                valuesEqual = false;
-            }
-        }
 
         // Check animation curves
         if (valuesEqual) {

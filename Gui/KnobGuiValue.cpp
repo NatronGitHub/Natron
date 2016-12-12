@@ -1140,6 +1140,28 @@ KnobGuiValue::reflectModificationsState()
 }
 
 void
+KnobGuiValue::reflectLinkedState(DimIdx dimension, bool linked)
+{
+    if (dimension < 0 || dimension >= (int)_imp->spinBoxes.size()) {
+        return;
+    }
+    if (_imp->spinBoxes[dimension].box) {
+        QColor c;
+        if (linked) {
+            double r,g,b;
+            appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+            c.setRgbF(Image::clamp(r, 0., 1.),
+                      Image::clamp(g, 0., 1.),
+                      Image::clamp(b, 0., 1.));
+            _imp->spinBoxes[dimension].box->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, true, c);
+        } else {
+            _imp->spinBoxes[dimension].box->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, false);
+        }
+    }
+
+}
+
+void
 KnobGuiValue::refreshDimensionName(DimIdx dim)
 {
     if ( (dim < 0) || ( dim >= (int)_imp->spinBoxes.size() ) ) {

@@ -42,7 +42,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 NATRON_NAMESPACE_ENTER;
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
-    : QFrame(parent), readOnly(false), checked(false)
+    : QFrame(parent), readOnly(false), checked(false), _linked(false)
 {
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy( QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed, QSizePolicy::Label) );
@@ -116,6 +116,12 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 }
 
 void
+AnimatedCheckBox::setLinked(bool linked)
+{
+    _linked = linked;
+}
+
+void
 AnimatedCheckBox::getBackgroundColor(double *r,
                                      double *g,
                                      double *b) const
@@ -158,7 +164,11 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
 
     ///Draw tick
     if (checked) {
-        if (animation == 3) {
+        if (_linked) {
+            double r, g, b;
+            appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+            activeColor.setRgbF(r, g, b);
+        } else if (animation == 3) {
             activeColor = Qt::black;
         } else if (readOnly) {
             activeColor.setRgbF(0.5, 0.5, 0.5);

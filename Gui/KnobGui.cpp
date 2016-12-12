@@ -698,6 +698,9 @@ KnobGui::createGUI(QWidget* parentWidget)
     // Refresh modifications state
     refreshModificationsStateNow();
 
+    // Refresh link state
+    onInternalKnobLinksChanged();
+
     
     // Refresh animation and expression state on all views
     for (int i = 0; i < knob->getNDimensions(); ++i) {
@@ -1453,6 +1456,11 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
 
                 knobName.append(".");
                 knobName.append( firstSharedKnob->getName() );
+                if (firstSharedKnob->getNDimensions() > 1) {
+                    std::string dimName = firstSharedKnob->getDimensionName(dimensionSharedKnobs.begin()->dimension);
+                    knobName.append(".");
+                    knobName.append(dimName);
+                }
             }
         }
         QString actionText;

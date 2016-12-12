@@ -217,14 +217,6 @@ Knob<T>::setValue(const T & v,
                     continue;
                 }
 
-                // When setting a value on a dimension other than 0,
-                // temporarily unlink the dimension to make sure the dimension point to a different data
-                // Make sure we don't send any signal to the gui so the dimensions doesn't become visible/unvisible
-                if ((dimension.isAll() || dimension > 0) && !getAllDimensionsVisible(*it)) {
-                    _signalSlotHandler->blockSignals(true);
-                    unlinkInternal(DimIdx(i), *it, true);
-                    _signalSlotHandler->blockSignals(false);
-                }
 
                 ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it).get());
                 if (data) {
@@ -414,16 +406,6 @@ Knob<T>::setValueAtTime(double time,
                 if (!dimension.isAll() && dimension != i) {
                     continue;
                 }
-
-                // When setting a value on a dimension other than 0,
-                // temporarily unlink the dimension to make sure the dimension point to a different data
-                // Make sure we don't send any signal to the gui so the dimensions doesn't become visible/unvisible
-                if ((dimension.isAll() || dimension > 0) && !getAllDimensionsVisible(*it)) {
-                    _signalSlotHandler->blockSignals(true);
-                    unlinkInternal(DimIdx(i), *it, true);
-                    _signalSlotHandler->blockSignals(false);
-                }
-
 
                 setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
 

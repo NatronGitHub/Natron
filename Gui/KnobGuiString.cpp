@@ -103,6 +103,13 @@ AnimatingTextEdit::~AnimatingTextEdit()
 }
 
 void
+AnimatingTextEdit::setLinkedAppearanceEnabled(bool linked)
+{
+    _appearLinked = linked;
+    refreshStylesheet();
+}
+
+void
 AnimatingTextEdit::refreshStylesheet()
 {
 
@@ -139,6 +146,11 @@ AnimatingTextEdit::refreshStylesheet()
     bool fgColorSet = false;
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
         fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
+    }
+
+    if (_appearLinked) {
+        appPTR->getCurrentSettings()->getExprColor(&fgColor[0], &fgColor[1], &fgColor[2]);
         fgColorSet = true;
     }
 
@@ -830,6 +842,26 @@ KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
         if ( !knob->isCustomKnob() ) {
             _lineEdit->setReadOnly_NoFocusRect(!perDimEnabled[0]);
         }
+    }
+}
+
+void
+KnobGuiString::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    if (_lineEdit) {
+        QColor c;
+        if (linked) {
+            double r,g,b;
+            appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+            c.setRgbF(Image::clamp(r, 0., 1.),
+                      Image::clamp(g, 0., 1.),
+                      Image::clamp(b, 0., 1.));
+            _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, true, c);
+        } else {
+            _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, false);
+        }
+    } else if (_textEdit) {
+        _textEdit->setLinkedAppearanceEnabled(linked);
     }
 }
 

@@ -68,6 +68,17 @@ public:
     void setCustomTextColor(const QColor& color);
 
 
+
+    enum AdditionalDecorationType
+    {
+        eAdditionalDecorationColoredFrame = 0x1,
+        eAdditionalDecorationColoredUnderlinedText = 0x2
+    };
+
+    void setAdditionalDecorationTypeEnabled(AdditionalDecorationType type, bool enabled, const QColor& color = Qt::black);
+
+    void disableAllDecorations();
+    
 Q_SIGNALS:
 
     void textDropped();
@@ -77,7 +88,7 @@ Q_SIGNALS:
 protected:
 
     virtual void refreshStylesheet() OVERRIDE;
-
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void dropEvent(QDropEvent* e) OVERRIDE;
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE;
@@ -90,6 +101,17 @@ private:
     bool _customColorSet;
     bool isBold;
     bool borderDisabled;
+
+
+    struct AdditionalDecoration
+    {
+        bool enabled;
+        QColor color;
+    };
+    typedef std::map<AdditionalDecorationType, AdditionalDecoration> AdditionalDecorationsMap;
+
+
+    AdditionalDecorationsMap decorationType;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -2669,7 +2669,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->gainSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGainButtonKnob.lock();
         if (reason == eValueChangedReasonUserEdited) {
-            enableKnob->setValue(true);
+            enableKnob->setValue(true, view, DimIdx(0), eValueChangedReasonPluginEdited);
             _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
         }
     } else if (k == _imp->enableGammaButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
@@ -2746,12 +2746,12 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         KnobChoicePtr wipeChoiceKnob = _imp->blendingModeChoiceKnob.lock();
         int value = wipeChoiceKnob->getValue();
         if (value != 0) {
-            wipeChoiceKnob->setValue(0);
+            wipeChoiceKnob->setValue(0, view, DimIdx(0), eValueChangedReasonPluginEdited);
         } else {
             if (_imp->lastWipeIndex == 0) {
                 _imp->lastWipeIndex = 1;
             }
-            wipeChoiceKnob->setValue(_imp->lastWipeIndex);
+            wipeChoiceKnob->setValue(_imp->lastWipeIndex, view, DimIdx(0), eValueChangedReasonPluginEdited);
         }
     } else if (k == _imp->blendingModeChoiceKnob.lock() && reason == eValueChangedReasonUserEdited) {
         KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
@@ -2764,7 +2764,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         std::vector<double> values(2);
         values[0] = _imp->lastMousePos.x();
         values[1] = _imp->lastMousePos.y();
-        knob->setValueAcrossDimensions(values);
+        knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonPluginEdited);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
     } else if (k == _imp->rightClickPreviousLayer.lock()) {

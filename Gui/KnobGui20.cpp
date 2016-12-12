@@ -239,7 +239,7 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
         ViewIdx otherViewToCheck = fromView.isAll() ? ViewIdx(0): ViewIdx(fromView);
         std::string error;
         if ( !knob->canLinkWith(fromKnob, thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
-            if (!error.empty()) {
+            if (showErrorDialog && !error.empty()) {
                 Dialogs::errorDialog( tr("Paste").toStdString(), error );
             }
             return false;
@@ -819,6 +819,17 @@ KnobGui::onInternalKnobLinksChanged()
 
     // Refresh help tooltip
     onHelpChanged();
+
+    if (!_imp->customInteract) {
+        int nDims = knob->getNDimensions();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            for (int i = 0;i < nDims; ++i) {
+                KnobDimViewKeySet sharedKnobs;
+                knob->getSharedValues(DimIdx(i), it->first, &sharedKnobs);
+                it->second.widgets->reflectLinkedState(DimIdx(i), !sharedKnobs.empty());
+            }
+        }
+    }
     
     EffectInstancePtr effect = toEffectInstance(knob->getHolder());
     if (!effect) {

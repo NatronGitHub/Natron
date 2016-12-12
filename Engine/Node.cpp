@@ -2036,11 +2036,19 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
 
                     // Increment the number of references to that node
                     NodePtr masterNode = holder->getNode();
-                    std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
-                    if (found == masterNodes.end()) {
-                        masterNodes[masterNode] = 1;
-                    } else {
-                        ++found->second;
+                    if (masterNode.get() != this) {
+                        std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+                        if (found == masterNodes.end()) {
+                            if (countKnobAmongstVisited) {
+                                masterNodes[masterNode] = 1;
+                            } else {
+                                masterNodes[masterNode] = 0;
+                            }
+                        } else {
+                            if (countKnobAmongstVisited) {
+                                ++found->second;
+                            }
+                        }
                     }
                 } // for all shared knobs
             } // for all dimensions
@@ -2062,11 +2070,19 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
 
             // Increment the number of references to that node
             NodePtr masterNode = holder->getNode();
-            std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
-            if (found == masterNodes.end()) {
-                masterNodes[masterNode] = 1;
-            } else {
-                ++found->second;
+            if (masterNode.get() != this) {
+                std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+                if (found == masterNodes.end()) {
+                    if (countKnobAmongstVisited) {
+                        masterNodes[masterNode] = 1;
+                    } else {
+                        masterNodes[masterNode] = 0;
+                    }
+                } else {
+                    if (countKnobAmongstVisited) {
+                        ++found->second;
+                    }
+                }
             }
 
         }

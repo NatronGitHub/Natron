@@ -590,16 +590,22 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
 
 
     int nDims = knob->getNDimensions();
-    std::vector<std::string> expressions(nDims);
+    // For each dimension, a string indicating the link + a boolean indicating if it is an expression or a regular link
+    std::vector<std::pair<std::string,bool> > linkString(nDims);
     bool exprAllSame = true;
     bool hasLink = false;
     for (int i = 0; i < nDims; ++i) {
 
-        expressions[i] =  knob->getExpression(DimIdx(i), view);
+        linkString[i].first =  knob->getExpression(DimIdx(i), view);
 
-        if (expressions[i].empty()) {
-            KnobDimViewKey sharingMaster;
-            if (knob->getSharingMaster(DimIdx(i), view, &sharingMaster)) {
+        if (!linkString[i].first.empty()) {
+            linkString[i].second = true;
+        } else {
+
+            KnobDimViewKeySet sharedKnobs;
+            knob->getSharedValues(DimIdx(i), view, &sharedKnobs);
+            if (!sharedKnobs.empty()) {
+                const KnobDimViewKey& sharingMaster = *sharedKnobs.begin();
                 KnobIPtr sharingMasterKnob = sharingMaster.knob.lock();
                 if (sharingMasterKnob) {
                     std::string knobName;
@@ -613,16 +619,17 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                         knobName += ".";
                     }
                     knobName += sharingMasterKnob->getName();
-                    expressions[i] = knobName;
+                    linkString[i].first = knobName;
+                    linkString[i].second = false;
                 }
             }
         }
-        if (!expressions[i].empty()) {
+        if (!linkString[i].first.empty()) {
             hasLink = true;
         } else {
-            expressions[i] = "curve(frame,dimension,view)";
+            linkString[i].first = "curve(frame,dimension,view)";
         }
-        if ( (i > 0) && (expressions[i] != expressions[0]) ) {
+        if ( (i > 0) && (linkString[i] != linkString[0]) ) {
             exprAllSame = false;
         }
 
@@ -631,21 +638,32 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
     QString exprTt;
     if (hasLink) {
         if (exprAllSame) {
-            if ( !expressions[0].empty() ) {
-                if (isMarkdown) {
-                    exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ) );
+            if ( !linkString[0].first.empty() ) {
+                QString prefix;
+                if (linkString[0].second) {
+                    prefix = QString::fromUtf8("ret =");
                 } else {
-                    exprTt = QString::fromUtf8("<br />ret = <b>%1</b>").arg( QString::fromUtf8( expressions[0].c_str() ) );
+                    prefix = tr("Linked to");
+                }
+                if (isMarkdown) {
+                    exprTt = QString::fromUtf8("%1 **%2**\n\n").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
+                } else {
+                    exprTt = QString::fromUtf8("<br />%1 <b>%2</b>").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
                 }
             }
         } else {
             for (int i = 0; i < nDims; ++i) {
                 std::string dimName = knob->getDimensionName(DimIdx(i));
-                QString toAppend;
-                if (isMarkdown) {
-                    toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+                QString toAppend,prefix;
+                if (linkString[i].second) {
+                    prefix = QString::fromUtf8("%1 =").arg(QString::fromUtf8( dimName.c_str() ));
                 } else {
-                    toAppend = QString::fromUtf8("<br />%1 = <b>%2</b>").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+                    prefix = tr("%1 linked to").arg(QString::fromUtf8( dimName.c_str() ));
+                }
+                if (isMarkdown) {
+                    toAppend = QString::fromUtf8("%1 **%2**\n\n").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
+                } else {
+                    toAppend = QString::fromUtf8("<br />%1 <b>%2</b>").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
                 }
                 exprTt.append(toAppend);
             }
@@ -770,7 +788,7 @@ KnobGui::hide()
     bool newLineActivated = _imp->layoutType == KnobGui::eKnobLayoutTypeViewerUI ? knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine : knob->isNewLineActivated();
 
     // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widget
-    if (!newLineActivated) {
+    if (newLineActivated) {
         if (_imp->mainContainer) {
             _imp->mainContainer->hide();
         }

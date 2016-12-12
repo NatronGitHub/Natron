@@ -82,7 +82,6 @@ public:
     ///Get a pointer to the right click menu, this can be used to add extra entries. @see KnobGuiTypes.cpp
     QMenu* getRightClickMenu();
 
-    void setUseLineColor(bool use, const QColor& color);
 
     /**
      * @brief Set an optional validator that will validate numbers instead of the regular double/int validator.

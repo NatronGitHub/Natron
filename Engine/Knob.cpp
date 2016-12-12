@@ -353,21 +353,20 @@ KnobHelper::setAllDimensionsVisibleInternal(ViewIdx view, bool visible)
         }
         curValue = visible;
     }
-    
-    int nDims = getNDimensions();
-    beginChanges();
-    // When folding, redirect other dimensions to the first one
-    KnobIPtr thisShared = shared_from_this();
-    for (int i = 1; i < nDims; ++i) {
-        // Unlink if already linked
-        unlink(DimIdx(i), view, false /*copyState*/);
-        if (!visible) {
-            bool ok = linkTo(thisShared, DimIdx(i), DimIdx(0), view, view);
-            assert(ok);
-            (void)ok;
+    if (!visible) {
+        // Prevent copyKnob from recomputing the allDimensionsVisible flag
+        setAdjustFoldExpandStateAutomatically(false);
+        int nDims = getNDimensions();
+        beginChanges();
+
+        KnobIPtr thisShared = shared_from_this();
+        for (int i = 1; i < nDims; ++i) {
+            // When folding, copy the values of the first dimension to other dimensions
+            copyKnob(thisShared, view, DimIdx(i), view, DimIdx(0));
         }
+        endChanges();
+        setAdjustFoldExpandStateAutomatically(true);
     }
-    endChanges();
 }
 
 void
@@ -1844,14 +1843,18 @@ KnobHelper::copyKnob(const KnobIPtr& other,
     hasChanged |= cloneValues(other, view, otherView, dimension, otherDimension, range, offset);
     hasChanged |= cloneExpressions(other, view, otherView, dimension, otherDimension);
 
+    ViewIdx view_i;
     if (!view.isAll()) {
-        autoAdjustFoldExpandDimensions(ViewIdx(view));
-    } else {
-        std::list<ViewIdx> views = getViewsList();
-        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-            autoAdjustFoldExpandDimensions(*it);
-        }
+        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
     }
+    std::list<ViewIdx> views = getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!view.isAll() && *it != view_i) {
+            continue;
+        }
+        autoAdjustFoldExpandDimensions(*it);
+    }
+
 
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
@@ -1934,9 +1937,24 @@ KnobHelper::linkToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, Dim
             (void)insertOk.second;
         }
 
-        sharedKnob->_signalSlotHandler->s_curveAnimationChanged(thisView, thisDimension);
-        sharedKnob->_signalSlotHandler->s_linkChanged();
+    }
 
+    // Notify links changed
+    {
+        KnobDimViewKeySet sharedKnobs;
+        {
+            QMutexLocker k2(&otherData->valueMutex);
+            sharedKnobs = otherData->sharedKnobs;
+        }
+        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!= sharedKnobs.end(); ++it) {
+            KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
+            if (!sharedKnob) {
+                continue;
+            }
+            sharedKnob->_signalSlotHandler->s_curveAnimationChanged(thisView, thisDimension);
+            sharedKnob->_signalSlotHandler->s_linkChanged();
+
+        }
     }
 
 
@@ -2140,8 +2158,11 @@ KnobHelper::getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* s
     if (!data) {
         return;
     }
-    assert(!data->sharedKnobs.empty());
-    *sharedKnobs = data->sharedKnobs;
+    {
+        QMutexLocker k(&data->valueMutex);
+        assert(!data->sharedKnobs.empty());
+        *sharedKnobs = data->sharedKnobs;
+    }
 
     // Remove this knob from the shared knobs
     KnobIPtr thisKnob = boost::const_pointer_cast<KnobI>(shared_from_this());
