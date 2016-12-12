@@ -573,12 +573,14 @@ NodeGraph::refreshNodeLinksNow()
                 } else {
                     link.arrow->setColor(simpleLinkColor);
                 }
+                _imp->linkedNodes.push_back(link);
             } else {
                 // A link existed, if this is a clone link and it was not before, upgrade it
                 if (!foundExistingLink->isCloneLink && link.isCloneLink) {
-                    link.arrow->setColor(cloneLinkColor);
+                    foundExistingLink->arrow->setColor(cloneLinkColor);
                 }
             }
+
         }
 
         (*it)->refreshLinkIndicators(linkedNodes);

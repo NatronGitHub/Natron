@@ -2029,6 +2029,8 @@ KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
     KnobIPtr thisKnob = shared_from_this();
 
     RedirectionLink redirectionLink;
+    KnobDimViewKeySet currentSharedKnobs;
+
     {
         QMutexLocker k(&_imp->perDimViewDataMutex);
         PerViewSavedDataMap::iterator foundSavedData = _imp->perDimViewSavedData[dimension].find(view);
@@ -2051,17 +2053,22 @@ KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
         // Remove this knob dim/view from the shared knobs set
         KnobDimViewKey thisKnobKey(thisKnob, dimension, view);
         {
-            QMutexLocker k2(&currentData->second->valueMutex);
-            assert(!currentData->second->sharedKnobs.empty());
-            KnobDimViewKeySet::iterator foundThisKnobDimView = currentData->second->sharedKnobs.find(thisKnobKey);
-            assert(foundThisKnobDimView != currentData->second->sharedKnobs.end());
-            if (foundThisKnobDimView != currentData->second->sharedKnobs.end()) {
-                currentData->second->sharedKnobs.erase(foundThisKnobDimView);
+            {
+                QMutexLocker k2(&currentData->second->valueMutex);
+                currentSharedKnobs = currentData->second->sharedKnobs;
+
+                assert(!currentData->second->sharedKnobs.empty());
+                KnobDimViewKeySet::iterator foundThisKnobDimView = currentData->second->sharedKnobs.find(thisKnobKey);
+                assert(foundThisKnobDimView != currentData->second->sharedKnobs.end());
+                if (foundThisKnobDimView != currentData->second->sharedKnobs.end()) {
+                    currentData->second->sharedKnobs.erase(foundThisKnobDimView);
+                }
             }
+
         }
-
-
-
+        
+        
+        
         // If there is a savedData pointer, that means we were linked to another knob: this is easy just set back the pointer, unless
         // the user requested to copy state
         if (redirectionLink.savedData && !copyState) {
@@ -2089,10 +2096,19 @@ KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
         }
     }
 
-    // The keyframes might have changed, notify it
-    _signalSlotHandler->s_curveAnimationChanged(view, dimension);
+    // Refresh links on all shared knobs
+    for (KnobDimViewKeySet::const_iterator it = currentSharedKnobs.begin(); it!=currentSharedKnobs.end(); ++it) {
+        KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
+        if (!sharedKnob) {
+            continue;
+        }
+        // The keyframes might have changed, notify it
+        sharedKnob->_signalSlotHandler->s_curveAnimationChanged(view, dimension);
 
-    _signalSlotHandler->s_linkChanged();
+        sharedKnob->_signalSlotHandler->s_linkChanged();
+    }
+
+
 
 } // unlinkInternal
 
